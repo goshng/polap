@@ -329,5 +329,5 @@ the `3000`.
 
 Copyright 2024 Sungshin Women's University. Released
 under the
-[MIT License](https://mit-license.org/ "MIT License"),
+[GNU General Public License version 3](https://www.gnu.org/licenses/gpl-3.0-standalone.html)
 This software carries no warranty of any kind.

@@ -1,9 +1,3 @@
----
-author: Sang Chul Choi
-date: May 3, 2024
-title: POLAP User's Guide
----
-
 # Description
 
 Polap is a meta-assembler pipeline that treats

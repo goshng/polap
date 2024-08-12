@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+../src/polap.sh assemble --test

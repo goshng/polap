@@ -41,18 +41,29 @@ It requires [BASH](https://www.gnu.org/software/bash/) (bash\>=3.0).
 
     bash --version
 
-# Installing Polap
+You must install a conda package manager like
+[Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/)
+on your favorite Linux Operating System in a command-line interface.
+
+    $ curl -OL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    $ bash Miniconda3-latest-Linux-x86_64.sh
 
 Your terminal should look like this after installing
 [Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/),
-exiting, and relogin back to your Linux. First, Install
-[Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/)
-on your favorite Linux Operating System in a command-line interface. The
-prompt with (base) indicates your successful
+exiting, and relogin back to your Linux terminal.
+The prompt with (base) indicates your successful
 [Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/)
 installation.
 
     (base) $
+
+Now, configure your conda with the following:
+
+    (base) $ conda update -y -n base conda
+    (base) $ conda config --add channels bioconda
+    (base) $ conda config --add channels conda-forge
+
+# Installing Polap
 
 Download the source code of Polap available at
 [Polap](https://github.com/goshng/polap)'s github website:
@@ -100,6 +111,7 @@ we need to create one for Polap's FMLRC conda environment.
 
     (base) $ conda create --name polap-fmlrc bioconda::polap-fmlrc
     (base) $ conda activate polap-fmlrc
+    (polap-fmlrc) $ conda install -y kbchoi::msbwt">=0.2.9"
     (polap-fmlrc) $ cd test
     (polap-fmlrc) $ polap prepare-polishing
     (polap-fmlrc) $ polap polish

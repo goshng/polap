@@ -36,23 +36,23 @@ pipeline is employed to finalize the mtDNA.
 # Requirements
 
 Polap runs on a Linux OS with
-[Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/).
+[Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install).
 It requires [BASH](https://www.gnu.org/software/bash/) (bash\>=3.0).
 
     bash --version
 
 You must install a conda package manager like
-[Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/)
+[Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install)
 on your favorite Linux Operating System in a command-line interface.
 
     $ curl -OL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     $ bash Miniconda3-latest-Linux-x86_64.sh
 
 Your terminal should look like this after installing
-[Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/),
+[Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install),
 exiting, and relogin back to your Linux terminal.
 The prompt with (base) indicates your successful
-[Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/)
+[Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install)
 installation.
 
     (base) $
@@ -60,8 +60,8 @@ installation.
 Now, configure your conda with the following:
 
     (base) $ conda update -y -n base conda
-    (base) $ conda config --add channels bioconda
-    (base) $ conda config --add channels conda-forge
+    (base) $ conda config --prepend channels bioconda
+    (base) $ conda config --prepend channels conda-forge
 
 # Installing Polap
 

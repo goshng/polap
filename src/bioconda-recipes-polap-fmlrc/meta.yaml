@@ -6,9 +6,8 @@ package:
   version: "{{ version }}"
 
 source:
-  path: ../../../../../polap/polap
-  # url: https://github.com/goshng/polap/archive/refs/tags/{{ version }}.tar.gz
-  # sha256: 5de2d8aeae3673e95c4d88c0bc2bf8f2061b346afb8c3261556b24cc0395f519
+  url: https://github.com/goshng/polap/archive/refs/tags/{{ version }}.tar.gz
+  sha256: 5de2d8aeae3673e95c4d88c0bc2bf8f2061b346afb8c3261556b24cc0395f519
 
 build:
   noarch: python
@@ -35,4 +34,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - Sang Chul Choi
+    - goshng

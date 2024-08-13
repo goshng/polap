@@ -1346,7 +1346,7 @@ function _run_polap_x-clustal() {
 # Outputs:
 #   $FA
 ################################################################################
-function _x_run_polap_check-coverage() {
+function _run_polap_x-check-coverage() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
@@ -1927,13 +1927,11 @@ if declare -f "_run_polap_${_arg_menu[0]}" >/dev/null 2>&1; then
 	# invoke that function, passing arguments through
 	_run_polap_"$@" # same as "$1" "$2" "$3" ... for full argument list
 else
-	echoerr "Menu: assemble1, annotate, assemble2, flye-polishing,"
-	echoerr "      reset, total-length-long, find-genome-size, reduce-data,"
-	echoerr "      flye1, blast-genome, count-gene, select-reads, flye2,"
-	echoerr "      flye-polishing, check-coverage,"
-	echoerr "      prepare-polishing, polish,"
+	echoerr "Menu: assemble1, annotate, assemble2,"
+	echoerr "      reset, total-length-long, find-genome-size, reduce-data, flye1,"
+	echoerr "      blast-genome, count-gene, flye2,"
+	echoerr "      flye-polishing, prepare-polishing, polish,"
 	echoerr "      assemble,"
-	echoerr "      ncbi-fetch-nucleotide, align-two-dna-sequences, clustal"
 	echoerr "ERROR: no such menu of $1"
 fi
 

@@ -95,10 +95,21 @@ run [Polap](https://github.com/goshng/polap) with a test dataset.
     (polap) $ cd test
     (polap) $ polap assemble --test
 
+Because FMLRC's conda environment was incompatible with that of Polap's,
+we need to create one for Polap's FMLRC conda environment.
+
+    (base) $ conda create --name polap-fmlrc bioconda::polap-fmlrc
+    (base) $ conda activate polap-fmlrc
+    (polap-fmlrc) $ cd test
+    (polap-fmlrc) $ polap prepare-polishing
+    (polap-fmlrc) $ polap polish
+
 # Using Polap
 
-If no _input-files_ are specified, three input files must be at the
-current directory: `l.fq`, `s1.fq`, and `s2.fq`.
+If no _input-files_ are specified by options with fastq input file paths,
+three input files must be at the current directory:
+`l.fq`, `s1.fq`, and `s2.fq`. You could use options such as
+`-l`, `-a`, and `-b`.
 
     (polap-dev) $ src/polap.sh assemble1
 
@@ -135,10 +146,14 @@ Extract a mitochondrial genome sequence by opening
 [Bandage](https://rrwick.github.io/Bandage/). Save the sequence with a
 file name called `mt.0.fasta`.
 
+    (polap) $ conda activate polap-fmlrc
     (polap-fmlrc) $ src/polap.sh prepare-polishing
     (polap-fmlrc) $ src/polap.sh polish
 
 Your final mitochondrial genome sequence is `mt.1.fa`.
+
+You must change your conda environment to `polap-dev` before using
+`assemble1`, `annotate`, `assemble2`, or `flye-polishing` menu.
 
 # Uninstalling Polap
 

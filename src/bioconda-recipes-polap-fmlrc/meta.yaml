@@ -1,0 +1,39 @@
+{% set name = "polap-fmlrc" %}
+{% set version = "0.2.4" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  path: ../../../../../polap/polap
+  # url: https://github.com/goshng/polap/archive/refs/tags/{{ version }}.tar.gz
+  # sha256: 5de2d8aeae3673e95c4d88c0bc2bf8f2061b346afb8c3261556b24cc0395f519
+
+build:
+  noarch: python
+  number: 1
+
+requirements:
+  run:
+    - python =2.7
+    - bioconda::ropebwt2 >=r187
+    - bioconda::fmlrc >=1.0.0
+    - kbchoi::msbwt >=0.2.9
+
+test:
+  commands:
+    - polap -h
+
+about:
+  home: https://github.com/goshng/polap
+  license: GPLv3
+  license_family: GPL
+  license_file: LICENSE
+  summary: "POLAP: plant organelle long-read assembly pipeline"
+  dev_url: https://github.com/goshng/polap
+  doc_url: https://goshng.github.io/polap/polap.html
+
+extra:
+  recipe-maintainers:
+    - Sang Chul Choi

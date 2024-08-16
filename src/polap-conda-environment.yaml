@@ -19,9 +19,9 @@ dependencies:
   - bioconda::jellyfish >=2.2.10
   - clustalw >=2.1
   - r-base >=4.3.2
-  - conda-forge::r-dplyr >= 1.1.4
-  - conda-forge::r-readr >= 2.1.5
-  - conda-forge::r-optparse >= 1.6.0
+  - conda-forge::r-dplyr >=1.1.4
+  - conda-forge::r-readr >=2.1.5
+  - conda-forge::r-optparse >=1.6.0
   - bioconda::samtools >=1.18
   - bioconda::assembly-stats >=1.0.1
   - bioconda::orthofinder >=2.5.5

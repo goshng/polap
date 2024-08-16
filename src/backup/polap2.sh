@@ -272,7 +272,7 @@ function _run_polap_find-genome-size() {
 function _run_polap_reduce-data() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 	# step1
-	seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o $LRNK >/dev/null 2>&1
+	seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o "$LRNK" >/dev/null 2>&1
 	echo "DATA: long-read minimum $MR reads data $LRNK is created"
 	echoerr NEXT: $0 flye1 [-g 150000] [-t 4] [-c 30] [-o o]
 
@@ -312,17 +312,6 @@ function _run_xxx_find-genome-size2() {
 	EXPECTED_COVERAGE=${EXPECTED_COVERAGE%.*}
 	echo "DATA: long reads expected coverage: ${EXPECTED_COVERAGE}x"
 	echoerr NEXT: $0 reduce-data [-m 3000]
-
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
-}
-
-# -l l.fq -m 3000
-function _run_polap_reduce-data() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
-
-	seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o "$LRNK" >/dev/null 2>&1
-	echo "DATA: long-read minimum $MR reads data $LRNK is created"
-	echoerr NEXT: $0 flye1 [-g 150000] [-t 4] [-c 30] [-o o]
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -590,7 +579,7 @@ function _run_polap_select-reads() {
 	echo "INFO: uses mt.contig.name at $MTCONTIGNAME"
 	echoerr "FILE: contigs in $MTCONTIGNAME"
 	cat $MTCONTIGNAME >&2
-	echoerr "please, wait for a long-read data selection ... $INUM -> $JNUM ... bridge=$MBRIDGE mapping=$MPAIR wapping=$MSINGLE"
+	echoerr "please, wait for a long-read data selection ... $INUM -> $JNUM ... bridge=$MBRIDGE p_mapping=$MPAIR s_mapping=$MSINGLE min_len_read=$MR"
 	# ADIR="$ODIR"/50-annotation
 	# if [[ ! -d $ADIR ]]; then
 	# 	mkdir -p $ADIR

@@ -8,4 +8,4 @@ LONG_TOTAL_LENGTH=$(seqkit stats -Ta l.fq | csvtk cut -t -f sum_len | csvtk del-
 echo "DATA: total number of bases in the long-read data $LONG_TOTAL_LENGTH"
 echo Step 1 is ready to run!
 echo Your next command is:
-echo $ src/run-polap-mtdna-carex-pseudochinensis-02.sh $LONG_TOTAL_LENGTH
+echo $ src/run-polap-mtdna-carex-pseudochinensis-02.sh

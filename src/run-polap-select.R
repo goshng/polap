@@ -16,11 +16,9 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+suppressPackageStartupMessages(library("dplyr"))
 args = commandArgs(trailingOnly=TRUE)
 
-#!/var2/home/alice/miniconda3/envs/bio38/bin/Rscript --vanilla
-
-suppressPackageStartupMessages(library("dplyr"))
 
 x = as_tibble(read.table(args[1]))
 copy_number_min = median(x$V6)

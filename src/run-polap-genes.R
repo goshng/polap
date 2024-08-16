@@ -16,21 +16,24 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-args = commandArgs(trailingOnly=TRUE)
-
-#!/var2/home/alice/miniconda3/envs/bio38/bin/Rscript --vanilla
+# name: converts BLAST output file to a BED format file.
+#
+# synopsis:
+# run-polap-genes.R $MTAABLAST $MTAABLAST.bed >/dev/null 2>&1
+# input: MTAABLAST
+# output: BED
+#
+# requirement:
+# Create a tblastn output file: MTAABLAST
+# tblastn -query $MTAA -db $CONTIGDB -out $MTAABLAST -evalue 1e-30 \
+#	-outfmt "6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle salltitles"
 
 suppressPackageStartupMessages(library("dplyr"))
-
+args = commandArgs(trailingOnly=TRUE)
 
 x = as_tibble(read.table(args[1]))
 y1 = x %>% select(V2,V9,V10) %>% filter(V9<V10) %>% rename(V1=V2,V2=V9,V3=V10)
 y2 = x %>% select(V2,V9,V10) %>% filter(V9>V10) %>% rename(V1=V2,V2=V10,V3=V9)
-
-#y1 = x %>% filter(V2=="contig_19") %>% select(V2,V9,V10) %>% filter(V9<V10) %>% rename(V1=V2,V2=V9,V3=V10)
-#y2 = x %>% filter(V2=="contig_19") %>% select(V2,V9,V10) %>% filter(V9>V10) %>% rename(V1=V2,V2=V10,V3=V9)
-
 z = bind_rows(y1,y2)
 
 write.table(z, args[2],row.names=F,col.names=F,quote=F,sep='\t')
-

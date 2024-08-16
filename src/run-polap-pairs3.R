@@ -51,8 +51,8 @@ y = t(combn(x$V1,2))
 x = as_tibble(read.table(args[2]))
 mtdir = args[3]
 pair_min = as.numeric(args[4])
-#single_min = as.numeric(args[5])
 single_min = pair_min
+#single_min = as.numeric(args[5])
 
 # https://lh3.github.io/minimap2/minimap2.html
 # Li 2008 - "OUTPUT FORMAT: Minimap2 outputs mapping positions in the Pairwise mApping Format (PAF) by default. PAF is a TAB-delimited text format with each line consisting of at least 12 fields as are described in the following table:"
@@ -70,6 +70,6 @@ orders <- function(y){
 }
 
 sfile = paste0(mtdir,"/single.names")
-x %>% filter((V4-V3)/V2 > 0.7, V10/V11 > 0.7) %>% select(V1) %>% distinct(V1) %>% write.table(sfile,row.names=F,col.names=F,quote=F)
+x %>% filter((V4-V3)/V2 > 0.7, V10/V11 > 0.7, V11 > single_min) %>% select(V1) %>% distinct(V1) %>% write.table(sfile,row.names=F,col.names=F,quote=F)
 
 apply(y, 1, orders)

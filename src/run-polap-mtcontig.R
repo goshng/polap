@@ -16,10 +16,29 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-args = commandArgs(trailingOnly=TRUE)
+# name: estimates genome size using Jellyfish output
+#
+# synopsis:
+# run-polap-mtcontig.R <flye_output_dir> <mt.contig.name> <assembley_count.txt> --contigger
+#
+# requirement: executes Flye 
+# jellyfish count -t 4 -C -m 19 -s 5G -o 19mer_out --min-qual-char=? s1.fq s2.fq
+# jellyfish histo -o 19mer_out.histo 19mer_out
+#
+# input: Jellyfish .histo output file
+# output: coverage and genome size
+# "$WDIR"/run-polap-mtcontig.R "$ODIR" \
+# 	"$ODIR"/50-annotation/mt.contig.name \
+# 	"$ODIR"/assembly_info_organelle_annotation_count.txt \
+# 	--contigger \
+# 	>/dev/null 2>&1
+# echo "USE: assembly graph: "$ODIR"/30-contigger/graph_final.gfa"
+# echo "USE: execute $ column -t "$ODIR"/assembly_info_organelle_annotation_count.txt"
+# echo "INFO: edit "$ODIR"/50-annotation/mt.contig.name-1 for mtDNA contig candidates"
 
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))
+args = commandArgs(trailingOnly=TRUE)
 
 # x = as_tibble(read.table(args[1]))
 # copy_number_min = median(x$V6)
@@ -62,8 +81,7 @@ pt.contig.name = paste0(args[2],"-2")
 
 copy_number_min = median(z.1$V6)
 
-z %>% filter(V2>1000) %>% filter(V6>copy_number_min) %>% filter(mt>pt) %>% select(V1) %>% write.table(mt.contig.name,row.names=F,col.names=F,quote=F)
-z %>% filter(V2>1000) %>% filter(V6>copy_number_min) %>% filter(mt<pt) %>% select(V1) %>% write.table(pt.contig.name,row.names=F,col.names=F,quote=F)
+# z %>% filter(V2>1000) %>% filter(V6>copy_number_min) %>% filter(mt>pt) %>% select(V1) %>% write.table(mt.contig.name,row.names=F,col.names=F,quote=F)
+# z %>% filter(V2>1000) %>% filter(V6>copy_number_min) %>% filter(mt<pt) %>% select(V1) %>% write.table(pt.contig.name,row.names=F,col.names=F,quote=F)
 
 z %>% arrange(mt<=pt) %>% write.table(args[3],row.names=F,quote=F)
-

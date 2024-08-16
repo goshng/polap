@@ -46,7 +46,7 @@ suppressPackageStartupMessages(library("stringr"))
 
 step1 <- function() {
 
-    # tree = read.newick("phylogenies/s2.treefile", node.label = "support")
+    tree = read.newick("phylogenies/s2.treefile", node.label = "support")
     # print(tree)
 
     if (is.null(opt$node)) {
@@ -310,6 +310,8 @@ step5 <- function(g2,p2,draw=TRUE) {
     dev.off()
     cat("Check: open", opt$pdf, "\n")
 }
+
+# main
 
 # --tree phylogenies/s2.treefile
 if (!is.null(opt$tree)) {

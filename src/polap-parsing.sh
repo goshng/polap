@@ -87,6 +87,7 @@ _arg_all_annotate="off"
 _arg_use_edges="off"
 _arg_coverage_check="on"
 _arg_resume="off"
+_arg_yes="off"
 _arg_circularize="off"
 _arg_step0="off"
 _arg_step1="off"
@@ -160,7 +161,9 @@ print_help() {
 	printf '  %s\n' "-u, --circularize, --no-circularize: circularize a contig (off by default)"
 	printf '  %s\n' "--reduction-reads, --no-reduction-reads: reduction of long-read data before assemble1 (on by default)"
 	printf '  %s\n' "--coverage-check, --no-coverage-check: coverage check before assemble2 step (on by default)"
+	printf '  %s\n' "--yes, --no-yes: alway yes for a question or deletes output completely (off by default)"
 	printf '  %s\n' "--species: Species scientific name (no default)"
+	printf '\t%s\n' "--sra: SRA data (no default)"
 	printf '  %s\n' "-v, --version: Prints version"
 	printf '  %s\n' "-h, --help: Prints help"
 	printf '\n'
@@ -174,7 +177,7 @@ print_x-help() {
 	printf '%s\n' "POLAP - Plant organelle DNA long-read assembly pipeline."
 	printf '%s\n' "version 0.2.4"
 	printf '\n'
-	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)contigger] [--(no-)all-annotate] [--(no-)use-edges] [--(no-)coverage-check] [--(no-)resume] [-u|--(no-)circularize] [--(no-)test] [-v|--version] [-h|--help]\n'
+	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)contigger] [--(no-)all-annotate] [--(no-)use-edges] [--(no-)coverage-check] [--(no-)yes] [-u|--(no-)circularize] [--(no-)test] [-v|--version] [-h|--help]\n'
 	printf '\n'
 	printf '%s\n' "menu: list, make-menus, or clean-menus"
 	printf '%s\n' "      assemble1, annotate, assemble2, flye-polishing,"
@@ -501,6 +504,10 @@ parse_commandline() {
 		--no-coverage-check | --coverage-check)
 			_arg_coverage_check="on"
 			test "${1:0:5}" = "--no-" && _arg_coverage_check="off"
+			;;
+		--no-yes | --yes)
+			_arg_yes="on"
+			test "${1:0:5}" = "--no-" && _arg_yes="off"
 			;;
 		--no-resume | --resume)
 			_arg_resume="on"

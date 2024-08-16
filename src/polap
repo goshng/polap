@@ -87,7 +87,27 @@ function run_check2() {
 		return $RETURN_FAIL
 	}
 	command -v fmlrc >/dev/null 2>&1 || {
-		echo >&2 "ropebwt2: not installed"
+		echo >&2 "fmlrc: not installed"
+		return $RETURN_FAIL
+	}
+	return $RETURN_SUCCESS
+}
+
+###############################################################################
+# Checks if ncbitools related commands are available.
+# called by fetch
+###############################################################################
+function run_check3() {
+	command -v prefetch >/dev/null 2>&1 || {
+		echo >&2 "prefetch: not installed"
+		return $RETURN_FAIL
+	}
+	command -v vdb-validate >/dev/null 2>&1 || {
+		echo >&2 "vdb-validate: not installed"
+		return $RETURN_FAIL
+	}
+	command -v fasterq-dump >/dev/null 2>&1 || {
+		echo >&2 "fasterq-dump: not installed"
 		return $RETURN_FAIL
 	}
 	return $RETURN_SUCCESS
@@ -101,10 +121,10 @@ function run_check2() {
 function _x_run_polap_template() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
-	echoall $0
-	echoall $FUNCNAME
-	echoall $1
-	echoall $2
+	echoall "$0"
+	echoall "$FUNCNAME"
+	echoall "$1"
+	echoall "$2"
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -135,13 +155,20 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
+	if ! run_check1; then
+		echoerr "ERROR: change your conda environment to polap-dev."
+		echoerr "INFO: (base) $ conda env create -f src/environment.yaml"
+		echoerr "INFO: (base) $ conda activate polap-dev"
+		exit $EXIT_ERROR
+	fi
+
 	if [ -z "$_arg_sra" ]; then
 		echoerr "ERROR: no --sra option is used."
 		exit $EXIT_SUCCESS
 	fi
 
 	SRA=$_arg_sra
-	$script_dir/run-polap-ncbitools fetch sra "$SRA"
+	"$script_dir"/run-polap-ncbitools fetch sra "$SRA"
 
 	echoerr You have a file called "$SRA".fastq and a folder named "$SRA"
 	echoerr if your download try is successful. Then, you would want to delete
@@ -200,8 +227,8 @@ function _run_polap_list() {
 		cat <<HEREDOC
 # Lists menu of POLAP.
 # You need to execute make-menus menu if nothing is displayed.
-Example: $(basename $0) make-menus
-         $(basename $0) ${_arg_menu[0]} [all|main|assemble1|annotate|assemble2|polish]
+Example: $(basename "$0") make-menus
+         $(basename "$0") ${_arg_menu[0]} [all|main|assemble1|annotate|assemble2|polish]
 HEREDOC
 	)
 
@@ -266,7 +293,7 @@ function _run_polap_reset() {
 # Inputs: nothing
 # Outputs:
 #   $ODIR
-Example: $(basename $0) ${_arg_menu[0]} [-o|--outdir <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} [-o|--outdir <arg>]
 HEREDOC
 	)
 
@@ -282,12 +309,12 @@ HEREDOC
 		exit $EXIT_ERROR
 	fi
 
-	if [ -d "$ODIR" ]; then
+	if [ -d "$ODIR" -a "${_arg_yes}" = "off" ]; then
 		while true; do
 			read -p "Folder [$ODIR] already exists. Do you want to delete it? [y/n] " yn
 			case $yn in
 			[Yy]*)
-				rm -rf $ODIR
+				rm -rf "$ODIR"
 				break
 				;;
 			[Nn]*)
@@ -296,6 +323,8 @@ HEREDOC
 			*) echo "Please answer yes or no." ;;
 			esac
 		done
+	else
+		rm -rf "$ODIR"
 	fi
 
 	mkdir -p "$ODIR"
@@ -306,7 +335,7 @@ HEREDOC
 	fi
 	_run_polap_make-menus
 
-	echoerr NEXT: $(basename $0) total-length-long -o $ODIR -l ${_arg_long_reads}
+	echoerr NEXT: $(basename "$0") total-length-long -o "$ODIR" -l ${_arg_long_reads}
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
@@ -333,7 +362,7 @@ function _run_polap_total-length-long() {
 #   $ODIR
 # Outputs:
 #   $ODIR/long_total_length.txt
-Example: $(basename $0) ${_arg_menu[0]} [-l|--long-reads <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} [-l|--long-reads <arg>]
 HEREDOC
 	)
 
@@ -342,7 +371,7 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	if [ ! -d $ODIR ]; then
+	if [ ! -d "$ODIR" ]; then
 		echoall "ERROR: no such output directory [$ODIR]"
 		echoerr "SUGGESTION: reset"
 		exit $EXIT_ERROR
@@ -353,12 +382,12 @@ HEREDOC
 		exit $EXIT_ERROR
 	fi
 
-	echoerr "please, wait ..."
+	echoerr "counting the total number of bases in your long-read data [$LR] ... please, wait ..."
 	seqkit stats -Ta "$LR" | csvtk cut -t -f "sum_len" | csvtk del-header >"$ODIR"/long_total_length.txt
 	LONG_TOTAL_LENGTH=$(cat "$ODIR"/long_total_length.txt)
 	echoall "DATA: total length of your long-read data (bases): $LONG_TOTAL_LENGTH bp"
 
-	echoerr NEXT: $(basename $0) find-genome-size -o $ODIR -a "${_arg_short_read1}" -b "${_arg_short_read2}"
+	echoerr NEXT: $(basename "$0") find-genome-size -o "$ODIR" -a "${_arg_short_read1}" -b "${_arg_short_read2}"
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -386,7 +415,7 @@ function _run_polap_find-genome-size() {
 #   $SR2: another short-read fastq data file
 # Outputs:
 #   $ODIR/short_expected_genome_size.txt
-Example: $(basename $0) ${_arg_menu[0]} [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
 HEREDOC
 	)
 
@@ -395,16 +424,16 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	if [ ! -s $ODIR ]; then
+	if [ ! -s "$ODIR" ]; then
 		echoall "ERROR: no such output directory [$ODIR]"
 		echoerr "SUGGESTION: reset"
 		exit $EXIT_ERROR
 	fi
 
-	echoerr "please, wait ..."
+	echoerr "estimating the genome size using your short-read data [$SR1] and [$SR2] ... please, wait ..."
 	# See https://bioinformatics.uconn.edu/genome-size-estimation-tutorial/
-	if [ -s $SR1 ]; then
-		if [ -s $SR2 ]; then
+	if [ -s "$SR1" ]; then
+		if [ -s "$SR2" ]; then
 			jellyfish count -t "$NT" -C -m 19 -s 5G -o "$ODIR"/jellyfish_out --min-qual-char=? "$SR1" "$SR2"
 		else
 			jellyfish count -t "$NT" -C -m 19 -s 5G -o "$ODIR"/jellyfish_out --min-qual-char=? "$SR1"
@@ -422,7 +451,7 @@ HEREDOC
 	EXPECTED_GENOME_SIZE=${EXPECTED_GENOME_SIZE%.*}
 	echoall "DATA: expected genome size using short-read data (bases): $EXPECTED_GENOME_SIZE bp"
 
-	echoerr NEXT: $(basename $0) reduce-data -o $ODIR -l "${_arg_long_reads}" [-m "${_arg_min_read_length}"]
+	echoerr NEXT: $(basename "$0") reduce-data -o "$ODIR" -l "${_arg_long_reads}" [-m "${_arg_min_read_length}"]
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -471,7 +500,7 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	if [ ! -d $ODIR ]; then
+	if [ ! -d "$ODIR" ]; then
 		echoall "ERROR: no such output directory [$ODIR]"
 		echoerr "SUGGESTION: reset"
 		exit $EXIT_ERROR
@@ -501,15 +530,16 @@ HEREDOC
 	EXPECTED_LONG_COVERAGE=$(echo "scale=3; $LONG_TOTAL_LENGTH/$EXPECTED_GENOME_SIZE" | bc)
 	EXPECTED_LONG_COVERAGE=${EXPECTED_LONG_COVERAGE%.*}
 
-	nfq_file=$ODIR/n.fq
+	echoerr "reducing your long-read data [$LR] ... please, wait ..."
+	nfq_file="$ODIR"/n.fq
 	rm -f $nfq_file
 	if [[ ${_arg_reduction_reads} == "off" ]]; then
 		echoall "OPTION: --no-reduction-reads No reduction of the long-read data"
-		ln -s $(realpath $LR) $nfq_file
+		ln -s $(realpath "$LR") "$nfq_file"
 	else
 		if [ "$EXPECTED_LONG_COVERAGE " -lt $COV ]; then
 			echoall "LOG: No reduction of the long-read data because $EXPECTED_LONG_COVERAGE < $COV"
-			ln -s $(realpath $LR) $nfq_file
+			ln -s $(realpath "$LR") "$nfq_file"
 		else
 			echoall "SUGGESTION: you might want to increase the minimum read lengths because you have enough long-read data."
 			RATE=$(echo "scale=3; $COV/$EXPECTED_LONG_COVERAGE" | bc)
@@ -522,15 +552,17 @@ HEREDOC
 	LR=$nfq_file
 
 	# step1
-	echoall "keeping long reads of length being at least $MR bp ..."
-	seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o "$LRNK"
-	# seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o "$LRNK" >/dev/null 2>&1
-	rm $nfq_file
+	echoall "LOG: keeps long reads of length being at least $MR bp ..."
+	echo "LOG: deletes $LRNK"
+	rm -f "$LRNK"
+	# seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o "$LRNK"
+	seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o "$LRNK" >/dev/null 2>&1
+	rm "$nfq_file"
 	echoall "DATA: long-read minimum $MR reads data $LRNK is created"
 
-	echoerr "NEXT (for testing purpose only): $(basename $0) flye1 -g 150000"
-	echoerr "NEXT (for testing purpose only): $(basename $0) flye1 --test"
-	echoerr NEXT: $(basename $0) flye1 -o $ODIR [-t $NT] [-c $COV]
+	echoerr "NEXT (for testing purpose only): $(basename "$0") flye1 -g 150000"
+	echoerr "NEXT (for testing purpose only): $(basename "$0") flye1 --test"
+	echoerr NEXT: $(basename "$0") flye1 -o "$ODIR" [-t $NT] [-c $COV]
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -589,7 +621,7 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	FDIR=$ODIR/0
+	FDIR="$ODIR"/0
 	EXPECTED_GENOME_SIZE=$(cat "$ODIR"/short_expected_genome_size.txt)
 	EXPECTED_GENOME_SIZE=${EXPECTED_GENOME_SIZE%.*}
 	echoall "DATA: the expected genome size based on short-read data (bases): $EXPECTED_GENOME_SIZE bp"
@@ -658,9 +690,9 @@ function _run_polap_blast-genome() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	ANUM=$INUM
-	MTAA=$WDIR/polap-mt.1.c70.3.faa
-	PTAA=$WDIR/polap-pt.2.c70.3.faa
-	FDIR=$ODIR/$ANUM
+	MTAA="$WDIR"/polap-mt.1.c70.3.faa
+	PTAA="$WDIR"/polap-pt.2.c70.3.faa
+	FDIR="$ODIR"/$ANUM
 	assembly_contigs_stats="$FDIR"/30-contigger/contigs_stats.txt
 	assembly_contigs_fasta="$FDIR"/30-contigger/contigs.fasta
 	ADIR="$FDIR"/50-annotation
@@ -685,7 +717,7 @@ function _run_polap_blast-genome() {
 #   $CONTIGNAME
 #   $MTGENECOUNT
 #   $PTGENECOUNT
-Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>]
 HEREDOC
 	)
 
@@ -709,14 +741,14 @@ HEREDOC
 	echo "INFO: $ADIR is created."
 
 	#src/run-polap-select.R o/30-contigger/contigs_stats.txt o/50-annotation/contig.name
-	grep -v "#" "${assembly_contigs_stats}" | cut -f 1 >$CONTIGNAME
+	grep -v "#" "${assembly_contigs_stats}" | cut -f 1 >"$CONTIGNAME"
 	echo "INFO: contig sequence names in file: $CONTIGNAME"
 
 	# seqkit grep --threads $NT -f "$CONTIGNAME" \
 	# 	"$assembly_contigs_fasta" \
 	# 	-o "$ADIR"/contig.fasta \
 	# 	>/dev/null 2>&1
-	cp $assembly_contigs_fasta "$ADIR"/contig.fasta
+	cp "$assembly_contigs_fasta" "$ADIR"/contig.fasta
 	echo "INFO: contig sequence file: $ADIR/contig.fasta"
 
 	makeblastdb -dbtype nucl \
@@ -744,9 +776,9 @@ HEREDOC
 	echo "INFO: counting mitochondrial genes in the contigs"
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 	while IFS= read -r contig; do
-		grep -w $contig "$MTAABLAST".sorted.bed >"$MTAABED"/"$contig".bed
+		grep -w "$contig" "$MTAABLAST".sorted.bed >"$MTAABED"/"$contig".bed
 		bedtools merge -i "$MTAABED"/$contig.bed >"$MTAABED"/"$contig".bed.txt
-		printf "%s\t%d\n" $contig $(wc -l <"$MTAABED"/$contig.bed.txt)
+		printf "%s\t%d\n" "$contig" $(wc -l <"$MTAABED"/$contig.bed.txt)
 	done <"$CONTIGNAME" | sort -k2 -rn >"$MTGENECOUNT"
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
@@ -772,9 +804,9 @@ HEREDOC
 	echo "INFO: counting plastid genes in the contigs"
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 	while IFS= read -r contig; do
-		grep -w $contig "$PTAABLAST".sorted.bed >"$PTAABED"/$contig.bed
+		grep -w "$contig" "$PTAABLAST".sorted.bed >"$PTAABED"/$contig.bed
 		bedtools merge -i "$PTAABED"/$contig.bed >"$PTAABED"/$contig.bed.txt
-		printf "%s\t%d\n" $contig $(wc -l <"$PTAABED"/$contig.bed.txt)
+		printf "%s\t%d\n" "$contig" $(wc -l <"$PTAABED"/$contig.bed.txt)
 	done <"$CONTIGNAME" | sort -k2 -rn >"$PTGENECOUNT"
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
@@ -782,7 +814,7 @@ HEREDOC
 	tar zcf "$ADIR"/ptaa.bed.tar.gz "$ADIR"/ptaa.bed
 	rm -rf "$ADIR"/ptaa.bed
 
-	echoerr "NEXT (for testing purpose only): $(basename $0) count-gene --test"
+	echoerr "NEXT (for testing purpose only): $(basename "$0") count-gene --test"
 	echoerr "NEXT: $(basename $0) count-gene -o $ODIR [-i $INUM]"
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
@@ -825,7 +857,7 @@ function _run_polap_count-gene() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	ANUM=$INUM
-	FDIR=$ODIR/$ANUM
+	FDIR="$ODIR"/$ANUM
 	ADIR="$FDIR"/50-annotation
 	MTGENECOUNT="$ADIR"/mt.gene.count
 	PTGENECOUNT="$ADIR"/pt.gene.count
@@ -845,7 +877,7 @@ function _run_polap_count-gene() {
 #   $FDIR/assembly_info_organelle_annotation_count.txt
 #   $FDIR/assembly_info_organelle_annotation_count-all.txt
 #   $FDIR/contig-annotation-table.txt 
-Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>]
 HEREDOC
 	)
 
@@ -856,8 +888,6 @@ HEREDOC
 
 	echoall "INFO: count mitochondrial and plastid genes on $ANUM"
 
-	FDIR=$ODIR/$ANUM
-	ADIR="$FDIR"/50-annotation
 	"$WDIR"/run-polap-mtcontig.R "$FDIR" \
 		"$FDIR"/mt.contig.name \
 		"$FDIR"/assembly_info_organelle_annotation_count.txt \
@@ -873,9 +903,9 @@ HEREDOC
 	if [[ ${_arg_test} == "on" ]]; then
 		echoall "LOG: creating $FDIR/mt.contig.name-1 for testing purpose"
 		echoall "LOG: you would have to edit it for a real data-set."
-		echo edge_1 >$FDIR/mt.contig.name-1
-		echo edge_2 >>$FDIR/mt.contig.name-1
-		echo edge_3 >>$FDIR/mt.contig.name-1
+		echo edge_1 >"$FDIR"/mt.contig.name-1
+		echo edge_2 >>"$FDIR"/mt.contig.name-1
+		echo edge_3 >>"$FDIR"/mt.contig.name-1
 	fi
 	echoerr "Example file: $FDIR/mt.contig.name-1"
 	echoerr "edge_1"
@@ -885,8 +915,8 @@ HEREDOC
 	echo "INFO: edit $FDIR/mt.contig.name-<destination flye number> for mtDNA contig candidates"
 
 	ANUMNEXT=$((ANUM + 1))
-	echoerr NEXT: $(basename $0) select-reads -o $ODIR [-i $ANUM] [-j $ANUMNEXT]
-	echoerr NEXT: $(basename $0) assemble2 -o $ODIR [-i $ANUM] [-j $ANUMNEXT]
+	echoerr NEXT: $(basename "$0") select-reads -o "$ODIR" [-i $ANUM] [-j $ANUMNEXT]
+	echoerr NEXT: $(basename "$0") assemble2 -o "$ODIR" [-i $ANUM] [-j $ANUMNEXT]
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
@@ -938,12 +968,12 @@ function _run_polap_select-reads() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	MR=$_arg_min_read_length
-	FDIR=$ODIR/$INUM
+	FDIR="$ODIR"/$INUM
 	ADIR="$FDIR"/50-annotation
-	MTDIR=$ODIR/$JNUM
-	MTSEEDSDIR=$MTDIR/seeds
+	MTDIR="$ODIR"/$JNUM
+	MTSEEDSDIR="$MTDIR"/seeds
 
-	MTCONTIGNAME=$FDIR/mt.contig.name-$JNUM
+	MTCONTIGNAME="$FDIR"/mt.contig.name-$JNUM
 
 	# for contigs
 	#	assembly_graph_final_fasta=o/30-contigger/contigs.fasta
@@ -966,7 +996,7 @@ function _run_polap_select-reads() {
 #   $MTDIR/contig.fa
 #   $MTSEEDSDIR/1.names
 #   $MTSEEDSDIR/2.fq.gz
-Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>]
 HEREDOC
 	)
 
@@ -985,12 +1015,12 @@ HEREDOC
 		exit $EXIT_ERROR
 	fi
 
-	if [ -d "$MTDIR" ]; then
+	if [ -d "$MTDIR" ] && [ "${_arg_yes}" = "off" ]; then
 		while true; do
-			read -p "Folder [$MTDIR] already exists. Do you want to replace it? [y/n] " yn
+			read -r -p "Folder [$MTDIR] already exists. Do you want to replace it? [y/n] " yn
 			case $yn in
 			[Yy]*)
-				rm -rf $MTDIR
+				rm -rf "$MTDIR"
 				echo "INFO: $MTDIR is deleted."
 				break
 				;;
@@ -1002,49 +1032,46 @@ HEREDOC
 			*) echo "Please answer yes or no." ;;
 			esac
 		done
+	else
+		rm -rf "$MTDIR"
+		echo "INFO: $MTDIR is deleted if there is one."
 	fi
 
-	echo $CMD >$ODIR/organelle-assembly_${INUM}-${JNUM}
+	echo "$CMD" >"$ODIR"/organelle-assembly_"${INUM}"-"${JNUM}"
 
-	mkdir -p $MTSEEDSDIR
-	ln -s "$PWD"/"$ODIR"/nk.fq.gz -t $MTDIR
+	mkdir -p "$MTSEEDSDIR"
+	ln -s "$PWD"/"$ODIR"/nk.fq.gz -t "$MTDIR"
 	echoall "INFO: extracts contigs from the assembly ${assembly_graph_final_fasta}"
 	echo "INFO: uses mt.contig.name at $MTCONTIGNAME"
 	echoerr "FILE: reading contigs in $MTCONTIGNAME"
-	cat $MTCONTIGNAME >&2
+	cat "$MTCONTIGNAME" >&2
 	echoerr "please, wait for a long-read data selection ... $INUM -> $JNUM ... bridge=$MBRIDGE p_mapping=$MPAIR s_mapping=$MSINGLE min_len_read=$MR"
-	# ADIR="$ODIR"/50-annotation
-	# if [[ ! -d $ADIR ]]; then
-	# 	mkdir -p $ADIR
-	# fi
+	seqkit grep --threads "$NT" -f "$MTCONTIGNAME" "${assembly_graph_final_fasta}" -o "$MTDIR"/contig.fa >/dev/null 2>&1
 
-	seqkit grep --threads $NT -f "$MTCONTIGNAME" "${assembly_graph_final_fasta}" -o $MTDIR/contig.fa >/dev/null 2>&1
-	# seqtk subseq $LRNK ${assembly_graph_final_fasta} $MTCONTIGNAME >"$MTDIR"/contig.fa
-	# if [[ $CIRCULARIZE == "--circularize" ]]; then
 	contig_count=$(wc -l <"$MTCONTIGNAME")
 	if [[ $CIRCULARIZE == "on" ]]; then
 		if [ "$contig_count" -eq 1 ]; then
-			seqkit fx2tab --length --name $MTDIR/contig.fa -o $MTDIR/contig.fa.len >/dev/null 2>&1
-			A=$(cut -f2 $MTDIR/contig.fa.len)
+			seqkit fx2tab --length --name "$MTDIR"/contig.fa -o "$MTDIR"/contig.fa.len >/dev/null 2>&1
+			A=$(cut -f2 "$MTDIR"/contig.fa.len)
 			B=$(echo "scale=0; $A/2" | bc)
 			C=$((B + 1))
-			seqkit subseq -r 1:$B $MTDIR/contig.fa -o $MTDIR/c1.fa >/dev/null 2>&1
-			seqkit subseq -r $C:$A $MTDIR/contig.fa -o $MTDIR/c2.fa >/dev/null 2>&1
-			cat $MTDIR/c?.fa | seqkit replace -p '.+' -r 'edge_{nr}' -o $MTDIR/contig.fa >/dev/null 2>&1
+			seqkit subseq -r 1:"$B" "$MTDIR"/contig.fa -o "$MTDIR"/c1.fa >/dev/null 2>&1
+			seqkit subseq -r "$C":"$A" "$MTDIR"/contig.fa -o "$MTDIR"/c2.fa >/dev/null 2>&1
+			cat "$MTDIR"/c?.fa | seqkit replace -p '.+' -r 'edge_{nr}' -o "$MTDIR"/contig.fa >/dev/null 2>&1
 			cp "$MTCONTIGNAME" "$MTCONTIGNAME"-backup
 			echo -e "edge_1\nedge_2" >"$MTCONTIGNAME"
 			echo "INFO: creates new $MTDIR/contig.fa and $MTCONTIGNAME"
 		else
 			echo "DEV: not implemented yet"
 			exit $EXIT_ERROR
-			"$WDIR"/run-polap-single.R $MTSEEDSDIR/contig.tab $MTSEEDSDIR $MSINGLE >/dev/null 2>&1
-			cat $MTSEEDSDIR/single.names | sort | uniq >$MTSEEDSDIR/1.names
-			echo "INFO: creates long read single name in $MTSEEDSDIR/1.names"
+			# "$WDIR"/run-polap-single.R "$MTSEEDSDIR"/contig.tab "$MTSEEDSDIR" "$MSINGLE" >/dev/null 2>&1
+			# cat "$MTSEEDSDIR"/single.names | sort | uniq >"$MTSEEDSDIR"/1.names
+			# echo "INFO: creates long read single name in $MTSEEDSDIR/1.names"
 		fi
 	fi
 	echo "DATA: $MTDIR/contig.fa is created."
 
-	CONTIG_LENGTH=$(seqkit stats -Ta $MTDIR/contig.fa | csvtk cut -t -f "sum_len" | csvtk del-header)
+	CONTIG_LENGTH=$(seqkit stats -Ta "$MTDIR"/contig.fa | csvtk cut -t -f "sum_len" | csvtk del-header)
 	echo "$CONTIG_LENGTH" >"$MTDIR"/contig_total_length.txt
 	echo "INFO: organelle genome size based on contig selection: $CONTIG_LENGTH"
 
@@ -1062,7 +1089,7 @@ HEREDOC
 
 	# MT: MPAIR=3000 MBRIDGE=3000 MSINGLE=3000
 	# PT: MPAIR=1000 MBRIDGE=5000 MSINGLE=0
-	Rscript --vanilla "$WDIR"/run-polap-pairs.R "$MTCONTIGNAME" $MTDIR/contig.tab $MTSEEDSDIR $MPAIR $MBRIDGE $MSINGLE >/dev/null 2>&1
+	Rscript --vanilla "$WDIR"/run-polap-pairs.R "$MTCONTIGNAME" "$MTDIR"/contig.tab "$MTSEEDSDIR" "$MPAIR" "$MBRIDGE" "$MSINGLE" >/dev/null 2>&1
 	# "$WDIR"/run-polap-pairs.R "$MTCONTIGNAME" $MTDIR/contig.tab $MTSEEDSDIR $MPAIR $MBRIDGE $MSINGLE >/dev/null 2>&1
 	echo "OPTION polap pairs alignment minimum: $MPAIR"
 	echo "OPTION polap pairs bridge minimum: $MBRIDGE"
@@ -1074,20 +1101,20 @@ HEREDOC
 	echo "INFO: creates long read names and the single name in $MTSEEDSDIR/1.names"
 
 	# seqkit grep --threads $NT -f "$MTSEEDSDIR"/1.names $LRNK -o "$MTSEEDSDIR"/1.fq.gz >/dev/null 2>&1
-	seqtk subseq $LRNK "$MTSEEDSDIR"/1.names | gzip >"$MTSEEDSDIR"/1.fq.gz
+	seqtk subseq "$LRNK" "$MTSEEDSDIR"/1.names | gzip >"$MTSEEDSDIR"/1.fq.gz
 	echo "DATA: organelle reads in $MTSEEDSDIR/1.fq.gz"
 
-	TOTAL_LENGTH=$(seqkit stats -Ta $MTSEEDSDIR/1.fq.gz | csvtk cut -t -f "sum_len" | csvtk del-header)
+	TOTAL_LENGTH=$(seqkit stats -Ta "$MTSEEDSDIR"/1.fq.gz | csvtk cut -t -f "sum_len" | csvtk del-header)
 	EXPECTED_ORGANELLE_COVERAGE=$((TOTAL_LENGTH / CONTIG_LENGTH))
 	echo "INFO: expected coverage: ${EXPECTED_ORGANELLE_COVERAGE}x"
 
-	if [[ ${_arg_coverage_check} == "off" ]]; then
+	if [[ "${_arg_coverage_check}" == "off" ]]; then
 		echoall "OPTION: --no-coverage-check No reduction of the long-read data"
-		ln -s $(realpath 1.fq.gz) $MTSEEDSDIR/2.fq.gz
+		ln -s "$(realpath 1.fq.gz)" "$MTSEEDSDIR"/2.fq.gz
 	else
-		if [ "$EXPECTED_ORGANELLE_COVERAGE" -lt $COV ]; then
+		if [ "$EXPECTED_ORGANELLE_COVERAGE" -lt "$COV" ]; then
 			echoall "LOG: No reduction of the long-read data because $EXPECTED_ORGANELLE_COVERAGE < $COV"
-			ln -s $(realpath 1.fq.gz) $MTSEEDSDIR/2.fq.gz
+			ln -s "$(realpath 1.fq.gz)" "$MTSEEDSDIR"/2.fq.gz
 		else
 			echoall "SUGGESTION: you might want to increase the minimum read lengths because you have enough long-read data."
 			RATE=$(echo "scale=10; $COV/$EXPECTED_ORGANELLE_COVERAGE" | bc)
@@ -1099,12 +1126,12 @@ HEREDOC
 	fi
 
 	C=$(ls -1 "$MTSEEDSDIR/"*".name" 2>/dev/null | wc -l)
-	if [ $C != 0 ]; then
+	if [ "$C" != 0 ]; then
 		echo "INFO: bridging reads exist: combinations of $C."
-		seqkit seq -n -i $MTSEEDSDIR/2.fq.gz >"$MTSEEDSDIR"/single.names.2
+		seqkit seq -n -i "$MTSEEDSDIR"/2.fq.gz >"$MTSEEDSDIR"/single.names.2
 		cat "$MTSEEDSDIR/"*".name" "$MTSEEDSDIR"/single.names.2 | sort | uniq >"$MTSEEDSDIR"/1.names.2
 		# seqkit grep --threads $NT -f "$MTSEEDSDIR"/1.names.2 $LRNK -o "$MTSEEDSDIR"/2.fq.gz >/dev/null 2>&1
-		seqtk subseq $LRNK "$MTSEEDSDIR"/1.names.2 | gzip >"$MTSEEDSDIR"/2.fq.gz
+		seqtk subseq "$LRNK" "$MTSEEDSDIR"/1.names.2 | gzip >"$MTSEEDSDIR"/2.fq.gz
 	fi
 	echo "DATA: organelle reads in $MTSEEDSDIR/2.fq.gz"
 
@@ -1114,11 +1141,11 @@ HEREDOC
 			mv "$MTCONTIGNAME"-backup "$MTCONTIGNAME"
 		else
 			echo "DEV: not implemented yet"
-			exit EXIT_ERROR
+			exit $EXIT_ERROR
 		fi
 	fi
 
-	echoerr NEXT: $(basename $0) flye2 -o $ODIR -j $JNUM -t $NT -c $COV
+	echoerr NEXT: "$(basename "$0")" flye2 -o "$ODIR" -j "$JNUM" -t "$NT" -c "$COV"
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -1163,8 +1190,8 @@ function _run_polap_flye2() {
 
 	echo "INFO: organelle-genome assembly on $JNUM"
 
-	MTDIR=$ODIR/$JNUM
-	MTSEEDSDIR=$MTDIR/seeds
+	MTDIR="$ODIR"/$JNUM
+	MTSEEDSDIR="$MTDIR"/seeds
 
 	help_message=$(
 		cat <<HEREDOC
@@ -1204,17 +1231,17 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	CONTIG_LENGTH=$(seqkit stats -Ta $MTDIR/contig.fa | csvtk cut -t -f "sum_len" | csvtk del-header)
+	CONTIG_LENGTH=$(seqkit stats -Ta "$MTDIR"/contig.fa | csvtk cut -t -f "sum_len" | csvtk del-header)
 	echo "$CONTIG_LENGTH" >"$MTDIR"/contig_total_length.txt
 	echo "INFO: organelle genome size based on contig selection: $CONTIG_LENGTH"
 
 	echo "INFO: executing the organelle-genome assembly using flye ... be patient!"
 	echoerr "please, wait for an organelle-genome assembly on $JNUM ..."
-	flye --nano-raw $MTSEEDSDIR/2.fq.gz \
-		--out-dir $MTDIR \
-		--threads $NT \
-		--asm-coverage $COV \
-		--genome-size $CONTIG_LENGTH \
+	flye --nano-raw "$MTSEEDSDIR"/2.fq.gz \
+		--out-dir "$MTDIR" \
+		--threads "$NT" \
+		--asm-coverage "$COV" \
+		--genome-size "$CONTIG_LENGTH" \
 		--stop-after contigger \
 		>/dev/null 2>&1
 	echoall "CHECK: assembly graph "$PWD/$MTDIR"/30-contigger/graph_final.gfa"
@@ -1222,9 +1249,9 @@ HEREDOC
 
 	jnum_next=$((JNUM + 1))
 	echoall Create and edit $ODIR/$JNUM/mt.contig.name-${jnum_next}
-	echoall NEXT: $(basename $0) assemble2 -o $ODIR -j ${jnum_next}
+	echoall NEXT: "$(basename "$0")" assemble2 -o "$ODIR" -j ${jnum_next}
 	echoall or you could finish with Flye organelle-genome assembly with its polishing stage.
-	echoall NEXT: $(basename $0) flye-polishing -o $ODIR -j $JNUM
+	echoall NEXT: "$(basename "$0")" flye-polishing -o "$ODIR" -j "$JNUM"
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -1250,8 +1277,8 @@ function _run_polap_flye-polishing() {
 
 	echo "INFO: polishing organelle-genome assembly on $JNUM"
 
-	MTDIR=$ODIR/$JNUM
-	MTSEEDSDIR=$MTDIR/seeds
+	MTDIR="$ODIR"/$JNUM
+	MTSEEDSDIR="$MTDIR"/seeds
 
 	help_message=$(
 		cat <<HEREDOC
@@ -1269,7 +1296,7 @@ function _run_polap_flye-polishing() {
 #   $MTDIR/30-contigger
 # Outputs:
 #   $MTDIR/assembly_graph.gfa
-Example: $(basename $0) ${_arg_menu[0]} [-j|--jnum <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} [-j|--jnum <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]
 HEREDOC
 	)
 
@@ -1290,23 +1317,71 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	CONTIG_LENGTH=$(seqkit stats -Ta $MTDIR/contig.fa | csvtk cut -t -f "sum_len" | csvtk del-header)
+	CONTIG_LENGTH=$(seqkit stats -Ta "$MTDIR"/contig.fa | csvtk cut -t -f "sum_len" | csvtk del-header)
 	echo "INFO: organelle genome size based on contig selection: $CONTIG_LENGTH"
 
 	echo "INFO: polishing the organelle-genome assembly using flye ... be patient!"
 	echoerr "please, wait for Flye long-read polishing the organelle-genome assembly on $JNUM ..."
-	flye --nano-raw $MTSEEDSDIR/2.fq.gz \
-		--out-dir $MTDIR \
-		--threads $NT \
-		--asm-coverage $COV \
-		--genome-size $CONTIG_LENGTH \
+	flye --nano-raw "$MTSEEDSDIR"/2.fq.gz \
+		--out-dir "$MTDIR" \
+		--threads "$NT" \
+		--asm-coverage "$COV" \
+		--genome-size "$CONTIG_LENGTH" \
 		--resume \
 		>/dev/null 2>&1
 	echoall "CHECK: the long-read polished assembly graph $PWD/$MTDIR/assembly_graph.gfa"
 	echoerr "DO: extract a draft organelle genome sequence (mt.0.fasta) from the polished assembly graph"
 	# echo "column -t $ODIR/assembly_info_organelle_annotation_count.txt"
 	# echoall NEXT: $(basename $0) check-coverage [-p $PA]
-	echoall NEXT: $(basename $0) prepare-polishing -a $SR1 -b $SR2
+	echoall NEXT: "$(basename "$0")" prepare-polishing -a "$SR1" -b "$SR2"
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+################################################################################
+# Fetches mtDNA genome sequence by species name.
+# Arguments:
+#   --sra SRR10190639
+################################################################################
+function _run_polap_x-ncbi-fetch-sra-runinfo() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	help_message=$(
+		cat <<HEREDOC
+# Fetches mtDNA genome sequence by species name.
+# Arguments:
+#   --sra SRR10190639
+# Outputs:
+#   bases
+Example: $(basename $0) ${_arg_menu[0]} --sra <arg>
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
+
+	if [ -z "$_arg_sra" ]; then
+		echoerr "ERROR: no --sra option is used."
+		exit $EXIT_SUCCESS
+	fi
+
+	echoerr "counting bases in SRA database and its downloaded FASTQ files of SRA [${_arg_sra}] ..."
+	bases=$(esearch -db sra -query "${_arg_sra}" |
+		efetch -format runinfo |
+		csvtk cut -f "bases" |
+		csvtk del-header)
+	echoall "SRA: ${_arg_sra}: ${bases} (bp)"
+
+	bases2=$(seqkit stats -T "${_arg_sra}"*.fastq 2>/dev/null | csvtk cut -t -f "sum_len" | paste -s -d+ - | bc)
+	echoall "FASTQ: ${_arg_sra}*.fastq: ${bases2} (bp)"
+
+	if [ "${bases}" -eq "${bases2}" ]; then
+		echoall "LOG: SRA ${_arg_sra} and its FASTQ files: total bases match."
+	else
+		echoall "ERROR: SRA ${_arg_sra} and its FASTQ files: total bases do not match."
+	fi
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -1328,7 +1403,7 @@ function _run_polap_x-ncbi-fetch-mtdna-genbank() {
 #   species-name
 # Outputs:
 #   species-name.mt.gb
-Example: $(basename $0) ${_arg_menu[0]} --species <arg>
+Example: $(basename "$0") ${_arg_menu[0]} --species <arg>
 HEREDOC
 	)
 
@@ -1369,7 +1444,7 @@ function _run_polap_x-ncbi-fetch-mtdna-nucleotide() {
 #   accession ID
 # Outputs:
 #   <accession>.fa
-Example: $(basename $0) ${_arg_menu[0]} --accession <arg>
+Example: $(basename "$0") ${_arg_menu[0]} --accession <arg>
 HEREDOC
 	)
 
@@ -1382,8 +1457,8 @@ HEREDOC
 		echoerr "ERROR: no --accession option is used."
 	else
 		esearch -db nuccore -query "${_arg_accession}[ACCN]" </dev/null |
-			efetch -format fasta >${_arg_accession}.fa
-		echoall NEXT: $(basename $0) align-two-dna-sequences --query mt.1.fa --subject ${_arg_accession}.fa
+			efetch -format fasta >"${_arg_accession}".fa
+		echoall "NEXT: $(basename "$0") align-two-dna-sequences --query mt.1.fa --subject ${_arg_accession}.fa"
 	fi
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
@@ -1420,7 +1495,7 @@ function _run_polap_x-align-two-dna-sequences() {
 #   subject: a known mtDNA sequence
 # Outputs:
 #   pairwise-alignment.txt
-Example: $(basename $0) ${_arg_menu[0]} [--query <arg>] [--subject <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} [--query <arg>] [--subject <arg>]
 HEREDOC
 	)
 
@@ -1435,10 +1510,10 @@ HEREDOC
 		echoerr "INFO: seqkit seq -p -r mt.1.fa -o mt.1r.fa"
 		echoerr "INFO: seqkit restart -i <POS> mt.1.fa -o mt.2.fa"
 	else
-		blastn -query $_arg_query -subject $_arg_subject >pairwise-alignment.txt
+		blastn -query "$_arg_query" -subject "$_arg_subject" >pairwise-alignment.txt
 		echoerr "INFO: seqkit seq -p -r mt.1.fa -o mt.1r.fa"
 		echoerr "INFO: seqkit restart -i <POS> mt.1.fa -o mt.2.fa"
-		echoerr "INFO: $(basename $0) clustal --query mt.2.fa --subject NCBI-ACC.fa"
+		echoerr "INFO: $(basename "$0") clustal --query mt.2.fa --subject NCBI-ACC.fa"
 		echoerr see pairwise-alignment.txt
 	fi
 
@@ -1470,7 +1545,7 @@ function _run_polap_x-clustal() {
 # Inputs:
 #   query: mt.1.fa or the assembled sequence
 #   subject: a known mtDNA sequence
-Example: $(basename $0) ${_arg_menu[0]} [--query <arg>] [--subject <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} [--query <arg>] [--subject <arg>]
 HEREDOC
 	)
 
@@ -1490,7 +1565,7 @@ HEREDOC
 			echo >&2 "clustalw2: not installed"
 			exit 1
 		}
-		cat $MT1 $MT2 >x.fa
+		cat "$MT1" "$MT2" >x.fa
 		clustalw2 x.fa
 	fi
 	# TODO: works for only Linux.
@@ -1504,10 +1579,10 @@ HEREDOC
 	echoall "INFO: pairwise alignment:    match: $MATCH"
 	echoall "INFO: pairwise alignment: mismatch: $MISMATCH"
 	echoall "INFO: pairwise alignment:     gaps: $GAP"
-	LENGTH1=$(seqkit stats -Ta $_arg_subject | csvtk cut -t -f "sum_len" | csvtk del-header)
-	LENGTH2=$(seqkit stats -Ta $_arg_query | csvtk cut -t -f "sum_len" | csvtk del-header)
-	NAME1=$(seqkit seq -n -i $_arg_subject)
-	NAME2=$(seqkit seq -n -i $_arg_query)
+	LENGTH1=$(seqkit stats -Ta "$_arg_subject" | csvtk cut -t -f "sum_len" | csvtk del-header)
+	LENGTH2=$(seqkit stats -Ta "$_arg_query" | csvtk cut -t -f "sum_len" | csvtk del-header)
+	NAME1=$(seqkit seq -n -i "$_arg_subject")
+	NAME2=$(seqkit seq -n -i "$_arg_query")
 	echoall "INFO: Sequence1: $NAME1"
 	echoall "INFO: SequenceLen1: $LENGTH1"
 	echoall "INFO: Sequence2: $NAME2"
@@ -1539,7 +1614,7 @@ function _run_polap_x-check-coverage() {
 #   $LRNK
 #   $PA
 # Outputs:
-Example: $(basename $0) ${_arg_menu[0]} [-p|--unpolished-fasta <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} [-p|--unpolished-fasta <arg>]
 HEREDOC
 	)
 
@@ -1548,7 +1623,7 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	if [ -z "$PA" -a -z "$LRNK" ]; then
+	if [ -z "$PA" ] && [ -z "$LRNK" ]; then
 		echoerr "ERROR: no -p option are used."
 		echoerr "INFO: --p mt.0.fasta"
 	else
@@ -1563,15 +1638,15 @@ HEREDOC
 			exit $EXIT_ERROR
 		fi
 
-		minimap2 -t $NT -ax map-ont $PA $LRNK 2>/dev/null |
+		minimap2 -t "$NT" -ax map-ont "$PA" "$LRNK" 2>/dev/null |
 			samtools view -u 2>/dev/null |
 			samtools sort -o "$ODIR"/1.bam \
 				>/dev/null 2>&1
 		samtools coverage -A -w 32 "$ODIR"/1.bam 1>&2
 
-		echoerr INFO: conda env create -f $WDIR/environment-fmlrc.yaml
+		echoerr INFO: conda env create -f "$WDIR"/environment-fmlrc.yaml
 		echoerr INFO: conda activate polap-fmlrc
-		echoerr NEXT: $(basename $0) prepare-polishing [-a s1.fq] [-b s2.fq]
+		echoerr "NEXT: $(basename "$0") prepare-polishing [-a s1.fq] [-b s2.fq]"
 	fi
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
@@ -1602,7 +1677,7 @@ function _run_polap_prepare-polishing() {
 #   $SR2
 # Outputs:
 #   $ODIR/msbwt/comp_msbwt.npy
-Example: $(basename $0) ${_arg_menu[0]} [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
 HEREDOC
 	)
 
@@ -1631,18 +1706,18 @@ HEREDOC
 
 	echo "INFO: excuting ropebwt2 and msbwt on the short reads ... be patient!"
 	if [[ $SR1 = *.fastq || $SR1 = *.fq ]]; then
-		cat $SR1 $SR2 |
+		cat "$SR1" "$SR2" |
 			awk 'NR % 4 == 2' | sort | tr NT TN | ropebwt2 -LR | tr NT TN |
-			msbwt convert $ODIR/msbwt \
+			msbwt convert "$ODIR"/msbwt \
 				>/dev/null 2>&1
-	elif [[ $SR1 = *.fq.gz || $SR1 = *.fastq.gz ]]; then
-		zcat $SR1 $SR2 |
+	elif [[ $SR1 = *.fq.gz ]] || [[ $SR1 = *.fastq.gz ]]; then
+		zcat "$SR1" "$SR2" |
 			awk 'NR % 4 == 2' | sort | tr NT TN | ropebwt2 -LR | tr NT TN |
-			msbwt convert $ODIR/msbwt \
+			msbwt convert "$ODIR"/msbwt \
 				>/dev/null 2>&1
 	fi
 
-	echoerr NEXT: $(basename $0) polish [-p mt.0.fasta] [-f mt.1.fa]
+	echoerr "NEXT: $(basename $0) polish [-p mt.0.fasta] [-f mt.1.fa]"
 
 	conda deactivate
 
@@ -1674,7 +1749,7 @@ function _run_polap_polish() {
 #   $PA
 # Outputs:
 #   $FA
-Example: $(basename $0) ${_arg_menu[0]} [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]
 HEREDOC
 	)
 
@@ -1700,7 +1775,7 @@ HEREDOC
 
 	echo "INFO: executing fmlrc on the draft sequence $PA ... be patient!"
 	if [[ -s $PA ]]; then
-		fmlrc -p $NT $ODIR/msbwt/comp_msbwt.npy $PA $FA >/dev/null 2>&1
+		fmlrc -p "$NT" "$ODIR"/msbwt/comp_msbwt.npy "$PA" "$FA" >/dev/null 2>&1
 	else
 		echo "ERROR: no unpolished fasta file: [$PA]"
 		exit $EXIT_ERROR
@@ -1776,7 +1851,7 @@ HEREDOC
 		exit $EXIT_ERROR
 	fi
 
-	echoerr NEXT: $(basename $0) reset -o $ODIR
+	echoerr "NEXT: $(basename $0) reset -o $ODIR"
 	_run_polap_reset
 	_run_polap_total-length-long
 	_run_polap_find-genome-size
@@ -1798,8 +1873,8 @@ function _func_polap_annotate() {
 		ANUM=$1
 	fi
 
-	_func_polap_blast-genome $ANUM
-	_func_polap_count-gene $ANUM
+	_func_polap_blast-genome "$ANUM"
+	_func_polap_count-gene "$ANUM"
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -1813,7 +1888,7 @@ function _run_polap_annotate() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	ANUM=$INUM
-	FDIR=$ODIR/$ANUM
+	FDIR="$ODIR"/$ANUM
 	assembly_contigs_stats="$FDIR"/30-contigger/contigs_stats.txt
 	assembly_contigs_fasta="$FDIR"/30-contigger/contigs.fasta
 	ADIR="$FDIR"/50-annotation
@@ -1847,7 +1922,7 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	echoerr NEXT: $(basename $0) blast-genome -i $INUM
+	echoerr "NEXT: $(basename "$0") blast-genome -i $INUM"
 	_run_polap_blast-genome
 	_run_polap_count-gene
 
@@ -1873,12 +1948,12 @@ function _run_polap_assemble2() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	MR=$_arg_min_read_length
-	FDIR=$ODIR/$INUM
+	FDIR="$ODIR"/$INUM
 	ADIR="$FDIR"/50-annotation
-	MTDIR=$ODIR/$JNUM
-	MTSEEDSDIR=$MTDIR/seeds
+	MTDIR="$ODIR"/$JNUM
+	MTSEEDSDIR="$MTDIR"/seeds
 
-	MTCONTIGNAME=$FDIR/mt.contig.name-$JNUM
+	MTCONTIGNAME="$FDIR"/mt.contig.name-"$JNUM"
 
 	# for contigs
 	#	assembly_graph_final_fasta=o/30-contigger/contigs.fasta
@@ -1932,7 +2007,7 @@ HEREDOC
 		exit $EXIT_ERROR
 	fi
 
-	echoerr NEXT: $(basename $0) select-reads -o $ODIR -i $INUM -j $JNUM
+	echoerr "NEXT: $(basename $0) select-reads -o $ODIR -i $INUM -j $JNUM"
 	_run_polap_select-reads
 	_run_polap_flye2
 
@@ -2058,8 +2133,7 @@ FA=$_arg_final_assembly   # polished sequence
 ODIR=$_arg_outdir
 INUM=$_arg_inum
 JNUM=$_arg_jnum
-FDIR=$ODIR/0 # flye 1st output
-# GDIR=$ODIR/1 # flye 2nd output
+FDIR="$ODIR"/0 # flye 1st output
 
 # tuning variables for optimal performance
 LRNK=$ODIR/nk.fq.gz

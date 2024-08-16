@@ -492,8 +492,9 @@ function _run_polap_count-gene() {
 		>/dev/null 2>&1
 
 	echo "USE: assembly graph: "$PWD"/"$FDIR"/30-contigger/graph_final.gfa"
-	echoall "column -t "$FDIR"/assembly_info_organelle_annotation_count.txt"
-	echoall "column -t "$FDIR"/assembly_info_organelle_annotation_count-all.txt"
+	echoall "column -t "$FDIR"/assembly_info_organelle_annotation_count-all.txt | less -S"
+	echoall "column -t "$FDIR"/assembly_info_organelle_annotation_count.txt | less -S"
+	echoall "column -t "$FDIR"/contig-annotation-table.txt | less -S"
 	# echo edge_1 >$FDIR/mt.contig.name-1
 	# echo edge_2 >>$FDIR/mt.contig.name-1
 	# echo edge_3 >>$FDIR/mt.contig.name-1
@@ -746,7 +747,7 @@ function _run_polap_flye-polishing() {
 		--resume \
 		>/dev/null 2>&1
 	echoall "CHECK: the polishing assembly graph $PWD/$MTDIR/assembly_graph.gfa"
-	echoerr "DO: extract a draft organelle genome sequence from the polished assembly graph"
+	echoerr "DO: extract a draft organelle genome sequence (mt.0.fasta) from the polished assembly graph"
 	# echo "column -t $ODIR/assembly_info_organelle_annotation_count.txt"
 	echoall NEXT: $0 check-coverage
 
@@ -769,12 +770,23 @@ function _run_polap_ncbi-fetch-nucleotide() {
 	else
 		esearch -db nuccore -query "${_arg_accession}[ACCN]" </dev/null |
 			efetch -format fasta >${_arg_accession}.fa
+		echoall NEXT: $0 align-two-dna-sequences --query mt.1.fa --subject ${_arg_accession}.fa
 	fi
 }
 
 function _run_polap_align-two-dna-sequences() {
-	blastn -query $_arg_query -subject $_arg_subject >pairwise-alignment.txt
-	echoerr see pairwise-alignment.txt
+	if [ -z "$_arg_query" -a -z "$_arg_subject" ]; then
+		echoerr "ERROR: no --query and --subject option are used."
+		echoerr "INFO: --query mt.1.fa --subject NCBI.fa"
+		echoerr "INFO: seqkit seq -p -r mt.1.fa -o mt.1r.fa"
+		echoerr "INFO: seqkit restart -i <POS> mt.1.fa -o mt.2.fa"
+	else
+		blastn -query $_arg_query -subject $_arg_subject >pairwise-alignment.txt
+		echoerr "INFO: seqkit seq -p -r mt.1.fa -o mt.1r.fa"
+		echoerr "INFO: seqkit restart -i <POS> mt.1.fa -o mt.2.fa"
+		echoerr "INFO: $0 clustal --query mt.2.fa --subject NCBI-ACC.fa"
+		echoerr see pairwise-alignment.txt
+	fi
 }
 
 function _run_polap_clustal() {
@@ -803,27 +815,52 @@ function _run_polap_clustal() {
 	echoall "INFO: pairwise alignment:    match: $MATCH"
 	echoall "INFO: pairwise alignment: mismatch: $MISMATCH"
 	echoall "INFO: pairwise alignment:     gaps: $GAP"
+	LENGTH1=$(seqkit stats -Ta $_arg_subject | csvtk cut -t -f "sum_len" | csvtk del-header)
+	LENGTH2=$(seqkit stats -Ta $_arg_query | csvtk cut -t -f "sum_len" | csvtk del-header)
+	NAME1=$(seqkit seq -n -i $_arg_subject)
+	NAME2=$(seqkit seq -n -i $_arg_query)
+	echoall "INFO: Sequence1: $NAME1"
+	echoall "INFO: SequenceLen1: $LENGTH1"
+	echoall "INFO: Sequence2: $NAME2"
+	echoall "INFO: SequenceLen2: $LENGTH2"
 }
 
 function _run_polap_check-coverage() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
-	echo "INFO: executing minimap2 and samtools for checking the long reads coverage on the $PA ... be patient!"
-	minimap2 -t $NT -ax map-ont $PA $LRNK 2>/dev/null |
-		samtools view -u 2>/dev/null |
-		samtools sort -o "$ODIR"/1.bam \
-			>/dev/null 2>&1
-	samtools coverage -A -w 32 "$ODIR"/1.bam 1>&2
+	if [ -z "$PA" -a -z "$LRNK" ]; then
+		echoerr "ERROR: no -p option are used."
+		echoerr "INFO: --p mt.0.fasta"
+	else
+		echo "INFO: executing minimap2 and samtools for checking the long reads coverage on the $PA ... be patient!"
+		if [[ ! -s "$PA" ]]; then
+			echoall "ERROR: no such file $PA"
+			exit $EXIT_ERROR
+		fi
 
-	echoerr INFO: conda env create -f $WDIR/environment-fmlrc.yaml
-	echoerr INFO: conda activate polap-fmlrc
-	echoerr NEXT: $0 prepare-polishing [-a s1.fq] [-b s2.fq]
+		if [[ ! -s "$LRNK" ]]; then
+			echoall "ERROR: no such file $LRNK"
+			exit $EXIT_ERROR
+		fi
+
+		minimap2 -t $NT -ax map-ont $PA $LRNK 2>/dev/null |
+			samtools view -u 2>/dev/null |
+			samtools sort -o "$ODIR"/1.bam \
+				>/dev/null 2>&1
+		samtools coverage -A -w 32 "$ODIR"/1.bam 1>&2
+
+		echoerr INFO: conda env create -f $WDIR/environment-fmlrc.yaml
+		echoerr INFO: conda activate polap-fmlrc
+		echoerr NEXT: $0 prepare-polishing [-a s1.fq] [-b s2.fq]
+	fi
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
 function _run_polap_prepare-polishing() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	source $HOME/miniconda3/bin/activate polap-fmlrc
 
 	if ! run_check2; then
 		echoerr "ERROR: change your conda environment to polap-fmlrc."
@@ -846,12 +883,15 @@ function _run_polap_prepare-polishing() {
 	fi
 
 	echoerr NEXT: $0 polish [-p mt.0.fasta] [-f mt.1.fa]
+	conda deactivate
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
 function _run_polap_polish() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	source $HOME/miniconda3/bin/activate polap-fmlrc
 
 	if ! run_check2; then
 		echoerr "ERROR: change your conda environment to polap-fmlrc."
@@ -874,7 +914,10 @@ function _run_polap_polish() {
 		exit $EXIT_ERROR
 	fi
 
-	echoerr NEXT: $0 reference algiment compare
+	echoerr "NEXT: $0 ncbi-fetch-nucleotide --accession <ACC>"
+	echoerr "NEXT: $0 align-two-dna-sequences --query mt.1.fa --subject <NCBI-ACC>.fa"
+	conda deactivate
+
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
@@ -927,10 +970,10 @@ function _run_polap_assemble() {
 	_run_polap_select-reads
 	_run_polap_flye2
 	_run_polap_check-coverage
-	source $HOME/miniconda3/bin/activate polap-fmlrc
+	# source $HOME/miniconda3/bin/activate polap-fmlrc
 	_run_polap_prepare-polishing
 	_run_polap_polish
-	conda deactivate
+	# conda deactivate
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }

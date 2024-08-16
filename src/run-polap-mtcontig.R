@@ -58,6 +58,8 @@ args = commandArgs(trailingOnly=TRUE)
 flye_dir=args[1]
 is.contigger = args[5]
 
+contig.table = paste0(flye_dir, "/contig-annotation-table.txt")
+
 assembly_info = ""
 if (is.contigger == "--contigger") {
     assembly_info = paste0(flye_dir,"/30-contigger/contigs_stats.txt")
@@ -84,6 +86,7 @@ copy_number_min = median(z.1$V6)
 # z %>% filter(V2>1000) %>% filter(V6>copy_number_min) %>% filter(mt>pt) %>% select(V1) %>% write.table(mt.contig.name,row.names=F,col.names=F,quote=F)
 # z %>% filter(V2>1000) %>% filter(V6>copy_number_min) %>% filter(mt<pt) %>% select(V1) %>% write.table(pt.contig.name,row.names=F,col.names=F,quote=F)
 
-z %>% arrange(mt<=pt) %>% relocate(V9, .after = last_col()) %>% write.table(args[3],row.names=F,quote=F)
-z.1 %>% relocate(V9, .after = last_col()) %>% write.table(args[4],row.names=F,quote=F)
+z %>% arrange(mt<=pt) %>% relocate(V9, .after = last_col()) %>% rename(Contig=V1, Length=V2, Copy=V6, MT=mt, PT=pt, Edge=V9) %>% write.table(args[3],row.names=F,quote=F)
+z %>% arrange(mt<=pt) %>% relocate(V9, .after = last_col()) %>% filter(mt>pt) %>% select(V1, V2, V6, mt, pt, V9) %>% rename(Contig=V1, Length=V2, Copy=V6, MT=mt, PT=pt, Edge=V9) %>% write.table(contig.table,row.names=F,quote=F)
+z.1 %>% rename(Contig=V1, Length=V2, Copy=V6, MT=mt, PT=pt, Edge=V9) %>% relocate(Edge, .after = last_col()) %>% write.table(args[4],row.names=F,quote=F)
 

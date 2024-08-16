@@ -138,6 +138,7 @@ function run_output1() {
 	echo INFO: long read data file: $LR
 	echo INFO: short read data file 1: $SR1
 	echo INFO: short read data file 2: $SR2
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
 function run_output2() {
@@ -147,6 +148,7 @@ function run_output2() {
 	echo INFO: number of CPUs: $NT
 	echo INFO: source flye output: $INUM
 	echo INFO: destination flye output: $JNUM
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
 # ODIR
@@ -172,14 +174,17 @@ function run_jellyfish() {
 		exit $EXIT_ERROR
 	fi
 	jellyfish histo -o "$ODIR"/jellyfish_out.histo "$ODIR"/jellyfish_out
-	"$WDIR"/run-polap-jellyfish.R "$ODIR"/jellyfish_out.histo "$LONG_TOTAL_LENGTH" "$ODIR"/long_coverage.txt "$ODIR"/short_expected_genome_size.txt
+	"$WDIR"/run-polap-jellyfish.R "$ODIR"/jellyfish_out.histo \
+		"$LONG_TOTAL_LENGTH" \
+		"$ODIR"/long_coverage.txt \
+		"$ODIR"/short_expected_genome_size.txt
 	EXPECTED_COVERAGE=$(cat "$ODIR"/long_coverage.txt)
 	EXPECTED_COVERAGE=${EXPECTED_COVERAGE%.*}
 	echo "DATA: long reads expected coverage: ${EXPECTED_COVERAGE}x"
 
 	# step1
 	seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o $LR3K >/dev/null 2>&1
-	echo "DATA: long-read minimum $MR reads data n3k.fq.gz is created"
+	echo "DATA: long-read minimum $MR reads data $LR3K is created"
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -196,7 +201,7 @@ run_flye1() {
 	flye --nano-raw "$LR3K" --out-dir "$FDIR" \
 		--threads "$NT" \
 		--stop-after contigger \
-		--asm-coverage 30 \
+		--asm-coverage "$COV" \
 		--genome-size "$EXPECTED_GENOME_SIZE" \
 		>/dev/null 2>&1
 
@@ -213,11 +218,11 @@ run_annotation() {
 
 	MTAA=$WDIR/mt.1.c70.3.faa
 	PTAA=$WDIR/pt.2.c70.3.faa
-	FLYEDIR=$ODIR
-	NUMTHREADS=$NT
+	# FLYEDIR=$ODIR
+	# NUMTHREADS=$NT
 
-	ALL_ANNOTATE=1
-	FLYE_CONTIGGER=1
+	# ALL_ANNOTATE=1
+	# FLYE_CONTIGGER=1
 
 	FDIR=$ODIR/$ANUM
 	ASSEMBLYINFO="$FDIR"/30-contigger/contigs_stats.txt
@@ -242,10 +247,10 @@ run_annotation() {
 	grep -v "#" $ASSEMBLYINFO | cut -f 1 >$CONTIGNAME
 	echo "INFO: contig sequence names in file: $CONTIGNAME"
 
-	seqkit grep -f "$CONTIGNAME" \
-		"$ASSEMBLYFILE" \
-		-o "$ADIR"/contig.fasta \
-		>/dev/null 2>&1
+	# seqkit grep -f "$CONTIGNAME" \
+	# 	"$ASSEMBLYFILE" \
+	# 	-o "$ADIR"/contig.fasta \
+	# 	>/dev/null 2>&1
 	cp $ASSEMBLYFILE "$ADIR"/contig.fasta
 	echo "INFO: contig sequence file: $ADIR/contig.fasta"
 
@@ -470,7 +475,7 @@ run_flye2() {
 	echo "INFO: executing the organelle-genome assembly using flye ... be patient!"
 	flye --nano-raw $MTSEEDSDIR/2.fq.gz \
 		--out-dir $MTODIR \
-		--asm-coverage 30 \
+		--asm-coverage $COV \
 		--genome-size $CONTIG_LENGTH \
 		--threads $NT \
 		>/dev/null 2>&1
@@ -510,7 +515,7 @@ run_polish1() {
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
-run_polish2() {
+function run_polish2() {
 	echo "INFO: executing fmlrc on the draft sequence $PA ... be patient!"
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 	if [[ -s $PA ]]; then

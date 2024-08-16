@@ -41,6 +41,8 @@
 ################################################################################
 # Log
 ################################################################################
+# 2023-08-19: version 0.1.4
+#  - single-min range
 # 2023-08-06: version 0.1.3
 #  - jellyfish: genome estimation with short-read data
 #  - pair/single option: 500/1000 -> 3000/3000
@@ -75,7 +77,7 @@
 # msbwt==0.3.0
 ################################################################################
 
-VERSION="0.1.3"
+VERSION="0.1.4"
 # version
 function version() {
     echoall "$(basename "$0") version $VERSION"
@@ -157,7 +159,7 @@ main step options:
     -e, --use-edges                 [step4] use flye's edges not contigs
     -c, --coverage <number>         [step4] coverage for the 2nd assembly [$COV]
     -q, --no-coverage-check         [step4] no coverage check for step 4
-    -w, --single-min <number>       [step4] min overlap on each contig [$SINGLE_MIN]
+    -w, --single-min <number,number>[step4] min overlap on each contig [$SINGLE_MIN]
     -r, --resume                    [step1,step4] flye option resume
     -v, --version                   display version
     -h, --help                      display this help
@@ -218,7 +220,7 @@ Usage:
     polap -5
     polap aflye seq -c contig_1 -f mt.0.fa
     polap -6 -a r1.fq -b r2.fq
-    polap -7 -p mt.0.fa -f mt.1.fa
+    polap -7 -t 4 -p mt.0.fa -f mt.1.fa
     polap compare mt.1.fa MN544313.1.fa 
     polap rearrange 90405 mt.1.fa mt.2.fa (90405 is the first position)
     polap clustal mt.2.fa MN544313.1.fa 
@@ -234,7 +236,7 @@ function set_options() {
     # --name for command name
     # -- for user comment
     arguments=$(getopt --options s:hvl:k:t:m:o:C01234:567a:b:p:f:c:nxyeqw:r \
-                       --longoptions help,verbose,long-reads:,3k-long-reads:,threads:,min-read-length:,short-reads:,outdir:,version,command-options,step0,step1,step2,step3,step4:,step5,step6,step7,code,resume,short-read1:,short-read2:,polishing-sequence:,final-assembly:,all-annotate,coverage,no-coverage-check,pair-min:,single-min:,no-reduction-reads,contigger,use-edges,no-contigger \
+                       --longoptions help,verbose,long-reads:,3k-long-reads:,threads:,min-read-length:,short-reads:,outdir:,version,command-options,step0,step1,step2,step3,step4:,step5,step6,step7,code,resume,short-read1:,short-read2:,polishing-sequence:,final-assembly:,all-annotate,coverage:,no-coverage-check,pair-min:,single-min:,no-reduction-reads,contigger,use-edges,no-contigger \
                        --name $(basename $0) \
                        -- "$@")
     eval set -- "$arguments"
@@ -349,8 +351,12 @@ function set_options() {
                 shift 2
                 ;;
             -w | --single-min)
-                SINGLE_MIN=$2
+                SINGLES=$2
                 shift 2
+                set -f # disable glob
+                IFS=',' # split on space characters
+                SINGLE_MINS=($SINGLES) # use the split+glob operator
+                set +f # enable glob
                 ;;
             --code)
                 astep1
@@ -377,6 +383,37 @@ function set_options() {
                 ;;
         esac
     done
+
+    if [[ ${#SINGLE_MINS[@]} -eq 2 ]]; then
+        SINGLE1=${SINGLE_MINS[0]}
+        SINGLE2=${SINGLE_MINS[1]}
+        SINGLE_MIN=0
+    elif [[ ${#SINGLE_MINS[@]} -eq 1 ]]; then
+        SINGLE1=0
+        SINGLE2=0
+        SINGLE_MIN=${SINGLE_MINS[0]}
+    elif [[ ${#SINGLE_MINS[@]} -gt 2 ]]; then
+        echoerr "ERROR: -w one or two numbers separated by a comma"
+        exit 1
+    fi
+
+
+    # if [[ $SINGLE1 -eq 0 ]]; then
+    #     echoerr "step4run: single"
+    # elif [[ $SINGLE_MIN -eq 0 ]]; then
+    #     for (( i=$SINGLE1; i<$SINGLE2; i+=1000)); do
+    #         SINGLE_MIN=$i
+    #         echoerr "step4run: $i"
+    #     done
+    # else
+    #     echoerr "ERROR: no run of step4"
+    # fi
+
+
+    # echoerr $SINGLE_MIN
+    # echoerr $SINGLE1
+    # echoerr $SINGLE2
+
 
     # the remaining arguments
     # shift $((OPTIND-1))
@@ -459,8 +496,6 @@ function step0() {
     command -v makeblastdb >/dev/null 2>&1 || { echo >&2 "makeblastdb: not installed"; exit 1; }
     command -v tblastn >/dev/null 2>&1 || { echo >&2 "tblastn: not installed"; exit 1; }
     command -v bedtools >/dev/null 2>&1 || { echo >&2 "bedtools: not installed"; exit 1; }
-    command -v kmerfreq >/dev/null 2>&1 || { echo >&2 "kmerfreq: not installed"; exit 1; }
-    command -v gce >/dev/null 2>&1 || { echo >&2 "gce: not installed"; exit 1; }
     command -v prefetch >/dev/null 2>&1 || { echo >&2 "prefetch: not installed"; exit 1; }
     command -v jellyfish >/dev/null 2>&1 || { echo >&2 "jellyfish: not installed"; exit 1; }
 
@@ -779,16 +814,16 @@ function step4() {
     ADIR=$ODIR/50-annotation
     MTDIR=$ODIR/60-mt-$STEP4
 
-    if [[ -z $POLAP_SKIP ]]; then
-        if [[ -d $MTDIR ]]; then
-            if [[ "no" == $(ask_yes_or_no "Do you want to delete the previous run [$MTDIR]?") ]]; then
-                echo "Okay!"
-                exit 0
-            fi
-            rm -rf "$MTDIR"
-        fi
-        mkdir "$MTDIR"
-    fi
+    # if [[ -z $POLAP_SKIP ]]; then
+    #     if [[ -d $MTDIR ]]; then
+    #         if [[ "no" == $(ask_yes_or_no "Do you want to delete the previous run [$MTDIR]?") ]]; then
+    #             echo "Okay!"
+    #             exit 0
+    #         fi
+    #         rm -rf "$MTDIR"
+    #     fi
+    #     mkdir "$MTDIR"
+    # fi
 
     if test -z "$LR3K"; then 
         LR3K=n3k.fq.gz
@@ -796,6 +831,20 @@ function step4() {
             echo ERROR: No 3K long-read data!
             exit 1
         fi
+    fi
+
+    x=$(cut -d'_' -f 1 $ADIR/mt.contig.name-$STEP4 | sort | uniq)
+    if [[ $x == "edge" ]]; then
+        echo "INFO: mt.contig.name-$STEP4: $x only"
+        echo "WARNING: --use-edges option is turned on"
+        USE_EDGES="--use-edges"
+    elif [[ $x == "contig" ]]; then
+        echo "INFO: mt.contig.name-$STEP4: $x only"
+        echo "WARNING: --use-edges option is turned off"
+        USE_EDGES="--no-use-edges"
+    else
+        echo "ERROR: mt.contig.name-$STEP4: multiple type $x"
+        exit 1
     fi
 
     if [[ $USE_EDGES == "--use-edges" ]]; then
@@ -814,37 +863,79 @@ function step4() {
             ASSEMBLY_FASTA=$ODIR/30-contigger/contigs.fasta
         fi
     fi
+
+
+
+
     echo "Step 4: flye organelle genome assembly on the folder: $MTDIR"
 
-    if [[ ! -s "$MTDIR/1.fq.gz" ]]; then
+
+    if [[ $SINGLE1 -eq 0 ]]; then
+        MTODIR=$MTDIR/o$SINGLE_MIN
+        MTSEEDSDIR=$MTODIR/seeds
+        echoall "INFO: step4run on $MTSEEDSDIR"
+        step4run
+    elif [[ $SINGLE_MIN -eq 0 ]]; then
+        for (( i=$SINGLE1; i<$SINGLE2; i+=1000)); do
+            SINGLE_MIN=$i
+            MTODIR=$MTDIR/o$SINGLE_MIN
+            MTSEEDSDIR=$MTODIR/seeds
+            echoall "INFO: step4run on $MTSEEDSDIR"
+            step4run
+        done
+    else
+        echoerr "ERROR: no run of step4"
+    fi
+
+    STEP4=0
+    echo "DEBUG: end of step4"
+}
+
+function step4run() {
+    echo "DEBUG: start of step4run"
+ 
+    # ADIR=$ODIR/50-annotation
+    # MTDIR=$ODIR/60-mt-$STEP4
+    # MTODIR=$MTDIR/o$SINGLE_MIN
+    # MTSEEDSDIR=$MTODIR/seeds
+    # mkdir -p $MTODIR
+    rm -rf $MTODIR
+    mkdir -p $MTSEEDSDIR
+
+    echo "Step 4: flye organelle genome assembly on the folder: $MTODIR"
+
+    if [[ ! -s "$MTDIR"/contig.tab ]]; then
         echo "INFO: organelle contigs selection"
         if [[ -s $ADIR/mt.contig-$STEP4.fa ]]; then
-            cat $ADIR/mt.contig-$STEP4.fa $ASSEMBLY_FASTA > $ODIR/assembly_ring.fa
-            seqkit grep -f $ADIR/mt.contig.name-$STEP4 $ODIR/assembly_ring.fa -o $MTDIR/contig.fa > /dev/null 2>&1
+            cat $ADIR/mt.contig-$STEP4.fa $ASSEMBLY_FASTA > $MTDIR/assembly_ring.fa
+            seqkit grep -f $ADIR/mt.contig.name-$STEP4 $MTDIR/assembly_ring.fa -o $MTDIR/contig.fa > /dev/null 2>&1
         else
             seqkit grep -f $ADIR/mt.contig.name-$STEP4 $ASSEMBLY_FASTA -o $MTDIR/contig.fa > /dev/null 2>&1
         fi
-        CONTIG_LENGTH=$(seqkit stats -Ta $MTDIR/contig.fa | csvtk cut -t -f "sum_len" | csvtk del-header)
         echo "DATA: $LR3K is used to select reads"
         if [[ ! -s "$MTDIR/contig.paf" ]]; then
             minimap2 -cx map-ont "$MTDIR"/contig.fa "$LR3K" -t "$NT" -o "$MTDIR"/contig.paf > /dev/null 2>&1
         fi
         echo "DATA: mininmum length of long reads in the selection mapping: $MR"
         cut -f1-11 "$MTDIR"/contig.paf | awk -v minlength=$MR '{if ($2>=minlength) {print}}' > "$MTDIR"/contig.tab
+    fi
+    CONTIG_LENGTH=$(seqkit stats -Ta $MTDIR/contig.fa | csvtk cut -t -f "sum_len" | csvtk del-header)
 
-
+    if [[ ! -s "$MTSEEDSDIR/1.fq.gz" ]]; then
         echo "INFO: organelle read selection min length: $SINGLE_MIN bp"
         contig_count=$(wc -l < $ADIR/mt.contig.name-$STEP4)
         if [ "$contig_count" -gt 1 ]; then
             # "$WDIR"/run-polap-pairs.R $ADIR/mt.contig.name-$STEP4 $MTDIR/contig.tab $MTDIR $PAIR_MIN $SINGLE_MIN > /dev/null 2>&1
-            "$WDIR"/run-polap-pairs.R $ADIR/mt.contig.name-$STEP4 $MTDIR/contig.tab $MTDIR $SINGLE_MIN $SINGLE_MIN > /dev/null 2>&1
-            cat $MTDIR/*.name $MTDIR/single.names | sort | uniq > $MTDIR/1.names
+            "$WDIR"/run-polap-pairs.R $ADIR/mt.contig.name-$STEP4 $MTDIR/contig.tab $MTSEEDSDIR $SINGLE_MIN $SINGLE_MIN > /dev/null 2>&1
+            echo "INFO: begin - cat names and the single name"
+            cat "$MTSEEDSDIR/"*".name" $MTSEEDSDIR/single.names | sort | uniq > $MTSEEDSDIR/1.names
+            echo "INFO: end - cat names and the single name"
         else
-            "$WDIR"/run-polap-single.R $MTDIR/contig.tab $MTDIR $SINGLE_MIN > /dev/null 2>&1
-            cat $MTDIR/single.names | sort | uniq > $MTDIR/1.names
+            "$WDIR"/run-polap-single.R $MTSEEDSDIR/contig.tab $MTSEEDSDIR $SINGLE_MIN > /dev/null 2>&1
+            cat $MTSEEDSDIR/single.names | sort | uniq > $MTSEEDSDIR/1.names
         fi
-        seqkit grep -f $MTDIR/1.names $LR3K -o $MTDIR/1.fq.gz > /dev/null 2>&1
-        echo "DATA: organelle reads in $MTDIR/1.fq.gz"
+        seqkit grep -f $MTSEEDSDIR/1.names $LR3K -o $MTSEEDSDIR/1.fq.gz > /dev/null 2>&1
+        echo "DATA: organelle reads in $MTSEEDSDIR/1.fq.gz"
     fi
 
     # target coverage: 50
@@ -857,7 +948,7 @@ function step4() {
     #   sample reads so that 
     #     the expected coverage goes down to the target coverage
     # fi
-    TOTAL_LENGTH=$(seqkit stats -Ta $MTDIR/1.fq.gz | csvtk cut -t -f "sum_len" | csvtk del-header)
+    TOTAL_LENGTH=$(seqkit stats -Ta $MTSEEDSDIR/1.fq.gz | csvtk cut -t -f "sum_len" | csvtk del-header)
     EXPECTED_COVERAGE=$((TOTAL_LENGTH / CONTIG_LENGTH))
     echo "INFO: organelle genome size based on contig selection: $CONTIG_LENGTH"
     echo "INFO: expected coverage: $EXPECTED_COVERAGE x"
@@ -865,20 +956,20 @@ function step4() {
 
         if [ "$EXPECTED_COVERAGE" -lt $COV ]; then
             echo "DATA: no data reduction: COV=$COV"
-            ln -s 1.fq.gz $MTDIR/2.fq.gz
+            ln -s 1.fq.gz $MTSEEDSDIR/2.fq.gz
         else
             RATE=$(echo "scale=10; $COV/$EXPECTED_COVERAGE" | bc)
             echo "DATA: data reduction by rate of $RATE"
-            seqkit sample -p $RATE $MTDIR/1.fq.gz -o $MTDIR/2.fq.gz 
+            seqkit sample -p $RATE $MTSEEDSDIR/1.fq.gz -o $MTSEEDSDIR/2.fq.gz 
         fi
 
         if [ -z $RESUME ]; then     
-            flye --nano-raw $MTDIR/2.fq.gz --out-dir $MTDIR/o \
+            flye --nano-raw $MTSEEDSDIR/2.fq.gz --out-dir $MTODIR \
                 --asm-coverage 30 \
                 --genome-size $CONTIG_LENGTH \
                 --threads $NT > /dev/null 2>&1
         else
-            flye --nano-raw $MTDIR/2.fq.gz --out-dir $MTDIR/o \
+            flye --nano-raw $MTSEEDSDIR/2.fq.gz --out-dir $MTODIR \
                 --asm-coverage 30 \
                 --genome-size $CONTIG_LENGTH \
                 --threads $NT --resume > /dev/null 2>&1
@@ -886,15 +977,15 @@ function step4() {
     else
         echo "DATA: no reduction in the final flye run"
         if [ -z $RESUME ]; then     
-            flye --nano-raw $MTDIR/1.fq.gz --out-dir $MTDIR/o \
+            flye --nano-raw $MTSEEDSDIR/1.fq.gz --out-dir $MTODIR \
                 --threads $NT > /dev/null 2>&1
         else
-            flye --nano-raw $MTDIR/1.fq.gz --out-dir $MTDIR/o \
+            flye --nano-raw $MTSEEDSDIR/1.fq.gz --out-dir $MTODIR \
                 --threads $NT --resume > /dev/null 2>&1
         fi
     fi
 
-    ODIR=$MTDIR/o
+    ODIR=$MTODIR
     if [[ -s $ODIR/assembly_info.txt ]]; then
         echoall "INFO: assembly graph: $(realpath $ODIR/assembly_graph.gfa)"
     else
@@ -1569,12 +1660,14 @@ function assemble() {
     ODIR=o
     FLYE_CONTIGGER="--contigger"
 
-    while getopts "s:l:a:b:o:k:t:rxn" option; do
+    while getopts "s:l:a:b:o:k:t:rxnw:" option; do
         case $option in
             s) # SRA=$OPTARG
                 set -f # disable glob
                 IFS=',' # split on space characters
-                SRA=($OPTARG) ;; # use the split+glob operator
+                SRA=($OPTARG)
+                set +f 
+                ;; # use the split+glob operator
             l) LR=$OPTARG ;;
             a) SR1=$OPTARG ;;
             b) SR2=$OPTARG ;;
@@ -1584,6 +1677,12 @@ function assemble() {
             r) RESUME="--resume" ;;
             x) FLYE_CONTIGGER="--polishing" ;;
             n) NO_REDUCTION_READS="--no-reduction-reads" ;;
+            w) #
+                set -f # disable glob
+                IFS=',' # split on space characters
+                SINGLE_MINS=($OPTARG) 
+                set +f
+                ;; # use the split+glob operator
             # h) usage_of ;;
             \?) # incorrect option
                 echo "Error: Invalid option; try -h option"
@@ -1594,6 +1693,19 @@ function assemble() {
     if [[ ${#SRA[@]} -eq 2 ]]; then
         SRALONG=${SRA[0]}
         SRASHORT=${SRA[1]}
+    fi
+
+    if [[ ${#SINGLE_MINS[@]} -eq 2 ]]; then
+        SINGLE1=${SINGLE_MINS[0]}
+        SINGLE2=${SINGLE_MINS[1]}
+        SINGLE_MIN=0
+    elif [[ ${#SINGLE_MINS[@]} -eq 1 ]]; then
+        SINGLE1=0
+        SINGLE2=0
+        SINGLE_MIN=${SINGLE_MINS[0]}
+    elif [[ ${#SINGLE_MINS[@]} -gt 2 ]]; then
+        echoerr "ERROR: -w one or two numbers separated by a comma"
+        exit 1
     fi
 
     version_print
@@ -1623,7 +1735,9 @@ function bflye() {
             s) # SRA=$OPTARG
                 set -f # disable glob
                 IFS=',' # split on space characters
-                SRA=($OPTARG) ;; # use the split+glob operator
+                SRA=($OPTARG) 
+                set +f
+                ;; # use the split+glob operator
             l) LR=$OPTARG ;;
             a) SR1=$OPTARG ;;
             b) SR2=$OPTARG ;;
@@ -1726,6 +1840,8 @@ MULTISTEP=0
 # v2: 3000
 PAIR_MIN=500     # 3k or 5k
 SINGLE_MIN=3000  # 3k or 5k
+SINGLE1=0
+SINGLE2=0
 BACKUP=species
 
 ################################################################

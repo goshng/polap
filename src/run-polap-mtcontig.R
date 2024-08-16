@@ -84,6 +84,6 @@ copy_number_min = median(z.1$V6)
 # z %>% filter(V2>1000) %>% filter(V6>copy_number_min) %>% filter(mt>pt) %>% select(V1) %>% write.table(mt.contig.name,row.names=F,col.names=F,quote=F)
 # z %>% filter(V2>1000) %>% filter(V6>copy_number_min) %>% filter(mt<pt) %>% select(V1) %>% write.table(pt.contig.name,row.names=F,col.names=F,quote=F)
 
-z %>% arrange(mt<=pt) %>% write.table(args[3],row.names=F,quote=F)
-z.1 %>% arrange(mt<=pt) %>% write.table(args[4],row.names=F,quote=F)
+z %>% arrange(mt<=pt) %>% relocate(V9, .after = last_col()) %>% write.table(args[3],row.names=F,quote=F)
+z.1 %>% relocate(V9, .after = last_col()) %>% write.table(args[4],row.names=F,quote=F)
 

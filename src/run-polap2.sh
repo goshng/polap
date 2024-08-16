@@ -34,9 +34,9 @@
 
 # input/output data file names
 #
-LR=long.fq    # long-read data file
-SR1=short1.fq # paired short-read data file 1
-SR2=short2.fq # paired short-read data file 2
+LR=l.fq       # long-read data file
+SR1=s1.fq     # paired short-read data file 1
+SR2=s2.fq     # paired short-read data file 2
 PA=mt.0.fasta # assembled draft sequence extracted from bandage
 FA=mt.1.fa    # polished sequence
 

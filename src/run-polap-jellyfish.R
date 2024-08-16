@@ -28,6 +28,9 @@
 #
 # input: Jellyfish .histo output file
 # output: coverage and genome size
+#   "$WDIR"/run-polap-jellyfish.R 19mer_out.histo expected_genome_size.txt
+#
+# old version
 #   "$WDIR"/run-polap-jellyfish.R 19mer_out.histo "$LONG_TOTAL_LENGTH" coverage.txt expected_genome_size.txt
 #	EXPECTED_GENOME_SIZE=$(cat expected_genome_size.txt)
 #	EXPECTED_GENOME_SIZE=${EXPECTED_GENOME_SIZE%.*}
@@ -38,9 +41,8 @@
 
 args <- commandArgs(trailingOnly = TRUE)
 
-# two input arguments
+# input arguments
 x <- read.table(args[1])
-total_read_length <- as.numeric(args[2])
 
 n <- nrow(x)
 a <- which.min(x$V2[1:10])
@@ -48,7 +50,5 @@ b <- n - 10 + which.min(x$V2[(n - 9):n])
 y <- which.max(x$V2[a:b]) + (a - 1)
 z <- sum(as.numeric(x[a:b, 1] * x[a:b, 2])) / y
 
-# two output argments
-write.table(total_read_length / z, args[3],
-            row.names = FALSE, col.names = FALSE, quote = FALSE)
-write.table(z, args[4], row.names = FALSE, col.names = FALSE, quote = FALSE)
+# output argments
+write.table(z, args[2], row.names = FALSE, col.names = FALSE, quote = FALSE)

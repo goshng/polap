@@ -80,36 +80,94 @@
 # msbwt==0.3.0
 ################################################################################
 
+################################################################################
+# All of the variables at our disposal
+#
 VERSION="0.2.1"
-# version
-function version() {
-	echoall "$(basename "$0") version $VERSION"
-	#     cat >&2 <<EOM
-	# $(basename "$0") version 0.1.3
-	# EOM
-}
-
-function version_print() {
-	echo "$(basename "$0") version $VERSION"
-	#     cat >&2 <<EOM
-	# $(basename "$0") version 0.1.3
-	# EOM
-}
-
-# debugging
-# set -x
-
-# exit if errors
-set -e
-
-# execution time count
-SECONDS=0
 
 # include and execute other BASH and R scripts
 WDIR="$(dirname "$0")"
 WDIR="${BASH_SOURCE%/*}"
-if [[ ! -d "$WDIR" ]]; then WDIR="$PWD"; fi
+if [[ ! -d "$WDIR" ]]; then
+	WDIR="$PWD"
+fi
+
+# variables for input data file names for flexible data processing.
+LR=l.fq       # long-read data file
+SR1=s1.fq     # paired short-read data file 1
+SR2=s2.fq     # paired short-read data file 2
+PA=mt.0.fasta # assembled draft sequence extracted from bandage
+FA=mt.1.fa    # polished sequence
+
+# variables for output
+ODIR=o
+FDIR="o/0" # flye 1st output
+GDIR="o/1" # flye 2nd output
+INUM=0
+JNUM=1
+
+# tuning variables for optimal performance
+LR3K=$ODIR/n3k.fq.gz
+MR=3000
+MPAIR=1000
+MBRIDGE=5000
+MSING=3000 # deprecated
+COV=30
+NT=$(cat /proc/cpuinfo | grep -c processor)
+if test -z "$DEBUG"; then
+	DEBUG=0
+fi
+CIRCULARIZE="" # "--circularize"
+
+################################################################
+# Variables
+
+SRA=""
+SRALONG=""
+SRASHORT=""
+RESUME=""
+ALL_ANNOTATE="--selective-annotate"
+FLYE_CONTIGGER="--contigger"
+USE_EDGES="--no-use-edges"
+NO_REDUCTION_READS=""
+NO_COVERAGE_CHECK=""
+STEP0=0
+STEP1=0
+STEP2=0
+STEP3=0
+STEP4=0
+STEP5=0
+STEP6=0
+STEP7=0
+MULTISTEP=0
+
+# v1: 500/1000
+# v2: 3000
+PAIR_MIN=500    # 3k or 5k
+SINGLE_MIN=3000 # 3k or 5k
+SINGLE1=0
+SINGLE2=0
+BACKUP=species
+
+# Constants
+EXIT_SUCCESS=1
+EXIT_FAIL=0
+EXIT_ERROR=2
+
+# The number of execution times counted.
+SECONDS=0
+
+# Incorporate standard and common shell scripts
 source "$WDIR/run-polap-common.sh"
+
+# version
+function version() {
+	echoall "$(basename "$0") version $VERSION"
+}
+
+function version_print() {
+	echo "$(basename "$0") version $VERSION"
+}
 
 # debugging main variables
 function print_options() {
@@ -123,8 +181,12 @@ SR1=$SR1
 SR2=$SR2
 NT=$NT
 MR=$MR
+MPAIR=$MPAIR
+MBRIDGE=$MBRIDGE
 PA=$PA
 FA=$FA
+INUM=$INUM
+JNUM=$JNUM
 EOM
 }
 
@@ -134,7 +196,7 @@ function usage() {
 $(basename "$0") [options]
 
 Decription:
-Plant organelle long-read assembly pipeline.
+'P'lant 'o'rganelle DNA 'l'ong-read 'a'ssembly 'p'ipeline.
 
 steps subcommand:
     -0, --step0                     step0: check requirement 
@@ -146,16 +208,16 @@ steps subcommand:
     -6, --step6                     step6: polishing step 1
     -7, --step7                     step7: polishing step 2
 main step options:
-    -l, --long-reads <fastq>        long-reads data file in fastq format
-    -k, --3k-long-reads <fastq>     long-reads (min 3001bp) fastq file
-    -o, --outdir <dir>              output folder name [default: o]
-    -a, --short-read1 <fastq>       short-read fastq file 1
-    -b, --short-read2 <fastq>       short-read fastq file 2
+    -l, --long-reads <fastq>        long-reads data file in fastq format [$LR]
+    -k, --3k-long-reads <fastq>     long-reads (min 3001bp) fastq file [$LR3K]
+    -o, --outdir <dir>              output folder name [$ODIR]
+    -a, --short-read1 <fastq>       short-read fastq file 1 [$SR1]
+    -b, --short-read2 <fastq>       short-read fastq file 2 [$SR2]
     -s, --sra <SRA accession>       SRA data
-    -p, --unpolished-fasta <fasta>  polishing sequence in fasta format
-    -f, --final-assembly <fasta>    final assembly in fasta format
+    -p, --unpolished-fasta <fasta>  polishing sequence in fasta format [$PA]
+    -f, --final-assembly <fasta>    final assembly in fasta format [$FA]
     -m, --min-read-length <number>  minimum length of long reads [$MR]
-    -t, --threads <number>          number of CPUs
+    -t, --threads <number>          number of CPUs [$NT]
     -n, --no-reduction-reads        [step0] no reduction of long-read data
     -x, --no-contigger              [step1] use flye's 40-polishing result
     -y, --all-annotate              [step2] annotate all contigs
@@ -245,7 +307,7 @@ Usage:
     polap aflye backup -b Anthoceros_agrestis
     polap aflye recovery -b Anthoceros_agrestis.tar.gz
 EOM
-	exit 1
+	exit 0
 }
 
 function set_options() {
@@ -418,21 +480,6 @@ function set_options() {
 		echoerr "ERROR: -w one or two numbers separated by a comma"
 		exit 1
 	fi
-
-	# if [[ $SINGLE1 -eq 0 ]]; then
-	#     echoerr "step4run: single"
-	# elif [[ $SINGLE_MIN -eq 0 ]]; then
-	#     for (( i=$SINGLE1; i<$SINGLE2; i+=1000)); do
-	#         SINGLE_MIN=$i
-	#         echoerr "step4run: $i"
-	#     done
-	# else
-	#     echoerr "ERROR: no run of step4"
-	# fi
-
-	# echoerr $SINGLE_MIN
-	# echoerr $SINGLE1
-	# echoerr $SINGLE2
 
 	# the remaining arguments
 	# shift $((OPTIND-1))
@@ -1988,50 +2035,9 @@ function logit() {
 	done
 }
 
-# function echoerr() { echo "$@" 1>&2; }
-
-################################################################
-# Variables
-
-COV=100
-SRA=""
-SRALONG=""
-SRASHORT=""
-LR3K=""
-LR=""
-SR1=""
-SR2=""
-ODIR=o
-PA=""
-FA=""
-MR=3000
-NT=2
-RESUME=""
-ALL_ANNOTATE="--selective-annotate"
-FLYE_CONTIGGER="--contigger"
-USE_EDGES="--no-use-edges"
-NO_REDUCTION_READS=""
-NO_COVERAGE_CHECK=""
-CIRCULARIZE="" # "--circularize"
-STEP0=0
-STEP1=0
-STEP2=0
-STEP3=0
-STEP4=0
-STEP5=0
-STEP6=0
-STEP7=0
-MULTISTEP=0
-# v1: 500/1000
-# v2: 3000
-PAIR_MIN=500    # 3k or 5k
-SINGLE_MIN=3000 # 3k or 5k
-SINGLE1=0
-SINGLE2=0
-BACKUP=species
-
 ################################################################
 # MAIN
+#
 if [ $# -eq 0 ]; then
 	usage
 fi
@@ -2058,7 +2064,6 @@ else
 		set_options0 "$@"
 	fi
 
-	set -x
 	if test $STEP0 -eq 1; then step0; fi
 	if test $STEP1 -eq 1; then step1; fi
 	if test $STEP2 -eq 1; then step2; fi
@@ -2067,7 +2072,6 @@ else
 	if test $STEP5 -eq 1; then step5; fi
 	if test $STEP6 -eq 1; then step6; fi
 	if test $STEP7 -eq 1; then step7; fi
-	set +x
 fi
 
 ELAPSED="Time: $((SECONDS / 3600))hrs $(((SECONDS / 60) % 60))min $((SECONDS % 60))sec - $CMD"

@@ -330,6 +330,7 @@ run_annotation() {
 }
 
 run_count_genes() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 	# step3
 	ANUM=$1
 	echo "INFO: count mitochondrial and plastid genes on $ANUM"
@@ -348,6 +349,7 @@ run_count_genes() {
 	touch $FDIR/mt.contig.name-1
 	echo "INFO: edit $FDIR/mt.contig.name-1 for mtDNA contig candidates"
 	echo "INFO: edit $FDIR/mt.contig.name-<destination flye number> for mtDNA contig candidates"
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
 run_flye2() {

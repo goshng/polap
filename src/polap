@@ -20,31 +20,11 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 # [ <-- needed because of Argbash
 
 # vvv  PLACE YOUR CODE HERE  vvv
-# For example:
-# printf 'Value of --%s: %s\n' 'long-reads' "$_arg_long_reads"
-# printf 'Value of --%s: %s\n' 'outdir' "$_arg_outdir"
-# printf 'Value of --%s: %s\n' 'short-read1' "$_arg_short_read1"
-# printf 'Value of --%s: %s\n' 'short-read2' "$_arg_short_read2"
-# printf 'Value of --%s: %s\n' 'sra' "$_arg_sra"
-# printf 'Value of --%s: %s\n' 'unpolished-fasta' "$_arg_unpolished_fasta"
-# printf 'Value of --%s: %s\n' 'final-assembly' "$_arg_final_assembly"
-# printf 'Value of --%s: %s\n' 'min-read-length' "$_arg_min_read_length"
-# printf 'Value of --%s: %s\n' 'threads' "$_arg_threads"
-# printf 'Value of --%s: %s\n' 'coverage' "$_arg_coverage"
-# printf 'Value of --%s: %s\n' 'single-min' "$_arg_single_min"
-# printf "'%s' is %s\\n" 'reduction-reads' "$_arg_reduction_reads"
-# printf "'%s' is %s\\n" 'contigger' "$_arg_contigger"
-# printf "'%s' is %s\\n" 'all-annotate' "$_arg_all_annotate"
-# printf "'%s' is %s\\n" 'use-edges' "$_arg_use_edges"
-# printf "'%s' is %s\\n" 'coverage-check' "$_arg_coverage_check"
-# printf "'%s' is %s\\n" 'resume' "$_arg_resume"
-# printf "'%s' is %s\\n" 'circularize' "$_arg_circularize"
-# printf "Value of '%s': %s\\n" 'menu' "${_arg_menu[0]}"
-# printf "Value of '%s': %s\\n" 'menu' "${_arg_menu[1]}"
-# printf "Value of '%s': %s\\n" 'menu' "${_arg_menu[2]}"
 
-# functions
-#
+###############################################################################
+# Checks if required commands are available.
+# called early in the code such as reset menu.
+###############################################################################
 function run_check1() {
 	command -v bc >/dev/null 2>&1 || {
 		echo >&2 "bc: not installed"
@@ -89,6 +69,10 @@ function run_check1() {
 	return $RETURN_SUCCESS
 }
 
+###############################################################################
+# Checks if FMLRC related commands are available.
+# called by prepare-polishing menu.
+###############################################################################
 function run_check2() {
 	command -v msbwt >/dev/null 2>&1 || {
 		echo >&2 "msbwt: not installed"
@@ -105,7 +89,12 @@ function run_check2() {
 	return $RETURN_SUCCESS
 }
 
-function _run_polap_x-template() {
+###############################################################################
+# You could use this function template to create a new menu.
+# Rename template and delete x in the name. You could execute such menu
+# but such menus are not created as empty files by make-menus menu.
+###############################################################################
+function _x_run_polap_template() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	echoall $0
@@ -116,49 +105,14 @@ function _run_polap_x-template() {
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
-function join_by {
-	local d=${1-} f=${2-}
-	if shift 2; then
-		printf %s "$f" "${@/#/$d}"
-	fi
-}
-
-# not working or NCBI connection errors
-# https://github.com/schultzm/entrez_direct_tut
-function _run_polap_x-bioproject() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
-
-	mkdir $ODIR
-	BIOPRJ=$_arg_bioproject
-
-	MDATA="$ODIR/accessions_demo.txt"
-	esearch -db bioproject -query $BIOPRJ | elink -target biosample | efetch -format docsum | xtract.Linux -pattern DocumentSummary -block Ids -element Id -group SRA >${MDATA}
-	SRSs=$(cat ${MDATA} | while read LINE; do
-		NCOL=$(echo ${LINE} | wc -w)
-		ACC=$(echo ${LINE} | cut -d ' ' -f ${NCOL})
-		echo ${ACC}
-	done | xargs)
-
-	# SRS_str=$(join_by ' OR ' ${SRSs[@]})
-	# echoall $SRS_str
-	# esearch -db SRA -query "\"" $SRS_str "\"" | efetch -format runinfo | csvtk cut -f Run,bases,LibraryName,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName | csvtk pretty 1>&2
-
-	for SRS in ${SRSs[@]}; do
-		esearch -db SRA -query ${SRS} | efetch -format runinfo
-		# esearch -db SRA -query ${SRS} | efetch -format runinfo | tail -n +2
-	done >$ODIR/accessions_demo.tab
-	# csvtk cut -f Run,bases,LibraryName,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName | csvtk pretty 1>&2
-
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
-}
-
 ###############################################################################
+# Feteches SRA data file.
 ###############################################################################
-function _run_polap_x-sra() {
+function _run_polap_x-ncbi-fetch-sra() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	SRA=$_arg_sra
-	$script_dir/ncbitools fetch sra "$SRA"
+	$script_dir/run-polap-ncbitools fetch sra "$SRA"
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -179,12 +133,27 @@ function _run_polap_x-sra() {
 function _run_polap_make-menus() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
-	rm -f sc-*
 	grep "^function _run_polap" "$WDIR"/polap.sh | grep run_polap | grep -v run_polap_x | sed 's/function _run_polap_//' | sed 's/() {//' | parallel touch {}
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
+################################################################################
+# Makes menu commands as empty files.
+# Creates menus prefixed with x.
+################################################################################
+function _run_polap_make-menus-all() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	grep "^function _run_polap" "$WDIR"/polap.sh | grep run_polap | sed 's/function _run_polap_//' | sed 's/() {//' | parallel touch {}
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+################################################################################
+# Deletes menu commands as empty files.
+# Leaves make-menus command.
+################################################################################
 function _run_polap_clean-menus() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
@@ -1242,12 +1211,15 @@ HEREDOC
 }
 
 ################################################################################
+# Fetches mtDNA genome sequence by species name.
+# Arguments:
+#   --species
 ################################################################################
-function _run_polap_x-ncbi-fetch-mtdna() {
+function _run_polap_x-ncbi-fetch-mtdna-genbank() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	if [ -z "$_arg_species" ]; then
-		echoerr "ERROR: no --specie option is used."
+		echoerr "ERROR: no --species option is used."
 	else
 		S="${_arg_species// /-}"
 		esearch -db nuccore -query "(mitochondrion[Title] AND complete[Title] AND genome[Title]) AND ${_arg_species}[Organism]" |
@@ -1258,8 +1230,11 @@ function _run_polap_x-ncbi-fetch-mtdna() {
 }
 
 ################################################################################
+# Fetches mtDNA genome sequence by accession.
+# Arguments:
+#   --accession
 ################################################################################
-function _run_polap_x-ncbi-fetch-nucleotide() {
+function _run_polap_x-ncbi-fetch-mtdna-nucleotide() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	if [ -z "$_arg_accession" ]; then
@@ -1274,9 +1249,36 @@ function _run_polap_x-ncbi-fetch-nucleotide() {
 }
 
 ################################################################################
+# Uses BLAST to align two very similar DNA sequences.
+# Before align the two sequences, rearrange the assembled query sequences
+# so that they are alignable using multiple sequence alignment tools
+# like ClustalW.
 ################################################################################
 function _run_polap_x-align-two-dna-sequences() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	help_message=$(
+		cat <<HEREDOC
+# Uses BLAST to align two very similar DNA sequences.
+# Before align the two sequences, rearrange the assembled query sequences
+# so that they are alignable using multiple sequence alignment tools
+# like ClustalW.
+# Arguments:
+#   --query ${_arg_query}
+#   --subject ${_arg_subject}
+# Inputs:
+#   query: mt.1.fa or the assembled sequence
+#   subject: a known mtDNA sequence
+# Outputs:
+#   pairwise-alignment.txt
+Example: $(basename $0) ${_arg_menu[0]} [--query <arg>] [--subject <arg>]
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
 
 	if [ -z "$_arg_query" -a -z "$_arg_subject" ]; then
 		echoerr "ERROR: no --query and --subject option are used."
@@ -1287,7 +1289,7 @@ function _run_polap_x-align-two-dna-sequences() {
 		blastn -query $_arg_query -subject $_arg_subject >pairwise-alignment.txt
 		echoerr "INFO: seqkit seq -p -r mt.1.fa -o mt.1r.fa"
 		echoerr "INFO: seqkit restart -i <POS> mt.1.fa -o mt.2.fa"
-		echoerr "INFO: $0 clustal --query mt.2.fa --subject NCBI-ACC.fa"
+		echoerr "INFO: $(basename $0) clustal --query mt.2.fa --subject NCBI-ACC.fa"
 		echoerr see pairwise-alignment.txt
 	fi
 
@@ -1295,9 +1297,32 @@ function _run_polap_x-align-two-dna-sequences() {
 }
 
 ################################################################################
+# Uses clustalw to align two DNA sequences.
+# After rearranging parts of a query assembled sequence,
+# we use clustalw to align the two to check how similar they are.
 ################################################################################
 function _run_polap_x-clustal() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	help_message=$(
+		cat <<HEREDOC
+# Uses clustalw to align two DNA sequences.
+# After rearranging parts of a query assembled sequence,
+# we use clustalw to align the two to check how similar they are.
+# Arguments:
+#   --query ${_arg_query}
+#   --subject ${_arg_subject}
+# Inputs:
+#   query: mt.1.fa or the assembled sequence
+#   subject: a known mtDNA sequence
+Example: $(basename $0) ${_arg_menu[0]} [--query <arg>] [--subject <arg>]
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
 
 	if [[ -s x.aln ]]; then
 		echoall "INFO: clustalw alignemnt is found."
@@ -1929,7 +1954,7 @@ if declare -f "_run_polap_${_arg_menu[0]}" >/dev/null 2>&1; then
 else
 	echoerr "Menu: assemble1, annotate, assemble2,"
 	echoerr "      reset, total-length-long, find-genome-size, reduce-data, flye1,"
-	echoerr "      blast-genome, count-gene, flye2,"
+	echoerr "      blast-genome, count-gene, select-reads, flye2,"
 	echoerr "      flye-polishing, prepare-polishing, polish,"
 	echoerr "      assemble,"
 	echoerr "ERROR: no such menu of $1"

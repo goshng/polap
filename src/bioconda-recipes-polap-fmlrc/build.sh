@@ -12,6 +12,7 @@ files=(polap
 	run-polap-genes.R
 	run-polap-jellyfish.R
 	run-polap-mtcontig.R
+	run-polap-ncbitools
 	run-polap-pairs.R)
 
 for i in "${files[@]}"; do
@@ -20,4 +21,4 @@ done
 
 chmod +x $PREFIX/bin/polap
 chmod +x $PREFIX/bin/polap.sh
-chmod +x $PREFIX/bin/run-polap-*.R
+chmod +x $PREFIX/bin/run-polap-*

@@ -1,0 +1,10 @@
+name: polap-fmlrc
+channels:
+  - conda-forge
+  - bioconda
+
+dependencies:
+  - python =2.7
+  - bioconda::ropebwt2 >=r187
+  - bioconda::fmlrc >=1.0.0
+  - kbchoi::msbwt >=0.2.9

@@ -51,6 +51,7 @@ y = t(combn(x$V1,2))
 x = as_tibble(read.table(args[2]))
 mtdir = args[3]
 pair_min = as.numeric(args[4])
+brigde_min = as.numeric(args[5])
 #single_min = as.numeric(args[5])
 single_min = pair_min
 
@@ -62,8 +63,8 @@ orders <- function(y){
   bname = paste0(z[1],"_",z[2])
   oname = paste0(mtdir,"/",bname,".name")
 
-  y1 = x %>% filter(V6==y[1], V10/V11 > 0.7, V11 > pair_min) %>% select(V1) %>% distinct(V1)
-  y2 = x %>% filter(V6==y[2], V10/V11 > 0.7, V11 > pair_min) %>% select(V1) %>% distinct(V1)
+  y1 = x %>% filter(V6==y[1], V10/V11 > 0.7, V11 > pair_min, V7 > brigde_min) %>% select(V1) %>% distinct(V1)
+  y2 = x %>% filter(V6==y[2], V10/V11 > 0.7, V11 > pair_min, V7 > brigde_min) %>% select(V1) %>% distinct(V1)
 
   intersect(y1,y2) %>% write.table(oname,row.names=F,col.names=F,quote=F)
 

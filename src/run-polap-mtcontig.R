@@ -56,7 +56,7 @@ args = commandArgs(trailingOnly=TRUE)
 # x %>% filter(V2>1000) %>% filter(V6>copy_number_min) %>% filter(mt>0) %>% select(V1) %>% write.table(args[2],row.names=F,col.names=F,quote=F)
 
 flye_dir=args[1]
-is.contigger = args[4]
+is.contigger = args[5]
 
 assembly_info = ""
 if (is.contigger == "--contigger") {
@@ -72,7 +72,7 @@ x = as_tibble(read.table(assembly_info))
 y.mt = as_tibble(read.table(mt.gene.count)) %>% rename(mt=V2)
 y.pt = as_tibble(read.table(pt.gene.count)) %>% rename(pt=V2)
 z = x %>% left_join(y.mt) %>% left_join(y.pt) %>% arrange(desc(mt)) %>% filter(!is.na(mt)) %>% filter(mt > 0 | pt > 0)
-z.1 = x %>% left_join(y.mt) %>% left_join(y.pt) 
+z.1 = x %>% left_join(y.mt) %>% left_join(y.pt) %>% arrange(V6)
 z.v = x %>% left_join(y.mt) %>% left_join(y.pt) %>% arrange(mt) %>% filter(is.na(mt))
 # print("print variable: z")
 
@@ -85,3 +85,5 @@ copy_number_min = median(z.1$V6)
 # z %>% filter(V2>1000) %>% filter(V6>copy_number_min) %>% filter(mt<pt) %>% select(V1) %>% write.table(pt.contig.name,row.names=F,col.names=F,quote=F)
 
 z %>% arrange(mt<=pt) %>% write.table(args[3],row.names=F,quote=F)
+z.1 %>% arrange(mt<=pt) %>% write.table(args[4],row.names=F,quote=F)
+

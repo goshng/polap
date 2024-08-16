@@ -20,4 +20,7 @@ done
 
 chmod +x $PREFIX/bin/polap
 chmod +x $PREFIX/bin/polap.sh
+<<<<<<< HEAD
 chmod +x $PREFIX/bin/run-polap-*.R
+=======
+>>>>>>> 587e5ac5efb38ad0aa0f8a5d6047d3eda435275c

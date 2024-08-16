@@ -159,7 +159,7 @@ main step options:
     -e, --use-edges                 [step4] use flye's edges not contigs
     -c, --coverage <number>         [step4] coverage for the 2nd assembly [$COV]
     -q, --no-coverage-check         [step4] no coverage check for step 4
-    -w, --single-min <number,number>[step4] min overlap on each contig [$SINGLE_MIN]
+    -w, --single-min <N>[,<N>]      [step4] min overlap on each contig [$SINGLE_MIN]
     -r, --resume                    [step1,step4] flye option resume
     -v, --version                   display version
     -h, --help                      display this help
@@ -219,8 +219,8 @@ Usage:
     polap -3 -o o/60-mt-1/o
     polap -5
     polap aflye seq -c contig_1 -f mt.0.fa
-    polap -6 -a r1.fq -b r2.fq
-    polap -7 -t 4 -p mt.0.fa -f mt.1.fa
+    /home/your-user-id/miniconda3/envs/m1/bin/polap -6 -a r1.fq -b r2.fq
+    /home/your-user-id/miniconda3/envs/m1/bin/polap -7 -t 4 -p mt.0.fa -f mt.1.fa
     polap compare mt.1.fa MN544313.1.fa 
     polap rearrange 90405 mt.1.fa mt.2.fa (90405 is the first position)
     polap clustal mt.2.fa MN544313.1.fa 
@@ -1038,7 +1038,12 @@ function step6() {
 }
 
 function step7() {
-    fmlrc -p $NT $ODIR/msbwt/comp_msbwt.npy $PA $FA
+    if [[ -s $PA ]]; then
+        fmlrc -p $NT $ODIR/msbwt/comp_msbwt.npy $PA $FA
+    else
+        echoerr "ERROR: no such file: $PA"
+        exit 1
+    fi
 }
 
 # filter subcommand
@@ -1157,13 +1162,15 @@ function aflye_command_parse() {
     CONTIGNAME=""
     FASTANAME=""
     BACKUP="species"
-    while getopts "o:n:c:f:b:" option; do
+    SINGLE_MIN=3000
+    while getopts "o:n:c:f:b:w:" option; do
         case $option in
             o) ODIR=$OPTARG ;;
             n) N=$OPTARG ;;
             c) CONTIGNAME=$OPTARG ;;
             f) FASTANAME=$OPTARG ;;
             b) BACKUP=$OPTARG ;;
+            w) SINGLE_MIN=$OPTARG ;;
             # h) usage_of ;;
             \?) # incorrect option
                 echo "Error: Invalid option; try -h option"
@@ -1242,7 +1249,7 @@ function aflye__seq() {
     if [[ $N -eq 0 ]]; then
         seqkit grep -n -p $CONTIGNAME $ODIR/assembly.fasta -o $FASTANAME
     else
-        seqkit grep -n -p $CONTIGNAME $ODIR/60-mt-$N/o/assembly.fasta -o $FASTANAME
+        seqkit grep -n -p $CONTIGNAME $ODIR/60-mt-$N/o$SINGLE_MIN/assembly.fasta -o $FASTANAME
     fi
 }
 

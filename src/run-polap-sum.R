@@ -30,6 +30,10 @@ assembly_info = paste0(flye_dir,"/assembly_info.txt")
 mt.gene.count = paste0(flye_dir,"/50-annotation/mt.gene.count")
 pt.gene.count = paste0(flye_dir,"/50-annotation/pt.gene.count")
 
+if (!file.exists(assembly_info)) {
+    assembly_info = paste0(flye_dir,"/30-contigger/contigs_stats.txt")
+}
+
 if (!file.exists(assembly_info) || 
     !file.exists(mt.gene.count) ||
     !file.exists(pt.gene.count)) {

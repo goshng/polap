@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+
+################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the 
+# terms of the GNU General Public License as published by the Free Software 
+# Foundation, either version 3 of the License, or (at your option) any later 
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY 
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR 
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with 
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
+# Required conda packages
+#
+# entrez-direct >=15.6
+# sra-tools >=3.0.5
+#
+# ((complete[All Fields] AND mitochondrion[All Fields])) AND Glycine max
+# esearch -db nuccore -query "((complete[All Fields] AND mitochondrion[All Fields])) AND Glycine max[Organism]" | efilter -query "(10000[SLEN] : 1000000000[SLEN])" | efetch -format acc
+
+set -e
+
+function version() {
+    cat <<EOM
+$(basename "$0") version 0.1
+EOM
+}
+
+function help() {
+    usage
+}
+
+function usage() {
+    cat <<EOM
+$(basename "$0") <subcommand> [format]
+
+usage:
+    $(basename "$0") fetch genbank NC_068626.1
+    $(basename "$0") fetch fasta NC_068626.1
+    $(basename "$0") fetch gff NC_068626.1
+    $(basename "$0") fetch faa NC_068626.1
+    $(basename "$0") fetch fna NC_068626.1
+    $(basename "$0") fetch tax NC_068626.1
+    $(basename "$0") fetch sra SRR390728
+
+subcommand:
+    help                  display this help
+    version               display version
+    fetch <format> <accn> download and print out to standard output
+EOM
+    exit 0
+}
+
+
+# fetch subcommand
+fetch__genbank() {
+    esearch -db nuccore -query "$1[ACCN]"  < /dev/null |\
+        efetch -format gb
+}
+
+fetch__fasta() {
+    esearch -db nuccore -query "$1[ACCN]"  < /dev/null |\
+        efetch -format fasta
+}
+
+# google:Retrieve GFF3 file from ncbi
+# https://www.biostars.org/p/296825/
+fetch__gff() {
+    wget -O - "https://www.ncbi.nlm.nih.gov/sviewer/viewer.cgi?db=nuccore&report=gff3&id=$1"
+}
+
+fetch__faa() {
+  esearch -db nuccore -query "$1[ACCN]" < /dev/null |\
+    elink -target protein |\
+    efetch -format fasta_cds_aa 
+}
+
+fetch__fna() {
+  esearch -db nuccore -query "$1[ACCN]" < /dev/null |\
+    elink -target protein |\
+    efetch -format fasta_cds_na 
+}
+
+# https://www.biostars.org/p/421959/
+fetch__tax() {
+    echo -ne "${1}\t"
+    elink -db nuccore -target taxonomy -id "$1[ACCN]" \
+        | efetch -format native -mode xml \
+        | xtract -pattern TaxaSet -sep ',' -element ScientificName
+}
+
+fetch__sra() {
+    local ACCN=$1; shift
+    prefetch "$ACCN" --quiet --max-size 200g
+    vdb-validate "$ACCN" --quiet
+    fasterq-dump "$ACCN" --quiet
+}
+
+fetch() {
+    if [ $# -eq 0 ]; then
+        usage
+    fi
+    local cmdname=$1; shift
+    if type "fetch__$cmdname" >/dev/null 2>&1; then
+        "fetch__$cmdname" "$@"
+    else
+        echo ERROR: fetch subfunction ["$cmdname"] is not recognized!        
+        usage  
+    fi
+    exit 0
+}
+
+###############################################################
+# MAIN
+#
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+# subcommand function call
+if declare -f "$1" >/dev/null 2>&1; then
+  # invoke that function, passing arguments through
+  "$@" # same as "$1" "$2" "$3" ... for full argument list
+else
+  echo INFO: subcommand ["$1"] is not recognized!
+  usage
+fi
+
+

@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+
+################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the 
+# terms of the GNU General Public License as published by the Free Software 
+# Foundation, either version 3 of the License, or (at your option) any later 
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY 
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR 
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with 
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
+# CONTIGNAME=contig.name run-flye-genes [flye folder]
+# run-flye-genes [flye-folder] [num_threads]
+# set -x
+
+MDIR=$(which polap)
+WDIR=$(dirname "$MDIR")
+WDIR="$(dirname "$0")"
+
+WDIR="${BASH_SOURCE%/*}"
+if [[ ! -d "$WDIR" ]]; then WDIR="$PWD"; fi
+source "$WDIR/run-polap-common.sh"
+
+MTAA=$WDIR/mt.1.c70.3.faa
+PTAA=$WDIR/pt.2.c70.3.faa
+
+# if [[ ! -f $MTAA ]]; then
+#   MTAA=/var2/home/goshng/run/data/mt.1.c70.3.faa
+#   PTAA=/var2/home/goshng/run/data/pt.2.c70.3.faa
+# fi
+
+if [[ ! -f $MTAA ]]; then
+  echo mt.1.c70.3.faa does not exit.
+  echo pt.2.c70.3.faa does not exit.
+  exit 1
+fi
+
+FLYEDIR=$1
+if [[ -z $2 ]]; then
+  NUMTHREADS=1
+else
+  NUMTHREADS=$2
+fi
+
+if [[ $3 == "--all-annotate" ]]; then
+  ALL_ANNOTATE=1
+else
+  ALL_ANNOTATE=0
+fi
+
+if [[ $4 == "--contigger" ]]; then
+  FLYE_CONTIGGER=1
+else
+  FLYE_CONTIGGER=0
+fi
+
+if [[ $FLYE_CONTIGGER -eq 0 ]]; then
+  ASSEMBLYINFO=$FLYEDIR/assembly_info.txt
+  ASSEMBLYFILE=$FLYEDIR/assembly.fasta
+else
+  ASSEMBLYINFO=$FLYEDIR/30-contigger/contigs_stats.txt
+  ASSEMBLYFILE=$FLYEDIR/30-contigger/contigs.fasta
+fi
+
+ODIR=$FLYEDIR/50-annotation
+CONTIGFILE=$ODIR/contig.fasta
+CONTIGDB=$ODIR/contig
+MTAABLAST=$ODIR/mtaa.blast
+MTAABED=$ODIR/mtaa.bed
+MTGENECOUNT=$ODIR/mt.gene.count
+PTAABLAST=$ODIR/ptaa.blast
+PTAABED=$ODIR/ptaa.bed
+PTGENECOUNT=$ODIR/pt.gene.count
+
+mkdir -p $ODIR
+
+# filter out genomic origin assembled contig
+# Rscript --vanilla run-flye-info.R $ASSEMBLYINFO $CONTIGNAME > /dev/null 2>&1
+if [[ -z "$CONTIGNAME" ]]; then
+  CONTIGNAME=$ODIR/contig.name
+  if [[ $ALL_ANNOTATE -eq 0 ]]; then
+    # select contig sequences
+    if [[ -s $ASSEMBLYINFO ]]; then
+      "$WDIR"/run-polap-select.R $ASSEMBLYINFO $CONTIGNAME > /dev/null 2>&1
+      if [ $? -ne 0 ]; then
+        echo "ERROR: executing run-polap-select.R $ASSEMBLYINFO $CONTIGNAME"
+        exit 1
+      fi
+    else
+      echoerr "ERROR: flye's incomplete result - no $ASSEMBLYINFO"
+      echoerr "check: $FLYEDIR/flye.log"
+      exit 1
+    fi
+  else
+    grep -v "#" $ASSEMBLYINFO | cut -f 1 > $CONTIGNAME
+  fi
+
+fi
+
+seqkit grep -f $CONTIGNAME $ASSEMBLYFILE -o $CONTIGFILE > /dev/null 2>&1
+
+
+# blastdb of the contig sequences
+makeblastdb -in $CONTIGFILE -dbtype nucl -out $CONTIGDB > /dev/null 2>&1
+
+# MT: blast
+tblastn -query $MTAA -db $CONTIGDB -out $MTAABLAST -evalue 1e-30 \
+  -outfmt "6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle salltitles" \
+  -num_threads $NUMTHREADS
+if [[ -n $5 ]]; then
+  tblastn -query $MTAA -db $CONTIGDB -out $MTAABLAST.txt -evalue 1e-30 \
+    -num_threads $NUMTHREADS
+fi
+
+# Rscript --vanilla run-flye-genes.R $MTAABLAST $MTAABLAST.bed > /dev/null 2>&1 
+"$WDIR"/run-polap-genes.R $MTAABLAST $MTAABLAST.bed > /dev/null 2>&1 
+sort -k1,1 -k2,2n $MTAABLAST.bed > $MTAABLAST.sorted.bed
+mkdir "$MTAABED"
+while IFS= read -r contig
+do
+  grep -w $contig $MTAABLAST.sorted.bed > "$MTAABED"/$contig.bed
+  bedtools merge -i $MTAABED/$contig.bed > "$MTAABED"/$contig.bed.txt
+  printf "%s\t%d\n" $contig $(wc -l < "$MTAABED"/$contig.bed.txt)
+done < "$CONTIGNAME" | sort -k2 -rn > $MTGENECOUNT
+tar zcf "$MTAABED".tar.gz "$MTAABED"
+rm -rf "$MTAABED"
+
+# PT: blast
+tblastn -query $PTAA -db $CONTIGDB -out $PTAABLAST -evalue 1e-30 \
+  -outfmt "6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle salltitles" \
+  -num_threads $NUMTHREADS
+if [[ -n $5 ]]; then
+  tblastn -query $PTAA -db $CONTIGDB -out $PTAABLAST.txt -evalue 1e-30 \
+    -num_threads $NUMTHREADS
+fi
+
+# Rscript --vanilla run-flye-genes.R $PTAABLAST $PTAABLAST.bed > /dev/null 2>&1 
+"$WDIR"/run-polap-genes.R $PTAABLAST $PTAABLAST.bed > /dev/null 2>&1 
+sort -k1,1 -k2,2n $PTAABLAST.bed > $PTAABLAST.sorted.bed
+mkdir "$PTAABED"
+while IFS= read -r contig
+do
+  grep -w $contig $PTAABLAST.sorted.bed > "$PTAABED"/$contig.bed
+  bedtools merge -i $PTAABED/$contig.bed > "$PTAABED"/$contig.bed.txt
+  printf "%s\t%d\n" $contig $(wc -l < "$PTAABED"/$contig.bed.txt)
+done < "$CONTIGNAME" | sort -k2 -rn > $PTGENECOUNT
+tar zcf "$PTAABED".tar.gz "$PTAABED"
+rm -rf "$PTAABED"
+# Execute R 
+# out=\"$FLYEDIR\"
+# source\(\"$WDIR/run-polap-sum.R\"\)
+# then type in z, z.1, z.v

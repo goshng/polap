@@ -36,23 +36,34 @@ pipeline is employed to finalize the mtDNA.
 # Requirements
 
 Polap runs on a Linux OS with
-[Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/).
+[Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install).
 It requires [BASH](https://www.gnu.org/software/bash/) (bash\>=3.0).
 
     bash --version
 
-# Installing Polap
+You must install a conda package manager like
+[Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install)
+on your favorite Linux Operating System in a command-line interface.
+
+    $ curl -OL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    $ bash Miniconda3-latest-Linux-x86_64.sh
 
 Your terminal should look like this after installing
-[Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/),
-exiting, and relogin back to your Linux. First, Install
-[Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/)
-on your favorite Linux Operating System in a command-line interface. The
-prompt with (base) indicates your successful
-[Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/)
+[Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install),
+exiting, and relogin back to your Linux terminal.
+The prompt with (base) indicates your successful
+[Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install)
 installation.
 
     (base) $
+
+Now, configure your conda with the following:
+
+    (base) $ conda update -y -n base conda
+    (base) $ conda config --prepend channels bioconda
+    (base) $ conda config --prepend channels conda-forge
+
+# Installing Polap
 
 Download the source code of Polap available at
 [Polap](https://github.com/goshng/polap)'s github website:
@@ -95,10 +106,22 @@ run [Polap](https://github.com/goshng/polap) with a test dataset.
     (polap) $ cd test
     (polap) $ polap assemble --test
 
+Because FMLRC's conda environment was incompatible with that of Polap's,
+we need to create one for Polap's FMLRC conda environment.
+
+    (base) $ conda create --name polap-fmlrc bioconda::polap-fmlrc
+    (base) $ conda activate polap-fmlrc
+    (polap-fmlrc) $ conda install -y kbchoi::msbwt">=0.2.9"
+    (polap-fmlrc) $ cd test
+    (polap-fmlrc) $ polap prepare-polishing
+    (polap-fmlrc) $ polap polish
+
 # Using Polap
 
-If no _input-files_ are specified, three input files must be at the
-current directory: `l.fq`, `s1.fq`, and `s2.fq`.
+If no _input-files_ are specified by options with fastq input file paths,
+three input files must be at the current directory:
+`l.fq`, `s1.fq`, and `s2.fq`. You could use options such as
+`-l`, `-a`, and `-b`.
 
     (polap-dev) $ src/polap.sh assemble1
 
@@ -135,10 +158,14 @@ Extract a mitochondrial genome sequence by opening
 [Bandage](https://rrwick.github.io/Bandage/). Save the sequence with a
 file name called `mt.0.fasta`.
 
+    (polap) $ conda activate polap-fmlrc
     (polap-fmlrc) $ src/polap.sh prepare-polishing
     (polap-fmlrc) $ src/polap.sh polish
 
 Your final mitochondrial genome sequence is `mt.1.fa`.
+
+You must change your conda environment to `polap-dev` before using
+`assemble1`, `annotate`, `assemble2`, or `flye-polishing` menu.
 
 # Uninstalling Polap
 

@@ -30,18 +30,8 @@
 # ARG_OPTIONAL_BOOLEAN([coverage-check],[],[step4: no coverage check for step 4])
 # ARG_OPTIONAL_BOOLEAN([resume],[],[step1,step4: flye option resume])
 # ARG_OPTIONAL_BOOLEAN([circularize],[u],[step4: circularize a contig])
-# ARG_OPTIONAL_BOOLEAN([step0],[],[step0: check requirement],[off])
-# ARG_OPTIONAL_BOOLEAN([step1],[],[step1: flye whole genome assembly],[off])
-# ARG_OPTIONAL_BOOLEAN([step2],[],[step2: organelle gene annotation],[off])
-# ARG_OPTIONAL_BOOLEAN([step3],[],[step3: contig selection],[off])
-# ARG_OPTIONAL_BOOLEAN([step4],[],[step4: 60-mt-<number>],[off])
-# ARG_OPTIONAL_BOOLEAN([step5],[],[step5: check the assembly],[off])
-# ARG_OPTIONAL_BOOLEAN([step6],[],[step6: polishing step 1],[off])
-# ARG_OPTIONAL_BOOLEAN([step7],[],[step7: polishing step 2],[off])
-# ARG_OPTIONAL_BOOLEAN([step8],[],[Step 8],[off])
-# ARG_OPTIONAL_BOOLEAN([step9],[],[Step 9],[off])
 # ARG_POSITIONAL_MULTI([menu],[Polap menu],[3],[assemble],[infile],[outfile])
-# ARG_VERSION([echo $0 v0.2.2])
+# ARG_VERSION([echo $0 v0.2.4])
 # ARG_VERBOSE([])
 # ARG_DEFAULTS_POS([])
 # ARG_HELP(['P'lant 'o'rganelle DNA 'l'ong-read 'a'ssembly 'p'ipeline.])
@@ -52,18 +42,14 @@
 # Argbash is a bash code generator used to get arguments parsing right.
 # Argbash is FREE SOFTWARE, see https://argbash.io for more info
 
-
-die()
-{
+die() {
 	local _ret="${2:-1}"
 	test "${_PRINT_HELP:-no}" = yes && print_help >&2
 	echo "$1" >&2
 	exit "${_ret}"
 }
 
-
-begins_with_short_option()
-{
+begins_with_short_option() {
 	local first_option all_short_options='loabpfmtcrxwijgMuvh'
 	first_option="${1:0:1}"
 	test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
@@ -112,13 +98,120 @@ _arg_step6="off"
 _arg_step7="off"
 _arg_step8="off"
 _arg_step9="off"
+_arg_test="off"
 _arg_verbose=0
 
+print_help() {
+	printf '%s\n' "POLAP - Plant organelle DNA long-read assembly pipeline."
+	printf '%s\n' "version 0.2.4"
+	printf '\n'
+	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)contigger] [--(no-)all-annotate] [--(no-)use-edges] [--(no-)coverage-check] [--(no-)resume] [-u|--(no-)circularize] [--(no-)test] [-v|--version] [-h|--help]\n'
+	printf '       polap <menu> help\n'
+	printf '\n'
+	printf '%s\n' "menu: list, make-menus, or clean-menus"
+	printf '%s\n' "      assemble1, annotate, assemble2, flye-polishing,"
+	printf '%s\n' "      reset, total-length-long, find-genome-size, reduce-data,"
+	printf '%s\n' "      flye1, blast-genome, count-gene, select-reads, flye2,"
+	printf '%s\n' "      flye-polishing, check-coverage,"
+	printf '%s\n' "      prepare-polishing, polish,"
+	printf '%s\n' "      assemble,"
+	printf '\n'
+	printf '%s\n' 'Menu: assemble1'
+	printf '%s\n' '  polap assemble1 [-o|--outdir <arg>] [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]'
+	printf '%s\n' '  or'
+	printf '%s\n' '  polap reset [-o|--outdir <arg>]'
+	printf '%s\n' '  polap total-length-long [-l|--long-reads <arg>]'
+	printf '%s\n' '  polap find-genome-size  [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]'
+	printf '%s\n' '  polap reduce-data [-l|--long-reads <arg>] [-m|--min-read-length <arg>]'
+	printf '%s\n' '  polap flye1 [-t|--threads <arg>] [-c|--coverage <arg>] [-g|--genomesize <arg>]'
+	printf '\n'
+	printf '%s\n' 'Menu: annotate'
+	printf '%s\n' '  polap annotate [-i|--inum <arg>]'
+	printf '%s\n' '  or'
+	printf '%s\n' '  polap blast-genome [-i|--inum <arg>]'
+	printf '%s\n' '  polap count-genes [-i|--inum <arg>]'
+	printf '\n'
+	printf '%s\n' 'Menu: assemble2'
+	printf '%s\n' '  polap assemble2 [-o|--outdir <arg>] [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]'
+	printf '%s\n' '  or'
+	printf '%s\n' '  polap select-reads [-i|--inum <arg>] [-j|--jnum <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>]'
+	printf '%s\n' '  polap flye2 [-j|--jnum <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]'
+	printf '\n'
+	printf '%s\n' 'Menu: polishing'
+	printf '%s\n' '  polap flye-polishing  [-j|--jnum <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]'
+	printf '%s\n' '  polap prepare-polishing  [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]'
+	printf '%s\n' '  polap polish [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]'
+	printf '\n'
+	printf '%s\n' "Options:"
+	printf '  %s\n' "-o, --outdir: output folder name (default: ${_arg_outdir})"
+	printf '  %s\n' "-l, --long-reads: long-reads data file in fastq format (default: 'l.fq')"
+	printf '  %s\n' "-a, --short-read1: short-read fastq file 1 (default: 's1.fq')"
+	printf '  %s\n' "-b, --short-read2: short-read fastq file 2 (default: 's2.fq')"
+	printf '  %s\n' "-p, --unpolished-fasta: polishing sequence in fasta format (default: 'mt.0.fasta')"
+	printf '  %s\n' "-f, --final-assembly: final assembly in fasta format (default: 'mt.1.fa')"
+	printf '  %s\n' "-m, --min-read-length: minimum length of long reads (default: '3000')"
+	printf '  %s\n' "-t, --threads: number of CPUs (default: '$(cat /proc/cpuinfo | grep -c processor)')"
+	printf '  %s\n' "-c, --coverage: coverage for the 2nd assembly (default: '30')"
+	printf '  %s\n' "-r, --pair-min: minimum mapped bases or PAF 11th column (default: '3000')"
+	printf '  %s\n' "-x, --bridge-min: minimum bridging read length or PAF 7th column (default: '3000')"
+	printf '  %s\n' "-w, --single-min: minimum mapped bases or PAF 11th column (default: '3000')"
+	printf '  %s\n' "-i, --inum: previous output number of organelle-genome assembly (default: '0')"
+	printf '  %s\n' "-j, --jnum: current output number of organelle-genome assembly (default: '1')"
+	printf '  %s\n' "-g, --genomesize: expected genome size (no default)"
+	printf '  %s\n' "-u, --circularize, --no-circularize: circularize a contig (off by default)"
+	printf '  %s\n' "-v, --version: Prints version"
+	printf '  %s\n' "-h, --help: Prints help"
+	printf '\n'
+	printf '%s\n' 'Places your long-read and short-read files at a folder.'
+	printf '%s\n' 'long-read file [l.fq]'
+	printf '%s\n' 'short-read files [s1.fq] and [s2.fq]'
+	printf '%s\n' 'Execute: polap reset'
+}
 
-print_help()
-{
-	printf '%s\n' "'P'lant 'o'rganelle DNA 'l'ong-read 'a'ssembly 'p'ipeline."
-	printf 'Usage: %s [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)contigger] [--(no-)all-annotate] [--(no-)use-edges] [--(no-)coverage-check] [--(no-)resume] [-u|--(no-)circularize] [--(no-)step0] [--(no-)step1] [--(no-)step2] [--(no-)step3] [--(no-)step4] [--(no-)step5] [--(no-)step6] [--(no-)step7] [--(no-)step8] [--(no-)step9] [-v|--version] [--verbose] [-h|--help] [<menu-1>] [<menu-2>] [<menu-3>]\n' "$0"
+print_x-help() {
+	printf '%s\n' "POLAP - Plant organelle DNA long-read assembly pipeline."
+	printf '%s\n' "version 0.2.4"
+	printf '\n'
+	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)contigger] [--(no-)all-annotate] [--(no-)use-edges] [--(no-)coverage-check] [--(no-)resume] [-u|--(no-)circularize] [--(no-)test] [-v|--version] [-h|--help]\n'
+	printf '\n'
+	printf '%s\n' "menu: list, make-menus, or clean-menus"
+	printf '%s\n' "      assemble1, annotate, assemble2, flye-polishing,"
+	printf '%s\n' "      reset, total-length-long, find-genome-size, reduce-data,"
+	printf '%s\n' "      flye1, blast-genome, count-gene, select-reads, flye2,"
+	printf '%s\n' "      flye-polishing, check-coverage,"
+	printf '%s\n' "      prepare-polishing, polish,"
+	printf '%s\n' "      assemble,"
+	printf '\n'
+	printf '%s\n' "<menu> help: each menu's help"
+	printf '\n'
+	printf '%s\n' 'Menu: assemble1'
+	printf '%s\n' '  polap assemble1 [-o|--outdir <arg>] [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]'
+	printf '%s\n' '  or'
+	printf '%s\n' '  polap reset [-o|--outdir <arg>]'
+	printf '%s\n' '  polap total-length-long [-l|--long-reads <arg>]'
+	printf '%s\n' '  polap find-genome-size  [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]'
+	printf '%s\n' '  polap reduce-data [-l|--long-reads <arg>] [-m|--min-read-length <arg>]'
+	printf '%s\n' '  polap flye1 [-t|--threads <arg>] [-c|--coverage <arg>] [-g|--genomesize <arg>]'
+	printf '\n'
+	printf '%s\n' 'Menu: annotate'
+	printf '%s\n' '  polap annotate [-i|--inum <arg>]'
+	printf '%s\n' '  or'
+	printf '%s\n' '  polap blast-genome [-i|--inum <arg>]'
+	printf '%s\n' '  polap count-genes [-i|--inum <arg>]'
+	printf '\n'
+	printf '%s\n' 'Menu: assemble2'
+	printf '%s\n' '  polap assemble2 [-o|--outdir <arg>] [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]'
+	printf '%s\n' '  or'
+	printf '%s\n' '  polap select-reads [-i|--inum <arg>] [-j|--jnum <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>]'
+	printf '%s\n' '  polap flye2 [-t|--threads <arg>] [-c|--coverage <arg>]'
+	printf '\n'
+	printf '%s\n' 'Example: polap flye-polishing'
+	printf '\n'
+	printf '\t%s\n' "Options:"
+	printf '\t%s\n' "-o, --outdir: output folder name (default: 'o')"
+	printf '\t%s\n' "-t, --threads: number of CPUs (default: ${CPU_COUNT})"
+	printf '\t%s\n' "-v, --version: Prints version"
+	printf '\t%s\n' "-h, --help: Prints help"
 	printf '\t%s\n' "<menu>: Polap menu (defaults for <menu-1> to <menu-3> respectively: 'assemble', 'infile' and 'outfile')"
 	printf '\t%s\n' "-l, --long-reads: long-reads data file in fastq format (default: 'l.fq')"
 	printf '\t%s\n' "-o, --outdir: output folder name (default: 'o')"
@@ -143,379 +236,368 @@ print_help()
 	printf '\t%s\n' "--subject: subject sequence for blastn (no default)"
 	printf '\t%s\n' "-M, --minimum: Pair, Bridge, and Single minimum (empty by default)"
 	printf '\t%s\n' "--reduction-reads, --no-reduction-reads: step0: no reduction of long-read data (off by default)"
-	printf '\t%s\n' "--contigger, --no-contigger: step1: use flye's 40-polishing result (off by default)"
+	printf '\t%s\n' "--contigger, --no-contigger: step1: use flye 40-polishing result (off by default)"
 	printf '\t%s\n' "--all-annotate, --no-all-annotate: step2: annotate all contigs (off by default)"
-	printf '\t%s\n' "--use-edges, --no-use-edges: step4: use flye's edges not contigs (off by default)"
+	printf '\t%s\n' "--use-edges, --no-use-edges: step4: use flye edges not contigs (off by default)"
 	printf '\t%s\n' "--coverage-check, --no-coverage-check: step4: no coverage check for step 4 (off by default)"
 	printf '\t%s\n' "--resume, --no-resume: step1,step4: flye option resume (off by default)"
 	printf '\t%s\n' "-u, --circularize, --no-circularize: step4: circularize a contig (off by default)"
-	printf '\t%s\n' "--step0, --no-step0: step0: check requirement (off by default)"
-	printf '\t%s\n' "--step1, --no-step1: step1: flye whole genome assembly (off by default)"
-	printf '\t%s\n' "--step2, --no-step2: step2: organelle gene annotation (off by default)"
-	printf '\t%s\n' "--step3, --no-step3: step3: contig selection (off by default)"
-	printf '\t%s\n' "--step4, --no-step4: step4: 60-mt-<number> (off by default)"
-	printf '\t%s\n' "--step5, --no-step5: step5: check the assembly (off by default)"
-	printf '\t%s\n' "--step6, --no-step6: step6: polishing step 1 (off by default)"
-	printf '\t%s\n' "--step7, --no-step7: step7: polishing step 2 (off by default)"
-	printf '\t%s\n' "--step8, --no-step8: Step 8 (off by default)"
-	printf '\t%s\n' "--step9, --no-step9: Step 9 (off by default)"
 	printf '\t%s\n' "-v, --version: Prints version"
-	printf '\t%s\n' "--verbose: Set verbose output (can be specified multiple times to increase the effect)"
 	printf '\t%s\n' "-h, --help: Prints help"
+	printf '\n'
+	printf '%s\n' 'Places your long-read and short-read files at a folder.'
+	printf '%s\n' 'long-read file [l.fq]'
+	printf '%s\n' 'short-read files [s1.fq] and [s2.fq]'
+	printf '%s\n' 'Execute: polap reset'
 }
 
-
-parse_commandline()
-{
+parse_commandline() {
 	_positionals_count=0
-	while test $# -gt 0
-	do
+	while test $# -gt 0; do
 		_key="$1"
 		case "$_key" in
-			-l|--long-reads)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_long_reads="$2"
-				shift
-				;;
-			--long-reads=*)
-				_arg_long_reads="${_key##--long-reads=}"
-				;;
-			-l*)
-				_arg_long_reads="${_key##-l}"
-				;;
-			-o|--outdir)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_outdir="$2"
-				shift
-				;;
-			--outdir=*)
-				_arg_outdir="${_key##--outdir=}"
-				;;
-			-o*)
-				_arg_outdir="${_key##-o}"
-				;;
-			-a|--short-read1)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_short_read1="$2"
-				shift
-				;;
-			--short-read1=*)
-				_arg_short_read1="${_key##--short-read1=}"
-				;;
-			-a*)
-				_arg_short_read1="${_key##-a}"
-				;;
-			-b|--short-read2)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_short_read2="$2"
-				shift
-				;;
-			--short-read2=*)
-				_arg_short_read2="${_key##--short-read2=}"
-				;;
-			-b*)
-				_arg_short_read2="${_key##-b}"
-				;;
-			--sra)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_sra="$2"
-				shift
-				;;
-			--sra=*)
-				_arg_sra="${_key##--sra=}"
-				;;
-			-p|--unpolished-fasta)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_unpolished_fasta="$2"
-				shift
-				;;
-			--unpolished-fasta=*)
-				_arg_unpolished_fasta="${_key##--unpolished-fasta=}"
-				;;
-			-p*)
-				_arg_unpolished_fasta="${_key##-p}"
-				;;
-			-f|--final-assembly)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_final_assembly="$2"
-				shift
-				;;
-			--final-assembly=*)
-				_arg_final_assembly="${_key##--final-assembly=}"
-				;;
-			-f*)
-				_arg_final_assembly="${_key##-f}"
-				;;
-			-m|--min-read-length)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_min_read_length="$2"
-				shift
-				;;
-			--min-read-length=*)
-				_arg_min_read_length="${_key##--min-read-length=}"
-				;;
-			-m*)
-				_arg_min_read_length="${_key##-m}"
-				;;
-			-t|--threads)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_threads="$2"
-				shift
-				;;
-			--threads=*)
-				_arg_threads="${_key##--threads=}"
-				;;
-			-t*)
-				_arg_threads="${_key##-t}"
-				;;
-			-c|--coverage)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_coverage="$2"
-				shift
-				;;
-			--coverage=*)
-				_arg_coverage="${_key##--coverage=}"
-				;;
-			-c*)
-				_arg_coverage="${_key##-c}"
-				;;
-			-r|--pair-min)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_pair_min="$2"
-				shift
-				;;
-			--pair-min=*)
-				_arg_pair_min="${_key##--pair-min=}"
-				;;
-			-r*)
-				_arg_pair_min="${_key##-r}"
-				;;
-			-x|--bridge-min)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_bridge_min="$2"
-				shift
-				;;
-			--bridge-min=*)
-				_arg_bridge_min="${_key##--bridge-min=}"
-				;;
-			-x*)
-				_arg_bridge_min="${_key##-x}"
-				;;
-			-w|--single-min)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_single_min="$2"
-				shift
-				;;
-			--single-min=*)
-				_arg_single_min="${_key##--single-min=}"
-				;;
-			-w*)
-				_arg_single_min="${_key##-w}"
-				;;
-			-i|--inum)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_inum="$2"
-				shift
-				;;
-			--inum=*)
-				_arg_inum="${_key##--inum=}"
-				;;
-			-i*)
-				_arg_inum="${_key##-i}"
-				;;
-			-j|--jnum)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_jnum="$2"
-				shift
-				;;
-			--jnum=*)
-				_arg_jnum="${_key##--jnum=}"
-				;;
-			-j*)
-				_arg_jnum="${_key##-j}"
-				;;
-			-g|--genomesize)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_genomesize="$2"
-				shift
-				;;
-			--genomesize=*)
-				_arg_genomesize="${_key##--genomesize=}"
-				;;
-			-g*)
-				_arg_genomesize="${_key##-g}"
-				;;
-			--bioproject)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_bioproject="$2"
-				shift
-				;;
-			--bioproject=*)
-				_arg_bioproject="${_key##--bioproject=}"
-				;;
-			--species)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_species="$2"
-				shift
-				;;
-			--species=*)
-				_arg_species="${_key##--species=}"
-				;;
-			--accession)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_accession="$2"
-				shift
-				;;
-			--accession=*)
-				_arg_accession="${_key##--accession=}"
-				;;
-			--query)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_query="$2"
-				shift
-				;;
-			--query=*)
-				_arg_query="${_key##--query=}"
-				;;
-			--subject)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_subject="$2"
-				shift
-				;;
-			--subject=*)
-				_arg_subject="${_key##--subject=}"
-				;;
-			-M|--minimum)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_minimum+=("$2")
-				shift
-				;;
-			--minimum=*)
-				_arg_minimum+=("${_key##--minimum=}")
-				;;
-			-M*)
-				_arg_minimum+=("${_key##-M}")
-				;;
-			--no-reduction-reads|--reduction-reads)
-				_arg_reduction_reads="on"
-				test "${1:0:5}" = "--no-" && _arg_reduction_reads="off"
-				;;
-			--no-contigger|--contigger)
-				_arg_contigger="on"
-				test "${1:0:5}" = "--no-" && _arg_contigger="off"
-				;;
-			--no-all-annotate|--all-annotate)
-				_arg_all_annotate="on"
-				test "${1:0:5}" = "--no-" && _arg_all_annotate="off"
-				;;
-			--no-use-edges|--use-edges)
-				_arg_use_edges="on"
-				test "${1:0:5}" = "--no-" && _arg_use_edges="off"
-				;;
-			--no-coverage-check|--coverage-check)
-				_arg_coverage_check="on"
-				test "${1:0:5}" = "--no-" && _arg_coverage_check="off"
-				;;
-			--no-resume|--resume)
-				_arg_resume="on"
-				test "${1:0:5}" = "--no-" && _arg_resume="off"
-				;;
-			-u|--no-circularize|--circularize)
-				_arg_circularize="on"
-				test "${1:0:5}" = "--no-" && _arg_circularize="off"
-				;;
-			-u*)
-				_arg_circularize="on"
-				_next="${_key##-u}"
-				if test -n "$_next" -a "$_next" != "$_key"
-				then
-					{ begins_with_short_option "$_next" && shift && set -- "-u" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
-				fi
-				;;
-			--no-step0|--step0)
-				_arg_step0="on"
-				test "${1:0:5}" = "--no-" && _arg_step0="off"
-				;;
-			--no-step1|--step1)
-				_arg_step1="on"
-				test "${1:0:5}" = "--no-" && _arg_step1="off"
-				;;
-			--no-step2|--step2)
-				_arg_step2="on"
-				test "${1:0:5}" = "--no-" && _arg_step2="off"
-				;;
-			--no-step3|--step3)
-				_arg_step3="on"
-				test "${1:0:5}" = "--no-" && _arg_step3="off"
-				;;
-			--no-step4|--step4)
-				_arg_step4="on"
-				test "${1:0:5}" = "--no-" && _arg_step4="off"
-				;;
-			--no-step5|--step5)
-				_arg_step5="on"
-				test "${1:0:5}" = "--no-" && _arg_step5="off"
-				;;
-			--no-step6|--step6)
-				_arg_step6="on"
-				test "${1:0:5}" = "--no-" && _arg_step6="off"
-				;;
-			--no-step7|--step7)
-				_arg_step7="on"
-				test "${1:0:5}" = "--no-" && _arg_step7="off"
-				;;
-			--no-step8|--step8)
-				_arg_step8="on"
-				test "${1:0:5}" = "--no-" && _arg_step8="off"
-				;;
-			--no-step9|--step9)
-				_arg_step9="on"
-				test "${1:0:5}" = "--no-" && _arg_step9="off"
-				;;
-			-v|--version)
-				echo $0 v0.2.2
-				exit 0
-				;;
-			-v*)
-				echo $0 v0.2.2
-				exit 0
-				;;
-			--verbose)
-				_arg_verbose=$((_arg_verbose + 1))
-				;;
-			-h|--help)
-				print_help
-				exit 0
-				;;
-			-h*)
-				print_help
-				exit 0
-				;;
-			*)
-				_last_positional="$1"
-				_positionals+=("$_last_positional")
-				_positionals_count=$((_positionals_count + 1))
-				;;
+		-l | --long-reads)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_long_reads="$2"
+			shift
+			;;
+		--long-reads=*)
+			_arg_long_reads="${_key##--long-reads=}"
+			;;
+		-l*)
+			_arg_long_reads="${_key##-l}"
+			;;
+		-o | --outdir)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_outdir="$2"
+			shift
+			;;
+		--outdir=*)
+			_arg_outdir="${_key##--outdir=}"
+			;;
+		-o*)
+			_arg_outdir="${_key##-o}"
+			;;
+		-a | --short-read1)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_short_read1="$2"
+			shift
+			;;
+		--short-read1=*)
+			_arg_short_read1="${_key##--short-read1=}"
+			;;
+		-a*)
+			_arg_short_read1="${_key##-a}"
+			;;
+		-b | --short-read2)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_short_read2="$2"
+			shift
+			;;
+		--short-read2=*)
+			_arg_short_read2="${_key##--short-read2=}"
+			;;
+		-b*)
+			_arg_short_read2="${_key##-b}"
+			;;
+		--sra)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_sra="$2"
+			shift
+			;;
+		--sra=*)
+			_arg_sra="${_key##--sra=}"
+			;;
+		-p | --unpolished-fasta)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_unpolished_fasta="$2"
+			shift
+			;;
+		--unpolished-fasta=*)
+			_arg_unpolished_fasta="${_key##--unpolished-fasta=}"
+			;;
+		-p*)
+			_arg_unpolished_fasta="${_key##-p}"
+			;;
+		-f | --final-assembly)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_final_assembly="$2"
+			shift
+			;;
+		--final-assembly=*)
+			_arg_final_assembly="${_key##--final-assembly=}"
+			;;
+		-f*)
+			_arg_final_assembly="${_key##-f}"
+			;;
+		-m | --min-read-length)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_min_read_length="$2"
+			shift
+			;;
+		--min-read-length=*)
+			_arg_min_read_length="${_key##--min-read-length=}"
+			;;
+		-m*)
+			_arg_min_read_length="${_key##-m}"
+			;;
+		-t | --threads)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_threads="$2"
+			shift
+			;;
+		--threads=*)
+			_arg_threads="${_key##--threads=}"
+			;;
+		-t*)
+			_arg_threads="${_key##-t}"
+			;;
+		-c | --coverage)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_coverage="$2"
+			shift
+			;;
+		--coverage=*)
+			_arg_coverage="${_key##--coverage=}"
+			;;
+		-c*)
+			_arg_coverage="${_key##-c}"
+			;;
+		-r | --pair-min)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_pair_min="$2"
+			shift
+			;;
+		--pair-min=*)
+			_arg_pair_min="${_key##--pair-min=}"
+			;;
+		-r*)
+			_arg_pair_min="${_key##-r}"
+			;;
+		-x | --bridge-min)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_bridge_min="$2"
+			shift
+			;;
+		--bridge-min=*)
+			_arg_bridge_min="${_key##--bridge-min=}"
+			;;
+		-x*)
+			_arg_bridge_min="${_key##-x}"
+			;;
+		-w | --single-min)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_single_min="$2"
+			shift
+			;;
+		--single-min=*)
+			_arg_single_min="${_key##--single-min=}"
+			;;
+		-w*)
+			_arg_single_min="${_key##-w}"
+			;;
+		-i | --inum)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_inum="$2"
+			shift
+			;;
+		--inum=*)
+			_arg_inum="${_key##--inum=}"
+			;;
+		-i*)
+			_arg_inum="${_key##-i}"
+			;;
+		-j | --jnum)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_jnum="$2"
+			shift
+			;;
+		--jnum=*)
+			_arg_jnum="${_key##--jnum=}"
+			;;
+		-j*)
+			_arg_jnum="${_key##-j}"
+			;;
+		-g | --genomesize)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_genomesize="$2"
+			shift
+			;;
+		--genomesize=*)
+			_arg_genomesize="${_key##--genomesize=}"
+			;;
+		-g*)
+			_arg_genomesize="${_key##-g}"
+			;;
+		--bioproject)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_bioproject="$2"
+			shift
+			;;
+		--bioproject=*)
+			_arg_bioproject="${_key##--bioproject=}"
+			;;
+		--species)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_species="$2"
+			shift
+			;;
+		--species=*)
+			_arg_species="${_key##--species=}"
+			;;
+		--accession)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_accession="$2"
+			shift
+			;;
+		--accession=*)
+			_arg_accession="${_key##--accession=}"
+			;;
+		--query)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_query="$2"
+			shift
+			;;
+		--query=*)
+			_arg_query="${_key##--query=}"
+			;;
+		--subject)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_subject="$2"
+			shift
+			;;
+		--subject=*)
+			_arg_subject="${_key##--subject=}"
+			;;
+		-M | --minimum)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_minimum+=("$2")
+			shift
+			;;
+		--minimum=*)
+			_arg_minimum+=("${_key##--minimum=}")
+			;;
+		-M*)
+			_arg_minimum+=("${_key##-M}")
+			;;
+		--no-reduction-reads | --reduction-reads)
+			_arg_reduction_reads="on"
+			test "${1:0:5}" = "--no-" && _arg_reduction_reads="off"
+			;;
+		--no-contigger | --contigger)
+			_arg_contigger="on"
+			test "${1:0:5}" = "--no-" && _arg_contigger="off"
+			;;
+		--no-all-annotate | --all-annotate)
+			_arg_all_annotate="on"
+			test "${1:0:5}" = "--no-" && _arg_all_annotate="off"
+			;;
+		--no-use-edges | --use-edges)
+			_arg_use_edges="on"
+			test "${1:0:5}" = "--no-" && _arg_use_edges="off"
+			;;
+		--no-coverage-check | --coverage-check)
+			_arg_coverage_check="on"
+			test "${1:0:5}" = "--no-" && _arg_coverage_check="off"
+			;;
+		--no-resume | --resume)
+			_arg_resume="on"
+			test "${1:0:5}" = "--no-" && _arg_resume="off"
+			;;
+		-u | --no-circularize | --circularize)
+			_arg_circularize="on"
+			test "${1:0:5}" = "--no-" && _arg_circularize="off"
+			;;
+		-u*)
+			_arg_circularize="on"
+			_next="${_key##-u}"
+			if test -n "$_next" -a "$_next" != "$_key"; then
+				{ begins_with_short_option "$_next" && shift && set -- "-u" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
+			fi
+			;;
+		--no-step0 | --step0)
+			_arg_step0="on"
+			test "${1:0:5}" = "--no-" && _arg_step0="off"
+			;;
+		--no-step1 | --step1)
+			_arg_step1="on"
+			test "${1:0:5}" = "--no-" && _arg_step1="off"
+			;;
+		--no-step2 | --step2)
+			_arg_step2="on"
+			test "${1:0:5}" = "--no-" && _arg_step2="off"
+			;;
+		--no-step3 | --step3)
+			_arg_step3="on"
+			test "${1:0:5}" = "--no-" && _arg_step3="off"
+			;;
+		--no-step4 | --step4)
+			_arg_step4="on"
+			test "${1:0:5}" = "--no-" && _arg_step4="off"
+			;;
+		--no-step5 | --step5)
+			_arg_step5="on"
+			test "${1:0:5}" = "--no-" && _arg_step5="off"
+			;;
+		--no-step6 | --step6)
+			_arg_step6="on"
+			test "${1:0:5}" = "--no-" && _arg_step6="off"
+			;;
+		--no-step7 | --step7)
+			_arg_step7="on"
+			test "${1:0:5}" = "--no-" && _arg_step7="off"
+			;;
+		--no-step8 | --step8)
+			_arg_step8="on"
+			test "${1:0:5}" = "--no-" && _arg_step8="off"
+			;;
+		--no-step9 | --step9)
+			_arg_step9="on"
+			test "${1:0:5}" = "--no-" && _arg_step9="off"
+			;;
+		--no-test | --test)
+			_arg_test="on"
+			test "${1:0:5}" = "--no-" && _arg_test="off"
+			;;
+		-v | --version)
+			echo $0 v0.2.4
+			exit 0
+			;;
+		-v*)
+			echo $0 v0.2.4
+			exit 0
+			;;
+		--verbose)
+			_arg_verbose=$((_arg_verbose + 1))
+			;;
+		-h | --help)
+			print_help
+			exit 0
+			;;
+		-h*)
+			print_help
+			exit 0
+			;;
+		*)
+			_last_positional="$1"
+			_positionals+=("$_last_positional")
+			_positionals_count=$((_positionals_count + 1))
+			;;
 		esac
 		shift
 	done
 }
 
-
-handle_passed_args_count()
-{
+handle_passed_args_count() {
 	test "${_positionals_count}" -le 3 || _PRINT_HELP=yes die "FATAL ERROR: There were spurious positional arguments --- we expect between 0 and 3, but got ${_positionals_count} (the last one was: '${_last_positional}')." 1
 }
 
-
-assign_positional_args()
-{
+assign_positional_args() {
 	local _positional_name _shift_for=$1
 	_positional_names="_arg_menu[0] _arg_menu[1] _arg_menu[2] "
 
 	shift "$_shift_for"
-	for _positional_name in ${_positional_names}
-	do
+	for _positional_name in ${_positional_names}; do
 		test $# -gt 0 || break
 		eval "$_positional_name=\${1}" || die "Error during argument parsing, possibly an Argbash bug." 1
 		shift
@@ -527,6 +609,9 @@ handle_passed_args_count
 assign_positional_args 1 "${_positionals[@]}"
 
 # OTHER STUFF GENERATED BY Argbash
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || { echo "Couldn't determine the script's running directory, which probably matters, bailing out" >&2; exit 2; }
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
+	echo "Couldn't determine the script's running directory, which probably matters, bailing out" >&2
+	exit 2
+}
 
 ### END OF CODE GENERATED BY Argbash (sortof) ### ])

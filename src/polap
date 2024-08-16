@@ -21,6 +21,10 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 
 # vvv  PLACE YOUR CODE HERE  vvv
 
+################################################################################
+# utilities
+################################################################################
+
 ###############################################################################
 # Checks if required commands are available.
 # called early in the code such as reset menu.
@@ -107,25 +111,44 @@ function _x_run_polap_template() {
 
 ###############################################################################
 # Feteches SRA data file.
+# Arguments:
+#   --sra SRR10190639
+# Outputs:
+#   SRR10190639.fastq
 ###############################################################################
 function _run_polap_x-ncbi-fetch-sra() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
+	help_message=$(
+		cat <<HEREDOC
+# Feteches SRA data file.
+# Arguments:
+#   --sra SRR10190639
+# Outputs:
+#   SRR10190639.fastq
+Example: $(basename $0) ${_arg_menu[0]} --sra <arg>
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
+
+	if [ -z "$_arg_sra" ]; then
+		echoerr "ERROR: no --sra option is used."
+		exit $EXIT_SUCCESS
+	fi
+
 	SRA=$_arg_sra
 	$script_dir/run-polap-ncbitools fetch sra "$SRA"
 
+	echoerr You have a file called "$SRA".fastq and a folder named "$SRA"
+	echoerr if your download try is successful. Then, you would want to delete
+	echoerr the folder because we need only the fastq file.
+
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
-
-###############################################################################
-# START of main functions
-#
-# polap analysis
-#
-# most data
-# yang ~/hey/run/mtdna$
-# Lolium perenne
-# thorne:/media/h1/run/mtdna$
 
 ################################################################################
 # Makes menu commands as empty files.
@@ -133,7 +156,10 @@ function _run_polap_x-ncbi-fetch-sra() {
 function _run_polap_make-menus() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
-	grep "^function _run_polap" "$WDIR"/polap.sh | grep run_polap | grep -v run_polap_x | sed 's/function _run_polap_//' | sed 's/() {//' | parallel touch {}
+	grep "^function _run_polap" "$WDIR"/polap.sh |
+		grep run_polap | grep -v run_polap_x |
+		sed 's/function _run_polap_//' | sed 's/() {//' |
+		parallel touch {}
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -280,7 +306,7 @@ HEREDOC
 	fi
 	_run_polap_make-menus
 
-	echoerr NEXT: $(basename $0) total-length-long [-l ${_arg_long_reads}]
+	echoerr NEXT: $(basename $0) total-length-long -o $ODIR -l ${_arg_long_reads}
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
@@ -289,6 +315,7 @@ HEREDOC
 # Arguments:
 #   -l $LR: a long-read fastq data file
 # Inputs:
+#   $LR: a long-read fastq data file
 #   $ODIR
 # Outputs:
 #   $ODIR/long_total_length.txt
@@ -331,7 +358,7 @@ HEREDOC
 	LONG_TOTAL_LENGTH=$(cat "$ODIR"/long_total_length.txt)
 	echoall "DATA: total length of your long-read data (bases): $LONG_TOTAL_LENGTH bp"
 
-	echoerr NEXT: $(basename $0) find-genome-size [-a "${_arg_short_read1}"] [-b "${_arg_short_read2}"]
+	echoerr NEXT: $(basename $0) find-genome-size -o $ODIR -a "${_arg_short_read1}" -b "${_arg_short_read2}"
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -395,17 +422,23 @@ HEREDOC
 	EXPECTED_GENOME_SIZE=${EXPECTED_GENOME_SIZE%.*}
 	echoall "DATA: expected genome size using short-read data (bases): $EXPECTED_GENOME_SIZE bp"
 
-	echoerr NEXT: $(basename $0) reduce-data [-l "${_arg_long_reads}"] [-m "${_arg_min_read_length}"]
+	echoerr NEXT: $(basename $0) reduce-data -o $ODIR -l "${_arg_long_reads}" [-m "${_arg_min_read_length}"]
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
 ################################################################################
+# Checks if the long-read coverage is less than $COV.
+# If so, keep the long read data.
+# If not, sample long reads upto that coverage.
 # Deletes long reads shorter than a sequence length threshold e.g., 3 kb.
 # Arguments:
 #   -l $LR: a long-read fastq data file
 #   -m $MR: the long-read sequence length threshold
+#   --reduction-reads (default) or --no-reduction-reads
 # Inputs:
+#   $ODIR/short_expected_genome_size.txt
+#   $ODIR/long_total_length.txt
 #   $LR
 # Outputs:
 #   $LRNK
@@ -415,11 +448,17 @@ function _run_polap_reduce-data() {
 
 	help_message=$(
 		cat <<HEREDOC
+# Checks if the long-read coverage is less than $COV.
+# If so, keep the long read data.
+# If not, sample long reads upto that coverage.
 # Deletes long reads shorter than a sequence length threshold e.g., 3 kb.
 # Arguments:
 #   -l $LR: a long-read fastq data file
 #   -m $MR: the long-read sequence length threshold
+#   --reduction-reads (default) or --no-reduction-reads
 # Inputs:
+#   $ODIR/short_expected_genome_size.txt
+#   $ODIR/long_total_length.txt
 #   $LR
 # Outputs:
 #   $LRNK
@@ -443,13 +482,55 @@ HEREDOC
 		exit $EXIT_ERROR
 	fi
 
+	if [ ! -s "$ODIR"/short_expected_genome_size.txt ]; then
+		echoall "ERROR: no genome size estimate [$ODIR/short_expected_genome_size.txt]"
+		echoerr "SUGGESTION: find-genome-size"
+		exit $EXIT_ERROR
+	fi
+
+	if [ ! -s "$ODIR"/long_total_length.txt ]; then
+		echoall "ERROR: no long read total length [$ODIR/long_total_length.txt]"
+		echoerr "SUGGESTION: total-length-long"
+		exit $EXIT_ERROR
+	fi
+
+	EXPECTED_GENOME_SIZE=$(cat "$ODIR"/short_expected_genome_size.txt)
+	EXPECTED_GENOME_SIZE=${EXPECTED_GENOME_SIZE%.*}
+	LONG_TOTAL_LENGTH=$(cat "$ODIR"/long_total_length.txt)
+
+	EXPECTED_LONG_COVERAGE=$(echo "scale=3; $LONG_TOTAL_LENGTH/$EXPECTED_GENOME_SIZE" | bc)
+	EXPECTED_LONG_COVERAGE=${EXPECTED_LONG_COVERAGE%.*}
+
+	nfq_file=$ODIR/n.fq
+	rm -f $nfq_file
+	if [[ ${_arg_reduction_reads} == "off" ]]; then
+		echoall "OPTION: --no-reduction-reads No reduction of the long-read data"
+		ln -s $(realpath $LR) $nfq_file
+	else
+		if [ "$EXPECTED_LONG_COVERAGE " -lt $COV ]; then
+			echoall "LOG: No reduction of the long-read data because $EXPECTED_LONG_COVERAGE < $COV"
+			ln -s $(realpath $LR) $nfq_file
+		else
+			echoall "SUGGESTION: you might want to increase the minimum read lengths because you have enough long-read data."
+			RATE=$(echo "scale=3; $COV/$EXPECTED_LONG_COVERAGE" | bc)
+			echoall "LOG: long-read data reduction by rate of $RATE <= COV[$COV] / long-read coverage[$EXPECTED_LONG_COVERAGE]"
+			echoall "sampling long-read data by $RATE ... wait ..."
+			seqkit sample -p "$RATE" "$LR" -o "$nfq_file" >/dev/null 2>&1
+			echoall "DATA: a reduced long-read data $nfq_file is created"
+		fi
+	fi
+	LR=$nfq_file
+
 	# step1
-	seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o "$LRNK" >/dev/null 2>&1
+	echoall "keeping long reads of length being at least $MR bp ..."
+	seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o "$LRNK"
+	# seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o "$LRNK" >/dev/null 2>&1
+	rm $nfq_file
 	echoall "DATA: long-read minimum $MR reads data $LRNK is created"
 
 	echoerr "NEXT (for testing purpose only): $(basename $0) flye1 -g 150000"
 	echoerr "NEXT (for testing purpose only): $(basename $0) flye1 --test"
-	echoerr NEXT: $(basename $0) flye1 [-t $NT] [-c $COV]
+	echoerr NEXT: $(basename $0) flye1 -o $ODIR [-t $NT] [-c $COV]
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -530,8 +611,8 @@ HEREDOC
 		>/dev/null 2>&1
 
 	echo "INFO: assembly graph in the flye contigger stage: $PWD/$FDIR/30-contigger/graph_final.gfa"
-	echoerr "NEXT: $(basename $0) blast-genome [-i 0]"
-	echoerr "NEXT: $(basename $0) annotate [-i 0]"
+	echoerr "NEXT: $(basename $0) blast-genome -o $ODIR [-i 0]"
+	echoerr "NEXT: $(basename $0) annotate -o $ODIR [-i 0]"
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -702,7 +783,7 @@ HEREDOC
 	rm -rf "$ADIR"/ptaa.bed
 
 	echoerr "NEXT (for testing purpose only): $(basename $0) count-gene --test"
-	echoerr "NEXT: $(basename $0) count-gene [-i $INUM]"
+	echoerr "NEXT: $(basename $0) count-gene -o $ODIR [-i $INUM]"
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -804,8 +885,8 @@ HEREDOC
 	echo "INFO: edit $FDIR/mt.contig.name-<destination flye number> for mtDNA contig candidates"
 
 	ANUMNEXT=$((ANUM + 1))
-	echoerr NEXT: $(basename $0) select-reads [-i $ANUM] [-j $ANUMNEXT]
-	echoerr NEXT: $(basename $0) assemble2 [-i $ANUM] [-j $ANUMNEXT]
+	echoerr NEXT: $(basename $0) select-reads -o $ODIR [-i $ANUM] [-j $ANUMNEXT]
+	echoerr NEXT: $(basename $0) assemble2 -o $ODIR [-i $ANUM] [-j $ANUMNEXT]
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
@@ -997,17 +1078,24 @@ HEREDOC
 	echo "DATA: organelle reads in $MTSEEDSDIR/1.fq.gz"
 
 	TOTAL_LENGTH=$(seqkit stats -Ta $MTSEEDSDIR/1.fq.gz | csvtk cut -t -f "sum_len" | csvtk del-header)
-	EXPECTED_COVERAGE=$((TOTAL_LENGTH / CONTIG_LENGTH))
-	echo "INFO: expected coverage: ${EXPECTED_COVERAGE}x"
+	EXPECTED_ORGANELLE_COVERAGE=$((TOTAL_LENGTH / CONTIG_LENGTH))
+	echo "INFO: expected coverage: ${EXPECTED_ORGANELLE_COVERAGE}x"
 
-	if [ "$EXPECTED_COVERAGE" -lt $COV ]; then
-		echo "DATA: no data reduction: COV=$COV"
-		ln -s 1.fq.gz $MTSEEDSDIR/2.fq.gz
+	if [[ ${_arg_coverage_check} == "off" ]]; then
+		echoall "OPTION: --no-coverage-check No reduction of the long-read data"
+		ln -s $(realpath 1.fq.gz) $MTSEEDSDIR/2.fq.gz
 	else
-		RATE=$(echo "scale=10; $COV/$EXPECTED_COVERAGE" | bc)
-		echoall "SUGGESTION: you might want to increase the minimum read lengths because you have enough long-read data."
-		echoall "DATA: data reduction by rate of $RATE"
-		seqkit sample -p $RATE $MTSEEDSDIR/1.fq.gz -o $MTSEEDSDIR/2.fq.gz >/dev/null 2>&1
+		if [ "$EXPECTED_ORGANELLE_COVERAGE" -lt $COV ]; then
+			echoall "LOG: No reduction of the long-read data because $EXPECTED_ORGANELLE_COVERAGE < $COV"
+			ln -s $(realpath 1.fq.gz) $MTSEEDSDIR/2.fq.gz
+		else
+			echoall "SUGGESTION: you might want to increase the minimum read lengths because you have enough long-read data."
+			RATE=$(echo "scale=10; $COV/$EXPECTED_ORGANELLE_COVERAGE" | bc)
+			echoall "LOG: long-read data reduction by rate of $RATE <= COV[$COV] / long-read organelle coverage[$EXPECTED_ORGANELLE_COVERAGE]"
+			echoall "sampling long-read data by $RATE ... wait ..."
+			seqkit sample -p "$RATE" "$MTSEEDSDIR/1.fq.gz" -o "$MTSEEDSDIR/2.fq.gz" >/dev/null 2>&1
+			echoall "DATA: a reduced long-read data $MTSEEDSDIR/2.fq.gz is created"
+		fi
 	fi
 
 	C=$(ls -1 "$MTSEEDSDIR/"*".name" 2>/dev/null | wc -l)
@@ -1030,7 +1118,7 @@ HEREDOC
 		fi
 	fi
 
-	echoerr NEXT: $(basename $0) flye2 [-j $JNUM] [-t $NT] [-c $COV]
+	echoerr NEXT: $(basename $0) flye2 -o $ODIR -j $JNUM -t $NT -c $COV
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -1054,16 +1142,21 @@ function _func_polap_flye2() {
 }
 
 ################################################################################
-# Executes Flye for an organelle-genome assembly.
-# Defaults:
-#   number of threads: $NT
-#   assembly coverage: $COV
+# Executes Flye for an organelle-genome assembly
+# Arguments:
+#   -j $JNUM: destination Flye organelle assembly number
+#   -t $NT: the number of CPU cores
+#   -c $COV: the Flye's coverage option
+#   -g <arg>: computed by find-genome-size menu or given by users
 # Inputs:
 #   $MTDIR/contig.fa
 #   $MTSEEDSDIR/2.fq.gz
 # Outputs:
 #   $MTDIR/contig_total_length.txt
-#		$MTDIR/30-contigger/graph_final.gfa
+#   $MTDIR/30-contigger/contigs.fasta
+#   $MTDIR/30-contigger/contigs_stats.txt
+#   $MTDIR/30-contigger/graph_final.fasta
+#   $MTDIR/30-contigger/graph_final.gfa
 ################################################################################
 function _run_polap_flye2() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
@@ -1127,22 +1220,30 @@ HEREDOC
 	echoall "CHECK: assembly graph "$PWD/$MTDIR"/30-contigger/graph_final.gfa"
 	# echo "column -t $ODIR/assembly_info_organelle_annotation_count.txt"
 
-	echoall NEXT: $(basename $0) flye-polishing -j $JNUM
+	jnum_next=$((JNUM + 1))
+	echoall Create and edit $ODIR/$JNUM/mt.contig.name-${jnum_next}
+	echoall NEXT: $(basename $0) assemble2 -o $ODIR -j ${jnum_next}
+	echoall or you could finish with Flye organelle-genome assembly with its polishing stage.
+	echoall NEXT: $(basename $0) flye-polishing -o $ODIR -j $JNUM
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
 ################################################################################
-# Polishes an organelle-genome assembly.
-# Defaults:
-#   number of threads: $NT
-#   assembly coverage: $COV
+# Finishes the Flye organelle-genome assembly.
+# Polishes an organelle-genome assembly using long-reads.
+# Note: use the same options as flye2 menu.
+# Arguments:
+#   -j $JNUM: destination Flye organelle assembly number
+#   -t $NT: the number of CPU cores
+#   -c $COV: the Flye's coverage option
+#   -g <arg>: computed by find-genome-size menu or given by users
 # Inputs:
 #   $MTDIR/contig.fa
 #   $MTSEEDSDIR/2.fq.gz
-#   $MTDIR/assembly_graph.gfa
+#   $MTDIR/30-contigger
 # Outputs:
-#		$MTDIR/30-contigger/graph_final.gfa
+#   $MTDIR/assembly_graph.gfa
 ################################################################################
 function _run_polap_flye-polishing() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
@@ -1193,7 +1294,7 @@ HEREDOC
 	echo "INFO: organelle genome size based on contig selection: $CONTIG_LENGTH"
 
 	echo "INFO: polishing the organelle-genome assembly using flye ... be patient!"
-	echoerr "please, wait for polishing the organelle-genome assembly on $JNUM ..."
+	echoerr "please, wait for Flye long-read polishing the organelle-genome assembly on $JNUM ..."
 	flye --nano-raw $MTSEEDSDIR/2.fq.gz \
 		--out-dir $MTDIR \
 		--threads $NT \
@@ -1201,11 +1302,11 @@ HEREDOC
 		--genome-size $CONTIG_LENGTH \
 		--resume \
 		>/dev/null 2>&1
-	echoall "CHECK: the polishing assembly graph $PWD/$MTDIR/assembly_graph.gfa"
+	echoall "CHECK: the long-read polished assembly graph $PWD/$MTDIR/assembly_graph.gfa"
 	echoerr "DO: extract a draft organelle genome sequence (mt.0.fasta) from the polished assembly graph"
 	# echo "column -t $ODIR/assembly_info_organelle_annotation_count.txt"
 	# echoall NEXT: $(basename $0) check-coverage [-p $PA]
-	echoall NEXT: $(basename $0) prepare-polishing [-a $SR1] [-b $SR2]
+	echoall NEXT: $(basename $0) prepare-polishing -a $SR1 -b $SR2
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -1217,6 +1318,24 @@ HEREDOC
 ################################################################################
 function _run_polap_x-ncbi-fetch-mtdna-genbank() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	help_message=$(
+		cat <<HEREDOC
+# Fetches mtDNA genome sequence by species name.
+# Arguments:
+#   --species species-name
+# Inputs:
+#   species-name
+# Outputs:
+#   species-name.mt.gb
+Example: $(basename $0) ${_arg_menu[0]} --species <arg>
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
 
 	if [ -z "$_arg_species" ]; then
 		echoerr "ERROR: no --species option is used."
@@ -1233,16 +1352,38 @@ function _run_polap_x-ncbi-fetch-mtdna-genbank() {
 # Fetches mtDNA genome sequence by accession.
 # Arguments:
 #   --accession
+# Inputs:
+#   accession ID
+# Outputs:
+#   <accession>.fa
 ################################################################################
 function _run_polap_x-ncbi-fetch-mtdna-nucleotide() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	help_message=$(
+		cat <<HEREDOC
+# Fetches mtDNA genome sequence by species name.
+# Arguments:
+#   --accession <arg>
+# Inputs:
+#   accession ID
+# Outputs:
+#   <accession>.fa
+Example: $(basename $0) ${_arg_menu[0]} --accession <arg>
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
 
 	if [ -z "$_arg_accession" ]; then
 		echoerr "ERROR: no --accession option is used."
 	else
 		esearch -db nuccore -query "${_arg_accession}[ACCN]" </dev/null |
 			efetch -format fasta >${_arg_accession}.fa
-		echoall NEXT: $0 align-two-dna-sequences --query mt.1.fa --subject ${_arg_accession}.fa
+		echoall NEXT: $(basename $0) align-two-dna-sequences --query mt.1.fa --subject ${_arg_accession}.fa
 	fi
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
@@ -1253,6 +1394,14 @@ function _run_polap_x-ncbi-fetch-mtdna-nucleotide() {
 # Before align the two sequences, rearrange the assembled query sequences
 # so that they are alignable using multiple sequence alignment tools
 # like ClustalW.
+# Arguments:
+#   --query ${_arg_query}
+#   --subject ${_arg_subject}
+# Inputs:
+#   query: mt.1.fa or the assembled sequence
+#   subject: a known mtDNA sequence
+# Outputs:
+#   pairwise-alignment.txt
 ################################################################################
 function _run_polap_x-align-two-dna-sequences() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
@@ -1300,6 +1449,12 @@ HEREDOC
 # Uses clustalw to align two DNA sequences.
 # After rearranging parts of a query assembled sequence,
 # we use clustalw to align the two to check how similar they are.
+# Arguments:
+#   --query ${_arg_query}
+#   --subject ${_arg_subject}
+# Inputs:
+#   query: mt.1.fa or the assembled sequence
+#   subject: a known mtDNA sequence
 ################################################################################
 function _run_polap_x-clustal() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
@@ -1436,15 +1591,6 @@ HEREDOC
 function _run_polap_prepare-polishing() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
-	source $HOME/miniconda3/bin/activate polap-fmlrc
-
-	if ! run_check2; then
-		echoerr "ERROR: change your conda environment to polap-fmlrc."
-		echoerr "INFO: (base) $ conda env create -f src/environment-fmlrc.yaml"
-		echoerr "INFO: (base) $ conda activate polap-fmlrc"
-		exit $EXIT_ERROR
-	fi
-
 	help_message=$(
 		cat <<HEREDOC
 # Prepares the polishing using FMLRC.
@@ -1463,6 +1609,15 @@ HEREDOC
 	if [[ ${_arg_menu[1]} == "help" ]]; then
 		echoerr "${help_message}"
 		exit $EXIT_SUCCESS
+	fi
+
+	source $HOME/miniconda3/bin/activate polap-fmlrc
+
+	if ! run_check2; then
+		echoerr "ERROR: change your conda environment to polap-fmlrc."
+		echoerr "INFO: (base) $ conda env create -f src/environment-fmlrc.yaml"
+		echoerr "INFO: (base) $ conda activate polap-fmlrc"
+		exit $EXIT_ERROR
 	fi
 
 	if [[ ! -s $SR1 ]]; then
@@ -1551,8 +1706,6 @@ HEREDOC
 		exit $EXIT_ERROR
 	fi
 
-	# echoerr "NEXT: $(basename $0) ncbi-fetch-nucleotide --accession <ACC>"
-	# echoerr "NEXT: $(basename $0) align-two-dna-sequences --query mt.1.fa --subject <NCBI-ACC>.fa"
 	conda deactivate
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
@@ -1775,11 +1928,11 @@ HEREDOC
 		exit $EXIT_ERROR
 	fi
 	if [[ ! -s $LRNK ]]; then
-		echo "ERROR: no $LRNK long read-data file found: $LRNK"
+		echoall "ERROR: no $LRNK long read-data file found: $LRNK"
 		exit $EXIT_ERROR
 	fi
 
-	echoerr NEXT: $(basename $0) select-reads -i $INUM -j $JNUM
+	echoerr NEXT: $(basename $0) select-reads -o $ODIR -i $INUM -j $JNUM
 	_run_polap_select-reads
 	_run_polap_flye2
 
@@ -1787,7 +1940,22 @@ HEREDOC
 }
 
 ################################################################################
+# NOT IMPLEMENTED YET!
+# because we need a manual long-read selection step.
+# You could execute this menu with option --test.
 #
+# Runs the organelle-genome assembly.
+# Arguments:
+#   -o $ODIR
+#   -l $LR: a long-read fastq data file
+#   -a $SR1: a short-read fastq data file
+#   -b $SR2: another short-read fastq data file
+# Inputs:
+#   $LR: a long-read fastq
+#   $SR1: a short-read fastq data file
+#   $SR2: another short-read fastq data file
+# Outputs:
+#   $MTDIR/assembly_graph.gfa
 ################################################################################
 function _run_polap_assemble() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi

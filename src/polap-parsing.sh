@@ -23,7 +23,7 @@
 # ARG_OPTIONAL_SINGLE([query],[],[query sequence for blastn])
 # ARG_OPTIONAL_SINGLE([subject],[],[subject sequence for blastn])
 # ARG_OPTIONAL_REPEATED([minimum],[M],[Pair, Bridge, and Single minimum],[])
-# ARG_OPTIONAL_BOOLEAN([reduction-reads],[],[step0: no reduction of long-read data])
+# ARG_OPTIONAL_BOOLEAN([reduction-reads],[],[step0: no reduction of long-read data],[on])
 # ARG_OPTIONAL_BOOLEAN([contigger],[],[step1: use flye's 40-polishing result])
 # ARG_OPTIONAL_BOOLEAN([all-annotate],[],[step2: annotate all contigs])
 # ARG_OPTIONAL_BOOLEAN([use-edges],[],[step4: use flye's edges not contigs])
@@ -81,11 +81,11 @@ _arg_accession=
 _arg_query=
 _arg_subject=
 _arg_minimum=()
-_arg_reduction_reads="off"
+_arg_reduction_reads="on"
 _arg_contigger="off"
 _arg_all_annotate="off"
 _arg_use_edges="off"
-_arg_coverage_check="off"
+_arg_coverage_check="on"
 _arg_resume="off"
 _arg_circularize="off"
 _arg_step0="off"
@@ -105,16 +105,15 @@ print_help() {
 	printf '%s\n' "POLAP - Plant organelle DNA long-read assembly pipeline."
 	printf '%s\n' "version 0.2.4"
 	printf '\n'
-	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)contigger] [--(no-)all-annotate] [--(no-)use-edges] [--(no-)coverage-check] [--(no-)resume] [-u|--(no-)circularize] [--(no-)test] [-v|--version] [-h|--help]\n'
+	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)coverage-check] [-u|--(no-)circularize] [--(no-)test] [-v|--version] [-h|--help]\n'
 	printf '       polap <menu> help\n'
 	printf '\n'
 	printf '%s\n' "menu: list, make-menus, or clean-menus"
 	printf '%s\n' "      assemble1, annotate, assemble2, flye-polishing,"
-	printf '%s\n' "      reset, total-length-long, find-genome-size, reduce-data,"
-	printf '%s\n' "      flye1, blast-genome, count-gene, select-reads, flye2,"
+	printf '%s\n' "      reset, total-length-long, find-genome-size, reduce-data, flye1"
+	printf '%s\n' "      blast-genome, count-gene, select-reads, flye2,"
 	printf '%s\n' "      flye-polishing, check-coverage,"
 	printf '%s\n' "      prepare-polishing, polish,"
-	printf '%s\n' "      assemble,"
 	printf '\n'
 	printf '%s\n' 'Menu: assemble1'
 	printf '%s\n' '  polap assemble1 [-o|--outdir <arg>] [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]'
@@ -159,6 +158,9 @@ print_help() {
 	printf '  %s\n' "-j, --jnum: current output number of organelle-genome assembly (default: '1')"
 	printf '  %s\n' "-g, --genomesize: expected genome size (no default)"
 	printf '  %s\n' "-u, --circularize, --no-circularize: circularize a contig (off by default)"
+	printf '  %s\n' "--reduction-reads, --no-reduction-reads: reduction of long-read data before assemble1 (on by default)"
+	printf '  %s\n' "--coverage-check, --no-coverage-check: coverage check before assemble2 step (on by default)"
+	printf '  %s\n' "--species: Species scientific name (no default)"
 	printf '  %s\n' "-v, --version: Prints version"
 	printf '  %s\n' "-h, --help: Prints help"
 	printf '\n'
@@ -235,7 +237,7 @@ print_x-help() {
 	printf '\t%s\n' "--query: query sequence for blastn (no default)"
 	printf '\t%s\n' "--subject: subject sequence for blastn (no default)"
 	printf '\t%s\n' "-M, --minimum: Pair, Bridge, and Single minimum (empty by default)"
-	printf '\t%s\n' "--reduction-reads, --no-reduction-reads: step0: no reduction of long-read data (off by default)"
+	printf '\t%s\n' "--reduction-reads, --no-reduction-reads: step0: no reduction of long-read data (on by default)"
 	printf '\t%s\n' "--contigger, --no-contigger: step1: use flye 40-polishing result (off by default)"
 	printf '\t%s\n' "--all-annotate, --no-all-annotate: step2: annotate all contigs (off by default)"
 	printf '\t%s\n' "--use-edges, --no-use-edges: step4: use flye edges not contigs (off by default)"

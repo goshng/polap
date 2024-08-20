@@ -35,8 +35,15 @@ pipeline is employed to finalize the mtDNA.
 
 # Requirements
 
-Polap runs on a Linux OS with
+Please, note that polap runs on only a Linux OS with
 [Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install).
+I do not know how I format the recipe for
+[Bioconda's polap package](https://anaconda.org/bioconda/polap), and
+it looks like that polap could be executed in other platforms.
+But, it does not run on either macOS or Windows computer.
+Although [Bioconda's polap package](https://anaconda.org/bioconda/polap) can be
+installed into either of them, they would fail to execute.
+
 It requires [BASH](https://www.gnu.org/software/bash/) (bash\>=3.0).
 
     bash --version
@@ -65,6 +72,39 @@ Now, configure your conda with the following:
 
 # Installing Polap
 
+## Using Biocoda polap package
+
+You could install
+[Bioconda's polap package](https://anaconda.org/bioconda/polap)
+in a new conda environment, and then
+run [Polap](https://github.com/goshng/polap) with a test dataset.
+
+    (base) $ conda create --name polap bioconda::polap
+    (base) $ conda activate polap
+    (polap) $ git clone https://github.com/goshng/polap.git
+    (polap) $ cd polap/test
+    (polap) $ polap assemble --test
+
+Because FMLRC's conda environment was incompatible with that of Polap's,
+we need to create one for Polap's FMLRC conda environment.
+Continued from the previous command lines,
+
+    (polap) $ conda deactivate
+    (base) $ conda env create -f ../src/polap-conda-environment-fmlrc.yaml
+    (base) $ conda activate polap-fmlrc
+    (polap-fmlrc) $ polap prepare-polishing
+    (polap-fmlrc) $ polap polish
+
+If you see a screen output ending with the following:
+
+    NEXT: src/polap.sh prepare-polishing [-a s1.fq] [-b s2.fq]
+
+You may be ready to use [Polap](https://github.com/goshng/polap). But,
+make sure that you do not have error messages from
+[Polap](https://github.com/goshng/polap).
+
+## Using github source
+
 Download the source code of Polap available at
 [Polap](https://github.com/goshng/polap)'s github website:
 
@@ -80,65 +120,123 @@ Setup the conda environment for
 
     (base) $ conda env create -f src/polap-conda-environment-fmlrc.yaml
 
-Activate polap-dev conda environment.
+Activate polap conda environment.
 
-    (base) $ conda activate polap-dev
+    (base) $ conda activate polap
 
 Run Polap with a test dataset.
 
-    (polap-dev) $ cd test
-    (polap-dev) $ ./run
-
-If you see a screen output ending with the following:
-
-    NEXT: src/polap.sh prepare-polishing [-a s1.fq] [-b s2.fq]
-
-You may be ready to use [Polap](https://github.com/goshng/polap). But,
-make sure that you do not have some kind of error messages from
-[Polap](https://github.com/goshng/polap).
-
-You could install polap bioconda package in a new conda environment, and then
-run [Polap](https://github.com/goshng/polap) with a test dataset.
-
-    (base) $ conda create --name polap bioconda::polap
-    (base) $ conda activate polap
-    (polap) $ conda install bioconda::kmer-jellyfish
-    (polap) $ git clone https://github.com/goshng/polap.git
-    (polap) $ cd polap/test
     (polap) $ cd test
-    (polap) $ polap assemble --test
-
-Because FMLRC's conda environment was incompatible with that of Polap's,
-we need to create one for Polap's FMLRC conda environment.
-
-    (base) $ conda create --name polap-fmlrc bioconda::polap-fmlrc
-    (base) $ conda activate polap-fmlrc
-    (polap-fmlrc) $ conda install -y kbchoi::msbwt">=0.2.9"
-    (polap-fmlrc) $ git clone https://github.com/goshng/polap.git
-    (polap-fmlrc) $ cd polap/test
-    (polap-fmlrc) $ polap prepare-polishing
-    (polap-fmlrc) $ polap polish
+    (polap) $ ../src/polap.sh assemble --test
 
 # Using Polap
 
+Once you passed the test dataset run with polap,
+you could execute polap two different ways depending on how you
+installed it.
+If you installed polap using
+[Bioconda's polap package](https://anaconda.org/bioconda/polap),
+you could simply type in `polap` at the prompt as long as you
+have the `polap` conda environment activated.
+
+    (polap) $ polap
+
+Note that you have `(polap)` at your prompt.
+If you installed polap using the github source, then
+it would be easier to `git-clone`
+[Polap](https://github.com/goshng/polap) at your data folder.
+You still must have the `polap` conda environment activated.
+
+    (polap) $ git clone https://github.com/goshng/polap.git
+    (polap) $ src/polap.sh
+
+Let me simply use `polap` command by assuming that you installed
+polap using
+[Bioconda's polap package](https://anaconda.org/bioconda/polap).
+You would replace `polap` with the `git-clone` and `src/polap.sh`
+commands. If you are an experienced command line user,
+this introduction would be easy. If not, try to follow this
+README.
+
+Now, you create a folder and place
+an input dataset in it: a single Oxford Nanopore long-read fastq file,
+and two short-read fastq files.
+The `test` folder from the `git-clone` source folder has a set of
+such fastq files.
+The case of a single short-read file
+is not tested, yet.
 If no _input-files_ are specified by options with fastq input file paths,
-three input files must be at the current directory:
-`l.fq`, `s1.fq`, and `s2.fq`. You could use options such as
-`-l`, `-a`, and `-b`.
+three input files must be at the current directory where you execute
+the polap script:
+`l.fq`, `s1.fq`, and `s2.fq`.
+The three fastq files must be extracted if they are compressed.
+You could use options such as
+`-l`, `-a`, and `-b` to set your fastq files.
+Please, execute polap without any option to see a help message.
 
-    (polap-dev) $ src/polap.sh assemble1
+Now that you have the three fastq files, the first polap step is
+to run a whole-genome assembly using
+[Flye](https://github.com/fenderglass/Flye)
+with menu `assemble1`. The first argument of the command `polap`
+is called menu. I do not know other better name for the first
+argument. A menu has its help message with a second argument
+of `help`.
+You would see options for the menu `assemble1` with the following
+command:
 
-You should be able to open `o/0/30-contigger/graph_final.gfa` using
+    (polap) $ polap assemble1 help
+
+Assuming that you have the three fastq files:
+`l.fq`, `s1.fq`, and `s2.fq`, you could execute a whole-genome
+assembly step with the following command:
+
+    (polap) $ polap assemble1
+
+It would take some times depending on your dataset.
+Please, be patient.
+After the execution of the whole-genome assembly using
+[Flye](https://github.com/fenderglass/Flye),
+you should be able to open `o/0/30-contigger/graph_final.gfa` using
 [Bandage](https://rrwick.github.io/Bandage/) to view the genome assembly
-graph. Then, you annotate your initial whole-genome assembly.
+graph.
+The graph would display contigs, some of which originate from
+mitochondrial or plastid DNAs and most from nuclear DNA molecules.
+You could look through the graph to locate contigs from
+plant mitochondrial DNAs. If you could do so, then you could use
+the contigs for plant mitochondrial DNA candidates.
+If not, you continue the `polap` pipeline
+by annotating your initial whole-genome assembly.
 
-    (polap-dev) $ src/polap.sh annotate
+    (polap) $ polap annotate
 
-You should be able to see contigs with organelle gene annotations in
-`o/0/contig-annotation-table.txt`. Choose contigs with more MT genes
-than PT genes in the assembly graph. Now, you need to prepare a text file,
-`o/0/mt.contig.name-1`, in your folder. Add one contig sequence name per
-line. Note that the contig sequence names should start with `edge_` not
+This takes some time as well. So, be patient.
+After the execution of the `polap` annotation step,
+you should be able to see contigs with organelle gene annotations in
+`o/0/contig-annotation-table.txt`.
+There are two more similar text files:
+`o/0/assembly_info_organelle_annotation_count-all.txt` and
+`o/0/assembly_info_organelle_annotation_count.txt`.
+After inspecting the three files,
+choose contigs with more MT genes
+than PT genes in the assembly graph.
+Admittedly, this choice of contigs is subjective step.
+I might need another section to describe what one could do in this
+contig selection step. Let's assume that you have contig condidates
+that potentially originate from plant mitochondrial DNAs.
+The three text file above are a modified version of
+`o/0/30-contigger/contigs_stats.txt` output file from
+[Flye](https://github.com/fenderglass/Flye).
+The file is a table with rows for contigs assembled from the whole-genome
+assembly. Each contig may consist of one or more edge sequences.
+The [Bandage](https://rrwick.github.io/Bandage/) graph shows
+edge sequences rather than contig sequences.
+So choose candidate contigs using
+the [Bandage](https://rrwick.github.io/Bandage/) graph
+and the three annotation table text file.
+
+Now, you need to prepare a text file,
+`o/0/mt.contig.name-1`, in your folder. Add one edge sequence name per
+line. Note that the edge sequence names should start with `edge_` not
 `contig_`. An example file for a MT contig name looks like this:
 
     edge_1
@@ -149,17 +247,39 @@ For more information on how you could prepare a MT contig file, see [MT
 contig name](#mt-contig-name) below. Now, you are ready to run an
 organelle-genome assembly.
 
-    (polap-dev) $ src/polap.sh assemble2
+    (polap) $ polap assemble2
 
-Finish your organelle-genome assembly upto the polishing stage of
+Wait for a while.
+This second genome assembly using
+[Flye](https://github.com/fenderglass/Flye)
+produces an assembly graph file called
+`o/1/30-contigger/graph_final.gfa`.
+Use
+[Bandage](https://rrwick.github.io/Bandage/) to view the organelle-genome
+assembly graph.
+We hope that this organelle-genome assembly graph is simpler than
+that of the whole-genome assembly.
+If so, you
+would want to finish your organelle-genome assembly upto
+the polishing stage of
 [Flye](https://github.com/fenderglass/Flye).
 
-    (polap-dev) $ src/polap.sh flye-polishing
+    (polap) $ polap flye-polishing
 
-Extract a mitochondrial genome sequence by opening
+Now, extract a mitochondrial genome sequence by opening
 `o/1/assembly_graph.gfa` using
 [Bandage](https://rrwick.github.io/Bandage/). Save the sequence with a
 file name called `mt.0.fasta`.
+This is the long-read mitochondrial genome assembly
+in fasta format.
+
+We use the approach
+[ptGAUL](https://github.com/Bean061/ptgaul), which uses
+[FMLRC](https://github.com/holtjma/fmlrc) to polish
+long-read assembly sequences using short-read data.
+The next step is just a wrapper of the script
+recommended by
+[ptGAUL](https://github.com/Bean061/ptgaul).
 
     (polap) $ conda activate polap-fmlrc
     (polap-fmlrc) $ src/polap.sh prepare-polishing
@@ -167,13 +287,10 @@ file name called `mt.0.fasta`.
 
 Your final mitochondrial genome sequence is `mt.1.fa`.
 
-You must change your conda environment to `polap-dev` before using
-`assemble1`, `annotate`, `assemble2`, or `flye-polishing` menu.
-
 # Uninstalling Polap
 
-    (polap-dev) $ conda deactivate
-    (base) $ conda remove -n polap-dev --all
+    (polap) $ conda deactivate
+    (base) $ conda remove -n polap --all
     (base) $ conda remove -n polap-fmlrc --all
 
 # MT contig name
@@ -193,7 +310,7 @@ You could see organelle annotation and copy numbers in
 
     $ column -t o/0/30-contigger/contigs_stats.txt
 
-You could watch [YouTube](https://youtu.be/29OaiFCqAzI) to see how you could
+You could watch [YouTube](https://youtu.be/29OaiFCqAzI) (in Korean) to see how you could
 select contigs that might have been from mitochondrial DNAs.
 The following is an example of the Flye assembly table with organelle gene counts.
 In the table, the column copy is the copy number for a contig,
@@ -220,16 +337,16 @@ You must have no empty lines in `o/0/mt.contig.name-1`.
 Once you have your `mt.contig.name-1` file ready, then:
 Your next command is:
 
-    (polap-dev) $ src/polap.sh assemble2
+    (polap) $ polap assemble2
 
 Your draft assembly graph is `o/1/30-contigger/graph_final.gfa`
 
-    (polap-dev) $ src/polap.sh flye-polishing
+    (polap) $ polap flye-polishing
 
 Your long-read polished assembly graph is `o/1/assembly_graph.gfa`
 You could extract a draft organelle genome sequence from the assembly graph
 by using [Bandage](https://rrwick.github.io/Bandage/).
-You could watch [YouTube](https://youtu.be/UF-0UIc2ZDY)
+You could watch [YouTube](https://youtu.be/UF-0UIc2ZDY) (in Korean)
 to see how you could extract a DNA sequence through a circular path.
 
 # Options

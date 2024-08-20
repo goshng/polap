@@ -177,6 +177,8 @@ commands. If you are an experienced command line user,
 this introduction would be easy. If not, try to follow this
 README.
 
+## Input data
+
 Now, you create a folder and place
 an input dataset in it: a single Oxford Nanopore long-read fastq file,
 and two short-read fastq files.
@@ -192,6 +194,8 @@ The three fastq files must be extracted if they are compressed.
 You could use options such as
 `-l`, `-a`, and `-b` to set your fastq files.
 Please, execute polap without any option to see a help message.
+
+## Whole-genome assemby
 
 Now that you have the three fastq files, the first polap step is
 to run a whole-genome assembly using
@@ -213,6 +217,9 @@ assembly step with the following command:
 
 It would take some times depending on your dataset.
 Please, be patient.
+
+## Plant organelle annotation
+
 After the execution of the whole-genome assembly using
 [Flye](https://github.com/fenderglass/Flye),
 you should be able to open `o/0/30-contigger/graph_final.gfa` using
@@ -229,6 +236,9 @@ by annotating your initial whole-genome assembly.
     (polap) $ polap annotate
 
 This takes some time as well. So, be patient.
+
+## Organelle contig selection
+
 After the execution of the `polap` annotation step,
 you should be able to see contigs with organelle gene annotations in
 `o/0/contig-annotation-table.txt`.
@@ -263,7 +273,11 @@ line. Note that the edge sequence names should start with `edge_` not
     edge_3
 
 For more information on how you could prepare a MT contig file, see [MT
-contig name](#mt-contig-name) below. Now, you are ready to run an
+contig name](#mt-contig-name) below. 
+
+## Organelle-genome assembly
+
+Now, you are ready to run an
 organelle-genome assembly.
 
     (polap) $ polap assemble2
@@ -276,6 +290,9 @@ produces an assembly graph file called
 Use
 [Bandage](https://rrwick.github.io/Bandage/) to view the organelle-genome
 assembly graph.
+
+## Polishing
+
 We hope that this organelle-genome assembly graph is simpler than
 that of the whole-genome assembly.
 If so, you

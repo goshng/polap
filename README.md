@@ -72,6 +72,9 @@ Now, configure your conda with the following:
 
 # Installing Polap
 
+You could use Bioconda's polap package or the yaml file from
+this github source.
+
 ## Using Biocoda polap package
 
 You could install
@@ -85,6 +88,14 @@ run [Polap](https://github.com/goshng/polap) with a test dataset.
     (polap) $ cd polap/test
     (polap) $ polap assemble --test
 
+If you see a screen output ending with the something like this:
+
+    NEXT: polap prepare-polishing [-a s1.fq] [-b s2.fq]
+
+You may be ready to use [Polap](https://github.com/goshng/polap). But,
+make sure that you do not have error messages from
+[Polap](https://github.com/goshng/polap).
+
 Because FMLRC's conda environment was incompatible with that of Polap's,
 we need to create one for Polap's FMLRC conda environment.
 Continued from the previous command lines,
@@ -92,16 +103,10 @@ Continued from the previous command lines,
     (polap) $ conda deactivate
     (base) $ conda env create -f ../src/polap-conda-environment-fmlrc.yaml
     (base) $ conda activate polap-fmlrc
-    (polap-fmlrc) $ polap prepare-polishing
-    (polap-fmlrc) $ polap polish
+    (polap-fmlrc) $ ../src/polap.sh prepare-polishing
+    (polap-fmlrc) $ ../src/polap.sh polish
 
-If you see a screen output ending with the following:
-
-    NEXT: src/polap.sh prepare-polishing [-a s1.fq] [-b s2.fq]
-
-You may be ready to use [Polap](https://github.com/goshng/polap). But,
-make sure that you do not have error messages from
-[Polap](https://github.com/goshng/polap).
+Your final mitochondrial genome sequence is `mt.1.fa`.
 
 ## Using github source
 
@@ -128,6 +133,20 @@ Run Polap with a test dataset.
 
     (polap) $ cd test
     (polap) $ ../src/polap.sh assemble --test
+
+If you see a screen output ending with the something like this:
+
+    NEXT: polap prepare-polishing [-a s1.fq] [-b s2.fq]
+
+You may be ready to use [Polap](https://github.com/goshng/polap).
+Continued from the previous command lines,
+
+    (polap) $ conda deactivate
+    (base) $ conda activate polap-fmlrc
+    (polap-fmlrc) $ ../src/polap.sh prepare-polishing
+    (polap-fmlrc) $ ../src/polap.sh polish
+
+Your final mitochondrial genome sequence is `mt.1.fa`.
 
 # Using Polap
 

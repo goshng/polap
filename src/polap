@@ -533,8 +533,11 @@ HEREDOC
 	echoerr "reducing your long-read data [$LR] ... please, wait ..."
 	nfq_file="$ODIR"/n.fq
 	rm -f $nfq_file
-	if [[ ${_arg_reduction_reads} == "off" ]]; then
-		echoall "OPTION: --no-reduction-reads No reduction of the long-read data"
+	if [[ ${_arg_test} == "on" ]]; then
+		echoall "OPTION: --test : No reduction of the test long-read data"
+		ln -s $(realpath "$LR") "$nfq_file"
+	elif [[ ${_arg_reduction_reads} == "off" ]]; then
+		echoall "OPTION: --no-reduction-reads : No reduction of the long-read data"
 		ln -s $(realpath "$LR") "$nfq_file"
 	else
 		if [ "$EXPECTED_LONG_COVERAGE " -lt $COV ]; then
@@ -1108,13 +1111,16 @@ HEREDOC
 	EXPECTED_ORGANELLE_COVERAGE=$((TOTAL_LENGTH / CONTIG_LENGTH))
 	echo "INFO: expected coverage: ${EXPECTED_ORGANELLE_COVERAGE}x"
 
-	if [[ "${_arg_coverage_check}" == "off" ]]; then
-		echoall "OPTION: --no-coverage-check No reduction of the long-read data"
-		ln -s "$(realpath 1.fq.gz)" "$MTSEEDSDIR"/2.fq.gz
+	if [[ "${_arg_test}" == "on" ]]; then
+		echoall "OPTION: --test : No reduction of the test long-read data"
+		ln -s "$(realpath "$MTSEEDSDIR"/1.fq.gz)" "$MTSEEDSDIR"/2.fq.gz
+	elif [[ "${_arg_coverage_check}" == "off" ]]; then
+		echoall "OPTION: --no-coverage-check : No reduction of the long-read data"
+		ln -s "$(realpath "$MTSEEDSDIR"/1.fq.gz)" "$MTSEEDSDIR"/2.fq.gz
 	else
 		if [ "$EXPECTED_ORGANELLE_COVERAGE" -lt "$COV" ]; then
 			echoall "LOG: No reduction of the long-read data because $EXPECTED_ORGANELLE_COVERAGE < $COV"
-			ln -s "$(realpath 1.fq.gz)" "$MTSEEDSDIR"/2.fq.gz
+			ln -s "$(realpath "$MTSEEDSDIR"/1.fq.gz)" "$MTSEEDSDIR"/2.fq.gz
 		else
 			echoall "SUGGESTION: you might want to increase the minimum read lengths because you have enough long-read data."
 			RATE=$(echo "scale=10; $COV/$EXPECTED_ORGANELLE_COVERAGE" | bc)
@@ -1133,7 +1139,7 @@ HEREDOC
 		# seqkit grep --threads $NT -f "$MTSEEDSDIR"/1.names.2 $LRNK -o "$MTSEEDSDIR"/2.fq.gz >/dev/null 2>&1
 		seqtk subseq "$LRNK" "$MTSEEDSDIR"/1.names.2 | gzip >"$MTSEEDSDIR"/2.fq.gz
 	fi
-	echo "DATA: organelle reads in $MTSEEDSDIR/2.fq.gz"
+	echoall "DATA: organelle reads in $MTSEEDSDIR/2.fq.gz"
 
 	# put the backup to the original
 	if [[ $CIRCULARIZE == "on" ]]; then

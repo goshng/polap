@@ -31,7 +31,7 @@
 # ARG_OPTIONAL_BOOLEAN([resume],[],[step1,step4: flye option resume])
 # ARG_OPTIONAL_BOOLEAN([circularize],[u],[step4: circularize a contig])
 # ARG_POSITIONAL_MULTI([menu],[Polap menu],[3],[assemble],[infile],[outfile])
-# ARG_VERSION([echo $0 v0.2.4])
+# ARG_VERSION([echo $0 v0.2.6])
 # ARG_VERBOSE([])
 # ARG_DEFAULTS_POS([])
 # ARG_HELP(['P'lant 'o'rganelle DNA 'l'ong-read 'a'ssembly 'p'ipeline.])
@@ -104,7 +104,7 @@ _arg_verbose=0
 
 print_help() {
 	printf '%s\n' "POLAP - Plant organelle DNA long-read assembly pipeline."
-	printf '%s\n' "version 0.2.4"
+	printf '%s\n' "version 0.2.6"
 	printf '\n'
 	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)coverage-check] [-u|--(no-)circularize] [--(no-)test] [-v|--version] [-h|--help]\n'
 	printf '       polap <menu> help\n'
@@ -175,7 +175,7 @@ print_help() {
 
 print_x-help() {
 	printf '%s\n' "POLAP - Plant organelle DNA long-read assembly pipeline."
-	printf '%s\n' "version 0.2.4"
+	printf '%s\n' "version 0.2.6"
 	printf '\n'
 	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)contigger] [--(no-)all-annotate] [--(no-)use-edges] [--(no-)coverage-check] [--(no-)yes] [-u|--(no-)circularize] [--(no-)test] [-v|--version] [-h|--help]\n'
 	printf '\n'
@@ -569,11 +569,11 @@ parse_commandline() {
 			test "${1:0:5}" = "--no-" && _arg_test="off"
 			;;
 		-v | --version)
-			echo $0 v0.2.4
+			echo $0 v0.2.6
 			exit 0
 			;;
 		-v*)
-			echo $0 v0.2.4
+			echo $0 v0.2.6
 			exit 0
 			;;
 		--verbose)

@@ -102,7 +102,9 @@ run [Polap](https://github.com/goshng/polap) with a test dataset.
 
     (base) $ conda create --name polap bioconda::polap
     (base) $ conda activate polap
+    (polap) $ conda install bioconda::kmer-jellyfish
     (polap) $ git clone https://github.com/goshng/polap.git
+    (polap) $ cd polap/test
     (polap) $ cd test
     (polap) $ polap assemble --test
 
@@ -112,7 +114,8 @@ we need to create one for Polap's FMLRC conda environment.
     (base) $ conda create --name polap-fmlrc bioconda::polap-fmlrc
     (base) $ conda activate polap-fmlrc
     (polap-fmlrc) $ conda install -y kbchoi::msbwt">=0.2.9"
-    (polap-fmlrc) $ cd test
+    (polap-fmlrc) $ git clone https://github.com/goshng/polap.git
+    (polap-fmlrc) $ cd polap/test
     (polap-fmlrc) $ polap prepare-polishing
     (polap-fmlrc) $ polap polish
 

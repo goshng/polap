@@ -1,17 +1,20 @@
 {% set name = "polap-fmlrc" %}
 {% set version = "0.2.4" %}
+{% set sha256 = "4463d4a71a8a3273108a0ab2dff0a4c37a565c05af6ee17ee83dc62404294caf" %}
 
 package:
-  name: "{{ name|lower }}"
+  name: "{{ name }}"
   version: "{{ version }}"
 
 source:
   url: https://github.com/goshng/polap/archive/refs/tags/{{ version }}.tar.gz
-  sha256: 5de2d8aeae3673e95c4d88c0bc2bf8f2061b346afb8c3261556b24cc0395f519
+  sha256: "{{ sha256 }}"
 
 build:
   noarch: python
-  number: 1
+  number: 0
+  run_exports:
+    - {{ pin_subpackage('polap-fmlrc', max_pin="x.x") }}
 
 requirements:
   run:
@@ -22,7 +25,7 @@ requirements:
 
 test:
   commands:
-    - polap -h
+    - polap
 
 about:
   home: https://github.com/goshng/polap

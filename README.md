@@ -70,6 +70,14 @@ Now, configure your conda with the following:
     (base) $ conda config --prepend channels bioconda
     (base) $ conda config --prepend channels conda-forge
 
+Make sure that your default channels are ordered like this:
+
+    (base) $ conda config --show channels
+    channels:
+      - conda-forge
+      - bioconda
+      - defaults
+
 # Installing Polap
 
 You could use Bioconda's polap package or the yaml file from
@@ -273,7 +281,7 @@ line. Note that the edge sequence names should start with `edge_` not
     edge_3
 
 For more information on how you could prepare a MT contig file, see [MT
-contig name](#mt-contig-name) below. 
+contig name](#mt-contig-name) below.
 
 ## Organelle-genome assembly
 
@@ -328,6 +336,12 @@ Your final mitochondrial genome sequence is `mt.1.fa`.
     (polap) $ conda deactivate
     (base) $ conda remove -n polap --all
     (base) $ conda remove -n polap-fmlrc --all
+
+# Sample datasets
+
+An example data set used to demonstrate the utility of Polap may be accessed
+at a figshare website:
+[Polap data analysis of 11 datasets](https://figshare.com/s/07305fd4e18c74080fbc).
 
 # MT contig name
 

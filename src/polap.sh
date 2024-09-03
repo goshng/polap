@@ -204,7 +204,7 @@ function _run_polap_make-menus-all() {
 }
 
 ################################################################################
-# Deletes menu commands as empty files.
+# Deletes menu commands.
 # Leaves make-menus command.
 ################################################################################
 function _run_polap_clean-menus() {
@@ -1845,15 +1845,15 @@ HEREDOC
 	fi
 
 	if [[ ! -s $LR ]]; then
-		echo "ERROR: no long-read data file found: $LR"
+		echoerr "ERROR: no long-read data file found: $LR"
 		exit $EXIT_ERROR
 	fi
 	if [[ ! -s $SR1 ]]; then
-		echo "ERROR: no short-read data file found: $SR1"
+		echoerr "ERROR: no short-read data file found: $SR1"
 		exit $EXIT_ERROR
 	fi
 	if [[ ! -s $SR2 ]]; then
-		echo "ERROR: no short read-data file found: $SR2"
+		echoerr "ERROR: no short read-data file found: $SR2"
 		exit $EXIT_ERROR
 	fi
 
@@ -2188,7 +2188,11 @@ fi
 
 # all message to a log file
 # https://stackoverflow.com/questions/49851882/how-to-log-echo-statement-with-timestamp-in-shell-script
-LOG_FILE="./polap.log"
+if [ "${_arg_log}" = "polap.log" ]; then
+	LOG_FILE="./polap.log"
+else
+	LOG_FILE="${_arg_log}"
+fi
 exec 3>&1 1>> >(logit)
 # exec 3>&1 1>> >(logit) 2>&1
 

@@ -10,6 +10,7 @@
 # ARG_OPTIONAL_SINGLE([final-assembly],[f],[final assembly in fasta format],[mt.1.fa])
 # ARG_OPTIONAL_SINGLE([min-read-length],[m],[minimum length of long reads],[3000])
 # ARG_OPTIONAL_SINGLE([threads],[t],[number of CPUs],[$(cat /proc/cpuinfo | grep -c processor)])
+# ARG_OPTIONAL_SINGLE([log],[],[log file],[polap.log])
 # ARG_OPTIONAL_SINGLE([coverage],[c],[step4: coverage for the 2nd assembly],[30])
 # ARG_OPTIONAL_SINGLE([pair-min],[r],[minimum mapped bases or PAF 11th column],[3000])
 # ARG_OPTIONAL_SINGLE([bridge-min],[x],[minimum bridging read length or PAF 7th column],[3000])
@@ -68,6 +69,7 @@ _arg_unpolished_fasta="mt.0.fasta"
 _arg_final_assembly="mt.1.fa"
 _arg_min_read_length="3000"
 _arg_threads="$(cat /proc/cpuinfo | grep -c processor)"
+_arg_log="polap.log"
 _arg_coverage="30"
 _arg_pair_min="3000"
 _arg_bridge_min="3000"
@@ -106,7 +108,7 @@ print_help() {
 	printf '%s\n' "POLAP - Plant organelle DNA long-read assembly pipeline."
 	printf '%s\n' "version 0.2.6"
 	printf '\n'
-	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)coverage-check] [-u|--(no-)circularize] [--(no-)test] [-v|--version] [-h|--help]\n'
+	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)coverage-check] [-u|--(no-)circularize] [--(no-)test] [--log <arg>] [-v|--version] [-h|--help]\n'
 	printf '       polap <menu> help\n'
 	printf '\n'
 	printf '%s\n' "menu: list, make-menus, or clean-menus"
@@ -164,6 +166,7 @@ print_help() {
 	printf '  %s\n' "--yes, --no-yes: alway yes for a question or deletes output completely (off by default)"
 	printf '  %s\n' "--species: Species scientific name (no default)"
 	printf '\t%s\n' "--sra: SRA data (no default)"
+	printf '  %s\n' "--log: log file (default: polap.log)"
 	printf '  %s\n' "-v, --version: Prints version"
 	printf '  %s\n' "-h, --help: Prints help"
 	printf '\n'
@@ -523,6 +526,14 @@ parse_commandline() {
 			if test -n "$_next" -a "$_next" != "$_key"; then
 				{ begins_with_short_option "$_next" && shift && set -- "-u" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
 			fi
+			;;
+		--log)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_log="$2"
+			shift
+			;;
+		--log=*)
+			_arg_log="${_key##--log=}"
 			;;
 		--no-step0 | --step0)
 			_arg_step0="on"

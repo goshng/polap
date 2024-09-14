@@ -129,8 +129,8 @@ if __name__ == "__main__":
     # g.addEdge(2, 1)
     # g.addEdge(3, 4)
     cc = g.connectedComponents()
-    print("Following are connected components")
-    print(cc)
+    # print("Following are connected components")
+    # print(cc)
 
     search_numbers = read_search_numbers(file_path_search_number)
 
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     # Flatten the resulting arrays and get unique elements
     unique_elements = flatten_and_unique(result_arrays)
 
-    print("Unique elements from the arrays containing any of the search numbers:")
-    print(unique_elements)
+    # print("Unique elements from the arrays containing any of the search numbers:")
+    # print(unique_elements)
 
     write_unique_elements_to_file(unique_elements, file_path_out)

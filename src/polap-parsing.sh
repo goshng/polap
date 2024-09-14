@@ -89,6 +89,7 @@ _arg_all_annotate="off"
 _arg_use_edges="off"
 _arg_coverage_check="on"
 _arg_resume="off"
+_arg_plastid="off"
 _arg_yes="off"
 _arg_circularize="off"
 _arg_step0="off"
@@ -102,13 +103,13 @@ _arg_step7="off"
 _arg_step8="off"
 _arg_step9="off"
 _arg_test="off"
-_arg_verbose=0
+_arg_verbose=1
 
 print_help() {
 	printf '%s\n' "POLAP - Plant organelle DNA long-read assembly pipeline."
 	printf '%s\n' "version 0.3.1"
 	printf '\n'
-	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)coverage-check] [-u|--(no-)circularize] [--(no-)test] [--log <arg>] [-v|--version] [-h|--help]\n'
+	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)plastid] [--(no-)coverage-check] [-u|--(no-)circularize] [--(no-)test] [--log <arg>] [-v|--version] [-h|--help]\n'
 	printf '       polap <menu> help\n'
 	printf '\n'
 	printf '%s\n' "menu: list, make-menus, or clean-menus"
@@ -511,6 +512,10 @@ parse_commandline() {
 			_arg_coverage_check="on"
 			test "${1:0:5}" = "--no-" && _arg_coverage_check="off"
 			;;
+		--no-plastid | --plastid)
+			_arg_plastid="on"
+			test "${1:0:5}" = "--no-" && _arg_plastid="off"
+			;;
 		--no-yes | --yes)
 			_arg_yes="on"
 			test "${1:0:5}" = "--no-" && _arg_yes="off"
@@ -589,6 +594,9 @@ parse_commandline() {
 		-v*)
 			echo $0 v0.2.6
 			exit 0
+			;;
+		--quiet)
+			_arg_verbose=0
 			;;
 		--verbose)
 			_arg_verbose=$((_arg_verbose + 1))

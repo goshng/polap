@@ -26,8 +26,8 @@ if (length(args) > 0) {
   output1 <- args[2]
   output2 <- args[3]
 } else {
-  s="bioprojects"
-  input_dir0 <- paste0("/media/h2/goshng/figshare/", s, "/o/bioproject")
+  s="Spirodela_polyrhiza"
+  input_dir0 <- paste0("/media/h2/goshng/figshare/", s, "/o/1/70-bioproject")
   input1 <- paste0(input_dir0, "/3-blastn3.txt")
   output1 <- paste0(input_dir0, "/3-blastn3.length.txt")
 }

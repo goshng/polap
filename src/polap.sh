@@ -25,51 +25,40 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 # utilities
 ################################################################################
 
+# Function to check if commands are available, taking an array as argument
+function check_commands() {
+	local cmd_array=("$@") # Capture all the passed arguments into an array
+	for cmd in "${cmd_array[@]}"; do
+		command -v "$cmd" >/dev/null 2>&1 || {
+			echo >&2 "$cmd: not installed"
+			return $RETURN_FAIL
+		}
+	done
+	return $RETURN_SUCCESS
+}
+
 ###############################################################################
-# Checks if required commands are available.
+# Checks if required main commands are available.
 # called early in the code such as reset menu.
 ###############################################################################
+# Original function that defines the array and calls check_commands
 function run_check1() {
-	command -v bc >/dev/null 2>&1 || {
-		echo >&2 "bc: not installed"
-		return $RETURN_FAIL
-	}
-	command -v seqkit >/dev/null 2>&1 || {
-		echo >&2 "seqkit: not installed"
-		return $RETURN_FAIL
-	}
-	command -v minimap2 >/dev/null 2>&1 || {
-		echo >&2 "minimap2: not installed"
-		return $RETURN_FAIL
-	}
-	command -v flye >/dev/null 2>&1 || {
-		echo >&2 "flye: not installed"
-		return $RETURN_FAIL
-	}
-	command -v makeblastdb >/dev/null 2>&1 || {
-		echo >&2 "makeblastdb: not installed"
-		return $RETURN_FAIL
-	}
-	command -v tblastn >/dev/null 2>&1 || {
-		echo >&2 "tblastn: not installed"
-		return $RETURN_FAIL
-	}
-	command -v bedtools >/dev/null 2>&1 || {
-		echo >&2 "bedtools: not installed"
-		return $RETURN_FAIL
-	}
-	command -v prefetch >/dev/null 2>&1 || {
-		echo >&2 "prefetch: not installed"
-		return $RETURN_FAIL
-	}
-	command -v jellyfish >/dev/null 2>&1 || {
-		echo >&2 "jellyfish: not installed"
-		return $RETURN_FAIL
-	}
-	command -v csvtk >/dev/null 2>&1 || {
-		echo >&2 "csvtk: not installed"
-		return $RETURN_FAIL
-	}
+	local commands=(
+		"bc"
+		"seqkit"
+		"minimap2"
+		"flye"
+		"makeblastdb"
+		"tblastn"
+		"bedtools"
+		"prefetch"
+		"jellyfish"
+		"csvtk"
+	)
+
+	# Pass the array elements to the check_commands function
+	check_commands "${commands[@]}"
+
 	return $RETURN_SUCCESS
 }
 
@@ -78,18 +67,15 @@ function run_check1() {
 # called by prepare-polishing menu.
 ###############################################################################
 function run_check2() {
-	command -v msbwt >/dev/null 2>&1 || {
-		echo >&2 "msbwt: not installed"
-		return $RETURN_FAIL
-	}
-	command -v ropebwt2 >/dev/null 2>&1 || {
-		echo >&2 "ropebwt2: not installed"
-		return $RETURN_FAIL
-	}
-	command -v fmlrc >/dev/null 2>&1 || {
-		echo >&2 "fmlrc: not installed"
-		return $RETURN_FAIL
-	}
+	local commands=(
+		"msbwt"
+		"ropebwt2"
+		"fmlrc"
+	)
+
+	# Pass the array elements to the check_commands function
+	check_commands "${commands[@]}"
+
 	return $RETURN_SUCCESS
 }
 
@@ -98,18 +84,15 @@ function run_check2() {
 # called by fetch
 ###############################################################################
 function run_check3() {
-	command -v prefetch >/dev/null 2>&1 || {
-		echo >&2 "prefetch: not installed"
-		return $RETURN_FAIL
-	}
-	command -v vdb-validate >/dev/null 2>&1 || {
-		echo >&2 "vdb-validate: not installed"
-		return $RETURN_FAIL
-	}
-	command -v fasterq-dump >/dev/null 2>&1 || {
-		echo >&2 "fasterq-dump: not installed"
-		return $RETURN_FAIL
-	}
+	local commands=(
+		"prefetch"
+		"vdb-validate"
+		"fasterq-dump"
+	)
+
+	# Pass the array elements to the check_commands function
+	check_commands "${commands[@]}"
+
 	return $RETURN_SUCCESS
 }
 
@@ -1936,6 +1919,1536 @@ HEREDOC
 }
 
 ################################################################################
+# Selects contigs for an organelle-genome assembly.
+#
+# 1. We could select mitochondrial- or plastid-derived contigs using a contig annotation table.
+# 2. We determine the range of sequencing depths for those candidate contigs: mean +/- sd \* 3.
+# 3. For a given gfa of a genome assembly graph, subset the graph for selecting graph elements in the range.
+# 4. Determine connected components in the subset.
+# 5. Choose connected components with candidate edges.
+#
+# We need to read GFA files to manipulate.
+# We need to determine connected components.
+################################################################################
+function _run_polap_select-contigs() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	MR=$_arg_min_read_length
+	FDIR="$ODIR"/$INUM
+	MTCONTIGNAME="$FDIR"/mt.contig.name-"$JNUM"
+	_polap_var_mtcontigs="$FDIR"/"$JNUM"/mtcontigs
+
+	# ADIR="$FDIR"/50-annotation
+	# MTDIR="$ODIR"/$JNUM
+	# MTSEEDSDIR="$MTDIR"/seeds
+
+	# for contigs
+	#	assembly_graph_final_fasta=o/30-contigger/contigs.fasta
+	#	for edges
+	_polap_var_assembly_graph_final_fasta="$FDIR"/30-contigger/graph_final.fasta
+	_polap_var_assembly_graph_final_gfa="$FDIR"/30-contigger/graph_final.gfa
+	_polap_var_annonation_table="$FDIR"/assembly_info_organelle_annotation_count-all.txt
+
+	_polap_var_mtcontig_annotated=${_polap_var_mtcontigs}/1-mtcontig.annotated.txt
+	_polap_var_mtcontigs_stats=${_polap_var_mtcontigs}/1-mtcontig.stats.txt
+	_polap_var_gfa_all=${_polap_var_mtcontigs}/2-gfa.all.gfa
+	_polap_var_gfa_seq_part=${_polap_var_mtcontigs}/2-gfa.seq.part.tsv
+	_polap_var_gfa_seq_filtered=${_polap_var_mtcontigs}/2-gfa.seq.filtered.txt
+	_polap_var_gfa_seq_filtered_range=${_polap_var_mtcontigs}/2-gfa.seq.filtered.range.txt
+	_polap_var_gfa_seq_filtered_edge=${_polap_var_mtcontigs}/2-gfa.seq.filtered.edge.txt
+	_polap_var_gfa_link_part=${_polap_var_mtcontigs}/gfa.link.part.tsv
+	_polap_var_gfa_seq_filtered_link_added=${_polap_var_mtcontigs}/gfa.seq.filtered.link.added.txt
+	_polap_var_gfa_filtered=${_polap_var_mtcontigs}/2-gfa.filtered.gfa
+	_polap_var_gfa_links=${_polap_var_mtcontigs}/3-gfa.links.tsv
+	_polap_var_gfa_links_number=${_polap_var_mtcontigs}/3-gfa.links.number.txt
+	_polap_var_gfa_links_order=${_polap_var_mtcontigs}/3-gfa.links.order.txt
+	_polap_var_gfa_links_contig=${_polap_var_mtcontigs}/3-gfa.links.contig.txt
+	_polap_var_gfa_links_contig_na=${_polap_var_mtcontigs}/3-gfa.links.contig.na.txt
+	_polap_var_gfa_links_seed=${_polap_var_mtcontigs}/4-gfa.links.seed.txt
+	_polap_var_gfa_links_mtcontig=${_polap_var_mtcontigs}/5-gfa.links.mtcontig.txt
+	_polap_var_gfa_links_mtcontig_depth=${_polap_var_mtcontigs}/gfa.links.mtcontig.depth.txt
+
+	help_message=$(
+		cat <<HEREDOC
+# Selects contigs using three features.
+#
+# To identify seed contigs of mitochondrial origin, 
+# a whole-genome assembly is evaluated for three criteria: 
+# 1) the presence of mitochondrial or plastid genes, 
+# 2) the number of read coverage, and
+# 3) the connectivity of contigs in the genome assembly graph. 
+#
+# 1. We could select mitochondrial- or plastid-derived contigs using a contig annotation table.
+# 2. We determine the range of sequencing depths for those candidate contigs: mean +/- sd \* 3.
+# 3. For a given gfa of a genome assembly graph, subset the graph for selecting graph elements in the range.
+# 4. Determine connected components in the subset.
+# 5. Choose connected components with candidate edges.
+#
+# Arguments:
+#   -i $INUM: source Flye (usually whole-genome) assembly number
+#   -j $JNUM: destination Flye organelle assembly number
+#
+# Inputs:
+#   ${_polap_var_assembly_graph_final_gfa}
+#   ${_polap_var_annonation_table}
+#
+# Outputs:
+#   $MTCONTIGNAME
+Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>]
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
+
+	if [ ! -s "${_polap_var_assembly_graph_final_gfa}" ]; then
+		echoall "ERROR: no assembly graph file: ${assembly_graph_final_gfa}"
+		exit $EXIT_ERROR
+	fi
+
+	rm -rf "${_polap_var_mtcontigs}"
+	mkdir -p "${_polap_var_mtcontigs}"
+
+	echoerr "FILE: ${_polap_var_assembly_graph_final_gfa}"
+	echoerr "FILE: ${_polap_var_annonation_table}"
+	echoerr "FILE: $MTCONTIGNAME"
+	# 1. We could select mitochondrial- or plastid-derived contigs using a contig annotation table.
+	# 2. We determine the range of sequencing depths for those candidate contigs: mean +/- sd \* 3.
+	"$WDIR"/run-polap-select-contigs-1-start.R \
+		${_polap_var_assembly_graph_final_gfa} \
+		${_polap_var_annonation_table} \
+		${_polap_var_mtcontig_annotated} \
+		${_polap_var_mtcontigs_stats}
+
+	echoerr "FILE: ${_polap_var_mtcontig_annotated}"
+	echoerr "FILE: ${_polap_var_mtcontigs_stats}"
+
+	_polap_var_number_mtcontig=$(cat ${_polap_var_mtcontig_annotated} | wc -l)
+	if [ "${_polap_var_number_mtcontig}" -eq 1 ]; then
+		cut -f1 ${_polap_var_mtcontig_annotated} >${MTCONTIGNAME}
+		echoerr "LOG: a single starting contig - done."
+		echoerr "FILE: ${MTCONTIGNAME}"
+		return
+	fi
+
+	# 3. For a given gfa of a genome assembly graph, subset the graph for selecting graph elements in the range.
+	gfatools view -S ${_polap_var_assembly_graph_final_gfa} >${_polap_var_gfa_all}
+
+	echoerr "FILE: ${_polap_var_gfa_all}"
+
+	gfatools view -S ${_polap_var_assembly_graph_final_gfa} |
+		grep "^S" >${_polap_var_gfa_seq_part}
+
+	echoerr "FILE: ${_polap_var_gfa_seq_part}"
+
+	# FIXME: the depth range needs to be adjusted case-by-case.
+	#
+	"$WDIR"/run-polap-select-contigs-2-gfa-filter.R \
+		${_polap_var_gfa_seq_part} \
+		${_polap_var_mtcontig_annotated} \
+		${_polap_var_gfa_seq_filtered} \
+		${_polap_var_gfa_seq_filtered_range}
+
+	echoerr "FILE: ${_polap_var_gfa_seq_filtered}"
+
+	# FIXME: link joint?
+	# one edge linked to another that is not part of our candidate
+	# then, the first edge will be removed. It may be suitable for gfatools
+	# but it may not be for polap mtcontig selection.
+	# So, we grab the second edge that is not part of the candidate.
+	# -> not working, similar to the result of gfatools -r 1 option.
+	# we may go back to the first strategy but add those missing (NA)
+	# mt.contig back to the final list.
+
+	# version: adding those linked to the first filtered edges -> not working
+	#
+	# gfatools view -S ${_polap_var_assembly_graph_final_gfa} |
+	# 	grep "^L" | cut -f2,4 >${_polap_var_gfa_link_part}
+	#
+	# echoerr "FILE: ${_polap_var_gfa_link_part}"
+	#
+	# "$WDIR"/run-polap-select-contigs-x-gfa-counter.R \
+	# 	${_polap_var_gfa_seq_filtered} \
+	# 	${_polap_var_gfa_link_part} \
+	# 	${_polap_var_gfa_seq_filtered_link_added}
+
+	# return
+
+	#
+	# -r 1 \
+	cut -f1 ${_polap_var_gfa_seq_filtered} >${_polap_var_gfa_seq_filtered_edge}
+	gfatools view -S \
+		-l @${_polap_var_gfa_seq_filtered_edge} \
+		${_polap_var_assembly_graph_final_gfa} >${_polap_var_gfa_filtered}
+
+	echoerr "FILE: ${_polap_var_gfa_filtered}"
+
+	# 4. Determine connected components in the subset.
+	cat ${_polap_var_gfa_filtered} | grep "^L" | cut -f2,4 >${_polap_var_gfa_links}
+
+	echoerr "FILE: ${_polap_var_gfa_links}"
+
+	"$WDIR"/run-polap-select-contigs-3-gfa-links.R \
+		${_polap_var_mtcontig_annotated} \
+		${_polap_var_gfa_links} \
+		${_polap_var_gfa_links_number} \
+		${_polap_var_gfa_links_order} \
+		${_polap_var_gfa_links_contig} \
+		${_polap_var_gfa_links_contig_na}
+
+	echoerr "FILE: ${_polap_var_gfa_links_number}"
+	echoerr "FILE: ${_polap_var_gfa_links_order}"
+	echoerr "FILE: ${_polap_var_gfa_links_contig}"
+	echoerr "FILE: ${_polap_var_gfa_links_contig_na}"
+
+	python "$WDIR"/run-polap-select-contigs-4-find-connected-components.py \
+		${_polap_var_gfa_links_number} \
+		${_polap_var_gfa_links_contig} \
+		${_polap_var_gfa_links_seed}
+
+	echoerr "FILE: ${_polap_var_gfa_links_seed}"
+
+	# 5. Choose connected components with candidate edges.
+	"$WDIR"/run-polap-select-contigs-5-gfa-mtcontig.R \
+		${_polap_var_gfa_links_seed} \
+		${_polap_var_gfa_links_order} \
+		${_polap_var_gfa_links_mtcontig}
+
+	echoerr "FILE: ${_polap_var_gfa_links_mtcontig}"
+
+	cat ${_polap_var_gfa_links_mtcontig} \
+		${_polap_var_gfa_links_contig_na} \
+		>${MTCONTIGNAME}
+
+	# FIXME: gfatools view -S -r 1 -> leads too many linked edges.
+	# we may evaluate seed candidate using depths and gene annotation one more.
+	#
+	# "$WDIR"/run-polap-select-contigs-6-end.R \
+	# 	${_polap_var_gfa_seq_part} \
+	# 	${_polap_var_mtcontigs_stats} \
+	# 	${_polap_var_gfa_links_mtcontig} \
+	# 	${_polap_var_gfa_links_mtcontig_depth}
+	#
+	# cp ${_polap_var_gfa_links_mtcontig_depth} ${MTCONTIGNAME}
+
+	echoerr "FILE: ${MTCONTIGNAME}"
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+################################################################################
+# Selects contigs for an organelle-genome assembly based on an organelle-genome.
+#
+# 1. We could select mitochondrial- or plastid-derived contigs using a contig annotation table.
+# 2. We determine the range of sequencing depths for those candidate contigs: mean +/- sd \* 3.
+# 3. For a given gfa of a genome assembly graph, subset the graph for selecting graph elements in the range.
+# 4. Determine connected components in the subset.
+# 5. Choose connected components with candidate edges.
+#
+# We need to read GFA files to manipulate.
+# We need to determine connected components.
+################################################################################
+function _run_polap_select-contigs-organelle() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	MR=$_arg_min_read_length
+	FDIR="$ODIR"/$INUM
+	MTCONTIGNAME="$FDIR"/mt.contig.name-"$JNUM"
+	_polap_var_mtcontigs="$FDIR"/"$JNUM"/mtcontigs
+
+	# ADIR="$FDIR"/50-annotation
+	# MTDIR="$ODIR"/$JNUM
+	# MTSEEDSDIR="$MTDIR"/seeds
+
+	# for contigs
+	#	assembly_graph_final_fasta=o/30-contigger/contigs.fasta
+	#	for edges
+	_polap_var_assembly_graph_final_fasta="$FDIR"/30-contigger/graph_final.fasta
+	_polap_var_assembly_graph_final_gfa="$FDIR"/30-contigger/graph_final.gfa
+	_polap_var_annonation_table="$FDIR"/assembly_info_organelle_annotation_count-all.txt
+
+	_polap_var_mtcontig_annotated=${_polap_var_mtcontigs}/1-mtcontig.annotated.txt
+	_polap_var_mtcontigs_stats=${_polap_var_mtcontigs}/1-mtcontig.stats.txt
+	_polap_var_gfa_all=${_polap_var_mtcontigs}/2-gfa.all.gfa
+	_polap_var_gfa_seq_part=${_polap_var_mtcontigs}/2-gfa.seq.part.tsv
+	_polap_var_gfa_seq_filtered=${_polap_var_mtcontigs}/2-gfa.seq.filtered.txt
+	_polap_var_gfa_seq_filtered_range=${_polap_var_mtcontigs}/2-gfa.seq.filtered.range.txt
+	_polap_var_gfa_seq_filtered_edge=${_polap_var_mtcontigs}/2-gfa.seq.filtered.edge.txt
+	_polap_var_gfa_link_part=${_polap_var_mtcontigs}/gfa.link.part.tsv
+	_polap_var_gfa_seq_filtered_link_added=${_polap_var_mtcontigs}/gfa.seq.filtered.link.added.txt
+	_polap_var_gfa_filtered=${_polap_var_mtcontigs}/2-gfa.filtered.gfa
+	_polap_var_gfa_links=${_polap_var_mtcontigs}/3-gfa.links.tsv
+	_polap_var_gfa_links_number=${_polap_var_mtcontigs}/3-gfa.links.number.txt
+	_polap_var_gfa_links_order=${_polap_var_mtcontigs}/3-gfa.links.order.txt
+	_polap_var_gfa_links_contig=${_polap_var_mtcontigs}/3-gfa.links.contig.txt
+	_polap_var_gfa_links_contig_na=${_polap_var_mtcontigs}/3-gfa.links.contig.na.txt
+	_polap_var_gfa_links_seed=${_polap_var_mtcontigs}/4-gfa.links.seed.txt
+	_polap_var_gfa_links_mtcontig=${_polap_var_mtcontigs}/5-gfa.links.mtcontig.txt
+	_polap_var_gfa_links_mtcontig_depth=${_polap_var_mtcontigs}/gfa.links.mtcontig.depth.txt
+
+	help_message=$(
+		cat <<HEREDOC
+# Selects contigs for an organelle-genome assembly based on an organelle-genome.
+#
+# 1. collect all edges with MT > PT.
+#
+# Arguments:
+#   -i $INUM: source Flye (usually organelle-genome) assembly number
+#   -j $JNUM: destination Flye organelle assembly number
+#
+# Inputs:
+#   ${_polap_var_assembly_graph_final_gfa}
+#   ${_polap_var_annonation_table}
+#
+# Outputs:
+#   $MTCONTIGNAME
+Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>]
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
+
+	if [ ! -s "${_polap_var_assembly_graph_final_gfa}" ]; then
+		echoall "ERROR: no assembly graph file: ${assembly_graph_final_gfa}"
+		exit $EXIT_ERROR
+	fi
+
+	if [ ! -s "${_polap_var_annonation_table}" ]; then
+		echoall "ERROR: no annotation table: ${_polap_var_annonation_table}"
+		exit $EXIT_ERROR
+	fi
+
+	# if [ "$INUM" -eq 0 ]; then
+	# 	echoall "ERROR: -i must be positive because it should be based on an organelle-genome assembly."
+	# 	exit $EXIT_ERROR
+	# fi
+
+	rm -rf "${_polap_var_mtcontigs}"
+	mkdir -p "${_polap_var_mtcontigs}"
+
+	echoerr "FILE: ${_polap_var_assembly_graph_final_gfa}"
+	echoerr "FILE: ${_polap_var_annonation_table}"
+	echoerr "FILE: $MTCONTIGNAME"
+
+	# 1. We could select mitochondrial- or plastid-derived contigs using a contig annotation table.
+	# 2. We determine the range of sequencing depths for those candidate contigs: mean +/- sd \* 3.
+	"$WDIR"/run-polap-select-contigs-organelle-1-start.R \
+		${_polap_var_assembly_graph_final_gfa} \
+		${_polap_var_annonation_table} \
+		${_polap_var_mtcontig_annotated} \
+		${_polap_var_mtcontigs_stats}
+
+	echoerr "FILE: ${_polap_var_mtcontig_annotated}"
+
+	cut -f1 ${_polap_var_mtcontig_annotated} >${MTCONTIGNAME}
+
+	echoerr "FILE: ${MTCONTIGNAME}"
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+function _run_polap_select-contigs-by-gene-density() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	MR=$_arg_min_read_length
+	FDIR="$ODIR"/$INUM
+	MTCONTIGNAME="$FDIR"/mt.contig.name-"$JNUM"
+	_polap_var_mtcontigs="$FDIR"/"$JNUM"/mtcontigs
+
+	# ADIR="$FDIR"/50-annotation
+	# MTDIR="$ODIR"/$JNUM
+	# MTSEEDSDIR="$MTDIR"/seeds
+
+	# for contigs
+	#	assembly_graph_final_fasta=o/30-contigger/contigs.fasta
+	#	for edges
+	_polap_var_assembly_graph_final_fasta="$FDIR"/30-contigger/graph_final.fasta
+	_polap_var_assembly_graph_final_gfa="$FDIR"/30-contigger/graph_final.gfa
+	_polap_var_annonation_table="$FDIR"/assembly_info_organelle_annotation_count-all.txt
+
+	_polap_var_mtcontig_annotated=${_polap_var_mtcontigs}/1-mtcontig.annotated.txt
+	_polap_var_mtcontigs_stats=${_polap_var_mtcontigs}/1-mtcontig.stats.txt
+	_polap_var_gfa_all=${_polap_var_mtcontigs}/2-gfa.all.gfa
+	_polap_var_gfa_seq_part=${_polap_var_mtcontigs}/2-gfa.seq.part.tsv
+	_polap_var_gfa_seq_filtered=${_polap_var_mtcontigs}/2-gfa.seq.filtered.txt
+	_polap_var_gfa_seq_filtered_range=${_polap_var_mtcontigs}/2-gfa.seq.filtered.range.txt
+	_polap_var_gfa_seq_filtered_edge=${_polap_var_mtcontigs}/2-gfa.seq.filtered.edge.txt
+	_polap_var_gfa_link_part=${_polap_var_mtcontigs}/gfa.link.part.tsv
+	_polap_var_gfa_seq_filtered_link_added=${_polap_var_mtcontigs}/gfa.seq.filtered.link.added.txt
+	_polap_var_gfa_filtered=${_polap_var_mtcontigs}/2-gfa.filtered.gfa
+	_polap_var_gfa_links=${_polap_var_mtcontigs}/3-gfa.links.tsv
+	_polap_var_gfa_links_number=${_polap_var_mtcontigs}/3-gfa.links.number.txt
+	_polap_var_gfa_links_order=${_polap_var_mtcontigs}/3-gfa.links.order.txt
+	_polap_var_gfa_links_contig=${_polap_var_mtcontigs}/3-gfa.links.contig.txt
+	_polap_var_gfa_links_contig_na=${_polap_var_mtcontigs}/3-gfa.links.contig.na.txt
+	_polap_var_gfa_links_seed=${_polap_var_mtcontigs}/4-gfa.links.seed.txt
+	_polap_var_gfa_links_mtcontig=${_polap_var_mtcontigs}/5-gfa.links.mtcontig.txt
+	_polap_var_gfa_links_mtcontig_depth=${_polap_var_mtcontigs}/gfa.links.mtcontig.depth.txt
+
+	help_message=$(
+		cat <<HEREDOC
+# Selects contigs for an organelle-genome assembly based on an organelle-genome.
+#
+# 1. collect all edges with MT > PT.
+#
+# Arguments:
+#   -i $INUM: source Flye (usually organelle-genome) assembly number
+#   -j $JNUM: destination Flye organelle assembly number
+#
+# Inputs:
+#   ${_polap_var_assembly_graph_final_gfa}
+#   ${_polap_var_annonation_table}
+#
+# Outputs:
+#   $MTCONTIGNAME
+Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>]
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
+
+	if [ ! -s "${_polap_var_assembly_graph_final_gfa}" ]; then
+		echoall "ERROR: no assembly graph file: ${assembly_graph_final_gfa}"
+		exit $EXIT_ERROR
+	fi
+
+	if [ ! -s "${_polap_var_annonation_table}" ]; then
+		echoall "ERROR: no annotation table: ${_polap_var_annonation_table}"
+		exit $EXIT_ERROR
+	fi
+
+	rm -rf "${_polap_var_mtcontigs}"
+	mkdir -p "${_polap_var_mtcontigs}"
+
+	echoerr "FILE: ${_polap_var_assembly_graph_final_gfa}"
+	echoerr "FILE: ${_polap_var_annonation_table}"
+	echoerr "FILE: $MTCONTIGNAME"
+
+	# 1. We could select mitochondrial- or plastid-derived contigs using a contig annotation table.
+	# 2. We determine the range of sequencing depths for those candidate contigs: mean +/- sd \* 3.
+	"$WDIR"/run-polap-select-contigs-by-gene-density-1-start.R \
+		${_polap_var_assembly_graph_final_gfa} \
+		${_polap_var_annonation_table} \
+		${_polap_var_mtcontig_annotated} \
+		${_polap_var_mtcontigs_stats}
+
+	echoerr "FILE: ${_polap_var_mtcontig_annotated}"
+
+	cut -f1 ${_polap_var_mtcontig_annotated} >${MTCONTIGNAME}
+
+	echoerr "FILE: ${MTCONTIGNAME}"
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+################################################################################
+# Selects mtDNA sequences from a GFA.
+#
+# annotation: uses 30-contigger/graph_final.gfa
+#
+# FIXME: need to check because assembly_graph.gfa and graph_final.gfa are different.
+# extraction: uses assembly_graph.gfa
+################################################################################
+function _run_polap_select-mtdna() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	MR=$_arg_min_read_length
+	FDIR="$ODIR"/$INUM
+	_polap_var_mtdna="$FDIR"/mtdna
+
+	# _polap_var_assembly_graph_final_gfa="$FDIR"/30-contigger/graph_final.gfa
+	_polap_var_assembly_graph_final_gfa="$FDIR"/assembly_graph.gfa
+	_polap_var_annonation_table="$FDIR"/assembly_info_organelle_annotation_count-all.txt
+	_polap_var_mt_fasta="$FDIR"/mt.0.fasta
+	_polap_var_mt_edges="$FDIR"/mt.0.edges
+
+	_polap_var_gfa_all=${_polap_var_mtdna}/1-gfa.all.gfa
+	_polap_var_gfa_links=${_polap_var_mtdna}/1-gfa.links.tsv
+	_polap_var_gfa_links_edges=${_polap_var_mtdna}/1-gfa.links.edges.txt
+	_polap_var_gfa_links_circular_path=${_polap_var_mtdna}/2-gfa.links.circular.path.txt
+	_polap_var_circular_path=${_polap_var_mtdna}/3-circular.path.txt
+	_polap_var_edge_fasta=${_polap_var_mtdna}/5-edge.fasta
+
+	_polap_var_gfa_links_order=${_polap_var_mtdna}/1-gfa.links.order.txt
+
+	_polap_var_gfa_links_seed=${_polap_var_mtdna}/2-gfa.links.seed.txt
+
+	_polap_var_annotated_edge=${_polap_var_mtdna}/3-annotated.edge.txt
+
+	# _polap_var_mtcontig_annotated=${_polap_var_mtdna}/1-mtcontig.annotated.txt
+	# _polap_var_mtdna_stats=${_polap_var_mtdna}/1-mtcontig.stats.txt
+	#
+	# _polap_var_gfa_seq_part=${_polap_var_mtdna}/2-gfa.seq.part.tsv
+	# _polap_var_gfa_seq_filtered=${_polap_var_mtdna}/2-gfa.seq.filtered.txt
+	# _polap_var_gfa_seq_filtered_range=${_polap_var_mtdna}/2-gfa.seq.filtered.range.txt
+	# _polap_var_gfa_seq_filtered_edge=${_polap_var_mtdna}/2-gfa.seq.filtered.edge.txt
+	# _polap_var_gfa_link_part=${_polap_var_mtdna}/gfa.link.part.tsv
+	# _polap_var_gfa_seq_filtered_link_added=${_polap_var_mtdna}/gfa.seq.filtered.link.added.txt
+	# _polap_var_gfa_filtered=${_polap_var_mtdna}/2-gfa.filtered.gfa
+
+	# _polap_var_gfa_links_contig=${_polap_var_mtdna}/1-gfa.links.contig.txt
+	# _polap_var_gfa_links_contig_na=${_polap_var_mtdna}/1-gfa.links.contig.na.txt
+
+	# _polap_var_gfa_links_mtcontig=${_polap_var_mtdna}/5-gfa.links.mtcontig.txt
+	# _polap_var_gfa_links_mtcontig_depth=${_polap_var_mtdna}/gfa.links.mtcontig.depth.txt
+
+	help_message=$(
+		cat <<HEREDOC
+# Selects mtDNA sequences from a GFA.
+#
+# Arguments:
+#   -i $INUM: organelle assembly number
+#
+# Inputs:
+#   ${_polap_var_assembly_graph_final_gfa}
+#   ${_polap_var_annonation_table}
+#
+# Outputs:
+#   ${_polap_var_mt_fasta}
+#
+Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>]
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
+
+	if [ ! -s "${_polap_var_assembly_graph_final_gfa}" ]; then
+		echoall "ERROR: no assembly graph file: ${assembly_graph_final_gfa}"
+		exit $EXIT_ERROR
+	fi
+
+	if [ ! -s "${_polap_var_annonation_table}" ]; then
+		echoall "ERROR: no annotation table: ${_polap_var_annonation_table}"
+		exit $EXIT_ERROR
+	fi
+
+	rm -rf "${_polap_var_mtdna}"
+	mkdir -p "${_polap_var_mtdna}"
+
+	echoerr "Inputs: ${_polap_var_assembly_graph_final_gfa}"
+	echoerr "Inputs: ${_polap_var_annonation_table}"
+	echoerr "Output: ${_polap_var_mt_fasta}"
+
+	# 1. List connected components: steps 1 and 2
+	gfatools view -S ${_polap_var_assembly_graph_final_gfa} >${_polap_var_gfa_all}
+
+	echoerr "FILE: ${_polap_var_gfa_all}"
+
+	cat ${_polap_var_gfa_all} | grep "^L" >${_polap_var_gfa_links}
+
+	_polap_var_number_links_gfa=$(cat ${_polap_var_gfa_links} | wc -l)
+	if [ "${_polap_var_number_links_gfa}" -eq 0 ]; then
+		echoerr "LOG: no circular sequences are found."
+		return
+	fi
+
+	echoerr "FILE: ${_polap_var_gfa_links}"
+
+	"$WDIR"/run-polap-select-mtdna-1-nx-gfa-links.R \
+		${_polap_var_gfa_links} \
+		${_polap_var_gfa_links_edges}
+
+	echoerr "FILE: ${_polap_var_gfa_links_edges}"
+
+	python "$WDIR"/run-polap-select-mtdna-2-nx-find-circular-path.py \
+		${_polap_var_gfa_links_edges} \
+		${_polap_var_gfa_links_circular_path}
+
+	echoerr "FILE: ${_polap_var_gfa_links_circular_path}"
+
+	tail -n +2 "${_polap_var_gfa_links_circular_path}" |
+		while IFS=$'\t' read -r col1 col2; do
+			# Extract number and sign from the first column
+			number1=$(echo "$col1" | grep -o '^[0-9]*')
+			sign1=$(echo "$col1" | grep -o '[+-]$')
+
+			# Append 'edge_' to the number and reattach the sign
+			new_col1="edge_${number1}\t${sign1}"
+
+			# Print the modified row
+			echo -e "$new_col1"
+
+		done >"${_polap_var_circular_path}"
+
+	echoerr "FILE: ${_polap_var_circular_path}"
+
+	_polap_var_fasta=${_polap_var_mtdna}/4-gfa.fasta
+
+	gfatools gfa2fa ${_polap_var_assembly_graph_final_gfa} \
+		>${_polap_var_fasta}
+
+	echoerr "FILE: ${_polap_var_fasta}"
+
+	# Create an empty file for the final concatenated sequence
+	>${_polap_var_edge_fasta}
+
+	# Loop through the list of IDs and their strand orientation
+	while read id strand; do
+		echoerr "$id"
+		echoerr "$strand"
+		if [[ "$strand" == "+" ]]; then
+			# If strand is +, just append the sequence to the final file
+			seqkit grep -p "$id" ${_polap_var_fasta} | seqkit seq >>${_polap_var_edge_fasta}
+		elif [[ "$strand" == "-" ]]; then
+			# If strand is -, reverse complement the sequence before appending
+			seqkit grep -p "$id" ${_polap_var_fasta} | seqkit seq -r -p >>${_polap_var_edge_fasta}
+		fi
+	done <${_polap_var_circular_path}
+
+	echo ">concatenated_sequence" >${_polap_var_mt_fasta}
+
+	seqkit fx2tab ${_polap_var_edge_fasta} |
+		cut -f2 |
+		tr -d '\n' >>${_polap_var_mt_fasta}
+
+	cp ${_polap_var_circular_path} ${_polap_var_mt_edges}
+
+	echoerr "Inputs: ${_polap_var_assembly_graph_final_gfa}"
+	echoerr "FILE: ${_polap_var_mt_edges}"
+	echoerr "FILE: ${_polap_var_mt_fasta}"
+
+	return
+
+	##########################################################
+
+	# 2. Choose the edge with the most MT genes.
+	"$WDIR"/run-polap-select-mtdna-3-annotated-edge.R \
+		${_polap_var_annonation_table} \
+		${_polap_var_gfa_links_order} \
+		${_polap_var_gfa_links_seed} \
+		${_polap_var_annotated_edge}
+
+	echoerr "FILE: ${_polap_var_annotated_edge}"
+
+	# 3. Find the shortest path for the connected component
+	#    that has the edge.
+	_polap_var_component_edge=${_polap_var_mtdna}/3-component.edge.txt
+
+	cp ${_polap_var_annotated_edge} ${_polap_var_component_edge}
+
+	_polap_var_gfa_component=${_polap_var_mtdna}/3-gfa.component.txt
+	_polap_var_gfa_component_graph=${_polap_var_mtdna}/3-gfa.component.graph.csv
+	_polap_var_gfa_cycle_component=${_polap_var_mtdna}/3-gfa.cycle.component.txt
+	_polap_var_gfa_cycle_edge=${_polap_var_mtdna}/3-gfa.cycle.edge.txt
+	_polap_var_gfa_cycle_edge_fasta=${_polap_var_mtdna}/3-gfa.cycle.edge.fasta
+	_polap_var_gfa_cycle_fasta=${_polap_var_mtdna}/3-gfa.cycle.fasta
+	_polap_var_fasta=${_polap_var_mtdna}/5-gfa.fasta
+
+	gfatools gfa2fa ${_polap_var_assembly_graph_final_gfa} \
+		>${_polap_var_fasta}
+
+	echoerr "FILE: ${_polap_var_fasta}"
+
+	gfatools view -S \
+		-l @${_polap_var_component_edge} \
+		${_polap_var_gfa_all} |
+		grep "^L" \
+			>${_polap_var_gfa_component}
+
+	echoerr "FILE: ${_polap_var_gfa_component}"
+
+	_polap_var_number_edge_component=$(cat ${_polap_var_gfa_component} | wc -l)
+	if [ "${_polap_var_number_edge_component}" -eq 1 ]; then
+		echo ">concatenated_sequence" >${_polap_var_gfa_cycle_fasta}
+		seqkit grep -f ${_polap_var_component_edge} ${_polap_var_fasta} |
+			seqkit seq -s >>${_polap_var_gfa_cycle_fasta}
+		echoerr "LOG: a single starting contig - done."
+		echoerr "FILE: ${_polap_var_gfa_cycle_fasta}"
+		return
+	fi
+
+	# step 4
+	"$WDIR"/run-polap-select-mtdna-3-graph-component.R \
+		${_polap_var_gfa_component} \
+		${_polap_var_gfa_component_graph}
+
+	echoerr "FILE: ${_polap_var_gfa_component_graph}"
+
+	# return
+
+	# FIXME: Macadamia case does not work.
+	# (polap) goshng@thorne:~/all/polap/figshare/Macadamia_tetraphylla/o/2/mtdna$ cat 3-gfa.component.graph.csv
+	# node1,node2,distance
+	# 1+,3-,1
+	# 1-,2-,1
+	# 2+,3+,1
+	# 2-,3-,1
+	# 1+,1-,1
+	# 3+,3-,1
+	# 2+,2-,1
+	# (polap) goshng@thorne:~/all/polap/figshare/Macadamia_tetraphylla/o/2/mtdna$ cat 3-gfa.cycle.component.txt
+	# 1+,1-
+	# 1-,2- <---
+	# 2-,2+
+	# 2+,3+ <---
+	# 3+,3-
+	# 3-,2- <---
+	# 2-,3- <---
+	# 3-,1+ <---
+	# FIXME: not working, 2 is repeated. Edge with different vertices should not exist.
+	# sometimes it works and not working some other. So, this is not working code.
+	# (polap) goshng@thorne:~/all/polap/figshare/Taraxacum_mongolicum/o/1/mtdna$ cat 3-gfa.cycle.component.txt
+	# 1+,1-
+	# 1-,2+ <---
+	# 2+,2-
+	# 2-,2+
+	# 2+,3+ <---
+	# 3+,3-
+	# 3-,2+ <---
+	# 2+,1+ <---
+	# (polap) goshng@thorne:~/all/polap/figshare/Taraxacum_mongolicum/o/1/mtdna$ cat 3-gfa.cycle.edge.txt
+	# edge_1  +
+	# edge_2  +
+	# edge_2  -
+	# edge_3  +
+
+	source $HOME/miniconda3/bin/activate p36
+
+	python "$WDIR"/run-polap-select-mtdna-4-find-cycle-component.py \
+		${_polap_var_gfa_component_graph} \
+		${_polap_var_gfa_cycle_component}
+
+	echoerr "FILE: ${_polap_var_gfa_cycle_component}"
+
+	conda deactivate
+
+	# return
+
+	# step 4
+	# FIXME: Macadamia case does not work: check o/2/mtdna.
+	"$WDIR"/run-polap-select-mtdna-5-cycle-edge.R \
+		${_polap_var_gfa_cycle_component} \
+		${_polap_var_gfa_cycle_edge}
+
+	echoerr "FILE: ${_polap_var_gfa_cycle_edge}"
+
+	# return
+
+	# Create an empty file for the final concatenated sequence
+	>${_polap_var_gfa_cycle_edge_fasta}
+
+	# Loop through the list of IDs and their strand orientation
+	while read id strand; do
+		if [[ "$strand" == "+" ]]; then
+			# If strand is +, just append the sequence to the final file
+			seqkit grep -p "$id" ${_polap_var_fasta} | seqkit seq >>${_polap_var_gfa_cycle_edge_fasta}
+		elif [[ "$strand" == "-" ]]; then
+			# If strand is -, reverse complement the sequence before appending
+			seqkit grep -p "$id" ${_polap_var_fasta} | seqkit seq -r -p >>${_polap_var_gfa_cycle_edge_fasta}
+		fi
+	done <${_polap_var_gfa_cycle_edge}
+
+	echoerr "FILE: ${_polap_var_gfa_cycle_edge_fasta}"
+
+	seqkit fx2tab ${_polap_var_gfa_cycle_edge_fasta} |
+		cut -f2 |
+		tr -d '\n' >concatenated_sequence.txt
+
+	echo ">concatenated_sequence" >${_polap_var_gfa_cycle_fasta}
+	cat concatenated_sequence.txt >>${_polap_var_gfa_cycle_fasta}
+
+	# seqkit concat ${_polap_var_gfa_cycle_edge_fasta} >${_polap_var_gfa_cycle_fasta}
+
+	echoerr "FILE: ${_polap_var_gfa_cycle_fasta}"
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+function _run_polap_select-mtdna-old-two-vertices() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	MR=$_arg_min_read_length
+	FDIR="$ODIR"/$INUM
+	_polap_var_mtdna="$FDIR"/mtdna
+
+	_polap_var_assembly_graph_final_gfa="$FDIR"/30-contigger/graph_final.gfa
+	_polap_var_annonation_table="$FDIR"/assembly_info_organelle_annotation_count-all.txt
+	_polap_var_mt_fasta="$FDIR"/mt.0.fasta
+
+	_polap_var_gfa_all=${_polap_var_mtdna}/1-gfa.all.gfa
+	_polap_var_gfa_links=${_polap_var_mtdna}/1-gfa.links.tsv
+	_polap_var_gfa_links_number=${_polap_var_mtdna}/1-gfa.links.number.txt
+	_polap_var_gfa_links_order=${_polap_var_mtdna}/1-gfa.links.order.txt
+
+	_polap_var_gfa_links_seed=${_polap_var_mtdna}/2-gfa.links.seed.txt
+
+	_polap_var_annotated_edge=${_polap_var_mtdna}/3-annotated.edge.txt
+
+	# _polap_var_mtcontig_annotated=${_polap_var_mtdna}/1-mtcontig.annotated.txt
+	# _polap_var_mtdna_stats=${_polap_var_mtdna}/1-mtcontig.stats.txt
+	#
+	# _polap_var_gfa_seq_part=${_polap_var_mtdna}/2-gfa.seq.part.tsv
+	# _polap_var_gfa_seq_filtered=${_polap_var_mtdna}/2-gfa.seq.filtered.txt
+	# _polap_var_gfa_seq_filtered_range=${_polap_var_mtdna}/2-gfa.seq.filtered.range.txt
+	# _polap_var_gfa_seq_filtered_edge=${_polap_var_mtdna}/2-gfa.seq.filtered.edge.txt
+	# _polap_var_gfa_link_part=${_polap_var_mtdna}/gfa.link.part.tsv
+	# _polap_var_gfa_seq_filtered_link_added=${_polap_var_mtdna}/gfa.seq.filtered.link.added.txt
+	# _polap_var_gfa_filtered=${_polap_var_mtdna}/2-gfa.filtered.gfa
+
+	# _polap_var_gfa_links_contig=${_polap_var_mtdna}/1-gfa.links.contig.txt
+	# _polap_var_gfa_links_contig_na=${_polap_var_mtdna}/1-gfa.links.contig.na.txt
+
+	# _polap_var_gfa_links_mtcontig=${_polap_var_mtdna}/5-gfa.links.mtcontig.txt
+	# _polap_var_gfa_links_mtcontig_depth=${_polap_var_mtdna}/gfa.links.mtcontig.depth.txt
+
+	help_message=$(
+		cat <<HEREDOC
+# Selects mtDNA sequences from a GFA.
+#
+# To identify mitochondrial DNAs:
+#
+# 1. List connected components: steps 1 and 2
+# 2. Choose the edge with the most MT genes.
+# 3. Find the shortest path for the connected component
+#    that has the edge.
+#
+# Arguments:
+#   -i $INUM: organelle assembly number
+#
+# Inputs:
+#   ${_polap_var_assembly_graph_final_gfa}
+#   ${_polap_var_annonation_table}
+#
+# Outputs:
+#   ${_polap_var_mt_fasta}
+#
+	# FIXME: we could have a little different graph for extracting mtDNA.
+	# First, edges have two sides or plus and minus. An implicit edge for an edge
+	# sequence is + to -: 3+,3- for edge 3. Then we need to use the strandness
+	# for a link row in a GFA file.
+	# For example,
+	# L       edge_1  +       edge_2  -       0M      L1:i:1799       L2:i:48402      RC:i:142
+	# L       edge_1  +       edge_2  +       0M      L1:i:1799       L2:i:48402      RC:i:135
+	# L       edge_1  -       edge_3  +       0M      L1:i:1799       L2:i:174640     RC:i:127
+	# L       edge_1  -       edge_3  -       0M      L1:i:1799       L2:i:174640     RC:i:151
+	#
+	# Implicit edge links are:
+	# edge_1 + -> edge_1 -
+	# edge_2 + -> edge_2 -
+	# edge_3 + -> edge_3 -
+	#
+	# 2024-09-08
+	# FIXME: For this example, I want to find an implementation for extracting a shortest cycle
+	# in an undirected graph. That was where I stopped.
+	#
+	# search
+	# Finding the shortest cycle in an undirected graph using every edge
+	# - [Chinese Postman in Python. Detailed Implementation & Explanation… | by Araz Sharma | Towards Data Science](https://towardsdatascience.com/chinese-postman-in-python-8b1187a3e5a)
+	# - [Intro to graph optimization: solving the Chinese Postman Problem – andrew brooks](https://brooksandrew.github.io/simpleblog/articles/intro-to-graph-optimization-solving-cpp/#overview-of-cpp-algorithm)
+	#
+	# Use this tool chinese_postman:
+	# - [postman_problems · PyPI](https://pypi.org/project/postman_problems/)
+	# I might use this code or executable.
+	#
+	# input: 1.csv
+	# node1,node2,distance
+	# 0,1,1
+	# 0,2,1
+	# 1,2,1
+	# 3,0,1
+	# 3,4,1
+	# 3,5,1
+	# 4,5,1
+	#
+	# chinese_postman --edgelist 1.csv
+	# chinese_postman --edgelist 1.csv 2>&1 | cut -d: -f3-
+	#
+	# output:
+	# Solving the chinese postman problem..
+	# Solution:
+	# ('0', '3', 0, {'distance': 1, 'id': 3, 'augmented': True})
+	# ('3', '5', 0, {'distance': 1, 'id': 5})
+	# ('5', '4', 0, {'distance': 1, 'id': 6})
+	# ('4', '3', 0, {'distance': 1, 'id': 4})
+	# ('3', '0', 0, {'distance': 1, 'id': 3})
+	# ('0', '2', 0, {'distance': 1, 'id': 1})
+	# ('2', '1', 0, {'distance': 1, 'id': 2})
+	# ('1', '0', 0, {'distance': 1, 'id': 0})
+	# Solution summary stats:
+	# distance_walked : 8
+	# distance_doublebacked : 1
+	# distance_walked_once : 7
+	# distance_walked_optional : 0
+	# distance_walked_required : 8
+	# edges_walked : 8
+	# edges_doublebacked : 1
+	# edges_walked_once : 7
+	# edges_walked_optional : 0
+	# edges_walked_required : 8
+	#
+	# Assume that we have a text file:
+	# edge_1
+	# edge_2
+	# edge_3
+	#
+Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>]
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
+
+	if [ ! -s "${_polap_var_assembly_graph_final_gfa}" ]; then
+		echoall "ERROR: no assembly graph file: ${assembly_graph_final_gfa}"
+		exit $EXIT_ERROR
+	fi
+
+	if [ ! -s "${_polap_var_annonation_table}" ]; then
+		echoall "ERROR: no annotation table: ${_polap_var_annonation_table}"
+		exit $EXIT_ERROR
+	fi
+
+	rm -rf "${_polap_var_mtdna}"
+	mkdir -p "${_polap_var_mtdna}"
+
+	echoerr "Inputs: ${_polap_var_assembly_graph_final_gfa}"
+	echoerr "Inputs: ${_polap_var_annonation_table}"
+	echoerr "Output: ${_polap_var_mt_fasta}"
+
+	# 1. List connected components: steps 1 and 2
+	gfatools view -S ${_polap_var_assembly_graph_final_gfa} >${_polap_var_gfa_all}
+
+	echoerr "FILE: ${_polap_var_gfa_all}"
+
+	cat ${_polap_var_gfa_all} | grep "^L" >${_polap_var_gfa_links}
+
+	_polap_var_number_links_gfa=$(cat ${_polap_var_gfa_links} | wc -l)
+	if [ "${_polap_var_number_links_gfa}" -eq 0 ]; then
+		echoerr "LOG: no circular sequences are found."
+		return
+	fi
+
+	echoerr "FILE: ${_polap_var_gfa_links}"
+
+	"$WDIR"/run-polap-select-mtdna-1-gfa-links.R \
+		${_polap_var_gfa_links} \
+		${_polap_var_gfa_links_number} \
+		${_polap_var_gfa_links_order}
+
+	echoerr "FILE: ${_polap_var_gfa_links_number}"
+	echoerr "FILE: ${_polap_var_gfa_links_order}"
+
+	python "$WDIR"/run-polap-select-mtdna-2-find-connected-components.py \
+		${_polap_var_gfa_links_number} \
+		dummy \
+		>${_polap_var_gfa_links_seed}
+
+	echoerr "FILE: ${_polap_var_gfa_links_seed}"
+
+	# 2. Choose the edge with the most MT genes.
+	"$WDIR"/run-polap-select-mtdna-3-annotated-edge.R \
+		${_polap_var_annonation_table} \
+		${_polap_var_gfa_links_order} \
+		${_polap_var_gfa_links_seed} \
+		${_polap_var_annotated_edge}
+
+	echoerr "FILE: ${_polap_var_annotated_edge}"
+
+	# 3. Find the shortest path for the connected component
+	#    that has the edge.
+	_polap_var_component_edge=${_polap_var_mtdna}/3-component.edge.txt
+
+	cp ${_polap_var_annotated_edge} ${_polap_var_component_edge}
+
+	_polap_var_gfa_component=${_polap_var_mtdna}/3-gfa.component.txt
+	_polap_var_gfa_component_graph=${_polap_var_mtdna}/3-gfa.component.graph.csv
+	_polap_var_gfa_cycle_component=${_polap_var_mtdna}/3-gfa.cycle.component.txt
+	_polap_var_gfa_cycle_edge=${_polap_var_mtdna}/3-gfa.cycle.edge.txt
+	_polap_var_gfa_cycle_edge_fasta=${_polap_var_mtdna}/3-gfa.cycle.edge.fasta
+	_polap_var_gfa_cycle_fasta=${_polap_var_mtdna}/3-gfa.cycle.fasta
+	_polap_var_fasta=${_polap_var_mtdna}/5-gfa.fasta
+
+	gfatools gfa2fa ${_polap_var_assembly_graph_final_gfa} \
+		>${_polap_var_fasta}
+
+	echoerr "FILE: ${_polap_var_fasta}"
+
+	gfatools view -S \
+		-l @${_polap_var_component_edge} \
+		${_polap_var_gfa_all} |
+		grep "^L" \
+			>${_polap_var_gfa_component}
+
+	echoerr "FILE: ${_polap_var_gfa_component}"
+
+	_polap_var_number_edge_component=$(cat ${_polap_var_gfa_component} | wc -l)
+	if [ "${_polap_var_number_edge_component}" -eq 1 ]; then
+		echo ">concatenated_sequence" >${_polap_var_gfa_cycle_fasta}
+		seqkit grep -f ${_polap_var_component_edge} ${_polap_var_fasta} |
+			seqkit seq -s >>${_polap_var_gfa_cycle_fasta}
+		echoerr "LOG: a single starting contig - done."
+		echoerr "FILE: ${_polap_var_gfa_cycle_fasta}"
+		return
+	fi
+
+	# step 4
+	"$WDIR"/run-polap-select-mtdna-3-graph-component.R \
+		${_polap_var_gfa_component} \
+		${_polap_var_gfa_component_graph}
+
+	echoerr "FILE: ${_polap_var_gfa_component_graph}"
+
+	# return
+
+	# FIXME: Macadamia case does not work.
+	# (polap) goshng@thorne:~/all/polap/figshare/Macadamia_tetraphylla/o/2/mtdna$ cat 3-gfa.component.graph.csv
+	# node1,node2,distance
+	# 1+,3-,1
+	# 1-,2-,1
+	# 2+,3+,1
+	# 2-,3-,1
+	# 1+,1-,1
+	# 3+,3-,1
+	# 2+,2-,1
+	# (polap) goshng@thorne:~/all/polap/figshare/Macadamia_tetraphylla/o/2/mtdna$ cat 3-gfa.cycle.component.txt
+	# 1+,1-
+	# 1-,2- <---
+	# 2-,2+
+	# 2+,3+ <---
+	# 3+,3-
+	# 3-,2- <---
+	# 2-,3- <---
+	# 3-,1+ <---
+	# FIXME: not working, 2 is repeated. Edge with different vertices should not exist.
+	# sometimes it works and not working some other. So, this is not working code.
+	# (polap) goshng@thorne:~/all/polap/figshare/Taraxacum_mongolicum/o/1/mtdna$ cat 3-gfa.cycle.component.txt
+	# 1+,1-
+	# 1-,2+ <---
+	# 2+,2-
+	# 2-,2+
+	# 2+,3+ <---
+	# 3+,3-
+	# 3-,2+ <---
+	# 2+,1+ <---
+	# (polap) goshng@thorne:~/all/polap/figshare/Taraxacum_mongolicum/o/1/mtdna$ cat 3-gfa.cycle.edge.txt
+	# edge_1  +
+	# edge_2  +
+	# edge_2  -
+	# edge_3  +
+
+	source $HOME/miniconda3/bin/activate p36
+
+	python "$WDIR"/run-polap-select-mtdna-4-find-cycle-component.py \
+		${_polap_var_gfa_component_graph} \
+		${_polap_var_gfa_cycle_component}
+
+	echoerr "FILE: ${_polap_var_gfa_cycle_component}"
+
+	conda deactivate
+
+	# return
+
+	# step 4
+	# FIXME: Macadamia case does not work: check o/2/mtdna.
+	"$WDIR"/run-polap-select-mtdna-5-cycle-edge.R \
+		${_polap_var_gfa_cycle_component} \
+		${_polap_var_gfa_cycle_edge}
+
+	echoerr "FILE: ${_polap_var_gfa_cycle_edge}"
+
+	# return
+
+	# Create an empty file for the final concatenated sequence
+	>${_polap_var_gfa_cycle_edge_fasta}
+
+	# Loop through the list of IDs and their strand orientation
+	while read id strand; do
+		if [[ "$strand" == "+" ]]; then
+			# If strand is +, just append the sequence to the final file
+			seqkit grep -p "$id" ${_polap_var_fasta} | seqkit seq >>${_polap_var_gfa_cycle_edge_fasta}
+		elif [[ "$strand" == "-" ]]; then
+			# If strand is -, reverse complement the sequence before appending
+			seqkit grep -p "$id" ${_polap_var_fasta} | seqkit seq -r -p >>${_polap_var_gfa_cycle_edge_fasta}
+		fi
+	done <${_polap_var_gfa_cycle_edge}
+
+	echoerr "FILE: ${_polap_var_gfa_cycle_edge_fasta}"
+
+	seqkit fx2tab ${_polap_var_gfa_cycle_edge_fasta} |
+		cut -f2 |
+		tr -d '\n' >concatenated_sequence.txt
+
+	echo ">concatenated_sequence" >${_polap_var_gfa_cycle_fasta}
+	cat concatenated_sequence.txt >>${_polap_var_gfa_cycle_fasta}
+
+	# seqkit concat ${_polap_var_gfa_cycle_edge_fasta} >${_polap_var_gfa_cycle_fasta}
+
+	echoerr "FILE: ${_polap_var_gfa_cycle_fasta}"
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+function ncbi_command_parse() {
+	BIOPRJ=""
+	SPECIES=""
+	SRA=""
+	while getopts "b:s:r:o:" option; do
+		case $option in
+		b) BIOPRJ=$OPTARG ;;
+		s) SPECIES=$OPTARG ;;
+		r) SRA=$OPTARG ;;
+		o) ODIR=$OPTARG ;;
+		# h) usage_of ;;
+		\?) # incorrect option
+			echo "Error: Invalid option; try -h option"
+			exit
+			;;
+		esac
+	done
+}
+
+function _run_polap_x-bioproject() {
+	ncbi_command_parse "$@"
+	esearch -db bioproject -query "$BIOPRJ" | elink -target sra | efetch -format runinfo >"$BIOPRJ".txt
+	echo "cat $BIOPRJ.txt | csvtk cut -f Run,bases,LibraryName,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName | csvtk pretty | less -S" 1>&2
+}
+
+function _run_polap_x-sra() {
+	ncbi_command_parse "$@"
+	# esearch -db sra -query $SRA | efetch -format runinfo | csvtk cut -f BioProject | csvtk del-header
+	esearch -db sra -query "$SRA" | efetch -format runinfo >"$SRA".txt
+	echo "use: cat $SRA.txt | csvtk cut -f BioProject | csvtk del-header" 1>&2
+}
+
+function _run_polap_x-bioproject2() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	mkdir $ODIR
+	BIOPRJ=$_arg_bioproject
+
+	MDATA="$ODIR/accessions_demo.txt"
+	esearch -db bioproject -query $BIOPRJ | elink -target biosample | efetch -format docsum | xtract.Linux -pattern DocumentSummary -block Ids -element Id -group SRA >${MDATA}
+	SRSs=$(cat ${MDATA} | while read LINE; do
+		NCOL=$(echo ${LINE} | wc -w)
+		ACC=$(echo ${LINE} | cut -d ' ' -f ${NCOL})
+		echo ${ACC}
+	done | xargs)
+
+	# SRS_str=$(join_by ' OR ' ${SRSs[@]})
+	# echoall $SRS_str
+	# esearch -db SRA -query "\"" $SRS_str "\"" | efetch -format runinfo | csvtk cut -f Run,bases,LibraryName,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName | csvtk pretty 1>&2
+
+	for SRS in ${SRSs[@]}; do
+		esearch -db SRA -query ${SRS} | efetch -format runinfo
+		# esearch -db SRA -query ${SRS} | efetch -format runinfo | tail -n +2
+	done >$ODIR/accessions_demo.tab
+	# csvtk cut -f Run,bases,LibraryName,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName | csvtk pretty 1>&2
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+function _run_polap_x-sra2() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	SRA=$_arg_sra
+	$script_dir/ncbitools fetch sra "$SRA"
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+################################################################################
+# TODO: get known mtDNA
+# compare known and the assembled using BLAST.
+# not use clustalw because it is too slow. We just use the length.
+#
+################################################################################
+function _run_polap_assemble-bioproject() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	MTDIR=$ODIR/$JNUM
+
+	help_message=$(
+		cat <<HEREDOC
+# NOT IMPLEMENTED YET!
+# because we need a manual long-read selection step.
+# You could execute this menu with option --test.
+#
+# Runs the organelle-genome assembly.
+# Arguments:
+#   -o $ODIR
+#   -b $SR2: bioproject ID
+# Inputs:
+#   $SR2: bioproject ID
+# Outputs:
+#   mt.1.fa
+Example: $(basename $0) ${_arg_menu[0]} -b PRJNA574453
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
+
+	_polap_var_bioproject=bioproject
+	_polap_var_bioproject_runinfo=${_polap_var_bioproject}/1-runinfo.tsv
+	_polap_var_bioproject_sra_long_read=${_polap_var_bioproject}/1-sra-long-read.tsv
+	_polap_var_bioproject_sra_short_read=${_polap_var_bioproject}/1-sra-short-read.tsv
+
+	rm -rf ${_polap_var_bioproject}
+	mkdir -p ${_polap_var_bioproject}
+
+	BIOPRJ=$SR2
+	esearch -db bioproject -query "$BIOPRJ" |
+		elink -target sra |
+		efetch -format runinfo |
+		csvtk cut -f Run,bases,LibraryName,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName |
+		csvtk csv2tab >${_polap_var_bioproject_runinfo}
+
+	echoerr "FILE: ${_polap_var_bioproject_runinfo}"
+
+	"$WDIR"/run-polap-assemble-bioproject-1-select-sra.R \
+		${_polap_var_bioproject_runinfo} \
+		${_polap_var_bioproject_sra_long_read} \
+		${_polap_var_bioproject_sra_short_read}
+
+	echoerr "FILE: ${_polap_var_bioproject_runinfo}"
+	echoerr "FILE: ${_polap_var_bioproject_sra_long_read}"
+	echoerr "FILE: ${_polap_var_bioproject_sra_short_read}"
+
+	if [ -s ${_polap_var_bioproject_sra_long_read} ]; then
+		SRA=$(cut -f1 ${_polap_var_bioproject_sra_long_read})
+		"$script_dir"/run-polap-ncbitools fetch sra "$SRA"
+		LR=$SRA.fastq
+	else
+		die "ERROR: no long-read dataset for the BioProject: $BIOPRJ"
+	fi
+
+	if [ -s ${_polap_var_bioproject_sra_short_read} ]; then
+		SRA=$(cut -f1 ${_polap_var_bioproject_sra_short_read})
+		SR1=${SRA}_1.fastq
+		SR2=${SRA}_2.fastq
+		"$script_dir"/run-polap-ncbitools fetch sra "$SRA"
+	else
+		die "ERROR: no short-read dataset for the BioProject: $BIOPRJ"
+	fi
+
+	_run_polap_assemble1
+	_run_polap_annotate
+	_run_polap_select-contigs
+	# check the mt.contig.name-1
+	if [ ! -s "$MTCONTIGNAME" ]; then
+		die "LOG: $MTCONTIGNAME is empty. You have to choose seed contigs by yourself."
+	fi
+	_run_polap_assemble2
+	INUM=1 _run_polap_annotate
+	_run_polap_flye-polishing
+	INUM=1 _run_polap_select-mtdna
+	_run_polap_prepare-polishing
+	PA=$ODIR/1/mt.0.fasta
+	FA=$ODIR/1/mt.1.fa
+	_run_polap_polish
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+function _run_polap_x-ncbi-mtdna() {
+	ncbi_command_parse "$@"
+	_polap_var_bioproject=bioproject
+	_polap_var_bioproject_runinfo=${_polap_var_bioproject}/1-runinfo.tsv
+	_polap_var_bioproject_sra_long_read=${_polap_var_bioproject}/1-sra-long-read.tsv
+	_polap_var_bioproject_mtdna_all_fasta=${_polap_var_bioproject}/1-mtdna-all.fasta
+	_polap_var_bioproject_mtdna_stats=${_polap_var_bioproject}/1-mtdna.stats
+	_polap_var_bioproject_mtdna=${_polap_var_bioproject}/2-mtdna.fasta
+	_polap_var_bioproject_blastn1=${_polap_var_bioproject}/3-blastn1.txt
+	_polap_var_bioproject_blastn2=${_polap_var_bioproject}/3-blastn2.txt
+	_polap_var_bioproject_blastn3=${_polap_var_bioproject}/3-blastn3.txt
+	_polap_var_bioproject_blastn3_length=${_polap_var_bioproject}/3-blastn3.length.txt
+
+	_polap_var_mtdna1=$ODIR/1/mt.1.fa
+	_polap_var_mtdna2=$ODIR/1/mt.2.fa
+	_polap_var_mtdna3=$ODIR/1/mt.3.fa
+
+	SPECIES=$(cut -f4 ${_polap_var_bioproject_sra_long_read})
+	echoerr "LOG: bioproject's species: $SPECIES"
+
+	# esearch -db nuccore \
+	# 	-query "(mitochondrion[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]" |
+	# 	efetch -format fasta >${_polap_var_bioproject_mtdna_all_fasta}
+	# seqkit stats ${_polap_var_bioproject_mtdna_all_fasta} --all >${_polap_var_bioproject_mtdna_stats}
+	#
+	# echoerr "FILE: ${_polap_var_bioproject_mtdna_stats}"
+	#
+	# seqkit head -n 1 ${_polap_var_bioproject_mtdna_all_fasta} -o ${_polap_var_bioproject_mtdna}
+	#
+	# echoerr "FILE: ${_polap_var_bioproject_mtdna}"
+
+	blastn -query ${_polap_var_mtdna1} -subject ${_polap_var_bioproject_mtdna} \
+		-outfmt "6 qseqid qstart sseqid sstart sstrand" \
+		>${_polap_var_bioproject_blastn1}
+
+	blastn -query ${_polap_var_mtdna1} -subject ${_polap_var_bioproject_mtdna} \
+		>${_polap_var_bioproject_blastn1}.full
+
+	echoerr "FILE: ${_polap_var_bioproject_blastn1}"
+
+	_polap_var_bioproject_strand=$(cut -f5 ${_polap_var_bioproject_blastn1} | head -n 1)
+
+	if [ ${_polap_var_bioproject_strand} = "plus" ]; then
+		cp ${_polap_var_mtdna1} ${_polap_var_mtdna2}
+	else
+		# reversed
+		seqkit seq -p -r ${_polap_var_mtdna1} -o ${_polap_var_mtdna2}
+	fi
+
+	blastn -query ${_polap_var_mtdna2} -subject ${_polap_var_bioproject_mtdna} \
+		-outfmt "6 qseqid qstart sseqid sstart sstrand" \
+		>${_polap_var_bioproject_blastn2}
+
+	echoerr "FILE: ${_polap_var_bioproject_blastn2}"
+
+	# restart the position at 1.
+	_polap_var_bioproject_restart_position=$(sort -n -k4 ${_polap_var_bioproject_blastn2} | head -n 1 | cut -f2)
+	echoerr "LOG: restart position: ${_polap_var_bioproject_restart_position}"
+	seqkit restart -i ${_polap_var_bioproject_restart_position} \
+		${_polap_var_mtdna2} -o ${_polap_var_mtdna3}
+
+	blastn -query ${_polap_var_mtdna3} -subject ${_polap_var_bioproject_mtdna} \
+		-outfmt "6 qseqid qstart sseqid sstart sstrand length pident" \
+		>${_polap_var_bioproject_blastn3}
+
+	echoerr "FILE: ${_polap_var_bioproject_blastn3}"
+
+	"$WDIR"/run-polap-assemble-bioproject-3-length-match.R \
+		${_polap_var_bioproject_blastn3} \
+		${_polap_var_bioproject_blastn3_length}
+
+	echoerr "FILE: ${_polap_var_bioproject_blastn3_length}"
+}
+
+function _run_polap_x-ncbi-ptdna() {
+	ncbi_command_parse "$@"
+	esearch -db nuccore \
+		-query "(chloroplast[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]" |
+		efetch -format fasta >pt.fasta
+}
+
+function _run_polap_x-help() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	print_x-help 1>&2
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+################################################################################
+# Blast the final mtDNA sequence.
+################################################################################
+function _run_polap_blast-mtdna() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	ANUM=$INUM
+	MTAA="$WDIR"/polap-mt.1.c70.3.faa
+	PTAA="$WDIR"/polap-pt.2.c70.3.faa
+
+	# FDIR="$ODIR"/$ANUM
+	# assembly_contigs_stats="$FDIR"/30-contigger/contigs_stats.txt
+	# assembly_contigs_fasta="$FDIR"/30-contigger/contigs.fasta
+	# ADIR="$FDIR"/50-annotation
+	# CONTIGFILE="$ADIR"/contig.fasta
+	# CONTIGDB="$ADIR"/contig
+	# MTAABLAST="$ADIR"/mtaa.blast
+	# MTAABED="$ADIR"/mtaa.bed
+	# MTGENECOUNT="$ADIR"/mt.gene.count
+	# PTAABLAST="$ADIR"/ptaa.blast
+	# PTAABED="$ADIR"/ptaa.bed
+	# PTGENECOUNT="$ADIR"/pt.gene.count
+	# CONTIGNAME="$ADIR"/contig.name
+
+	help_message=$(
+		cat <<HEREDOC
+# Blast the final mtDNA sequence.
+# Arguments:
+#   -f $FA
+# Inputs:
+#   $ODIR/$INUM/$FA
+# Outputs:
+Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>] -f mt.1.fa -o [$ODIR]
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
+
+	_polap_var_chloroplot=$ODIR/$INUM/60-chloroplot
+	echoall "please, wait for annotation with mitochondrial and plastid genes on $FA"
+
+	if [ ! -s "$FA" ]; then
+		echoall "ERROR: no FASTA file [$FA]"
+		exit $EXIT_ERROR
+	fi
+
+	if [ -d "${_polap_var_chloroplot}" ]; then
+		rm -rf "${_polap_var_chloroplot}"
+		echo "INFO: ${_polap_var_chloroplot} is deleted."
+	fi
+	mkdir -p "${_polap_var_chloroplot}"
+	echo "INFO: ${_polap_var_chloroplot} is created."
+
+	makeblastdb -dbtype nucl \
+		-in "${FA}" \
+		-out "${_polap_var_chloroplot}"/dna \
+		>/dev/null 2>&1
+	echo "INFO: BLASTDB of the contig sequences: ${_polap_var_chloroplot}/dna"
+
+	# mtDNA gene annotation and counts
+	echo "INFO: BLAST of the mitochondrial proteins againt ${_polap_var_chloroplot}/dna"
+	echo "INFO: executing the tblastn ... be patient!"
+	# tblastn -query "$MTAA" \
+	# 	-db "${_polap_var_chloroplot}"/dna \
+	# 	-out "${_polap_var_chloroplot}"/mtaa.blast.full \
+	# 	-evalue 1e-30 \
+	# 	-num_threads "$NT" \
+	# 	>/dev/null 2>&1
+
+	tblastn -query "$MTAA" \
+		-db "${_polap_var_chloroplot}"/dna \
+		-out "${_polap_var_chloroplot}"/mtaa.blast \
+		-evalue 1e-30 \
+		-outfmt '6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle salltitles' \
+		-num_threads "$NT" \
+		>/dev/null 2>&1
+
+	"$WDIR"/run-polap-genes.R "${_polap_var_chloroplot}"/mtaa.blast \
+		"${_polap_var_chloroplot}"/mtaa.blast.bed \
+		>/dev/null 2>&1
+	sort -k1,1 -k2,2n "${_polap_var_chloroplot}"/mtaa.blast.bed >"${_polap_var_chloroplot}/mtaa.blast.sorted.bed"
+
+	mkdir "${_polap_var_chloroplot}"/mtaa.bed
+
+	"$WDIR"/run-polap-genes-bed4.R "${_polap_var_chloroplot}"/mtaa.blast \
+		"${_polap_var_chloroplot}"/mtaa.blast.bed4
+	# >/dev/null 2>&1
+
+	echo "INFO: counting mitochondrial genes in the contigs"
+	bedtools merge -i "${_polap_var_chloroplot}/mtaa.blast.sorted.bed" >${_polap_var_chloroplot}/mtaa.blast.sorted.bed.txt
+
+	echoerr "FILE: ${_polap_var_chloroplot}/mtaa.blast.sorted.bed.txt"
+
+	# head -n 1 "${_polap_var_chloroplot}/mtaa.blast.sorted.bed.txt" >1
+
+	_polap_var_i=1
+	while IFS= read -r gene; do
+		printf "%s\n" "$gene" >"${_polap_var_chloroplot}"/${_polap_var_i}.gene.bed
+		bedtools intersect -wa \
+			-a "${_polap_var_chloroplot}"/mtaa.blast.bed4 \
+			-b "${_polap_var_chloroplot}"/${_polap_var_i}.gene.bed \
+			>"${_polap_var_chloroplot}"/${_polap_var_i}.bed4
+
+		"$WDIR"/run-polap-blast-mtdna-1-determine-gene.R \
+			"${_polap_var_chloroplot}"/${_polap_var_i}.bed4 \
+			"$WDIR"/polap-mt.1.c70.3.faa.name \
+			"$WDIR"/polap-mtgenes.txt \
+			"${_polap_var_chloroplot}"/${_polap_var_i}.gene \
+			"${_polap_var_chloroplot}"/${_polap_var_i}.bed4.description \
+			"${_polap_var_chloroplot}"/${_polap_var_i}.bed4.count \
+			>/dev/null 2>&1
+
+		_polap_var_i=$((_polap_var_i + 1))
+
+	done <"${_polap_var_chloroplot}/mtaa.blast.sorted.bed.txt"
+
+	paste \
+		<(cat "${_polap_var_chloroplot}"/*.gene.bed) \
+		<(cat "${_polap_var_chloroplot}"/*.gene) \
+		>"${_polap_var_chloroplot}"/annotation.bed
+
+	echoerr "FILE: ${_polap_var_chloroplot}/annotation.bed"
+	echoerr "CHECK: ${_polap_var_chloroplot}/*.check"
+	ls ${_polap_var_chloroplot}/*.check 1>&2
+
+	# Combine the following:
+	# 1.gene
+	# 1.gene.bed
+	#
+	#
+
+	# csvtk cut -t -f 2,9,10,1 "${_polap_var_chloroplot}"/mtaa.blast >2
+
+	# cut -f "${_polap_var_chloroplot}"/mtaa.blast
+
+	# if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	# while IFS= read -r contig; do
+	# 	grep -w "$contig" "$MTAABLAST".sorted.bed >"$MTAABED"/"$contig".bed
+	# 	bedtools merge -i "$MTAABED"/$contig.bed >"$MTAABED"/"$contig".bed.txt
+	# 	printf "%s\t%d\n" "$contig" $(wc -l <"$MTAABED"/$contig.bed.txt)
+	# done <"$CONTIGNAME" | sort -k2 -rn >"$MTGENECOUNT"
+	# if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	# echo "INFO: compressing the BLAST results of mitochondrial gene annotation"
+	# tar zcf "$ADIR"/mtaa.bed.tar.gz "$ADIR"/mtaa.bed
+	# rm -rf "$ADIR"/mtaa.bed
+
+	echoerr "NEXT: $(basename $0) gene-table-mtdna -o $ODIR [-i $INUM]"
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+################################################################################
+# based on _run_polap_count-gene
+#
+# Gene table for importing to Chloroplot R package.
+################################################################################
+function _run_polap_plot-mtdna() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	FDIR="$ODIR"/$INUM
+	_polap_var_chloroplot=$ODIR/$INUM/60-chloroplot
+
+	help_message=$(
+		cat <<HEREDOC
+# Counts genes annotated on a genome assembly.
+# Arguments:
+#   -i $INUM: a Flye genome assembly number
+# Inputs:
+#   $FDIR/30-contigger/contigs_stats.txt
+#   $MTGENECOUNT
+#   $PTGENECOUNT
+# Outputs:
+#   $FDIR/mt.contig.name-1
+#   $FDIR/mt.contig.name-2
+#   $FDIR/assembly_info_organelle_annotation_count.txt
+#   $FDIR/assembly_info_organelle_annotation_count-all.txt
+#   $FDIR/contig-annotation-table.txt 
+Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>]
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
+
+	echoall "INFO: plot mitochondrial DNA genome on $INUM ..."
+
+	"$WDIR"/run-polap-plot-mtdna.R \
+		${_polap_var_chloroplot}/annotation.bed \
+		$ODIR/$INUM/mt.3.fa
+	>/dev/null 2>&1
+
+	echoerr "FILE: see mt.3.pdf"
+
+	# echoerr NEXT: $(basename "$0") select-reads -o "$ODIR" [-i $ANUM] [-j $ANUMNEXT]
+	# echoerr NEXT: $(basename "$0") assemble2 -o "$ODIR" [-i $ANUM] [-j $ANUMNEXT]
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+################################################################################
 # Selects and assembles long-read data.
 # Arguments:
 #   -i 0
@@ -2072,8 +3585,19 @@ HEREDOC
 
 	_run_polap_assemble1
 	_run_polap_annotate
+	_run_polap_select-contigs
+	# check the mt.contig.name-1
+	if [ ! -s "$MTCONTIGNAME" ]; then
+		die "LOG: $MTCONTIGNAME is empty. You have to choose seed contigs by yourself."
+	fi
 	_run_polap_assemble2
-	_run_polap_flye-polishing
+	INUM=1 _run_polap_annotate
+	# _run_polap_flye-polishing
+	INUM=1 _run_polap_select-mtdna
+	_run_polap_prepare-polishing
+	PA=$ODIR/1/mt.0.fasta
+	FA=$ODIR/1/mt.1.fa
+	_run_polap_polish
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }

@@ -106,7 +106,7 @@ _arg_verbose=0
 
 print_help() {
 	printf '%s\n' "POLAP - Plant organelle DNA long-read assembly pipeline."
-	printf '%s\n' "version 0.2.6"
+	printf '%s\n' "version 0.3.1"
 	printf '\n'
 	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)coverage-check] [-u|--(no-)circularize] [--(no-)test] [--log <arg>] [-v|--version] [-h|--help]\n'
 	printf '       polap <menu> help\n'
@@ -114,7 +114,7 @@ print_help() {
 	printf '%s\n' "menu: list, make-menus, or clean-menus"
 	printf '%s\n' "      assemble1, annotate, assemble2, flye-polishing,"
 	printf '%s\n' "      reset, total-length-long, find-genome-size, reduce-data, flye1"
-	printf '%s\n' "      blast-genome, count-gene, select-reads, flye2,"
+	printf '%s\n' "      blast-genome, count-gene, select-contigs, select-reads, flye2,"
 	printf '%s\n' "      flye-polishing, check-coverage,"
 	printf '%s\n' "      prepare-polishing, polish,"
 	printf '\n'
@@ -132,6 +132,9 @@ print_help() {
 	printf '%s\n' '  or'
 	printf '%s\n' '  polap blast-genome [-i|--inum <arg>]'
 	printf '%s\n' '  polap count-genes [-i|--inum <arg>]'
+	printf '\n'
+	printf '%s\n' 'Menu: select-contigs'
+	printf '%s\n' '  polap select-contigs [-o|--outdir <arg>] [-i|--inum <arg>] [-j|--jnum <arg>]'
 	printf '\n'
 	printf '%s\n' 'Menu: assemble2'
 	printf '%s\n' '  polap assemble2 [-o|--outdir <arg>] [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]'

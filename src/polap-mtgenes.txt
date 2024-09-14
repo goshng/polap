@@ -1,0 +1,58 @@
+ATP1	ATP1,ATP synthase F1 subunit alpha
+ATP4	ATP4,ATP synthase subunit 4,ATPase subunit 4,ATPase F0 complex subunit 4
+ATP6	ATP6,ATP synthase subunit 6,ATPase subunit 6,ATP synthase F0 subunit 6,ATP synthase F0 subunit a
+ATP8	ATP8,ATPase subunit 8,ATP synthase subunit 8
+CCMB	CCMB,cytochrome c maturation subunit B,cytochrome c biogenesis B
+CCMC	CCMC,cytochrome c maturation subunit C,cytochrome c maturase subunit C,cytochrome c biogenesis C
+CCMFC	CCMFC,cytochrome c maturase subunit Fc,cytochrome c biogenesis FC,cytochrome c biogenesis factor C,CcmFC
+CCMFN	CCMFN,cytochrome c maturase,cytochrome c biogenesis FN,cytochrome c biogenesis factor N,CcmFN
+COX1	COX1,cytochrome c oxidase subunit 1,cytochrome c oxidase subunit I,cytochrome c oxidase subunit 1
+COX2	COX2,cytochrome c oxidase subunit 2,cytochrome c oxidase subunit II,cytochrome c oxidase subunit 2
+COX3	COX3,cytochrome c oxidase subunit 3,cytochrome c oxidase subunit III,cytochrome c oxidase subunit 3
+CYTB	CYTB,cytochrome b,apocytochrome b,cob,CytBp
+MTTB	MTTB
+MATR	MATR,maturase-related protein,maturase
+ND1	ND1,NADH dehydrogenase subunit 1,Nad1
+ND2	ND2,NADH dehydrogenase subunit 2,Nad2
+ND3	ND3,NADH dehydrogenase subunit 3,Nad3
+ND4	ND4,NADH dehydrogenase subunit 4,Nad4
+ND4L	ND4L,NADH dehydrogenase subunit 4L
+ND5	ND5,NADH dehydrogenase subunit 5,Nad5
+ND6	ND6,NADH dehydrogenase subunit 6,Nad6
+ND7	ND7,NADH dehydrogenase subunit 7,Nad7
+ND9	ND9,NADH dehydrogenase subunit 9,Nad9
+RNR1	RNR1
+RNR2	RNR2
+RPO	RPO
+RPL	RPL,ribosomal protein L
+RPL5	RPL5,ribosomal protein L5
+RPL10	RPL10,ribosomal protein L10
+RPS	RPS,ribosomal protein S
+RPS1	RPS1,ribosomal protein S1
+RPS2	RPS2,ribosomal protein S2
+RPS4	RPS4,ribosomal protein S4,ribosomal protein 4,ribosomal protein subunit S4
+RPS7	RPS2,ribosomal protein S7
+RPS12	RPS2,ribosomal protein S12
+RPS13	RPS2,ribosomal protein S13
+TRNA	TRNA
+TRNC	TRNC
+TRND	TRND
+TRNE	TRNE
+TRNF	TRNF
+TRNG	TRNG
+TRNH	TRNH
+TRNI	TRNI
+TRNK	TRNK
+TRNL1	TRNL1
+TRNL2	TRNL2
+TRNM	TRNM
+TRNN	TRNN
+TRNP	TRNP
+TRNQ	TRNQ
+TRNR	TRNR
+TRNS1	TRNS1
+TRNS2	TRNS2
+TRNT	TRNT
+TRNV	TRNV
+TRNW	TRNW
+TRNY	TRNY

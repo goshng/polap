@@ -17,39 +17,94 @@
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))
 suppressPackageStartupMessages(library("tidyr"))
-args = commandArgs(trailingOnly=TRUE)
+args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) > 0) {
   input1 <- args[1]
   output1 <- args[2]
   output2 <- args[3]
   output3 <- args[4]
+  output4 <- args[5]
 } else {
-  s="bioprojects"
-  input_dir0 <- file.path("/media/h2/goshng/figshare", s, "o/bioproject")
+  s <- "bioprojects"
+  input_dir0 <- file.path("/media/h2/goshng/figshare", s, "o/0-bioproject")
   input1 <- file.path(input_dir0, "1-runinfo.tsv")
   output1 <- file.path(input_dir0, "1-sra-long-read.txt")
   output2 <- file.path(input_dir0, "1-sra-short-read.txt")
   output3 <- file.path(input_dir0, "1-species.txt")
+  output4 <- file.path(input_dir0, "1-runinfo.per.species.tsv")
 }
 
 x1 <- read_tsv(input1, col_names = TRUE)
 
+# Load the data
+data <- x1
+
+# Filter and select runs for OXFORD_NANOPORE platform
+selected_runs_nano <- data |>
+  filter(
+    LibraryStrategy == "WGS", # we need this.
+    LibrarySource == "GENOMIC",
+    Platform == "OXFORD_NANOPORE"
+  ) |>
+  group_by(ScientificName) |>
+  filter(bases == max(bases)) |>
+  ungroup()
+
+# Filter and select runs for ILLUMINA platform
+selected_runs_illumina <- data |>
+  filter(
+    LibraryStrategy == "WGS", # we need this.
+    LibrarySource == "GENOMIC",
+    Platform == "ILLUMINA"
+  ) |>
+  group_by(ScientificName) |>
+  filter(bases == max(bases)) |>
+  ungroup()
+
+# Find ScientificNames present in both selected runs
+common_scientific_names <- intersect(
+  selected_runs_nano$ScientificName,
+  selected_runs_illumina$ScientificName
+)
+
+# Filter rows with ScientificName present in both selected runs
+selected_runs_common_nano <- selected_runs_nano |>
+  filter(ScientificName %in% common_scientific_names)
+
+selected_runs_common_illumina <- selected_runs_illumina |>
+  filter(ScientificName %in% common_scientific_names)
+
+# Create a table with three columns.
+# ScientificName, Run from OXFORD_NANOPORE, and Run from ILLUMINA
+result_table <- selected_runs_common_nano |>
+  select(ScientificName, Run_Nano = Run) |>
+  left_join(
+    selected_runs_common_illumina |>
+      select(ScientificName, Run_Illumina = Run),
+    by = "ScientificName"
+  ) |>
+  write_tsv(output4)
+
 l1 <- x1 |>
-  filter(LibrarySource == "GENOMIC", 
-         Platform == "OXFORD_NANOPORE", 
-         LibraryLayout == "SINGLE") |>
-  select(Run, bases, Platform, ScientificName)
+  filter(
+    LibrarySource == "GENOMIC",
+    Platform == "OXFORD_NANOPORE",
+    LibraryLayout == "SINGLE"
+  ) |>
+  select(Run, bases, LibraryStrategy, LibrarySource, Platform, ScientificName)
 
 l1 |>
   filter(bases == max(bases)) |>
   write_tsv(output1, col_names = FALSE)
 
 s1 <- x1 |>
-  filter(LibrarySource == "GENOMIC", 
-         Platform == "ILLUMINA", 
-         LibraryLayout == "PAIRED") |>
-  select(Run, bases, Platform, ScientificName)
+  filter(
+    LibrarySource == "GENOMIC",
+    Platform == "ILLUMINA",
+    LibraryLayout == "PAIRED"
+  ) |>
+  select(Run, bases, LibraryStrategy, LibrarySource, Platform, ScientificName)
 
 s1 |>
   filter(bases == max(bases)) |>

@@ -4,6 +4,7 @@
 function _run_polap_get-bioproject-sra() {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log1 "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
 	local _polap_output_dest="/dev/null"
@@ -32,8 +33,10 @@ HEREDOC
 		csvtk del-header \
 			>"${ODIR}/bioproject.txt"
 
-	_polap_log1 $(cat "${ODIR}/bioproject.txt")
+	_polap_log1_file "${ODIR}/bioproject.txt"
+	_polap_log0 $(head -n 1 "${ODIR}/bioproject.txt")
 
+	_polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }

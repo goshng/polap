@@ -1,0 +1,15 @@
+bioprojects.log.passed
+
+bioproject ID
+
+taxonomy order family species mtDNA accession long SRA short SRA  assembled length  length coverage   Type
+
+# select contig
+
+main 1
+select contig - 2 - using all mt contig group
+mt & pt
+depth cut 5 steps
+
+esearch -db taxonomy -query "taxon_name" | efetch -format docsum | xtract -pattern DocumentSummary -element TaxId
+

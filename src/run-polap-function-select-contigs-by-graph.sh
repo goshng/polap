@@ -10,28 +10,23 @@
 # We need to read GFA files to manipulate.
 # We need to determine connected components.
 ################################################################################
-function _run_polap_select-contigs() {
+function _run_polap_select-contigs-by-graph() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
-	if [ "${_arg_verbose}" -ge 2 ]; then
-		# echo "${_arg_verbose} > ${msg_level}: $message"
-		local _polap_output_dest="/dev/stderr"
-	else
-		local _polap_output_dest="/dev/null"
-	fi
-	# echo "verbose level: ${_arg_verbose}" >&2
-	# echo "_polap_output_dest: ${_polap_output_dest}" >&2
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge 3 ] && _polap_output_dest="/dev/stderr"
 
+	# Grouped file path declarations
 	local FDIR="$ODIR"/$INUM
 	local MTCONTIGNAME="$FDIR"/mt.contig.name-"$JNUM"
 	local _polap_var_mtcontigs="$FDIR"/"$JNUM"/mtcontigs
-
-	# Grouped file path declarations
 	local _polap_var_assembly_graph_final_fasta="${FDIR}/30-contigger/graph_final.fasta"
 	local _polap_var_assembly_graph_final_gfa="${FDIR}/30-contigger/graph_final.gfa"
 	local _polap_var_annotation_table="${FDIR}/assembly_info_organelle_annotation_count-all.txt"
 	local _polap_var_mtcontig_annotated="${_polap_var_mtcontigs}/1-mtcontig.annotated.txt"
 	local _polap_var_mtcontigs_stats="${_polap_var_mtcontigs}/1-mtcontig.stats.txt"
+
 	local _polap_var_gfa_all="${_polap_var_mtcontigs}/2-gfa.all.gfa"
 	local _polap_var_gfa_seq_part="${_polap_var_mtcontigs}/2-gfa.seq.part.tsv"
 	local _polap_var_gfa_seq_filtered="${_polap_var_mtcontigs}/2-gfa.seq.filtered.txt"

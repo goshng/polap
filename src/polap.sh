@@ -96,101 +96,39 @@ function run_check3() {
 	return $RETURN_SUCCESS
 }
 
-###############################################################################
-# You could use this function template to create a new menu.
-# Rename template and delete x in the name. You could execute such menu
-# but such menus are not created as empty files by make-menus menu.
-###############################################################################
-function _run_polap_template() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
-
-	echo "verbose level: ${_arg_verbose}" >&2
-	echoall "command: $0"
-	echoall "function: $FUNCNAME"
-	echoall "menu2: [$1]"
-	echoall "menu3: [$2]"
-	echoerr "LOG: echoerr"
-	echoall "LOG: echoall"
-
-	_polap_log0 "Log level 0"
-	_polap_log1 "Log level 1"
-	_polap_log2 "Log level 2"
-	_polap_log0_file "log0.file"
-	_polap_log1_file "log1.file"
-	_polap_log2_file "log2.file"
-
-	if [ "${_arg_verbose}" -ge 2 ]; then
-		# echo "${_arg_verbose} > ${msg_level}: $message"
-		local _polap_output_dest="/dev/stderr"
-	else
-		local _polap_output_dest="/dev/null"
-	fi
-
-	echo "stdout message" >"${_polap_output_dest}"
-
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
-}
-
-###############################################################################
-# Feteches SRA data file.
-# Arguments:
-#   --sra SRR10190639
-# Outputs:
-#   SRR10190639.fastq
-###############################################################################
-function _run_polap_x-ncbi-fetch-sra() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
-
-	help_message=$(
-		cat <<HEREDOC
-# Feteches SRA data file.
-# Arguments:
-#   --sra SRR10190639
-# Outputs:
-#   SRR10190639.fastq
-Example: $(basename $0) ${_arg_menu[0]} --sra <arg>
-HEREDOC
-	)
-
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
-		exit $EXIT_SUCCESS
-	fi
-
-	if ! run_check1; then
-		echoerr "ERROR: change your conda environment to polap-dev."
-		echoerr "INFO: (base) $ conda env create -f src/environment.yaml"
-		echoerr "INFO: (base) $ conda activate polap-dev"
-		exit $EXIT_ERROR
-	fi
-
-	if [ -z "$_arg_sra" ]; then
-		echoerr "ERROR: no --sra option is used."
-		exit $EXIT_SUCCESS
-	fi
-
-	SRA=$_arg_sra
-	"$script_dir"/run-polap-ncbitools fetch sra "$SRA"
-
-	echoerr You have a file called "$SRA".fastq and a folder named "$SRA"
-	echoerr if your download try is successful. Then, you would want to delete
-	echoerr the folder because we need only the fastq file.
-
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+# Function to prompt for confirmation
+confirm() {
+	while true; do
+		read -p "$1 [y/n]: " response
+		case "$response" in
+		[Yy]*) return 0 ;;
+		[Nn]*) return 1 ;;
+		*) echoerr "Please answer yes (y) or no (n)." ;;
+		esac
+	done
 }
 
 ################################################################################
 # Makes menu commands as empty files.
 ################################################################################
 function _run_polap_make-menus() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	grep "^function _run_polap" "$WDIR"/polap.sh |
 		grep run_polap | grep -v run_polap_x |
 		sed 's/function _run_polap_//' | sed 's/() {//' |
 		parallel touch {}
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	ls "$script_dir" | grep "^run-polap-function-" |
+		sed 's/run-polap-function-//' |
+		sed 's/\.sh//' |
+		parallel touch {}
+
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -198,11 +136,15 @@ function _run_polap_make-menus() {
 # Creates menus prefixed with x.
 ################################################################################
 function _run_polap_make-menus-all() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	grep "^function _run_polap" "$WDIR"/polap.sh | grep run_polap | sed 's/function _run_polap_//' | sed 's/() {//' | parallel touch {}
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -210,12 +152,25 @@ function _run_polap_make-menus-all() {
 # Leaves make-menus command.
 ################################################################################
 function _run_polap_clean-menus() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	grep "^function _run_polap" "$WDIR"/polap.sh | grep run_polap | sed 's/function _run_polap_//' | sed 's/() {//' | parallel rm -f {}
+	ls "$script_dir" | grep "^run-polap-function-" |
+		sed 's/run-polap-function-//' |
+		sed 's/\.sh//' |
+		parallel rm -f {}
+
 	touch make-menus
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -223,53 +178,60 @@ function _run_polap_clean-menus() {
 # You need to execute make-menus menu if nothing is displayed.
 ################################################################################
 function _run_polap_list() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	help_message=$(
 		cat <<HEREDOC
 # Lists menu of POLAP.
 # You need to execute make-menus menu if nothing is displayed.
 Example: $(basename "$0") make-menus
-         $(basename "$0") ${_arg_menu[0]} [all|main|assemble1|annotate|assemble2|polish]
+Example: $(basename "$0") ${_arg_menu[0]} [all|main|assemble1|annotate|assemble2|polish]
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
-		exit $EXIT_SUCCESS
-	fi
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
 
 	if [[ ${_arg_menu[1]} == "all" ]]; then
 		find . -maxdepth 1 -type f -empty -exec basename {} \; |
 			sort >&2
 	elif [[ ${_arg_menu[1]} == "main" ]]; then
-		echoerr assemble1
-		echoerr annotate
-		echoerr assemble2
-		echoerr flye-polishing
-		echoerr prepare-polishing
-		echoerr polish
+		_polap_log0 assemble1
+		_polap_log0 annotate
+		_polap_log0 assemble2
+		_polap_log0 flye-polishing
+		_polap_log0 prepare-polishing
+		_polap_log0 polish
 	elif [[ ${_arg_menu[1]} == "assemble1" ]]; then
-		echoerr reset
-		echoerr total-length-long
-		echoerr find-genome-size
-		echoerr reduce-data
-		echoerr flye1
+		_polap_log0 reset
+		_polap_log0 summary-reads
+		_polap_log0 total-length-long
+		_polap_log0 find-genome-size
+		_polap_log0 reduce-data
+		_polap_log0 flye1
 	elif [[ ${_arg_menu[1]} == "annotate" ]]; then
-		echoerr blast-genome
-		echoerr count-gene
+		_polap_log0 blast-genome
+		_polap_log0 count-gene
 	elif [[ ${_arg_menu[1]} == "assemble2" ]]; then
-		echoerr select-reads
-		echoerr flye2
+		_polap_log0 select-reads
+		_polap_log0 flye2
 	elif [[ ${_arg_menu[1]} == "polish" ]]; then
-		echoerr flye-polishing
-		echoerr prepare-polishing
-		echoerr polish
+		_polap_log0 flye-polishing
+		_polap_log0 prepare-polishing
+		_polap_log0 polish
 	else
-		echoerr "${help_message}"
+		_polap_log0 "${help_message}"
 	fi
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -277,7 +239,8 @@ HEREDOC
 ################################################################################
 
 ################################################################################
-# Initializes polap analysis in a starting folder, creating an output folder.
+# Initializes polap analysis in a starting folder,
+# creating an output folder.
 # Arguments:
 #   -o $ODIR
 # Inputs: nothing
@@ -285,29 +248,35 @@ HEREDOC
 #   $ODIR
 ################################################################################
 function _run_polap_reset() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	help_message=$(
 		cat <<HEREDOC
-# Initializes polap analysis in a starting folder, creating an output folder.
+# Initializes polap analysis in a starting folder, 
+# creating the output folder [${ODIR}].
+#
 # Arguments:
-#   -o $ODIR
+#   -o ${ODIR}
 # Inputs: nothing
 # Outputs:
-#   $ODIR
-Example: $(basename "$0") ${_arg_menu[0]} [-o|--outdir <arg>]
+#   ${ODIR}
+Example: $(basename "$0") ${_arg_menu[0]} [-o|--outdir ${ODIR}]
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
-		exit $EXIT_SUCCESS
-	fi
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
 
 	if ! run_check1; then
-		echoerr "ERROR: change your conda environment to polap-dev."
-		echoerr "INFO: (base) $ conda env create -f src/environment.yaml"
-		echoerr "INFO: (base) $ conda activate polap-dev"
+		_polap_log0 "ERROR: change your conda environment to polap-dev."
+		_polap_log0 "INFO: (base) $ conda env create -f src/environment.yaml"
+		_polap_log0 "INFO: (base) $ conda activate polap"
 		exit $EXIT_ERROR
 	fi
 
@@ -322,7 +291,7 @@ HEREDOC
 			[Nn]*)
 				exit $EXIT_FAIL
 				;;
-			*) echo "Please answer yes or no." ;;
+			*) _polap_log0 "Please answer yes or no." ;;
 			esac
 		done
 	else
@@ -330,15 +299,198 @@ HEREDOC
 	fi
 
 	mkdir -p "$ODIR"
-	echoall "DATA: Your output folder [$ODIR] is created."
+	_polap_log1 "DATA: Your output folder [$ODIR] is created."
 	if [ "$ODIR" != "o" ]; then
-		echoall "Use -o $ODIR option in all subsequent analysis"
-		echoall "  because your output folder is not the default of 'o'."
+		_polap_log1 "Use -o $ODIR option in all subsequent analysis"
+		_polap_log1 "  because your output folder is not the default of 'o'."
 	fi
 	_run_polap_make-menus
 
-	echoerr NEXT: $(basename "$0") total-length-long -o "$ODIR" -l ${_arg_long_reads}
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log1 NEXT: $(basename "$0") total-length-long -o "$ODIR" -l ${_arg_long_reads}
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+}
+
+################################################################################
+# Set the following variables:
+# ${SR1}
+# ${SR2}
+# depending on the options provided.
+################################################################################
+function _polap_set-variables-short-read() {
+
+	# Set paths for bioproject data
+	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-oga.sh"        # '.' means 'source'
+	source "$script_dir/run-polap-function-utilities.sh"
+
+	# if --bioproject is used, we use 0-bioproject.
+	# otherwise, -l option is used.
+	if [ "${_arg_short_read1_is}" = "off" ]; then
+		if [ -z "${_arg_bioproject}" ]; then
+			_polap_log1 "we use the default short-read1 data filename: ${_arg_short_read1}"
+			SR1="${_arg_short_read1}"
+		else
+			check_file_existence "${_polap_var_bioproject_sra_short_read}"
+			SRA=$(cut -f1 "${_polap_var_bioproject_sra_short_read}")
+			SR1="${ODIR}/${SRA}_1.fastq"
+		fi
+	else
+		SR1="${_arg_short_read1}"
+	fi
+
+	if [ "${_arg_short_read2_is}" = "off" ]; then
+		if [ -z "${_arg_bioproject}" ]; then
+			_polap_log1 "we use the default short-read2 data filename: ${_arg_short_read2}"
+			SR2="${_arg_short_read2}"
+		else
+			check_file_existence "${_polap_var_bioproject_sra_short_read}"
+			SRA=$(cut -f1 "${_polap_var_bioproject_sra_short_read}")
+			SR2="${ODIR}/${SRA}_2.fastq"
+		fi
+	else
+		SR2="${_arg_short_read2}"
+	fi
+
+}
+################################################################################
+# Statisics of the short-read and POLAP's long-read (nk.fq.gz) dataset.
+################################################################################
+function _run_polap_summary-reads() {
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Set paths for bioproject data
+	_polap_set-variables-short-read
+	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-oga.sh"        # '.' means 'source'
+
+	# FIXME: delete this?
+	# # if --bioproject is used, we use 0-bioproject.
+	# # otherwise, -l option is used.
+	# if [ "${_arg_short_read1_is}" = "off" ]; then
+	# 	if [ -z "${_arg_bioproject}" ]; then
+	# 		_polap_log1 "we use the default short-read1 data filename: ${_arg_short_read1}"
+	# 		SR1="${_arg_short_read1}"
+	# 	else
+	# 		check_file_existence "${_polap_var_bioproject_sra_short_read}"
+	# 		SRA=$(cut -f1 "${_polap_var_bioproject_sra_short_read}")
+	# 		SR1="${ODIR}/${SRA}_1.fastq"
+	# 	fi
+	# else
+	# 	SR1="${_arg_short_read1}"
+	# fi
+	#
+	# if [ "${_arg_short_read2_is}" = "off" ]; then
+	# 	if [ -z "${_arg_bioproject}" ]; then
+	# 		_polap_log1 "we use the default short-read2 data filename: ${_arg_short_read2}"
+	# 		SR2="${_arg_short_read2}"
+	# 	else
+	# 		check_file_existence "${_polap_var_bioproject_sra_short_read}"
+	# 		SRA=$(cut -f1 "${_polap_var_bioproject_sra_short_read}")
+	# 		SR2="${ODIR}/${SRA}_2.fastq"
+	# 	fi
+	# else
+	# 	SR2="${_arg_short_read2}"
+	# fi
+
+	help_message=$(
+		cat <<HEREDOC
+# Summarize the statisics of the long- and short-read dataset.
+#
+# Arguments:
+#   -a $SR1: a short-read fastq data file
+#   -b $SR2: another short-read fastq data file
+#   or
+#   --bioproject ${_arg_bioproject} (any argument)
+#   -o ${ODIR}
+# Inputs:
+#   $SR1: a short-read fastq data file
+#   $SR2: another short-read fastq data file
+# Outputs:
+#   ${_polap_var_base_fq_stats}: short-read data statisics
+#   ${_polap_var_base_nk_fq_stats}: POLAP long-read data statisics
+# Precondition:
+#   get-bioproject --bioproject ${_arg_bioproject} -o ${ODIR}
+Example: $(basename "$0") ${_arg_menu[0]} -a <file> -b <file>
+Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR} --bioproject <BioProjectID>
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		if [ -s "${_polap_var_base_fq_stats}" ]; then
+			_polap_log0_file "${_polap_var_base_fq_stats}"
+			_polap_log0_cat "${_polap_var_base_fq_stats}"
+		else
+			_polap_log0 "No short-read statisics"
+		fi
+
+		if [ -s "${_polap_var_base_nk_fq_stats}" ]; then
+			_polap_log0_file "${_polap_var_base_nk_fq_stats}"
+			_polap_log0_cat "${_polap_var_base_nk_fq_stats}"
+		else
+			_polap_log0 "No POLAP long-read statisics"
+		fi
+
+		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
+		exit $EXIT_SUCCESS
+	fi
+
+	check_folder_existence "${ODIR}"
+	check_file_existence "${SR1}"
+	check_file_existence "${SR2}"
+
+	_polap_log0 "computing stats of the sequencing data: $SR1, $SR2 ..."
+	_polap_log1_file "input2: ${SR1}"
+	_polap_log1_file "input3: ${SR2}"
+
+	if [ -s "${_polap_var_base_fq_stats}" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log0 "  skipping long- and short-read statisics ..."
+		_polap_log0_file "${_polap_var_base_fq_stats}"
+		_polap_log0_cat "${_polap_var_base_fq_stats}"
+	else
+		seqkit stats -T "$SR1" |
+			csvtk del-header >"${_polap_var_base_fq_stats}"
+		seqkit stats -T "$SR2" |
+			csvtk del-header >>"${_polap_var_base_fq_stats}"
+	fi
+
+	_polap_log1_file "output1: ${_polap_var_base_fq_stats}"
+
+	if [ -s "${_polap_var_base_nk_fq_stats}" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log0 "  skipping POLAP long-read statisics ..."
+		_polap_log0_file "${_polap_var_base_nk_fq_stats}"
+		_polap_log0_cat "${_polap_var_base_nk_fq_stats}"
+	else
+		if [ -s "${_polap_var_base_nk_fq_gz}" ]; then
+			seqkit stats -T "${_polap_var_base_nk_fq_gz}" \
+				>"${_polap_var_base_nk_fq_stats}"
+			_polap_log0_file "${_polap_var_base_nk_fq_stats}"
+			_polap_log0_cat "${_polap_var_base_nk_fq_stats}"
+		else
+			_polap_log0 "  no such file: ${_polap_var_base_nk_fq_gz}"
+			_polap_log0 "  skipping POLAP long-read statisics ..."
+		fi
+	fi
+
+	_polap_log1 NEXT: $(basename "$0") total-length-long -o "$ODIR" -l ${_arg_long_reads}
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -352,46 +504,90 @@ HEREDOC
 #   $ODIR/long_total_length.txt
 ################################################################################
 function _run_polap_total-length-long() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# CHECK: local function
+	source "$script_dir/run-polap-function-utilities.sh"
+	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+
+	if [ -z "${_arg_bioproject+x}" ]; then
+		_polap_log0 "ASSERT: no such case."
+	elif [ -z "$_arg_bioproject" ]; then
+		# if not --bioproject is used
+		LR="${_arg_long_reads}"
+	else
+		# if --bioproject is used
+		local SRA=$(cut -f1 "${_polap_var_bioproject_sra_long_read}")
+		local _polap_var_base_sra_long_fastq="${ODIR}/${SRA}.fastq"
+		LR=${_polap_var_base_sra_long_fastq}
+	fi
 
 	help_message=$(
 		cat <<HEREDOC
 # Computes the total number of nucleotides of long-read data.
+#
 # Arguments:
-#   -l $LR: a long-read fastq data file
+#   -l ${LR}: a long-read fastq data file
+#   or
+#   --bioproject ${_arg_bioproject} (any argument)
+#   -o ${ODIR}
 # Inputs:
-#   $LR: a long-read fastq data file
-#   $ODIR
+#   ${LR}: a long-read fastq data file
 # Outputs:
-#   $ODIR/long_total_length.txt
-Example: $(basename "$0") ${_arg_menu[0]} [-l|--long-reads <arg>]
+#   ${_polap_var_base_long_total_length}
+Example: $(basename "$0") ${_arg_menu[0]} [-l|--long-reads ${LR}]
+Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR} --bioproject <BioProjectID>
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		check_file_existence "${_polap_var_base_long_total_length}"
+		_polap_log0_cat "${_polap_var_base_long_total_length}"
+		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
 	fi
 
-	if [ ! -d "$ODIR" ]; then
-		echoall "ERROR: no such output directory [$ODIR]"
-		echoerr "SUGGESTION: reset"
-		exit $EXIT_ERROR
+	check_folder_existence "${ODIR}"
+	check_file_existence "${LR}"
+
+	_polap_log0 "counting the total number of bases in the long-read dataset [$LR] ..."
+	_polap_log1_file "input: ${LR}"
+
+	if [ -s "${_polap_var_base_long_total_length}" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log1_file "${_polap_var_base_long_total_length}"
+		_polap_log1 "  skipping counting long reads"
+	else
+		seqkit stats -Ta "${LR}" |
+			csvtk cut -t -f "sum_len" |
+			csvtk del-header \
+				>"${_polap_var_base_long_total_length}"
 	fi
 
-	if [ ! -s "$LR" ]; then
-		echoall "ERROR: no long-read data file [$LR]"
-		exit $EXIT_ERROR
-	fi
+	_polap_log1_file "output: ${_polap_var_base_long_total_length}"
+	_polap_log1_cat "${_polap_var_base_long_total_length}"
 
-	echoerr "counting the total number of bases in your long-read data [$LR] ... please, wait ..."
-	seqkit stats -Ta "$LR" | csvtk cut -t -f "sum_len" | csvtk del-header >"$ODIR"/long_total_length.txt
-	LONG_TOTAL_LENGTH=$(cat "$ODIR"/long_total_length.txt)
-	echoall "DATA: total length of your long-read data (bases): $LONG_TOTAL_LENGTH bp"
+	local LONG_TOTAL_LENGTH=$(<"${_polap_var_base_long_total_length}")
+	local _total_long_read=$(_polap_utility_convert_bp ${LONG_TOTAL_LENGTH})
+	_polap_log0 "  total length of the long-read dataset (bases): ${_total_long_read}"
 
-	echoerr NEXT: $(basename "$0") find-genome-size -o "$ODIR" -a "${_arg_short_read1}" -b "${_arg_short_read2}"
+	_polap_log1 NEXT: $(basename "$0") find-genome-size -o "$ODIR" -a "${_arg_short_read1}" -b "${_arg_short_read2}"
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -404,58 +600,150 @@ HEREDOC
 #   $ODIR/short_expected_genome_size.txt
 ################################################################################
 function _run_polap_find-genome-size() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Set paths for bioproject data
+	_polap_set-variables-short-read
+	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-oga.sh"        # '.' means 'source'
+	source "$script_dir/run-polap-function-utilities.sh"
+
+	# FIXME: delete this?
+	# # if --bioproject is used, we use 0-bioproject.
+	# # otherwise, -l option is used.
+	# if [ "${_arg_short_read1_is}" = "off" ]; then
+	# 	if [ -z "${_arg_bioproject}" ]; then
+	# 		_polap_log1 "we use the default short-read1 data filename: ${_arg_short_read1}"
+	# 		SR1="${_arg_short_read1}"
+	# 	else
+	# 		check_file_existence "${_polap_var_bioproject_sra_short_read}"
+	# 		SRA=$(cut -f1 "${_polap_var_bioproject_sra_short_read}")
+	# 		SR1="${ODIR}/${SRA}_1.fastq"
+	# 	fi
+	# else
+	# 	SR1="${_arg_short_read1}"
+	# fi
+	#
+	# if [ "${_arg_short_read2_is}" = "off" ]; then
+	# 	if [ -z "${_arg_bioproject}" ]; then
+	# 		_polap_log1 "we use the default short-read2 data filename: ${_arg_short_read2}"
+	# 		SR2="${_arg_short_read2}"
+	# 	else
+	# 		check_file_existence "${_polap_var_bioproject_sra_short_read}"
+	# 		SRA=$(cut -f1 "${_polap_var_bioproject_sra_short_read}")
+	# 		SR2="${ODIR}/${SRA}_2.fastq"
+	# 	fi
+	# else
+	# 	SR2="${_arg_short_read2}"
+	# fi
 
 	help_message=$(
 		cat <<HEREDOC
 # Estimates the whole genome size using short-read data.
+#
 # Arguments:
 #   -a $SR1: a short-read fastq data file
 #   -b $SR2: another short-read fastq data file
+#   or
+#   --bioproject ${_arg_bioproject} (any argument)
+#   -o ${ODIR}
 # Inputs:
 #   $SR1: a short-read fastq data file
 #   $SR2: another short-read fastq data file
 # Outputs:
-#   $ODIR/short_expected_genome_size.txt
+#   ${_polap_var_base_genome_size}
 Example: $(basename "$0") ${_arg_menu[0]} [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR} --bioproject <BioProjectID>
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
+	# Display help message
+	[[ "${_arg_menu[1]}" == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		check_file_existence "${_polap_var_base_genome_size}"
+		_polap_log0_cat "${_polap_var_base_genome_size}"
+		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
 	fi
 
-	if [ ! -s "$ODIR" ]; then
-		echoall "ERROR: no such output directory [$ODIR]"
-		echoerr "SUGGESTION: reset"
-		exit $EXIT_ERROR
-	fi
+	check_folder_existence "${ODIR}"
+	check_file_existence "${SR1}"
+	check_file_existence "${SR2}"
 
-	echoerr "estimating the genome size using your short-read data [$SR1] and [$SR2] ... please, wait ..."
+	_polap_log0 "estimating the genome size using your short-read data [$SR1] and [$SR2] ..."
+	_polap_log1_file "input1: $SR1"
+	_polap_log1_file "input2: $SR2"
+
 	# See https://bioinformatics.uconn.edu/genome-size-estimation-tutorial/
-	if [ -s "$SR1" ]; then
-		if [ -s "$SR2" ]; then
-			jellyfish count -t "$NT" -C -m 19 -s 5G -o "$ODIR"/jellyfish_out --min-qual-char=? "$SR1" "$SR2"
-		else
-			jellyfish count -t "$NT" -C -m 19 -s 5G -o "$ODIR"/jellyfish_out --min-qual-char=? "$SR1"
-		fi
+	if [ -s "${_polap_var_base_genome_size}" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log1 "  skipping the genome size estimation using the short-read data ..."
 	else
-		echoerr "ERROR: no short-read data: $SR1"
-		exit $EXIT_ERROR
+		if [ -s "$ODIR"/jellyfish_out ] && [ "${_arg_redo}" = "off" ]; then
+			_polap_log1 "  skipping the JellyFish step for genome size estimation using the short-read data ..."
+			_polap_log2_file "${ODIR}/jellyfish_out"
+		else
+			if [ -s "$SR1" ]; then
+				if [ -s "$SR2" ]; then
+					_polap_log3 jellyfish count -t "${NT}" -C -m 19 -s 5G -o "${_polap_var_base_jellyfish_out}" --min-qual-char=? "$SR1" "$SR2"
+					jellyfish count \
+						-t "$NT" -C -m 19 \
+						-s 5G \
+						-o "${_polap_var_base_jellyfish_out}" \
+						--min-qual-char=? \
+						"$SR1" "$SR2"
+				else
+					_polap_log3 jellyfish count -t "$NT" -C -m 19 -s 5G -o "${_polap_var_base_jellyfish_out}" --min-qual-char=? "$SR1"
+					jellyfish count \
+						-t "$NT" -C -m 19 \
+						-s 5G \
+						-o "${_polap_var_base_jellyfish_out}" \
+						--min-qual-char=? \
+						"$SR1"
+				fi
+				_polap_log2_file "${_polap_var_base_jellyfish_out}"
+			else
+				_polap_log0 "ERROR: no short-read data: $SR1"
+				exit $EXIT_ERROR
+			fi
+		fi
+
+		if [ -s "${_polap_var_base_jellyfish_out_histo}" ]; then
+			_polap_log2_file "${_polap_var_base_jellyfish_out_histo}"
+		else
+			_polap_log3 jellyfish histo -o "${_polap_var_base_jellyfish_out_histo}" "${_polap_var_base_jellyfish_out}"
+			jellyfish histo -o "${_polap_var_base_jellyfish_out_histo}" \
+				"${_polap_var_base_jellyfish_out}"
+			_polap_log2_file "${_polap_var_base_jellyfish_out_histo}"
+		fi
+
+		"$script_dir/run-polap-jellyfish.R" \
+			"${_polap_var_base_jellyfish_out_histo}" \
+			"${_polap_var_base_genome_size}"
 	fi
-	jellyfish histo -o "$ODIR"/jellyfish_out.histo "$ODIR"/jellyfish_out
-	"$WDIR"/run-polap-jellyfish.R \
-		"$ODIR"/jellyfish_out.histo \
-		"$ODIR"/short_expected_genome_size.txt
+	_polap_log1_file "output: ${_polap_var_base_genome_size}"
+	_polap_log3_cat "${_polap_var_base_genome_size}"
 
-	EXPECTED_GENOME_SIZE=$(cat "$ODIR"/short_expected_genome_size.txt)
+	EXPECTED_GENOME_SIZE=$(<"${_polap_var_base_genome_size}")
 	EXPECTED_GENOME_SIZE=${EXPECTED_GENOME_SIZE%.*}
-	echoall "DATA: expected genome size using short-read data (bases): $EXPECTED_GENOME_SIZE bp"
+	local _expected_genome_size=$(_polap_utility_convert_bp ${EXPECTED_GENOME_SIZE})
+	_polap_log0 "  expected genome size using short-read data (bases): ${_expected_genome_size}"
 
-	echoerr NEXT: $(basename "$0") reduce-data -o "$ODIR" -l "${_arg_long_reads}" [-m "${_arg_min_read_length}"]
+	_polap_log1 NEXT: $(basename "$0") reduce-data -o "$ODIR" -l "${_arg_long_reads}" [-m "${_arg_min_read_length}"]
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -463,6 +751,9 @@ HEREDOC
 # If so, keep the long read data.
 # If not, sample long reads upto that coverage.
 # Deletes long reads shorter than a sequence length threshold e.g., 3 kb.
+#
+# FIXME: read selection may need the total long-read dataset.
+#
 # Arguments:
 #   -l $LR: a long-read fastq data file
 #   -m $MR: the long-read sequence length threshold
@@ -475,101 +766,154 @@ HEREDOC
 #   $LRNK
 ################################################################################
 function _run_polap_reduce-data() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+
+	if [ -z "${_arg_bioproject+x}" ]; then
+		_polap_log0 "ASSERT: no such case."
+	elif [ -z "$_arg_bioproject" ]; then
+		# if not --bioproject is used
+		LR="${_arg_long_reads}"
+	else
+		# if --bioproject is used
+		local SRA=$(cut -f1 "${_polap_var_bioproject_sra_long_read}")
+		local _polap_var_base_sra_long_fastq="${ODIR}/${SRA}.fastq"
+		LR="${_polap_var_base_sra_long_fastq}"
+		LRNK="${_polap_var_base_nk_fq_gz}"
+	fi
 
 	help_message=$(
 		cat <<HEREDOC
+# Reduce the long-read data.
+#
+# 1. Subsample the long-read data size with a target coverage.
 # Checks if the long-read coverage is less than $COV.
 # If so, keep the long read data.
 # If not, sample long reads upto that coverage.
-# Deletes long reads shorter than a sequence length threshold e.g., 3 kb.
+#
+# 2. Deletes long reads shorter than a sequence length threshold e.g., 3 kb.
+#
 # Arguments:
 #   -l $LR: a long-read fastq data file
 #   -m $MR: the long-read sequence length threshold
+#   -c $COV: the target coverage
 #   --reduction-reads (default) or --no-reduction-reads
 # Inputs:
-#   $ODIR/short_expected_genome_size.txt
-#   $ODIR/long_total_length.txt
-#   $LR
+#   ${_polap_var_base_genome_size}
+#   ${_polap_var_base_long_total_length}
+#   ${_arg_long_reads}
 # Outputs:
-#   $LRNK
-Example: $(basename $0) ${_arg_menu[0]} [-l|--long-reads <arg>] [-m|--min-read-length <arg>]
+#   ${_polap_var_base_nk_fq_gz}
+Example: $(basename "$0") ${_arg_menu[0]} [-l|--long-reads <arg>] [-m|--min-read-length <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR} --bioproject <BioProjectID>
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		check_file_existence "${_polap_var_base_nk_fq_gz}"
+		_polap_log0_cat "${_polap_var_base_nk_fq_stats}"
+		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
 	fi
 
-	if [ ! -d "$ODIR" ]; then
-		echoall "ERROR: no such output directory [$ODIR]"
-		echoerr "SUGGESTION: reset"
-		exit $EXIT_ERROR
+	_polap_log0 "reducing the long-read data ${LR} with target coverage ${COV} ..."
+
+	# Check for required files
+	check_folder_existence "${ODIR}"
+	check_file_existence "${LR}"
+	check_file_existence "${_polap_var_base_genome_size}"
+	check_file_existence "${_polap_var_base_long_total_length}"
+
+	_polap_log1_file "input1: ${_polap_var_base_genome_size}"
+	_polap_log1_file "input2: ${_polap_var_base_long_total_length}"
+
+	# Get the expected genome size and long-read sequencing coverage
+	local EXPECTED_GENOME_SIZE=$(<"${_polap_var_base_genome_size}")
+	local EXPECTED_GENOME_SIZE=${EXPECTED_GENOME_SIZE%.*}
+	local LONG_TOTAL_LENGTH=$(<"${_polap_var_base_long_total_length}")
+	local EXPECTED_LONG_COVERAGE=$(echo "scale=3; $LONG_TOTAL_LENGTH/$EXPECTED_GENOME_SIZE" | bc)
+	local EXPECTED_LONG_COVERAGE=${EXPECTED_LONG_COVERAGE%.*}
+
+	if [[ -s "${LRNK}" ]] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log0 "  you have the reduced long-read data: ${LRNK}"
+		_polap_log0 "  skipping the long-read data reduction."
+		[ "$DEBUG" -eq 1 ] && set +x
+		return
 	fi
 
-	if [ ! -s "$LR" ]; then
-		echoall "ERROR: no long-read data file [$LR]"
-		exit $EXIT_ERROR
-	fi
-
-	if [ ! -s "$ODIR"/short_expected_genome_size.txt ]; then
-		echoall "ERROR: no genome size estimate [$ODIR/short_expected_genome_size.txt]"
-		echoerr "SUGGESTION: find-genome-size"
-		exit $EXIT_ERROR
-	fi
-
-	if [ ! -s "$ODIR"/long_total_length.txt ]; then
-		echoall "ERROR: no long read total length [$ODIR/long_total_length.txt]"
-		echoerr "SUGGESTION: total-length-long"
-		exit $EXIT_ERROR
-	fi
-
-	EXPECTED_GENOME_SIZE=$(cat "$ODIR"/short_expected_genome_size.txt)
-	EXPECTED_GENOME_SIZE=${EXPECTED_GENOME_SIZE%.*}
-	LONG_TOTAL_LENGTH=$(cat "$ODIR"/long_total_length.txt)
-
-	EXPECTED_LONG_COVERAGE=$(echo "scale=3; $LONG_TOTAL_LENGTH/$EXPECTED_GENOME_SIZE" | bc)
-	EXPECTED_LONG_COVERAGE=${EXPECTED_LONG_COVERAGE%.*}
-
-	echoerr "reducing your long-read data [$LR] ... please, wait ..."
-	nfq_file="$ODIR"/n.fq
-	rm -f $nfq_file
+	# subsample the long-read data so that the target coverage is $COV.
+	local nfq_file="${ODIR}/n.fq"
+	_polap_log2 "  deletes ${nfq_file} if there is one."
+	rm -f "${nfq_file}"
 	if [[ ${_arg_test} == "on" ]]; then
-		echoall "OPTION: --test : No reduction of the test long-read data"
+		_polap_log0 "OPTION: --test : No reduction of the test long-read data"
 		ln -s $(realpath "$LR") "$nfq_file"
 	elif [[ ${_arg_reduction_reads} == "off" ]]; then
-		echoall "OPTION: --no-reduction-reads : No reduction of the long-read data"
+		_polap_log1 "OPTION: --no-reduction-reads : No reduction of the long-read data"
 		ln -s $(realpath "$LR") "$nfq_file"
 	else
 		if [ "$EXPECTED_LONG_COVERAGE " -lt $COV ]; then
-			echoall "LOG: No reduction of the long-read data because $EXPECTED_LONG_COVERAGE < $COV"
+			_polap_log1 "No reduction of the long-read data because $EXPECTED_LONG_COVERAGE < $COV"
 			ln -s $(realpath "$LR") "$nfq_file"
 		else
-			echoall "SUGGESTION: you might want to increase the minimum read lengths because you have enough long-read data."
-			RATE=$(echo "scale=3; $COV/$EXPECTED_LONG_COVERAGE" | bc)
-			echoall "LOG: long-read data reduction by rate of $RATE <= COV[$COV] / long-read coverage[$EXPECTED_LONG_COVERAGE]"
-			echoall "sampling long-read data by $RATE ... wait ..."
-			seqkit sample -p "$RATE" "$LR" -o "$nfq_file" >/dev/null 2>&1
-			echoall "DATA: a reduced long-read data $nfq_file is created"
+			_polap_log1 "SUGGESTION: you might want to increase the minimum read lengths because you have enough long-read data."
+			local RATE=$(echo "scale=3; $COV/$EXPECTED_LONG_COVERAGE" | bc)
+			_polap_log2 "  Rate: ${Rate} = ${COV}/${EXPECTED_LONG_COVERAGE}"
+			# Compare value with 0
+			if echo "${RATE} > 0" | bc -l | grep -q 1; then
+				_polap_log2 "long-read data reduction by rate of $RATE <= COV[$COV] / long-read coverage[$EXPECTED_LONG_COVERAGE]"
+				_polap_log2 "sampling long-read data by $RATE ... wait ..."
+				seqkit sample -p "$RATE" "$LR" -o "${nfq_file}" >/dev/null 2>&1
+				_polap_log2 "seqkit sample -p ${RATE} ${LR} -o ${nfq_file}"
+				_polap_log2_file "${nfq_file}: a reduced long-read data is created"
+			else
+				_polap_log0 "  target coverage: ${COV}"
+				_polap_log0 "  long-read coverage: ${EXPECTED_LONG_COVERAGE}"
+				_polap_log0 "  sampling rate is ${COV} / ${EXPECTED_LONG_COVERAGE} => ${RATE}"
+				_polap_log0 "  genome size: ${EXPECTED_GENOME_SIZE}"
+				_polap_log0 "  total long-read: ${LONG_TOTAL_LENGTH}"
+				_polap_log0 "  Too large expected long-read coverage"
+				_polap_log0 "  Expected genome size may be too small."
+				die "ERROR: long-read sampling rate is not greater than 0."
+			fi
 		fi
 	fi
-	LR=$nfq_file
+	LR="${nfq_file}"
 
-	# step1
-	echoall "LOG: keeps long reads of length being at least $MR bp ..."
-	echo "LOG: deletes $LRNK"
+	# purge the long-read data of shorter than $MR bp
+	check_file_existence "${LR}"
+	_polap_log0 "keeps long reads of length being at least $MR bp ..."
+	_polap_log2 "  deletes $LRNK"
 	rm -f "$LRNK"
-	# seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o "$LRNK"
+	_polap_log3 seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o "$LRNK"
 	seqkit seq --quiet -m "$MR" --threads 4 "$LR" -o "$LRNK" >/dev/null 2>&1
+	_polap_log2 "  deletes $nfq_file"
 	rm "$nfq_file"
-	echoall "DATA: long-read minimum $MR reads data $LRNK is created"
+	seqkit stats -T "${LRNK}" >"${ODIR}/nk.fq.stats"
+	_polap_log2_file "${ODIR}/nk.fq.stats"
+	_polap_log1_file "output: $LRNK: long-read minimum $MR (bases)"
 
-	echoerr "NEXT (for testing purpose only): $(basename "$0") flye1 -g 150000"
-	echoerr "NEXT (for testing purpose only): $(basename "$0") flye1 --test"
-	echoerr NEXT: $(basename "$0") flye1 -o "$ODIR" [-t $NT] [-c $COV]
+	_polap_log1 "NEXT (for testing purpose only): $(basename "$0") flye1 -g 150000"
+	_polap_log1 "NEXT (for testing purpose only): $(basename "$0") flye1 --test"
+	_polap_log1 "NEXT: $(basename $0) flye1 -o $ODIR [-t $NT] [-c $COV]"
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -588,11 +932,20 @@ HEREDOC
 #   $FDIR/30-contigger/graph_final.gfa
 ################################################################################
 function _run_polap_flye1() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	LRNK="$ODIR/nk.fq.gz"
 
 	help_message=$(
 		cat <<HEREDOC
 # Executes Flye for a whole-genome assembly upto the contigger stage
+#
 # Arguments:
 #   -t $NT: the number of CPU cores
 #   -c $COV: the Flye's coverage option
@@ -604,54 +957,54 @@ function _run_polap_flye1() {
 #   $FDIR/30-contigger/contigs.fasta
 #   $FDIR/30-contigger/contigs_stats.txt
 #   $FDIR/30-contigger/graph_final.fasta
-#   $FDIR/30-contigger/graph_final.gfa
+#   ${_polap_var_wga_contigger_gfa}
 Example: $(basename $0) ${_arg_menu[0]} [-t|--threads <arg>] [-c|--coverage <arg>] [-g|--genomesize <arg>]
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
-		exit $EXIT_SUCCESS
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+
+	check_file_existence "$ODIR/short_expected_genome_size.txt"
+	check_file_existence "${LRNK}"
+
+	FDIR="${ODIR}/0"
+
+	if [ -s "$PWD/$FDIR/30-contigger/graph_final.gfa" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log1_file "$PWD/$FDIR/30-contigger/graph_final.gfa" ]
+		_polap_log1 "  skipping the flye1 execution ..."
+	else
+		FDIR="$ODIR"/0
+		EXPECTED_GENOME_SIZE=$(cat "$ODIR"/short_expected_genome_size.txt)
+		EXPECTED_GENOME_SIZE=${EXPECTED_GENOME_SIZE%.*}
+		local _expected_genome_size=$(_polap_utility_convert_bp ${EXPECTED_GENOME_SIZE})
+		_polap_log2 "  expected genome size using short-read data (bases): ${_expected_genome_size}"
+		if [[ ${_arg_test} == "on" ]]; then
+			_arg_genomesize=150000
+		fi
+		if [ ! -z "$_arg_genomesize" ]; then
+			EXPECTED_GENOME_SIZE=$_arg_genomesize
+			local _expected_genome_size=$(_polap_utility_convert_bp ${EXPECTED_GENOME_SIZE})
+			_polap_log2 "OPTION: short reads expected genome size (bases) we use instead: ${_expected_genome_size}"
+		fi
+
+		_polap_log2 "  executing the whole-genome assembly using flye ... be patient!"
+		flye --nano-raw "$LRNK" \
+			--out-dir "$FDIR" \
+			--threads "$NT" \
+			--asm-coverage "$COV" \
+			--genome-size "$EXPECTED_GENOME_SIZE" \
+			--stop-after contigger \
+			>/dev/null 2>&1
 	fi
 
-	if [ ! -s "$ODIR"/short_expected_genome_size.txt ]; then
-		echoall "ERROR: no genome size file [$ODIR/short_expected_genome_size.txt]"
-		echoerr "SUGGESTION: find-genome-size"
-		exit $EXIT_SUCCESS
-	fi
+	_polap_log1 "  assembly graph in the flye contigger stage: $PWD/$FDIR/30-contigger/graph_final.gfa"
+	_polap_log1 "NEXT: $(basename $0) blast-genome -o $ODIR [-i 0]"
+	_polap_log1 "NEXT: $(basename $0) annotate -o $ODIR [-i 0]"
 
-	if [ ! -s "$LRNK" ]; then
-		echoall "ERROR: no reduced long-read file [$LRNK]"
-		echoerr "SUGGESTION: reduce-data"
-		exit $EXIT_SUCCESS
-	fi
-
-	FDIR="$ODIR"/0
-	EXPECTED_GENOME_SIZE=$(cat "$ODIR"/short_expected_genome_size.txt)
-	EXPECTED_GENOME_SIZE=${EXPECTED_GENOME_SIZE%.*}
-	echoall "DATA: the expected genome size based on short-read data (bases): $EXPECTED_GENOME_SIZE bp"
-	if [[ ${_arg_test} == "on" ]]; then
-		_arg_genomesize=150000
-	fi
-	if [ ! -z "$_arg_genomesize" ]; then
-		EXPECTED_GENOME_SIZE=$_arg_genomesize
-		echoall "OPTION: short reads expected genome size (bases) we use instead: $EXPECTED_GENOME_SIZE bp"
-	fi
-
-	echoall "INFO: executing the whole-genome assembly using flye ... be patient!"
-	flye --nano-raw "$LRNK" \
-		--out-dir "$FDIR" \
-		--threads "$NT" \
-		--asm-coverage "$COV" \
-		--genome-size "$EXPECTED_GENOME_SIZE" \
-		--stop-after contigger \
-		>/dev/null 2>&1
-
-	echo "INFO: assembly graph in the flye contigger stage: $PWD/$FDIR/30-contigger/graph_final.gfa"
-	echoerr "NEXT: $(basename $0) blast-genome -o $ODIR [-i 0]"
-	echoerr "NEXT: $(basename $0) annotate -o $ODIR [-i 0]"
-
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -659,7 +1012,8 @@ HEREDOC
 # -i or --inum option is ignored.
 ################################################################################
 function _func_polap_blast-genome() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
 
 	if [ $# -eq 0 ]; then
 		INUM=0
@@ -669,7 +1023,8 @@ function _func_polap_blast-genome() {
 
 	_run_polap_blast-genome
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -970,8 +1325,10 @@ function _func_polap_select-reads() {
 #   $MTSEEDSDIR/2.fq.gz
 ################################################################################
 function _run_polap_select-reads() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
 
+	LRNK="$ODIR/nk.fq.gz"
 	MR=$_arg_min_read_length
 	FDIR="$ODIR"/$INUM
 	ADIR="$FDIR"/50-annotation
@@ -1329,7 +1686,7 @@ HEREDOC
 	echo "INFO: organelle genome size based on contig selection: $CONTIG_LENGTH"
 
 	echo "INFO: polishing the organelle-genome assembly using flye ... be patient!"
-	echoerr "please, wait for Flye long-read polishing the organelle-genome assembly on $JNUM ..."
+	echoerr "please, wait for Flye long-read polishing of the organelle-genome assembly on $JNUM ..."
 	flye --nano-raw "$MTSEEDSDIR"/2.fq.gz \
 		--out-dir "$MTDIR" \
 		--threads "$NT" \
@@ -1358,7 +1715,16 @@ HEREDOC
 #   $$ODIR/msbwt
 ################################################################################
 function _run_polap_prepare-polishing() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	_polap_set-variables-short-read
+	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
 
 	help_message=$(
 		cat <<HEREDOC
@@ -1366,56 +1732,80 @@ function _run_polap_prepare-polishing() {
 # Arguments:
 #   -a $SR1
 #   -b $SR2
+#   or
+#   --bioproject ${_arg_bioproject}
 # Inputs:
 #   $SR1
 #   $SR2
 # Outputs:
 #   $ODIR/msbwt/comp_msbwt.npy
+# Precondition:
+#   get-bioproject --bioproject ${_arg_bioproject}
 Example: $(basename "$0") ${_arg_menu[0]} [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} -o $ODIR
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		ls -l "${ODIR}/msbwt" >&2
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
 	fi
 
-	source $HOME/miniconda3/bin/activate polap-fmlrc
+	if [ -s "${_polap_var_base_msbwt_tar_gz}" ]; then
+		_polap_log1_file "${_polap_var_base_msbwt_tar_gz}"
+		if [[ -s "${_polap_var_base_msbwt}" ]]; then
+			_polap_log1_file "${_polap_var_base_msbwt}"
+			_polap_log1 "  skipping the short-read polishing preparation."
+		else
+			tar -zxf "${_polap_var_base_msbwt_tar_gz}" -C "${ODIR}"
+		fi
+	elif [[ -s "${_polap_var_base_msbwt}" ]]; then
+		_polap_log1_file "${_polap_var_base_msbwt}"
+		_polap_log1 "  skipping the short-read polishing preparation."
+	else
 
-	if ! run_check2; then
-		echoerr "ERROR: change your conda environment to polap-fmlrc."
-		echoerr "INFO: (base) $ conda env create -f src/environment-fmlrc.yaml"
-		echoerr "INFO: (base) $ conda activate polap-fmlrc"
-		exit $EXIT_ERROR
+		source $HOME/miniconda3/bin/activate polap-fmlrc
+
+		if ! run_check2; then
+			echoerr "ERROR: change your conda environment to polap-fmlrc."
+			echoerr "INFO: (base) $ conda env create -f src/environment-fmlrc.yaml"
+			echoerr "INFO: (base) $ conda activate polap-fmlrc"
+			exit $EXIT_ERROR
+		fi
+
+		check_file_existence "${SR1}"
+		check_file_existence "${SR2}"
+
+		_polap_log1 "excuting ropebwt2 and msbwt on the short reads ... be patient!"
+		if [[ $SR1 = *.fastq || $SR1 = *.fq ]]; then
+			cat "$SR1" "$SR2" |
+				awk 'NR % 4 == 2' | sort | tr NT TN |
+				ropebwt2 -LR 2>"${_polap_output_dest}" |
+				tr NT TN |
+				msbwt convert "$ODIR"/msbwt \
+					>/dev/null 2>&1
+		elif [[ $SR1 = *.fq.gz ]] || [[ $SR1 = *.fastq.gz ]]; then
+			zcat "$SR1" "$SR2" |
+				awk 'NR % 4 == 2' | sort | tr NT TN |
+				ropebwt2 -LR 2>"${_polap_output_dest}" |
+				tr NT TN |
+				msbwt convert "$ODIR"/msbwt \
+					>/dev/null 2>&1
+		fi
+		conda deactivate
 	fi
 
-	if [[ ! -s $SR1 ]]; then
-		echo "ERROR: no short-read data file found: $SR1"
-		exit $EXIT_ERROR
-	fi
-	if [[ ! -s $SR2 ]]; then
-		echo "ERROR: no short read-data file found: $SR2"
-		exit $EXIT_ERROR
-	fi
+	_polap_log1 "NEXT: $(basename $0) polish [-p mt.0.fasta] [-f mt.1.fa]"
 
-	echo "INFO: excuting ropebwt2 and msbwt on the short reads ... be patient!"
-	if [[ $SR1 = *.fastq || $SR1 = *.fq ]]; then
-		cat "$SR1" "$SR2" |
-			awk 'NR % 4 == 2' | sort | tr NT TN | ropebwt2 -LR | tr NT TN |
-			msbwt convert "$ODIR"/msbwt \
-				>/dev/null 2>&1
-	elif [[ $SR1 = *.fq.gz ]] || [[ $SR1 = *.fastq.gz ]]; then
-		zcat "$SR1" "$SR2" |
-			awk 'NR % 4 == 2' | sort | tr NT TN | ropebwt2 -LR | tr NT TN |
-			msbwt convert "$ODIR"/msbwt \
-				>/dev/null 2>&1
-	fi
-
-	echoerr "NEXT: $(basename $0) polish [-p mt.0.fasta] [-f mt.1.fa]"
-
-	conda deactivate
-
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -1430,7 +1820,13 @@ HEREDOC
 #   $FA
 ################################################################################
 function _run_polap_polish() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	help_message=$(
 		cat <<HEREDOC
@@ -1447,37 +1843,37 @@ Example: $(basename "$0") ${_arg_menu[0]} [-p|--unpolished-fasta <arg>] [-f|--fi
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
-		exit $EXIT_SUCCESS
-	fi
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
 
 	source $HOME/miniconda3/bin/activate polap-fmlrc
 
 	if ! run_check2; then
-		echoerr "ERROR: change your conda environment to polap-fmlrc."
-		echoerr "INFO: (base) $ conda env create -f src/environment-fmlrc.yaml"
-		echoerr "INFO: (base) $ conda activate polap-fmlrc"
+		_polap_log0 "ERROR: change your conda environment to polap-fmlrc."
+		_polap_log0 "INFO: (base) $ conda env create -f src/environment-fmlrc.yaml"
+		_polap_log0 "INFO: (base) $ conda activate polap-fmlrc"
 		exit $EXIT_ERROR
 	fi
 
 	if [[ ! -s "$ODIR/msbwt/comp_msbwt.npy" ]]; then
-		echoall "ERROR: no msbwt at $ODIR/msbwt/comp_msbwt.npy"
-		echoall "HINT: $0 prepare-polishing [-a s1.fq] [-b s2.fq]"
+		_polap_log0 "ERROR: no msbwt at $ODIR/msbwt/comp_msbwt.npy"
+		_polap_log0 "HINT: $0 prepare-polishing [-a s1.fq] [-b s2.fq]"
 		exit $EXIT_ERROR
 	fi
 
-	echo "INFO: executing fmlrc on the draft sequence $PA ... be patient!"
-	if [[ -s $PA ]]; then
-		fmlrc -p "$NT" "$ODIR"/msbwt/comp_msbwt.npy "$PA" "$FA" >/dev/null 2>&1
+	_polap_log1 "INFO: executing fmlrc on the draft sequence $PA ... be patient!"
+	if [[ -s "${PA}" ]]; then
+		fmlrc -p "${NT}" "$ODIR"/msbwt/comp_msbwt.npy "${PA}" "${FA}" >/dev/null 2>&1
 	else
-		echo "ERROR: no unpolished fasta file: [$PA]"
+		_polap_log0 "ERROR: no unpolished fasta file: [$PA]"
 		exit $EXIT_ERROR
 	fi
 
 	conda deactivate
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -1496,7 +1892,16 @@ HEREDOC
 #   $FDIR
 ################################################################################
 function _run_polap_assemble1() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log1 "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
+	LRNK="${_polap_var_base_nk_fq_gz}"
 
 	help_message=$(
 		cat <<HEREDOC
@@ -1527,39 +1932,53 @@ Example: $(basename $0) ${_arg_menu[0]} [-o|--outdir <arg>] [-l|--long-reads <ar
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
-		exit $EXIT_SUCCESS
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+
+	# check_file_existence "${LR}"
+	# check_file_existence "${SR1}"
+	# check_file_existence "${SR2}"
+
+	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
+
+	if [ -s "${_polap_var_base_long_total_length}" ]; then
+		_polap_log2 "  skipping total-length-long ..."
+	else
+		_run_polap_total-length-long
 	fi
 
-	if [[ ! -s $LR ]]; then
-		echoerr "ERROR: no long-read data file found: $LR"
-		exit $EXIT_ERROR
-	fi
-	if [[ ! -s $SR1 ]]; then
-		echoerr "ERROR: no short-read data file found: $SR1"
-		exit $EXIT_ERROR
-	fi
-	if [[ ! -s $SR2 ]]; then
-		echoerr "ERROR: no short read-data file found: $SR2"
-		exit $EXIT_ERROR
+	if [ -s "${_polap_var_base_genome_size}" ]; then
+		_polap_log2 "  skipping find-genome-size ..."
+	else
+		_run_polap_find-genome-size
 	fi
 
-	echoerr "NEXT: $(basename $0) reset -o $ODIR"
-	_run_polap_reset
-	_run_polap_total-length-long
-	_run_polap_find-genome-size
-	_run_polap_reduce-data
+	if [ -s "${_polap_var_base_nk_fq_gz}" ]; then
+		_polap_log2 "  skipping reduce-data ..."
+	else
+		_run_polap_reduce-data
+	fi
+
+	check_file_existence "${_polap_var_base_nk_fq_gz}"
+
 	_run_polap_flye1
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
 # Called in the script not by users.
 ################################################################################
 function _func_polap_annotate() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log1 "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	if [ $# -eq 0 ]; then
 		ANUM=0
@@ -1567,10 +1986,22 @@ function _func_polap_annotate() {
 		ANUM=$1
 	fi
 
-	_func_polap_blast-genome "$ANUM"
-	_func_polap_count-gene "$ANUM"
+	FDIR="${ODIR}/0"
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	#   $FDIR/assembly_info_organelle_annotation_count.txt
+	#   $FDIR/assembly_info_organelle_annotation_count-all.txt
+	#   $FDIR"/contig-annotation-table.txt
+	_polap_log2 "$PWD/$FDIR/assembly_info_organelle_annotation_count-all.txt"
+	if [ -s "$PWD/$FDIR/assembly_info_organelle_annotation_count-all.txt" ]; then
+		_polap_log2_file "$PWD/$FDIR/assembly_info_organelle_annotation_count-all.txt"
+	else
+		_func_polap_blast-genome "$ANUM"
+		_func_polap_count-gene "$ANUM"
+	fi
+
+	_polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -1579,7 +2010,9 @@ function _func_polap_annotate() {
 # Outputs:
 ################################################################################
 function _run_polap_annotate() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	ANUM=$INUM
 	FDIR="$ODIR"/$ANUM
@@ -1606,37 +2039,76 @@ function _run_polap_annotate() {
 #   $FDIR/mt.contig.name-2
 #   $FDIR/assembly_info_organelle_annotation_count.txt
 #   $FDIR/assembly_info_organelle_annotation_count-all.txt
-#   $FDIR"/contig-annotation-table.txt 
+#   $FDIR/contig-annotation-table.txt 
 Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>]
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+
+		if [ -s "$PWD/$FDIR/contig-annotation-table.txt" ]; then
+			column -t "$PWD/$FDIR/contig-annotation-table.txt" >&2
+		fi
+
+		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
 	fi
 
-	echoerr "NEXT: $(basename "$0") blast-genome -i $INUM"
-	_run_polap_blast-genome
-	_run_polap_count-gene
+	_polap_log2 "$PWD/$FDIR/assembly_info_organelle_annotation_count-all.txt"
+	if [ -s "$PWD/$FDIR/assembly_info_organelle_annotation_count-all.txt" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log2_file "$PWD/$FDIR/assembly_info_organelle_annotation_count-all.txt"
+	else
+		_run_polap_blast-genome
+		_run_polap_count-gene
+	fi
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
 # Select the main seed contigs.
+#
+# include external shell scripts
 ################################################################################
-. "$script_dir/run-polap-function-select-contigs.sh" # '.' means 'source'
+. "$script_dir/run-polap-function-template.sh" # '.' means 'source'
 
-. "$script_dir/run-polap-function-select-contigs-organelle.sh" # '.' means 'source'
+. "$script_dir/run-polap-function-assemble-draft.sh" # '.' means 'source'
+
+. "$script_dir/run-polap-function-archive.sh" # '.' means 'source'
+
+. "$script_dir/run-polap-function-cleanup.sh" # '.' means 'source'
+
+. "$script_dir/run-polap-function-select-contigs-by-graph-depth-length.sh" # '.' means 'source'
+
+. "$script_dir/run-polap-function-select-contigs-by-graph.sh" # '.' means 'source'
 
 . "$script_dir/run-polap-function-select-contigs-by-gene-density.sh" # '.' means 'source'
+
+. "$script_dir/run-polap-function-select-contigs-by-organelle-gene-group.sh" # '.' means 'source'
+
+. "$script_dir/run-polap-function-select-contigs-by-mt-gene-group.sh" # '.' means 'source'
+
+. "$script_dir/run-polap-function-select-contigs-by-pt-gene-group.sh" # '.' means 'source'
+
+. "$script_dir/run-polap-function-select-contigs-by-depth-length.sh" # '.' means 'source'
+
+. "$script_dir/run-polap-function-select-contigs-organelle.sh" # '.' means 'source'
 
 . "$script_dir/run-polap-function-select-mtdna.sh" # '.' means 'source'
 
 . "$script_dir/run-polap-function-get-bioproject-sra.sh" # '.' means 'source'
 
 . "$script_dir/run-polap-function-get-bioproject.sh" # '.' means 'source'
+
+. "$script_dir/run-polap-function-copy-sra-bioproject.sh" # '.' means 'source'
 
 . "$script_dir/run-polap-function-get-mtdna.sh" # '.' means 'source'
 
@@ -1646,6 +2118,88 @@ HEREDOC
 
 . "$script_dir/run-polap-function-plot-mtdna.sh" # '.' means 'source'
 
+. "$script_dir/run-polap-function-assemble-bioproject.sh" # '.' means 'source'
+
+. "$script_dir/run-polap-function-report-assembly.sh" # '.' means 'source'
+
+################################################################################
+# Select seed contigs using multiple methods
+################################################################################
+function _run_polap_select-contigs() {
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	help_message=$(
+		cat <<HEREDOC
+# Select seed contigs using multiple methods.
+#
+# Arguments:
+#   -o $ODIR
+#   -i $INUM: source Flye (usually whole-genome) assembly number
+# Inputs:
+#   $ODIR
+# Outputs:
+#   $ODIR/1..5
+Example: $(basename $0) ${_arg_menu[0]} [-o $ODIR] [-i <number>]
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		wc "${ODIR}/${INUM}"/mt.contig.name-* >&2
+
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
+		exit $EXIT_SUCCESS
+	fi
+
+	_polap_log0 "selecting contigs using 5 methods ..."
+	INUM=0
+
+	# Loop over numbers from 1 to 5
+	for i in "${_arg_select_contig_numbers[@]}"; do
+		# Call the function corresponding to the current number (index is i-1)
+		INUM=0
+		FDIR="${ODIR}/${INUM}"
+		JNUM="${i}"
+		MTCONTIGNAME="$FDIR"/mt.contig.name-$JNUM
+
+		_arg_select_contig="${i}"
+		if [ -e "$MTCONTIGNAME" ] && [ "${_arg_redo}" = "off" ]; then
+			_polap_log1 "  skipping the select-contig step for ${MTCONTIGNAME}"
+		else
+			_run_polap_select-contigs-by-graph-depth-length
+		fi
+
+		# check the mt.contig.name-1
+		if [ -s "$MTCONTIGNAME" ]; then
+			_polap_log1_file "${MTCONTIGNAME}"
+		else
+			_polap_log1 "LOG: $MTCONTIGNAME is empty. You have to choose seed contigs by yourself."
+		fi
+
+	done
+
+	if [ "${_arg_verbose}" -ge "0" ]; then
+		wc "${ODIR}/${INUM}"/mt.contig.name-* >&2
+	fi
+
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+}
+
+################################################################################
+# FIXME: separate command parser
+################################################################################
 function ncbi_command_parse() {
 	BIOPRJ=""
 	SPECIES=""
@@ -1665,12 +2219,9 @@ function ncbi_command_parse() {
 	done
 }
 
-function _run_polap_x-bioproject() {
-	ncbi_command_parse "$@"
-	esearch -db bioproject -query "$BIOPRJ" | elink -target sra | efetch -format runinfo >"$BIOPRJ".txt
-	echo "cat $BIOPRJ.txt | csvtk cut -f Run,bases,LibraryName,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName | csvtk pretty | less -S" 1>&2
-}
-
+################################################################################
+# FIXME: something are complicated. Do we need it?
+################################################################################
 function _run_polap_x-bioproject2() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
@@ -1698,11 +2249,50 @@ function _run_polap_x-bioproject2() {
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
-function _run_polap_x-sra2() {
+###############################################################################
+# Feteches SRA data file.
+# Arguments:
+#   --sra SRR10190639
+# Outputs:
+#   SRR10190639.fastq
+###############################################################################
+function _run_polap_x-ncbi-fetch-sra() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
+	help_message=$(
+		cat <<HEREDOC
+# Feteches SRA data file.
+# Arguments:
+#   --sra SRR10190639
+# Outputs:
+#   SRR10190639.fastq
+Example: $(basename $0) ${_arg_menu[0]} --sra <arg>
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
+
+	if ! run_check1; then
+		echoerr "ERROR: change your conda environment to polap-dev."
+		echoerr "INFO: (base) $ conda env create -f src/environment.yaml"
+		echoerr "INFO: (base) $ conda activate polap-dev"
+		exit $EXIT_ERROR
+	fi
+
+	if [ -z "$_arg_sra" ]; then
+		echoerr "ERROR: no --sra option is used."
+		exit $EXIT_SUCCESS
+	fi
+
 	SRA=$_arg_sra
-	$script_dir/ncbitools fetch sra "$SRA"
+	"$script_dir"/run-polap-ncbitools fetch sra "$SRA"
+
+	echoerr You have a file called "$SRA".fastq and a folder named "$SRA"
+	echoerr if your download try is successful. Then, you would want to delete
+	echoerr the folder because we need only the fastq file.
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
@@ -1973,6 +2563,8 @@ HEREDOC
 function _run_polap_x-check-coverage() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
+	LRNK="$ODIR/nk.fq.gz"
+
 	help_message=$(
 		cat <<HEREDOC
 # NOT IMPLEMENTED YET
@@ -2022,101 +2614,6 @@ HEREDOC
 }
 
 ################################################################################
-# TODO: get known mtDNA
-# compare known and the assembled using BLAST.
-# not use clustalw because it is too slow. We just use the length.
-#
-################################################################################
-function _run_polap_assemble-bioproject() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
-
-	MTDIR=$ODIR/$JNUM
-
-	help_message=$(
-		cat <<HEREDOC
-# because we need a manual long-read selection step.
-# You could execute this menu with option --test.
-#
-# Runs the organelle-genome assembly.
-# Arguments:
-#   -o $ODIR
-#   -b $SR2: bioproject ID
-# Inputs:
-#   $SR2: bioproject ID
-# Outputs:
-#   mt.1.fa
-Example: $(basename $0) ${_arg_menu[0]} -b PRJNA574453
-HEREDOC
-	)
-
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
-		exit $EXIT_SUCCESS
-	fi
-
-	_polap_var_bioproject=bioproject
-	_polap_var_bioproject_runinfo=${_polap_var_bioproject}/1-runinfo.tsv
-	_polap_var_bioproject_sra_long_read=${_polap_var_bioproject}/1-sra-long-read.tsv
-	_polap_var_bioproject_sra_short_read=${_polap_var_bioproject}/1-sra-short-read.tsv
-
-	rm -rf ${_polap_var_bioproject}
-	mkdir -p ${_polap_var_bioproject}
-
-	BIOPRJ=$SR2
-	esearch -db bioproject -query "$BIOPRJ" |
-		elink -target sra |
-		efetch -format runinfo |
-		csvtk cut -f Run,bases,LibraryName,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName |
-		csvtk csv2tab >${_polap_var_bioproject_runinfo}
-
-	echoerr "FILE: ${_polap_var_bioproject_runinfo}"
-
-	"$WDIR"/run-polap-assemble-bioproject-1-select-sra.R \
-		${_polap_var_bioproject_runinfo} \
-		${_polap_var_bioproject_sra_long_read} \
-		${_polap_var_bioproject_sra_short_read}
-
-	echoerr "FILE: ${_polap_var_bioproject_runinfo}"
-	echoerr "FILE: ${_polap_var_bioproject_sra_long_read}"
-	echoerr "FILE: ${_polap_var_bioproject_sra_short_read}"
-
-	if [ -s ${_polap_var_bioproject_sra_long_read} ]; then
-		SRA=$(cut -f1 ${_polap_var_bioproject_sra_long_read})
-		"$script_dir"/run-polap-ncbitools fetch sra "$SRA"
-		LR=$SRA.fastq
-	else
-		die "ERROR: no long-read dataset for the BioProject: $BIOPRJ"
-	fi
-
-	if [ -s ${_polap_var_bioproject_sra_short_read} ]; then
-		SRA=$(cut -f1 ${_polap_var_bioproject_sra_short_read})
-		SR1=${SRA}_1.fastq
-		SR2=${SRA}_2.fastq
-		"$script_dir"/run-polap-ncbitools fetch sra "$SRA"
-	else
-		die "ERROR: no short-read dataset for the BioProject: $BIOPRJ"
-	fi
-
-	_run_polap_assemble1
-	_run_polap_annotate
-	_run_polap_select-contigs
-	# check the mt.contig.name-1
-	if [ ! -s "$MTCONTIGNAME" ]; then
-		die "LOG: $MTCONTIGNAME is empty. You have to choose seed contigs by yourself."
-	fi
-	_run_polap_assemble2
-	INUM=1 _run_polap_annotate
-	_run_polap_flye-polishing
-	INUM=1 _run_polap_select-mtdna
-	_run_polap_prepare-polishing
-	PA=$ODIR/1/mt.0.fasta
-	FA=$ODIR/1/mt.1.fa
-	_run_polap_polish
-
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
-}
-
-################################################################################
 # Selects and assembles long-read data.
 # Arguments:
 #   -i 0
@@ -2132,8 +2629,9 @@ HEREDOC
 # Outputs:
 ################################################################################
 function _run_polap_assemble2() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	[ "$DEBUG" -eq 1 ] && set -x
 
+	LRNK="$ODIR/nk.fq.gz"
 	MR=$_arg_min_read_length
 	FDIR="$ODIR"/$INUM
 	ADIR="$FDIR"/50-annotation
@@ -2175,30 +2673,18 @@ Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>] [-r|
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
-		exit $EXIT_SUCCESS
-	fi
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
 
-	if [ ! -s "$MTCONTIGNAME" ]; then
-		echoall "ERROR: no such mt.contig.name file: $MTCONTIGNAME"
-		exit $EXIT_ERROR
-	fi
-
-	if [ ! -s "${assembly_graph_final_fasta}" ]; then
-		echoall "ERROR: no assembly fasta file: ${assembly_graph_final_fasta}"
-		exit $EXIT_ERROR
-	fi
-	if [[ ! -s $LRNK ]]; then
-		echoall "ERROR: no $LRNK long read-data file found: $LRNK"
-		exit $EXIT_ERROR
-	fi
+	check_file_existence "${MTCONTIGNAME}"
+	check_file_existence "${assembly_graph_final_fasta}"
+	check_file_existence "${LRNK}"
 
 	echoerr "NEXT: $(basename $0) select-reads -o $ODIR -i $INUM -j $JNUM"
 	_run_polap_select-reads
 	_run_polap_flye2
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -2220,17 +2706,20 @@ HEREDOC
 #   $MTDIR/assembly_graph.gfa
 ################################################################################
 function _run_polap_assemble() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
 
-	MTDIR=$ODIR/$JNUM
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-wga.sh"  # '.' means 'source'
 
 	help_message=$(
 		cat <<HEREDOC
-# NOT IMPLEMENTED YET!
-# because we need a manual long-read selection step.
-# You could execute this menu with option --test.
-#
-# Runs the organelle-genome assembly.
+# Runs the POLAP organelle-genome assembly with sequencing data.
+# 
 # Arguments:
 #   -o $ODIR
 #   -l $LR: a long-read fastq data file
@@ -2246,28 +2735,77 @@ Example: $(basename $0) ${_arg_menu[0]} --test
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
-		exit $EXIT_SUCCESS
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+
+	# Not delete the output directory.
+	mkdir -p "$ODIR"
+
+	# Run assembly, annotation, and contig selection steps
+	if [ -s "${_polap_var_wga_contigger_gfa}" ]; then
+		_polap_log1 "  skipping the whole-genome assembly"
+	else
+		check_file_existence "${LR}"
+		_run_polap_assemble1
 	fi
 
-	_run_polap_assemble1
-	_run_polap_annotate
+	if [ -s "${_polap_var_wga_annotation}" ]; then
+		_polap_log1 "  skipping the organelle annotation on the whole-genome"
+	else
+		_run_polap_annotate
+	fi
+
+	# Select seed contigs
 	_run_polap_select-contigs
-	# check the mt.contig.name-1
-	if [ ! -s "$MTCONTIGNAME" ]; then
-		die "LOG: $MTCONTIGNAME is empty. You have to choose seed contigs by yourself."
-	fi
-	_run_polap_assemble2
-	INUM=1 _run_polap_annotate
-	# _run_polap_flye-polishing
-	INUM=1 _run_polap_select-mtdna
-	_run_polap_prepare-polishing
-	PA=$ODIR/1/mt.0.fasta
-	FA=$ODIR/1/mt.1.fa
-	_run_polap_polish
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	# Loop over numbers from 1 to 5
+	for i in "${_arg_select_contig_numbers[@]}"; do
+		# Call the function corresponding to the current number (index is i-1)
+		INUM=0
+		FDIR="${ODIR}/${INUM}"
+		JNUM="${i}"
+
+		MTCONTIGNAME="$FDIR"/mt.contig.name-$JNUM
+		# check the mt.contig.name-1
+		if [ -s "$MTCONTIGNAME" ]; then
+			# Run secondary assembly, polishing, and mtDNA selection steps
+			_polap_log1_file "${MTCONTIGNAME}"
+			_run_polap_assemble2
+			INUM="${i}" _run_polap_annotate
+			INUM="${i}" _run_polap_flye-polishing
+			INUM="${i}" _run_polap_select-mtdna
+		else
+			_polap_log1 "LOG: $MTCONTIGNAME is empty for select-contig type $i ..."
+		fi
+	done
+
+	if [ -s "${_polap_var_base_msbwt}" ]; then
+		_polap_log1 "  skipping the preparation of short-read polishing ..."
+	else
+		if [ -s "${_polap_var_base_msbwt_tar_gz}" ]; then
+			_polap_log1 "  decompressing ${_polap_var_base_msbwt_tar_gz} ... later when we polish it with the short-read data."
+			tar -zxf "${_polap_var_base_msbwt_tar_gz}" -C "${ODIR}"
+		else
+			_polap_log1 "  Do the preparation of short-read polishing ... early"
+			check_file_existence "${SR1}"
+			check_file_existence "${SR2}"
+			_run_polap_prepare-polishing
+		fi
+	fi
+
+	# Run the polishing step
+	for i in "${_arg_select_contig_numbers[@]}"; do
+		# Define the paths for mtDNA sequences to be polished
+		PA="${ODIR}/${i}/mt.0.fasta"
+		FA="${ODIR}/${i}/mt.1.fa"
+
+		if [ -s "${PA}" ] && [ -s "${_polap_var_base_msbwt}" ]; then
+			_run_polap_polish
+		fi
+	done
+
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 function _run_polap_x-help() {
@@ -2304,6 +2842,43 @@ function verbose_echo() {
 	if [ "${_arg_verbose}" -ge "$msg_level" ]; then
 		# echo "${_arg_verbose} > ${msg_level}: $message"
 		echo "$message"
+	fi
+}
+
+function verbose_echo_newline() {
+	local msg_level=$1 # The verbosity level of this message
+	shift              # Shift arguments to access the actual message
+	local message="$@"
+
+	# Only print if the current verbosity level is greater than or equal to the message level
+	if [ "${_arg_verbose}" -ge "$msg_level" ]; then
+		# echo "${_arg_verbose} > ${msg_level}: $message"
+		echo ""
+		echo "$message"
+	fi
+}
+
+function verbose_cat() {
+	local msg_level=$1 # The verbosity level of this message
+	shift              # Shift arguments to access the actual message
+	local message="$@"
+
+	# Only print if the current verbosity level is greater than or equal to the message level
+	if [ "${_arg_verbose}" -ge "$msg_level" ]; then
+		# echo "${_arg_verbose} > ${msg_level}: $message"
+		cat "$message"
+	fi
+}
+
+function verbose_head() {
+	local msg_level=$1 # The verbosity level of this message
+	shift              # Shift arguments to access the actual message
+	local message="$@"
+
+	# Only print if the current verbosity level is greater than or equal to the message level
+	if [ "${_arg_verbose}" -ge "$msg_level" ]; then
+		# echo "${_arg_verbose} > ${msg_level}: $message"
+		head "$message"
 	fi
 }
 
@@ -2346,6 +2921,14 @@ function check_file_existence() {
 	fi
 }
 
+function check_folder_existence() {
+	local folder=$1
+	if [ ! -d "$folder" ]; then
+		die "ERROR: No such folder: $folder"
+		exit $EXIT_ERROR
+	fi
+}
+
 # Helper function for logging
 # only to the screen with --verbose
 function log1_file() {
@@ -2364,23 +2947,96 @@ function _polap_log2_file() {
 	_polap_log2 "FILE: $@"
 }
 
+function _polap_log3_file() {
+	_polap_log3 "FILE: $@"
+}
+
+# --quiet level
+# log only to the log file
 function _polap_log0() {
 	verbose_echo 0 "$@"
-}
-
-function _polap_log1() {
 	verbose_echo 1 "$@" 1>&2
-	verbose_echo 1 "$@"
 }
 
-function _polap_log2() {
+# log level 1 to the log file
+# log level 0 to the screen
+function _polap_log1() {
+	verbose_echo 1 "$@"
 	verbose_echo 2 "$@" 1>&2
+}
+
+# log level 2 to the log file
+# log level 1 to the screen
+function _polap_log2() {
 	verbose_echo 2 "$@"
+	verbose_echo 3 "$@" 1>&2
+}
+
+# log level 3 to the log file
+# log level 2 to the screen
+function _polap_log3() {
+	verbose_echo 3 "$@"
+	verbose_echo 4 "$@" 1>&2
+}
+
+function _polap_log0_log() {
+	_polap_log0 "LOG: $@"
+}
+
+function _polap_log1_log() {
+	_polap_log1 "LOG: $@"
+}
+
+function _polap_log2_log() {
+	_polap_log2 "LOG: $@"
+}
+
+function _polap_log3_log() {
+	_polap_log3 "LOG: $@"
+}
+
+function _polap_echo0() {
+	verbose_echo 0 "$@" 1>&2
+}
+
+function _polap_log0_cat() {
+	verbose_cat 0 "$@"
+	verbose_cat 1 "$@" 1>&2
+}
+
+function _polap_log1_cat() {
+	verbose_cat 1 "$@"
+	verbose_cat 2 "$@" 1>&2
+}
+
+function _polap_log2_cat() {
+	verbose_cat 2 "$@"
+	verbose_cat 3 "$@" 1>&2
+}
+
+function _polap_log3_cat() {
+	verbose_cat 3 "$@"
+	verbose_cat 4 "$@" 1>&2
+}
+
+function _polap_log_function() {
+	verbose_echo_newline 2 "$@"
+	verbose_echo_newline 3 "$@" 1>&2
+}
+
+function _run_polap_gbs() {
+	_run_polap_get-bioproject-sra
+}
+
+function _run_polap_scbg() {
+	_run_polap_select-contigs-by-graph-depth-length
 }
 
 ################################################################################
 # All of the variables at our disposal
 ################################################################################
+
+_polap_var_function_verbose=4
 
 # include and execute other BASH and R scripts
 WDIR="$(dirname "$0")"
@@ -2402,9 +3058,12 @@ ODIR=$_arg_outdir
 INUM=$_arg_inum
 JNUM=$_arg_jnum
 FDIR="$ODIR"/0 # flye 1st output
+if [ "${_arg_archive_is}" = "off" ]; then
+	_arg_archive="${ODIR}a"
+fi
 
 # tuning variables for optimal performance
-LRNK=$ODIR/nk.fq.gz
+LRNK="$ODIR/nk.fq.gz"
 MR=$_arg_min_read_length
 MPAIR=$_arg_pair_min     # 3000 for MT, 1000 for PT
 MBRIDGE=$_arg_bridge_min # used to be 3000,
@@ -2476,6 +3135,9 @@ fi
 
 ELAPSED="Time: $((SECONDS / 3600))hrs $(((SECONDS / 60) % 60))min $((SECONDS % 60))sec - $CMD"
 echo "$ELAPSED"
+
+# _polap_log0 "${_polap_var_apple}"
+# _polap_log0 "var: ${_polap_var_apple}"
 
 # ^^^  TERMINATE YOUR CODE BEFORE THE BOTTOM ARGBASH MARKER  ^^^
 

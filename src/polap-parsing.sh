@@ -24,7 +24,7 @@
 # ARG_OPTIONAL_SINGLE([query],[],[query sequence for blastn])
 # ARG_OPTIONAL_SINGLE([subject],[],[subject sequence for blastn])
 # ARG_OPTIONAL_REPEATED([minimum],[M],[Pair, Bridge, and Single minimum],[])
-# ARG_OPTIONAL_BOOLEAN([reduction-reads],[],[step0: no reduction of long-read data],[on])
+# ARG_OPTIONAL_BOOLEAN([reduction-reads],[],[redo: no reduction of long-read data],[on])
 # ARG_OPTIONAL_BOOLEAN([contigger],[],[step1: use flye's 40-polishing result])
 # ARG_OPTIONAL_BOOLEAN([all-annotate],[],[step2: annotate all contigs])
 # ARG_OPTIONAL_BOOLEAN([use-edges],[],[step4: use flye's edges not contigs])
@@ -61,9 +61,14 @@ _positionals=()
 _arg_menu=("assemble" "infile" "outfile")
 # THE DEFAULTS INITIALIZATION - OPTIONALS
 _arg_long_reads="l.fq"
+_arg_long_reads_is="off"
 _arg_outdir="o"
+_arg_archive="a"
+_arg_archive_is="off"
 _arg_short_read1="s1.fq"
+_arg_short_read1_is="off"
 _arg_short_read2="s2.fq"
+_arg_short_read2_is="off"
 _arg_sra=
 _arg_unpolished_fasta="mt.0.fasta"
 _arg_final_assembly="mt.1.fa"
@@ -76,6 +81,9 @@ _arg_bridge_min="3000"
 _arg_single_min="3000"
 _arg_inum="0"
 _arg_jnum="1"
+_arg_select_contig="1"
+# _arg_select_contig_numbers=(1 7)
+_arg_select_contig_numbers=(1 2 3 4 5)
 _arg_genomesize=
 _arg_bioproject=
 _arg_species=
@@ -92,7 +100,7 @@ _arg_resume="off"
 _arg_plastid="off"
 _arg_yes="off"
 _arg_circularize="off"
-_arg_step0="off"
+_arg_redo="off"
 _arg_step1="off"
 _arg_step2="off"
 _arg_step3="off"
@@ -106,10 +114,11 @@ _arg_test="off"
 _arg_verbose=1
 
 print_help() {
+	source "$script_dir/polap-version.sh" # '.' means 'source'
 	printf '%s\n' "POLAP - Plant organelle DNA long-read assembly pipeline."
-	printf '%s\n' "version 0.3.1"
+	printf '%s\n' "version ${_polap_version}"
 	printf '\n'
-	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)plastid] [--(no-)coverage-check] [-u|--(no-)circularize] [--(no-)test] [--log <arg>] [-v|--version] [-h|--help]\n'
+	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)plastid] [--(no-)coverage-check] [-u|--(no-)circularize] [--(no-)test] [--log <arg>] [--archive <arg>] [[-v|--version] [-h|--help]\n'
 	printf '       polap <menu> help\n'
 	printf '\n'
 	printf '%s\n' "menu: list, make-menus, or clean-menus"
@@ -168,10 +177,12 @@ print_help() {
 	printf '  %s\n' "--reduction-reads, --no-reduction-reads: reduction of long-read data before assemble1 (on by default)"
 	printf '  %s\n' "--coverage-check, --no-coverage-check: coverage check before assemble2 step (on by default)"
 	printf '  %s\n' "--yes, --no-yes: alway yes for a question or deletes output completely (off by default)"
+	printf '  %s\n' "--redo, --no-redo: (off by default)"
 	printf '  %s\n' "--species: Species scientific name (no default)"
 	printf '\t%s\n' "--sra: SRA data (no default)"
 	printf '  %s\n' "--log: log file (default: polap.log)"
-	printf '  %s\n' "-v, --version: Prints version"
+	printf '  %s\n' "-v, --verbose: use multiple times to increase the verbose level"
+	printf '  %s\n' "--version: Prints version"
 	printf '  %s\n' "-h, --help: Prints help"
 	printf '\n'
 	printf '%s\n' 'Places your long-read and short-read files at a folder.'
@@ -247,12 +258,13 @@ print_x-help() {
 	printf '\t%s\n' "--query: query sequence for blastn (no default)"
 	printf '\t%s\n' "--subject: subject sequence for blastn (no default)"
 	printf '\t%s\n' "-M, --minimum: Pair, Bridge, and Single minimum (empty by default)"
-	printf '\t%s\n' "--reduction-reads, --no-reduction-reads: step0: no reduction of long-read data (on by default)"
+	printf '\t%s\n' "--reduction-reads, --no-reduction-reads: redo: no reduction of long-read data (on by default)"
 	printf '\t%s\n' "--contigger, --no-contigger: step1: use flye 40-polishing result (off by default)"
 	printf '\t%s\n' "--all-annotate, --no-all-annotate: step2: annotate all contigs (off by default)"
 	printf '\t%s\n' "--use-edges, --no-use-edges: step4: use flye edges not contigs (off by default)"
 	printf '\t%s\n' "--coverage-check, --no-coverage-check: step4: no coverage check for step 4 (off by default)"
 	printf '\t%s\n' "--resume, --no-resume: step1,step4: flye option resume (off by default)"
+	printf '\t%s\n' "--redo, --no-redo: (off by default)"
 	printf '\t%s\n' "-u, --circularize, --no-circularize: step4: circularize a contig (off by default)"
 	printf '\t%s\n' "-v, --version: Prints version"
 	printf '\t%s\n' "-h, --help: Prints help"
@@ -261,9 +273,15 @@ print_x-help() {
 	printf '%s\n' 'long-read file [l.fq]'
 	printf '%s\n' 'short-read files [s1.fq] and [s2.fq]'
 	printf '%s\n' 'Execute: polap reset'
+	printf '%s\n' '...'
+	printf '%s\n' 'Download data from ginko'
+	printf '%s\n' 'get-bioproject -o <BioProject Accession> -b <BioProject Accession>'
+	printf '%s\n' 'get-bioproject-sra --sra <SRA Accession>'
+	printf '%s\n' 'copy-sra-bioproject -o <BioProject Accession> -b <BioProject Accession>'
 }
 
 parse_commandline() {
+	source "$script_dir/polap-version.sh" # '.' means 'source'
 	_positionals_count=0
 	while test $# -gt 0; do
 		_key="$1"
@@ -271,13 +289,16 @@ parse_commandline() {
 		-l | --long-reads)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_long_reads="$2"
+			_arg_long_reads_is="on"
 			shift
 			;;
 		--long-reads=*)
 			_arg_long_reads="${_key##--long-reads=}"
+			_arg_long_reads_is="on"
 			;;
 		-l*)
 			_arg_long_reads="${_key##-l}"
+			_arg_long_reads_is="on"
 			;;
 		-o | --outdir)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -293,24 +314,30 @@ parse_commandline() {
 		-a | --short-read1)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_short_read1="$2"
+			_arg_short_read1_is="on"
 			shift
 			;;
 		--short-read1=*)
 			_arg_short_read1="${_key##--short-read1=}"
+			_arg_short_read1_is="on"
 			;;
 		-a*)
 			_arg_short_read1="${_key##-a}"
+			_arg_short_read1_is="on"
 			;;
 		-b | --short-read2)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_short_read2="$2"
+			_arg_short_read2_is="on"
 			shift
 			;;
 		--short-read2=*)
 			_arg_short_read2="${_key##--short-read2=}"
+			_arg_short_read2_is="on"
 			;;
 		-b*)
 			_arg_short_read2="${_key##-b}"
+			_arg_short_read2_is="on"
 			;;
 		--sra)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -430,6 +457,14 @@ parse_commandline() {
 		-j*)
 			_arg_jnum="${_key##-j}"
 			;;
+		--select-contig)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_select_contig="$2"
+			shift
+			;;
+		--select-contig=*)
+			_arg_select_contig="${_key##--select-contig=}"
+			;;
 		-g | --genomesize)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_genomesize="$2"
@@ -440,6 +475,16 @@ parse_commandline() {
 			;;
 		-g*)
 			_arg_genomesize="${_key##-g}"
+			;;
+		--archive)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_archive="$2"
+			_arg_archive_is="on"
+			shift
+			;;
+		--archive=*)
+			_arg_archive="${_key##--archive=}"
+			_arg_archive_is="on"
 			;;
 		--bioproject)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -543,9 +588,9 @@ parse_commandline() {
 		--log=*)
 			_arg_log="${_key##--log=}"
 			;;
-		--no-step0 | --step0)
-			_arg_step0="on"
-			test "${1:0:5}" = "--no-" && _arg_step0="off"
+		--no-redo | --redo)
+			_arg_redo="on"
+			test "${1:0:5}" = "--no-" && _arg_redo="off"
 			;;
 		--no-step1 | --step1)
 			_arg_step1="on"
@@ -587,18 +632,14 @@ parse_commandline() {
 			_arg_test="on"
 			test "${1:0:5}" = "--no-" && _arg_test="off"
 			;;
-		-v | --version)
-			echo $0 v0.2.6
-			exit 0
-			;;
-		-v*)
-			echo $0 v0.2.6
+		--version)
+			echo $0 v${_polap_version}
 			exit 0
 			;;
 		--quiet)
 			_arg_verbose=0
 			;;
-		--verbose)
+		-v | --verbose)
 			_arg_verbose=$((_arg_verbose + 1))
 			;;
 		-h | --help)

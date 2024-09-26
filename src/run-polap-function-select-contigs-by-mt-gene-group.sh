@@ -1,4 +1,7 @@
-function _run_polap_select-contigs-by-gene-density() {
+################################################################################
+# Select contig seeds from MT and PT
+################################################################################
+function _run_polap_select-contigs-by-mt-gene-group() {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 
@@ -19,9 +22,10 @@ function _run_polap_select-contigs-by-gene-density() {
 	# Help message
 	local help_message=$(
 		cat <<HEREDOC
-# Selects contigs for an organelle-genome assembly based on gene density.
+# Selects contigs from MT contig origin using only the annotation table.
 #
-# 1. Collect all edges with gene density above a threshold.
+# 1. Collect all edges with MT genes.
+# 2. Filter out edges with too long sequences.
 #
 # Arguments:
 #   -i $INUM: source Flye (usually organelle-genome) assembly number
@@ -39,7 +43,7 @@ HEREDOC
 	)
 
 	# Print help message if needed
-	[[ ${_arg_menu[1]} == "help" ]] && echoerr "$help_message" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_log1 "$help_message" && exit $EXIT_SUCCESS
 
 	# Check for required files
 	check_file_existence "${_polap_var_assembly_graph_final_gfa}"
@@ -50,17 +54,15 @@ HEREDOC
 	mkdir -p "${_polap_var_mtcontigs}"
 
 	# Log the important files used in the process
-	_polap_log1_file "input1: ${_polap_var_assembly_graph_final_gfa}"
-	_polap_log1_file "input2: ${_polap_var_annotation_table}"
+	_polap_log2_file "input1: ${_polap_var_assembly_graph_final_gfa}"
+	_polap_log2_file "input2: ${_polap_var_annotation_table}"
 
 	# Step 1: Select contigs based on gene density
-	"$WDIR"/run-polap-select-contigs-by-gene-density-1-start.R \
-		"${_polap_var_assembly_graph_final_gfa}" \
+	"$WDIR"/run-polap-select-contigs-by-mt-gene-group-1-start.R \
 		"${_polap_var_annotation_table}" \
-		"${_polap_var_mtcontig_annotated}" \
-		"${_polap_var_mtcontigs_stats}"
+		"${_polap_var_mtcontig_annotated}"
 
-	_polap_log2_flie "${_polap_var_mtcontig_annotated}"
+	_polap_log2_file "${_polap_var_mtcontig_annotated}"
 
 	# Save the first column (contig names) to the output file
 	cut -f1 "${_polap_var_mtcontig_annotated}" >"${MTCONTIGNAME}"

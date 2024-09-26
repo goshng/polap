@@ -31,37 +31,40 @@ if (length(args) > 0) {
   s="Vigna_radiata"
   s="Brassica_rapa"
   s="Anthoceros_angustus"
-  input0 <- paste0("/media/h2/goshng/figshare/", s, "/o/0")
-  input1 <- paste0(input0, "/30-contigger/graph_final.gfa")
-  input2 <- paste0(input0, "/assembly_info_organelle_annotation_count-all.txt")
-  input_dir0 <- paste0("/media/h2/goshng/figshare/", s, "/o/0/1/mtcontigs")
-  output1 <- paste0(input_dir0, "/1-mtcontig.annotated.txt")
-  output2 <- paste0(input_dir0, "/1-mtcontig.stats.txt")
+
+  s="bioprojects"
+  o="PRJNA766769"
+  jnum="1"
+  input_dir0 <- file.path("/media/h2/goshng/figshare", s, o, "0")
+  input1 <- file.path(input_dir0, "30-contigger/graph_final.gfa")
+  input2 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
+  input_dir1 <- file.path(input_dir0, jnum, "mtcontigs")
+  output1 <- file.path(input_dir1, "1-mtcontig.annotated.txt")
+  output2 <- file.path(input_dir1, "1-mtcontig.stats.txt")
 }
 
 x0 <- read_delim(input2, delim=' ')
 
-# filtering
-#
-# Case 1. too long without many MT genes
-# Case 2. too big or small copy number
-  # filter(Length < 1e+6, MT > 1) |>
-  # filter(Copy > 1, PT<MT) |>
+# PT selection
+# gene density cutoff: 1 in 10 kb
 x1 <- x0 |>
-  filter(Copy > 1, PT<MT) |>
-  mutate(R1=as.integer(Length/MT)) |>
-  filter(R1 < 1e+5) |>
+  filter(Copy > 1) |>
+  filter(PT > 1) |>
+  filter(PT > MT) |>
+  mutate(RT=as.integer(Length/PT)) |>
+  filter(RT < 1e+4) |>
   # Separate the Edge column into individual numbers
   separate_rows(Edge, sep = ",") |>
-  distinct() |>
   # Convert the numbers to absolute values
-  mutate(Edge = abs(as.numeric(Edge)))
+  mutate(Edge = abs(as.numeric(Edge))) |>
+  # Group by the absolute value of Edge
+  group_by(Edge) |>
+  # Summarize by taking the maximum MT value for each edge
+  # summarise(MT = max(Length, na.rm = TRUE)) |>
+  ungroup() |>
+  distinct()
 
-y <- x1 |>
-  filter(Copy < 5 * median(x1$Copy), Copy > 0.2 * median(x1$Copy)) |>
-  arrange(MT)
-
-y |> mutate(edgename=paste0("edge_",Edge)) |> select(edgename, V3) |>
+x1 |> mutate(edgename=paste0("edge_",Edge)) |>
+  select(edgename, Length, V3, Copy, MT, PT, RT) |>
+  arrange(Copy) |>
   write_tsv(output1, col_names = FALSE)
-# cat(paste0("edge_",y$Edge), file = output1, sep="\n")
-cat(mean(y$V3),sd(y$V3),median(y$V3), file=output2, sep="\n")

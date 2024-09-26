@@ -14,6 +14,10 @@ function _run_polap_select-contigs-organelle() {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge 3 ] && _polap_output_dest="/dev/stderr"
+
 	# Set variables
 	local FDIR="$ODIR/$INUM"
 	local MTCONTIGNAME="$FDIR/mt.contig.name-$JNUM"

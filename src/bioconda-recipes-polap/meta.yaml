@@ -36,6 +36,9 @@ requirements:
     - assembly-stats
     - orthofinder
     - bioconductor-ggtree
+    - networkx
+    - pandas
+    - gfatools
     - perl-xml-libxml
     - icu
     - libxml2

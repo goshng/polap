@@ -64,6 +64,16 @@ HEREDOC
 		else
 			_polap_log0 "No short-read info."
 		fi
+		check_file_existence "${_polap_var_bioproject_sra_short_read}"
+		if [[ "${_arg_yes}" = "on" ]]; then
+			# _polap_log0 "sending SRA for downloading ..."
+			check_file_existence "${_polap_var_bioproject_sra_long_read}"
+			SRA=$(cut -f1 "${_polap_var_bioproject_sra_long_read}")
+			echo $SRA >"${ODIR}/sra.txt"
+			SRA=$(cut -f1 "${_polap_var_bioproject_sra_short_read}")
+			echo $SRA >>"${ODIR}/sra.txt"
+			# scp -qp sra.txt gingko:
+		fi
 		# _polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
@@ -143,10 +153,12 @@ HEREDOC
 
 		# Create a new bioproject folder with the species name.
 		mkdir -p "${bioproject_species_folder}"
+		touch "${bioproject_species_base}/log-need-to-fetch-data.txt"
 		cp "${_polap_var_bioproject_txt}" "${bioproject_species_base}"
 		cp "${_polap_var_bioproject}"/* "${bioproject_species_folder}"
 		cp "$taxon_id_folder/1-sra-long-read.tsv" "${bioproject_species_folder}"
 		cp "$taxon_id_folder/1-sra-short-read.tsv" "${bioproject_species_folder}"
+		echo "${ScientificName}" >"${bioproject_species_folder}/1-species.txt"
 	done
 
 	if [ ! -s "${_polap_var_bioproject_sra_long_read}" ]; then

@@ -10,7 +10,7 @@
 # We need to read GFA files to manipulate.
 # We need to determine connected components.
 ################################################################################
-function _run_polap_select-contigs-by-graph-depth-length() {
+function _run_polap_select-contigs-by() {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -72,15 +72,21 @@ HEREDOC
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 
 		case "${_arg_select_contig}" in
-		1 | 2)
+		1 | 3)
 			check_file_existence "${_polap_var_mtcontig_annotated}"
 			_polap_log0_cat "${_polap_var_mtcontig_annotated}"
+			check_file_existence "${_polap_var_mtcontig_stats}"
+			_polap_log0_cat "${_polap_var_mtcontig_stats}"
 			;;
-		3 | 4 | 5)
+		2 | 4 | 5)
+			check_file_existence "${_polap_var_mtcontig_mixfit}"
+			_polap_log0_cat "${_polap_var_mtcontig_mixfit}"
 			check_file_existence "${_polap_var_mtcontig_annotated}"
 			_polap_log0_cat "${_polap_var_mtcontig_annotated}"
-			# check_file_existence "${MTCONTIGNAME}"
-			# _polap_log0_cat "${MTCONTIGNAME}"
+			check_file_existence "${_polap_var_mtcontig_stats}"
+			_polap_log0_cat "${_polap_var_mtcontig_stats}"
+			check_file_existence "${_polap_var_mtcontig_mixfit}"
+			_polap_log0_cat "${_polap_var_mtcontig_mixfit}"
 			;;
 		*)
 			echo "Invalid input!"
@@ -93,7 +99,7 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	_polap_log0 "selecting seed contigs using $(echo $FUNCNAME | sed s/_run_polap_//) ${INUM} -> ${JNUM} with ${_arg_select_contig}"
+	_polap_log0 "selecting seed contigs using $(echo $FUNCNAME | sed s/_run_polap_//) ${INUM} -> ${JNUM} with type ${_arg_select_contig}"
 
 	# Check for required files
 	check_file_existence "${_polap_var_assembly_graph_final_gfa}"

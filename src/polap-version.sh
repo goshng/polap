@@ -1,1 +1,1 @@
-local _polap_version=0.3.2
+local _polap_version=0.3.4

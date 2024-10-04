@@ -37,9 +37,15 @@ if __name__ == "__main__":
         df, source="Source", target="Target", create_using=nx.DiGraph
     )
 
+    # data = nx.cycles.find_cycle(G, orientation="original", source="2+")
+
     data = nx.cycles.find_cycle(G, orientation="original")  # , source="4-")
 
     # Creating a DataFrame from the data
     dfo = pd.DataFrame(data, columns=["Source", "Target", "Orientation"])
 
     dfo.to_csv(file_path_out, sep="\t", index=False)
+
+    # cycles = list(nx.simple_cycles(G))
+    # for cycle in cycles:
+    #     print(cycle)

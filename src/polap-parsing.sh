@@ -157,6 +157,12 @@ print_help() {
 	printf '%s\n' '  polap prepare-polishing  [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]'
 	printf '%s\n' '  polap polish [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]'
 	printf '\n'
+	printf '%s\n' 'Menu: get-mtdna'
+	printf '%s\n' '  polap get-mtdna [--species <arg>]'
+	printf '\n'
+	printf '%s\n' 'Menu: get-bioproject-sra'
+	printf '%s\n' '  polap get-bioproject-sra [--sra <arg>]'
+	printf '\n'
 	printf '%s\n' "Options:"
 	printf '  %s\n' "-o, --outdir: output folder name (default: ${_arg_outdir})"
 	printf '  %s\n' "-l, --long-reads: long-reads data file in fastq format (default: 'l.fq')"

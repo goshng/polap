@@ -10,12 +10,25 @@ function _run_polap_get-mtdna() {
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-bioproject.sh"
+	source "$script_dir/run-polap-function-utilities.sh"
+
+	if ! run_check_ncbitools; then
+		error_polap_conda
+		exit $EXIT_ERROR
+	fi
 
 	# Help message
 	local help_message=$(
 		cat <<HEREDOC
-# Download the organelle-genome in FASTA format.
+# Download the organelle-genome sequence in FASTA format from NCBI.
+#
+#	NCBI search for a mitochondrial genome:
+#	"mitochondrion[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]"
+#	
+#	NCBI search for a plastid genome:
+#	"chloroplast[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]"
+#
 # Arguments:
 #   --species "scientific name" highest priority
 #   or
@@ -23,7 +36,9 @@ function _run_polap_get-mtdna() {
 #   or
 #   --bioproject ${_arg_bioproject} the least priority
 # Outputs:
-#   $ODIR/bioproject/1-mtdna.fasta
+#   ${_polap_var_bioproject_mtdna_fasta1}
+#   ${_polap_var_bioproject_mtdna_fasta2}
+#   ${_polap_var_bioproject_mtdna_fasta2_accession}
 Example: $(basename $0) ${_arg_menu[0]} --species "Anthoceros agrestis"
 Example: $(basename $0) ${_arg_menu[0]} -o o
 Example: $(basename $0) ${_arg_menu[0]} -b PRJNA574453
@@ -38,7 +53,13 @@ HEREDOC
 			_polap_log0_cat "${_polap_var_bioproject_mtdna_fasta2_accession}"
 			if [ -s "${_polap_var_bioproject_mtdna_fasta1}" ]; then
 				seqkit stats "${_polap_var_bioproject_mtdna_fasta1}" >&2
+			else
+				_polap_log0 "No such file: ${_polap_var_bioproject_mtdna_fasta1}"
+			fi
+			if [ -s "${_polap_var_bioproject_mtdna_fasta2}" ]; then
 				seqkit stats "${_polap_var_bioproject_mtdna_fasta2}" >&2
+			else
+				_polap_log0 "No such file: ${_polap_var_bioproject_mtdna_fasta2}"
 			fi
 		else
 			_polap_log0 "No result yet."
@@ -50,48 +71,75 @@ HEREDOC
 	# mkdir -p "${_polap_var_bioproject}"
 	# _run_polap_get-bioproject
 
+	_polap_log0 "getting the organelle-genome sequence of a plant species ..."
+
 	# Determine species name
 	local SPECIES=""
 	if [ -n "${_arg_species}" ]; then
-		_polap_log1 "LOG: species name is given as the option --species: $SPECIES"
+		_polap_log1 "  option --species: ${_arg_species}"
 		SPECIES="${_arg_species}"
 		mkdir -p "${_polap_var_bioproject}"
 	elif [ -s "${_polap_var_bioproject_species}" ]; then
-		SPECIES=$(cut -f4 "${_polap_var_bioproject_species}")
-		_polap_log1 "LOG: bioproject's species: $SPECIES"
-	else
+		local bioproject_id=$(<"${_polap_var_bioproject_txt}")
+		local n=$(wc -l <"${_polap_var_bioproject_species}")
+		if [[ "${n}" -gt 1 ]]; then
+			_polap_log0_file "${_polap_var_bioproject_species}"
+			_polap_log0_cat "${_polap_var_bioproject_species}"
+			die "ERROR: you have multiple species names in BioProject: ${bioproject_id}"
+		fi
+		SPECIES=$(<"${_polap_var_bioproject_species}")
+		_polap_log1 "  bioproject's species: $SPECIES"
+	elif [ -n "${_arg_bioproject}" ]; then
 		_run_polap_get-bioproject
 		if [ -s "${_polap_var_bioproject_species}" ]; then
-			SPECIES=$(cut -f4 "${_polap_var_bioproject_species}")
-			_polap_log1 "LOG: bioproject's species: $SPECIES"
+			local bioproject_id=$(<"${_polap_var_bioproject_txt}")
+			local n=$(wc -l <"${_polap_var_bioproject_species}")
+			if [[ "${n}" -gt 1 ]]; then
+				_polap_log0_file "${_polap_var_bioproject_species}"
+				_polap_log0_cat "${_polap_var_bioproject_species}"
+				die "ERROR: you have multiple species names in BioProject: ${bioproject_id}"
+			fi
+			SPECIES=$(<"${_polap_var_bioproject_species}")
+			_polap_log1 "  bioproject's species: $SPECIES"
 		else
-			die "No species name is provided."
+			die "  no species name is provided in the BioProject: ${_arg_bioproject}"
 		fi
+	else
+		die "  use --species or --bioproject option."
 	fi
 
 	# Download the mitochondrial genome sequence for the given species
 	if [ "${_arg_plastid}" = "off" ]; then
+		_polap_log1 "  downloading mitochondrial complete genomes of ${SPECIES} ..."
 		esearch \
 			-db nuccore \
 			-query "(mitochondrion[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]" |
 			efetch -format fasta >"${_polap_var_bioproject_mtdna_fasta1}"
 	else
-		_polap_log1 "LOG: downloading chloroplast complete genomes of ${SPECIES} ..."
+		_polap_log1 "  downloading chloroplast complete genomes of ${SPECIES} ..."
 		esearch \
 			-db nuccore \
 			-query "(chloroplast[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]" |
 			efetch -format fasta >"${_polap_var_bioproject_mtdna_fasta1}"
 	fi
+	_polap_log2_file "${_polap_var_bioproject_mtdna_fasta1}"
 
 	# Check if the fasta file was successfully downloaded
 	if [ -s "${_polap_var_bioproject_mtdna_fasta1}" ]; then
-		_polap_log2_file "potentially multiple-sequence: ${_polap_var_bioproject_mtdna_fasta1}"
-		seqkit stats -T "${_polap_var_bioproject_mtdna_fasta1}" \
+		# seqkit stats -T "${_polap_var_bioproject_mtdna_fasta1}" \
+		# 	>"${_polap_var_bioproject_mtdna_fasta1_stats}"
+
+		seqkit fx2tab --length --name --header-line \
+			"${_polap_var_bioproject_mtdna_fasta1}" \
 			>"${_polap_var_bioproject_mtdna_fasta1_stats}"
 
 		local n=$(seqkit stats -T "${_polap_var_bioproject_mtdna_fasta1}" |
 			csvtk cut -t -f num_seqs |
 			csvtk del-header)
+
+		if [[ "${n}" -gt 1 ]]; then
+			_polap_log2 "  multiple (${n}) accession numbers for the organelle genome sequences"
+		fi
 
 		seqkit head -n 1 "${_polap_var_bioproject_mtdna_fasta1}" \
 			-o "${_polap_var_bioproject_mtdna_fasta2}"
@@ -99,7 +147,10 @@ HEREDOC
 		seqkit seq -ni "${_polap_var_bioproject_mtdna_fasta2}" \
 			-o "${_polap_var_bioproject_mtdna_fasta2_accession}"
 
-		_polap_log1_file "mtDNA NCBI accession: ${_polap_var_bioproject_mtdna_fasta2_accession}"
+		local accession=$(<"${_polap_var_bioproject_mtdna_fasta2_accession}")
+		_polap_log2_cat "${_polap_var_bioproject_mtdna_fasta1_stats}"
+		_polap_log0 "Species: ${SPECIES}"
+		_polap_log0 "NCBI accession: ${accession}"
 	else
 		echo "no mtDNA" >"${_polap_var_bioproject_mtdna_fasta2_accession}"
 		_polap_log0 "No mtDNA sequence found for the species: ${SPECIES}"

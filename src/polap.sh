@@ -25,76 +25,73 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 # utilities
 ################################################################################
 
-# Function to check if commands are available, taking an array as argument
-function check_commands() {
-	local cmd_array=("$@") # Capture all the passed arguments into an array
-	for cmd in "${cmd_array[@]}"; do
-		command -v "$cmd" >/dev/null 2>&1 || {
-			echo >&2 "$cmd: not installed"
-			return $RETURN_FAIL
-		}
-	done
-	return $RETURN_SUCCESS
-}
+source "$script_dir/polap-constants.sh"
+source "$script_dir/run-polap-function-utilities.sh"
 
-###############################################################################
-# Checks if required main commands are available.
-# called early in the code such as reset menu.
-###############################################################################
-# Original function that defines the array and calls check_commands
-function run_check1() {
-	local commands=(
-		"bc"
-		"seqkit"
-		"minimap2"
-		"flye"
-		"makeblastdb"
-		"tblastn"
-		"bedtools"
-		"prefetch"
-		"jellyfish"
-		"csvtk"
-	)
-
-	# Pass the array elements to the check_commands function
-	check_commands "${commands[@]}"
-
-	return $RETURN_SUCCESS
-}
-
-###############################################################################
-# Checks if FMLRC related commands are available.
-# called by prepare-polishing menu.
-###############################################################################
-function run_check2() {
-	local commands=(
-		"msbwt"
-		"ropebwt2"
-		"fmlrc"
-	)
-
-	# Pass the array elements to the check_commands function
-	check_commands "${commands[@]}"
-
-	return $RETURN_SUCCESS
-}
-
-###############################################################################
-# Checks if ncbitools related commands are available.
-# called by fetch
-###############################################################################
-function run_check3() {
-	local commands=(
-		"prefetch"
-		"vdb-validate"
-		"fasterq-dump"
-	)
-
-	# Pass the array elements to the check_commands function
-	check_commands "${commands[@]}"
-
-	return $RETURN_SUCCESS
-}
+# # Function to check if commands are available, taking an array as argument
+# function check_commands() {
+# 	local cmd_array=("$@") # Capture all the passed arguments into an array
+# 	for cmd in "${cmd_array[@]}"; do
+# 		command -v "$cmd" >/dev/null 2>&1 || {
+# 			echo >&2 "$cmd: not installed"
+# 			return $RETURN_FAIL
+# 		}
+# 	done
+# 	return $RETURN_SUCCESS
+# }
+#
+# ###############################################################################
+# # Checks if required main commands are available.
+# # called early in the code such as reset menu.
+# ###############################################################################
+# # Original function that defines the array and calls check_commands
+# function run_check1() {
+# 	local commands=(
+# 		"bc"
+# 		"seqkit"
+# 		"minimap2"
+# 		"flye"
+# 		"makeblastdb"
+# 		"tblastn"
+# 		"bedtools"
+# 		"prefetch"
+# 		"jellyfish"
+# 		"csvtk"
+# 	)
+#
+# 	# Pass the array elements to the check_commands function
+# 	return $(check_commands "${commands[@]}")
+# }
+#
+# ###############################################################################
+# # Checks if FMLRC related commands are available.
+# # called by prepare-polishing menu.
+# ###############################################################################
+# function run_check2() {
+# 	local commands=(
+# 		"msbwt"
+# 		"ropebwt2"
+# 		"fmlrc"
+# 	)
+#
+# 	# Pass the array elements to the check_commands function
+# 	return $(check_commands "${commands[@]}")
+# }
+#
+# ###############################################################################
+# # Checks if ncbitools related commands are available.
+# # called by fetch
+# ###############################################################################
+# function run_check3() {
+# 	local commands=(
+# 		"prefetch"
+# 		"vdb-validate"
+# 		"fasterq-dump"
+# 	)
+#
+# 	# Pass the array elements to the check_commands function
+# 	return $(check_commands "${commands[@]}")
+# }
 
 # Function to prompt for confirmation
 confirm() {
@@ -452,11 +449,15 @@ HEREDOC
 
 	check_folder_existence "${ODIR}"
 	check_file_existence "${SR1}"
-	check_file_existence "${SR2}"
+	# check_file_existence "${SR2}"
 
 	_polap_log0 "computing stats of the sequencing data: $SR1, $SR2 ..."
-	_polap_log1_file "input2: ${SR1}"
-	_polap_log1_file "input3: ${SR2}"
+	_polap_log1_file "input1: ${SR1}"
+	if [ -s "${SR2}" ]; then
+		_polap_log1_file "input2: ${SR2}"
+	else
+		_polap_log1 "  we use a single short-read data file."
+	fi
 
 	if [ -s "${_polap_var_base_fq_stats}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log0 "  skipping long- and short-read statisics ..."
@@ -465,8 +466,11 @@ HEREDOC
 	else
 		seqkit stats -T "$SR1" |
 			csvtk del-header >"${_polap_var_base_fq_stats}"
-		seqkit stats -T "$SR2" |
-			csvtk del-header >>"${_polap_var_base_fq_stats}"
+
+		if [ -s "${SR2}" ]; then
+			seqkit stats -T "$SR2" |
+				csvtk del-header >>"${_polap_var_base_fq_stats}"
+		fi
 	fi
 
 	_polap_log1_file "output1: ${_polap_var_base_fq_stats}"
@@ -677,7 +681,12 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	check_folder_existence "${ODIR}"
+	# check_folder_existence "${ODIR}"
+	if [[ -d "${ODIR}" ]]; then
+		_polap_log2 "  output folder: ${ODIR}"
+	else
+		mkdir -p "${ODIR}"
+	fi
 	check_file_existence "${SR1}"
 	check_file_existence "${SR2}"
 
@@ -846,7 +855,7 @@ HEREDOC
 	local EXPECTED_GENOME_SIZE=${EXPECTED_GENOME_SIZE%.*}
 	local LONG_TOTAL_LENGTH=$(<"${_polap_var_base_long_total_length}")
 	local EXPECTED_LONG_COVERAGE=$(echo "scale=3; $LONG_TOTAL_LENGTH/$EXPECTED_GENOME_SIZE" | bc)
-	local EXPECTED_LONG_COVERAGE=${EXPECTED_LONG_COVERAGE%.*}
+	# local EXPECTED_LONG_COVERAGE=${EXPECTED_LONG_COVERAGE%.*}
 
 	if [[ -s "${LRNK}" ]] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log0 "  you have the reduced long-read data: ${LRNK}"
@@ -866,13 +875,14 @@ HEREDOC
 		_polap_log1 "OPTION: --no-reduction-reads : No reduction of the long-read data"
 		ln -s $(realpath "$LR") "$nfq_file"
 	else
-		if [ "$EXPECTED_LONG_COVERAGE " -lt $COV ]; then
+		# if [ "$EXPECTED_LONG_COVERAGE " -lt $COV ]; then
+		if echo "${EXPECTED_LONG_COVERAGE} < ${COV}" | bc -l | grep -q 1; then
 			_polap_log1 "No reduction of the long-read data because $EXPECTED_LONG_COVERAGE < $COV"
 			ln -s $(realpath "$LR") "$nfq_file"
 		else
 			_polap_log1 "SUGGESTION: you might want to increase the minimum read lengths because you have enough long-read data."
 			local RATE=$(echo "scale=3; $COV/$EXPECTED_LONG_COVERAGE" | bc)
-			_polap_log2 "  Rate: ${Rate} = ${COV}/${EXPECTED_LONG_COVERAGE}"
+			_polap_log2 "  Rate: ${RATE} = ${COV}/${EXPECTED_LONG_COVERAGE}"
 			# Compare value with 0
 			if echo "${RATE} > 0" | bc -l | grep -q 1; then
 				_polap_log2 "long-read data reduction by rate of $RATE <= COV[$COV] / long-read coverage[$EXPECTED_LONG_COVERAGE]"
@@ -939,6 +949,9 @@ function _run_polap_flye1() {
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# CHECK: local function
+	source "$script_dir/run-polap-function-utilities.sh"
 
 	LRNK="$ODIR/nk.fq.gz"
 
@@ -1047,7 +1060,9 @@ function _func_polap_blast-genome() {
 #   $ADIR/ptaa.bed
 ################################################################################
 function _run_polap_blast-genome() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	ANUM=$INUM
 	MTAA="$WDIR"/polap-mt.1.c70.3.faa
@@ -1177,7 +1192,9 @@ HEREDOC
 	echoerr "NEXT (for testing purpose only): $(basename "$0") count-gene --test"
 	echoerr "NEXT: $(basename $0) count-gene -o $ODIR [-i $INUM]"
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -1214,7 +1231,9 @@ function _func_polap_count-gene() {
 #   $FDIR/contig-annotation-table.txt
 ################################################################################
 function _run_polap_count-gene() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	ANUM=$INUM
 	FDIR="$ODIR"/$ANUM
@@ -1277,7 +1296,10 @@ HEREDOC
 	ANUMNEXT=$((ANUM + 1))
 	echoerr NEXT: $(basename "$0") select-reads -o "$ODIR" [-i $ANUM] [-j $ANUMNEXT]
 	echoerr NEXT: $(basename "$0") assemble2 -o "$ODIR" [-i $ANUM] [-j $ANUMNEXT]
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -1327,6 +1349,7 @@ function _func_polap_select-reads() {
 function _run_polap_select-reads() {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	LRNK="$ODIR/nk.fq.gz"
 	MR=$_arg_min_read_length
@@ -1512,7 +1535,9 @@ HEREDOC
 
 	echoerr NEXT: "$(basename "$0")" flye2 -o "$ODIR" -j "$JNUM" -t "$NT" -c "$COV"
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -1551,7 +1576,9 @@ function _func_polap_flye2() {
 #   $MTDIR/30-contigger/graph_final.gfa
 ################################################################################
 function _run_polap_flye2() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	echo "INFO: organelle-genome assembly on $JNUM"
 
@@ -1618,7 +1645,9 @@ HEREDOC
 	echoall or you could finish with Flye organelle-genome assembly with its polishing stage.
 	echoall NEXT: "$(basename "$0")" flye-polishing -o "$ODIR" -j "$JNUM"
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -1638,7 +1667,9 @@ HEREDOC
 #   $MTDIR/assembly_graph.gfa
 ################################################################################
 function _run_polap_flye-polishing() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	echo "INFO: polishing organelle-genome assembly on $JNUM"
 
@@ -1700,7 +1731,9 @@ HEREDOC
 	# echoall NEXT: $(basename $0) check-coverage [-p $PA]
 	echoall NEXT: "$(basename "$0")" prepare-polishing -a "$SR1" -b "$SR2"
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
@@ -1894,13 +1927,14 @@ HEREDOC
 function _run_polap_assemble1() {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
-	_polap_log1 "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-wga.sh"  # '.' means 'source'
 	LRNK="${_polap_var_base_nk_fq_gz}"
 
 	help_message=$(
@@ -1935,11 +1969,29 @@ HEREDOC
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
 
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+
+		if [[ -s "${_polap_var_wga_contigger_gfa}" ]]; then
+			_polap_log0_file "${_polap_var_wga_contigger_gfa}"
+		fi
+		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
+		exit $EXIT_SUCCESS
+	fi
+
 	# check_file_existence "${LR}"
 	# check_file_existence "${SR1}"
 	# check_file_existence "${SR2}"
 
 	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
+
+	if [ -s "${_polap_var_base_fq_stats}" ]; then
+		_polap_log2 "  skipping summary-reads ..."
+	else
+		_run_polap_summary-reads
+	fi
 
 	if [ -s "${_polap_var_base_long_total_length}" ]; then
 		_polap_log2 "  skipping total-length-long ..."
@@ -1974,7 +2026,7 @@ HEREDOC
 function _func_polap_annotate() {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
-	_polap_log1 "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
 	local _polap_output_dest="/dev/null"
@@ -1999,7 +2051,7 @@ function _func_polap_annotate() {
 		_func_polap_count-gene "$ANUM"
 	fi
 
-	_polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -2068,7 +2120,7 @@ HEREDOC
 		_run_polap_count-gene
 	fi
 
-	_polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -2086,21 +2138,7 @@ HEREDOC
 
 . "$script_dir/run-polap-function-cleanup.sh" # '.' means 'source'
 
-. "$script_dir/run-polap-function-select-contigs-by-graph-depth-length.sh" # '.' means 'source'
-
-. "$script_dir/run-polap-function-select-contigs-by-graph.sh" # '.' means 'source'
-
-. "$script_dir/run-polap-function-select-contigs-by-gene-density.sh" # '.' means 'source'
-
-. "$script_dir/run-polap-function-select-contigs-by-organelle-gene-group.sh" # '.' means 'source'
-
-. "$script_dir/run-polap-function-select-contigs-by-mt-gene-group.sh" # '.' means 'source'
-
-. "$script_dir/run-polap-function-select-contigs-by-pt-gene-group.sh" # '.' means 'source'
-
-. "$script_dir/run-polap-function-select-contigs-by-depth-length.sh" # '.' means 'source'
-
-. "$script_dir/run-polap-function-select-contigs-organelle.sh" # '.' means 'source'
+. "$script_dir/run-polap-function-select-contigs-by.sh" # '.' means 'source'
 
 . "$script_dir/run-polap-function-select-mtdna.sh" # '.' means 'source'
 
@@ -2176,7 +2214,7 @@ HEREDOC
 		if [ -e "$MTCONTIGNAME" ] && [ "${_arg_redo}" = "off" ]; then
 			_polap_log1 "  skipping the select-contig step for ${MTCONTIGNAME}"
 		else
-			_run_polap_select-contigs-by-graph-depth-length
+			_run_polap_select-contigs-by
 		fi
 
 		# check the mt.contig.name-1
@@ -3110,7 +3148,7 @@ fi
 # all message to a log file
 # https://stackoverflow.com/questions/49851882/how-to-log-echo-statement-with-timestamp-in-shell-script
 if [ "${_arg_log}" = "polap.log" ]; then
-	LOG_FILE="./polap.log"
+	LOG_FILE="${ODIR}/polap.log"
 else
 	LOG_FILE="${_arg_log}"
 fi
@@ -3133,7 +3171,7 @@ else
 	echoerr "ERROR: no such menu of $1"
 fi
 
-ELAPSED="Time: $((SECONDS / 3600))hrs $(((SECONDS / 60) % 60))min $((SECONDS % 60))sec - $CMD"
+ELAPSED="Time at $(hostname): $((SECONDS / 3600))hrs $(((SECONDS / 60) % 60))min $((SECONDS % 60))sec - $CMD"
 echo "$ELAPSED"
 
 # _polap_log0 "${_polap_var_apple}"

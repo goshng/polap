@@ -11,18 +11,27 @@ function _run_polap_assemble-bioproject() {
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
+	# Set variables for file paths
+	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+
 	# Set the output directory for the current job number
-	if [ "${_arg_short_read2_is}" = "on" ]; then
-		_arg_bioproject="${SR2}"
-	fi
+	if [[ -s "${_polap_var_bioproject_txt}" ]]; then
+		_arg_bioproject=$(<"${_polap_var_bioproject_txt}")
+		local BIOPRJ="${_arg_bioproject}"
+	else
+		_polap_log0 "NOTE: you have no ${_polap_var_bioproject_txt}"
+		_polap_log0 "  save BioProject ID in ${_polap_var_bioproject_txt}"
+		_polap_log0 "  if you already have the folder ${_polap_var_bioproject}"
+		if [ "${_arg_short_read2_is}" = "on" ]; then
+			_arg_bioproject="${SR2}"
+		fi
 
-	if [ -z "${_arg_bioproject}" ]; then
-		_polap_log0 "ERROR: use --bioproject option"
-		exit $EXIT_SUCCESS
+		if [ -z "${_arg_bioproject}" ]; then
+			_polap_log0 "ERROR: use --bioproject option"
+			exit $EXIT_SUCCESS
+		fi
 	fi
-
-	# ODIR="${_arg_bioproject}"
-	local BIOPRJ="${_arg_bioproject}"
 
 	# Help message
 	local help_message=$(
@@ -30,26 +39,22 @@ function _run_polap_assemble-bioproject() {
 # Runs the organelle-genome assembly for a given BioProject ID.
 #
 # Arguments:
-#   -b ${BIOPRJ}: BioProject ID
 #   -o ${ODIR}: output folder for BioProject
+#   -b ${BIOPRJ}: BioProject ID for creating o/0-bioproject
 # Inputs:
-#   ${BIOPRJ}: BioProject ID
+#   ${ODIR}
 # Outputs:
 #   mt.1.fa
-Example: $(basename $0) ${_arg_menu[0]} -b ${BIOPRJ} [-o ${ODIR}]
+Example: $(basename $0) ${_arg_menu[0]} -o ${ODIR} [-b ${BIOPRJ}]
 HEREDOC
 	)
 
 	LRNK="${ODIR}/nk.fq.gz"
 
-	# Set variables for file paths
-	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
-
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" ]] && _polap_log0 "${help_message}" && exit $EXIT_SUCCESS
 
-	_polap_log0_log "assembling organelle genomes of BioProject ${BIOPRJ} ..."
+	_polap_log0 "assembling organelle genomes of BioProject ${BIOPRJ} ..."
 
 	if [ -d "${ODIR}" ]; then
 		_polap_log2_file "the main output folder: ${ODIR}"
@@ -60,8 +65,8 @@ HEREDOC
 
 	# Get the long-read information from NCBI
 	if [ -s "${_polap_var_bioproject_sra_long_read}" ]; then
-		_polap_log2_file "${_polap_var_bioproject_sra_long_read}"
-		_polap_log3_cat "${_polap_var_bioproject_sra_long_read}"
+		_polap_log2 "  using SRA info at: ${_polap_var_bioproject_sra_long_read}"
+		_polap_log2_cat "${_polap_var_bioproject_sra_long_read}"
 	else
 		_run_polap_get-bioproject
 	fi
@@ -90,10 +95,10 @@ HEREDOC
 	# Fetch the short-read dataset
 	if [ -s "${_polap_var_base_msbwt_tar_gz}" ]; then
 		_polap_log1 "we use the short-read data in: ${_polap_var_base_msbwt_tar_gz}"
-		check_file_existence "${_polap_var_base_genome_size}"
+		# check_file_existence "${_polap_var_base_genome_size}"
 	elif [[ -s "${_polap_var_base_msbwt}" ]]; then
 		_polap_log1 "we use the short-read data in: ${_polap_var_base_msbwt}"
-		check_file_existence "${_polap_var_base_genome_size}"
+		# check_file_existence "${_polap_var_base_genome_size}"
 	elif [ -s "${_polap_var_bioproject_sra_short_read}" ]; then
 		local SRA=$(cut -f1 "${_polap_var_bioproject_sra_short_read}")
 		SR1="${ODIR}/${SRA}_1.fastq"
@@ -111,8 +116,15 @@ HEREDOC
 			_polap_log2_file "${SR2}.gz is being extracted ..."
 			gunzip "${SR2}.gz"
 		fi
+		# if [ -s "${SR1}" ]; then
+		# 	seqkit stats -T "${SR1}" >"${_polap_var_base_fq_stats}"
+		# fi
+		# if [ -s "${SR2}" ]; then
+		# 	seqkit stats -T "${SR2}" >>"${_polap_var_base_fq_stats}"
+		# fi
 
 		if [ ! -s "${SR1}" ] || [ ! -s "${SR2}" ]; then
+			_polap_log1 "  downloading the paired-end short-read data: $SRA"
 			"$script_dir"/run-polap-ncbitools fetch sra "$SRA"
 			mv "${SRA}_1.fastq" "${ODIR}/"
 			mv "${SRA}_2.fastq" "${ODIR}/"
@@ -132,6 +144,10 @@ HEREDOC
 	# 	_run_polap_summary-reads
 	# fi
 
+	# _run_polap_total-length-long
+	# _run_polap_find-genome-size
+	# _run_polap_reduce-data
+
 	if [ -s "${_polap_var_base_msbwt}" ]; then
 		_polap_log1 "  skipping the preparation of short-read polishing ..."
 	else
@@ -147,14 +163,6 @@ HEREDOC
 	fi
 
 	_run_polap_assemble-draft
-
-	_polap_log1 "rsync back to thorne ..."
-	touch "${ODIR}/log-assembled.txt"
-	# touch "$BIOPRJ/log-copying-to-xxx.txt"
-	# touch "$BIOPRJ/log-not-started-yet.txt"
-	if [ "$(hostname)" != "thorne" ]; then
-		rsync -a -e ssh "${ODIR}/" thorne:"$PWD/${ODIR}/"
-	fi
 
 	if [ -s "${_polap_var_base_msbwt}" ]; then
 		_polap_log1 "  skipping the preparation of short-read polishing ..."
@@ -191,33 +199,55 @@ HEREDOC
 
 	# Download the known reference mtDNA sequence in fasta format if available
 	# -o PRJNA914763
-	INUM=0
-	if [ -s "${_polap_var_bioproject_mtdna_fasta2}" ]; then
-		_polap_log2 "  skipping downloading mtDNA from NCBI"
-		_polap_log2 "  we use the mtDNA: ${_polap_var_bioproject_mtdna_fasta2}"
+	# INUM=0
+	# if [ -s "${_polap_var_bioproject_mtdna_fasta2}" ]; then
+	# 	_polap_log2 "  skipping downloading mtDNA from NCBI"
+	# 	_polap_log2 "  we use the mtDNA: ${_polap_var_bioproject_mtdna_fasta2}"
+	# else
+	# 	_run_polap_get-mtdna
+	#
+	# fi
+
+	if [[ -s "${_polap_var_bioproject_mtdna_fasta2}" ]]; then
+
+		# Compare the known mtDNA and the assembled one.
+		for i in "${_arg_select_contig_numbers[@]}"; do
+			# Define the paths for mtDNA sequences to be polished
+			FA="${ODIR}/${i}/mt.1.fa"
+
+			if [ -s "${FA}" ]; then
+				INUM="${i}"
+				_run_polap_compare-mtdna
+			else
+				_polap_log1 "  skipping the short-read polishing ..."
+				INUM="${i}"
+				source "$script_dir/polap-variables-oga.sh" # '.' means 'source'
+				local n1=$(cut -f1 "${_polap_var_bioproject_mtdna_fasta2_accession}")
+				local l1="0"
+				local l2="0"
+				local c1="0"
+				printf "%s\t%d\t%d\t%f\n" ${n1} ${l1} ${l2} ${c1} >"${_polap_var_mtdna_compare}"
+			fi
+		done
 	else
-		_run_polap_get-mtdna
+		_polap_log0 "No known mtDNA for $(<${_polap_var_bioproject_species})"
 	fi
 
-	# Compare the known mtDNA and the assembled one.
-	for i in "${_arg_select_contig_numbers[@]}"; do
-		# Define the paths for mtDNA sequences to be polished
-		FA="${ODIR}/${i}/mt.1.fa"
-
-		if [ -s "${FA}" ]; then
-			INUM="${i}"
-			_run_polap_compare-mtdna
-		else
-			_polap_log1 "  skipping the short-read polishing ..."
-			INUM="${i}"
-			source "$script_dir/polap-variables-oga.sh" # '.' means 'source'
-			local n1=$(cut -f1 "${_polap_var_bioproject_mtdna_fasta2_accession}")
-			local l1="0"
-			local l2="0"
-			local c1="0"
-			printf "%s\t%d\t%d\t%f\n" ${n1} ${l1} ${l2} ${c1} >"${_polap_var_mtdna_compare}"
+	# Finalize the assemble-bioproject function.
+	_polap_log1 "rsync back to thorne ..."
+	touch "${ODIR}/log-assembled.txt"
+	# touch "$BIOPRJ/log-copying-to-xxx.txt"
+	# touch "$BIOPRJ/log-not-started-yet.txt"
+	if [ "$(hostname)" = "thorne" ]; then
+		if [[ "${PWD}" = "/home/goshng/run/polap" ]]; then
+			cp -pr "${ODIR}/" "/home/goshng/all/polap/figshare/bioprojects/"
+			touch "/home/goshng/all/polap/figshare/bioprojects/log-assembled-${ODIR}.txt"
 		fi
-	done
+	else
+		touch "log-assembled-${ODIR}.txt"
+		scp -pq "log-assembled-${ODIR}.txt" thorne:"$PWD/"
+		rsync -a -e ssh "${ODIR}/" thorne:"$PWD/${ODIR}/"
+	fi
 
 	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

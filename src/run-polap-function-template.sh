@@ -40,6 +40,15 @@ HEREDOC
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
 
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+
+		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
+		exit $EXIT_SUCCESS
+	fi
+
 	echo "verbose level: ${_arg_verbose}" >&2
 	echoall "command: $0"
 	echoall "function: $FUNCNAME"

@@ -7,6 +7,7 @@ local _polap_var_annotation_table="${FDIR}/assembly_info_organelle_annotation_co
 
 local _polap_var_mtcontig_base="${_polap_var_mtcontigs}/1-mtcontig"
 local _polap_var_mtcontig_stats="${_polap_var_mtcontigs}/1-mtcontig.stats.txt"
+local _polap_var_mtcontig_mixfit="${_polap_var_mtcontigs}/1-mtcontig.mixfit.txt"
 local _polap_var_mtcontig_annotated="${_polap_var_mtcontigs}/1-mtcontig.annotated.txt"
 
 local _polap_var_mtcontigs_mt_stats="${_polap_var_mtcontigs}/1-mtcontig.mt.stats.txt"

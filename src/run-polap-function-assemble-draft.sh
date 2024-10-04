@@ -46,7 +46,6 @@ HEREDOC
 	if [ -s "${_polap_var_wga_contigger_gfa}" ]; then
 		_polap_log1 "  skipping the whole-genome assembly"
 	else
-		check_file_existence "${LRNK}"
 		_run_polap_assemble1
 	fi
 
@@ -99,7 +98,7 @@ HEREDOC
 				# Run secondary assembly, polishing, and mtDNA selection steps
 				_polap_log1_file "${MTCONTIGNAME}"
 
-				if [ -s "${ODIR}/${JNUM}/30-contigger/graph_final.gfa" ]; then
+				if [ -s "${ODIR}/${JNUM}/30-contigger/graph_final.gfa" ] && [ "${_arg_redo}" = "off" ]; then
 					_polap_log2 "  skipping organelle-genome assembly -i 0 -j ${JNUM} ..."
 				else
 					_polap_log2 "  not skipping organelle-genome assembly -i 0 -j ${JNUM} ..."
@@ -107,19 +106,19 @@ HEREDOC
 					_run_polap_assemble2
 				fi
 
-				if [ -s "${ODIR}/${JNUM}/contig-annotation-table.txt" ]; then
+				if [ -s "${ODIR}/${JNUM}/contig-annotation-table.txt" ] && [ "${_arg_redo}" = "off" ]; then
 					_polap_log2 "  skipping organelle-genome annotation -i ${JNUM} ..."
 				else
 					INUM="${i}" _run_polap_annotate
 				fi
 
-				if [ -s "${ODIR}/${JNUM}/assembly_graph.gfa" ]; then
+				if [ -s "${ODIR}/${JNUM}/assembly_graph.gfa" ] && [ "${_arg_redo}" = "off" ]; then
 					_polap_log2 "  skipping organelle-genome long-read polishing -i ${JNUM} ..."
 				else
-					INUM="${i}" _run_polap_flye-polishing
+					JNUM="${i}" _run_polap_flye-polishing
 				fi
 
-				if [ -s "${ODIR}/${JNUM}/mt.0.fasta" ]; then
+				if [ -s "${ODIR}/${JNUM}/mt.0.fasta" ] && [ "${_arg_redo}" = "off" ]; then
 					_polap_log2 "  skipping organelle-genome extraction -i ${JNUM} ..."
 				else
 					INUM="${i}" _run_polap_select-mtdna

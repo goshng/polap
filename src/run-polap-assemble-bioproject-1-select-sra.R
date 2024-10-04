@@ -43,7 +43,7 @@ data <- x1
 # Filter and select runs for OXFORD_NANOPORE platform
 selected_runs_nano <- data |>
   filter(
-    LibraryStrategy == "WGS", # we need this.
+    LibraryStrategy == "WGS" | LibraryStrategy == "WGA", # we need this.
     LibrarySource == "GENOMIC",
     Platform == "OXFORD_NANOPORE"
   ) |>
@@ -54,9 +54,9 @@ selected_runs_nano <- data |>
 # Filter and select runs for ILLUMINA platform
 selected_runs_illumina <- data |>
   filter(
-    LibraryStrategy == "WGS", # we need this.
+    LibraryStrategy == "WGS" | LibraryStrategy == "WGA", # we need this.
     LibrarySource == "GENOMIC",
-    Platform == "ILLUMINA"
+    Platform == "ILLUMINA" | Platform == "DNBSEQ"
   ) |>
   group_by(ScientificName) |>
   filter(bases == max(bases)) |>

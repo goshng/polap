@@ -102,8 +102,9 @@ if (is_null(args1$table)) {
   o <- "PRJEB79308"
   o <- "PRJDB10540a"
   o <- "PRJEB26621a"
+  o <- "PRJNA644206-Populus_x_sibirica"
 
-  jnum <- "1"
+  jnum <- "2"
   input_dir0 <- file.path("/media/h2/goshng/figshare", s, o, "0")
   input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
   input_dir1 <- file.path(input_dir0, jnum, "mtcontigs")
@@ -130,7 +131,7 @@ if (is_null(args1$table)) {
   } else if (jnum == "5") {
     args1 <- parse_args(parser, args = c("--table", input1, "--range-copy", "--gene-compare", "--gene-density", 10, "--save-range-copy", "-o", output1))
   }
-  
+
   # type 3 + depth graph
   # type 5 + 3 + depth graph
   # type 5 + 3 + graph (using depth range from the distribution)
@@ -181,6 +182,7 @@ if (is_null(args1$table)) {
 
 output1 <- paste0(args1$out, ".annotated.txt")
 output2 <- paste0(args1$out, ".stats.txt")
+output3 <- paste0(args1$out, ".mixfit.txt")
 
 x0 <- read_delim(args1$table, delim = " ", show_col_types = FALSE)
 
@@ -223,7 +225,8 @@ if (args1$mitochondrial == TRUE) {
       # nothing for x1 if mixfit fails to converge.
       x1 <- x1 |> filter(Copy < 0)
     } else {
-      x2 <- x1 |> filter(m1$mu[1] < Copy, Copy < m1$mu[3])
+      # x2 <- x1 |> filter(m1$mu[1] < Copy, Copy < m1$mu[3])
+      x2 <- x1 |> filter(m1$mu[1] < Copy, Copy < m1$mu[3] + m1$sd[3])
       x1 <- x2
     }
   }
@@ -323,8 +326,8 @@ if (args1$`save-range-copy` == TRUE) {
   if (nrow(xt) > 1) {
     xt |>
       summarise(
-        depth_lower_bound = mean(V3) - sd(V3) * 5,
-        depth_upper_bound = mean(V3) + sd(V3) * 5,
+        depth_lower_bound = max(min(V3), mean(V3) - sd(V3) * 3),
+        depth_upper_bound = min(max(V3), mean(V3) + sd(V3) * 3),
         depth_min = min(V3),
         depth_max = max(V3),
         depth_median = median(V3),
@@ -346,5 +349,13 @@ if (args1$`save-range-copy` == TRUE) {
       write_tsv(output2)
   } else {
     tibble() |> write_tsv(output2)
+  }
+}
+
+if (exists("m1")) {
+  if (!is_null(m1)) {
+    sink(output3)
+    print(m1)
+    sink()
   }
 }

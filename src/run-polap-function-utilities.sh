@@ -1,10 +1,37 @@
+################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
+################################################################################
+# Ensure that the current script is sourced only once
+source "$script_dir/run-polap-function-include.sh"
+_POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
+[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+declare "$_POLAP_INCLUDE_=1"
+#
+################################################################################
+
 source "$script_dir/polap-constants.sh"
 
+################################################################################
 # Function to convert base pairs to the highest appropriate unit
 # Example usage
 # bp=31846726397
 # convert_bp $bp
-_polap_utility_convert_bp() {
+################################################################################
+function _polap_utility_convert_bp() {
 	local bp=$1
 
 	if ((bp >= 1000000000)); then
@@ -18,7 +45,9 @@ _polap_utility_convert_bp() {
 	fi
 }
 
+################################################################################
 # Function to check if commands are available, taking an array as argument
+################################################################################
 function check_commands() {
 	local cmd_array=("$@") # Capture all the passed arguments into an array
 	for cmd in "${cmd_array[@]}"; do
@@ -34,7 +63,6 @@ function check_commands() {
 # Checks if required main commands are available.
 # called early in the code such as reset menu.
 ###############################################################################
-# Original function that defines the array and calls check_commands
 function run_check1() {
 	local commands=(
 		"bc"
@@ -83,6 +111,9 @@ function run_check3() {
 	return $(check_commands "${commands[@]}")
 }
 
+###############################################################################
+# Checks if ncbitools related commands are available.
+###############################################################################
 function run_check_ncbitools() {
 	local commands=(
 		"makeblastdb"
@@ -94,6 +125,23 @@ function run_check_ncbitools() {
 	return $(check_commands "${commands[@]}")
 }
 
+###############################################################################
+# Function to prompt for confirmation
+###############################################################################
+function confirm() {
+	while true; do
+		read -p "$1 [y/n]: " response
+		case "$response" in
+		[Yy]*) return 0 ;;
+		[Nn]*) return 1 ;;
+		*) echoerr "Please answer yes (y) or no (n)." ;;
+		esac
+	done
+}
+
+###############################################################################
+# Ouputs error messages for executing polap without a proper conda environment.
+###############################################################################
 function error_polap_conda() {
 	_polap_log0 "ERROR: change your conda environment to polap."
 	_polap_log0 "SUGGESTION: do the following steps for setting up the polap conda environment"
@@ -105,4 +153,21 @@ function error_polap_conda() {
 	_polap_log0 "(base) $ conda config --prepend channels conda-forge"
 	_polap_log0 "(base) $ conda env create -f src/environment.yaml"
 	_polap_log0 "(base) $ conda activate polap"
+}
+
+# Helper function for checking if a file exists
+function check_file_existence() {
+	local file=$1
+	if [ ! -s "$file" ]; then
+		die "ERROR: No such file: $file"
+		exit $EXIT_ERROR
+	fi
+}
+
+function check_folder_existence() {
+	local folder=$1
+	if [ ! -d "$folder" ]; then
+		die "ERROR: No such folder: $folder"
+		exit $EXIT_ERROR
+	fi
 }

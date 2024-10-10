@@ -82,8 +82,8 @@ _arg_single_min="3000"
 _arg_inum="0"
 _arg_jnum="1"
 _arg_select_contig="1"
-# _arg_select_contig_numbers=(1 7)
-_arg_select_contig_numbers=(1 2 3 4 5)
+_arg_select_contig_numbers=(1 2 3 4 5 6 7 8)
+_arg_seed=
 _arg_genomesize=
 _arg_bioproject=
 _arg_species=
@@ -114,14 +114,199 @@ _arg_test="off"
 _arg_verbose=1
 
 print_help() {
-	source "$script_dir/polap-version.sh" # '.' means 'source'
+
+	source "$script_dir/polap-version.sh"
+
+	help_message=$(
+		cat <<HEREDOC
+POLAP - Plant organelle DNA long-read assembly pipeline.
+version ${_polap_version}
+
+Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)plastid] [--(no-)coverage-check] [-u|--(no-)circularize] [--(no-)test] [--log <arg>] [--archive <arg>] [--seed <arg>] [--version] [-h|--help]
+
+       polap <menu> help
+
+menu: make-menus, list, clean-menus
+      assemble1, annotate, assemble2, flye-polishing,
+      reset, 
+      summary-reads, total-length-long, find-genome-size, reduce-data, flye1
+      blast-genome, count-gene, select-contigs, select-reads, flye2,
+      flye-polishing, check-coverage,
+      prepare-polishing, polish,
+
+Menu: menus
+  polap make-menus
+  polap clean-menus
+  polap list [all|main|assemble1|annotate|assemble2|polish]
+
+Menu: assemble1
+  polap assemble1 -o <arg> -l <arg> -a <arg> [-b <arg>] [-m <arg>] [-c <arg>]
+  polap reset -o <arg>
+  polap summary-reads -a <arg> [-b <arg>]
+  polap total-length-long -l <arg>
+  polap find-genome-size  -a <arg> [-b <arg>]
+  polap reduce-data -l <arg>] [-m <arg>]
+  polap flye1 [-t <arg>] [-c <arg>]
+
+Menu: annotate
+  polap annotate -i <arg>
+  or
+  polap blast-genome -i <arg>
+  polap count-genes -i <arg>
+
+Menu: select-contigs
+  polap select-contigs [-o|--outdir <arg>] [-i|--inum <arg>] [-j|--jnum <arg>]
+
+Menu: assemble2
+  polap assemble2 [-o|--outdir <arg>] [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]
+  or
+  polap select-reads [-i|--inum <arg>] [-j|--jnum <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>]
+  polap flye2 [-j|--jnum <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]
+
+Menu: polishing
+  polap flye-polishing  [-j|--jnum <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]
+  polap prepare-polishing  [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
+  polap polish [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]
+
+Menu: get-mtdna
+  polap get-mtdna [--species <arg>]
+
+Menu: get-bioproject-sra
+  polap get-bioproject-sra [--sra <arg>]
+
+Options:
+  -o, --outdir: output folder name (default: o)
+  -l, --long-reads: long-reads data file in fastq format (default: 'l.fq')
+  -a, --short-read1: short-read fastq file 1 (default: 's1.fq')
+  -b, --short-read2: short-read fastq file 2 (default: 's2.fq')
+  -p, --unpolished-fasta: polishing sequence in fasta format (default: 'mt.0.fasta')
+  -f, --final-assembly: final assembly in fasta format (default: 'mt.1.fa')
+  -m, --min-read-length: minimum length of long reads (default: '3000')
+  -t, --threads: number of CPUs (default: '56')
+  -c, --coverage: coverage for the 2nd assembly (default: '30')
+  -r, --pair-min: minimum mapped bases or PAF 11th column (default: '3000')
+  -x, --bridge-min: minimum bridging read length or PAF 7th column (default: '3000')
+  -w, --single-min: minimum mapped bases or PAF 11th column (default: '3000')
+  -i, --inum: previous output number of organelle-genome assembly (default: '0')
+  -j, --jnum: current output number of organelle-genome assembly (default: '1')
+  -g, --genomesize: expected genome size (no default)
+  -u, --circularize, --no-circularize: circularize a contig (off by default)
+  --reduction-reads, --no-reduction-reads: reduction of long-read data before assemble1 (on by default)
+  --coverage-check, --no-coverage-check: coverage check before assemble2 step (on by default)
+  --yes, --no-yes: alway yes for a question or deletes output completely (off by default)
+  --redo, --no-redo: (off by default)
+  --species: Species scientific name (no default)
+	--sra: SRA data (no default)
+  --log: log file (default: polap.log)
+  -v, --verbose: use multiple times to increase the verbose level
+  --version: Prints version
+  -h, --help: Prints help
+
+Places your long-read and short-read files at a folder.
+long-read file [l.fq]
+short-read files [s1.fq] and [s2.fq]
+Execute: polap reset
+POLAP - Plant organelle DNA long-read assembly pipeline.
+version 0.3.4
+
+Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)plastid] [--(no-)coverage-check] [-u|--(no-)circularize] [--(no-)test] [--log <arg>] [--archive <arg>] [[-v|--version] [-h|--help]
+
+       polap <menu> help
+
+menu: make-menus, list, clean-menus
+      assemble1, annotate, assemble2, flye-polishing,
+      reset, total-length-long, find-genome-size, reduce-data, flye1
+      blast-genome, count-gene, select-contigs, select-reads, flye2,
+      flye-polishing, check-coverage,
+      prepare-polishing, polish,
+
+Menu: assemble1
+  polap assemble1 [-o|--outdir <arg>] [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]
+  or
+  polap reset [-o|--outdir <arg>]
+  polap total-length-long [-l|--long-reads <arg>]
+  polap find-genome-size  [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
+  polap reduce-data [-l|--long-reads <arg>] [-m|--min-read-length <arg>]
+  polap flye1 [-t|--threads <arg>] [-c|--coverage <arg>] [-g|--genomesize <arg>]
+
+Menu: annotate
+  polap annotate [-i|--inum <arg>]
+  or
+  polap blast-genome [-i|--inum <arg>]
+  polap count-genes [-i|--inum <arg>]
+
+Menu: select-contigs
+  polap select-contigs [-o|--outdir <arg>] [-i|--inum <arg>] [-j|--jnum <arg>]
+
+Menu: assemble2
+  polap assemble2 [-o|--outdir <arg>] [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]
+  or
+  polap select-reads [-i|--inum <arg>] [-j|--jnum <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>]
+  polap flye2 [-j|--jnum <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]
+
+Menu: polishing
+  polap flye-polishing  [-j|--jnum <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]
+  polap prepare-polishing  [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
+  polap polish [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]
+
+Menu: get-mtdna
+  polap get-mtdna [--species <arg>]
+
+Menu: get-bioproject-sra
+  polap get-bioproject-sra [--sra <arg>]
+
+Options:
+  -o, --outdir: output folder name (default: o)
+  -l, --long-reads: long-reads data file in fastq format (default: 'l.fq')
+  -a, --short-read1: short-read fastq file 1 (default: 's1.fq')
+  -b, --short-read2: short-read fastq file 2 (default: 's2.fq')
+  -p, --unpolished-fasta: polishing sequence in fasta format (default: 'mt.0.fasta')
+  -f, --final-assembly: final assembly in fasta format (default: 'mt.1.fa')
+  -m, --min-read-length: minimum length of long reads (default: '3000')
+  -t, --threads: number of CPUs (default: '56')
+  -c, --coverage: coverage for the 2nd assembly (default: '30')
+  -r, --pair-min: minimum mapped bases or PAF 11th column (default: '3000')
+  -x, --bridge-min: minimum bridging read length or PAF 7th column (default: '3000')
+  -w, --single-min: minimum mapped bases or PAF 11th column (default: '3000')
+  -i, --inum: previous output number of organelle-genome assembly (default: '0')
+  -j, --jnum: current output number of organelle-genome assembly (default: '1')
+  -g, --genomesize: expected genome size (no default)
+  -u, --circularize, --no-circularize: circularize a contig (off by default)
+  --reduction-reads, --no-reduction-reads: reduction of long-read data before assemble1 (on by default)
+  --coverage-check, --no-coverage-check: coverage check before assemble2 step (on by default)
+  --yes, --no-yes: alway yes for a question or deletes output completely (off by default)
+  --redo, --no-redo: (off by default)
+  --species: Species scientific name (no default)
+	--sra: SRA data (no default)
+  --log: log file (default: polap.log)
+  -v, --verbose: use multiple times to increase the verbose level
+  -q, --quiet: almost no output to screen
+  --version: Prints version
+  -h, --help: Prints help
+
+Places your long-read and short-read files at a folder.
+long-read file [l.fq]
+short-read files [s1.fq] and [s2.fq]
+Execute: polap reset
+HEREDOC
+	)
+
+	# Display help message
+	echo "${help_message}"
+}
+
+print_help_xyz() {
+
+	source "$script_dir/polap-version.sh"
+
 	printf '%s\n' "POLAP - Plant organelle DNA long-read assembly pipeline."
 	printf '%s\n' "version ${_polap_version}"
 	printf '\n'
 	printf 'Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)plastid] [--(no-)coverage-check] [-u|--(no-)circularize] [--(no-)test] [--log <arg>] [--archive <arg>] [[-v|--version] [-h|--help]\n'
+	printf '\n'
 	printf '       polap <menu> help\n'
 	printf '\n'
-	printf '%s\n' "menu: list, make-menus, or clean-menus"
+	printf '%s\n' "menu: make-menus, list, clean-menus"
 	printf '%s\n' "      assemble1, annotate, assemble2, flye-polishing,"
 	printf '%s\n' "      reset, total-length-long, find-genome-size, reduce-data, flye1"
 	printf '%s\n' "      blast-genome, count-gene, select-contigs, select-reads, flye2,"
@@ -471,6 +656,14 @@ parse_commandline() {
 		--select-contig=*)
 			_arg_select_contig="${_key##--select-contig=}"
 			;;
+		--seed)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_seed="$2"
+			shift
+			;;
+		--seed=*)
+			_arg_seed="${_key##--seed=}"
+			;;
 		-g | --genomesize)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_genomesize="$2"
@@ -642,7 +835,7 @@ parse_commandline() {
 			echo $0 v${_polap_version}
 			exit 0
 			;;
-		--quiet)
+		-q | --quiet)
 			_arg_verbose=0
 			;;
 		-v | --verbose)

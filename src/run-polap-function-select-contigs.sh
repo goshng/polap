@@ -23,7 +23,12 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-function _run_polap_template() {
+source "$script_dir/run-polap-function-select-contigs-by.sh"
+
+################################################################################
+# Select seed contigs using multiple methods
+################################################################################
+function _run_polap_select-contigs() {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -32,63 +37,89 @@ function _run_polap_template() {
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	# Grouped file path declarations
-	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
-
-	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
-# Template for an external shell script
+# Select seed contigs using multiple methods.
 #
 # Arguments:
+#   -o $ODIR
 #   -i $INUM: source Flye (usually whole-genome) assembly number
-#
 # Inputs:
-#   ${_polap_var_annotation_table}
-#
+#   $ODIR/$INUM
 # Outputs:
-#   $MTCONTIGNAME
-#
-# See:
-#   run-polap-select-contigs-by-table-1.R for the description of --select-contig option
-Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>] [--select-contig <number>]
+#   $ODIR/$INUM/1
+#   $ODIR/$INUM/2
+#   $ODIR/$INUM/3
+#   $ODIR/$INUM/4
+#   $ODIR/$INUM/5
+Example: $(basename $0) ${_arg_menu[0]} [-o $ODIR] [-i <number>]
 HEREDOC
 	)
 
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		if [[ "${_arg_menu[2]}" == "simple" ]]; then
+			wc "${ODIR}/${INUM}"/mt.contig.name-* >&2
+			exit $EXIT_SUCCESS
+		fi
 
-		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		for i in "${_arg_select_contig_numbers[@]}"; do
+
+			local MTCONTIGNAME="${ODIR}/${INUM}/mt.contig.name-${i}"
+
+			if [ -s "$MTCONTIGNAME" ]; then
+				_arg_select_contig="${i}"
+				JNUM="${i}"
+				_run_polap_select-contigs-by
+			fi
+		done
+
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
 	fi
 
-	echo "verbose level: ${_arg_verbose}" >&2
-	echoall "command: $0"
-	echoall "function: $FUNCNAME"
-	echoall "menu2: [$1]"
-	echoall "menu3: [$2]"
-	echoerr "LOG: echoerr"
-	echoall "LOG: echoall"
+	_polap_log0 "selecting contigs from the genome assembly number ${INUM} ..."
 
-	echoerr "LOG: echoerr"
-	verbose_echo 0 "Log level   - screen        polap.log file" 1>&2
-	_polap_log0 "Log level 0 - nothing        minimal log - --quiet"
-	_polap_log1 "Log level 1 - minimal        step info and main io files"
-	_polap_log2 "Log level 2 - main io files  inside of function: file input/output --verbose"
-	_polap_log3 "Log level 3 - files inside   all log or details of file contents --verbose --verbose"
-	_polap_log0_file "log0.file: main assembly input/output"
-	_polap_log1_file "log1.file: step main input/output"
-	_polap_log2_file "log2.file: inside detail input/output"
-	_polap_log3_file "log3.file: all input/output"
+	# Loop over numbers from 1 to 5
+	for i in "${_arg_select_contig_numbers[@]}"; do
+		# Call the function corresponding to the current number (index is i-1)
+		if [[ "${INUM}" -ne 0 ]]; then
+			_polap_log0 "ASSERT: only -i 0 is implemented"
+			exit $EXIT_FAIL
+		fi
+		local MTCONTIGNAME="${ODIR}/${INUM}/mt.contig.name-${i}"
 
-	_polap_log0 "var: ${_polap_var_apple}"
+		if [ -e "$MTCONTIGNAME" ] && [ "${_arg_redo}" = "off" ]; then
+			_polap_log0 "  found: ${MTCONTIGNAME}, so skipping the select-contig step for ${MTCONTIGNAME}"
+		else
+			_arg_select_contig="${i}"
+			JNUM="${i}"
+			_run_polap_select-contigs-by
+		fi
+
+		# check the mt.contig.name-1
+		if [ -s "$MTCONTIGNAME" ]; then
+			_polap_log1_file "${MTCONTIGNAME}"
+		else
+			_polap_log0 "  $MTCONTIGNAME is empty; choose seed contigs by yourself."
+		fi
+
+	done
+
+	if [ "${_arg_verbose}" -ge 0 ]; then
+		wc "${ODIR}/${INUM}"/mt.contig.name-* >&2
+	fi
 
 	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+}
+
+function _run_polap_sc() {
+	_run_polap_select-contigs
 }

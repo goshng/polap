@@ -16,16 +16,36 @@
 
 ################################################################################
 # Ensure that the current script is sourced only once
-source "$script_dir/run-polap-function-include.sh"
-_POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
+SCRIPT_NAME="${BASH_SOURCE[0]}"
+SCRIPT_NAME=$(basename "${SCRIPT_NAME}")
+SCRIPT_NAME="${SCRIPT_NAME//-/_}"
+SCRIPT_NAME="${SCRIPT_NAME//./_}"
+SCRIPT_NAME=$(echo "$SCRIPT_NAME" | tr '[:lower:]' '[:upper:]')
+_POLAP_INCLUDE_="_POLAP_INCLUDE_${SCRIPT_NAME}"
 [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-# Constants
-EXIT_SUCCESS=0
-EXIT_FAIL=1
-EXIT_ERROR=2
-RETURN_SUCCESS=0
-RETURN_FAIL=1
+function _polap_include() {
+	local input_string="$1"
+	# Extract the basename
+	local script_name=$(basename "${input_string}")
+	# Replace hyphens and dots with underscores
+	script_name="${script_name//-/_}"
+	script_name="${script_name//./_}"
+	# Convert to uppercase
+	script_name=$(echo "$script_name" | tr '[:lower:]' '[:upper:]')
+	# Create the _POLAP_INCLUDE_ variable
+	local _POLAP_INCLUDE_="_POLAP_INCLUDE_${script_name}"
+
+	echo "${_POLAP_INCLUDE_}"
+}
+
+################################################################################
+# Ensure that the current script is sourced only once
+# _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
+# [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+# declare "$_POLAP_INCLUDE_=1"
+#
+################################################################################

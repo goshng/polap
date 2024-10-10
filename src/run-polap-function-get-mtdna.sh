@@ -1,4 +1,31 @@
 ################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
+################################################################################
+# Ensure that the current script is sourced only once
+source "$script_dir/run-polap-function-include.sh"
+_POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
+[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+declare "$_POLAP_INCLUDE_=1"
+#
+################################################################################
+
+source "$script_dir/run-polap-function-utilities.sh"
+
+################################################################################
 # Downloads the mtDNA sequence for a given species name.
 ################################################################################
 function _run_polap_get-mtdna() {
@@ -11,7 +38,6 @@ function _run_polap_get-mtdna() {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "$script_dir/polap-variables-bioproject.sh"
-	source "$script_dir/run-polap-function-utilities.sh"
 
 	if ! run_check_ncbitools; then
 		error_polap_conda
@@ -23,25 +49,25 @@ function _run_polap_get-mtdna() {
 		cat <<HEREDOC
 # Download the organelle-genome sequence in FASTA format from NCBI.
 #
-#	NCBI search for a mitochondrial genome:
-#	"mitochondrion[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]"
-#	
-#	NCBI search for a plastid genome:
-#	"chloroplast[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]"
+# Note: A downloaded fasta file may have multiple sequences.
+#
+# 1. NCBI search for a mitochondrial genome:
+#   "(mitochondrion[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]"
+# 2. NCBI search for a plastid genome:
+#   "(chloroplast[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]"
 #
 # Arguments:
-#   --species "scientific name" highest priority
+#   --species "scientific name" (highest priority)
 #   or
-#   -o ${ODIR} next priority
-#   or
-#   --bioproject ${_arg_bioproject} the least priority
+#   -o ${ODIR} (next priority)
 # Outputs:
 #   ${_polap_var_bioproject_mtdna_fasta1}
 #   ${_polap_var_bioproject_mtdna_fasta2}
 #   ${_polap_var_bioproject_mtdna_fasta2_accession}
+# Preconditions:
+#   get-bioproject
 Example: $(basename $0) ${_arg_menu[0]} --species "Anthoceros agrestis"
 Example: $(basename $0) ${_arg_menu[0]} -o o
-Example: $(basename $0) ${_arg_menu[0]} -b PRJNA574453
 HEREDOC
 	)
 
@@ -54,12 +80,13 @@ HEREDOC
 			if [ -s "${_polap_var_bioproject_mtdna_fasta1}" ]; then
 				seqkit stats "${_polap_var_bioproject_mtdna_fasta1}" >&2
 			else
-				_polap_log0 "No such file: ${_polap_var_bioproject_mtdna_fasta1}"
+				_polap_log1 "No such file: ${_polap_var_bioproject_mtdna_fasta1}"
+				_polap_log0 "No organelle genome sequence"
 			fi
 			if [ -s "${_polap_var_bioproject_mtdna_fasta2}" ]; then
 				seqkit stats "${_polap_var_bioproject_mtdna_fasta2}" >&2
 			else
-				_polap_log0 "No such file: ${_polap_var_bioproject_mtdna_fasta2}"
+				_polap_log1 "No such file: ${_polap_var_bioproject_mtdna_fasta2}"
 			fi
 		else
 			_polap_log0 "No result yet."
@@ -67,28 +94,29 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	# Ensure the bioproject directory exists
-	# mkdir -p "${_polap_var_bioproject}"
-	# _run_polap_get-bioproject
-
 	_polap_log0 "getting the organelle-genome sequence of a plant species ..."
 
 	# Determine species name
+	_polap_log1 "  step 1: determine the species name"
 	local SPECIES=""
 	if [ -n "${_arg_species}" ]; then
 		_polap_log1 "  option --species: ${_arg_species}"
 		SPECIES="${_arg_species}"
-		mkdir -p "${_polap_var_bioproject}"
+		_polap_log3_cmd mkdir -p "${_polap_var_bioproject}"
 	elif [ -s "${_polap_var_bioproject_species}" ]; then
-		local bioproject_id=$(<"${_polap_var_bioproject_txt}")
-		local n=$(wc -l <"${_polap_var_bioproject_species}")
-		if [[ "${n}" -gt 1 ]]; then
-			_polap_log0_file "${_polap_var_bioproject_species}"
-			_polap_log0_cat "${_polap_var_bioproject_species}"
-			die "ERROR: you have multiple species names in BioProject: ${bioproject_id}"
+		if [[ -s "${_polap_var_bioproject_txt}" ]]; then
+			local bioproject_id=$(<"${_polap_var_bioproject_txt}")
+			local n=$(wc -l <"${_polap_var_bioproject_species}")
+			if [[ "${n}" -gt 1 ]]; then
+				_polap_log0_file "${_polap_var_bioproject_species}"
+				_polap_log0_cat "${_polap_var_bioproject_species}"
+				die "ERROR: you have multiple species names in BioProject: ${bioproject_id}"
+			fi
+			SPECIES=$(<"${_polap_var_bioproject_species}")
+			_polap_log0 "  bioproject's species: $SPECIES"
+		else
+			die "ERROR: you have not run the menu: get-bioproject on the output folder [${ODIR}], yet!"
 		fi
-		SPECIES=$(<"${_polap_var_bioproject_species}")
-		_polap_log1 "  bioproject's species: $SPECIES"
 	elif [ -n "${_arg_bioproject}" ]; then
 		_run_polap_get-bioproject
 		if [ -s "${_polap_var_bioproject_species}" ]; then
@@ -109,6 +137,7 @@ HEREDOC
 	fi
 
 	# Download the mitochondrial genome sequence for the given species
+	_polap_log1 "  step 2: download the mitochondrial genome sequence for the given species"
 	if [ "${_arg_plastid}" = "off" ]; then
 		_polap_log1 "  downloading mitochondrial complete genomes of ${SPECIES} ..."
 		esearch \
@@ -125,10 +154,8 @@ HEREDOC
 	_polap_log2_file "${_polap_var_bioproject_mtdna_fasta1}"
 
 	# Check if the fasta file was successfully downloaded
+	_polap_log1 "  step 3: check if the fasta file was successfully downloaded"
 	if [ -s "${_polap_var_bioproject_mtdna_fasta1}" ]; then
-		# seqkit stats -T "${_polap_var_bioproject_mtdna_fasta1}" \
-		# 	>"${_polap_var_bioproject_mtdna_fasta1_stats}"
-
 		seqkit fx2tab --length --name --header-line \
 			"${_polap_var_bioproject_mtdna_fasta1}" \
 			>"${_polap_var_bioproject_mtdna_fasta1_stats}"
@@ -159,4 +186,9 @@ HEREDOC
 	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+}
+
+function _run_polap_gm() {
+	_run_polap_get-mtdna
+
 }

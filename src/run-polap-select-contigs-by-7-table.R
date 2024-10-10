@@ -89,8 +89,7 @@ if (is_null(args1$table)) {
   #
 }
 
-output1 <- paste0(args1$out, ".annotated.txt")
-output2 <- paste0(args1$out, ".stats.txt")
+output1 <- paste0(args1$out, ".table.tsv")
 
 x0 <- read_delim(args1$table, delim = " ", show_col_types = FALSE)
 x1 <- read_delim(args1$mtcontigseed, delim = " ", col_names = c("edgename"), show_col_types = FALSE)
@@ -106,8 +105,10 @@ xall <- x0 |>
   dplyr::select(-V4, -V5, -V7, -V8) |>
   mutate(edgename = paste0("edge_", Edge)) |>
   relocate(edgename) |>
+  filter(MT > PT, MT > 0) |>
   arrange(Copy)
 
 left_join(x1, xall) |>
+  filter(!is.na(MT)) |>
   arrange(desc(MT > PT), desc(MT)) |>
   write_tsv(output1, col_names = FALSE)

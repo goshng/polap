@@ -1,5 +1,4 @@
 #!/usr/bin/env Rscript
-
 ################################################################################
 # This file is part of polap.
 #
@@ -22,7 +21,7 @@ suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))
 suppressPackageStartupMessages(library("purrr"))
 suppressPackageStartupMessages(library("tidyr"))
-# args = commandArgs(trailingOnly=TRUE)
+
 parser <- OptionParser()
 parser <- add_option(parser, c("-m", "--mitochondrial"),
   action = "store_true",
@@ -43,6 +42,7 @@ parser <- add_option(parser, c("-c", "--gene-compare"),
   default = FALSE,
   help = "Compare MT and PT gene counts"
 )
+
 # max gene distance: 100 kb for mitochondrial and 10 kb for plastid
 parser <- add_option(parser, c("-d", "--gene-density"),
   type = "integer",
@@ -87,22 +87,14 @@ if (is_null(args1$table)) {
   s <- "Vigna_radiata"
   s <- "Brassica_rapa"
   s <- "Anthoceros_angustus"
-
   s <- "bioprojects"
 
-  # o <- "PRJNA914763" # type 3
-  o <- "PRJNA597121" # type 5 + 3
-  # o <- "PRJNA766769"    # type 5 + 3
-  # o <- "PRJNA635654"    # type 5 + 3
-  # o <- "PRJNA646849" # type 5 + 3, type 3
-  # o <- "PRJEB26621"     # type 5 + 3, type 3
-  # o <- "PRJNA1074514"   # type 5 + 3
-  # o <- "PRJEB19787"     # no mtDNA seeds
-  # o <- "PRJEB21270" # type 3; type 5 Error: insufficient data for model estimation.
+  o <- "PRJNA597121"
   o <- "PRJEB79308"
   o <- "PRJDB10540a"
   o <- "PRJEB26621a"
   o <- "PRJNA644206-Populus_x_sibirica"
+  o <- "PRJEB42431-Ophrys_insectifera_subsp._aymoninii"
 
   jnum <- "2"
   input_dir0 <- file.path("/media/h2/goshng/figshare", s, o, "0")
@@ -110,7 +102,7 @@ if (is_null(args1$table)) {
   input_dir1 <- file.path(input_dir0, jnum, "mtcontigs")
   output1 <- file.path(input_dir1, "1-mtcontig")
 
-  # for Plastid
+  # for plastid
   # args1 <- parse_args(parser, args = c("--plastid", "--table", input1, "--gene-count", 1, "--gene-compare", "--gene-density", 100))
   #
   # for mitochondrial
@@ -131,53 +123,6 @@ if (is_null(args1$table)) {
   } else if (jnum == "5") {
     args1 <- parse_args(parser, args = c("--table", input1, "--range-copy", "--gene-compare", "--gene-density", 10, "--save-range-copy", "-o", output1))
   }
-
-  # type 3 + depth graph
-  # type 5 + 3 + depth graph
-  # type 5 + 3 + graph (using depth range from the distribution)
-  #
-  # Gene count only
-  # args1 <- parse_args(parser, args = c("--table", input1, "--gene-count", 1))
-  #
-  # type 1
-  # args1 <- parse_args(parser, args = c("--table", input1, "--gene-compare"))
-  # type 2
-  # args1 <- parse_args(parser, args = c("--table", input1, "--gene-density", 10))
-  # type 3
-  # args1 <- parse_args(parser, args = c("--table", input1, "--gene-compare", "--gene-density", 10, "-o", output1))
-  #
-  # Depth only
-  # type 4
-  # args1 <- parse_args(parser, args = c("--table", input1, "--number-copy", 2))
-  #
-  # Depth & Gene count
-  # type 4 + 1
-  # args1 <- parse_args(parser, args = c("--table", input1, "--number-copy", 2, "--gene-compare"))
-  # type 4 + 2
-  # args1 <- parse_args(parser, args = c("--table", input1, "--number-copy", 2, "--gene-density", 10))
-  # type 4 + 3
-  # args1 <- parse_args(parser, args = c("--table", input1, "--number-copy", 2, "--gene-compare", "--gene-density", 10))
-  #
-  # type 5
-  # args1 <- parse_args(parser, args = c("--table", input1, "--range-copy"))
-  # type 5 + 4
-  # args1 <- parse_args(parser, args = c("--table", input1, "--range-copy", "--number-copy", 1))
-  # type 5 + 1
-  # args1 <- parse_args(parser, args = c("--table", input1, "--range-copy", "--gene-compare"))
-  # type 5 + 2
-  # args1 <- parse_args(parser, args = c("--table", input1, "--range-copy", "--gene-density", 10))
-  # type 5 + 3
-  # args1 <- parse_args(parser, args = c("--table", input1, "--range-copy", "--gene-compare", "--gene-density", 10, "--save-range-copy", "-o", output1))
-
-  # args1 <- parse_args(parser, args = c(
-  #   "--table", input1,
-  #   "--gene-count", 1,
-  #   "--gene-compare",
-  #   "--gene-density", 10,
-  #   "--number-copy", 1,
-  #   "--range-copy"
-  # ))
-  #
 }
 
 output1 <- paste0(args1$out, ".annotated.txt")
@@ -186,6 +131,7 @@ output3 <- paste0(args1$out, ".mixfit.txt")
 
 x0 <- read_delim(args1$table, delim = " ", show_col_types = FALSE)
 
+# Rearrange the table by edge
 xall <- x0 |>
   separate_rows(Edge, sep = ",") |>
   # Convert the numbers to absolute values
@@ -206,10 +152,11 @@ cutoff_data <- x0 |>
   filter(cumulative_length <= 3e+6) |>
   filter(MT > 0 | PT > 0)
 
-# MT selection
+# xall is not used.
+# MT selection: x0 -> x1
+# MT selection: x0 -> cutoff_data -> xt
 # gene density cutoff: 1 in 100 kb
 x1 <- x0
-
 if (args1$mitochondrial == TRUE) {
   xt <- cutoff_data |>
     filter(PT < MT)
@@ -217,6 +164,7 @@ if (args1$mitochondrial == TRUE) {
   if (args1$`number-copy` > 0) {
     x1 <- x1 |> filter(Copy > args1$`number-copy`)
   }
+
   if (args1$`range-copy` == TRUE) {
     x2 <- x1 |> filter(Copy > 1)
     m1 <- mixfit(x2$Copy, ncomp = 3, family = "gamma")
@@ -230,12 +178,15 @@ if (args1$mitochondrial == TRUE) {
       x1 <- x2
     }
   }
+
   if (args1$`gene-count` > 0) {
     x1 <- x1 |> filter(MT >= args1$`gene-count`)
   }
+
   if (args1$`gene-compare` == TRUE) {
     x1 <- x1 |> filter(MT >= PT, MT > 0)
   }
+
   if (args1$`gene-density` > 0) {
     rt1 <- 1e+6 / args1$`gene-density`
     x1 <- x1 |>
@@ -275,6 +226,7 @@ if (args1$mitochondrial == TRUE) {
   }
 }
 
+# list by edge
 x1 <- x1 |>
   separate_rows(Edge, sep = ",") |>
   # Convert the numbers to absolute values
@@ -285,14 +237,7 @@ x1 <- x1 |>
   distinct() |>
   dplyr::select(-V4, -V5, -V7, -V8)
 
-# print(x1)
-
-# if (is_null(args1$out)) {
-#   args1$out <- output1
-# }
-
-# select(edgename, Length, V3, Copy, MT, PT, RT) |>
-
+# x1 -> .annotated.txt
 if (nrow(x1) > 0) {
   x1 |>
     mutate(edgename = paste0("edge_", Edge)) |>
@@ -304,6 +249,7 @@ if (nrow(x1) > 0) {
   tibble() |> write_tsv(output1)
 }
 
+# .stats
 if (args1$`save-range-copy` == TRUE) {
   if (nrow(x1) > 0) {
     tibble(
@@ -323,6 +269,7 @@ if (args1$`save-range-copy` == TRUE) {
     sd1 <- sd(xt$V3)
   }
 
+  # xt -> .stats
   if (nrow(xt) > 1) {
     xt |>
       summarise(
@@ -352,6 +299,7 @@ if (args1$`save-range-copy` == TRUE) {
   }
 }
 
+# .mixfit
 if (exists("m1")) {
   if (!is_null(m1)) {
     sink(output3)

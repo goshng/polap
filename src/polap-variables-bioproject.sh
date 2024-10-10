@@ -1,7 +1,7 @@
 local _polap_var_output="${ODIR}"
 local _polap_var_bioproject_txt="${_polap_var_output}/bioproject.txt"
+local _polap_var_bioproject_runinfo_all="${_polap_var_output}/bioproject.runinfo"
 local _polap_var_bioproject="${_polap_var_output}/0-bioproject"
-local _polap_var_bioproject_runinfo_all="${_polap_var_bioproject}/1-runinfo.all"
 local _polap_var_bioproject_runinfo="${_polap_var_bioproject}/1-runinfo.tsv"
 local _polap_var_bioproject_sra_per_species="${_polap_var_bioproject}/1-runinfo.per.species.tsv"
 local _polap_var_bioproject_sra_long_read="${_polap_var_bioproject}/1-sra-long-read.tsv"

@@ -1,0 +1,13 @@
+source test-include-a.sh
+source test-include-b.sh
+source test-include-a.sh
+source test-include-a.sh
+source test-include-b.sh
+source test-include-a.sh
+source test-include-b.sh
+source test-include-a.sh
+source test-include-b.sh
+source test-include-a.sh
+source test-include-b.sh
+source test-include-b.sh
+source test-include-b.sh

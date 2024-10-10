@@ -23,7 +23,15 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-function _run_polap_template() {
+source "$script_dir/run-polap-function-blast-genome.sh"
+source "$script_dir/run-polap-function-count-gene.sh"
+
+################################################################################
+# Annotates the genome assembly.
+# Defaults:
+# Outputs:
+################################################################################
+function _run_polap_annotate() {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -33,25 +41,18 @@ function _run_polap_template() {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-ga.sh"
 
-	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
-# Template for an external shell script
+# Annotates the genome assembly.
 #
 # Arguments:
-#   -i $INUM: source Flye (usually whole-genome) assembly number
-#
+#   -i $INUM: a Flye genome assembly number
 # Inputs:
-#   ${_polap_var_annotation_table}
-#
+#   $INUM
 # Outputs:
-#   $MTCONTIGNAME
-#
-# See:
-#   run-polap-select-contigs-by-table-1.R for the description of --select-contig option
-Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>] [--select-contig <number>]
+Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>]
 HEREDOC
 	)
 
@@ -60,35 +61,39 @@ HEREDOC
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		touch "${ODIR}"
 
+		# local _polap_var_ga_annotation="${_polap_var_ga}/assembly_info_organelle_annotation_count.txt"
+		# local _polap_var_ga_annotation_all="${_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt"
+		_polap_log0 column -t "${_polap_var_ga_annotation}"
+		if [ -s "${_polap_var_ga_annotation}" ]; then
+			column -t "${_polap_var_ga_annotation}" >&2
+		fi
+
+		_polap_log0 column -t "${_polap_var_ga_annotation_table}"
+		if [ -s "${_polap_var_ga_annotation_table}" ]; then
+			column -t "${_polap_var_ga_annotation_table}" >&2
+		fi
 		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
 	fi
 
-	echo "verbose level: ${_arg_verbose}" >&2
-	echoall "command: $0"
-	echoall "function: $FUNCNAME"
-	echoall "menu2: [$1]"
-	echoall "menu3: [$2]"
-	echoerr "LOG: echoerr"
-	echoall "LOG: echoall"
+	_polap_log0 "annotating contigs with mitochondrial and plastid genes on the assembly number ${INUM} ..."
 
-	echoerr "LOG: echoerr"
-	verbose_echo 0 "Log level   - screen        polap.log file" 1>&2
-	_polap_log0 "Log level 0 - nothing        minimal log - --quiet"
-	_polap_log1 "Log level 1 - minimal        step info and main io files"
-	_polap_log2 "Log level 2 - main io files  inside of function: file input/output --verbose"
-	_polap_log3 "Log level 3 - files inside   all log or details of file contents --verbose --verbose"
-	_polap_log0_file "log0.file: main assembly input/output"
-	_polap_log1_file "log1.file: step main input/output"
-	_polap_log2_file "log2.file: inside detail input/output"
-	_polap_log3_file "log3.file: all input/output"
-
-	_polap_log0 "var: ${_polap_var_apple}"
+	if [ -s "${_polap_var_ga_annotation_all}" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log0 "  found: ${_polap_var_ga_annotation_all}, so skipping the annotation ..."
+	else
+		_run_polap_blast-genome
+		_run_polap_count-gene
+	fi
 
 	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+}
+
+function _run_polap_a() {
+	_run_polap_annotate
 }

@@ -27,7 +27,7 @@ if (length(args) > 0) {
   output4 <- args[5]
 } else {
   s <- "bioprojects"
-  input_dir0 <- file.path("/media/h2/goshng/figshare", s, "o/0-bioproject")
+  input_dir0 <- file.path("/media/h2/goshng/figshare/bioprojects/test/o/0-bioproject")
   input1 <- file.path(input_dir0, "1-runinfo.tsv")
   output1 <- file.path(input_dir0, "1-sra-long-read.txt")
   output2 <- file.path(input_dir0, "1-sra-short-read.txt")

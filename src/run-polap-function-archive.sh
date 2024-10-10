@@ -1,4 +1,29 @@
 ################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
+################################################################################
+# Ensure that the current script is sourced only once
+source "$script_dir/run-polap-function-include.sh"
+_POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
+[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+declare "$_POLAP_INCLUDE_=1"
+#
+################################################################################
+
+################################################################################
 # Archive the ${ODIR} folder to ${_arg_archive}
 ################################################################################
 function _run_polap_archive() {
@@ -11,11 +36,12 @@ function _run_polap_archive() {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-bioproject.sh"
 
 	if [ "${_arg_short_read1_is}" = "on" ]; then
 		_arg_archive="${_arg_short_read1}"
 	fi
+
 	local FDIR="$ODIR"/$INUM
 	local MTCONTIGNAME="$FDIR"/mt.contig.name-"$JNUM"
 	local _polap_var_source_0="${ODIR}/0"

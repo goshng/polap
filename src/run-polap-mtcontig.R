@@ -16,17 +16,6 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# name: estimates genome size using Jellyfish output
-#
-# synopsis:
-# run-polap-mtcontig.R <flye_output_dir> <mt.contig.name> <assembley_count.txt> --contigger
-#
-# requirement: executes Flye 
-# jellyfish count -t 4 -C -m 19 -s 5G -o 19mer_out --min-qual-char=? s1.fq s2.fq
-# jellyfish histo -o 19mer_out.histo 19mer_out
-#
-# input: Jellyfish .histo output file
-# output: coverage and genome size
 # "$WDIR"/run-polap-mtcontig.R "$ODIR" \
 # 	"$ODIR"/50-annotation/mt.contig.name \
 # 	"$ODIR"/assembly_info_organelle_annotation_count.txt \
@@ -38,6 +27,7 @@
 
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))
+
 args = commandArgs(trailingOnly=TRUE)
 
 # x = as_tibble(read.table(args[1]))

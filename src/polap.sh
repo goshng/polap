@@ -50,6 +50,8 @@ source "$script_dir/run-polap-function-wga.sh"
 source "$script_dir/run-polap-function-blast-genome.sh"
 source "$script_dir/run-polap-function-count-gene.sh"
 source "$script_dir/run-polap-function-annotate.sh"
+
+# read selection and organelle-genome assembly
 source "$script_dir/run-polap-function-oga.sh"
 source "$script_dir/run-polap-function-polishing.sh"
 
@@ -69,10 +71,6 @@ source "$script_dir/run-polap-function-copy-sra-bioproject.sh"
 # contig selection
 source "$script_dir/run-polap-function-select-contigs.sh"
 source "$script_dir/run-polap-function-assemble-draft.sh"
-source "$script_dir/run-polap-function-select-contigs-by.sh"
-
-# read selection
-source "$script_dir/run-polap-function-select-reads.sh"
 
 # mtDNA or ptDNA selection
 source "$script_dir/run-polap-function-select-mtdna.sh"

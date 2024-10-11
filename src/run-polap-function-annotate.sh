@@ -111,6 +111,7 @@ HEREDOC
 
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
@@ -122,9 +123,9 @@ HEREDOC
 			column -t "${_polap_var_ga_annotation}" >&2
 		fi
 
-		_polap_log0 column -t "${_polap_var_ga_annotation_table}"
-		if [ -s "${_polap_var_ga_annotation_table}" ]; then
-			column -t "${_polap_var_ga_annotation_table}" >&2
+		_polap_log0 column -t "${_polap_var_ga_annotation_depth_table}"
+		if [ -s "${_polap_var_ga_annotation_depth_table}" ]; then
+			column -t "${_polap_var_ga_annotation_depth_table}" >&2
 		fi
 
 		_polap_log3_cmd touch "${ODIR}"

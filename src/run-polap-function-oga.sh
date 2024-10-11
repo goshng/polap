@@ -212,7 +212,7 @@ HEREDOC
 			echoall "sampling long-read data by $RATE ... wait ..."
 			# seqkit sample -p "$RATE" "$MTSEEDSDIR/1.fq.gz" -o "$MTSEEDSDIR/2.fq.gz" >/dev/null 2>&1
 			local seed=${_arg_seed:-$RANDOM}
-			_polap_log3_cmd "seqkit sample -p ${RATE} -s ${seed} ${MTSEEDSDIR}/1.fq.gz -o ${MTSEEDSDIR}/2.fq.gz 2>${_polap_output_dest}"
+			_polap_log3_pipe "seqkit sample -p ${RATE} -s ${seed} ${MTSEEDSDIR}/1.fq.gz -o ${MTSEEDSDIR}/2.fq.gz 2>${_polap_output_dest}"
 			echoall "DATA: a reduced long-read data $MTSEEDSDIR/2.fq.gz is created"
 		fi
 	fi

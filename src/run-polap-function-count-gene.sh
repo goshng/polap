@@ -24,24 +24,6 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 ################################################################################
-# Called in the script not by users.
-# -i or --inum option is ignored.
-################################################################################
-function _func_polap_count-gene() {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
-
-	if [ $# -eq 0 ]; then
-		INUM=0
-	elif [ $# -eq 1 ]; then
-		INUM=$1
-	fi
-
-	_run_polap_count-gene
-
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
-}
-
-################################################################################
 # Counts genes annotated on a genome assembly.
 # Arguments:
 #   -i $INUM: a Flye genome assembly number
@@ -84,6 +66,7 @@ function _run_polap_count-gene() {
 #   ${_polap_var_ga}/assembly_info_organelle_annotation_count.txt
 #   ${_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt
 #   ${_polap_var_ga}/contig-annotation-table.txt 
+#   ${_polap_var_ga}/contig-annotation-depth-table.txt 
 # Usage:
 #   assembly graph: ${_polap_var_ga}"/30-contigger/graph_final.gfa
 # 	column -t ${_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt | less -S
@@ -129,6 +112,7 @@ HEREDOC
 	_polap_log0 "  output1: ${_polap_var_ga_annotation}"
 	_polap_log0 "  output2: ${_polap_var_ga_annotation_all}"
 	_polap_log0 "  output3: ${_polap_var_ga_annotation_table}"
+	_polap_log0 "  output4: ${_polap_var_ga_annotation_depth_table}"
 
 	if [[ ${_arg_test} == "on" ]]; then
 		_polap_log0 "creating ${_polap_var_ga}/mt.contig.name-1 for testing purpose ..."
@@ -145,4 +129,8 @@ HEREDOC
 	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+}
+
+function _run_polap_cg() {
+	_run_polap_count-gene
 }

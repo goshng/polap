@@ -22,6 +22,20 @@ suppressPackageStartupMessages(library("readr"))
 suppressPackageStartupMessages(library("purrr"))
 suppressPackageStartupMessages(library("tidyr"))
 
+compare_and_choose_smaller <- function(x, y) {
+  if (x < 0 && y < 0) {
+    stop("Both values cannot be negative; at least one must be positive.")
+  }
+  smaller <- min(x, y)
+  larger <- max(x, y)
+
+  if (smaller < 0) {
+    return(larger)
+  } else {
+    return(smaller)
+  }
+}
+
 parser <- OptionParser()
 parser <- add_option(parser, c("-m", "--mitochondrial"),
   action = "store_true",
@@ -80,45 +94,40 @@ parser <- add_option(parser, c("-o", "--out"),
   action = "store",
   help = "Output contig seeds filename"
 )
+parser <- add_option(parser, c("-x", "--depth"),
+  action = "store",
+  help = "Output depth range"
+)
+parser <- add_option(parser, c("--mixfit"),
+  action = "store",
+  help = "Output mixfit"
+)
 args1 <- parse_args(parser)
 
 if (is_null(args1$table)) {
-  s <- "Vigna_radiata"
-  s <- "Brassica_rapa"
-  s <- "Anthoceros_angustus"
   s <- "bioprojects"
+  o <- "PRJNA817235-Canavalia_ensiformis"
 
-  o <- "PRJNA597121"
-  o <- "PRJEB79308"
-  o <- "PRJDB10540a"
-  o <- "PRJEB26621a"
-  o <- "PRJNA644206-Populus_x_sibirica"
-  o <- "PRJEB42431-Ophrys_insectifera_subsp._aymoninii"
-
-  jnum <- "2"
-  input_dir0 <- file.path("/media/h2/goshng/figshare", s, o, "0")
-  input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
-  input_dir1 <- file.path(input_dir0, jnum, "mtcontigs")
-  output1 <- file.path(input_dir1, "1-mtcontig")
-
-  if (jnum == "1" || jnum == "3") {
-    args1 <- parse_args(parser, args = c("--table", input1, "--gene-compare", "--gene-density", 10, "-o", output1))
-  } else if (jnum == "2" || jnum == "4") {
-    args1 <- parse_args(parser, args = c("--table", input1, "--range-type", 1, "--gene-compare", "--gene-density", 10, "-o", output1))
-  } else if (jnum == "5") {
-    args1 <- parse_args(parser, args = c("--table", input1, "--range-type", 1, "--gene-compare", "--gene-density", 10, "-o", output1))
-  } else if (jnum == "6" || jnum == "7") {
-    args1 <- parse_args(parser, args = c("--table", input1, "--range-type", 2, "--gene-compare", "--gene-density", 10, "-o", output1))
+  # input_dir0 <- file.path("/media/h2/goshng/figshare", s, o, "0")
+  jnum <- 1
+  if (jnum == 1) {
+    input_dir0 <- file.path(".")
+    input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
+    output1 <- file.path(input_dir0, "1-preselection.by.gene.density.txt")
+    output2 <- file.path(input_dir0, "1-depth.range.by.gene.density.txt")
+    # no output3 for mixfit file
+    args1 <- parse_args(parser, args = c("--table", input1, "-c", "-d", 10, "-o", output1, "--depth", output2))
+  } else if (jnum == 2) {
+    input_dir0 <- file.path(".")
+    input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
+    output1 <- file.path(input_dir0, "1-preselection.by.depth.mixture.txt")
+    output2 <- file.path(input_dir0, "1-depth.range.by.depth.mixture.txt")
+    output3 <- file.path(input_dir0, "1-mixfit.txt")
+    args1 <- parse_args(parser, args = c("--table", input1, "-c", "-d", 10, "-r", 2, "--out", output1, "--depth", output2, "--mixfit", output3))
   }
 }
 
-output1 <- paste0(args1$out, ".annotated.txt")
-output2 <- paste0(args1$out, ".annotated.stats.txt")
-output3 <- paste0(args1$out, ".mixfit.txt")
-
 x0 <- read_delim(args1$table, delim = " ", show_col_types = FALSE)
-
-print(args1$`range-type`)
 
 # MT selection: x0 -> x1
 # gene density cutoff: 1 in 100 kb
@@ -137,32 +146,24 @@ if (args1$mitochondrial == TRUE) {
   # depth range by mixture model
   if (args1$`range-type` > 0) {
     x2 <- x1 |> filter(Copy > 1)
-    # print("range-type:")
-    # print(out2)
-    # print(length(x2$Copy))
-    m1 <- mixfit(x2$Copy, ncomp = 3, family = "gamma")
+    m1 <- mixfit(x2$Copy, ncomp = 3, family = "gamma", max_iter = 30)
     if (is_null(m1)) {
       # nothing for x1 if mixfit fails to converge.
       x1 <- x1 |> filter(Copy < 0)
+      x2 <- x1
     } else {
-      # x2 <- x1 |> filter(m1$mu[1] < Copy, Copy < m1$mu[3])
-      # x2 <- x1 |> filter(m1$mu[1] < Copy, Copy < m1$mu[3] + m1$sd[3])
-
       if (args1$`range-type` == 1) {
-        # print("range-type 1")
         x2 <- x1 |> filter(m1$mu[1] < Copy, Copy < m1$mu[2] + m1$sd[2] * 3)
       } else if (args1$`range-type` == 2) {
-        # print("range-type 2")
         x2 <- x1 |> filter(m1$mu[1] < Copy, Copy < m1$mu[3] + m1$sd[3])
       }
-
       x1 <- x2
     }
   }
 
   # filter by the MT/PT gene comparison among genes with MT > 0
   if (args1$`gene-compare` == TRUE) {
-    x1 <- x1 |> filter(MT >= PT, MT > 0)
+    x1 <- x1 |> filter(MT > PT, MT > 0)
   }
 
   # filter by gene density: 1 MT gene per 1 Mb
@@ -181,6 +182,7 @@ if (args1$mitochondrial == TRUE) {
     m1 <- mixfit(x2$Copy, ncomp = 3, family = "gamma")
     if (is_null(m1)) {
       x1 <- x1 |> filter(Copy < 0)
+      x2 <- x1
     } else {
       x2 <- x1 |> filter(Copy > m1$mu[3])
       x1 <- x2
@@ -216,21 +218,21 @@ if (nrow(x1) > 0) {
     relocate(edgename) |>
     arrange(desc(MT > PT), desc(MT)) |>
     distinct() |>
-    write_tsv(output1, col_names = FALSE)
+    write_tsv(args1$out, col_names = FALSE)
 } else {
-  tibble() |> write_tsv(output1)
+  tibble() |> write_tsv(args1$out)
 }
 
 # outfile: .stats
 if (args1$`range-type` == 0) {
   if (nrow(x1) > 0) {
     tibble(
-      depth_lower_bound = min(x1$V3) - 1,
+      depth_lower_bound = max(min(x1$V3) - 1, 1), # CHECK # FIXME
       depth_upper_bound = max(x1$V3) + 1
     ) |>
-      write_tsv(output2)
+      write_tsv(args1$depth)
   } else {
-    tibble() |> write_tsv(output2) # create an empty file
+    tibble() |> write_tsv(args1$depth) # create an empty file
   }
 } else {
   if (nrow(x2) > 0) {
@@ -238,16 +240,16 @@ if (args1$`range-type` == 0) {
       depth_lower_bound = min(x2$V3) - 1,
       depth_upper_bound = max(x2$V3) + 1
     ) |>
-      write_tsv(output2)
+      write_tsv(args1$depth)
   } else {
-    tibble() |> write_tsv(output2) # create an empty file
+    tibble() |> write_tsv(args1$depth) # create an empty file
   }
 }
 
 # .mixfit
 if (exists("m1")) {
   if (!is_null(m1)) {
-    sink(output3)
+    sink(args1$mixfit)
     print(m1)
     sink()
   }

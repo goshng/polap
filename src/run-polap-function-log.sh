@@ -69,6 +69,8 @@ function verbose_cat() {
 	# Only print if the current verbosity level is greater than or equal to the message level
 	if [ "${_arg_verbose}" -ge "$msg_level" ]; then
 		# echo "${_arg_verbose} > ${msg_level}: $message"
+		local n=$(wc -l <"${message}")
+		echo "FILE ($n lines): $message"
 		cat "$message"
 	fi
 }
@@ -81,7 +83,10 @@ function verbose_head() {
 	# Only print if the current verbosity level is greater than or equal to the message level
 	if [ "${_arg_verbose}" -ge "$msg_level" ]; then
 		# echo "${_arg_verbose} > ${msg_level}: $message"
+		local n=$(wc -l <"${message}")
+		echo "FILE head ($n lines): $message"
 		head "$message"
+		echo "..."
 	fi
 }
 
@@ -213,6 +218,26 @@ function _polap_log2_cat() {
 function _polap_log3_cat() {
 	verbose_cat 3 "$@"
 	verbose_cat 4 "$@" 1>&2
+}
+
+function _polap_log0_head() {
+	verbose_head 0 "$@"
+	verbose_head 1 "$@" 1>&2
+}
+
+function _polap_log1_head() {
+	verbose_head 1 "$@"
+	verbose_head 2 "$@" 1>&2
+}
+
+function _polap_log2_head() {
+	verbose_head 2 "$@"
+	verbose_head 3 "$@" 1>&2
+}
+
+function _polap_log3_head() {
+	verbose_head 3 "$@"
+	verbose_head 4 "$@" 1>&2
 }
 
 function _polap_log_function() {

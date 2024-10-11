@@ -116,19 +116,19 @@ WDIR="${BASH_SOURCE%/*}"
 if [[ ! -d "$WDIR" ]]; then
 	WDIR="$PWD"
 fi
-WDIR=$script_dir
+WDIR=${script_dir}
 
 # variables for input data file names for flexible data processing.
-LR=$_arg_long_reads       # long-read data file
-SR1=$_arg_short_read1     # paired short-read data file 1
-SR2=$_arg_short_read2     # paired short-read data file 2
-PA=$_arg_unpolished_fasta # assembled draft sequence extracted from bandage
-FA=$_arg_final_assembly   # polished sequence
+LR=${_arg_long_reads}       # long-read data file
+SR1=${_arg_short_read1}     # paired short-read data file 1
+SR2=${_arg_short_read2}     # paired short-read data file 2
+PA=${_arg_unpolished_fasta} # assembled draft sequence extracted from bandage
+FA=${_arg_final_assembly}   # polished sequence
 
 # variables for output
-ODIR=$_arg_outdir
-INUM=$_arg_inum
-JNUM=$_arg_jnum
+ODIR="${_arg_outdir%/}"
+INUM=${_arg_inum}
+JNUM=${_arg_jnum}
 FDIR="$ODIR"/0 # flye 1st output
 if [ "${_arg_archive_is}" = "off" ]; then
 	_arg_archive="${ODIR}-a"
@@ -136,30 +136,30 @@ fi
 
 # tuning variables for optimal performance
 LRNK="$ODIR/nk.fq.gz"
-MR=$_arg_min_read_length
-MPAIR=$_arg_pair_min     # 3000 for MT, 1000 for PT
-MBRIDGE=$_arg_bridge_min # used to be 3000,
-MSINGLE=$_arg_single_min # not used deprecated
-COV=$_arg_coverage
+MR=${_arg_min_read_length}
+MPAIR=${_arg_pair_min}     # 3000 for MT, 1000 for PT
+MBRIDGE=${_arg_bridge_min} # used to be 3000,
+MSINGLE=${_arg_single_min} # not used deprecated
+COV=${_arg_coverage}
 # NT=$(cat /proc/cpuinfo | grep -c processor)
-NT=$_arg_threads
+NT=${_arg_threads}
 if test -z "$DEBUG"; then
 	DEBUG=0
 fi
-CIRCULARIZE=$_arg_circularize # "--circularize"
-SPECIES=$_arg_species
+CIRCULARIZE=${_arg_circularize} # "--circularize"
+SPECIES=${_arg_species}
 
 ################################################################
 # Variables
-SRA=$_arg_sra
+SRA=${_arg_sra}
 SRALONG=""
 SRASHORT=""
-RESUME=$_arg_resume
+RESUME=${_arg_resume}
 ALL_ANNOTATE="--selective-annotate"
 FLYE_CONTIGGER="--contigger"
 USE_EDGES="--no-use-edges"
-NO_REDUCTION_READS=$_arg_reduction_reads
-NO_COVERAGE_CHECK=$_arg_coverage_check
+NO_REDUCTION_READS=${_arg_reduction_reads}
+NO_COVERAGE_CHECK=${_arg_coverage_check}
 
 # Constants
 EXIT_SUCCESS=0

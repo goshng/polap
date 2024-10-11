@@ -16,48 +16,67 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+
+suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))
+suppressPackageStartupMessages(library("purrr"))
 suppressPackageStartupMessages(library("tidyr"))
-args = commandArgs(trailingOnly=TRUE)
 
-if (length(args) > 0) {
-  input0 <- args[1]
-  input1 <- args[2]
-  output1 <- args[3]
-  output2 <- args[4]
-  output3 <- args[5]
-  output4 <- args[6]
-} else {
-  option1 <- "locus_tag"
-  input1 <- "/media/h2/goshng/figshare/Brassica_rapa/o2/0/30-contigger/graph_final.gfa"
-  input2 <- "/media/h2/goshng/figshare/Brassica_rapa/o2/0/assembly_info_organelle_annotation_count-all.txt"
-  output1 <- "/media/h2/goshng/figshare/Brassica_rapa/o2/0/mt.contig.name-1"
-  output2 <- "/media/h2/goshng/figshare/Brassica_rapa/o2/0/mt.contig.name-1.stats"
 
-  s="Brassica_rapa"
-  s="Vigna_radiata"
-  s="Anthoceros_angustus"
-  input0 <- paste0("/media/h2/goshng/figshare/", s, "/o/0")
-  input0 <- paste0(input0, "/mt.contig.name-1")
-  input_dir0 <- paste0("/media/h2/goshng/figshare/", s, "/o/0/1/mtcontigs")
-  input0 <- paste0(input_dir0, "/mtcontig.annotated.txt")
-  input1 <- paste0(input_dir0, "/gfa.links.tsv")
-  output1 <- paste0(input_dir0, "/gfa.links.number.txt")
-  output2 <- paste0(input_dir0, "/gfa.links.order.txt")
-  output3 <- paste0(input_dir0, "/gfa.links.contig.txt")
-  output4 <- paste0(input_dir0, "/gfa.links.contig.na.txt")
+parser <- OptionParser()
+parser <- add_option(parser, c("-m", "--mitochondrial"),
+                     action = "store_true",
+                     default = TRUE, help = "Mitochondrial genome assembly"
+)
+parser <- add_option(parser, c("-p", "--plastid"),
+                     action = "store_false",
+                     dest = "mitochondrial", help = "Plastid genome assembly"
+)
+parser <- add_option(parser, c("-g", "--gfa"),
+                     action = "store",
+                     help = "GFA sequence part",
+                     metavar = "<FILE>"
+)
+parser <- add_option(parser, c("--edge"),
+                     action = "store",
+                     help = "Depth range",
+                     metavar = "<FILE>"
+)
+parser <- add_option(parser, c("-o", "--out"),
+                     action = "store",
+                     help = "Output contig seeds filename"
+)
+args1 <- parse_args(parser)
+
+if (is_null(args1$gfa)) {
+  s <- "bioprojects"
+  o <- "PRJNA817235-Canavalia_ensiformis"
+  
+  # input_dir0 <- file.path("/media/h2/goshng/figshare", s, o, "0")
+  input_dir0 <- file.path(".")
+  input1 <- file.path(input_dir0, "4-gfa.links.tsv")
+  input2 <- file.path(input_dir0, "1-preselection.by.gene.density.txt")
+  # input2 <- file.path(input_dir0, "1-preselection.by.depth.mixture.txt")
+  output.base <- file.path(input_dir0, "4-gfa.links")
+  args1 <- parse_args(parser, args = c("--gfa", input1, "--edge", input2, "-o", output.base))
 }
 
-x1 <- read_tsv(input0, col_names = c("string", "depth"))
+output1 <- paste0(args1$out, ".number.txt")
+output2 <- paste0(args1$out, ".order.txt")
+output3 <- paste0(args1$out, ".contig.txt")
+output4 <- paste0(args1$out, ".contig.na.txt")
+
+# x1 <- read_tsv(args1$edge, col_names = c("string", "depth"))
+x1 <- read_tsv(args1$edge, col_names = c("string", "contig", "length", "depth", "copy", "mt", "pt", "edge", "density"), show_col_types = FALSE)
 
 # Step 1: Read the TSV file (assuming it has no header and two columns)
 # Adjust the file path as necessary
-df <- read_tsv(input1, col_names = c("string1", "string2"))
+df <- read_tsv(args1$gfa, col_names = c("string1", "string2"), show_col_types = FALSE)
 
 # Step 2: Combine both columns to identify all unique strings
 unique_strings <- df |>
-  select(string1, string2) |>
+  dplyr::select(string1, string2) |>
   unlist() |>
   unique() |>
   sort()
@@ -71,12 +90,12 @@ mapping_table <- tibble(
 vector_mapped <- x1 |>
   left_join(mapping_table, by = "string") |>
   filter(!is.na(int_value)) |>
-  select(int_value)
+  dplyr::select(int_value)
 
 vector_mapped_na <- x1 |>
   left_join(mapping_table, by = "string") |>
   filter(is.na(int_value)) |>
-  select(string)
+  dplyr::select(string)
 
 # Step 4: Use left_join to map each string to its corresponding integer
 df_mapped <- df |>
@@ -84,7 +103,7 @@ df_mapped <- df |>
   rename(int1 = int_value) |>
   left_join(mapping_table, by = c("string2" = "string")) |>
   rename(int2 = int_value) |>
-  select(int1, int2)
+  dplyr::select(int1, int2)
 
 
 

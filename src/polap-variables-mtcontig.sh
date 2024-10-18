@@ -1,8 +1,31 @@
+################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
 # base folders
 local _polap_var_ga="${ODIR}/${INUM}"
 local _polap_var_manual_depth_range="${ODIR}"/0/1-manual.depth.range.txt
 local _polap_var_manual_copy_range="${ODIR}"/0/1-manual.copy.range.txt
 local _polap_var_mtcontigs="${_polap_var_ga}/${JNUM}"/mtcontigs
+
+local _polap_var_1_custom_depth_range="${ODIR}"/0/1-custom.depth.range.txt
+local _polap_var_2_custom_depth_range="${ODIR}"/0/2-custom.depth.range.txt
+
+local _polap_var_2_depth_range_by_cdf_copy_number="${ODIR}/0/2-depth.range.by.cdf.copy.number.txt"
+local _polap_var_3_depth_range_by_mixture="${ODIR}/0/3-depth.range.by.mixture.txt"
+local _polap_var_3_mixfit="${_polap_var_ga}/3-mixfit.txt"
 
 # input
 local _polap_var_assembly_graph_final_gfa="${_polap_var_ga}/30-contigger/graph_final.gfa"

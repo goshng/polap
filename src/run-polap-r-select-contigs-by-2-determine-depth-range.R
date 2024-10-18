@@ -24,34 +24,33 @@ suppressPackageStartupMessages(library("tidyr"))
 
 parser <- OptionParser()
 parser <- add_option(parser, c("-m", "--mitochondrial"),
-                     action = "store_true",
-                     default = TRUE, help = "Mitochondrial genome assembly"
+  action = "store_true",
+  default = TRUE, help = "Mitochondrial genome assembly"
 )
 parser <- add_option(parser, c("-p", "--plastid"),
-                     action = "store_false",
-                     dest = "mitochondrial", help = "Plastid genome assembly"
+  action = "store_false",
+  dest = "mitochondrial", help = "Plastid genome assembly"
 )
 parser <- add_option(parser, c("-t", "--table"),
-                     action = "store",
-                     help = "Organelle annotation table",
-                     metavar = "<FILE>"
+  action = "store",
+  help = "Organelle annotation table",
+  metavar = "<FILE>"
 )
 parser <- add_option(parser, c("-o", "--out"),
-                     action = "store",
-                     help = "Output contig seeds filename"
+  action = "store",
+  help = "Output contig seeds filename"
 )
 args1 <- parse_args(parser)
 
 if (is_null(args1$table)) {
   s <- "bioprojects"
   o <- "PRJNA817235-Canavalia_ensiformis"
-  
+
   # input_dir0 <- file.path("/media/h2/goshng/figshare", s, o, "0")
   input_dir0 <- file.path(".")
   input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
   output1 <- file.path(input_dir0, "2-depth.range.by.cdf.copy.number.txt")
   args1 <- parse_args(parser, args = c("--table", input1, "-o", output1))
-  
 }
 
 x0 <- read_delim(args1$table, delim = " ", show_col_types = FALSE)
@@ -84,21 +83,6 @@ while (mean1 < 1 * sd1 && nrow(xt) > 1) {
   mean1 <- mean(xt$V3)
   sd1 <- sd(xt$V3)
 }
-
-compare_and_choose_smaller <- function(x, y) {
-  if (x < 0 && y < 0) {
-    stop("Both values cannot be negative; at least one must be positive.")
-  }
-  smaller <- pmin(x, y)
-  larger <- pmax(x, y)
-  
-  if (smaller < 0) {
-    return(larger)
-  } else {
-    return(smaller)
-  }
-}
-
 
 # lower bound: 1/3 of the original value
 # upper bound: x3 of the original value

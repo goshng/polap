@@ -79,10 +79,10 @@ parser <- add_option(parser, c("-s", "--save-range-copy"),
   default = FALSE,
   help = "Save the range of contig copy numbers using the copy number distribution"
 )
-parser <- add_option(parser, c("-u", "--upper-number-copy"),
-  type = "integer",
-  default = -1,
-  help = "Maximum contig copy number [default off]",
+parser <- add_option(parser, c("--depth-range"),
+  type = "character",
+  default = "0,0",
+  help = "Range of contig depth [default off]",
   metavar = "number"
 )
 parser <- add_option(parser, c("-t", "--table"),
@@ -116,7 +116,7 @@ if (is_null(args1$table)) {
     output1 <- file.path(input_dir0, "1-preselection.by.gene.density.txt")
     output2 <- file.path(input_dir0, "1-depth.range.by.gene.density.txt")
     # no output3 for mixfit file
-    args1 <- parse_args(parser, args = c("--table", input1, "-c", "-d", 10, "-o", output1, "--depth", output2))
+    args1 <- parse_args(parser, args = c("--table", input1, "--depth-range", "50,100", "-c", "-d", 10, "-o", output1, "--depth", output2))
   } else if (jnum == 2) {
     input_dir0 <- file.path(".")
     input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
@@ -127,12 +127,20 @@ if (is_null(args1$table)) {
   }
 }
 
+# filter by the depth range
+depth.range <- as.numeric(strsplit(args1$`depth-range`, ",")[[1]])
+
 x0 <- read_delim(args1$table, delim = " ", show_col_types = FALSE)
 
 # MT selection: x0 -> x1
 # gene density cutoff: 1 in 100 kb
 x1 <- x0
 if (args1$mitochondrial == TRUE) {
+  # filter by the depth range
+  if (depth.range[1] > 0) {
+    x1 <- x1 |> filter(depth.range[1] <= V3, V3 <= depth.range[2])
+  }
+
   # filter by the minimum copy number
   if (args1$`number-copy` > 0) {
     x1 <- x1 |> filter(Copy >= args1$`number-copy`)

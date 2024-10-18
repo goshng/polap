@@ -1,3 +1,9 @@
+# 2024-10-13
+
+## Sequence length from Fasta
+
+https://www.biostars.org/p/118954/
+
 # 2024-10-02
 
 ## Compare POLAP vith PMAT

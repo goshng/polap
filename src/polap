@@ -36,6 +36,9 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 
 # vvv  PLACE YOUR CODE HERE  vvv
 
+_polap_var_function_verbose=4
+ODIR="${_arg_outdir%/}"
+
 ################################################################################
 # include bash shell files
 ################################################################################
@@ -47,6 +50,8 @@ source "$script_dir/run-polap-function-menus.sh"
 source "$script_dir/run-polap-function-reset.sh"
 source "$script_dir/polap-function-set-variables.sh"
 source "$script_dir/run-polap-function-wga.sh"
+
+# organelle-genome annotation
 source "$script_dir/run-polap-function-blast-genome.sh"
 source "$script_dir/run-polap-function-count-gene.sh"
 source "$script_dir/run-polap-function-annotate.sh"
@@ -96,79 +101,9 @@ source "$script_dir/run-polap-function-miscellaneous.sh"
 
 function try() { "$@" || die "cannot $*"; }
 
-function _run_polap_gbs() {
-	_run_polap_get-bioproject-sra
-}
-
-function _run_polap_scbg() {
-	_run_polap_select-contigs-by-graph-depth-length
-}
-
 ################################################################################
 # All of the variables at our disposal
 ################################################################################
-
-_polap_var_function_verbose=4
-
-# include and execute other BASH and R scripts
-WDIR="$(dirname "$0")"
-WDIR="${BASH_SOURCE%/*}"
-if [[ ! -d "$WDIR" ]]; then
-	WDIR="$PWD"
-fi
-WDIR=${script_dir}
-
-# variables for input data file names for flexible data processing.
-LR=${_arg_long_reads}       # long-read data file
-SR1=${_arg_short_read1}     # paired short-read data file 1
-SR2=${_arg_short_read2}     # paired short-read data file 2
-PA=${_arg_unpolished_fasta} # assembled draft sequence extracted from bandage
-FA=${_arg_final_assembly}   # polished sequence
-
-# variables for output
-ODIR="${_arg_outdir%/}"
-INUM=${_arg_inum}
-JNUM=${_arg_jnum}
-FDIR="$ODIR"/0 # flye 1st output
-if [ "${_arg_archive_is}" = "off" ]; then
-	_arg_archive="${ODIR}-a"
-fi
-
-# tuning variables for optimal performance
-LRNK="$ODIR/nk.fq.gz"
-MR=${_arg_min_read_length}
-MPAIR=${_arg_pair_min}     # 3000 for MT, 1000 for PT
-MBRIDGE=${_arg_bridge_min} # used to be 3000,
-MSINGLE=${_arg_single_min} # not used deprecated
-COV=${_arg_coverage}
-# NT=$(cat /proc/cpuinfo | grep -c processor)
-NT=${_arg_threads}
-if test -z "$DEBUG"; then
-	DEBUG=0
-fi
-CIRCULARIZE=${_arg_circularize} # "--circularize"
-SPECIES=${_arg_species}
-
-################################################################
-# Variables
-SRA=${_arg_sra}
-SRALONG=""
-SRASHORT=""
-RESUME=${_arg_resume}
-ALL_ANNOTATE="--selective-annotate"
-FLYE_CONTIGGER="--contigger"
-USE_EDGES="--no-use-edges"
-NO_REDUCTION_READS=${_arg_reduction_reads}
-NO_COVERAGE_CHECK=${_arg_coverage_check}
-
-# Constants
-EXIT_SUCCESS=0
-EXIT_FAIL=1
-EXIT_ERROR=2
-RETURN_SUCCESS=0
-RETURN_FAIL=1
-
-SECONDS=0
 
 ################################################################
 # MAIN
@@ -179,14 +114,10 @@ if [ $# -eq 0 ]; then
 	exit $EXIT_SUCCESS
 fi
 
+source "$script_dir/polap-variables-main.sh"
+
 # all message to a log file
 # https://stackoverflow.com/questions/49851882/how-to-log-echo-statement-with-timestamp-in-shell-script
-if [ "${_arg_log}" = "polap.log" ]; then
-	LOG_FILE="${ODIR}/polap.log"
-	[[ ! -d "${ODIR}" ]] && mkdir -p "${ODIR}"
-else
-	LOG_FILE="${_arg_log}"
-fi
 exec 3>&1 1>> >(logit)
 # exec 3>&1 1>> >(logit) 2>&1
 
@@ -210,8 +141,8 @@ fi
 ELAPSED="Time at $(hostname): $((SECONDS / 3600))hrs $(((SECONDS / 60) % 60))min $((SECONDS % 60))sec - $CMD"
 echo "$ELAPSED"
 
-# _polap_log0 "${_polap_var_apple}"
-# _polap_log0 "var: ${_polap_var_apple}"
+# Close FD 3 when no longer needed
+exec 3>&-
 
 # ^^^  TERMINATE YOUR CODE BEFORE THE BOTTOM ARGBASH MARKER  ^^^
 

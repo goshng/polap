@@ -3,16 +3,16 @@
 ################################################################################
 # This file is part of polap.
 #
-# polap is free software: you can redistribute it and/or modify it under the 
-# terms of the GNU General Public License as published by the Free Software 
-# Foundation, either version 3 of the License, or (at your option) any later 
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
 # version.
 #
-# polap is distributed in the hope that it will be useful, but WITHOUT ANY 
-# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR 
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along with 
+# You should have received a copy of the GNU General Public License along with
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
@@ -25,34 +25,38 @@ suppressPackageStartupMessages(library("tidyr"))
 
 
 parser <- OptionParser()
+parser <- add_option(parser, c("--unit-annotation-edge"),
+  action = "store_true",
+  default = FALSE, help = "true for edge, false for contig"
+)
 parser <- add_option(parser, c("-m", "--mitochondrial"),
-                     action = "store_true",
-                     default = TRUE, help = "Mitochondrial genome assembly"
+  action = "store_true",
+  default = TRUE, help = "Mitochondrial genome assembly"
 )
 parser <- add_option(parser, c("-p", "--plastid"),
-                     action = "store_false",
-                     dest = "mitochondrial", help = "Plastid genome assembly"
+  action = "store_false",
+  dest = "mitochondrial", help = "Plastid genome assembly"
 )
 parser <- add_option(parser, c("-g", "--gfa"),
-                     action = "store",
-                     help = "GFA sequence part",
-                     metavar = "<FILE>"
+  action = "store",
+  help = "GFA sequence part",
+  metavar = "<FILE>"
 )
 parser <- add_option(parser, c("--edge"),
-                     action = "store",
-                     help = "Depth range",
-                     metavar = "<FILE>"
+  action = "store",
+  help = "Depth range",
+  metavar = "<FILE>"
 )
 parser <- add_option(parser, c("-o", "--out"),
-                     action = "store",
-                     help = "Output contig seeds filename"
+  action = "store",
+  help = "Output contig seeds filename"
 )
 args1 <- parse_args(parser)
 
 if (is_null(args1$gfa)) {
   s <- "bioprojects"
   o <- "PRJNA817235-Canavalia_ensiformis"
-  
+
   # input_dir0 <- file.path("/media/h2/goshng/figshare", s, o, "0")
   input_dir0 <- file.path(".")
   input1 <- file.path(input_dir0, "4-gfa.links.tsv")
@@ -68,7 +72,13 @@ output3 <- paste0(args1$out, ".contig.txt")
 output4 <- paste0(args1$out, ".contig.na.txt")
 
 # x1 <- read_tsv(args1$edge, col_names = c("string", "depth"))
-x1 <- read_tsv(args1$edge, col_names = c("string", "contig", "length", "depth", "copy", "mt", "pt", "edge", "density"), show_col_types = FALSE)
+#
+
+if (args1$`unit-annotation-edge` == TRUE) {
+  x1 <- read_tsv(args1$edge, col_names = c("string", "length", "depth", "V4", "V5", "copy", "V7", "V8", "mt", "pt", "edge", "density"), show_col_types = FALSE)
+} else {
+  x1 <- read_tsv(args1$edge, col_names = c("string", "contig", "length", "depth", "copy", "mt", "pt", "edge", "density"), show_col_types = FALSE)
+}
 
 # Step 1: Read the TSV file (assuming it has no header and two columns)
 # Adjust the file path as necessary

@@ -407,9 +407,9 @@ HEREDOC
 				>/dev/null 2>&1
 		samtools coverage -A -w 32 "$ODIR"/1.bam 1>&2
 
-		echoerr INFO: conda env create -f "$WDIR"/environment-fmlrc.yaml
-		echoerr INFO: conda activate polap-fmlrc
-		echoerr "NEXT: $(basename "$0") prepare-polishing [-a s1.fq] [-b s2.fq]"
+		_polap_log1 INFO: conda env create -f "$WDIR"/environment-fmlrc.yaml
+		_polap_log1 INFO: conda activate polap-fmlrc
+		_polap_log1 "NEXT: $(basename "$0") prepare-polishing [-a s1.fq] [-b s2.fq]"
 	fi
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi

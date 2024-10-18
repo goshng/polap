@@ -74,6 +74,16 @@ HEREDOC
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
 
+	if [[ ${_arg_menu[1]} == "file" ]]; then
+		if [[ -s "${_polap_var_bioproject_species}" ]]; then
+			_polap_log0_file "${_polap_var_bioproject_species}"
+			_polap_log0_cat "${_polap_var_bioproject_species}"
+		else
+			_polap_log0 "No species file."
+		fi
+		exit $EXIT_SUCCESS
+	fi
+
 	if [[ ${_arg_menu[1]} == "view" ]]; then
 		if [[ -s "${_polap_var_bioproject_mtdna_fasta2_accession}" ]]; then
 			_polap_log0_cat "${_polap_var_bioproject_mtdna_fasta2_accession}"
@@ -181,6 +191,10 @@ HEREDOC
 	else
 		echo "no mtDNA" >"${_polap_var_bioproject_mtdna_fasta2_accession}"
 		_polap_log0 "No mtDNA sequence found for the species: ${SPECIES}"
+		rm -f \
+			"${_polap_var_bioproject_mtdna_fasta1_stats}" \
+			"${_polap_var_bioproject_mtdna_fasta1}" \
+			"${_polap_var_bioproject_mtdna_fasta2}"
 	fi
 
 	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"

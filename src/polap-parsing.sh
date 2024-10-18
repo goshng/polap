@@ -75,10 +75,12 @@ _arg_final_assembly="mt.1.fa"
 _arg_min_read_length="3000"
 _arg_threads="$(cat /proc/cpuinfo | grep -c processor)"
 _arg_log="polap.log"
+_arg_log_stderr="off"
 _arg_coverage="30"
 _arg_pair_min="3000"
 _arg_bridge_min="3000"
 _arg_single_min="3000"
+_arg_rwx="3000"
 _arg_inum="0"
 _arg_jnum="1"
 _arg_select_contig="1"
@@ -187,6 +189,7 @@ Options:
   -r, --pair-min: minimum mapped bases or PAF 11th column (default: '3000')
   -x, --bridge-min: minimum bridging read length or PAF 7th column (default: '3000')
   -w, --single-min: minimum mapped bases or PAF 11th column (default: '3000')
+  --rwx: -r -w -x set to the same value (default: '3000')
   -i, --inum: previous output number of organelle-genome assembly (default: '0')
   -j, --jnum: current output number of organelle-genome assembly (default: '1')
   -g, --genomesize: expected genome size (no default)
@@ -544,6 +547,20 @@ parse_commandline() {
 		-w*)
 			_arg_single_min="${_key##-w}"
 			;;
+		--rwx)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_rwx="$2"
+			_arg_pair_min="$2"
+			_arg_single_min="$2"
+			_arg_bridge_min="$2"
+			shift
+			;;
+		--rwx=*)
+			_arg_single_min="${_key##--rwx=}"
+			_arg_pair_min="${_key##--pair-min=}"
+			_arg_single_min="${_key##--single-min=}"
+			_arg_bridge_min="${_key##--bridge-min=}"
+			;;
 		-i | --inum)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_inum="$2"
@@ -665,6 +682,10 @@ parse_commandline() {
 		--no-all-annotate | --all-annotate)
 			_arg_all_annotate="on"
 			test "${1:0:5}" = "--no-" && _arg_all_annotate="off"
+			;;
+		--no-log-stderr | --log-stderr)
+			_arg_log_stderr="on"
+			test "${1:0:5}" = "--no-" && _arg_log_stderr="off"
 			;;
 		--no-use-edges | --use-edges)
 			_arg_use_edges="on"

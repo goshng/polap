@@ -98,6 +98,7 @@ x0 <- read_delim(args1$table, delim = " ", show_col_types = FALSE)
 # gene density cutoff: 1 in 100 kb
 x1 <- x0
 if (args1$mitochondrial == TRUE) {
+  # for mitochondria
   # filter by the depth range
   if (depth.range[1] > 0) {
     x1 <- x1 |> filter(depth.range[1] <= V3, V3 <= depth.range[2])
@@ -129,15 +130,61 @@ if (args1$mitochondrial == TRUE) {
       mutate(RT = as.integer(Length / MT)) |>
       filter(RT < rt1)
   }
+  # output: .annotated.txt
+  if (nrow(x1) > 0) {
+    x1 |>
+      arrange(desc(MT > PT), desc(MT)) |>
+      write_tsv(args1$out, col_names = FALSE)
+  } else {
+    tibble() |> write_tsv(args1$out)
+  }
+  
 } else {
-  stop("not implemented for plastid")
+  # for plastid
+  # filter by the depth range
+  if (depth.range[1] > 0) {
+    x1 <- x1 |> filter(depth.range[1] <= V3, V3 <= depth.range[2])
+  }
+  
+  # for plastid
+  # filter by the minimum copy number
+  if (args1$`copy-number` > 0) {
+    x1 <- x1 |> filter(Copy >= args1$`copy-number`)
+  }
+  
+  # for plastid
+  # filter by the minimum PT gene count
+  if (args1$`gene-count` > 0) {
+    x1 <- x1 |> filter(PT >= args1$`gene-count`)
+  }
+  
+  # depth range by mixture model
+  # no code
+  
+  # for plastid
+  # filter by the MT/PT gene comparison among genes with PT > 0
+  if (args1$`compare-mt-pt` == TRUE) {
+    x1 <- x1 |> filter(PT > MT, PT > 0)
+  }
+  
+  # for plastid
+  # filter by gene density: 1 MT gene per 100 kb
+  if (args1$`gene-density` > 0) {
+    # for plastid
+    rt1 <- 1e+5 / args1$`gene-density`
+    x1 <- x1 |>
+      filter(PT > 0) |>
+      mutate(RT = as.integer(Length / PT)) |>
+      filter(RT < rt1)
+  }
+  # for plastid
+  # output: .annotated.txt
+  if (nrow(x1) > 0) {
+    x1 |>
+      arrange(desc(PT > MT), desc(PT)) |>
+      write_tsv(args1$out, col_names = FALSE)
+  } else {
+    tibble() |> write_tsv(args1$out)
+  }
 }
 
-# output: .annotated.txt
-if (nrow(x1) > 0) {
-  x1 |>
-    arrange(desc(MT > PT), desc(MT)) |>
-    write_tsv(args1$out, col_names = FALSE)
-} else {
-  tibble() |> write_tsv(args1$out)
-}

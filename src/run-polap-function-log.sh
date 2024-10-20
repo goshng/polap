@@ -219,8 +219,7 @@ function _polap_log2_cmd() {
 }
 
 function _polap_log3_cmd() {
-	verbose_echo 3 "$@"
-	verbose_echo 4 "$@" >&3
+	_polap_log3 "$@"
 	"$@"
 }
 

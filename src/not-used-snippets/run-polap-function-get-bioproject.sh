@@ -28,7 +28,7 @@ source "$script_dir/polap-constants.sh"
 ################################################################################
 # Get BioProject information using BioProject accession.
 ################################################################################
-function _run_polap_get-bioproject() {
+function _run_polap_get-bioproject() { # get BioProject info from NCBI
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"

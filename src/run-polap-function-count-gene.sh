@@ -38,7 +38,7 @@ declare "$_POLAP_INCLUDE_=1"
 #   ${_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt
 #   ${_polap_var_ga}/contig-annotation-table.txt
 ################################################################################
-function _run_polap_count-gene() {
+function _run_polap_count-gene-contig() { # v0.2.6: count MT and PT genes
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -123,17 +123,14 @@ HEREDOC
 	fi
 
 	ANUMNEXT=$((INUM + 1))
-	echoerr NEXT: $(basename "$0") select-reads -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
-	echoerr NEXT: $(basename "$0") assemble2 -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
+	_polap_log1 NEXT: $(basename "$0") select-reads -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
+	_polap_log1 NEXT: $(basename "$0") assemble2 -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
 
 	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
 
-function _run_polap_cg() {
-	_run_polap_count-gene
-}
 ################################################################################
 # Counts genes annotated on a genome assembly.
 #
@@ -150,7 +147,7 @@ function _run_polap_cg() {
 #   ${_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt
 #   ${_polap_var_ga}/contig-annotation-table.txt
 ################################################################################
-function _run_polap_count-gene-edge() {
+function _run_polap_count-gene() { # count MT and PT genes using edges_stats.txt
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -241,14 +238,14 @@ HEREDOC
 	fi
 
 	ANUMNEXT=$((INUM + 1))
-	echoerr NEXT: $(basename "$0") select-reads -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
-	echoerr NEXT: $(basename "$0") assemble2 -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
+	_polap_log1 NEXT: $(basename "$0") select-reads -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
+	_polap_log1 NEXT: $(basename "$0") assemble2 -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
 
 	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
 
-function _run_polap_cg() {
+function _run_polap_cg() { # shortcut for menu count-gene
 	_run_polap_count-gene
 }

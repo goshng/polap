@@ -38,7 +38,7 @@ source "$script_dir/polap-function-set-variables.sh"
 ################################################################################
 # Statisics of the short-read and POLAP's long-read (nk.fq.gz) dataset.
 ################################################################################
-function _run_polap_summary-reads() {
+function _run_polap_summary-reads() { # statisics of the read dataset
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -158,6 +158,7 @@ HEREDOC
 
 ################################################################################
 # Computes the total number of nucleotides of long-read data.
+#
 # Arguments:
 #   -l $LR: a long-read fastq data file
 # Inputs:
@@ -166,7 +167,7 @@ HEREDOC
 # Outputs:
 #   $ODIR/long_total_length.txt
 ################################################################################
-function _run_polap_total-length-long() {
+function _run_polap_total-length-long() { # total size (bp) of long-read data
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -272,7 +273,7 @@ HEREDOC
 #   $ODIR/jellyfish_out.histo
 #   $ODIR/short_expected_genome_size.txt
 ################################################################################
-function _run_polap_find-genome-size() {
+function _run_polap_find-genome-size() { # estimate the whole genome size
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -411,6 +412,7 @@ HEREDOC
 
 ################################################################################
 # Checks if the long-read coverage is less than $COV.
+#
 # If so, keep the long read data.
 # If not, sample long reads upto that coverage.
 # Deletes long reads shorter than a sequence length threshold e.g., 3 kb.
@@ -426,7 +428,7 @@ HEREDOC
 # Outputs:
 #   $LRNK
 ################################################################################
-function _run_polap_reduce-data() {
+function _run_polap_reduce-data() { # reduce the long-read data, if too big
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -468,7 +470,7 @@ function _run_polap_reduce-data() {
 #   ${LR}
 # Outputs:
 #   ${_polap_var_base_nk_fq_gz}
-Example: $(basename "$0") ${_arg_menu[0]} [-l|--long-reads <arg>] [-m|--min-read-length <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} -l <arg> -m <arg>
 Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR} --bioproject use
 HEREDOC
 	)
@@ -541,6 +543,7 @@ HEREDOC
 				_polap_log1 "  sampling long-read data by $RATE ..."
 				_polap_log1 "    $RATE <= target long-read genome coverage[$COV]/expected long-read genome coverage[$EXPECTED_LONG_COVERAGE] ..."
 				local seed=${_arg_seed:-$RANDOM}
+				_polap_log0 "  random seed for reducing the whole-genome assembly long-read data: ${seed}"
 				# _polap_log3 "seqkit sample -p ${RATE} ${LR} -o ${nfq_file}"
 				# seqkit sample -p "${RATE}" "${LR}" -o "${nfq_file}" >${_polap_output_dest} 2>&1
 				_polap_log3_cmd "seqkit sample -p ${RATE} -s ${seed} ${LR} -o ${nfq_file} 2>${_polap_output_dest}"
@@ -587,6 +590,7 @@ HEREDOC
 
 ################################################################################
 # Executes Flye for a whole-genome assembly upto the contigger stage
+#
 # Arguments:
 #   -t $NT: the number of CPU cores
 #   -c $COV: the Flye's coverage option
@@ -600,7 +604,7 @@ HEREDOC
 #   $FDIR/30-contigger/graph_final.fasta
 #   $FDIR/30-contigger/graph_final.gfa
 ################################################################################
-function _run_polap_flye1() {
+function _run_polap_flye1() { # execute Flye for a whole-genome assembly
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"

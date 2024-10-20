@@ -29,7 +29,7 @@ source "$script_dir/run-polap-function-count-gene.sh"
 ################################################################################
 #
 ################################################################################
-function _run_polap_edges-stats() {
+function _run_polap_edges-stats() { # Creates an edge version of contigs_stats.txt
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -103,9 +103,9 @@ HEREDOC
 }
 
 ################################################################################
-#
+# creates a depth distribution
 ################################################################################
-function _run_polap_depth-distribution() {
+function _run_polap_depth-distribution() { # creates a depth distribution
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -120,9 +120,11 @@ function _run_polap_depth-distribution() {
 	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
-# Draw distributions of annotation tables.
+# Draw depth distributions of an annotation table.
 #
-# Distribution by the cutoff of MT gene groups Copy average - 3 x SD
+# FIXME: Distribution by the cutoff of MT gene groups Copy average - 3 x SD
+# FIXME: depth or copy? 
+# FIXME: what is it for? The purpose or intended use of this function?
 #
 # Arguments:
 #   -i $INUM: source Flye (usually whole-genome) assembly number
@@ -146,7 +148,7 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	Rscript "$script_dir"/run-polap-depth-distribution.R \
+	Rscript "$script_dir"/run-polap-r-depth-distribution.R \
 		-t "${_polap_var_annotation_table}" \
 		-o "${_polap_var_annotation_table}".pdf \
 		2>"$_polap_output_dest"
@@ -158,10 +160,8 @@ HEREDOC
 
 ################################################################################
 # Annotates the genome assembly.
-# Defaults:
-# Outputs:
 ################################################################################
-function _run_polap_annotate() {
+function _run_polap_annotate-contig() { # annotate v0.2.6 for contigs_stats.txt
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -219,8 +219,8 @@ HEREDOC
 	if [ -s "${_polap_var_ga_annotation_all}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log0 "  found: ${_polap_var_ga_annotation_all}, so skipping the annotation ..."
 	else
-		_run_polap_blast-genome
-		_run_polap_count-gene
+		_run_polap_blast-genome-contig
+		_run_polap_count-gene-contig
 	fi
 
 	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -230,10 +230,8 @@ HEREDOC
 
 ################################################################################
 # Annotates edge sequences of a flye genome assembly.
-# Defaults:
-# Outputs:
 ################################################################################
-function _run_polap_annotate-edge() {
+function _run_polap_annotate() { # annotate edge sequences in edges_stats.txt
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -291,11 +289,11 @@ HEREDOC
 	elif [ -s "${_polap_var_ga_annotation_all}" ] && [ "${_arg_redo}" = "on" ]; then
 		_polap_log0 "  found: ${_polap_var_ga_annotation_all}, with --redo option, so backup the annotation ..."
 		_polap_log3_cmd cp -p ${_polap_var_ga_annotation_all} ${_polap_var_ga_annotation_all_backup}
-		_run_polap_blast-genome-edge
-		_run_polap_count-gene-edge
+		_run_polap_blast-genome
+		_run_polap_count-gene
 	else
-		_run_polap_blast-genome-edge
-		_run_polap_count-gene-edge
+		_run_polap_blast-genome
+		_run_polap_count-gene
 	fi
 
 	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -303,10 +301,10 @@ HEREDOC
 	[ "$DEBUG" -eq 1 ] && set +x
 }
 
-function _run_polap_a() {
-	_run_polap_annotate-edge
+function _run_polap_a() { # shortcut for annotate
+	_run_polap_annotate
 }
 
-function _run_polap_dd() {
+function _run_polap_dd() { # shortcut for depth-distribution
 	_run_polap_depth-distribution
 }

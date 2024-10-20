@@ -47,7 +47,6 @@ source "$script_dir/polap-constants.sh"
 source "$script_dir/run-polap-function-utilities.sh"
 source "$script_dir/run-polap-function-log.sh"
 source "$script_dir/run-polap-function-menus.sh"
-source "$script_dir/run-polap-function-reset.sh"
 source "$script_dir/polap-function-set-variables.sh"
 source "$script_dir/run-polap-function-wga.sh"
 
@@ -63,31 +62,19 @@ source "$script_dir/run-polap-function-polishing.sh"
 # Template
 source "$script_dir/run-polap-function-template.sh"
 
-# NCBI: BioProject, NCBI
-source "$script_dir/run-polap-function-get-bioproject.sh"
-source "$script_dir/run-polap-function-get-mtdna.sh"
-source "$script_dir/run-polap-function-compare-mtdna.sh" # FIXME: not tested yet.
-
-# BioProject
-source "$script_dir/run-polap-function-assemble-bioproject.sh"
-source "$script_dir/run-polap-function-get-bioproject-sra.sh"
-source "$script_dir/run-polap-function-copy-sra-bioproject.sh"
+# NCBI: BioProject
+source "$script_dir/run-polap-function-bioproject.sh"
 
 # contig selection
 source "$script_dir/run-polap-function-select-contigs.sh"
-source "$script_dir/run-polap-function-assemble-draft.sh"
 
 # mtDNA or ptDNA selection
-source "$script_dir/run-polap-function-select-mtdna.sh"
-
 # mtDNA annotation and plotting
-source "$script_dir/run-polap-function-blast-mtdna.sh"
-source "$script_dir/run-polap-function-plot-mtdna.sh"
+# NCBI: mtDNA
+source "$script_dir/run-polap-function-mtdna.sh"
 
 # report, archive, and cleanup
-source "$script_dir/run-polap-function-report-assembly.sh"
 source "$script_dir/run-polap-function-archive.sh"
-source "$script_dir/run-polap-function-cleanup.sh"
 
 # assemble
 source "$script_dir/run-polap-function-assemble.sh"

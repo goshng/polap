@@ -44,7 +44,7 @@ declare "$_POLAP_INCLUDE_=1"
 #   $MTSEEDSDIR/1.fq.gz
 #   $MTSEEDSDIR/2.fq.gz
 ################################################################################
-function _run_polap_select-reads() {
+function _run_polap_select-reads() { # selects reads mapped on a genome assembly
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -213,12 +213,13 @@ HEREDOC
 			_polap_log0 "LOG: No reduction of the long-read data because $EXPECTED_ORGANELLE_COVERAGE < $COV"
 			ln -s "$(realpath "$MTSEEDSDIR"/1.fq.gz)" "$MTSEEDSDIR"/2.fq.gz
 		else
-			_polap_log0 "SUGGESTION: you might want to increase the minimum read lengths because you have enough long-read data."
+			_polap_log0 "SUGGESTION: you might want to increase the minimum read lengths (use --rwx or -m)because you have enough long-read data."
 			RATE=$(echo "scale=10; $COV/$EXPECTED_ORGANELLE_COVERAGE" | bc)
 			_polap_log0 "LOG: long-read data reduction by rate of $RATE <= COV[$COV] / long-read organelle coverage[$EXPECTED_ORGANELLE_COVERAGE]"
 			_polap_log1 "sampling long-read data by $RATE ... wait ..."
 			# seqkit sample -p "$RATE" "$MTSEEDSDIR/1.fq.gz" -o "$MTSEEDSDIR/2.fq.gz" >/dev/null 2>&1
 			local seed=${_arg_seed:-$RANDOM}
+			_polap_log0 "  random seed for reducing the organelle-genome assembly long-read data: ${seed}"
 			_polap_log3_pipe "seqkit sample \
         -p ${RATE} \
         -s ${seed} \
@@ -261,6 +262,7 @@ HEREDOC
 
 ################################################################################
 # Executes Flye for an organelle-genome assembly
+#
 # Arguments:
 #   -j $JNUM: destination Flye organelle assembly number
 #   -t $NT: the number of CPU cores
@@ -276,10 +278,14 @@ HEREDOC
 #   $MTDIR/30-contigger/graph_final.fasta
 #   $MTDIR/30-contigger/graph_final.gfa
 ################################################################################
-function _run_polap_flye2() {
+function _run_polap_flye2() { # executes Flye for an organelle-genome assembly
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	echo "INFO: organelle-genome assembly on $JNUM"
 
@@ -307,10 +313,8 @@ Example: $(basename $0) ${_arg_menu[0]} [-j|--jnum <arg>] [-t|--threads <arg>] [
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
-		exit $EXIT_SUCCESS
-	fi
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
 
 	if [ ! -s "$MTDIR/contig.fa" ]; then
 		echoall "ERROR: no selected-contig file [$MTDIR/contig.fa]"
@@ -326,25 +330,25 @@ HEREDOC
 
 	CONTIG_LENGTH=$(seqkit stats -Ta "$MTDIR"/contig.fa | csvtk cut -t -f "sum_len" | csvtk del-header)
 	echo "$CONTIG_LENGTH" >"$MTDIR"/contig_total_length.txt
-	echo "INFO: organelle genome size based on contig selection: $CONTIG_LENGTH"
+	_polap_log1 "INFO: organelle genome size based on contig selection: $CONTIG_LENGTH"
 
-	echo "INFO: executing the organelle-genome assembly using flye ... be patient!"
-	echoerr "please, wait for an organelle-genome assembly on $JNUM ..."
-	flye --nano-raw "$MTSEEDSDIR"/2.fq.gz \
-		--out-dir "$MTDIR" \
-		--threads "$NT" \
-		--asm-coverage "$COV" \
-		--genome-size "$CONTIG_LENGTH" \
+	_polap_log1 "INFO: executing the organelle-genome assembly using flye ... be patient!"
+	_polap_log0 "please, wait for an organelle-genome assembly on $JNUM ..."
+	_polap_log3_pipe "flye --nano-raw $MTSEEDSDIR/2.fq.gz \
+		--out-dir $MTDIR \
+		--threads $NT \
+		--asm-coverage $COV \
+		--genome-size $CONTIG_LENGTH \
 		--stop-after contigger \
-		>/dev/null 2>&1
-	echoall "CHECK: assembly graph "$PWD/$MTDIR"/30-contigger/graph_final.gfa"
+		2>$_polap_output_dest"
+	_polap_log0 "CHECK: assembly graph "$PWD/$MTDIR"/30-contigger/graph_final.gfa"
 	# echo "column -t $ODIR/assembly_info_organelle_annotation_count.txt"
 
 	jnum_next=$((JNUM + 1))
-	echoall Create and edit $ODIR/$JNUM/mt.contig.name-${jnum_next}
-	echoall NEXT: "$(basename "$0")" assemble2 -o "$ODIR" -j ${jnum_next}
-	echoall or you could finish with Flye organelle-genome assembly with its polishing stage.
-	echoall NEXT: "$(basename "$0")" flye-polishing -o "$ODIR" -j "$JNUM"
+	_polap_log1 Create and edit $ODIR/$JNUM/mt.contig.name-${jnum_next}
+	_polap_log1 NEXT: "$(basename "$0")" assemble2 -o "$ODIR" -i ${JNUM} -j ${jnum_next}
+	_polap_log1 or you could finish with Flye organelle-genome assembly with its polishing stage.
+	_polap_log1 NEXT: "$(basename "$0")" flye-polishing -o "$ODIR" -j "$JNUM"
 
 	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -352,7 +356,8 @@ HEREDOC
 }
 
 ################################################################################
-# Finishes the Flye organelle-genome assembly.
+# Finishes a Flye organelle-genome assembly upto flye-polishing step
+#
 # Polishes an organelle-genome assembly using long-reads.
 # Note: use the same options as flye2 menu.
 # Arguments:
@@ -367,10 +372,14 @@ HEREDOC
 # Outputs:
 #   $MTDIR/assembly_graph.gfa
 ################################################################################
-function _run_polap_flye-polishing() {
+function _run_polap_flye-polishing() { # finish a Flye organelle-genome assembly upto flye-polishing step
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	echo "INFO: polishing organelle-genome assembly on $JNUM"
 
@@ -397,10 +406,8 @@ Example: $(basename "$0") ${_arg_menu[0]} [-j|--jnum <arg>] [-t|--threads <arg>]
 HEREDOC
 	)
 
-	if [[ ${_arg_menu[1]} == "help" ]]; then
-		echoerr "${help_message}"
-		exit $EXIT_SUCCESS
-	fi
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
 
 	if [ ! -s "$MTDIR/contig.fa" ]; then
 		echoall "ERROR: no selected-contig file [$MTDIR/contig.fa]"
@@ -415,22 +422,131 @@ HEREDOC
 	fi
 
 	CONTIG_LENGTH=$(seqkit stats -Ta "$MTDIR"/contig.fa | csvtk cut -t -f "sum_len" | csvtk del-header)
-	echo "INFO: organelle genome size based on contig selection: $CONTIG_LENGTH"
+	_polap_log1 "INFO: organelle genome size based on contig selection: $CONTIG_LENGTH"
 
-	echo "INFO: polishing the organelle-genome assembly using flye ... be patient!"
-	echoerr "please, wait for Flye long-read polishing of the organelle-genome assembly on $JNUM ..."
-	flye --nano-raw "$MTSEEDSDIR"/2.fq.gz \
-		--out-dir "$MTDIR" \
-		--threads "$NT" \
-		--asm-coverage "$COV" \
-		--genome-size "$CONTIG_LENGTH" \
+	_polap_log1 "INFO: polishing the organelle-genome assembly using flye ... be patient!"
+	_polap_log0 "please, wait for Flye long-read polishing of the organelle-genome assembly on $JNUM ..."
+	_polap_log3_pipe "flye --nano-raw $MTSEEDSDIR/2.fq.gz \
+		--out-dir $MTDIR \
+		--threads $NT \
+		--asm-coverage $COV \
+		--genome-size $CONTIG_LENGTH \
 		--resume \
-		>/dev/null 2>&1
-	echoall "CHECK: the long-read polished assembly graph $PWD/$MTDIR/assembly_graph.gfa"
-	echoerr "DO: extract a draft organelle genome sequence (mt.0.fasta) from the polished assembly graph"
+		2>$_polap_output_dest"
+	_polap_log0 "CHECK: the long-read polished assembly graph $PWD/$MTDIR/assembly_graph.gfa"
+	_polap_log0 "DO: extract a draft organelle genome sequence (mt.0.fasta) from the polished assembly graph"
 	# echo "column -t $ODIR/assembly_info_organelle_annotation_count.txt"
 	# echoall NEXT: $(basename $0) check-coverage [-p $PA]
-	echoall NEXT: "$(basename "$0")" prepare-polishing -a "$SR1" -b "$SR2"
+	_polap_log1 NEXT: "$(basename "$0")" prepare-polishing -a "$SR1" -b "$SR2"
+
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+}
+
+################################################################################
+# Reports the organelle-genome assembly results.
+################################################################################
+function _run_polap_report-assembly() { # report an organelle-genome assembly result
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Help message
+	local help_message=$(
+		cat <<HEREDOC
+# Reports the organelle-genome assembly results.
+#
+# Arguments:
+#   -o ${ODIR}: output folder for BioProject
+# Inputs:
+#   ${ODIR}: output folder for BioProject
+# Outputs:
+Example: $(basename $0) ${_arg_menu[0]} [-o ${ODIR}]
+Example: report-assembly -o PRJDB10540a 2>&1 | tr '\n' '\t' | sed 's/\t$/\n/'
+HEREDOC
+	)
+
+	LRNK="${ODIR}/nk.fq.gz"
+
+	# Set variables for file paths
+	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_log0 "${help_message}" && exit $EXIT_SUCCESS
+
+	_polap_log1_log "reporting the organelle-genome assembly at ${ODIR} ..."
+
+	if [ -d "${ODIR}" ]; then
+		_polap_log2_file "the main output folder: ${ODIR}"
+	else
+		_polap_log2 "ERROR: no such output folder; use -o option"
+		exit $EXIT_SUCCESS
+	fi
+
+	_polap_log0 $(cut -f1 "${_polap_var_bioproject_txt}")
+	_polap_log0 $(cut -f1 "${_polap_var_bioproject_sra_long_read}")
+	_polap_log0 $(cut -f1 "${_polap_var_bioproject_sra_short_read}")
+	_polap_log0 $(cut -f1 "${_polap_var_bioproject_species}")
+	_polap_log0 $(cut -f1 "${_polap_var_bioproject_mtdna_fasta2_accession}")
+
+	# wc -l "${ODIR}/0/mt.contig.name-"? | awk '$2 != "total" {print $1}' | head -5 >&2
+
+	# for i in "${_arg_select_contig_numbers[@]}"; do
+	# 	# Call the function corresponding to the current number (index is i-1)
+	# 	INUM="${i}"
+	# 	source "$script_dir/polap-variables-oga.sh" # '.' means 'source'
+	# 	_polap_log0 $(cat "${ODIR}/0/mt.contig.name-${i}" | wc -l)
+	# 	_polap_log0_cat "${_polap_var_mtdna_compare}"
+	# done
+
+	# Array to store the names of the original files
+	files=($(ls "${ODIR}/0/mt.contig.name-"?))
+
+	# Temporary array to store the paths of unique files
+	unique_files=()
+
+	# Function to check if a file is unique
+	is_unique() {
+		for unique_file in "${unique_files[@]}"; do
+			if cmp -s "$1" "$unique_file"; then
+				echo "$unique_file"
+				return 1 # Not unique
+			fi
+		done
+		return 0 # Unique
+	}
+
+	_polap_log1 "Checking for unique files and their matches:"
+
+	# Iterate over the files to find unique ones
+	for i in "${_arg_select_contig_numbers[@]}"; do
+		# Call the function corresponding to the current number (index is i-1)
+		FDIR="${ODIR}/0"
+		JNUM="${i}"
+		file="$FDIR"/mt.contig.name-$JNUM
+
+		unique_file=$(is_unique "$file")
+		if [ $? -eq 0 ]; then
+			# If unique, add it to the unique_files array
+			unique_files+=("$file")
+			echo "$file is unique."
+
+			MTCONTIGNAME="$file"
+			INUM="${i}"
+		else
+			_polap_log1 "$file is the same as $unique_file."
+			INUM="${unique_file##*-}"
+		fi
+		source "$script_dir/polap-variables-oga.sh" # '.' means 'source'
+		_polap_log0 $(cat "${ODIR}/0/mt.contig.name-${i}" | wc -l)
+		_polap_log0_cat "${_polap_var_mtdna_compare}"
+	done
 
 	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

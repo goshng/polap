@@ -38,7 +38,7 @@ declare "$_POLAP_INCLUDE_=1"
 #   $LRNK
 #   $FDIR
 ################################################################################
-function _run_polap_assemble1() {
+function _run_polap_assemble1() { # whole-genome genome assembly
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -76,18 +76,20 @@ ta file
 #   $FDIR/30-contigger/contigs_stats.txt
 #   $FDIR/30-contigger/graph_final.fasta
 #   $FDIR/30-contigger/graph_final.gfa
-Example: $(basename $0) ${_arg_menu[0]} [-o|--outdir <arg>] [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]
+Example: $(basename $0) ${_arg_menu[0]} [-o <arg>] [-l <arg>] [-a <arg>] [-b <arg>]
 HEREDOC
 	)
 
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
-
 		if [[ -s "${_polap_var_wga_contigger_gfa}" ]]; then
 			_polap_log0_file "${_polap_var_wga_contigger_gfa}"
+		else
+			_polap_log0 "No such file: ${_polap_var_wga_contigger_gfa}"
 		fi
 		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
@@ -101,25 +103,46 @@ HEREDOC
 
 	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
 
-	if [ -s "${_polap_var_base_fq_stats}" ]; then
+	_polap_log0 "starting the whole-genome assembly on ${ODIR} ..."
+
+	if [[ -d "${_polap_var_wga}" ]]; then
+		if [[ "${_arg_redo}" = "on" ]]; then
+			_polap_log3_cmd rm -rf "${_polap_var_wga}"
+			_polap_log3_cmd mkdir -p "${_polap_var_wga}"
+		else
+			if confirm "Do you want to do the whole-genome assembly, which will delete ${_polap_var_wga}?"; then
+				_polap_log0 "  deleting and creating ${_polap_var_wga} ..."
+				_polap_log3_cmd rm -rf "${_polap_var_wga}"
+				_polap_log3_cmd mkdir -p "${_polap_var_wga}"
+			else
+				_polap_log0 "You have cancelled the whole-genome assembly."
+				return
+			fi
+		fi
+	else
+		_polap_log0 "  creating ${_polap_var_wga} ..."
+		_polap_log3_cmd mkdir -p "${_polap_var_wga}"
+	fi
+
+	if [ -s "${_polap_var_base_fq_stats}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping summary-reads ..."
 	else
 		_run_polap_summary-reads
 	fi
 
-	if [ -s "${_polap_var_base_long_total_length}" ]; then
+	if [ -s "${_polap_var_base_long_total_length}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping total-length-long ..."
 	else
 		_run_polap_total-length-long
 	fi
 
-	if [ -s "${_polap_var_base_genome_size}" ]; then
+	if [ -s "${_polap_var_base_genome_size}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping find-genome-size ..."
 	else
 		_run_polap_find-genome-size
 	fi
 
-	if [ -s "${_polap_var_base_nk_fq_gz}" ]; then
+	if [ -s "${_polap_var_base_nk_fq_gz}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping reduce-data ..."
 	else
 		_run_polap_reduce-data
@@ -171,8 +194,14 @@ function ncbi_command_parse() {
 # Inputs:
 # Outputs:
 ################################################################################
-function _run_polap_assemble2() {
+function _run_polap_assemble2() { # organelle-genome assembly
+	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	LRNK="$ODIR/nk.fq.gz"
 	MR=$_arg_min_read_length
@@ -191,6 +220,7 @@ function _run_polap_assemble2() {
 	help_message=$(
 		cat <<HEREDOC
 # Selects reads mapped on a genome assembly and assembles an organelle genome.
+#
 # Arguments:
 #   -i $INUM: source Flye (usually whole-genome) assembly number
 #   -j $JNUM: destination Flye organelle assembly number
@@ -223,7 +253,7 @@ HEREDOC
 	check_file_existence "${assembly_graph_final_fasta}"
 	check_file_existence "${LRNK}"
 
-	echoerr "NEXT: $(basename $0) select-reads -o $ODIR -i $INUM -j $JNUM"
+	_polap_log1 "NEXT: $(basename $0) select-reads -o $ODIR -i $INUM -j $JNUM"
 	_run_polap_select-reads
 	_run_polap_flye2
 
@@ -248,7 +278,7 @@ HEREDOC
 # Outputs:
 #   $MTDIR/assembly_graph.gfa
 ################################################################################
-function _run_polap_assemble() {
+function _run_polap_assemble() { # whole-genome and then organelle-genome assembly
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 
@@ -280,8 +310,12 @@ HEREDOC
 
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Not delete the output directory.
+	if [[ "${_arg_redo}" = "on" ]]; then
+		_polap_log3_cmd rm -rf "${ODIR}"
+	fi
 	mkdir -p "$ODIR"
 
 	# Run assembly, annotation, and contig selection steps
@@ -295,32 +329,25 @@ HEREDOC
 	if [ -s "${_polap_var_wga_annotation}" ]; then
 		_polap_log1 "  skipping the organelle annotation on the whole-genome"
 	else
+		_run_polap_edges-stats
 		_run_polap_annotate
 	fi
 
 	# Select seed contigs
-	_run_polap_select-contigs
+	if [[ "${_arg_test}" = "on" ]]; then
+		_arg_plastid="on"
+	fi
+	_arg_menu[1]="auto"
+	_run_polap_select-contigs-5-graph
 
-	# Loop over numbers from 1 to 5
-	for i in "${_arg_select_contig_numbers[@]}"; do
-		# Call the function corresponding to the current number (index is i-1)
-		INUM=0
-		FDIR="${ODIR}/${INUM}"
-		JNUM="${i}"
+	_run_polap_assemble2
 
-		MTCONTIGNAME="$FDIR"/mt.contig.name-$JNUM
-		# check the mt.contig.name-1
-		if [ -s "$MTCONTIGNAME" ]; then
-			# Run secondary assembly, polishing, and mtDNA selection steps
-			_polap_log1_file "${MTCONTIGNAME}"
-			_run_polap_assemble2
-			INUM="${i}" _run_polap_annotate
-			INUM="${i}" _run_polap_flye-polishing
-			INUM="${i}" _run_polap_select-mtdna
-		else
-			_polap_log1 "LOG: $MTCONTIGNAME is empty for select-contig type $i ..."
-		fi
-	done
+	return
+
+	INUM="${i}" _run_polap_edges-stats
+	INUM="${i}" _run_polap_annotate
+	INUM="${i}" _run_polap_flye-polishing
+	INUM="${i}" _run_polap_select-mtdna
 
 	if [ -s "${_polap_var_base_msbwt}" ]; then
 		_polap_log1 "  skipping the preparation of short-read polishing ..."

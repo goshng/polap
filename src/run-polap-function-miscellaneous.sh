@@ -219,7 +219,7 @@ HEREDOC
 	else
 		esearch -db nuccore -query "${_arg_accession}[ACCN]" </dev/null |
 			efetch -format fasta >"${_arg_accession}".fa
-		echoall "NEXT: $(basename "$0") align-two-dna-sequences --query mt.1.fa --subject ${_arg_accession}.fa"
+		_polap_log1 "NEXT: $(basename "$0") align-two-dna-sequences --query mt.1.fa --subject ${_arg_accession}.fa"
 	fi
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi

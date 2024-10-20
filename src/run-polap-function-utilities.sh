@@ -171,3 +171,35 @@ function check_folder_existence() {
 		exit $EXIT_ERROR
 	fi
 }
+
+# Function to check and display the size of an SRA accession in GB, MB, or KB
+function get_sra_size() {
+	# Check if the user provided an SRA accession
+	if [ -z "$1" ]; then
+		echo "Usage: get_sra_size <SRA_ACCESSION>"
+		return 1
+	fi
+
+	SRA_ACCESSION=$1
+
+	# Get the size in bytes using vdb-dump
+	size_in_bytes=$(vdb-dump $SRA_ACCESSION --info | grep size | awk -F':' '{print $2}' | tr -d ' ,' | xargs)
+
+	# Check if the size was retrieved
+	if [ -z "$size_in_bytes" ]; then
+		echo "Error: Could not retrieve size for $SRA_ACCESSION"
+		return 1
+	fi
+
+	# Convert size to human-readable format
+	if [ "$size_in_bytes" -ge 1073741824 ]; then
+		size_in_gb=$(echo "scale=2; $size_in_bytes / 1073741824" | bc)
+		echo "Size of $SRA_ACCESSION: $size_in_gb GB"
+	elif [ "$size_in_bytes" -ge 1048576 ]; then
+		size_in_mb=$(echo "scale=2; $size_in_bytes / 1048576" | bc)
+		echo "Size of $SRA_ACCESSION: $size_in_mb MB"
+	else
+		size_in_kb=$(echo "scale=2; $size_in_bytes / 1024" | bc)
+		echo "Size of $SRA_ACCESSION: $size_in_kb KB"
+	fi
+}

@@ -37,6 +37,12 @@ parser <- add_option(parser, c("-o", "--out"),
   action = "store",
   help = "Output contig seeds filename"
 )
+parser <- add_option(parser, c("-l", "--length"),
+                     type = "integer",
+                     default = -1,
+                     help = "Maximum length of seed contigs [default off]",
+                     metavar = "number"
+)
 args1 <- parse_args(parser)
 
 
@@ -48,7 +54,7 @@ if (is_null(args1$table)) {
   # input_dir0 <- file.path("/media/h2/goshng/figshare", s, o, "0")
   input_dir0 <- file.path(".")
   input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
-  input2 <- file.path(input_dir0, "mt.contig.name-2")
+  input2 <- file.path(input_dir0, "mt.contig.name-8")
   output1 <- file.path(input_dir0, "1-mtcontig.table.tsv")
   args1 <- parse_args(parser, args = c("--table", input1, "-m", input2, "-o", output1))
   
@@ -71,6 +77,11 @@ xall <- x0 |>
   mutate(edgename = paste0("edge_", Edge)) |>
   relocate(edgename) |>
   arrange(Copy)
+
+if (args1$length > 0) {
+  xall <- xall |>
+    filter(Length < args1$length)
+}
 
 # Not sure whether we need this:
 # Case: PRJNA838254-Prunus_padus

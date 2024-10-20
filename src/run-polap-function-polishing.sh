@@ -25,6 +25,7 @@ declare "$_POLAP_INCLUDE_=1"
 
 ################################################################################
 # Prepares the polishing using FMLRC.
+#
 # Arguments:
 #   -a s1.fq
 #   -b s2.fq
@@ -34,7 +35,7 @@ declare "$_POLAP_INCLUDE_=1"
 # Outputs:
 #   $$ODIR/msbwt
 ################################################################################
-function _run_polap_prepare-polishing() {
+function _run_polap_prepare-polishing() { # prepare the polishing using FMLRC
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -130,6 +131,7 @@ HEREDOC
 
 ################################################################################
 # Polishes using FMLRC.
+#
 # Arguments:
 #   -p mt.0.fasta
 #   -f mt.1.fa
@@ -139,7 +141,7 @@ HEREDOC
 # Outputs:
 #   $FA
 ################################################################################
-function _run_polap_polish() {
+function _run_polap_polish() { # polish organelle genome sequences using FMLRC
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"

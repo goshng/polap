@@ -42,7 +42,7 @@ declare "$_POLAP_INCLUDE_=1"
 #   $PTAABLAST.sorted.bed
 #   $ADIR/ptaa.bed
 ################################################################################
-function _run_polap_blast-genome() {
+function _run_polap_blast-genome-contig() { # v0.2.6: BLAST contig sequences on MT and PT genes
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -247,7 +247,7 @@ HEREDOC
 #   $PTAABLAST.sorted.bed
 #   $ADIR/ptaa.bed
 ################################################################################
-function _run_polap_blast-genome-edge() {
+function _run_polap_blast-genome() { # BLAST edge sequences on MT and PT genes
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"

@@ -26,7 +26,7 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 # Archive the ${ODIR} folder to ${_arg_archive}
 ################################################################################
-function _run_polap_archive() {
+function _run_polap_archive() { # archive a POLAP output folder for later use
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -54,7 +54,7 @@ function _run_polap_archive() {
 #
 # Arguments:
 #   -o ${ODIR}: the source output folder to archive
-#   -a ${_arg_archive}: the target output folder for the archive [default: $_arg_archive]
+#   -a ${_arg_archive}: the target output folder for the archive
 #
 # Inputs:
 #   ${ODIR}
@@ -62,7 +62,7 @@ function _run_polap_archive() {
 # Outputs:
 #   ${_arg_archive}
 #
-Example: $(basename $0) ${_arg_menu[0]} [-o|--outdir <folder>] [-a|--archive <folder>]
+Example: $(basename $0) ${_arg_menu[0]} -o <folder> --archive <folder>
 HEREDOC
 	)
 
@@ -201,6 +201,147 @@ HEREDOC
 		cp -p "${ODIR}/0/mt.contig.name-${b}" "${_arg_archive}/0/"
 	done
 
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+}
+
+################################################################################
+# Clean up the ${ODIR}.
+################################################################################
+function _run_polap_x-cleanup() { # cleanup an POLAP output folder
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Grouped file path declarations
+	local FDIR="$ODIR"/$INUM
+	local MTCONTIGNAME="$FDIR"/mt.contig.name-"$JNUM"
+	local _polap_var_mtcontigs="$FDIR"/"$JNUM"/mtcontigs
+	local _polap_var_assembly_graph_final_gfa="${FDIR}/30-contigger/graph_final.gfa"
+	local _polap_var_annotation_table="${FDIR}/assembly_info_organelle_annotation_count-all.txt"
+
+	local _polap_var_mtcontig_base="${_polap_var_mtcontigs}/1-mtcontig"
+	local _polap_var_mtcontig_stats="${_polap_var_mtcontigs}/1-mtcontig.stats.txt"
+	local _polap_var_mtcontig_annotated="${_polap_var_mtcontigs}/1-mtcontig.annotated.txt"
+
+	local _polap_var_mtcontigs_mt_stats="${_polap_var_mtcontigs}/1-mtcontig.mt.stats.txt"
+	local _polap_var_mtcontigs_pt_stats="${_polap_var_mtcontigs}/1-mtcontig.pt.stats.txt"
+
+	# Print help message if requested
+	help_message=$(
+		cat <<HEREDOC
+# Clean up the ${ODIR}.
+#
+# Arguments:
+#   -o $ODIR: the output directory
+#   -o $ODIR: the output directory
+#
+# Inputs:
+#   ${ODIR}
+#
+# Outputs:
+#
+Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>] [--select-contig <number>]
+Example: $(basename $0) ${_arg_menu[0]} -o PRJNA914763 -i 0 -j 5 --select-contig 5
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+
+	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+}
+
+source "$script_dir/run-polap-function-utilities.sh"
+source "$script_dir/run-polap-function-menus.sh"
+
+################################################################################
+# Initializes polap analysis in a starting folder,
+# creating an output folder.
+# Arguments:
+#   -o $ODIR
+# Inputs: nothing
+# Outputs:
+#   $ODIR
+################################################################################
+function _run_polap_reset() {
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	help_message=$(
+		cat <<HEREDOC
+# Initializes polap analysis in a starting folder by creating the output folder.
+#
+# Arguments:
+#   -o ${ODIR}: the output folder
+# Inputs: none
+# Outputs:
+#   ${ODIR}
+Example: $(basename "$0") ${_arg_menu[0]} [-o|--outdir ${ODIR}]
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+
+	if ! run_check1; then
+		error_polap_conda
+		exit $EXIT_ERROR
+	fi
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		if [[ -d "${ODIR}" ]]; then
+			ls "${ODIR}" >&2
+		else
+			_polap_log0 "No such output folder: ${ODIR}"
+		fi
+		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
+		exit $EXIT_SUCCESS
+	fi
+
+	if [ -d "$ODIR" -a "${_arg_yes}" = "off" ]; then
+		while true; do
+			read -p "Folder [$ODIR] already exists. Do you want to delete it? [y/n] " yn
+			case $yn in
+			[Yy]*)
+				rm -rf "$ODIR"
+				break
+				;;
+			[Nn]*)
+				exit $EXIT_FAIL
+				;;
+			*) _polap_log0 "Please answer yes or no." ;;
+			esac
+		done
+	else
+		rm -rf "$ODIR"
+	fi
+
+	mkdir -p "$ODIR"
+	_polap_log0 "creating output folder [$ODIR] ..."
+	_polap_log1 "  Your output folder [$ODIR] is created."
+	if [ "$ODIR" != "o" ]; then
+		_polap_log1 "  Use -o $ODIR option in all subsequent analysis"
+		_polap_log1 "  because your output folder is not the default of 'o'."
+	fi
+	_run_polap_make-menus
+
+	_polap_log1 NEXT: $(basename "$0") total-length-long -o "$ODIR" -l ${_arg_long_reads}
 	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x

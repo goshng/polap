@@ -1,4 +1,4 @@
-function _run_polap_select-contigs() {
+function _run_polap_x-select-contigs() {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"

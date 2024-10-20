@@ -14,6 +14,8 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+source "$script_dir/polap-variables-common.sh"
+
 # include and execute other BASH and R scripts
 WDIR="$(dirname "$0")"
 WDIR="${BASH_SOURCE%/*}"

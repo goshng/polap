@@ -25,38 +25,46 @@ suppressPackageStartupMessages(library("ggplot2"))
 
 parser <- OptionParser()
 
+parser <- add_option(parser, c("-m", "--mitochondrial"),
+  action = "store_true",
+  default = TRUE, help = "Mitochondrial genome assembly"
+)
+parser <- add_option(parser, c("-p", "--plastid"),
+  action = "store_false",
+  dest = "mitochondrial", help = "Plastid genome assembly"
+)
 parser <- add_option(parser, c("--flyeout-edges-stats"),
-                     action = "store",
-                     help = "Input1 30-contigger/edges_stats.txt"
+  action = "store",
+  help = "Input1 30-contigger/edges_stats.txt"
 )
 parser <- add_option(parser, c("--mt-gene-count"),
-                     action = "store",
-                     help = "Input2 50-annotation/mt.gene.count"
+  action = "store",
+  help = "Input2 50-annotation/mt.gene.count"
 )
 parser <- add_option(parser, c("--pt-gene-count"),
-                     action = "store",
-                     help = "Input3 50-annotation/pt.gene.count"
+  action = "store",
+  help = "Input3 50-annotation/pt.gene.count"
 )
 parser <- add_option(parser, c("--out-annotation"),
-                     action = "store",
-                     help = "Output1 assembly_info_organelle_annotation_count.txt"
+  action = "store",
+  help = "Output1 assembly_info_organelle_annotation_count.txt"
 )
 parser <- add_option(parser, c("--out-annotation-all"),
-                     action = "store",
-                     help = "Output2 assembly_info_organelle_annotation_count-all.txt"
+  action = "store",
+  help = "Output2 assembly_info_organelle_annotation_count-all.txt"
 )
 parser <- add_option(parser, c("--out-annotation-table"),
-                     action = "store",
-                     help = "Output3 contig-annotation-table.txt"
+  action = "store",
+  help = "Output3 contig-annotation-table.txt"
 )
 parser <- add_option(parser, c("--out-annotation-depth-table"),
-                     action = "store",
-                     help = "Output4 contig-annotation-depth-table.txt"
+  action = "store",
+  help = "Output4 contig-annotation-depth-table.txt"
 )
 parser <- add_option(parser, c("-c", "--contigger"),
-                     action = "store_true",
-                     default = FALSE,
-                     help = "Use 30-contigger flye output"
+  action = "store_true",
+  default = FALSE,
+  help = "Use 30-contigger flye output"
 )
 args1 <- parse_args(parser)
 
@@ -76,15 +84,17 @@ if (is_null(args1$`flyeout-edges-stats`)) {
   output2 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
   output3 <- file.path(input_dir0, "contig-annotation-table.txt")
   output4 <- file.path(input_dir0, "contig-annotation-depth-table.txt")
-  
-  args1 <- parse_args(parser, args = c("--flyeout-edges-stats", input1, 
-                                       "--mt-gene-count", input2, 
-                                       "--pt-gene-count", input3, 
-                                       "--out-annotation", output1, 
-                                       "--out-annotation-all", output2, 
-                                       "--out-annotation-table", output3, 
-                                       "--out-annotation-depth-table", output4, 
-                                       "--contigger"))
+
+  args1 <- parse_args(parser, args = c(
+    "--flyeout-edges-stats", input1,
+    "--mt-gene-count", input2,
+    "--pt-gene-count", input3,
+    "--out-annotation", output1,
+    "--out-annotation-all", output2,
+    "--out-annotation-table", output3,
+    "--out-annotation-depth-table", output4,
+    "--contigger"
+  ))
 }
 
 # flye_dir <- args[1]
@@ -137,21 +147,39 @@ z %>%
   rename(Contig = V1, Length = V2, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
   write.table(args1$`out-annotation`, row.names = F, quote = F)
 
-z %>%
-  arrange(mt <= pt) %>%
-  relocate(V9, .after = last_col()) %>%
-  filter(mt > pt) %>%
-  select(V1, V2, V6, mt, pt, V9) %>%
-  rename(Contig = V1, Length = V2, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
-  write.table(args1$`out-annotation-table`, row.names = F, quote = F)
+if (args1$mitochondrial == TRUE) {
+  z %>%
+    arrange(mt <= pt) %>%
+    relocate(V9, .after = last_col()) %>%
+    filter(mt > pt) %>%
+    select(V1, V2, V6, mt, pt, V9) %>%
+    rename(Contig = V1, Length = V2, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
+    write.table(args1$`out-annotation-table`, row.names = F, quote = F)
 
-z %>%
-  arrange(mt <= pt) %>%
-  relocate(V9, .after = last_col()) %>%
-  filter(mt > pt) %>%
-  select(V1, V2, V3, V6, mt, pt, V9) %>%
-  rename(Contig = V1, Length = V2, Depth = V3, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
-  write.table(args1$`out-annotation-depth-table`, row.names = F, quote = F)
+  z %>%
+    arrange(mt <= pt) %>%
+    relocate(V9, .after = last_col()) %>%
+    filter(mt > pt) %>%
+    select(V1, V2, V3, V6, mt, pt, V9) %>%
+    rename(Contig = V1, Length = V2, Depth = V3, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
+    write.table(args1$`out-annotation-depth-table`, row.names = F, quote = F)
+} else {
+  z %>%
+    arrange(mt <= pt) %>%
+    relocate(V9, .after = last_col()) %>%
+    filter(mt < pt) %>%
+    select(V1, V2, V6, mt, pt, V9) %>%
+    rename(Contig = V1, Length = V2, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
+    write.table(args1$`out-annotation-table`, row.names = F, quote = F)
+
+  z %>%
+    arrange(mt <= pt) %>%
+    relocate(V9, .after = last_col()) %>%
+    filter(mt < pt) %>%
+    select(V1, V2, V3, V6, mt, pt, V9) %>%
+    rename(Contig = V1, Length = V2, Depth = V3, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
+    write.table(args1$`out-annotation-depth-table`, row.names = F, quote = F)
+}
 
 z.1 %>%
   rename(Contig = V1, Length = V2, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%

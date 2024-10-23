@@ -92,7 +92,7 @@ HEREDOC
 	_polap_log1_file "${ODIR}/bioproject.txt"
 	_polap_log0 $(head -n 1 "${ODIR}/bioproject.txt")
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -237,7 +237,7 @@ function _run_polap_get-bioproject() { # get BioProject info from NCBI
 		cat <<HEREDOC
 # Get BioProject information using BioProject accession.
 #
-# FIXME: PRJNA841235 no Illumina, PacBIO data: error run-polap-get-bioproject-1.R
+# FIXME: PRJNA841235 no Illumina, PacBIO data: error run-polap-r-get-bioproject-1.R
 #
 # Arguments:
 #   --bioproject <BioProject ID>
@@ -283,7 +283,7 @@ HEREDOC
 			_polap_log0 "No short-read info."
 		fi
 
-		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
@@ -333,13 +333,13 @@ HEREDOC
     csvtk csv2tab >${_polap_var_bioproject_runinfo}"
 
 	# Select SRA long and short read data
-	_polap_log1 "  run-polap-get-bioproject-1.R"
+	_polap_log1 "  run-polap-r-get-bioproject-1.R"
 	_polap_log2 "    input1: ${_polap_var_bioproject_runinfo}"
 	_polap_log2 "    output1: ${_polap_var_bioproject_sra_long_read}"
 	_polap_log2 "    output2: ${_polap_var_bioproject_sra_short_read}"
 	_polap_log2 "    output3: ${_polap_var_bioproject_species}"
 	_polap_log2 "    output4: ${_polap_var_bioproject_sra_per_species}"
-	_polap_log3_pipe "Rscript $script_dir/run-polap-get-bioproject-1.R \
+	_polap_log3_pipe "Rscript $script_dir/run-polap-r-get-bioproject-1.R \
 		${_polap_var_bioproject_runinfo} \
 		${_polap_var_bioproject_sra_long_read} \
 		${_polap_var_bioproject_sra_short_read} \
@@ -375,7 +375,7 @@ HEREDOC
 		_polap_log3_pipe "echo ${ScientificName} >${bioproject_species_folder}/1-species.txt"
 	done
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -583,7 +583,7 @@ HEREDOC
 	_polap_log0 "SR2: ${SR2}"
 	_polap_log0 "NEXT: assemble-draft"
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -646,7 +646,7 @@ HEREDOC
 	_run_polap_select-contigs
 
 	# Array to store the names of the original files
-	files=($(ls "${ODIR}/0/mt.contig.name-"?))
+	files=($(ls "${_polap_var_wga}/mt.contig.name-"?))
 
 	# Temporary array to store the paths of unique files
 	unique_files=()
@@ -880,7 +880,7 @@ HEREDOC
 		rsync -a -e ssh "${ODIR}/" thorne:"$PWD/${ODIR}/"
 	fi
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -966,7 +966,7 @@ HEREDOC
 
 	_run_polap_bioproject-postprocess
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }

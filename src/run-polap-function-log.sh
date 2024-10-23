@@ -23,6 +23,11 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+# default: _arg_verbose=1
+# --quiet: _arg_verbose=0
+# -v: _arg_verbose=2
+# -v -v: _arg_verbose=3
+# -v -v -v: _arg_verbose=4
 # Function to handle verbose output
 function verbose_echo() {
 	local msg_level=$1 # The verbosity level of this message
@@ -33,6 +38,20 @@ function verbose_echo() {
 	if [ "${_arg_verbose}" -ge "$msg_level" ]; then
 		# echo "${_arg_verbose} > ${msg_level}: $message"
 		echo "$message"
+	fi
+}
+
+# Function to handle verbose output
+function verbose_echo_trim() {
+	local msg_level=$1 # The verbosity level of this message
+	shift              # Shift arguments to access the actual message
+	# local message="$@"
+
+	# Only print if the current verbosity level is greater than or equal to the message level
+	if [ "${_arg_verbose}" -ge "$msg_level" ]; then
+		# echo "${_arg_verbose} > ${msg_level}: $message"
+		local message=$(echo "$@" | tr -d '\n' | tr -s '[:space:]' ' ')
+		echo "command: $message"
 	fi
 }
 
@@ -158,7 +177,7 @@ function _polap_log0() {
 # log level 1 to the log file
 # log level 0 to the screen
 function _polap_log1() {
-	verbose_echo 1 "$@"
+	verbose_echo 0 "$@"
 	# verbose_echo 2 "$@" 1>&2
 	if [[ "${_arg_log_stderr}" = "off" ]]; then
 		verbose_echo 2 "$@" >&3
@@ -170,7 +189,7 @@ function _polap_log1() {
 # log level 2 to the log file
 # log level 1 to the screen
 function _polap_log2() {
-	verbose_echo 2 "$@"
+	verbose_echo 0 "$@"
 	# verbose_echo 3 "$@" 1>&2
 	if [[ "${_arg_log_stderr}" = "off" ]]; then
 		verbose_echo 3 "$@" >&3
@@ -182,7 +201,7 @@ function _polap_log2() {
 # log level 3 to the log file
 # log level 2 to the screen
 function _polap_log3() {
-	verbose_echo 3 "$@"
+	verbose_echo 0 "$@"
 	# verbose_echo 4 "$@" 1>&2
 	if [[ "${_arg_log_stderr}" = "off" ]]; then
 		verbose_echo 4 "$@" >&3
@@ -197,35 +216,42 @@ function _polap_log0_n() {
 }
 
 function _polap_log0_cmd() {
-	verbose_echo 0 "$@"
-	verbose_echo 1 "$@" >&3
+	verbose_echo_trim 0 "$@"
+	verbose_echo_trim 1 "$@" >&3
 	"$@"
 }
 
 # log level 1 to the log file
 # log level 0 to the screen
 function _polap_log1_cmd() {
-	verbose_echo 1 "$@"
-	verbose_echo 2 "$@" >&3
+	verbose_echo_trim 0 "$@"
+	verbose_echo_trim 2 "$@" >&3
 	"$@"
 }
 
 # log level 2 to the log file
 # log level 1 to the screen
 function _polap_log2_cmd() {
-	verbose_echo 2 "$@"
-	verbose_echo 3 "$@" >&3
+	verbose_echo_trim 0 "$@"
+	verbose_echo_trim 3 "$@" >&3
 	"$@"
 }
 
 function _polap_log3_cmd() {
-	_polap_log3 "$@"
+	verbose_echo_trim 0 "$@"
+	verbose_echo_trim 4 "$@" >&3
 	"$@"
 }
 
+function _polap_log2_pipe() {
+	verbose_echo_trim 0 "$@"
+	verbose_echo_trim 3 "$@" >&3
+	eval "$@"
+}
+
 function _polap_log3_pipe() {
-	verbose_echo 3 "$@"
-	verbose_echo 4 "$@" >&3
+	verbose_echo_trim 0 "$@"
+	verbose_echo_trim 4 "$@" >&3
 	eval "$@"
 }
 
@@ -259,7 +285,7 @@ function _polap_log0_cat() {
 }
 
 function _polap_log1_cat() {
-	verbose_cat 1 "$@"
+	verbose_cat 0 "$@"
 	if [[ "${_arg_log_stderr}" = "off" ]]; then
 		verbose_cat 2 "$@" >&3
 	else
@@ -268,7 +294,7 @@ function _polap_log1_cat() {
 }
 
 function _polap_log2_cat() {
-	verbose_cat 2 "$@"
+	verbose_cat 0 "$@"
 	if [[ "${_arg_log_stderr}" = "off" ]]; then
 		verbose_cat 3 "$@" >&3
 	else
@@ -277,7 +303,7 @@ function _polap_log2_cat() {
 }
 
 function _polap_log3_cat() {
-	verbose_cat 3 "$@"
+	verbose_cat 0 "$@"
 	if [[ "${_arg_log_stderr}" = "off" ]]; then
 		verbose_cat 4 "$@" >&3
 	else
@@ -287,22 +313,38 @@ function _polap_log3_cat() {
 
 function _polap_log0_head() {
 	verbose_head 0 "$@"
-	verbose_head 1 "$@" >&3
+	if [[ "${_arg_log_stderr}" = "off" ]]; then
+		verbose_head 1 "$@" >&3
+	else
+		verbose_head 1 "$@" >&2
+	fi
 }
 
 function _polap_log1_head() {
-	verbose_head 1 "$@"
-	verbose_head 2 "$@" >&3
+	verbose_head 0 "$@"
+	if [[ "${_arg_log_stderr}" = "off" ]]; then
+		verbose_head 2 "$@" >&3
+	else
+		verbose_head 2 "$@" >&2
+	fi
 }
 
 function _polap_log2_head() {
-	verbose_head 2 "$@"
-	verbose_head 3 "$@" >&3
+	verbose_head 0 "$@"
+	if [[ "${_arg_log_stderr}" = "off" ]]; then
+		verbose_head 3 "$@" >&3
+	else
+		verbose_head 3 "$@" >&2
+	fi
 }
 
 function _polap_log3_head() {
-	verbose_head 3 "$@"
-	verbose_head 4 "$@" >&3
+	verbose_head 0 "$@"
+	if [[ "${_arg_log_stderr}" = "off" ]]; then
+		verbose_head 4 "$@" >&3
+	else
+		verbose_head 4 "$@" >&2
+	fi
 }
 
 function _polap_log0_column() {
@@ -315,7 +357,7 @@ function _polap_log0_column() {
 }
 
 function _polap_log1_column() {
-	verbose_column 1 "$@"
+	verbose_column 0 "$@"
 	if [[ "${_arg_log_stderr}" = "off" ]]; then
 		verbose_column 2 "$@" >&3
 	else
@@ -324,7 +366,7 @@ function _polap_log1_column() {
 }
 
 function _polap_log2_column() {
-	verbose_column 2 "$@"
+	verbose_column 0 "$@"
 	if [[ "${_arg_log_stderr}" = "off" ]]; then
 		verbose_column 3 "$@" >&3
 	else
@@ -333,7 +375,7 @@ function _polap_log2_column() {
 }
 
 function _polap_log3_column() {
-	verbose_column 3 "$@"
+	verbose_column 0 "$@"
 	if [[ "${_arg_log_stderr}" = "off" ]]; then
 		verbose_column 4 "$@" >&3
 	else
@@ -358,6 +400,6 @@ function _polap_log3_file() {
 }
 
 function _polap_log_function() {
-	verbose_echo_newline 2 "$@"
-	verbose_echo_newline 3 "$@" >&3
+	verbose_echo_newline 3 "$@"
+	verbose_echo_newline 4 "$@" >&3
 }

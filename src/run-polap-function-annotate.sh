@@ -29,7 +29,7 @@ source "$script_dir/run-polap-function-count-gene.sh"
 ################################################################################
 #
 ################################################################################
-function _run_polap_edges-stats() { # Creates an edge version of contigs_stats.txt
+function _run_polap_edges-stats() { # create an edge version of contigs_stats.txt
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -44,7 +44,7 @@ function _run_polap_edges-stats() { # Creates an edge version of contigs_stats.t
 	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
-# Creates edges_stats.txt like contigs_stats.txt.
+# Create an edge version of contigs_stats.txt: edges_stats.txt
 #
 # Arguments:
 #   -i $INUM: source Flye (usually whole-genome) assembly number
@@ -52,17 +52,23 @@ function _run_polap_edges-stats() { # Creates an edge version of contigs_stats.t
 #   ${_polap_var_contigger_gfa}
 # Outputs:
 #   ${_polap_var_contigger_edges_stats}
-Example: $(basename $0) ${_arg_menu[0]} [-o ${ODIR}]
+Example: $0 ${_arg_menu[0]} -i ${INUM} [-o ${ODIR}]
 HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		if [[ -s "${_polap_var_contigger_edges_stats}" ]]; then
+			_polap_log0_column "${_polap_var_contigger_edges_stats}"
+		else
+			_polap_log0 "No such file: ${_polap_var_contigger_edges_stats}"
+		fi
 
-		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		return
@@ -70,34 +76,50 @@ HEREDOC
 
 	mkdir -p "${_polap_var_ga_mtcontigs}"
 
-	_polap_log1 "creating edges_stats.txt from graph_final.gfa ..."
-	_polap_log2 "  creating GFA without sequence data: ${_polap_var_ga_gfa_all}"
+	_polap_log0 "creating edges_stats.txt from graph_final.gfa ..."
+	_polap_log1 "  creating GFA without sequence data: ${_polap_var_ga_gfa_all}"
 	_polap_log2 "    input: ${_polap_var_contigger_gfa}"
 	_polap_log2 "    output: ${_polap_var_ga_gfa_all}"
-	gfatools view \
-		-S "${_polap_var_contigger_gfa}" \
-		>"${_polap_var_ga_gfa_all}" \
-		2>"$_polap_output_dest"
 
-	_polap_log2 "  extracting sequence part of GFA: ${_polap_var_ga_gfa_seq_part}"
-	_polap_log2 "    input: ${_polap_var_ga_gfa_all}"
-	_polap_log2 "    output: ${_polap_var_ga_gfa_seq_part}"
-	grep "^S" "${_polap_var_ga_gfa_all}" >"${_polap_var_ga_gfa_seq_part}"
-
-	# Filter edges in GFA using depths.
-	_polap_log2 "  filtering GFA sequence part using depth range"
-	_polap_log2 "    input1: ${_polap_var_ga_gfa_seq_part}"
-	_polap_log2 "    output1: ${_polap_var_contigger_edges_stats}"
-	Rscript "$script_dir"/run-polap-r-edges-stats.R \
-		--gfa "${_polap_var_ga_gfa_seq_part}" \
-		--out "${_polap_var_contigger_edges_stats}" \
-		2>"$_polap_output_dest"
-
-	if [[ -s "${_polap_var_contigger_edges_stats}" ]]; then
-		_polap_log2_cat "${_polap_var_contigger_edges_stats}"
+	if [ -s "${_polap_var_ga_gfa_all}" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log1 "    found: ${_polap_var_ga_gfa_all}, so skipping ..."
+	else
+		_polap_log3_pipe "gfatools view \
+		  -S ${_polap_var_contigger_gfa} \
+		  >${_polap_var_ga_gfa_all} \
+		  2>$_polap_output_dest"
 	fi
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log1 "  extracting sequence part of GFA: ${_polap_var_ga_gfa_seq_part}"
+	_polap_log2 "    input: ${_polap_var_ga_gfa_all}"
+	_polap_log2 "    output: ${_polap_var_ga_gfa_seq_part}"
+	if [ -s "${_polap_var_ga_gfa_seq_part}" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log1 "    found: ${_polap_var_ga_gfa_seq_part}, so skipping ..."
+	else
+		_polap_log3_pipe "grep ^S ${_polap_var_ga_gfa_all} >${_polap_var_ga_gfa_seq_part}"
+	fi
+
+	# Filter edges in GFA using depths.
+	_polap_log1 "  filtering GFA sequence part using depth range"
+	_polap_log2 "    input1: ${_polap_var_ga_gfa_seq_part}"
+	_polap_log2 "    output1: ${_polap_var_contigger_edges_stats}"
+	if [ -s "${_polap_var_contigger_edges_stats}" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log1 "    found: ${_polap_var_contigger_edges_stats}, so skipping ..."
+	else
+		_polap_log3_pipe "Rscript $script_dir/run-polap-r-edges-stats.R \
+		--gfa ${_polap_var_ga_gfa_seq_part} \
+		--out ${_polap_var_contigger_edges_stats} \
+		2>$_polap_output_dest"
+	fi
+
+	if [[ -s "${_polap_var_contigger_edges_stats}" ]]; then
+		_polap_log2_column "${_polap_var_contigger_edges_stats}"
+	else
+		_polap_log2 "ERROR: no such file: ${_polap_var_contigger_edges_stats}"
+	fi
+
+	_polap_log1 "NEXT: $0 blast-genome -o $ODIR [-i ${INUM}]"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -142,7 +164,7 @@ HEREDOC
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 		_polap_log0_file "${_polap_var_annotation_table}".pdf
-		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
@@ -153,7 +175,7 @@ HEREDOC
 		-o "${_polap_var_annotation_table}".pdf \
 		2>"$_polap_output_dest"
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -208,7 +230,7 @@ HEREDOC
 		_polap_log3_cmd touch "${ODIR}"
 		_polap_log3_cmd ln -f -s "${_polap_var_contigger_gfa#*/}" "${ODIR}"/wga.gfa
 
-		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
@@ -223,7 +245,7 @@ HEREDOC
 		_run_polap_count-gene-contig
 	fi
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -276,7 +298,7 @@ HEREDOC
 		_polap_log3_cmd touch "${ODIR}"
 		_polap_log3_cmd ln -f -s "${_polap_var_contigger_gfa#*/}" "${ODIR}"/wga.gfa
 
-		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
@@ -296,7 +318,7 @@ HEREDOC
 		_run_polap_count-gene
 	fi
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }

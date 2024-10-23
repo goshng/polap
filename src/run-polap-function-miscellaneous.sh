@@ -357,25 +357,26 @@ HEREDOC
 # Arguments:
 #   -p mt.0.fasta
 # Inputs:
-#   $LRNK
-#   $PA
+#   ${_polap_var_base_nk_fq_gz}
+#   ${_arg_unpolished_fasta}
 # Outputs:
-#   $FA
+#   ${_arg_final_assembly}
 ################################################################################
 function _run_polap_x-check-coverage() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	LRNK="$ODIR/nk.fq.gz"
+	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
 
 	help_message=$(
 		cat <<HEREDOC
 # NOT IMPLEMENTED YET
 # Checks the coverage on a draft genome using samtools.
 # Arguments:
-#   -p $PA: a draft genome
+#   -p ${_arg_unpolished_fasta}: a draft genome
 # Inputs:
-#   $LRNK
-#   $PA
+#   ${_polap_var_base_nk_fq_gz}
+#   ${_arg_unpolished_fasta}
 # Outputs:
 Example: $(basename "$0") ${_arg_menu[0]} [-p|--unpolished-fasta <arg>]
 HEREDOC
@@ -386,28 +387,28 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	if [ -z "$PA" ] && [ -z "$LRNK" ]; then
+	if [ -z "${_arg_unpolished_fasta}" ] && [ -z "${_polap_var_base_nk_fq_gz}" ]; then
 		echoerr "ERROR: no -p option are used."
 		echoerr "INFO: --p mt.0.fasta"
 	else
-		echo "INFO: executing minimap2 and samtools for checking the long reads coverage on the $PA ... be patient!"
-		if [[ ! -s "$PA" ]]; then
-			echoall "ERROR: no such file $PA"
+		echo "INFO: executing minimap2 and samtools for checking the long reads coverage on the ${_arg_unpolished_fasta} ... be patient!"
+		if [[ ! -s "${_arg_unpolished_fasta}" ]]; then
+			echoall "ERROR: no such file ${_arg_unpolished_fasta}"
 			exit $EXIT_ERROR
 		fi
 
-		if [[ ! -s "$LRNK" ]]; then
-			echoall "ERROR: no such file $LRNK"
+		if [[ ! -s "${_polap_var_base_nk_fq_gz}" ]]; then
+			echoall "ERROR: no such file ${_polap_var_base_nk_fq_gz}"
 			exit $EXIT_ERROR
 		fi
 
-		minimap2 -t "$NT" -ax map-ont "$PA" "$LRNK" 2>/dev/null |
+		minimap2 -t "${_arg_threads}" -ax map-ont "${_arg_unpolished_fasta}" "${_polap_var_base_nk_fq_gz}" 2>/dev/null |
 			samtools view -u 2>/dev/null |
 			samtools sort -o "$ODIR"/1.bam \
 				>/dev/null 2>&1
 		samtools coverage -A -w 32 "$ODIR"/1.bam 1>&2
 
-		_polap_log1 INFO: conda env create -f "$WDIR"/environment-fmlrc.yaml
+		_polap_log1 INFO: conda env create -f "$script_dir"/environment-fmlrc.yaml
 		_polap_log1 INFO: conda activate polap-fmlrc
 		_polap_log1 "NEXT: $(basename "$0") prepare-polishing [-a s1.fq] [-b s2.fq]"
 	fi

@@ -34,10 +34,13 @@ function _run_polap_blast-mtdna() {
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge 2 ] && _polap_output_dest="/dev/stderr"
 
+	# Grouped file path declarations
+	source "$script_dir/polap-variables-common.sh"
+
 	# Set variables for file paths
-	local MTAA="$WDIR/polap-mt.1.c70.3.faa"
-	local PTAA="$WDIR/polap-pt.2.c70.3.faa"
-	local _polap_var_assembly="${ODIR}/${INUM}"
+	local MTAA="$script_dir/polap-mt.1.c70.3.faa"
+	local PTAA="$script_dir/polap-pt.2.c70.3.faa"
+	local _polap_var_assembly="${_polap_var_ga}"
 	local _polap_var_chloroplot="${_polap_var_assembly}/60-chloroplot"
 
 	# Help message
@@ -45,9 +48,9 @@ function _run_polap_blast-mtdna() {
 		cat <<HEREDOC
 # Blast the final mtDNA sequence against the POLAP organelle gene set.
 # Arguments:
-#   -f $FA
+#   -f ${_arg_final_assembly}
 # Inputs:
-#   $FA: mtDNA sequence
+#   ${_arg_final_assembly}: mtDNA sequence
 # Outputs:
 #
 Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>] -f mt.1.fa -o [$ODIR]
@@ -87,13 +90,13 @@ HEREDOC
 		-out "${_polap_var_chloroplot}/mtaa.blast" \
 		-evalue 1e-30 \
 		-outfmt '6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle salltitles' \
-		-num_threads "$NT" \
+		-num_threads "${_arg_threads}" \
 		>/dev/null 2>&1
 
 	_polap_log2 "INFO: tblastn complete"
 
 	# Process the tblastn results
-	"$WDIR"/run-polap-genes.R \
+	"$script_dir"/run-polap-genes.R \
 		"${_polap_var_chloroplot}/mtaa.blast" \
 		"${_polap_var_chloroplot}/mtaa.blast.bed" \
 		>/dev/null 2>&1
@@ -105,7 +108,7 @@ HEREDOC
 	# Create directory for gene bed files
 	mkdir "${_polap_var_chloroplot}/mtaa.bed"
 
-	"$WDIR"/run-polap-genes-bed4.R \
+	"$script_dir"/run-polap-genes-bed4.R \
 		"${_polap_var_chloroplot}/mtaa.blast" \
 		"${_polap_var_chloroplot}/mtaa.blast.bed4"
 
@@ -124,10 +127,10 @@ HEREDOC
 			-b "${_polap_var_chloroplot}/${_polap_var_i}.gene.bed" \
 			>"${_polap_var_chloroplot}/${_polap_var_i}.bed4"
 
-		"$WDIR"/run-polap-blast-mtdna-1-determine-gene.R \
+		"$script_dir"/run-polap-r-blast-mtdna-1-determine-gene.R \
 			"${_polap_var_chloroplot}/${_polap_var_i}.bed4" \
-			"$WDIR/polap-mt.1.c70.3.faa.name" \
-			"$WDIR/polap-mtgenes.txt" \
+			"$script_dir/polap-mt.1.c70.3.faa.name" \
+			"$script_dir/polap-mtgenes.txt" \
 			"${_polap_var_chloroplot}/${_polap_var_i}.gene" \
 			"${_polap_var_chloroplot}/${_polap_var_i}.bed4.description" \
 			"${_polap_var_chloroplot}/${_polap_var_i}.bed4.count" \
@@ -243,7 +246,7 @@ HEREDOC
 	_polap_log2_file "${_polap_var_oga_blastn3}"
 
 	# Analyze the length of the match using an R script
-	"$WDIR"/run-polap-assemble-bioproject-3-length-match.R \
+	"$script_dir"/run-polap-r-assemble-bioproject-3-length-match.R \
 		"${_polap_var_oga_blastn3}" \
 		"${_polap_var_oga_blastn3_length}" \
 		2>"$_polap_output_dest"
@@ -257,7 +260,7 @@ HEREDOC
 	_polap_log1 "length coverage: ${c1}"
 	printf "%s\t%d\t%d\t%f\n" ${n1} ${l1} ${l2} ${c1} >"${_polap_var_mtdna_compare}"
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -436,7 +439,7 @@ HEREDOC
 			"${_polap_var_bioproject_mtdna_fasta2}"
 	fi
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -456,8 +459,11 @@ function _run_polap_plot-mtdna() {
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge 2 ] && _polap_output_dest="/dev/stderr"
 
+	# Grouped file path declarations
+	source "$script_dir/polap-variables-common.sh"
+
 	# Set working directories and file paths
-	local _polap_var_assembly="${ODIR}/${INUM}"
+	local _polap_var_assembly="${_polap_var_ga}"
 	local _polap_var_chloroplot="${_polap_var_assembly}/60-chloroplot"
 
 	# Help message
@@ -465,12 +471,12 @@ function _run_polap_plot-mtdna() {
 		cat <<HEREDOC
 # Counts genes annotated on a genome assembly and plots the mtDNA genome.
 # Arguments:
-#   -f $FA
+#   -f ${_arg_final_assembly}
 #   -i $INUM: a Flye genome assembly number
 # Inputs:
-#   $FA: mtDNA sequence
+#   ${_arg_final_assembly}: mtDNA sequence
 # Outputs:
-Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>] [-f $FA]
+Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>] [-f ${_arg_final_assembly}]
 HEREDOC
 	)
 
@@ -480,7 +486,7 @@ HEREDOC
 	_polap_log1 "LOG: Plotting mitochondrial DNA genome for Flye assembly $INUM..."
 
 	# Run the R script to generate the mtDNA plot
-	"$WDIR/run-polap-plot-mtdna.R" \
+	"$script_dir/run-polap-r-plot-mtdna.R " \
 		"${_polap_var_chloroplot}/annotation.bed" \
 		"${FA}" \
 		2>"$_polap_output_dest"
@@ -516,11 +522,11 @@ function _run_polap_select-mtdna() {
 	# local _polap_var_mtdna="$FDIR/mtdna"
 	#
 	# # File paths
-	# local _polap_var_assembly_graph_final_gfa="$FDIR/assembly_graph.gfa"
+	# local _polap_var_assembly_graph_gfa="$FDIR/assembly_graph.gfa"
 	# local _polap_var_annotation_table="$FDIR/assembly_info_organelle_annotation_count-all.txt"
 	# local _polap_var_mt_fasta="$FDIR/mt.0.fasta"
 	# local _polap_var_mt_edges="$FDIR/mt.0.edges"
-	# local _polap_var_gfa_all="${_polap_var_mtdna}/1-gfa.all.gfa"
+	# local _polap_var_1_gfa_all="${_polap_var_mtdna}/1-gfa.all.gfa"
 	# local _polap_var_gfa_links="${_polap_var_mtdna}/1-gfa.links.tsv"
 	# local _polap_var_gfa_links_edges="${_polap_var_mtdna}/1-gfa.links.edges.txt"
 	# local _polap_var_gfa_links_circular_path="${_polap_var_mtdna}/2-gfa.links.circular.path.txt"
@@ -537,7 +543,7 @@ function _run_polap_select-mtdna() {
 #   -i $INUM: organelle assembly number
 #
 # Inputs:
-#   ${_polap_var_assembly_graph_final_gfa}
+#   ${_polap_var_assembly_graph_gfa}
 #   ${_polap_var_annotation_table}
 #
 # Outputs:
@@ -551,32 +557,32 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "help" ]] && echo "${help_message}" >&2 && exit $EXIT_SUCCESS
 
 	# Check for required files
-	check_file_existence "${_polap_var_assembly_graph_final_gfa}"
+	check_file_existence "${_polap_var_assembly_graph_gfa}"
 	check_file_existence "${_polap_var_annotation_table}"
 
 	# Create necessary directories
 	rm -rf "${_polap_var_mtdna}"
 	mkdir -p "${_polap_var_mtdna}"
 
-	_polap_log1_file "Input GFA: ${_polap_var_assembly_graph_final_gfa}"
+	_polap_log1_file "Input GFA: ${_polap_var_assembly_graph_gfa}"
 	_polap_log1_file "Input Annotation Table: ${_polap_var_annotation_table}"
 
 	# Convert GFA to FASTA
-	gfatools gfa2fa "${_polap_var_assembly_graph_final_gfa}" \
+	gfatools gfa2fa "${_polap_var_assembly_graph_gfa}" \
 		>"${_polap_var_fasta}" \
 		2>"$_polap_output_dest"
 
 	_polap_log2_file "FASTA of the input GFA: ${_polap_var_fasta}"
 
 	# Step 1: List connected components (GFA processing)
-	gfatools view -S "${_polap_var_assembly_graph_final_gfa}" \
-		>"${_polap_var_gfa_all}" \
+	gfatools view -S "${_polap_var_assembly_graph_gfa}" \
+		>"${_polap_var_1_gfa_all}" \
 		2>"$_polap_output_dest"
 
-	_polap_log2_file "GFA content: ${_polap_var_gfa_all}"
+	_polap_log2_file "GFA content: ${_polap_var_1_gfa_all}"
 
 	# Extract links from GFA and store them
-	grep "^L" "${_polap_var_gfa_all}" >"${_polap_var_gfa_links}"
+	grep "^L" "${_polap_var_1_gfa_all}" >"${_polap_var_gfa_links}"
 
 	local _polap_var_number_links_gfa=$(wc -l <"${_polap_var_gfa_links}")
 	if [ "${_polap_var_number_links_gfa}" -eq 0 ]; then
@@ -587,7 +593,7 @@ HEREDOC
 	_polap_log2_file "GFA Links: ${_polap_var_gfa_links}"
 
 	# Process the GFA links
-	"$WDIR"/run-polap-select-mtdna-1-nx-gfa-links.R \
+	"$script_dir"/run-polap-r-select-mtdna-1-nx-gfa-links.R \
 		"${_polap_var_gfa_links}" \
 		"${_polap_var_gfa_links_edges}" \
 		2>"$_polap_output_dest"
@@ -595,11 +601,11 @@ HEREDOC
 	_polap_log2_file "GFA Links Edges: ${_polap_var_gfa_links_edges}"
 
 	# Step 2: Find circular paths using Python script
-	python "$WDIR"/run-polap-select-mtdna-2-nx-simple-cycles.py \
+	python "$script_dir"/run-polap-py-select-mtdna-2-nx-simple-cycles.py \
 		"${_polap_var_gfa_links_edges}" \
 		"${_polap_var_gfa_links_circular_path}" \
 		2>"$_polap_output_dest"
-	# python "$WDIR"/run-polap-select-mtdna-2-nx-find-circular-path.py \
+	# python "$script_dir"/run-polap-py-select-mtdna-2-nx-find-circular-path.py \
 	# 	"${_polap_var_gfa_links_edges}" \
 	# 	"${_polap_var_gfa_links_circular_path}" \
 	# 	2>"$_polap_output_dest"
@@ -639,7 +645,7 @@ HEREDOC
 
 	_polap_log1_file "Output mtDNA FASTA: ${_polap_var_mt_fasta}"
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -664,11 +670,11 @@ function _run_polap_select-mtdna-org() {
 	# local _polap_var_mtdna="$FDIR/mtdna"
 	#
 	# # File paths
-	# local _polap_var_assembly_graph_final_gfa="$FDIR/assembly_graph.gfa"
+	# local _polap_var_assembly_graph_gfa="$FDIR/assembly_graph.gfa"
 	# local _polap_var_annotation_table="$FDIR/assembly_info_organelle_annotation_count-all.txt"
 	# local _polap_var_mt_fasta="$FDIR/mt.0.fasta"
 	# local _polap_var_mt_edges="$FDIR/mt.0.edges"
-	# local _polap_var_gfa_all="${_polap_var_mtdna}/1-gfa.all.gfa"
+	# local _polap_var_1_gfa_all="${_polap_var_mtdna}/1-gfa.all.gfa"
 	# local _polap_var_gfa_links="${_polap_var_mtdna}/1-gfa.links.tsv"
 	# local _polap_var_gfa_links_edges="${_polap_var_mtdna}/1-gfa.links.edges.txt"
 	# local _polap_var_gfa_links_circular_path="${_polap_var_mtdna}/2-gfa.links.circular.path.txt"
@@ -685,7 +691,7 @@ function _run_polap_select-mtdna-org() {
 #   -i $INUM: organelle assembly number
 #
 # Inputs:
-#   ${_polap_var_assembly_graph_final_gfa}
+#   ${_polap_var_assembly_graph_gfa}
 #   ${_polap_var_annotation_table}
 #
 # Outputs:
@@ -699,32 +705,32 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "help" ]] && echo "${help_message}" >&2 && exit $EXIT_SUCCESS
 
 	# Check for required files
-	check_file_existence "${_polap_var_assembly_graph_final_gfa}"
+	check_file_existence "${_polap_var_assembly_graph_gfa}"
 	check_file_existence "${_polap_var_annotation_table}"
 
 	# Create necessary directories
 	rm -rf "${_polap_var_mtdna}"
 	mkdir -p "${_polap_var_mtdna}"
 
-	_polap_log1_file "Input GFA: ${_polap_var_assembly_graph_final_gfa}"
+	_polap_log1_file "Input GFA: ${_polap_var_assembly_graph_gfa}"
 	_polap_log1_file "Input Annotation Table: ${_polap_var_annotation_table}"
 
 	# Convert GFA to FASTA
-	gfatools gfa2fa "${_polap_var_assembly_graph_final_gfa}" \
+	gfatools gfa2fa "${_polap_var_assembly_graph_gfa}" \
 		>"${_polap_var_fasta}" \
 		2>"$_polap_output_dest"
 
 	_polap_log2_file "FASTA of the input GFA: ${_polap_var_fasta}"
 
 	# Step 1: List connected components (GFA processing)
-	gfatools view -S "${_polap_var_assembly_graph_final_gfa}" \
-		>"${_polap_var_gfa_all}" \
+	gfatools view -S "${_polap_var_assembly_graph_gfa}" \
+		>"${_polap_var_1_gfa_all}" \
 		2>"$_polap_output_dest"
 
-	_polap_log2_file "GFA content: ${_polap_var_gfa_all}"
+	_polap_log2_file "GFA content: ${_polap_var_1_gfa_all}"
 
 	# Extract links from GFA and store them
-	grep "^L" "${_polap_var_gfa_all}" >"${_polap_var_gfa_links}"
+	grep "^L" "${_polap_var_1_gfa_all}" >"${_polap_var_gfa_links}"
 
 	local _polap_var_number_links_gfa=$(wc -l <"${_polap_var_gfa_links}")
 	if [ "${_polap_var_number_links_gfa}" -eq 0 ]; then
@@ -735,7 +741,7 @@ HEREDOC
 	_polap_log2_file "GFA Links: ${_polap_var_gfa_links}"
 
 	# Process the GFA links
-	"$WDIR"/run-polap-select-mtdna-1-nx-gfa-links.R \
+	"$script_dir"/run-polap-r-select-mtdna-1-nx-gfa-links.R \
 		"${_polap_var_gfa_links}" \
 		"${_polap_var_gfa_links_edges}" \
 		2>"$_polap_output_dest"
@@ -743,11 +749,11 @@ HEREDOC
 	_polap_log2_file "GFA Links Edges: ${_polap_var_gfa_links_edges}"
 
 	# Step 2: Find circular paths using Python script
-	# python "$WDIR"/run-polap-select-mtdna-2-nx-simple-cycles.py \
+	# python "$script_dir"/run-polap-py-select-mtdna-2-nx-simple-cycles.py \
 	# 	"${_polap_var_gfa_links_edges}" \
 	# 	"${_polap_var_gfa_links_circular_path}" \
 	# 	2>"$_polap_output_dest"
-	python "$WDIR"/run-polap-select-mtdna-2-nx-find-circular-path.py \
+	python "$script_dir"/run-polap-py-select-mtdna-2-nx-find-circular-path.py \
 		"${_polap_var_gfa_links_edges}" \
 		"${_polap_var_gfa_links_circular_path}" \
 		2>"$_polap_output_dest"
@@ -770,7 +776,7 @@ HEREDOC
 	_polap_log1_file "Output mtDNA FASTA: ${_polap_var_mt_fasta}"
 	seqkit stats "${_polap_var_mt_fasta}" 1>&2
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }

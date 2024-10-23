@@ -26,6 +26,12 @@ declare "$_POLAP_INCLUDE_=1"
 source "$script_dir/polap-constants.sh"
 
 ################################################################################
+# try a command
+################################################################################
+
+function try() { "$@" || die "cannot $*"; }
+
+################################################################################
 # Function to convert base pairs to the highest appropriate unit
 # Example usage
 # bp=31846726397

@@ -19,11 +19,11 @@
 # name: select long reads
 #
 # synopsis:
-#	run-polap-pairs.R mt.contig.name-1 contig.tab $MTSEEDSDIR $SINGLE_MIN $SINGLE_MIN
+#	run-polap-pairs.R mt.contig.name-1 contig.tab ${MTSEEDSDIR} $SINGLE_MIN $SINGLE_MIN
 #
 # requirement: executes Flye 
 # flye --nano-raw "$LR3K" --out-dir "$ODIR" \
-# 	--threads "$NT" \
+# 	--threads "${_arg_threads}" \
 # 	--stop-after contigger \
 # 	--asm-coverage 30 \
 # 	--genome-size "$EXPECTED_GENOME_SIZE"
@@ -40,8 +40,8 @@
 #   single.names and <contig1-contig2.name> files in the output directory
 #
 # MTSEEDSDIR="$ODIR"/60-mt-${STEP4}/o${MR}/seeds
-#	run-polap-pairs.R mt.contig.name-1 contig.tab $MTSEEDSDIR $PAIR_MIN $BRIDGE_MIN $SINGLE_MIN
-#	run-polap-pairs.R mt.contig.name-1 contig.tab $MTSEEDSDIR $PAIR_MIN $BRIDGE_MIN
+#	run-polap-pairs.R mt.contig.name-1 contig.tab ${MTSEEDSDIR} $PAIR_MIN $BRIDGE_MIN $SINGLE_MIN
+#	run-polap-pairs.R mt.contig.name-1 contig.tab ${MTSEEDSDIR} $PAIR_MIN $BRIDGE_MIN
 
 suppressPackageStartupMessages(library("dplyr"))
 

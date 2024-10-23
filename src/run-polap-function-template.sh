@@ -47,7 +47,7 @@ function _run_polap_template() {
 #   ${_polap_var_annotation_table}
 #
 # Outputs:
-#   $MTCONTIGNAME
+#   ${MTCONTIGNAME}
 #
 # See:
 #   run-polap-select-contigs-by-table-1.R for the description of --select-contig option
@@ -61,7 +61,7 @@ HEREDOC
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 
-		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
@@ -88,7 +88,7 @@ HEREDOC
 
 	_polap_log0 "var: ${_polap_var_apple}"
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }

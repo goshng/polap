@@ -89,7 +89,7 @@ HEREDOC
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 		# Display the BLAST genome output.
 
-		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
@@ -126,7 +126,7 @@ HEREDOC
 	_polap_log1 NEXT: $(basename "$0") select-reads -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
 	_polap_log1 NEXT: $(basename "$0") assemble2 -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -161,7 +161,7 @@ function _run_polap_count-gene() { # count MT and PT genes using edges_stats.txt
 
 	help_message=$(
 		cat <<HEREDOC
-# Counts genes annotated on a genome assembly.
+# Count genes annotated on a genome assembly.
 #
 # Arguments:
 #   -i $INUM: a Flye genome assembly number
@@ -187,18 +187,58 @@ function _run_polap_count-gene() { # count MT and PT genes using edges_stats.txt
 #   edge_3
 # edit ${_polap_var_ga}/mt.contig.name-1 for mtDNA contig candidates
 # edit ${_polap_var_ga}/mt.contig.name-<destination flye number> for mtDNA contig candidates
-Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>]
+# View:
+#   all
+#   short
+#   table
+#   depth
+Example: $(basename "$0") ${_arg_menu[0]} -i ${INUM}
 HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 		# Display the BLAST genome output.
+		#
+		case "${_arg_menu[2]}" in
+		all)
+			if [[ -s "${_polap_var_ga_annotation_all}" ]]; then
+				_polap_log0_column "${_polap_var_ga_annotation_all}"
+			else
+				_polap_log0 "No such file: ${_polap_var_ga_annotation_all}"
+			fi
+			;;
+		short)
+			if [[ -s "${_polap_var_ga_annotation}" ]]; then
+				_polap_log0_column "${_polap_var_ga_annotation}"
+			else
+				_polap_log0 "No such file: ${_polap_var_ga_annotation}"
+			fi
+			;;
+		table)
+			if [[ -s "${_polap_var_ga_annotation_table}" ]]; then
+				_polap_log0_column "${_polap_var_ga_annotation_table}"
+			else
+				_polap_log0 "No such file: ${_polap_var_ga_annotation_table}"
+			fi
+			;;
+		depth)
+			if [[ -s "${_polap_var_ga_annotation_depth_table}" ]]; then
+				_polap_log0_column "${_polap_var_ga_annotation_depth_table}"
+			else
+				_polap_log0 "No such file: ${_polap_var_ga_annotation_depth_table}"
+			fi
+			;;
+		*)
+			_polap_log0 "all, short, table, depth"
+			;;
+		esac
 
-		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
@@ -206,15 +246,25 @@ HEREDOC
 
 	_polap_log0 "counting mitochondrial and plastid genes on the assembly number ${INUM} ..."
 
-	_polap_log0 "  input1: ${_polap_var_ga}/30-contigger/edges_stats.txt"
-	_polap_log0 "  input2: ${_polap_var_ann_MTGENECOUNT}"
-	_polap_log0 "  input3: ${_polap_var_ann_PTGENECOUNT}"
-	_polap_log0 "  output1: ${_polap_var_ga_annotation}"
-	_polap_log0 "  output2: ${_polap_var_ga_annotation_all}"
-	_polap_log0 "  output3: ${_polap_var_ga_annotation_table}"
-	_polap_log0 "  output4: ${_polap_var_ga_annotation_depth_table}"
+	_polap_log1 "  input1: ${_polap_var_ga}/30-contigger/edges_stats.txt"
+	_polap_log1 "  input2: ${_polap_var_ann_MTGENECOUNT}"
+	_polap_log1 "  input3: ${_polap_var_ann_PTGENECOUNT}"
+	_polap_log1 "  output1: ${_polap_var_ga_annotation}"
+	_polap_log1 "  output2: ${_polap_var_ga_annotation_all}"
+	_polap_log1 "  output3: ${_polap_var_ga_annotation_table}"
+	_polap_log1 "  output4: ${_polap_var_ga_annotation_depth_table}"
 
-	_polap_log3_pipe "Rscript $script_dir/run-polap-r-mtcontig.R \
+	# Checks the output files earlier than the input.
+	if [[ -s "${_polap_var_ga_annotation_all}" ]] &&
+		[[ "${_arg_redo}" = "off" ]]; then
+		_polap_log0 "  found1: ${_polap_var_ga_annotation_all}"
+		_polap_log0 "  so skipping the blast genome ..."
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
+		return
+	fi
+
+	local _command1="Rscript $script_dir/run-polap-r-mtcontig.R \
 		--flyeout-edges-stats ${_polap_var_contigger_edges_stats} \
     --mt-gene-count ${_polap_var_ann_MTGENECOUNT} \
     --pt-gene-count ${_polap_var_ann_PTGENECOUNT} \
@@ -222,11 +272,17 @@ HEREDOC
 		--out-annotation-all ${_polap_var_ga_annotation_all} \
 		--out-annotation-table ${_polap_var_ga_annotation_table} \
 		--out-annotation-depth-table ${_polap_var_ga_annotation_depth_table} \
-		--contigger \
-		2>${_polap_output_dest}"
+		--contigger"
+	if [[ "${_arg_plastid}" = "on" ]]; then
+		_command1+=" \
+        --plastid"
+	fi
+	_command1+=" \
+				2>${_polap_output_dest}"
+	_polap_log3_pipe "${_command1}"
 
 	if [[ -s "${_polap_var_ga_annotation_all}" ]]; then
-		_polap_log3_cat "${_polap_var_ga_annotation_all}"
+		_polap_log3_column "${_polap_var_ga_annotation_all}"
 	fi
 
 	if [[ ${_arg_test} == "on" ]]; then
@@ -238,10 +294,9 @@ HEREDOC
 	fi
 
 	ANUMNEXT=$((INUM + 1))
-	_polap_log1 NEXT: $(basename "$0") select-reads -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
-	_polap_log1 NEXT: $(basename "$0") assemble2 -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
+	_polap_log1 NEXT: $0 seeds -o "$ODIR" -i $INUM -j $ANUMNEXT
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }

@@ -51,13 +51,13 @@ function _run_polap_prepare-polishing() { # prepare the polishing using FMLRC
 		cat <<HEREDOC
 # Prepares the polishing using FMLRC.
 # Arguments:
-#   -a $SR1
-#   -b $SR2
+#   -a ${_arg_short_read1}
+#   -b ${_arg_short_read2}
 #   or
 #   --bioproject ${_arg_bioproject}
 # Inputs:
-#   $SR1
-#   $SR2
+#   ${_arg_short_read1}
+#   ${_arg_short_read2}
 # Outputs:
 #   $ODIR/msbwt/comp_msbwt.npy
 # Precondition:
@@ -100,19 +100,19 @@ HEREDOC
 			exit $EXIT_ERROR
 		fi
 
-		check_file_existence "${SR1}"
-		check_file_existence "${SR2}"
+		check_file_existence "${_arg_short_read1}"
+		check_file_existence "${_arg_short_read2}"
 
 		_polap_log1 "excuting ropebwt2 and msbwt on the short reads ... be patient!"
-		if [[ $SR1 = *.fastq || $SR1 = *.fq ]]; then
-			cat "$SR1" "$SR2" |
+		if [[ ${_arg_short_read1} = *.fastq || ${_arg_short_read1} = *.fq ]]; then
+			cat "${_arg_short_read1}" "${_arg_short_read2}" |
 				awk 'NR % 4 == 2' | sort | tr NT TN |
 				ropebwt2 -LR 2>"${_polap_output_dest}" |
 				tr NT TN |
 				msbwt convert "$ODIR"/msbwt \
 					>/dev/null 2>&1
-		elif [[ $SR1 = *.fq.gz ]] || [[ $SR1 = *.fastq.gz ]]; then
-			zcat "$SR1" "$SR2" |
+		elif [[ ${_arg_short_read1} = *.fq.gz ]] || [[ ${_arg_short_read1} = *.fastq.gz ]]; then
+			zcat "${_arg_short_read1}" "${_arg_short_read2}" |
 				awk 'NR % 4 == 2' | sort | tr NT TN |
 				ropebwt2 -LR 2>"${_polap_output_dest}" |
 				tr NT TN |
@@ -124,7 +124,7 @@ HEREDOC
 
 	_polap_log1 "NEXT: $(basename $0) polish [-p mt.0.fasta] [-f mt.1.fa]"
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -137,9 +137,9 @@ HEREDOC
 #   -f mt.1.fa
 # Inputs:
 #   $ODIR/msbwt/comp_msbwt.npy
-#   $PA
+#   ${_arg_unpolished_fasta}
 # Outputs:
-#   $FA
+#   ${_arg_final_assembly}
 ################################################################################
 function _run_polap_polish() { # polish organelle genome sequences using FMLRC
 	# Enable debugging if DEBUG is set
@@ -154,13 +154,13 @@ function _run_polap_polish() { # polish organelle genome sequences using FMLRC
 		cat <<HEREDOC
 # Polishes using FMLRC.
 # Arguments:
-#   -p $PA: a long-read draft genome assembly
-#   -f $FA: a final genome assembly sequence name
+#   -p ${_arg_unpolished_fasta}: a long-read draft genome assembly
+#   -f ${_arg_final_assembly}: a final genome assembly sequence name
 # Inputs:
 #   $ODIR/msbwt/comp_msbwt.npy
-#   $PA
+#   ${_arg_unpolished_fasta}
 # Outputs:
-#   $FA
+#   ${_arg_final_assembly}
 Example: $(basename "$0") ${_arg_menu[0]} [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]
 HEREDOC
 	)
@@ -183,17 +183,17 @@ HEREDOC
 		exit $EXIT_ERROR
 	fi
 
-	_polap_log1 "INFO: executing fmlrc on the draft sequence $PA ... be patient!"
+	_polap_log1 "INFO: executing fmlrc on the draft sequence ${_arg_unpolished_fasta} ... be patient!"
 	if [[ -s "${PA}" ]]; then
-		fmlrc -p "${NT}" "$ODIR"/msbwt/comp_msbwt.npy "${PA}" "${FA}" >/dev/null 2>&1
+		fmlrc -p "${_arg_threads}" "$ODIR"/msbwt/comp_msbwt.npy "${PA}" "${FA}" >/dev/null 2>&1
 	else
-		_polap_log0 "ERROR: no unpolished fasta file: [$PA]"
+		_polap_log0 "ERROR: no unpolished fasta file: [${_arg_unpolished_fasta}]"
 		exit $EXIT_ERROR
 	fi
 
 	conda deactivate
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }

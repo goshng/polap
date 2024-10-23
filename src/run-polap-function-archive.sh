@@ -44,7 +44,7 @@ function _run_polap_archive() { # archive a POLAP output folder for later use
 
 	local FDIR="$ODIR"/$INUM
 	local MTCONTIGNAME="$FDIR"/mt.contig.name-"$JNUM"
-	local _polap_var_source_0="${ODIR}/0"
+	local _polap_var_source_0="${_polap_var_wga}"
 	local _polap_var_source_0_30_contigger="$FDIR"/"$JNUM"/mtcontigs
 
 	# Print help message if requested
@@ -152,7 +152,7 @@ HEREDOC
 			rm -rf "${_arg_archive}"
 		else
 			_polap_log0 "You cancelled the operation."
-			_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+			_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 			[ "$DEBUG" -eq 1 ] && set +x
 			exit $EXIT_SUCCESS
 		fi
@@ -198,10 +198,10 @@ HEREDOC
 			_polap_log2 "cp -p" "${ODIR}/${b}/${f}" "${_arg_archive}/${b}/${f}"
 			cp -p "${ODIR}/${b}/${f}" "${_arg_archive}/${b}/${f}"
 		done
-		cp -p "${ODIR}/0/mt.contig.name-${b}" "${_arg_archive}/0/"
+		cp -p "${_polap_var_wga}/mt.contig.name-${b}" "${_arg_archive}/0/"
 	done
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -254,7 +254,7 @@ HEREDOC
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -264,6 +264,7 @@ source "$script_dir/run-polap-function-menus.sh"
 
 ################################################################################
 # Initializes polap analysis in a starting folder,
+#
 # creating an output folder.
 # Arguments:
 #   -o $ODIR
@@ -271,7 +272,7 @@ source "$script_dir/run-polap-function-menus.sh"
 # Outputs:
 #   $ODIR
 ################################################################################
-function _run_polap_reset() {
+function _run_polap_reset() { # initialize an output folder
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -282,19 +283,20 @@ function _run_polap_reset() {
 
 	help_message=$(
 		cat <<HEREDOC
-# Initializes polap analysis in a starting folder by creating the output folder.
+# A polap analysis process is initiated in a specified starting folder 
+# through the creation of an output folder.
 #
 # Arguments:
 #   -o ${ODIR}: the output folder
 # Inputs: none
 # Outputs:
 #   ${ODIR}
-Example: $(basename "$0") ${_arg_menu[0]} [-o|--outdir ${ODIR}]
+Example: $0 ${_arg_menu[0]} -o ${ODIR}
 HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
 
 	if ! run_check1; then
 		error_polap_conda
@@ -304,14 +306,15 @@ HEREDOC
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 		if [[ -d "${ODIR}" ]]; then
-			ls "${ODIR}" >&2
+			ls "${ODIR}" >&3
+			# less "${ODIR}/${_arg_log}" >&3
 		else
 			_polap_log0 "No such output folder: ${ODIR}"
 		fi
-		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
-		exit $EXIT_SUCCESS
+		return
 	fi
 
 	if [ -d "$ODIR" -a "${_arg_yes}" = "off" ]; then
@@ -319,20 +322,21 @@ HEREDOC
 			read -p "Folder [$ODIR] already exists. Do you want to delete it? [y/n] " yn
 			case $yn in
 			[Yy]*)
-				rm -rf "$ODIR"
+				rm -rf "${ODIR}"
 				break
 				;;
 			[Nn]*)
-				exit $EXIT_FAIL
+				_polap_log0 "You cancelled the reset."
+				exit $EXIT_SUCCESS
 				;;
 			*) _polap_log0 "Please answer yes or no." ;;
 			esac
 		done
 	else
-		rm -rf "$ODIR"
+		rm -rf "${ODIR}"
 	fi
 
-	mkdir -p "$ODIR"
+	mkdir -p "${ODIR}"
 	_polap_log0 "creating output folder [$ODIR] ..."
 	_polap_log1 "  Your output folder [$ODIR] is created."
 	if [ "$ODIR" != "o" ]; then
@@ -341,8 +345,8 @@ HEREDOC
 	fi
 	_run_polap_make-menus
 
-	_polap_log1 NEXT: $(basename "$0") total-length-long -o "$ODIR" -l ${_arg_long_reads}
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log1 NEXT: "$0" total-length-long -o "${ODIR}" -l "${_arg_long_reads}"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }

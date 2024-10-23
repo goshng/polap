@@ -53,9 +53,10 @@ HEREDOC
 		grep -v run_polap_x |
 		sed 's/function _run_polap_//' |
 		sed 's/() {//' |
+		awk '{print $1}' |
 		parallel touch {}
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -90,9 +91,10 @@ HEREDOC
 		grep run_polap |
 		sed 's/function _run_polap_//' |
 		sed 's/() {//' |
+		awk '{print $1}' |
 		parallel touch {}
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -108,30 +110,32 @@ function _run_polap_clean-menus() { # deletes menu command empty files
 
 	help_message=$(
 		cat <<HEREDOC
-# Clean up the menu files.
+# Delete empty menu files that are no longer required.
 #
 # Arguments: none
 # Inputs: none
-# Outputs: empty files with filenames of menus.
-Example: $(basename $0) ${_arg_menu[0]}
+# Outputs: no empty menu files
+Example: $0 ${_arg_menu[0]}
 HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
 
 	_polap_log0 "cleaning up the empty menu files ..."
 
 	cat "$script_dir"/*.sh |
 		grep "^function _run_polap" |
 		grep run_polap |
-		sed 's/function _run_polap_//' | sed 's/() {//' |
+		sed 's/function _run_polap_//' |
+		sed 's/() {//' |
+		awk '{print $1}' |
 		parallel rm -f {}
 
 	# Leave the make-menus empty file.
 	touch make-menus
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -150,15 +154,15 @@ function _run_polap_list() { # List POLAP menus.
 
 	help_message=$(
 		cat <<HEREDOC
-# Lists menu of POLAP.
+# List menus. A POLAP menu is a first argument of the command.
 #
 # You need to execute make-menus menu if nothing is displayed.
-Example: $(basename "$0") ${_arg_menu[0]} [all|main|assemble1|annotate|seeds|assemble2|mtdna|polish]
+Example: $0 ${_arg_menu[0]} [all|main|assemble|assemble1|annotate|seeds|assemble2|mtdna|polish]
 HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
 
 	case "${_arg_menu[1]}" in
 	all)
@@ -200,42 +204,68 @@ HEREDOC
 		_polap_log0 prepare-polishing
 		_polap_log0 polish
 		;;
+	assemble)
+		_polap_log0 assemble1
+		_polap_log0 annotate
+		_polap_log0 seeds
+		_polap_log0 assemble2
+		;;
 	assemble1)
-		_polap_log0 reset
-		_polap_log0 summary-reads
-		_polap_log0 total-length-long
-		_polap_log0 find-genome-size
-		_polap_log0 reduce-data
-		_polap_log0 flye1
+		_polap_log0 "reset"
+		_polap_log0 "summary-reads"
+		_polap_log0 "total-length-long"
+		_polap_log0 "find-genome-size"
+		_polap_log0 "reduce-data"
+		_polap_log0 "flye1"
 		;;
 	annotate)
-		_polap_log0 blast-genome
-		_polap_log0 count-gene
+		_polap_log0 "edges-stats"
+		_polap_log0 "blast-genome"
+		_polap_log0 "count-gene"
 		;;
 	seeds)
-		_polap_log0 seeds-1-annotation
-		_polap_log0 seeds-2-depth-range
-		_polap_log0 seeds-4-annotation-depth
-		_polap_log0 seeds-5-graph
+		_polap_log0 "seeds-1-annotation"
+		_polap_log0 "seeds-2-depth-range"
+		_polap_log0 "seeds-4-annotation-depth"
+		_polap_log0 "seeds"
 		;;
 	assemble2)
-		_polap_log0 select-reads
-		_polap_log0 flye2
+		_polap_log0 "select-reads"
+		_polap_log0 "flye2"
 		;;
 	mtdna)
-		_polap_log0 select-mtdna
+		_polap_log0 "select-mtdna"
 		;;
 	polish)
-		_polap_log0 flye-polishing
-		_polap_log0 prepare-polishing
-		_polap_log0 polish
+		_polap_log0 "flye-polishing"
+		_polap_log0 "prepare-polishing"
+		_polap_log0 "polish"
 		;;
 	*)
-		_polap_log0 "${help_message}"
+		_polap_log0 "assemble"
+		_polap_log0 "  assemble1"
+		_polap_log0 "    reset"
+		_polap_log0 "    summary-reads"
+		_polap_log0 "    total-length-long"
+		_polap_log0 "    find-genome-size"
+		_polap_log0 "    reduce-data"
+		_polap_log0 "  annotate"
+		_polap_log0 "    edges-stats"
+		_polap_log0 "    blast-genome"
+		_polap_log0 "    count-gene"
+		_polap_log0 "  seeds"
+		_polap_log0 "    seeds"
+		_polap_log0 "    seeds-gene"
+		_polap_log0 "  assemble2"
+		_polap_log0 "    select-reads"
+		_polap_log0 "    flye2"
+		_polap_log0 "  flye-polishing"
+		_polap_log0 "  prepare-polishing"
+		_polap_log0 "  polish"
 		;;
 	esac
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -252,6 +282,7 @@ function _run_polap_menu() { # Interactive menu interface
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
+	source "$script_dir/polap-variables-common.sh"
 	source "$script_dir/run-polap-function-utilities.sh"
 
 	help_message=$(
@@ -611,11 +642,11 @@ HEREDOC
 					;;
 				c)
 					_polap_log0 "..."
-					_polap_log0_cmd rm -rf ${ODIR}/0/?
-					_polap_log0_cmd rm -rf ${ODIR}/0/1-custom.depth.range.txt
-					_polap_log0_cmd rm -rf ${ODIR}/0/2-custom.depth.range.txt
+					_polap_log0_cmd rm -rf ${_polap_var_wga}/?
+					_polap_log0_cmd rm -rf ${_polap_var_wga}/1-custom.depth.range.txt
+					_polap_log0_cmd rm -rf ${_polap_var_wga}/2-custom.depth.range.txt
 					_polap_log0_cmd rm -rf ${ODIR}/{1..9}
-					_polap_log0_cmd rm -f ${ODIR}/0/mt.contig.name-?
+					_polap_log0_cmd rm -f ${_polap_var_wga}/mt.contig.name-?
 					;;
 				d)
 					_polap_log0 "..."
@@ -765,11 +796,11 @@ HEREDOC
 					;;
 				d)
 					_polap_log0 "..."
-					_polap_log0_cmd rm -rf ${ODIR}/0/?
-					_polap_log0_cmd rm -rf ${ODIR}/0/1-custom.depth.range.txt
-					_polap_log0_cmd rm -rf ${ODIR}/0/2-custom.depth.range.txt
+					_polap_log0_cmd rm -rf ${_polap_var_wga}/?
+					_polap_log0_cmd rm -rf ${_polap_var_wga}/1-custom.depth.range.txt
+					_polap_log0_cmd rm -rf ${_polap_var_wga}/2-custom.depth.range.txt
 					_polap_log0_cmd rm -rf ${ODIR}/{1..9}
-					_polap_log0_cmd rm -f ${ODIR}/0/mt.contig.name-?
+					_polap_log0_cmd rm -f ${_polap_var_wga}/mt.contig.name-?
 					;;
 				m | e) current_menu="main" ;; # Go back to Main Menu
 				*) _polap_log0 "Invalid choice, please select a valid option." ;;
@@ -825,7 +856,7 @@ HEREDOC
 	# Start at the main menu
 	navigate_menu "main"
 
-	_polap_log2 "Function end: $(_polap_log0 $FUNCNAME | sed s/_run_polap_//)"\.
+	_polap_log3 "Function end: $(_polap_log0 $FUNCNAME | sed s/_run_polap_//)"\.
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }

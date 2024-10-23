@@ -15,7 +15,7 @@ function _run_polap_x-select-contigs() {
 	# Check for required files
 	check_file_existence "${_polap_var_assembly_graph_final_gfa}"
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }

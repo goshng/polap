@@ -8,8 +8,9 @@ annotation.bed
 DEVELOPMENT.md
 trash
 nodefile
-src/not-used-sippets/
+src/not-used-snippets/
 chloroplot
+not-used-snippets/
 t
 ptGAUL.sh
 

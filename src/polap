@@ -83,12 +83,6 @@ source "$script_dir/run-polap-function-assemble.sh"
 source "$script_dir/run-polap-function-miscellaneous.sh"
 
 ################################################################################
-# utilities
-################################################################################
-
-function try() { "$@" || die "cannot $*"; }
-
-################################################################################
 # All of the variables at our disposal
 ################################################################################
 
@@ -108,6 +102,7 @@ source "$script_dir/polap-variables-main.sh"
 exec 3>&1 1>> >(logit)
 # exec 3>&1 1>> >(logit) 2>&1
 
+date +"%Y-%m-%d %H:%M:%S" >&3
 CMD="$0 $*"
 echo "CMD: $CMD"
 
@@ -117,11 +112,10 @@ if declare -f "_run_polap_${_arg_menu[0]}" >/dev/null 2>&1; then
 	# _run_polap_"$@" # same as "$1" "$2" "$3" ... for full argument list
 	_run_polap_${_arg_menu[0]}
 else
-	_polap_log0 "Menu: assemble1, annotate, assemble2,"
+	_polap_log0 "Menu: assemble, assemble1, annotate, assemble2,"
 	_polap_log0 "      reset, total-length-long, find-genome-size, reduce-data, flye1,"
-	_polap_log0 "      blast-genome, count-gene, select-reads, flye2,"
+	_polap_log0 "      blast-genome, count-gene, select-contigs, select-reads, flye2,"
 	_polap_log0 "      flye-polishing, prepare-polishing, polish,"
-	_polap_log0 "      assemble,"
 	_polap_log0 "ERROR: no such menu of $1"
 fi
 

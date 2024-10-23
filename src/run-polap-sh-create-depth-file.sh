@@ -14,18 +14,17 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# wga -> annotation, wga
-# oga ->
+# Check if exactly 3 arguments are provided
+if [ "$#" -ne 3 ]; then
+	echo "Usage: $0 lower_bound upper_bound output_file"
+	exit 1
+fi
 
-# Base variables used across multiple scripts
-local _polap_var_output="${ODIR}"
-local _polap_var_base="${ODIR}"
-local _polap_var_wga="${ODIR}/0"
-local _polap_var_oga="${ODIR}/${INUM}"
-# local _polap_var_ga="${ODIR}/${INUM}"
+# Assign positional arguments to variables
+lower_bound=$1
+upper_bound=$2
+output_file=$3
 
-local _polap_var_wga_contigger="${_polap_var_wga}/30-contigger"
-local _polap_var_wga_contigger_gfa="${_polap_var_wga_contigger}/graph_final.gfa"
-local _polap_var_wga_annotation="${_polap_var_wga}/assembly_info_organelle_annotation_count-all.txt"
-
-# Add other common variables here as needed
+# Create the output file with the depth range
+echo -e "depth_lower_bound\tdepth_upper_bound" >"$output_file"
+echo -e "$lower_bound\t$upper_bound" >>"$output_file"

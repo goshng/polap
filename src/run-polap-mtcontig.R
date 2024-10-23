@@ -16,7 +16,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# "$WDIR"/run-polap-mtcontig.R "$ODIR" \
+# "$script_dir"/run-polap-mtcontig.R "$ODIR" \
 # 	"$ODIR"/50-annotation/mt.contig.name \
 # 	"$ODIR"/assembly_info_organelle_annotation_count.txt \
 # 	--contigger \

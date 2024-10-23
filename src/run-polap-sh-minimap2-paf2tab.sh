@@ -14,14 +14,18 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-source "$script_dir/polap-variables-common.sh"
+# Check if exactly 3 arguments are provided
+if [ "$#" -ne 3 ]; then
+	echo "Usage: $0 min_read_length paf_file tab_file"
+	exit 1
+fi
 
-local _polap_var_oga="${ODIR}/${INUM}"
-local _polap_var_mtdna1="${_polap_var_oga}/mt.1.fa"
-local _polap_var_mtdna2="${_polap_var_oga}/mt.2.fa"
-local _polap_var_mtdna3="${_polap_var_oga}/mt.3.fa"
-local _polap_var_mtdna_compare="${_polap_var_oga}/mt.compare.txt"
-local _polap_var_oga_blastn1="${_polap_var_oga}/3-blastn1.txt"
-local _polap_var_oga_blastn2="${_polap_var_oga}/3-blastn2.txt"
-local _polap_var_oga_blastn3="${_polap_var_oga}/3-blastn3.txt"
-local _polap_var_oga_blastn3_length="${_polap_var_oga}/3-blastn3.length.txt"
+# Assign positional arguments to variables
+_min_read_length=$1
+_paf=$2
+_tab=$3
+
+# Create the output file with the depth range
+cut -f1-11 "${_paf}" |
+	awk -v minlength="${_min_read_length}" '{if ($2>=minlength) {print}}' \
+		>"${_tab}"

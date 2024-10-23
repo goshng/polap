@@ -52,7 +52,6 @@ function _run_polap_blast-genome-contig() { # v0.2.6: BLAST contig sequences on 
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	# source "$script_dir/polap-variables-annotation.sh"
 	source "$script_dir/polap-variables-ga.sh"
 	local MTAA="$script_dir"/polap-mt.1.c70.3.faa
 	local PTAA="$script_dir"/polap-pt.2.c70.3.faa
@@ -79,7 +78,7 @@ HEREDOC
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 		# Display the BLAST genome output.
 
-		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
@@ -119,7 +118,7 @@ HEREDOC
 	grep -v "#" "${_polap_var_contigger_contigs_stats}" |
 		cut -f 1 >"${_polap_var_ann_CONTIGNAME}"
 
-	# seqkit grep --threads $NT -f "$CONTIGNAME" \
+	# seqkit grep --threads ${_arg_threads} -f "$CONTIGNAME" \
 	# 	"$assembly_contigs_fasta" \
 	# 	-o "${_polap_var_ann}"/contig.fasta \
 	# 	>/dev/null 2>&1
@@ -144,7 +143,7 @@ HEREDOC
 		-out "${_polap_var_ann_MTAABLAST}" \
 		-evalue 1e-30 \
 		-outfmt '6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle salltitles' \
-		-num_threads "${NT}" \
+		-num_threads "${_arg_threads}" \
 		>${_polap_output_dest} 2>&1
 
 	Rscript "$script_dir"/run-polap-genes.R \
@@ -185,7 +184,7 @@ HEREDOC
 		-out "${_polap_var_ann_PTAABLAST}" \
 		-evalue 1e-30 \
 		-outfmt '6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle salltitles' \
-		-num_threads "${NT}" \
+		-num_threads "${_arg_threads}" \
 		>${_polap_output_dest} 2>&1
 
 	Rscript "$script_dir"/run-polap-genes.R \
@@ -221,7 +220,7 @@ HEREDOC
 	_polap_log1 "NEXT (for testing purpose only): $(basename "$0") count-gene --test"
 	_polap_log1 "NEXT: $(basename $0) count-gene -o $ODIR [-i $INUM]"
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
@@ -257,14 +256,13 @@ function _run_polap_blast-genome() { # BLAST edge sequences on MT and PT genes
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	# source "$script_dir/polap-variables-annotation.sh"
 	source "$script_dir/polap-variables-ga.sh"
 	local MTAA="$script_dir"/polap-mt.1.c70.3.faa
 	local PTAA="$script_dir"/polap-pt.2.c70.3.faa
 
 	help_message=$(
 		cat <<HEREDOC
-# Blasts the genome assembly of a Flye run againt the plant organelle genes.
+# NCBI BLAST the genome assembly of a Flye run againt the plant organelle genes.
 #
 # Arguments:
 #   -i $INUM: a Flye genome assembly number
@@ -274,33 +272,47 @@ function _run_polap_blast-genome() { # BLAST edge sequences on MT and PT genes
 # Outputs:
 #   ${_polap_var_ann_MTGENECOUNT}
 #   ${_polap_var_ann_PTGENECOUNT}
-Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>]
+Example: $(basename "$0") ${_arg_menu[0]} -i ${INUM}
 HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 		# Display the BLAST genome output.
+		if [[ -s "${_polap_var_ann_MTGENECOUNT}" ]]; then
+			_polap_log0_head "${_polap_var_ann_MTGENECOUNT}"
+		else
+			_polap_log0 "No such file: ${_polap_var_ann_MTGENECOUNT}"
+		fi
 
-		_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		if [[ -s "${_polap_var_ann_PTGENECOUNT}" ]]; then
+			_polap_log0_head "${_polap_var_ann_PTGENECOUNT}"
+		else
+			_polap_log0 "No such file: ${_polap_var_ann_PTGENECOUNT}"
+		fi
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		return
 	fi
 
 	_polap_log0 "blasting edge contigs with mitochondrial and plastid genes on the assembly number ${INUM} ..."
+	_polap_log1 "  input1: ${_polap_var_contigger_edges_stats}"
+	_polap_log1 "  input2: ${_polap_var_contigger_edges_fasta}"
 
 	# Checks the output files earlier than the input.
 	if [[ -s "${_polap_var_ann_MTGENECOUNT}" ]] &&
 		[[ -s "${_polap_var_ann_PTGENECOUNT}" ]] &&
-		[ "${_arg_redo}" = "off" ]; then
+		[[ "${_arg_redo}" = "off" ]]; then
 		_polap_log0 "  found1: ${_polap_var_ann_MTGENECOUNT}"
 		_polap_log0 "  found2: ${_polap_var_ann_PTGENECOUNT}"
 		_polap_log0 "  so skipping the blast genome ..."
+		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		return
 	fi
@@ -314,117 +326,183 @@ HEREDOC
 	_polap_log3_cmd rm -rf "${_polap_var_ann}"
 	_polap_log3_cmd mkdir -p "${_polap_var_ann}"
 
-	_polap_log1 "  input1: ${_polap_var_contigger_edges_stats}"
-	_polap_log1 "  input2: ${_polap_var_contigger_edges_fasta}"
-
 	#src/run-polap-select.R o/30-contigger/edges_stats.txt o/50-annotation/contig.name
 	_polap_log2 "  contig sequence names in file: ${_polap_var_ann_CONTIGNAME}"
-	grep -v "#" "${_polap_var_contigger_edges_stats}" |
-		cut -f 1 >"${_polap_var_ann_CONTIGNAME}"
+	_polap_log2 "    input: ${_polap_var_contigger_edges_stats}"
+	_polap_log2 "    output: ${_polap_var_ann_CONTIGFILE}"
+	_polap_log3_pipe "grep -v '#' ${_polap_var_contigger_edges_stats} |
+		cut -f 1 >${_polap_var_ann_CONTIGNAME}"
 
-	# seqkit grep --threads $NT -f "$CONTIGNAME" \
-	# 	"$assembly_edges_fasta" \
-	# 	-o "${_polap_var_ann}"/contig.fasta \
-	# 	>/dev/null 2>&1
-	_polap_log2 "  contig sequence file: ${_polap_var_ann_CONTIGFILE}"
-	cp "${_polap_var_contigger_edges_fasta}" "${_polap_var_ann_CONTIGFILE}"
+	_polap_log2 "  copying edge contig sequence file: ${_polap_var_ann_CONTIGFILE}"
+	_polap_log3_cmd cp "${_polap_var_contigger_edges_fasta}" "${_polap_var_ann_CONTIGFILE}"
 
 	_polap_log2 "  making BLASTDB of the contig sequences: ${_polap_var_ann_CONTIGDB}"
+	_polap_log2 "    input: ${_polap_var_ann_CONTIGFILE}"
+	_polap_log2 "    output: ${_polap_var_ann_CONTIGDB}"
 	_polap_log3_pipe "makeblastdb -dbtype nucl \
 		-in ${_polap_var_ann_CONTIGFILE} \
 		-out ${_polap_var_ann_CONTIGDB} \
 		2>${_polap_output_dest}"
-	# makeblastdb -dbtype nucl \
-	# 	-in "$_polap_var_ann_CONTIGFILE}" \
-	# 	-out "${_polap_var_ann_CONTIGDB}" \
-	# 	>${_polap_output_dest} 2>&1
 
 	# Mitochondrial gene annotation and counts
 	_polap_log2 "  BLAST of the mitochondrial proteins against ${_polap_var_ann_CONTIGDB}"
+	_polap_log2 "    input query: ${MTAA}"
+	_polap_log2 "    input BLAST DB: ${_polap_var_ann_CONTIGDB}"
+	_polap_log2 "    evalue cutoff: 1e-30"
+	_polap_log2 "    number of CPUs: ${_arg_threads}"
 	_polap_log3 "    executing the tblastn ... be patient!"
-	tblastn -query "${MTAA}" \
-		-db "${_polap_var_ann_CONTIGDB}" \
-		-out "${_polap_var_ann_MTAABLAST}" \
+	_polap_log3_pipe "tblastn -query ${MTAA} \
+		-db ${_polap_var_ann_CONTIGDB} \
+		-out ${_polap_var_ann_MTAABLAST} \
 		-evalue 1e-30 \
 		-outfmt '6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle salltitles' \
-		-num_threads "${NT}" \
-		>${_polap_output_dest} 2>&1
+		-num_threads ${_arg_threads} \
+		>${_polap_output_dest} 2>&1"
 
-	Rscript "$script_dir"/run-polap-genes.R \
-		"${_polap_var_ann_MTAABLAST}" \
-		"${_polap_var_ann_MTAABLASTBED}" \
-		>${_polap_output_dest} 2>&1
+	_polap_log2 "  converting BLAST result in BED format for removing redundancy"
+	_polap_log2 "    input1: ${_polap_var_ann_MTAABLAST}"
+	_polap_log2 "    output1: ${_polap_var_ann_MTAABLASTBED}"
+	_polap_log3_pipe "Rscript $script_dir/run-polap-genes.R \
+		${_polap_var_ann_MTAABLAST} \
+		${_polap_var_ann_MTAABLASTBED} \
+		>${_polap_output_dest} 2>&1"
 
-	sort -k1,1 -k2,2n \
-		"${_polap_var_ann_MTAABLASTBED}" \
-		>"${_polap_var_ann_MTAABLAST}".sorted.bed
+	_polap_log2 "  sorting BED format BLAST result"
+	_polap_log2 "    input1: ${_polap_var_ann_MTAABLASTBED}"
+	_polap_log2 "    output1: ${_polap_var_ann_MTAABLAST}.sorted.bed"
+	_polap_log3_pipe "sort -k1,1 -k2,2n \
+		${_polap_var_ann_MTAABLASTBED} \
+		>${_polap_var_ann_MTAABLAST}.sorted.bed"
 
-	mkdir "${_polap_var_ann_MTAABED}"
+	_polap_log2 "  creating folder: ${_polap_var_ann_MTAABED}"
+	_polap_log3_cmd mkdir "${_polap_var_ann_MTAABED}"
 
 	_polap_log2 "  counting mitochondrial genes in the contigs ..."
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "    input1: ${_polap_var_ann_MTAABLAST}.sorted.bed"
+	_polap_log2 "    output1: ${_polap_var_ann_MTGENECOUNT}"
+	_polap_log3_cmd rm -f "${_polap_var_ann_MTGENECOUNT_TMP}"
 	while IFS= read -r contig; do
-		grep -w "${contig}" "${_polap_var_ann_MTAABLAST}".sorted.bed \
-			>"${_polap_var_ann_MTAABED}/${contig}".bed
-		bedtools merge -i "${_polap_var_ann_MTAABED}/${contig}".bed \
-			>"${_polap_var_ann_MTAABED}/${contig}".bed.txt
-		printf "%s\t%d\n" "${contig}" \
-			$(wc -l <"${_polap_var_ann_MTAABED}/${contig}".bed.txt)
-	done <"${_polap_var_ann_CONTIGNAME}" |
-		sort -k2 -rn >"${_polap_var_ann_MTGENECOUNT}"
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+		_polap_log3_pipe "grep -w ${contig} ${_polap_var_ann_MTAABLAST}.sorted.bed \
+			>${_polap_var_ann_MTAABED}/${contig}.bed"
+		_polap_log3_pipe "bedtools merge -i ${_polap_var_ann_MTAABED}/${contig}.bed \
+			>${_polap_var_ann_MTAABED}/${contig}.bed.txt"
+		_polap_log3 commnad: printf \"%s\\t%d\\n\" "${contig}" $(wc -l <"${_polap_var_ann_MTAABED}/${contig}".bed.txt) ">>${_polap_var_ann_MTGENECOUNT_TMP}"
+		printf "%s\t%d\n" ${contig} $(wc -l <${_polap_var_ann_MTAABED}/${contig}.bed.txt) >>"${_polap_var_ann_MTGENECOUNT_TMP}"
+	done <"${_polap_var_ann_CONTIGNAME}"
+	_polap_log3_pipe "sort -k2 -rn ${_polap_var_ann_MTGENECOUNT_TMP} >${_polap_var_ann_MTGENECOUNT}"
 
 	_polap_log2 "  compressing the BLAST results of mitochondrial gene annotation"
-	tar zcf "${_polap_var_ann_MTAABED}".tar.gz "${_polap_var_ann_MTAABED}"
-	rm -rf "${_polap_var_ann_MTAABED}"
+	_polap_log2 "    input: ${_polap_var_ann_MTAABED}"
+	_polap_log2 "    output: ${_polap_var_ann_MTAABED}.tar.gz"
+	_polap_log3_cmd tar zcf "${_polap_var_ann_MTAABED}".tar.gz "${_polap_var_ann_MTAABED}"
+	_polap_log2 "  deleting folder: ${_polap_var_ann_MTAABLASTBED}"
+	_polap_log3_cmd rm -rf "${_polap_var_ann_MTAABED}"
 
 	_polap_log1 "  output1: ${_polap_var_ann_MTGENECOUNT}"
 
 	# Plastid gene annotation and counts
 	_polap_log2 "  BLAST of the plastid proteins against ${_polap_var_ann_CONTIGDB}"
+	_polap_log2 "    input query: ${PTAA}"
+	_polap_log2 "    input BLAST DB: ${_polap_var_ann_CONTIGDB}"
+	_polap_log2 "    evalue cutoff: 1e-30"
+	_polap_log2 "    number of CPUs: ${_arg_threads}"
 	_polap_log3 "    executing the tblastn ... be patient!"
-	tblastn -query "${PTAA}" \
-		-db "${_polap_var_ann_CONTIGDB}" \
-		-out "${_polap_var_ann_PTAABLAST}" \
+	_polap_log3_pipe "tblastn -query ${PTAA} \
+		-db ${_polap_var_ann_CONTIGDB} \
+		-out ${_polap_var_ann_PTAABLAST} \
 		-evalue 1e-30 \
 		-outfmt '6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle salltitles' \
-		-num_threads "${NT}" \
-		>${_polap_output_dest} 2>&1
+		-num_threads ${_arg_threads} \
+		>${_polap_output_dest} 2>&1"
 
-	Rscript "$script_dir"/run-polap-genes.R \
-		"${_polap_var_ann_PTAABLAST}" \
-		"${_polap_var_ann_PTAABLASTBED}" \
-		>${_polap_output_dest} 2>&1
+	_polap_log2 "  converting BLAST result in BED format for removing redundancy"
+	_polap_log2 "    input1: ${_polap_var_ann_PTAABLAST}"
+	_polap_log2 "    output1: ${_polap_var_ann_PTAABLASTBED}"
+	_polap_log3_pipe "Rscript $script_dir/run-polap-genes.R \
+		${_polap_var_ann_PTAABLAST} \
+		${_polap_var_ann_PTAABLASTBED} \
+		>${_polap_output_dest} 2>&1"
 
-	sort -k1,1 -k2,2n \
-		"${_polap_var_ann_PTAABLASTBED}" \
-		>"${_polap_var_ann_PTAABLAST}".sorted.bed
+	_polap_log2 "  sorting BED format BLAST result"
+	_polap_log2 "    input1: ${_polap_var_ann_PTAABLASTBED}"
+	_polap_log2 "    output1: ${_polap_var_ann_PTAABLAST}.sorted.bed"
+	_polap_log3_pipe "sort -k1,1 -k2,2n \
+		${_polap_var_ann_PTAABLASTBED} \
+		>${_polap_var_ann_PTAABLAST}.sorted.bed"
 
-	mkdir "${_polap_var_ann_PTAABED}"
+	_polap_log2 "  creating folder: ${_polap_var_ann_PTAABED}"
+	_polap_log3_cmd mkdir "${_polap_var_ann_PTAABED}"
 
-	_polap_log2 "  counting plastid genes in the contigs ..."
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	_polap_log2 "  counting mitochondrial genes in the contigs ..."
+	_polap_log2 "    input1: ${_polap_var_ann_PTAABLAST}.sorted.bed"
+	_polap_log2 "    output1: ${_polap_var_ann_PTGENECOUNT}"
+	_polap_log3_cmd rm -f "${_polap_var_ann_PTGENECOUNT_TMP}"
 	while IFS= read -r contig; do
-		grep -w "${contig}" "${_polap_var_ann_PTAABLAST}".sorted.bed \
-			>"${_polap_var_ann_PTAABED}/${contig}".bed
-		bedtools merge -i "${_polap_var_ann_PTAABED}/${contig}".bed \
-			>"${_polap_var_ann_PTAABED}/${contig}".bed.txt
-		printf "%s\t%d\n" "${contig}" \
-			$(wc -l <"${_polap_var_ann_PTAABED}/${contig}".bed.txt)
-	done <"${_polap_var_ann_CONTIGNAME}" |
-		sort -k2 -rn >"${_polap_var_ann_PTGENECOUNT}"
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+		_polap_log3_pipe "grep -w ${contig} ${_polap_var_ann_PTAABLAST}.sorted.bed \
+			>${_polap_var_ann_PTAABED}/${contig}.bed"
+		_polap_log3_pipe "bedtools merge -i ${_polap_var_ann_PTAABED}/${contig}.bed \
+			>${_polap_var_ann_PTAABED}/${contig}.bed.txt"
+		_polap_log3 commnad: printf \"%s\\t%d\\n\" "${contig}" $(wc -l <"${_polap_var_ann_PTAABED}/${contig}".bed.txt) ">>${_polap_var_ann_PTGENECOUNT_TMP}"
+		printf "%s\t%d\n" ${contig} $(wc -l <${_polap_var_ann_PTAABED}/${contig}.bed.txt) >>"${_polap_var_ann_PTGENECOUNT_TMP}"
+	done <"${_polap_var_ann_CONTIGNAME}"
+	_polap_log3_pipe "sort -k2 -rn ${_polap_var_ann_PTGENECOUNT_TMP} >${_polap_var_ann_PTGENECOUNT}"
 
-	_polap_log2 "  compressing the BLAST results of plastid gene annotation"
-	tar zcf "${_polap_var_ann_PTAABED}".tar.gz "${_polap_var_ann_PTAABED}"
-	rm -rf "${_polap_var_ann_PTAABED}"
+	_polap_log2 "  compressing the BLAST results of mitochondrial gene annotation"
+	_polap_log2 "    input: ${_polap_var_ann_PTAABED}"
+	_polap_log2 "    output: ${_polap_var_ann_PTAABED}.tar.gz"
+	_polap_log3_cmd tar zcf "${_polap_var_ann_PTAABED}".tar.gz "${_polap_var_ann_PTAABED}"
+	_polap_log2 "  deleting folder: ${_polap_var_ann_PTAABLASTBED}"
+	_polap_log3_cmd rm -rf "${_polap_var_ann_PTAABED}"
 
 	_polap_log1 "  output2: ${_polap_var_ann_PTGENECOUNT}"
 
-	_polap_log1 "NEXT (for testing purpose only): $(basename "$0") count-gene --test"
-	_polap_log1 "NEXT: $(basename $0) count-gene -o $ODIR [-i $INUM]"
+	# Wait for a while before deleting these plastid part
+	# Original Plastid version
+	# Plastid gene annotation and counts
+	# _polap_log2 "  BLAST of the plastid proteins against ${_polap_var_ann_CONTIGDB}"
+	# _polap_log3 "    executing the tblastn ... be patient!"
+	# tblastn -query "${PTAA}" \
+	# 	-db "${_polap_var_ann_CONTIGDB}" \
+	# 	-out "${_polap_var_ann_PTAABLAST}" \
+	# 	-evalue 1e-30 \
+	# 	-outfmt '6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle salltitles' \
+	# 	-num_threads "${_arg_threads}" \
+	# 	>${_polap_output_dest} 2>&1
+	#
+	# Rscript "$script_dir"/run-polap-genes.R \
+	# 	"${_polap_var_ann_PTAABLAST}" \
+	# 	"${_polap_var_ann_PTAABLASTBED}" \
+	# 	>${_polap_output_dest} 2>&1
+	#
+	# sort -k1,1 -k2,2n \
+	# 	"${_polap_var_ann_PTAABLASTBED}" \
+	# 	>"${_polap_var_ann_PTAABLAST}".sorted.bed
+	#
+	# mkdir "${_polap_var_ann_PTAABED}"
+	#
+	# _polap_log2 "  counting plastid genes in the contigs ..."
+	# if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	# while IFS= read -r contig; do
+	# 	grep -w "${contig}" "${_polap_var_ann_PTAABLAST}".sorted.bed \
+	# 		>"${_polap_var_ann_PTAABED}/${contig}".bed
+	# 	bedtools merge -i "${_polap_var_ann_PTAABED}/${contig}".bed \
+	# 		>"${_polap_var_ann_PTAABED}/${contig}".bed.txt
+	# 	printf "%s\t%d\n" "${contig}" \
+	# 		$(wc -l <"${_polap_var_ann_PTAABED}/${contig}".bed.txt)
+	# done <"${_polap_var_ann_CONTIGNAME}" |
+	# 	sort -k2 -rn >"${_polap_var_ann_PTGENECOUNT}"
+	# if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	#
+	# _polap_log2 "  compressing the BLAST results of plastid gene annotation"
+	# tar zcf "${_polap_var_ann_PTAABED}".tar.gz "${_polap_var_ann_PTAABED}"
+	# rm -rf "${_polap_var_ann_PTAABED}"
+	#
+	# _polap_log1 "  output2: ${_polap_var_ann_PTGENECOUNT}"
 
-	_polap_log2 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	_polap_log1 "NEXT (for testing purpose only): $0 count-gene --test"
+	_polap_log1 "NEXT: $0 count-gene -o $ODIR [-i $INUM]"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }

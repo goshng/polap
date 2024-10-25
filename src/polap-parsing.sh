@@ -94,7 +94,6 @@ _arg_species=
 _arg_accession=
 _arg_query=
 _arg_subject=
-_arg_minimum=()
 _arg_reduction_reads="on"
 _arg_contigger="off"
 _arg_all_annotate="off"
@@ -105,17 +104,9 @@ _arg_plastid="off"
 _arg_yes="off"
 _arg_circularize="off"
 _arg_redo="off"
-_arg_step1="off"
-_arg_step2="off"
-_arg_step3="off"
-_arg_step4="off"
-_arg_step5="off"
-_arg_step6="off"
-_arg_step7="off"
-_arg_step8="off"
-_arg_step9="off"
 _arg_test="off"
 _arg_verbose=1
+_arg_help="off"
 
 print_help() {
 
@@ -142,7 +133,7 @@ Menu: menus
   polap clean-menus
   polap list
 
-Menu: assemble
+Menu: assemble [default]
   polap assemble -o <arg> -l <arg> -a <arg> [-b <arg>] [--rwx <arg>] [-m <arg>] [-c <arg>]
 
 Menu: assemble1
@@ -181,13 +172,29 @@ Menu: bioproject
 
 Options:
   -o, --outdir: output folder name (default: o)
+    The option '-o' or '--outdir' specifies the output folder name, 
+    with a default value of 'o'. The output folder typically contains input 
+    files that are long-read and short-read data files. Input data files can 
+    be specified using the options provided by -l, -a, and -b.
+
   -l, --long-reads: long-reads data file in fastq format (default: 'l.fq')
+    The option '-l' or '--long-reads' specifies the location of a long-reads 
+    data file in fastq format, with a default filename of 'l.fq'.
+
   -a, --short-read1: short-read fastq file 1 (default: 's1.fq')
+    The option '-a' or '--short-read1' specifies the first short-read fastq 
+    file to be used, with a default value of "s1.fq".
+
   -b, --short-read2: short-read fastq file 2 (default: 's2.fq')
-  -p, --unpolished-fasta: polishing sequence in fasta format (default: 'mt.0.fasta')
-  -f, --final-assembly: final assembly in fasta format (default: 'mt.1.fa')
+    The option '-b' or '--short-read2' specifies a short-read fastq file 2, 
+    with a default value of 's2.fq'. The second short-read data file, 
+    if provided, is considered optional.
+
   -m, --min-read-length: minimum length of long reads (default: '3000')
-  -t, --threads: number of CPUs (default: '56')
+    The option '-m' or '--min-read-length' specifies the minimum length of 
+    long reads, with a default value of 3000. 
+
+  -t, --threads: number of CPUs (default: maximum number of cores)
   -c, --coverage: coverage for the 2nd assembly (default: '30')
   -r, --pair-min: minimum mapped bases or PAF 11th column (default: '3000')
   -x, --bridge-min: minimum bridging read length or PAF 7th column (default: '3000')
@@ -195,17 +202,22 @@ Options:
   --rwx: -r -w -x set to the same value (default: '3000')
   -i, --inum: previous output number of organelle-genome assembly (default: '0')
   -j, --jnum: current output number of organelle-genome assembly (default: '1')
-  -g, --genomesize: expected genome size (no default)
+  -g, --genomesize: expected genome size (default: estimated with a short-read dataset)
   -u, --circularize, --no-circularize: circularize a contig (off by default)
+  -p, --unpolished-fasta: polishing sequence in fasta format (default: 'mt.0.fasta')
+  -f, --final-assembly: final assembly in fasta format (default: 'mt.1.fa')
   --reduction-reads, --no-reduction-reads: reduction of long-read data before assemble1 (on by default)
   --coverage-check, --no-coverage-check: coverage check before assemble2 step (on by default)
   --yes, --no-yes: alway yes for a question or deletes output completely (off by default)
   --redo, --no-redo: (off by default)
-  --random-seed: (off by default; 11 used in seqkit sample)
+    The command specifies that any previously generated intermediate results 
+    should be disregarded and new calculations performed from scratch.
+
+  --random-seed: 5-digit number (default automatically assigned; 11 used in seqkit sample)
   --flye-asm-coverage: Flye --asm-coverage (default: '30')
   --species: Species scientific name (no default)
 	--sra: SRA data (no default)
-  --log: log file (default: polap.log)
+  --log: log file (default: <output>/polap.log)
   -v, --verbose: use multiple times to increase the verbose level
   --version: Prints version
   -h, --help: Prints help
@@ -497,17 +509,6 @@ parse_commandline() {
 		--subject=*)
 			_arg_subject="${_key##--subject=}"
 			;;
-		-M | --minimum)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_minimum+=("$2")
-			shift
-			;;
-		--minimum=*)
-			_arg_minimum+=("${_key##--minimum=}")
-			;;
-		-M*)
-			_arg_minimum+=("${_key##-M}")
-			;;
 		--no-reduction-reads | --reduction-reads)
 			_arg_reduction_reads="on"
 			test "${1:0:5}" = "--no-" && _arg_reduction_reads="off"
@@ -569,42 +570,6 @@ parse_commandline() {
 			_arg_redo="on"
 			test "${1:0:5}" = "--no-" && _arg_redo="off"
 			;;
-		--no-step1 | --step1)
-			_arg_step1="on"
-			test "${1:0:5}" = "--no-" && _arg_step1="off"
-			;;
-		--no-step2 | --step2)
-			_arg_step2="on"
-			test "${1:0:5}" = "--no-" && _arg_step2="off"
-			;;
-		--no-step3 | --step3)
-			_arg_step3="on"
-			test "${1:0:5}" = "--no-" && _arg_step3="off"
-			;;
-		--no-step4 | --step4)
-			_arg_step4="on"
-			test "${1:0:5}" = "--no-" && _arg_step4="off"
-			;;
-		--no-step5 | --step5)
-			_arg_step5="on"
-			test "${1:0:5}" = "--no-" && _arg_step5="off"
-			;;
-		--no-step6 | --step6)
-			_arg_step6="on"
-			test "${1:0:5}" = "--no-" && _arg_step6="off"
-			;;
-		--no-step7 | --step7)
-			_arg_step7="on"
-			test "${1:0:5}" = "--no-" && _arg_step7="off"
-			;;
-		--no-step8 | --step8)
-			_arg_step8="on"
-			test "${1:0:5}" = "--no-" && _arg_step8="off"
-			;;
-		--no-step9 | --step9)
-			_arg_step9="on"
-			test "${1:0:5}" = "--no-" && _arg_step9="off"
-			;;
 		--no-test | --test)
 			_arg_test="on"
 			test "${1:0:5}" = "--no-" && _arg_test="off"
@@ -619,11 +584,11 @@ parse_commandline() {
 		-v | --verbose)
 			_arg_verbose=$((_arg_verbose + 1))
 			;;
-		-h | --help)
-			print_help
-			exit 0
+		--help)
+			_arg_help="on"
+			test "${1:0:5}" = "--no-" && _arg_test="off"
 			;;
-		-h*)
+		-h)
 			print_help
 			exit 0
 			;;

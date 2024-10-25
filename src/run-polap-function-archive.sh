@@ -296,7 +296,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	if ! run_check1; then
 		error_polap_conda

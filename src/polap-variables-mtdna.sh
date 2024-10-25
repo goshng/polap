@@ -21,8 +21,9 @@ local _polap_var_assembly_graph_gfa="${_polap_var_ga}/assembly_graph.gfa"
 local _polap_var_annotation_table="${_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt"
 local _polap_var_mt_fasta="${_polap_var_ga}/mt.0.fasta"
 local _polap_var_mt_edges="${_polap_var_ga}/mt.0.edges"
-local _polap_var_1_gfa_all="${_polap_var_mtdna}/1-gfa.all.gfa"
 
+# _polap_var_mtdna_
+local _polap_var_1_gfa_all="${_polap_var_mtdna}/1-gfa.all.gfa"
 local _polap_var_gfa_links="${_polap_var_mtdna}/1-gfa.links.tsv"
 local _polap_var_gfa_links_edges="${_polap_var_mtdna}/1-gfa.links.edges.txt"
 local _polap_var_gfa_links_circular_path="${_polap_var_mtdna}/2-gfa.links.circular.path.txt"

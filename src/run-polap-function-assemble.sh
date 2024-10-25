@@ -292,10 +292,21 @@ function _run_polap_assemble() { # whole-genome and then organelle-genome assemb
 # Runs the POLAP organelle-genome assembly with sequencing data.
 # 
 # Arguments:
-#   -o $ODIR
+#   -o $ODIR: output folder (default: o)
 #   -l ${_arg_long_reads}: a long-read fastq data file
 #   -a ${_arg_short_read1}: a short-read fastq data file
 #   -b ${_arg_short_read2}: another short-read fastq data file
+#   --rwx <arg>: mapping length for read selection
+#   -m <arg>: minimum read length
+#   -c <arg>: maximum coverage of reads 
+#   -t <arg>: number of CPUs
+#   -i <arg>: index of the source of an organelle-genome assembly
+#   -j <arg>: index of the target organelle-genome assembly
+#   --no-reduction-reads: no data reduction in a whole-genome assembly
+#   --no-coverage-check: no data reduction in an organelle-genome assembly
+#   --random-seed <arg>: 5-digit number
+#   --flye-asm-coverage <arg>: Flye --asm-coverage
+#   --redo: do not use previously created intermediate results
 # Inputs:
 #   ${_arg_long_reads}: a long-read fastq 
 #   ${_arg_short_read1}: a short-read fastq data file
@@ -307,7 +318,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Not delete the output directory.

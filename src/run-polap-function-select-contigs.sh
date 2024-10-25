@@ -971,6 +971,24 @@ HEREDOC
 		done
 
 		return
+	elif [[ "${_arg_menu[1]}" = "bandage" ]]; then
+		# Prompt the user for input
+		read -p "Enter edges using Bandage (e.g., edge_265, edge_520, edge_425): " edges
+
+		# Convert the input string into new lines (replace ", " with newlines)
+		local formatted_edges=$(echo "$edges" | tr ', ' '\n')
+		echo "${formatted_edges}" >"${MTCONTIGNAME}"
+		local _command1="Rscript $script_dir/run-polap-r-select-contigs-by-7-table.R \
+		      -t ${_polap_var_annotation_table} \
+      		-m ${MTCONTIGNAME} \
+      		-a ${_polap_var_ga_annotation_depth_table} \
+      		--out-annotation ${_polap_var_ga_annotation_depth_table_seed_target} \
+          -o ${_polap_var_mtcontig_table}"
+		_command1+=" \
+			    2>$_polap_output_dest"
+		_polap_log3_pipe "${_command1}"
+		return
+
 	fi
 
 	_polap_log0 "selecting seed contigs using the assembly graph: ${INUM} (source) -> ${JNUM} (target) ..."

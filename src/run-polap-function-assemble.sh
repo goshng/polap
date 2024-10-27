@@ -81,7 +81,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Display the content of output files
@@ -99,29 +99,35 @@ HEREDOC
 
 	_polap_log0 "starting the whole-genome assembly on ${ODIR} ..."
 
-	if [[ -d "${_polap_var_wga}" ]]; then
-		if [[ "${_arg_redo}" = "on" ]]; then
-			_polap_log3_cmd rm -rf "${_polap_var_wga}"
-			_polap_log3_cmd mkdir -p "${_polap_var_wga}"
-		else
-			if confirm "Do you want to do the whole-genome assembly, which will delete ${_polap_var_wga}?"; then
-				_polap_log0 "  deleting and creating ${_polap_var_wga} ..."
+	if [[ "${_arg_flye}" == "on" ]]; then
+		if [[ -d "${_polap_var_wga}" ]]; then
+			if [[ "${_arg_redo}" = "on" ]]; then
 				_polap_log3_cmd rm -rf "${_polap_var_wga}"
 				_polap_log3_cmd mkdir -p "${_polap_var_wga}"
 			else
-				_polap_log0 "You have cancelled the whole-genome assembly."
-				return
+				if confirm "Do you want to do the whole-genome assembly, which will delete ${_polap_var_wga}?"; then
+					_polap_log0 "  deleting and creating ${_polap_var_wga} ..."
+					_polap_log3_cmd rm -rf "${_polap_var_wga}"
+					_polap_log3_cmd mkdir -p "${_polap_var_wga}"
+				else
+					_polap_log0 "You have cancelled the whole-genome assembly."
+					return
+				fi
 			fi
+		else
+			_polap_log0 "  creating ${_polap_var_wga} ..."
+			_polap_log3_cmd mkdir -p "${_polap_var_wga}"
 		fi
-	else
-		_polap_log0 "  creating ${_polap_var_wga} ..."
-		_polap_log3_cmd mkdir -p "${_polap_var_wga}"
 	fi
 
 	if [ -s "${_polap_var_base_fq_stats}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping summary-reads ..."
 	else
-		_run_polap_summary-reads
+		if [[ "${_arg_flye}" == "on" ]]; then
+			_run_polap_summary-reads
+		else
+			_polap_log2 "  skipping summary-reads ..."
+		fi
 	fi
 
 	if [ -s "${_polap_var_base_long_total_length}" ] && [ "${_arg_redo}" = "off" ]; then
@@ -147,7 +153,11 @@ HEREDOC
 	if [ -s "${_polap_var_wga_contigger_gfa}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping flye1 ..."
 	else
-		_run_polap_flye1
+		if [[ "${_arg_flye}" == "on" ]]; then
+			_run_polap_flye1
+		else
+			_polap_log2 "  skipping flye1 ..."
+		fi
 	fi
 
 	_polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -245,7 +255,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	check_file_existence "${MTCONTIGNAME}"
 	check_file_existence "${_polap_var_contigger_edges_fasta}"
@@ -253,7 +263,11 @@ HEREDOC
 
 	_polap_log1 "NEXT: $(basename $0) select-reads -o $ODIR -i $INUM -j $JNUM"
 	_run_polap_select-reads
-	_run_polap_flye2
+	if [[ "${_arg_flye}" == "on" ]]; then
+		_run_polap_flye2
+	else
+		_polap_log2 "  skipping flye2 ..."
+	fi
 
 	[ "$DEBUG" -eq 1 ] && set +x
 }

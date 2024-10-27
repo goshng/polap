@@ -181,14 +181,14 @@ function _run_polap_compare-mtdna() {
 # Arguments:
 #   -i $INUM
 # Inputs:
-#   ${_polap_var_mtdna3}
+#   ${_polap_var_compare_mtdna3}
 # Outputs:
 Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>] -f mt.1.fa -o [$ODIR]
 HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	check_folder_existence "${ODIR}"
 
@@ -198,67 +198,67 @@ HEREDOC
 		csvtk del-header)
 
 	# Run blastn between known mtDNA and assembled mtDNA (first round)
-	blastn -query "${_polap_var_mtdna1}" \
+	blastn -query "${_polap_var_compare_mtdna1}" \
 		-subject "${_polap_var_bioproject_mtdna_fasta2}" \
 		-outfmt "6 qseqid qstart sseqid sstart sstrand" \
-		>"${_polap_var_oga_blastn1}"
+		>"${_polap_var_compare_oga_blastn1}"
 
-	blastn -query "${_polap_var_mtdna1}" \
+	blastn -query "${_polap_var_compare_mtdna1}" \
 		-subject "${_polap_var_bioproject_mtdna_fasta2}" \
-		>"${_polap_var_oga_blastn1}.full"
+		>"${_polap_var_compare_oga_blastn1}.full"
 
-	_polap_log2_file "${_polap_var_oga_blastn1}"
+	_polap_log2_file "${_polap_var_compare_oga_blastn1}"
 
 	# Determine the strand orientation
-	if [ -s "${_polap_var_oga_blastn1}" ]; then
-		local _polap_var_bioproject_strand=$(cut -f5 "${_polap_var_oga_blastn1}" | head -n 1)
+	if [ -s "${_polap_var_compare_oga_blastn1}" ]; then
+		local _polap_var_bioproject_strand=$(cut -f5 "${_polap_var_compare_oga_blastn1}" | head -n 1)
 	else
-		_polap_log1 "No hit in ${_polap_var_oga_blastn1}"
+		_polap_log1 "No hit in ${_polap_var_compare_oga_blastn1}"
 		local n1=$(cut -f1 "${_polap_var_bioproject_mtdna_fasta2_accession}")
-		printf "%s\t%d\t0\t0\n" ${n1} ${l1} >"${_polap_var_mtdna_compare}"
+		printf "%s\t%d\t0\t0\n" ${n1} ${l1} >"${_polap_var_compare_mtdna_compare}"
 		return
 	fi
 
 	# Reverse sequence if the strand is negative
 	if [ "${_polap_var_bioproject_strand}" = "plus" ]; then
-		cp "${_polap_var_mtdna1}" "${_polap_var_mtdna2}"
+		cp "${_polap_var_compare_mtdna1}" "${_polap_var_compare_mtdna2}"
 	else
-		seqkit seq -t dna -v -p -r "${_polap_var_mtdna1}" -o "${_polap_var_mtdna2}"
+		seqkit seq -t dna -v -p -r "${_polap_var_compare_mtdna1}" -o "${_polap_var_compare_mtdna2}"
 	fi
 
 	# Run blastn (second round)
-	blastn -query "${_polap_var_mtdna2}" -subject "${_polap_var_bioproject_mtdna_fasta2}" \
+	blastn -query "${_polap_var_compare_mtdna2}" -subject "${_polap_var_bioproject_mtdna_fasta2}" \
 		-outfmt "6 qseqid qstart sseqid sstart sstrand" \
-		>"${_polap_var_oga_blastn2}"
+		>"${_polap_var_compare_oga_blastn2}"
 
-	_polap_log2_file "${_polap_var_oga_blastn2}"
+	_polap_log2_file "${_polap_var_compare_oga_blastn2}"
 
 	# Restart sequence alignment at the lowest start position
-	local _polap_var_bioproject_restart_position=$(sort -n -k4 "${_polap_var_oga_blastn2}" | head -n 1 | cut -f2)
+	local _polap_var_bioproject_restart_position=$(sort -n -k4 "${_polap_var_compare_oga_blastn2}" | head -n 1 | cut -f2)
 	_polap_log2 "LOG: restart position: ${_polap_var_bioproject_restart_position}"
-	seqkit restart -i "${_polap_var_bioproject_restart_position}" "${_polap_var_mtdna2}" -o "${_polap_var_mtdna3}"
+	seqkit restart -i "${_polap_var_bioproject_restart_position}" "${_polap_var_compare_mtdna2}" -o "${_polap_var_compare_mtdna3}"
 
 	# Run blastn (third round)
-	blastn -query "${_polap_var_mtdna3}" -subject "${_polap_var_bioproject_mtdna_fasta2}" \
+	blastn -query "${_polap_var_compare_mtdna3}" -subject "${_polap_var_bioproject_mtdna_fasta2}" \
 		-outfmt "6 qseqid qstart sseqid sstart sstrand length pident" \
-		>"${_polap_var_oga_blastn3}"
+		>"${_polap_var_compare_oga_blastn3}"
 
-	_polap_log2_file "${_polap_var_oga_blastn3}"
+	_polap_log2_file "${_polap_var_compare_oga_blastn3}"
 
 	# Analyze the length of the match using an R script
 	"$script_dir"/run-polap-r-assemble-bioproject-3-length-match.R \
-		"${_polap_var_oga_blastn3}" \
-		"${_polap_var_oga_blastn3_length}" \
+		"${_polap_var_compare_oga_blastn3}" \
+		"${_polap_var_compare_oga_blastn3_length}" \
 		2>"$_polap_output_dest"
 
-	_polap_log2_file "${_polap_var_oga_blastn3_length}"
+	_polap_log2_file "${_polap_var_compare_oga_blastn3_length}"
 
-	local l2=$(<"${_polap_var_oga_blastn3_length}")
+	local l2=$(<"${_polap_var_compare_oga_blastn3_length}")
 	local c1=$(echo "scale=3; ${l2}/${l1}" | bc)
 	_polap_log2 "Length of ${_polap_var_bioproject_mtdna_fasta2}: ${l1}"
 	_polap_log2 "Length of match alignment: ${l2}"
 	_polap_log1 "length coverage: ${c1}"
-	printf "%s\t%d\t%d\t%f\n" ${n1} ${l1} ${l2} ${c1} >"${_polap_var_mtdna_compare}"
+	printf "%s\t%d\t%d\t%f\n" ${n1} ${l1} ${l2} ${c1} >"${_polap_var_compare_mtdna_compare}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -314,7 +314,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	if [[ ${_arg_menu[1]} == "file" ]]; then
 		if [[ -s "${_polap_var_bioproject_species}" ]]; then
@@ -481,7 +481,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && echo "${help_message}" >&2 && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && echo "${help_message}" >&2 && exit $EXIT_SUCCESS
 
 	_polap_log1 "LOG: Plotting mitochondrial DNA genome for Flye assembly $INUM..."
 
@@ -526,13 +526,13 @@ function _run_polap_select-mtdna() {
 	# local _polap_var_annotation_table="$FDIR/assembly_info_organelle_annotation_count-all.txt"
 	# local _polap_var_mt_fasta="$FDIR/mt.0.fasta"
 	# local _polap_var_mt_edges="$FDIR/mt.0.edges"
-	# local _polap_var_1_gfa_all="${_polap_var_mtdna}/1-gfa.all.gfa"
-	# local _polap_var_gfa_links="${_polap_var_mtdna}/1-gfa.links.tsv"
-	# local _polap_var_gfa_links_edges="${_polap_var_mtdna}/1-gfa.links.edges.txt"
-	# local _polap_var_gfa_links_circular_path="${_polap_var_mtdna}/2-gfa.links.circular.path.txt"
-	# local _polap_var_circular_path="${_polap_var_mtdna}/3-circular.path.txt"
-	# local _polap_var_edge_fasta="${_polap_var_mtdna}/5-edge.fasta"
-	# local _polap_var_fasta="${_polap_var_mtdna}/4-gfa.fasta"
+	# local _polap_var_mtdna_1_gfa_all="${_polap_var_mtdna}/1-gfa.all.gfa"
+	# local _polap_var_mtdna_gfa_links="${_polap_var_mtdna}/1-gfa.links.tsv"
+	# local _polap_var_mtdna_gfa_links_edges="${_polap_var_mtdna}/1-gfa.links.edges.txt"
+	# local _polap_var_mtdna_gfa_links_circular_path="${_polap_var_mtdna}/2-gfa.links.circular.path.txt"
+	# local _polap_var_mtdna_circular_path="${_polap_var_mtdna}/3-circular.path.txt"
+	# local _polap_var_mtdna_edge_fasta="${_polap_var_mtdna}/5-edge.fasta"
+	# local _polap_var_mtdna_fasta="${_polap_var_mtdna}/4-gfa.fasta"
 
 	# Help message
 	local help_message=$(
@@ -554,7 +554,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && echo "${help_message}" >&2 && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && echo "${help_message}" >&2 && exit $EXIT_SUCCESS
 
 	# Check for required files
 	check_file_existence "${_polap_var_assembly_graph_gfa}"
@@ -569,62 +569,62 @@ HEREDOC
 
 	# Convert GFA to FASTA
 	gfatools gfa2fa "${_polap_var_assembly_graph_gfa}" \
-		>"${_polap_var_fasta}" \
+		>"${_polap_var_mtdna_fasta}" \
 		2>"$_polap_output_dest"
 
-	_polap_log2_file "FASTA of the input GFA: ${_polap_var_fasta}"
+	_polap_log2_file "FASTA of the input GFA: ${_polap_var_mtdna_fasta}"
 
 	# Step 1: List connected components (GFA processing)
 	gfatools view -S "${_polap_var_assembly_graph_gfa}" \
-		>"${_polap_var_1_gfa_all}" \
+		>"${_polap_var_mtdna_1_gfa_all}" \
 		2>"$_polap_output_dest"
 
-	_polap_log2_file "GFA content: ${_polap_var_1_gfa_all}"
+	_polap_log2_file "GFA content: ${_polap_var_mtdna_1_gfa_all}"
 
 	# Extract links from GFA and store them
-	grep "^L" "${_polap_var_1_gfa_all}" >"${_polap_var_gfa_links}"
+	grep "^L" "${_polap_var_mtdna_1_gfa_all}" >"${_polap_var_mtdna_gfa_links}"
 
-	local _polap_var_number_links_gfa=$(wc -l <"${_polap_var_gfa_links}")
+	local _polap_var_number_links_gfa=$(wc -l <"${_polap_var_mtdna_gfa_links}")
 	if [ "${_polap_var_number_links_gfa}" -eq 0 ]; then
 		echoerr "LOG: No circular sequences are found."
 		return
 	fi
 
-	_polap_log2_file "GFA Links: ${_polap_var_gfa_links}"
+	_polap_log2_file "GFA Links: ${_polap_var_mtdna_gfa_links}"
 
 	# Process the GFA links
 	"$script_dir"/run-polap-r-select-mtdna-1-nx-gfa-links.R \
-		"${_polap_var_gfa_links}" \
-		"${_polap_var_gfa_links_edges}" \
+		"${_polap_var_mtdna_gfa_links}" \
+		"${_polap_var_mtdna_gfa_links_edges}" \
 		2>"$_polap_output_dest"
 
-	_polap_log2_file "GFA Links Edges: ${_polap_var_gfa_links_edges}"
+	_polap_log2_file "GFA Links Edges: ${_polap_var_mtdna_gfa_links_edges}"
 
 	# Step 2: Find circular paths using Python script
 	python "$script_dir"/run-polap-py-select-mtdna-2-nx-simple-cycles.py \
-		"${_polap_var_gfa_links_edges}" \
-		"${_polap_var_gfa_links_circular_path}" \
+		"${_polap_var_mtdna_gfa_links_edges}" \
+		"${_polap_var_mtdna_gfa_links_circular_path}" \
 		2>"$_polap_output_dest"
 	# python "$script_dir"/run-polap-py-select-mtdna-2-nx-find-circular-path.py \
-	# 	"${_polap_var_gfa_links_edges}" \
-	# 	"${_polap_var_gfa_links_circular_path}" \
+	# 	"${_polap_var_mtdna_gfa_links_edges}" \
+	# 	"${_polap_var_mtdna_gfa_links_circular_path}" \
 	# 	2>"$_polap_output_dest"
 
-	_polap_log2_file "Circular Path: ${_polap_var_gfa_links_circular_path}"
+	_polap_log2_file "Circular Path: ${_polap_var_mtdna_gfa_links_circular_path}"
 
 	# return
 	#
 	# Process circular path
-	# process_circular_path "${_polap_var_gfa_links_circular_path}" "${_polap_var_circular_path}"
-	# _polap_log2_file "Processed Circular Path: ${_polap_var_circular_path}"
+	# process_circular_path "${_polap_var_mtdna_gfa_links_circular_path}" "${_polap_var_mtdna_circular_path}"
+	# _polap_log2_file "Processed Circular Path: ${_polap_var_mtdna_circular_path}"
 
 	# Step 3: Concatenate sequences from circular path
-	for _polap_file in "${_polap_var_gfa_links_circular_path}"_*.tsv; do
+	for _polap_file in "${_polap_var_mtdna_gfa_links_circular_path}"_*.tsv; do
 		# Extract the number from the filename using parameter expansion
 		local index=$(echo "${_polap_file}" | sed -E 's/.*_(.*)\.tsv/\1/')
 		# _polap_log0 "${index}"
-		concatenate_sequences "${_polap_file}" "${_polap_var_fasta}" "${_polap_var_edge_fasta}-${index}"
-		finalize_mtdna_fasta "${_polap_var_edge_fasta}-${index}" "${_polap_var_mt_fasta}-${index}.fasta"
+		concatenate_sequences "${_polap_file}" "${_polap_var_mtdna_fasta}" "${_polap_var_mtdna_edge_fasta}-${index}"
+		finalize_mtdna_fasta "${_polap_var_mtdna_edge_fasta}-${index}" "${_polap_var_mt_fasta}-${index}.fasta"
 		_polap_log2_file "Final mtDNA FASTA: ${_polap_var_mt_fasta}-${index}.fasta"
 		cp "${_polap_file}" "${_polap_var_mt_edges}-${index}.edges"
 		seqkit stats "${_polap_var_mt_fasta}-${index}.fasta" 1>&2
@@ -635,13 +635,13 @@ HEREDOC
 	cp "${largest_file}" "${_polap_var_mt_fasta}"
 	cp "${_polap_var_mt_edges}-${index}.edges" "${_polap_var_mt_edges}"
 
-	# concatenate_sequences "${_polap_var_circular_path}" "${_polap_var_fasta}" "${_polap_var_edge_fasta}"
+	# concatenate_sequences "${_polap_var_mtdna_circular_path}" "${_polap_var_mtdna_fasta}" "${_polap_var_mtdna_edge_fasta}"
 
 	# Finalize the mtDNA FASTA
-	# finalize_mtdna_fasta "${_polap_var_edge_fasta}" "${_polap_var_mt_fasta}"
+	# finalize_mtdna_fasta "${_polap_var_mtdna_edge_fasta}" "${_polap_var_mt_fasta}"
 	# _polap_log2_file "Final mtDNA FASTA: ${_polap_var_mt_fasta}"
 
-	# cp "${_polap_var_circular_path}" "${_polap_var_mt_edges}"
+	# cp "${_polap_var_mtdna_circular_path}" "${_polap_var_mt_edges}"
 
 	_polap_log1_file "Output mtDNA FASTA: ${_polap_var_mt_fasta}"
 
@@ -674,13 +674,13 @@ function _run_polap_select-mtdna-org() {
 	# local _polap_var_annotation_table="$FDIR/assembly_info_organelle_annotation_count-all.txt"
 	# local _polap_var_mt_fasta="$FDIR/mt.0.fasta"
 	# local _polap_var_mt_edges="$FDIR/mt.0.edges"
-	# local _polap_var_1_gfa_all="${_polap_var_mtdna}/1-gfa.all.gfa"
-	# local _polap_var_gfa_links="${_polap_var_mtdna}/1-gfa.links.tsv"
-	# local _polap_var_gfa_links_edges="${_polap_var_mtdna}/1-gfa.links.edges.txt"
-	# local _polap_var_gfa_links_circular_path="${_polap_var_mtdna}/2-gfa.links.circular.path.txt"
-	# local _polap_var_circular_path="${_polap_var_mtdna}/3-circular.path.txt"
-	# local _polap_var_edge_fasta="${_polap_var_mtdna}/5-edge.fasta"
-	# local _polap_var_fasta="${_polap_var_mtdna}/4-gfa.fasta"
+	# local _polap_var_mtdna_1_gfa_all="${_polap_var_mtdna}/1-gfa.all.gfa"
+	# local _polap_var_mtdna_gfa_links="${_polap_var_mtdna}/1-gfa.links.tsv"
+	# local _polap_var_mtdna_gfa_links_edges="${_polap_var_mtdna}/1-gfa.links.edges.txt"
+	# local _polap_var_mtdna_gfa_links_circular_path="${_polap_var_mtdna}/2-gfa.links.circular.path.txt"
+	# local _polap_var_mtdna_circular_path="${_polap_var_mtdna}/3-circular.path.txt"
+	# local _polap_var_mtdna_edge_fasta="${_polap_var_mtdna}/5-edge.fasta"
+	# local _polap_var_mtdna_fasta="${_polap_var_mtdna}/4-gfa.fasta"
 
 	# Help message
 	local help_message=$(
@@ -702,7 +702,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && echo "${help_message}" >&2 && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && echo "${help_message}" >&2 && exit $EXIT_SUCCESS
 
 	# Check for required files
 	check_file_existence "${_polap_var_assembly_graph_gfa}"
@@ -717,61 +717,61 @@ HEREDOC
 
 	# Convert GFA to FASTA
 	gfatools gfa2fa "${_polap_var_assembly_graph_gfa}" \
-		>"${_polap_var_fasta}" \
+		>"${_polap_var_mtdna_fasta}" \
 		2>"$_polap_output_dest"
 
-	_polap_log2_file "FASTA of the input GFA: ${_polap_var_fasta}"
+	_polap_log2_file "FASTA of the input GFA: ${_polap_var_mtdna_fasta}"
 
 	# Step 1: List connected components (GFA processing)
 	gfatools view -S "${_polap_var_assembly_graph_gfa}" \
-		>"${_polap_var_1_gfa_all}" \
+		>"${_polap_var_mtdna_1_gfa_all}" \
 		2>"$_polap_output_dest"
 
-	_polap_log2_file "GFA content: ${_polap_var_1_gfa_all}"
+	_polap_log2_file "GFA content: ${_polap_var_mtdna_1_gfa_all}"
 
 	# Extract links from GFA and store them
-	grep "^L" "${_polap_var_1_gfa_all}" >"${_polap_var_gfa_links}"
+	grep "^L" "${_polap_var_mtdna_1_gfa_all}" >"${_polap_var_mtdna_gfa_links}"
 
-	local _polap_var_number_links_gfa=$(wc -l <"${_polap_var_gfa_links}")
+	local _polap_var_number_links_gfa=$(wc -l <"${_polap_var_mtdna_gfa_links}")
 	if [ "${_polap_var_number_links_gfa}" -eq 0 ]; then
 		echoerr "LOG: No circular sequences are found."
 		return
 	fi
 
-	_polap_log2_file "GFA Links: ${_polap_var_gfa_links}"
+	_polap_log2_file "GFA Links: ${_polap_var_mtdna_gfa_links}"
 
 	# Process the GFA links
 	"$script_dir"/run-polap-r-select-mtdna-1-nx-gfa-links.R \
-		"${_polap_var_gfa_links}" \
-		"${_polap_var_gfa_links_edges}" \
+		"${_polap_var_mtdna_gfa_links}" \
+		"${_polap_var_mtdna_gfa_links_edges}" \
 		2>"$_polap_output_dest"
 
-	_polap_log2_file "GFA Links Edges: ${_polap_var_gfa_links_edges}"
+	_polap_log2_file "GFA Links Edges: ${_polap_var_mtdna_gfa_links_edges}"
 
 	# Step 2: Find circular paths using Python script
 	# python "$script_dir"/run-polap-py-select-mtdna-2-nx-simple-cycles.py \
-	# 	"${_polap_var_gfa_links_edges}" \
-	# 	"${_polap_var_gfa_links_circular_path}" \
+	# 	"${_polap_var_mtdna_gfa_links_edges}" \
+	# 	"${_polap_var_mtdna_gfa_links_circular_path}" \
 	# 	2>"$_polap_output_dest"
 	python "$script_dir"/run-polap-py-select-mtdna-2-nx-find-circular-path.py \
-		"${_polap_var_gfa_links_edges}" \
-		"${_polap_var_gfa_links_circular_path}" \
+		"${_polap_var_mtdna_gfa_links_edges}" \
+		"${_polap_var_mtdna_gfa_links_circular_path}" \
 		2>"$_polap_output_dest"
 
-	_polap_log2_file "Circular Path: ${_polap_var_gfa_links_circular_path}"
+	_polap_log2_file "Circular Path: ${_polap_var_mtdna_gfa_links_circular_path}"
 
 	# Process circular path
-	process_circular_path "${_polap_var_gfa_links_circular_path}" "${_polap_var_circular_path}"
-	_polap_log2_file "Processed Circular Path: ${_polap_var_circular_path}"
+	process_circular_path "${_polap_var_mtdna_gfa_links_circular_path}" "${_polap_var_mtdna_circular_path}"
+	_polap_log2_file "Processed Circular Path: ${_polap_var_mtdna_circular_path}"
 
 	# Step 3: Concatenate sequences from circular path
-	concatenate_sequences "${_polap_var_circular_path}" "${_polap_var_fasta}" "${_polap_var_edge_fasta}"
+	concatenate_sequences "${_polap_var_mtdna_circular_path}" "${_polap_var_mtdna_fasta}" "${_polap_var_mtdna_edge_fasta}"
 
 	# Finalize the mtDNA FASTA
-	finalize_mtdna_fasta "${_polap_var_edge_fasta}" "${_polap_var_mt_fasta}"
+	finalize_mtdna_fasta "${_polap_var_mtdna_edge_fasta}" "${_polap_var_mt_fasta}"
 	_polap_log2_file "Final mtDNA FASTA: ${_polap_var_mt_fasta}"
 
-	cp "${_polap_var_circular_path}" "${_polap_var_mt_edges}"
+	cp "${_polap_var_mtdna_circular_path}" "${_polap_var_mt_edges}"
 
 	_polap_log1_file "Output mtDNA FASTA: ${_polap_var_mt_fasta}"
 	seqkit stats "${_polap_var_mt_fasta}" 1>&2

@@ -88,7 +88,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	_polap_log0 "selecting long-reads mapped on the seed contigs in file: ${MTCONTIGNAME} and ${_polap_var_contigger_edges_fasta}"
@@ -292,6 +292,20 @@ HEREDOC
 	# 2.fq.gz: a reduced data of 1.fq.gz
 	#          or a reduced data of 1.fq.gz plus the inter-mapped reads, if any
 	# single.names.2: read names from the reduced data
+	#
+	# v0.2.6
+	# input1: single.names: single-mapped read names
+	# input2: edge-number1_edge_number2.name: pair-mapped read names
+	# 1.names: unique read names from single.names
+	# 1.fq.gz: reads using 1.names
+	# 2.fq.gz: reduced from 1.fq.gz but later replaced by some with additional pair-mapped reads
+	# single.names.2: names from 2.fq.gz with only single-mapped reads or reduced names
+	# 1.names.2: single.names.2 + all pair-mapped read names
+	#
+	# single.names.2: single-mapped reads -> read data
+	# 1.names.2: reads used for organelle-genome
+	# use:
+	# seqtk subseq ${_polap_var_base_nk_fq_gz} ${MTSEEDSDIR}/1.names.2 | gzip >${MTSEEDSDIR}/3.fq.gz
 	_polap_log1 "  adding pair-mapped bridging long reads to the single-mapped data ..."
 	local C=$(ls -1 "${MTSEEDSDIR}/"*".name" 2>/dev/null | wc -l)
 	if [ "$C" != 0 ]; then
@@ -335,6 +349,205 @@ HEREDOC
 	[ "$DEBUG" -eq 1 ] && set +x
 }
 
+# simply use read names to extract reads from a long-read data file
+function _run_polap_x-select-reads() { # selects reads mapped on a genome assembly
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	source "$script_dir/polap-variables-oga.sh" # '.' means 'source'
+
+	local MTDIR="${_polap_var_oga}"                              # target: ${_polap_var_oga}
+	local MTSEEDSDIR="${_polap_var_oga}/seeds"                   # ${_polap_var_seeds} for oga-class
+	local MTCONTIGNAME="${_polap_var_ga}/mt.contig.name-${JNUM}" # ${_polap_var_mtcontigname}
+
+	# for contigs
+	#	_polap_var_contigger_edges_fasta=o/30-contigger/contigs.fasta
+	# for edges
+
+	help_message=$(
+		cat <<HEREDOC
+# Extract long reads mapped on a genome assembly.
+#
+# Arguments:
+#   -j ${JNUM}: destination Flye organelle assembly number
+#   -l ${_arg_long_reads}
+# Inputs:
+#   input long read data: 1. ${_polap_var_base_nk_fq_gz} <- input data used for the whole-genome assembly
+#                         2. ${_arg_long_reads}          <- input long-read data
+#   ${ODIR}/${JNUM}/seeds/1.names         <- single-mapped read
+#   ${ODIR}/${JNUM}/seeds/single.names.2  <- reduced single-mapped read
+#   ${ODIR}/${JNUM}/seeds/1.names.2       <- reduced single-mapped read + pair-mapped read
+#   ${_polap_var_contigger_edges_fasta}
+# Outputs:
+#   ${_polap_var_oga_seeds}/2.fq.gz <- reduced single-mapped reads, if we have many such reads
+#   ${_polap_var_oga_seeds}/3.fq.gz <- reduced single-mapped reads plus pair-mapped reads
+Example: $0 ${_arg_menu[0]} -j ${JNUM}
+Example: $0 ${_arg_menu[0]} -j ${JNUM} -l l.fq
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
+
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		_polap_log0 "view: single-mapped reads"
+		if [[ -s "${_polap_var_oga_seeds}/1.fq.gz" ]]; then
+			seqkit stats "${_polap_var_oga_seeds}/1.fq.gz"
+		else
+			_polap_log0 "No such file: ${_polap_var_oga_seeds}/1.fq.gz"
+		fi
+		_polap_log0 "view: reduced single-mapped reads"
+		if [[ -s "${_polap_var_oga_seeds}/2.fq.gz" ]]; then
+			seqkit stats "${_polap_var_oga_seeds}/2.fq.gz"
+		else
+			_polap_log0 "No such file: ${_polap_var_oga_seeds}/2.fq.gz"
+		fi
+		_polap_log0 "view: reduced single-mapped + pair-mapped reads"
+		if [[ -s "${_polap_var_oga_seeds}/3.fq.gz" ]]; then
+			seqkit stats "${_polap_var_oga_seeds}/3.fq.gz"
+		else
+			_polap_log0 "No such file: ${_polap_var_oga_seeds}/3.fq.gz"
+		fi
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
+		return
+	fi
+
+	_polap_log0 "extracting reads using read names ..."
+
+	if [[ "${_arg_long_reads_is}" == "off" ]]; then
+		local _source_long_reads_fq="${_polap_var_base_nk_fq_gz}"
+	else
+		local _source_long_reads_fq="${_arg_long_reads}"
+	fi
+	if [[ -s "${_source_long_reads_fq}" ]]; then
+		_polap_log1 "  using ${_source_long_reads_fq} for a source of long-read data"
+	else
+		_polap_log0 "ERROR: no such file: ${_source_long_reads_fq}"
+		return
+	fi
+
+	_polap_log3_cmd mkdir -p "${_polap_var_oga_seeds}"
+
+	_polap_log1 "  extracting the single-mapped ..."
+	_polap_log2 "    input1: ${_source_long_reads_fq}"
+	_polap_log2 "    input2: ${MTSEEDSDIR}/1.names"
+	_polap_log2 "    output: ${_polap_var_oga_seeds}/1.fq.gz"
+
+	_polap_log3_pipe "seqtk subseq \
+    ${_source_long_reads_fq} \
+    ${MTSEEDSDIR}/1.names |\
+    gzip >${_polap_var_oga_seeds}/1.fq.gz"
+
+	_polap_log1 "  extracting the reduced single-mapped ..."
+	_polap_log2 "    input1: ${_source_long_reads_fq}"
+	_polap_log2 "    input2: ${MTSEEDSDIR}/single.names.2"
+	_polap_log2 "    output: ${_polap_var_oga_seeds}/2.fq.gz"
+
+	_polap_log3_pipe "seqtk subseq \
+    ${_source_long_reads_fq} \
+    ${MTSEEDSDIR}/single.names.2 |\
+    gzip >${_polap_var_oga_seeds}/2.fq.gz"
+
+	_polap_log1 "  extracting the reduced single-mapped and pair-mapped reads ..."
+	_polap_log2 "    input1: ${_source_long_reads_fq}"
+	_polap_log2 "    input2: ${MTSEEDSDIR}/1.names.2"
+	_polap_log2 "    output: ${_polap_var_oga_seeds}/3.fq.gz"
+
+	_polap_log3_pipe "seqtk subseq \
+    ${_source_long_reads_fq} \
+    ${MTSEEDSDIR}/1.names.2 |\
+    gzip >${_polap_var_oga_seeds}/3.fq.gz"
+
+	_polap_log1 "  extracts contig sequeces from the assembly: ${_polap_var_contigger_edges_fasta}"
+	_polap_log2 "    input1: ${_polap_var_contigger_edges_fasta}"
+	_polap_log2 "    input2: ${MTCONTIGNAME}"
+	_polap_log2 "    output: ${MTDIR}/contig.fa"
+	_polap_log3_pipe "seqkit grep \
+    --threads ${_arg_threads} \
+    -f ${MTCONTIGNAME} \
+		${_polap_var_contigger_edges_fasta} \
+		-o ${MTDIR}/contig.fa \
+		2>${_polap_output_dest}"
+
+	# 1.fq.gz: reads mapped on a single read
+	# 2.fq.gz: a reduced data of 1.fq.gz
+	#          or a reduced data of 1.fq.gz plus the inter-mapped reads, if any
+	# single.names.2: read names from the reduced data
+	#
+	# v0.2.6
+	# input1: single.names: single-mapped read names
+	# input2: edge-number1_edge_number2.name: pair-mapped read names
+	# 1.names: unique read names from single.names
+	# 1.fq.gz: reads using 1.names
+	# 2.fq.gz: reduced from 1.fq.gz but later replaced by some with additional pair-mapped reads
+	# single.names.2: names from 2.fq.gz with only single-mapped reads or reduced names
+	# 1.names.2: single.names.2 + all pair-mapped read names
+	#
+	# single.names.2: single-mapped reads -> read data
+	# 1.names.2: reads used for organelle-genome
+	# use:
+	# seqtk subseq ${_polap_var_base_nk_fq_gz} ${MTSEEDSDIR}/1.names.2 | gzip >${MTSEEDSDIR}/3.fq.gz
+
+	_polap_log0 "assembling the organelle-genome using single-mapped or pair-mapped reads ..."
+	CONTIG_LENGTH=$(seqkit stats -Ta "${MTDIR}"/contig.fa | csvtk cut -t -f "sum_len" | csvtk del-header)
+	echo "$CONTIG_LENGTH" >"${MTDIR}"/contig_total_length.txt
+	_polap_log1 "  organelle genome size based on the seed contig selection: $CONTIG_LENGTH"
+
+	for _i_seed in 1 2 3; do
+
+		if [[ "${_i_seed}" = "2" ]]; then
+			_polap_log0 "assembling the organelle-genome using single-mapped reads ..."
+		elif [[ "${_i_seed}" = "3" ]]; then
+			_polap_log0 "assembling the organelle-genome using pair-mapped reads ..."
+		elif [[ "${_i_seed}" = "1" ]]; then
+			_polap_log0 "assembling the organelle-genome using all single-mapped reads ..."
+		fi
+
+		_polap_log3_cmd mkdir -p "${_polap_var_oga_seeds}/${_i_seed}"
+
+		if [[ "${_arg_menu[1]}" = "polishing" ]]; then
+			_polap_log1 "  executing the organelle-genome long-read flye polishing assembly on $JNUM ..."
+			_polap_log1 "    input1: ${_polap_var_oga_seeds}/${_i_seed}.fq.gz"
+			_polap_log1 "    output: ${_polap_var_oga_seeds}/${_i_seed}/assembly_graph.gfa"
+		else
+			_polap_log1 "  executing the organelle-genome assembly using flye on $JNUM ..."
+			_polap_log1 "    input1: ${_polap_var_oga_seeds}/${_i_seed}.fq.gz"
+			_polap_log1 "    output: ${_polap_var_oga_seeds}/${_i_seed}/30-contigger/graph_final.gfa"
+		fi
+
+		local _command1="flye \
+    --nano-raw ${_polap_var_oga_seeds}/${_i_seed}.fq.gz \
+		--out-dir ${_polap_var_oga_seeds}/${_i_seed} \
+		--threads ${_arg_threads} \
+		--asm-coverage ${_arg_flye_asm_coverage} \
+		--genome-size $CONTIG_LENGTH"
+		if [[ "${_arg_menu[1]}" = "polishing" ]]; then
+			_command1+=" \
+		  --resume"
+		else
+			_command1+=" \
+		  --stop-after contigger"
+		fi
+		_command1+=" \
+		2>${_polap_output_dest}"
+		_polap_log3_pipe "${_command1}"
+	done
+
+	_polap_log1 NEXT: $0 flye2 -o "$ODIR" -j "$JNUM" -t "${_arg_threads}" -c "${_arg_coverage}"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+}
 ################################################################################
 # Executes Flye for an organelle-genome assembly
 #
@@ -390,7 +603,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	if [[ "${_arg_menu[1]}" = "polishing" ]]; then
@@ -513,7 +726,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	if [ ! -s "${MTDIR}/contig.fa" ]; then
 		echoall "ERROR: no selected-contig file [${MTDIR}/contig.fa]"
@@ -589,7 +802,7 @@ HEREDOC
 	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_log0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_log0 "${help_message}" && return
 
 	_polap_log1_log "reporting the organelle-genome assembly at ${ODIR} ..."
 

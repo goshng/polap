@@ -43,7 +43,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	_polap_log0 "creating empty menu files ..."
 
@@ -82,7 +82,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	_polap_log0 "creating empty menu files including development versions ..."
 
@@ -120,7 +120,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	_polap_log0 "cleaning up the empty menu files ..."
 
@@ -162,7 +162,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	case "${_arg_menu[1]}" in
 	all)
@@ -249,6 +249,7 @@ HEREDOC
 		_polap_log0 "    total-length-long"
 		_polap_log0 "    find-genome-size"
 		_polap_log0 "    reduce-data"
+		_polap_log0 "    flye1"
 		_polap_log0 "  annotate"
 		_polap_log0 "    edges-stats"
 		_polap_log0 "    blast-genome"
@@ -293,7 +294,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap__polap_log00 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap__polap_log00 "${help_message}" && return
 
 	if [[ "${_arg_menu[1]}" != "infile" ]]; then
 		_polap_log0 "ODIR: ${_arg_menu[1]}"

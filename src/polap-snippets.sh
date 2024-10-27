@@ -10,7 +10,7 @@ function _run_polap_x-select-contigs() {
 	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	# Check for required files
 	check_file_existence "${_polap_var_assembly_graph_final_gfa}"

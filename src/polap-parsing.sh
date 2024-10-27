@@ -94,6 +94,7 @@ _arg_species=
 _arg_accession=
 _arg_query=
 _arg_subject=
+_arg_flye="on"
 _arg_reduction_reads="on"
 _arg_contigger="off"
 _arg_all_annotate="off"
@@ -195,10 +196,19 @@ Options:
     long reads, with a default value of 3000. 
 
   -t, --threads: number of CPUs (default: maximum number of cores)
-  -c, --coverage: coverage for the 2nd assembly (default: '30')
+    The option '-t' or '--threads' specifies the number of CPU threads to 
+    utilize, with a default value equal to the maximum number of available cores.
+
+  -c, --coverage: coverage for the organelle-genome assembly (default: '30')
+    The option '-c' or '--coverage' specifies the coverage percentage for the 
+    organelle-genome assembly, with a default value of 30x. 
+
   -r, --pair-min: minimum mapped bases or PAF 11th column (default: '3000')
+
   -x, --bridge-min: minimum bridging read length or PAF 7th column (default: '3000')
+
   -w, --single-min: minimum mapped bases or PAF 11th column (default: '3000')
+
   --rwx: -r -w -x set to the same value (default: '3000')
   -i, --inum: previous output number of organelle-genome assembly (default: '0')
   -j, --jnum: current output number of organelle-genome assembly (default: '1')
@@ -512,6 +522,10 @@ parse_commandline() {
 		--no-reduction-reads | --reduction-reads)
 			_arg_reduction_reads="on"
 			test "${1:0:5}" = "--no-" && _arg_reduction_reads="off"
+			;;
+		--no-flye | --flye)
+			_arg_flye="on"
+			test "${1:0:5}" = "--no-" && _arg_flye="off"
 			;;
 		--no-contigger | --contigger)
 			_arg_contigger="on"

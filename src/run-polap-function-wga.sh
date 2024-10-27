@@ -78,7 +78,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Display the content of output files
@@ -205,7 +205,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Display the content of output files
@@ -468,7 +468,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Display the content of output files
@@ -535,7 +535,7 @@ HEREDOC
 				_polap_log0 "  random seed for reducing the whole-genome assembly long-read data: ${seed}"
 				# _polap_log3 "seqkit sample -p ${RATE} ${_arg_long_reads} -o ${nfq_file}"
 				# seqkit sample -p "${RATE}" "${_arg_long_reads}" -o "${nfq_file}" >${_polap_output_dest} 2>&1
-				_polap_log3_cmd "seqkit sample -p ${RATE} -s ${seed} ${_arg_long_reads} -o ${nfq_file} 2>${_polap_output_dest}"
+				_polap_log3_pipe "seqkit sample -p ${RATE} -s ${seed} ${_arg_long_reads} -o ${nfq_file} 2>${_polap_output_dest}"
 				_polap_log1 "  ${nfq_file}: a reduced long-read data is created"
 			else
 				_polap_log0 "  target coverage: ${_arg_coverage}"
@@ -565,7 +565,7 @@ HEREDOC
 
 	_polap_log1 "  output: ${_polap_var_base_nk_fq_gz}"
 	_polap_log2 "  deletes $nfq_file"
-	_polap_log3_cmd rm "$nfq_file"
+	_polap_log3_cmd rm -f "$nfq_file"
 
 	_polap_log0 "creating the statisics for the reduced long-read data ..."
 	_polap_log3_pipe "seqkit stats -T \
@@ -636,7 +636,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	check_file_existence "$ODIR/short_expected_genome_size.txt"

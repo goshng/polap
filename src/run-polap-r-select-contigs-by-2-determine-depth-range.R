@@ -36,6 +36,11 @@ parser <- add_option(parser, c("-t", "--table"),
   help = "Organelle annotation table",
   metavar = "<FILE>"
 )
+parser <- add_option(parser, c("-c", "--cdf"),
+  action = "store",
+  help = "Organelle annotation table",
+  metavar = "<FILE>"
+)
 parser <- add_option(parser, c("-o", "--out"),
   action = "store",
   help = "Output contig seeds filename"
@@ -65,6 +70,8 @@ cutoff_data <- x0 |>
   filter(cumulative_length <= 3e+6) |>
   filter(MT > 0 | PT > 0)
 
+
+
 # MT selection: x0 -> cutoff_data -> xt
 # gene density cutoff: 1 in 100 kb
 if (args1$mitochondrial == TRUE) {
@@ -75,6 +82,8 @@ if (args1$mitochondrial == TRUE) {
     filter(PT > MT)
 }
 
+write_tsv(xt, args1$cdf)
+
 # remove large copy number contig so that SD is less than MEAN.
 mean1 <- mean(xt$V3)
 sd1 <- sd(xt$V3)
@@ -82,6 +91,22 @@ while (mean1 < 1 * sd1 && nrow(xt) > 1) {
   xt <- xt |> filter(V3 < max(V3))
   mean1 <- mean(xt$V3)
   sd1 <- sd(xt$V3)
+}
+
+write_tsv(xt, args1$cdf)
+
+# Carex pseudochinensis
+lbound <- function(x) {
+  depth_lower_bound <- 0
+  if (sd(x) > 1) {
+    depth_lower_bound <- round(max(
+      min(x), (mean(x) - sd(x) * 2) / 1
+    )) # CHECK # FIXME
+  } else {
+    # if it is too narrow in the distribution
+    # the number 'divided by 3' is critical for C. pseudochinensis case
+    depth_lower_bound <- round(mean(x) / 3)
+  }
 }
 
 # lower bound: 1/3 of the original value
@@ -93,9 +118,7 @@ if (nrow(xt) > 1) {
       # 2024-10-19
       # depth_lower_bound = round(max(min(V3), mean(V3) - sd(V3) * 3) / 3), # CHECK # FIXME
       # depth_upper_bound = round(min(max(V3), mean(V3) + sd(V3) * 3) * 3),
-      depth_lower_bound = round(max(
-        min(V3), (mean(V3) - sd(V3) * 2) / 1
-      )), # CHECK # FIXME
+      depth_lower_bound = lbound(V3), # CHECK # FIXME
       depth_upper_bound = round(min(
         max(V3), mean(V3) + sd(V3) * 2
       ) * 3),

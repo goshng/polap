@@ -1,4 +1,4 @@
-local _polap_version=0.3.5
+local _polap_version=0.3.6
 
 print_version_history() {
 	local _message=$(

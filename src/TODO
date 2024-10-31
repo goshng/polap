@@ -1,3 +1,29 @@
+# 2024-10-31
+
+Salix_dunni: single contig case -> no combined data
+1. cut half and use two contigs
+2. use the single contigs
+
+connect two contigs that are far apart
+-> lupulina cpDNA case
+
+# 2024-10-30
+
+install: 
+
+spliting input lk.fq.gz
+rw options
+
+asm-coverage = 0.6 x coverage? 
+asm-coverage : unknown 30x 50x 70x 90x
+subsampling might be a good approach
+
+test reduce-data - nk.fq.gz created without using n.fq
+annotation table column names - proper names
+
+## done
+return 0 at the end of function to use: tset -e option
+
 # 2024-10-23
 # test
 -u option

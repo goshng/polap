@@ -77,7 +77,7 @@ _arg_threads="$(cat /proc/cpuinfo | grep -c processor)"
 _arg_log="polap.log"
 _arg_log_is="off"
 _arg_log_stderr="off"
-_arg_coverage="30"
+_arg_coverage="50" # 2024-10-29 was change to 50
 _arg_flye_asm_coverage="30"
 _arg_pair_min="3000"
 _arg_bridge_min="3000"
@@ -85,8 +85,11 @@ _arg_single_min="3000"
 _arg_rwx="3000"
 _arg_inum="0"
 _arg_jnum="1"
+_arg_start_index=0
 _arg_select_contig="1"
 _arg_select_contig_numbers=(1 2 3 4 5 6)
+_arg_select_read_range="3000,39000,7"
+_arg_select_read_range_is="off"
 _arg_random_seed=
 _arg_genomesize=
 _arg_bioproject=
@@ -118,16 +121,31 @@ print_help() {
 POLAP - Plant organelle DNA long-read assembly pipeline.
 version ${_polap_version}
 
-Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>] [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>] [-m|--min-read-length <arg>] [-t|--threads <arg>] [-c|--coverage <arg>] [--flye-coverage <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>] [--bioproject <arg>] [--species <arg>] [--accession <arg>] [--query <arg>] [--subject <arg>] [-M|--minimum <arg>] [--(no-)reduction-reads] [--(no-)plastid] [--(no-)coverage-check] [-u|--(no-)circularize] [--(no-)test] [--log <arg>] [--archive <arg>] [--random-seed <arg>] [--version] [-h|--help]
+Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>]
+      [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>]
+      [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]
+      [-m|--min-read-length <arg>] [-t|--threads <arg>]
+      [-c|--coverage <arg>] [--flye-coverage <arg>]
+      [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>]
+      [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>]
+      [--bioproject <arg>] [--species <arg>] [--accession <arg>]
+      [--query <arg>] [--subject <arg>] [-M|--minimum <arg>]
+      [--(no-)reduction-reads] [--(no-)plastid] [--(no-)coverage-check]
+      [-u|--(no-)circularize] [--(no-)test] [--log <arg>] [--archive <arg>]
+      [--random-seed <arg>] [--version] [-h|--help]
 
 polap <menu> help
 
 menu: assemble, assemble1, annotate, assemble2, flye-polishing,
-      make-menus, list, clean-menus
-      reset, 
+      make-menus, list, clean-menus, cleanup
+      reset,
       summary-reads, total-length-long, find-genome-size, reduce-data, flye1
-      blast-genome, count-gene, select-contigs, select-reads, flye2,
+      blast-genome, count-gene, select-contigs,
+      select-reads,
+      map-reads, test-reads, best-reads, best-flye2,
+      flye2,
       flye-polishing, prepare-polishing, polish,
+      version
 
 Menu: menus
   polap make-menus
@@ -135,7 +153,7 @@ Menu: menus
   polap list
 
 Menu: assemble [default]
-  polap assemble -o <arg> -l <arg> -a <arg> [-b <arg>] [--rwx <arg>] [-m <arg>] [-c <arg>]
+  polap assemble -o <arg> -l <arg> -a <arg> [-b <arg>] [--rw <arg>] [-m <arg>] [-c <arg>]
 
 Menu: assemble1
   polap assemble1 -o <arg> -l <arg> -a <arg> [-b <arg>] [-m <arg>] [-c <arg>]
@@ -155,9 +173,9 @@ Menu: seeds
   polap seeds -o <arg> -i <arg> -j <arg>
 
 Menu: assemble2
-  polap assemble2 -o <arg> -i <arg> -j <arg> --rwx <arg> [-c <arg>]
+  polap assemble2 -o <arg> -i <arg> -j <arg> --rw <arg> [-c <arg>]
   or
-  polap select-reads -i <arg> -j <arg> --rwx <arg> [-c <arg>]
+  polap select-reads -i <arg> -j <arg> --rw <arg> [-c <arg>]
   polap flye2 -j <arg>
 
 Menu: polishing
@@ -172,26 +190,26 @@ Menu: bioproject
   polap get-mtdna --species <arg>
 
 Options:
-  -o, --outdir: output folder name (default: o)
+  -o, --outdir: output folder name (default: ${_arg_outdir})
     The option '-o' or '--outdir' specifies the output folder name, 
     with a default value of 'o'. The output folder typically contains input 
     files that are long-read and short-read data files. Input data files can 
     be specified using the options provided by -l, -a, and -b.
 
-  -l, --long-reads: long-reads data file in fastq format (default: 'l.fq')
+  -l, --long-reads: long-reads data file in fastq format (default: ${_arg_long_reads})
     The option '-l' or '--long-reads' specifies the location of a long-reads 
     data file in fastq format, with a default filename of 'l.fq'.
 
-  -a, --short-read1: short-read fastq file 1 (default: 's1.fq')
+  -a, --short-read1: short-read fastq file 1 (default: ${_arg_short_read1})
     The option '-a' or '--short-read1' specifies the first short-read fastq 
     file to be used, with a default value of "s1.fq".
 
-  -b, --short-read2: short-read fastq file 2 (default: 's2.fq')
+  -b, --short-read2: short-read fastq file 2 (default: ${_arg_short_read2})
     The option '-b' or '--short-read2' specifies a short-read fastq file 2, 
     with a default value of 's2.fq'. The second short-read data file, 
     if provided, is considered optional.
 
-  -m, --min-read-length: minimum length of long reads (default: '3000')
+  -m, --min-read-length: minimum length of long reads (default: ${_arg_min_read_length})
     The option '-m' or '--min-read-length' specifies the minimum length of 
     long reads, with a default value of 3000. 
 
@@ -199,38 +217,87 @@ Options:
     The option '-t' or '--threads' specifies the number of CPU threads to 
     utilize, with a default value equal to the maximum number of available cores.
 
-  -c, --coverage: coverage for the organelle-genome assembly (default: '30')
+  -c, --coverage: coverage for the organelle-genome assembly (default: ${_arg_coverage})
+    Could change: 30 -> 50 so that it matches with ptGAUL.
     The option '-c' or '--coverage' specifies the coverage percentage for the 
     organelle-genome assembly, with a default value of 30x. 
 
-  -r, --pair-min: minimum mapped bases or PAF 11th column (default: '3000')
+  -w, --single-min: minimum mapped bases or PAF 11th column (default: ${_arg_single_min})
 
-  -x, --bridge-min: minimum bridging read length or PAF 7th column (default: '3000')
+  -r, --pair-min: minimum mapped bases or PAF 11th column (default: ${_arg_pair_min})
 
-  -w, --single-min: minimum mapped bases or PAF 11th column (default: '3000')
+  -x, --bridge-min: minimum bridging read length or PAF 7th column (default: ${_arg_bridge_min})
 
-  --rwx: -r -w -x set to the same value (default: '3000')
-  -i, --inum: previous output number of organelle-genome assembly (default: '0')
-  -j, --jnum: current output number of organelle-genome assembly (default: '1')
+  --rw: --single-min and --pair-min all set to the same value (default: ${_arg_single_min})
+    --bridge-min is set to 0.
+
+  -i, --inum: previous output number of organelle-genome assembly (default: ${_arg_inum})
+    The option '-i' or '--inum' specifies the previous output number 
+    of an organelle-genome assembly, with a default value of '0'.
+    The zero for this option specifies the whole-genome assembly.
+
+  -j, --jnum: current output number of organelle-genome assembly (default: ${_arg_jnum})
+    The option '-j' or '--jnum' allows users to specify the current output number 
+    for an organelle-genome assembly, with a default value of '1'.
+
   -g, --genomesize: expected genome size (default: estimated with a short-read dataset)
+
   -u, --circularize, --no-circularize: circularize a contig (off by default)
-  -p, --unpolished-fasta: polishing sequence in fasta format (default: 'mt.0.fasta')
-  -f, --final-assembly: final assembly in fasta format (default: 'mt.1.fa')
+
+  -p, --unpolished-fasta: polishing sequence in fasta format (default: ${_arg_unpolished_fasta})
+    The option enables the polishing of sequences in a FASTA format, 
+    with the default output file being named 'mt.0.fasta'. 
+
+  -f, --final-assembly: final assembly in fasta format (default: ${_arg_final_assembly})
+    The final assembly in FASTA format, with a default file name of 'mt.1.fa'. 
+
   --reduction-reads, --no-reduction-reads: reduction of long-read data before assemble1 (on by default)
+    In the process of whole-genome assembly, we utilize a reduced amount of long-read data.
+    The size of coverage is set by --coverage (default: ${_arg_coverage})
+
   --coverage-check, --no-coverage-check: coverage check before assemble2 step (on by default)
+    In the process of organelle-genome assembly, we reduce the seed reads.
+    In the process of assembling organelle genomes, we reduce the size of selected seed reads.
+    The size of coverage is set by --coverage (default: ${_arg_coverage})
+
   --yes, --no-yes: alway yes for a question or deletes output completely (off by default)
+
   --redo, --no-redo: (off by default)
     The command specifies that any previously generated intermediate results 
     should be disregarded and new calculations performed from scratch.
 
+  --select-read-range: start,end,number for the range of read selection (default: ${_arg_select_read_range})
+    It specifies the values for ptGAUL read-selection minimum number of 
+    bases or ratios. For the start and end values of a ratio, real numbers must 
+    fall within the range of 0 to 1.
+    For further information, please refer to the menu "test-reads" for help.
+
+  --start-index: used by test-reads
+
   --random-seed: 5-digit number (default automatically assigned; 11 used in seqkit sample)
-  --flye-asm-coverage: Flye --asm-coverage (default: '30')
+    To ensure reproducibility, you can supply a random number seed 
+    to facilitate sampling of reads.
+
+  --flye-asm-coverage: Flye --asm-coverage (default: ${_arg_flye_asm_coverage})
+    Flye --asm-coverage is a parameter used with the assembly coverage of Flye.
+
+  --no-flye-asm-coverage: no use of Flye --asm-coverage
+    The flag '--no-flye-asm-coverage' indicates that we use Flye option 
+    neither --asm-coverage nor --genome-size in flye execution.
+    This option is the same as --flye-asm-coverage set to 0.
+
   --species: Species scientific name (no default)
 	--sra: SRA data (no default)
+
   --log: log file (default: <output>/polap.log)
+    The log file option allows users to specify a custom log file location, 
+    with a default setting of '<output>/polap.log'.
+
   -v, --verbose: use multiple times to increase the verbose level
+
   --version: Prints version
-  -h, --help: Prints help
+  -h: Prints polap global help
+  --help: Prints menu help
 
 Place your long-read and short-read files at a folder:
 long-read file: l.fq
@@ -362,6 +429,10 @@ parse_commandline() {
 		--flye-asm-coverage=*)
 			_arg_flye_asm_coverage="${_key##--flye-asm-coverage=}"
 			;;
+		--no-flye-asm-coverage)
+			_arg_flye_asm_coverage="0"
+			shift
+			;;
 		-c | --coverage)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_coverage="$2"
@@ -406,19 +477,17 @@ parse_commandline() {
 		-w*)
 			_arg_single_min="${_key##-w}"
 			;;
-		--rwx)
+		--rw)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_rwx="$2"
 			_arg_pair_min="$2"
 			_arg_single_min="$2"
-			_arg_bridge_min="$2"
+			_arg_bridge_min="0"
 			shift
 			;;
-		--rwx=*)
-			_arg_single_min="${_key##--rwx=}"
-			_arg_pair_min="${_key##--pair-min=}"
-			_arg_single_min="${_key##--single-min=}"
-			_arg_bridge_min="${_key##--bridge-min=}"
+		--rw=*)
+			_arg_pair_min="${_key##--rw=}"
+			_arg_single_min="${_key##--rw=}"
+			_arg_bridge_min="0"
 			;;
 		-i | --inum)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -441,6 +510,14 @@ parse_commandline() {
 			;;
 		-j*)
 			_arg_jnum="${_key##-j}"
+			;;
+		--start-index)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_start_index="$2"
+			shift
+			;;
+		--start-index=*)
+			_arg_start_index="${_key##--start-index=}"
 			;;
 		--select-contig)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -518,6 +595,12 @@ parse_commandline() {
 			;;
 		--subject=*)
 			_arg_subject="${_key##--subject=}"
+			;;
+		--select-read-range)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_select_read_range="$2"
+			_arg_select_read_range_is="on"
+			shift
 			;;
 		--no-reduction-reads | --reduction-reads)
 			_arg_reduction_reads="on"

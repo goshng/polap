@@ -18,12 +18,15 @@
 # Ensure that the current script is sourced only once
 source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
+set +u
 [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
 source "$script_dir/polap-constants.sh"
+source "$script_dir/run-polap-function-log.sh"
 
 ################################################################################
 # try a command
@@ -38,9 +41,10 @@ function try() { "$@" || die "cannot $*"; }
 # convert_bp $bp
 ################################################################################
 function _polap_utility_convert_bp() {
-	local bp=$1
-
-	if ((bp >= 1000000000)); then
+	local bp=${1%.*}
+	if ((bp >= 1000000000000)); then
+		echo "$(bc <<<"scale=1; $bp/1000000000000") Tbp"
+	elif ((bp >= 1000000000)); then
 		echo "$(bc <<<"scale=1; $bp/1000000000") Gbp"
 	elif ((bp >= 1000000)); then
 		echo "$(bc <<<"scale=1; $bp/1000000") Mbp"
@@ -49,6 +53,18 @@ function _polap_utility_convert_bp() {
 	else
 		echo "$bp bp"
 	fi
+}
+
+################################################################################
+# Get contig total length
+################################################################################
+function _polap_utility_get_contig_length() {
+	local contig_file="$1"
+	local length_file="$2"
+	_polap_log3_pipe "seqkit stats -Ta $contig_file |
+    csvtk cut -t -f sum_len |
+    csvtk del-header \
+    >${length_file}"
 }
 
 ################################################################################
@@ -131,6 +147,66 @@ function run_check_ncbitools() {
 	return $(check_commands "${commands[@]}")
 }
 
+###############################################################################
+# Logs all commands
+###############################################################################
+function _log_command_versions() {
+	local commands=(
+		# main
+		"bc"
+		"seqkit"
+		"minimap2"
+		"flye"
+		"makeblastdb"
+		"tblastn"
+		"bedtools"
+		"prefetch"
+		"jellyfish"
+		"csvtk"
+		# fmlrc polishing
+		"msbwt"
+		"ropebwt2"
+		"fmlrc"
+		# sratools
+		"prefetch"
+		"vdb-validate"
+		"fasterq-dump"
+		# ncbitools
+		"makeblastdb"
+		"tblastn"
+		"prefetch"
+	)
+
+	_polap_log0 "------------------------"
+	_polap_log0 "conda environment: polap"
+	_polap_log0 "------------------------"
+	_polap_log0 "version: minimap2: $(minimap2 --version)"
+	_polap_log0 "version: flye: $(flye --version)"
+	_polap_log0 "version: bedtools: $(bedtools --version)"
+	_polap_log0 "version: jellyfish: $(jellyfish --version)"
+	_polap_log0 "version: tblastn: $(tblastn -version | head -1)"
+	_polap_log0 "version: makeblastdb: $(makeblastdb -version | head -1)"
+	_polap_log0 "version: fasterq-dump: $(fasterq-dump --version | tail -2 | head -1)"
+	_polap_log0 "version: vdb-validate: $(vdb-validate --version | tail -2 | head -1)"
+	_polap_log0 "version: prefetch: $(prefetch --version | tail -2 | head -1)"
+	_polap_log0 "version: seqkit: $(seqkit version)"
+	_polap_log0 "version: csvtk: $(csvtk version)"
+	_polap_log0 "version: bc: $(bc --version | head -1)"
+	_polap_log0 "version: gfatools: $(gfatools version | tail -1)"
+
+	_polap_log0 "------------------------------"
+	_polap_log0 "conda environment: polap-fmlrc"
+	_polap_log0 "------------------------------"
+	source $HOME/miniconda3/bin/activate polap-fmlrc
+	_polap_log0 "version: msbwt: $(msbwt --version 2>&1)"
+	_polap_log0 "version: fmlrc: $(fmlrc -v)"
+	_polap_log0 "version: ropebwt2: $(ropebwt2 2>&1 | head -2 | tail -1)"
+	conda deactivate
+	# for cmd in "${commands[@]}"; do
+	# 	_polap_log0 "version: $cmd: $($cmd --version)"
+	# done
+
+}
 ###############################################################################
 # Function to prompt for confirmation
 ###############################################################################

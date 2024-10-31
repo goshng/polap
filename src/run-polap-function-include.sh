@@ -22,7 +22,9 @@ SCRIPT_NAME="${SCRIPT_NAME//-/_}"
 SCRIPT_NAME="${SCRIPT_NAME//./_}"
 SCRIPT_NAME=$(echo "$SCRIPT_NAME" | tr '[:lower:]' '[:upper:]')
 _POLAP_INCLUDE_="_POLAP_INCLUDE_${SCRIPT_NAME}"
+set +u
 [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
@@ -45,7 +47,7 @@ function _polap_include() {
 ################################################################################
 # Ensure that the current script is sourced only once
 # _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
-# [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+# set +u; [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0; set -u
 # declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################

@@ -13,6 +13,7 @@ chloroplot
 not-used-snippets/
 t
 ptGAUL.sh
+ptGAUL2.sh
 
 # Makefile
 Makefile

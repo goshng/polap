@@ -24,12 +24,15 @@
 # Ensure that the current script is sourced only once
 source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
+set +u
 [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
 source "$script_dir/polap-function-set-variables.sh"
+source "$script_dir/run-polap-function-utilities.sh"
 
 ################################################################################
 # Runs the whole-genome assembly.
@@ -100,6 +103,7 @@ HEREDOC
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		exit $EXIT_SUCCESS
 	fi
 
@@ -156,6 +160,7 @@ HEREDOC
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -219,6 +224,7 @@ HEREDOC
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		return
 	fi
 
@@ -251,6 +257,7 @@ HEREDOC
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -322,6 +329,7 @@ HEREDOC
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		exit $EXIT_SUCCESS
 	fi
 
@@ -400,6 +408,7 @@ HEREDOC
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -430,22 +439,29 @@ function _run_polap_reduce-data() { # reduce the long-read data, if too big
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# CHECK: local function
-	_polap_set-variables-long-read
 	source "$script_dir/polap-variables-base.sh"
-	source "$script_dir/polap-variables-bioproject.sh"
-	source "$script_dir/polap-variables-oga.sh"
+	_polap_set-variables-long-read
 	source "$script_dir/run-polap-function-utilities.sh"
-
-	LRNK="${_polap_var_base_nk_fq_gz}"
 
 	help_message=$(
 		cat <<HEREDOC
-# Reduce the long-read data for the flye genome assembly.
+# FIXME: test it. Reduce the long-read data for a Flye genome assembly.
+# Reduce the long-read data for a Flye genome assembly.
 #
-# 1. Subsample the long-read data size with a target coverage.
-# Checks if the long-read coverage is less than ${_arg_coverage}.
-# If so, keep the long read data. Sample long reads upto that coverage, otherwise.
-# 2. Deletes long reads shorter than a sequence length threshold e.g., 3 kb.
+# Outputs:
+# 1. ${_polap_var_base_lk_fq_gz}: reads longer than ${_arg_min_read_length} bp
+# 2. ${_polap_var_base_nk_fq_gz}: subsample of ${_polap_var_base_nk_fq_gz}
+#
+# Steps:
+# 1. Firstly, generate a long-read DNA sequence of ${_arg_min_read_length}
+#    base pairs (bp) to serve as the foundation for further analysis and
+#    experimentation.
+# 2. subsample the long-read data to achieve a desired level of coverage.
+#    Checks whether the long-read coverage falls below the specified threshold of ${_arg_coverage}.
+#    If the condition is met, retain the full-length read data; 
+#    otherwise, sample the long reads up to a certain level of coverage.
+# 3. delete long reads that are shorter than a specified sequence length 
+#    threshold, such as 3 kilobases.
 #
 # Arguments:
 #   -l $_arg_long_reads: a long-read fastq data file
@@ -456,14 +472,19 @@ function _run_polap_reduce-data() { # reduce the long-read data, if too big
 #   -m ${_arg_min_read_length}: the long-read sequence length threshold
 #   -c ${_arg_coverage}: the target coverage
 #   --reduction-reads (default) or --no-reduction-reads
+#   --random-seed 11 for seqkit default seed
 # Inputs:
-#   ${_polap_var_base_long_total_length}
 #   ${_polap_var_base_genome_size}
+#   ${_polap_var_base_long_total_length}
 #   ${_arg_long_reads}
 # Outputs:
-#   ${_polap_var_base_nk_fq_gz}
+#   ${_polap_var_base_lk_fq_gz}: reads longer than ${_arg_min_read_length} bp
+#   ${_polap_var_base_nk_fq_gz}: subsample of ${_polap_var_base_nk_fq_gz}
+# Menu:
+#   split <N>: splits ${_polap_var_base_lk_fq_gz} into N parts.
 Example: $0 ${_arg_menu[0]} -l <arg> -m <arg>
 Example: $0 ${_arg_menu[0]} -o ${ODIR} --bioproject use
+Example: $0 ${_arg_menu[0]} split 10
 HEREDOC
 	)
 
@@ -474,19 +495,39 @@ HEREDOC
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 		if [ -s "${_polap_var_base_nk_fq_gz}" ]; then
-			_polap_log0_file "${_polap_var_base_nk_fq_gz}"
 			_polap_log0_cat "${_polap_var_base_nk_fq_stats}"
 		else
-			_polap_log0 "No reduced long-read"
+			_polap_log0 "No reduced subsample long-read data file: ${_polap_var_base_nk_fq_gz}"
+		fi
+
+		if [ -s "${_polap_var_base_lk_fq_gz}" ]; then
+			_polap_log0_cat "${_polap_var_base_lk_fq_stats}"
+		else
+			_polap_log0 "No reduced long-read: ${_polap_var_base_lk_fq_gz}"
 		fi
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		exit $EXIT_SUCCESS
 	fi
 
-	_polap_log0 "reducing the long-read data ${_arg_long_reads} with the target coverage of ${_arg_coverage}x ..."
+	if [[ "${_arg_menu[1]}" == "split" ]]; then
+		if [ -s "${_polap_var_base_lk_fq_gz}" ]; then
+			seqkit split2 -p "${_arg_menu[2]}" "${_polap_var_base_lk_fq_gz}"
+		else
+			_polap_log0 "No reduced long-read: ${_polap_var_base_lk_fq_gz}"
+		fi
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
+		exit $EXIT_SUCCESS
+	fi
+
+	_polap_log0 "reducing the long-read data ${_arg_long_reads} with the minimum length of ${_arg_min_read_length} bp or the target coverage of ${_arg_coverage}x ..."
 
 	# Check for required files
 	check_folder_existence "${ODIR}"
@@ -494,85 +535,132 @@ HEREDOC
 	check_file_existence "${_polap_var_base_genome_size}"
 	check_file_existence "${_arg_long_reads}"
 
-	_polap_log1 "  input1: ${_polap_var_base_long_total_length}"
-	_polap_log1 "  input2: ${_polap_var_base_genome_size}"
+	_polap_log1 "  input1: ${_arg_long_reads}"
+	_polap_log1 "  input2: ${_polap_var_base_long_total_length}"
+	_polap_log1 "  input3: ${_polap_var_base_genome_size}"
 
 	# Get the expected genome size and long-read sequencing coverage
-	local LONG_TOTAL_LENGTH=$(<"${_polap_var_base_long_total_length}")
-	local EXPECTED_GENOME_SIZE=$(<"${_polap_var_base_genome_size}")
-	local EXPECTED_GENOME_SIZE=${EXPECTED_GENOME_SIZE%.*}
-	local EXPECTED_LONG_COVERAGE=$(echo "scale=3; $LONG_TOTAL_LENGTH/$EXPECTED_GENOME_SIZE" | bc)
+	local _LONG_TOTAL_LENGTH=$(<"${_polap_var_base_long_total_length}")
+	local _long_total_length_bp=$(_polap_utility_convert_bp ${_LONG_TOTAL_LENGTH})
+	local _EXPECTED_GENOME_SIZE=$(<"${_polap_var_base_genome_size}")
+	local _expected_genome_size_bp=$(_polap_utility_convert_bp ${_EXPECTED_GENOME_SIZE})
+	local _EXPECTED_LONG_COVERAGE=$(echo "scale=3; ${_LONG_TOTAL_LENGTH}/${_EXPECTED_GENOME_SIZE}" | bc)
+	_polap_log2 "    LONG_TOTAL_LENGTH: ${_long_total_length_bp}"
+	_polap_log2 "    EXPECTED_GENOME_SIZE: ${_expected_genome_size_bp}"
+	_polap_log2 "    EXPECTED_LONG_COVERAGE: ${_EXPECTED_LONG_COVERAGE}x"
 
-	if [[ -s "${_polap_var_base_nk_fq_gz}" ]] && [ "${_arg_redo}" = "off" ]; then
+	if [[ -s "${_polap_var_base_nk_fq_gz}" ]] &&
+		[[ -s "${_polap_var_base_lk_fq_gz}" ]] &&
+		[[ "${_arg_redo}" == "off" ]]; then
 		_polap_log0 "  found: ${_polap_var_base_nk_fq_gz}, so skipping the long-read data reduction."
-		[ "$DEBUG" -eq 1 ] && set +x
-		return $EXIT_SUCCESS
+		_polap_log0 "  found: ${_polap_var_base_lk_fq_gz}, so skipping the long-read data reduction."
+		return
 	fi
 
-	# subsample the long-read data so that the target coverage is ${_arg_coverage}.
-	local nfq_file="${ODIR}/n.fq"
-	_polap_log2 "  deletes ${nfq_file} if there is one."
-	_polap_log3_cmd rm -f "${nfq_file}"
-	if [[ ${_arg_test} == "on" ]]; then
-		_polap_log1 "  OPTION: --test : No reduction of the test long-read data"
-		_polap_log3_cmd ln -s $(realpath "$_arg_long_reads") "$nfq_file"
-	elif [[ ${_arg_reduction_reads} == "off" ]]; then
-		_polap_log1 "  OPTION: --no-reduction-reads : No reduction of the long-read data"
-		_polap_log3_cmd ln -s $(realpath "$_arg_long_reads") "$nfq_file"
+	if [[ -s "${_polap_var_base_lk_fq_gz}" ]] && [[ "${_arg_redo}" == "off" ]]; then
+		_polap_log0 "  found: ${_polap_var_base_lk_fq_gz}, so skipping the long-read data reduction."
 	else
-		# if [ "$EXPECTED_LONG_COVERAGE " -lt ${_arg_coverage} ]; then
-		if echo "${EXPECTED_LONG_COVERAGE} < ${_arg_coverage}" | bc -l | grep -q 1; then
-			_polap_log1 "  No reduction of the long-read data because $EXPECTED_LONG_COVERAGE < ${_arg_coverage}"
+		_polap_log1 "  keeps long reads of length being at least ${_arg_min_read_length} bp ..."
+		_polap_log2 "    input1: ${_arg_long_reads}"
+		_polap_log2 "    output: ${_polap_var_base_lk_fq_gz}"
+		_polap_log2 "    sorting reads for a faster seqtk subseq ..."
+		_polap_log3_cmd rm -f "${_polap_var_base_lk_fq_gz}"
+		_polap_log3_pipe "seqkit seq \
+      --quiet \
+      -m ${_arg_min_read_length} \
+      --threads 4 \
+		  ${_arg_long_reads} \
+		  -o ${_polap_var_base_lk_fq_gz} \
+      >${_polap_output_dest} 2>&1"
+
+		_polap_log1 "  creating the statisics for the size reduced long-read data ..."
+		_polap_log2 "    input1: ${_polap_var_base_lk_fq_gz}"
+		_polap_log2 "    output: ${_polap_var_base_lk_fq_stats}"
+		_polap_log3_pipe "seqkit stats -aT \
+      ${_polap_var_base_lk_fq_gz} \
+      >${_polap_var_base_lk_fq_stats}"
+		_polap_log2_column "${_polap_var_base_lk_fq_stats}"
+	fi
+
+	if [[ -s "${_polap_var_base_nk_fq_gz}" ]] && [[ "${_arg_redo}" == "on" ]]; then
+		_polap_log0 "  found: ${_polap_var_base_nk_fq_gz}, so skipping the long-read data reduction."
+	else
+		# subsample the long-read data so that the target coverage is ${_arg_coverage}.
+		local nfq_file="${ODIR}/n.fq"
+		_polap_log2 "  deletes ${nfq_file} if there is one."
+		_polap_log3_cmd rm -f "${nfq_file}"
+		if [[ ${_arg_test} == "on" ]]; then
+			_polap_log1 "  OPTION: --test : No reduction of the test long-read data"
+			_polap_log3_cmd ln -s $(realpath "$_arg_long_reads") "$nfq_file"
+		elif [[ ${_arg_reduction_reads} == "off" ]]; then
+			_polap_log1 "  OPTION: --no-reduction-reads : No reduction of the long-read data"
 			_polap_log3_cmd ln -s $(realpath "$_arg_long_reads") "$nfq_file"
 		else
-			_polap_log1 "SUGGESTION: you might want to increase the minimum read lengths because you have enough long-read data."
-			local RATE=$(echo "scale=3; ${_arg_coverage}/$EXPECTED_LONG_COVERAGE" | bc)
-			# Compare value with 0
-			if echo "${RATE} > 0" | bc -l | grep -q 1; then
-				_polap_log1 "  sampling long-read data by $RATE ..."
-				_polap_log1 "    $RATE <= target long-read genome coverage[${_arg_coverage}]/expected long-read genome coverage[$EXPECTED_LONG_COVERAGE] ..."
-				local seed=${_arg_random_seed:-$RANDOM}
-				_polap_log0 "  random seed for reducing the whole-genome assembly long-read data: ${seed}"
-				# _polap_log3 "seqkit sample -p ${RATE} ${_arg_long_reads} -o ${nfq_file}"
-				# seqkit sample -p "${RATE}" "${_arg_long_reads}" -o "${nfq_file}" >${_polap_output_dest} 2>&1
-				_polap_log3_pipe "seqkit sample -p ${RATE} -s ${seed} ${_arg_long_reads} -o ${nfq_file} 2>${_polap_output_dest}"
-				_polap_log1 "  ${nfq_file}: a reduced long-read data is created"
+			# if [ "$EXPECTED_LONG_COVERAGE " -lt ${_arg_coverage} ]; then
+			if echo "${_EXPECTED_LONG_COVERAGE} < ${_arg_coverage}" | bc -l | grep -q 1; then
+				_polap_log1 "  No reduction of the long-read data because ${_EXPECTED_LONG_COVERAGE} < ${_arg_coverage}"
+				_polap_log3_cmd ln -s $(realpath "$_arg_long_reads") "$nfq_file"
 			else
-				_polap_log0 "  target coverage: ${_arg_coverage}"
-				_polap_log0 "  long-read coverage: ${EXPECTED_LONG_COVERAGE}"
-				_polap_log0 "  sampling rate is ${_arg_coverage} / ${EXPECTED_LONG_COVERAGE} => ${RATE}"
-				_polap_log0 "  genome size: ${EXPECTED_GENOME_SIZE}"
-				_polap_log0 "  total long-read: ${LONG_TOTAL_LENGTH}"
-				_polap_log0 "  Too large expected long-read coverage"
-				_polap_log0 "  Expected genome size may be too small."
-				die "ERROR: long-read sampling rate is not greater than 0."
+				_polap_log1 "SUGGESTION: you might want to increase the minimum read lengths because you have enough long-read data."
+				local _RATE=$(echo "scale=3; ${_arg_coverage}/${_EXPECTED_LONG_COVERAGE}" | bc)
+				# Compare value with 0
+				if echo "${_RATE} > 0" | bc -l | grep -q 1; then
+					_polap_log1 "  sampling long-read data by $_RATE ..."
+					_polap_log1 "    $_RATE <= target long-read genome coverage[${_arg_coverage}]/expected long-read genome coverage[$EXPECTED_LONG_COVERAGE] ..."
+					local _random_seed=${_arg_random_seed:-$RANDOM}
+					_polap_log0 "  random seed for reducing the whole-genome assembly long-read data: ${_random_seed}"
+					# _polap_log3 "seqkit sample -p ${_RATE} ${_arg_long_reads} -o ${nfq_file}"
+					# seqkit sample -p "${_RATE}" "${_arg_long_reads}" -o "${nfq_file}" >${_polap_output_dest} 2>&1
+					_polap_log3_pipe "seqkit sample \
+            -p ${_RATE} \
+            -s ${_random_seed} \
+            ${_arg_long_reads} \
+            2>${_polap_output_dest} |
+            seqkit seq \
+              --quiet \
+              -m ${_arg_min_read_length} \
+              --threads 4 \
+		          -o ${_polap_var_base_nk_fq_gz} \
+              >${_polap_output_dest} 2>&1"
+					_polap_log3_cmd touch "${_polap_var_base_nk_fq_gz}.random.seed.${_random_seed}"
+					_polap_log1 "  ${nfq_file}: a reduced long-read data is created"
+				else
+					_polap_log0 "  target coverage: ${_arg_coverage}"
+					_polap_log0 "  long-read coverage: ${_EXPECTED_LONG_COVERAGE}"
+					_polap_log0 "  sampling rate is ${_arg_coverage} / ${_EXPECTED_LONG_COVERAGE} => ${_RATE}"
+					_polap_log0 "  genome size: ${_EXPECTED_GENOME_SIZE}"
+					_polap_log0 "  total long-read: ${_LONG_TOTAL_LENGTH}"
+					_polap_log0 "  Too large expected long-read coverage"
+					_polap_log0 "  Expected genome size may be too small."
+					die "ERROR: long-read sampling rate is not greater than 0."
+				fi
 			fi
 		fi
+
+		if [[ -s "${nfq_file}" ]]; then
+			# purge the long-read data of shorter than ${_arg_min_read_length} bp
+			_polap_log1 "  keeps long reads of length being at least ${_arg_min_read_length} bp ..."
+			_polap_log2 "    input1: ${nfq_file}"
+			_polap_log2 "    output: ${_polap_var_base_nk_fq_gz}"
+			_polap_log3_cmd rm -f "${_polap_var_base_nk_fq_gz}"
+			_polap_log3_pipe "seqkit seq \
+        --quiet \
+        -m ${_arg_min_read_length} \
+        --threads 4 \
+		    ${nfq_file} \
+  		  -o ${_polap_var_base_nk_fq_gz} \
+        >${_polap_output_dest} 2>&1"
+
+			_polap_log3_cmd rm -f "$nfq_file"
+		fi
+
+		_polap_log1 "  creating the statisics for the reduced long-read data ..."
+		_polap_log3_pipe "seqkit stats -aT \
+      ${_polap_var_base_nk_fq_gz} \
+      >${_polap_var_base_nk_fq_stats}"
+		_polap_log1 "    output: ${_polap_var_base_nk_fq_stats}"
+		_polap_log2_column "${_polap_var_base_nk_fq_stats}"
 	fi
-	check_file_existence "${nfq_file}"
-
-	# purge the long-read data of shorter than ${_arg_min_read_length} bp
-	_polap_log1 "  keeps long reads of length being at least ${_arg_min_read_length} bp ..."
-	_polap_log2 "  deletes ${_polap_var_base_nk_fq_gz}"
-	_polap_log3_cmd rm -f "${_polap_var_base_nk_fq_gz}"
-	_polap_log3_pipe "seqkit seq \
-    --quiet \
-    -m ${_arg_min_read_length} \
-    --threads 4 \
-		${nfq_file} \
-		-o ${_polap_var_base_nk_fq_gz} \
-    >${_polap_output_dest} 2>&1"
-
-	_polap_log1 "  output: ${_polap_var_base_nk_fq_gz}"
-	_polap_log2 "  deletes $nfq_file"
-	_polap_log3_cmd rm -f "$nfq_file"
-
-	_polap_log0 "creating the statisics for the reduced long-read data ..."
-	_polap_log3_pipe "seqkit stats -T \
-    ${_polap_var_base_nk_fq_gz} \
-    >${_polap_var_base_nk_fq_stats}"
-	_polap_log1 "  output: ${_polap_var_base_nk_fq_stats}"
-	_polap_log2_column "${_polap_var_base_nk_fq_stats}"
 
 	_polap_log1 "NEXT (for testing purpose only): $0 flye1 -g 150000"
 	_polap_log1 "NEXT (for testing purpose only): $0 flye1 --test"
@@ -581,6 +669,7 @@ HEREDOC
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -664,14 +753,35 @@ HEREDOC
 		fi
 
 		_polap_log1 "  executing the whole-genome assembly using flye ... be patient!"
-		_polap_log3_pipe "flye \
+		# _polap_log3_pipe "flye \
+		#     --nano-raw ${_polap_var_base_nk_fq_gz} \
+		# 	--out-dir ${_polap_var_wga} \
+		# 	--threads ${_arg_threads} \
+		# 	--asm-coverage ${_arg_flye_asm_coverage} \
+		# 	--genome-size ${EXPECTED_GENOME_SIZE} \
+		# 	--stop-after contigger \
+		# 	>${_polap_output_dest} 2>&1"
+
+		local _command1="flye \
       --nano-raw ${_polap_var_base_nk_fq_gz} \
 			--out-dir ${_polap_var_wga} \
-			--threads ${_arg_threads} \
+			--threads ${_arg_threads}"
+		if [[ "${_arg_flye_asm_coverage}" -gt 0 ]]; then
+			_command1+=" \
 			--asm-coverage ${_arg_flye_asm_coverage} \
-			--genome-size ${EXPECTED_GENOME_SIZE} \
-			--stop-after contigger \
-			>${_polap_output_dest} 2>&1"
+			--genome-size ${EXPECTED_GENOME_SIZE}"
+		fi
+		if [[ "${_arg_menu[2]}" == "polishing" ]]; then
+			_command1+=" \
+		  --resume"
+		else
+			_command1+=" \
+		  --stop-after contigger"
+		fi
+		_command1+=" \
+		  2>${_polap_output_dest}"
+		_polap_log3_pipe "${_command1}"
+
 	fi
 
 	_polap_log1 "  assembly graph in the flye contigger stage: ${_polap_var_wga_contigger_gfa}"
@@ -681,4 +791,5 @@ HEREDOC
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }

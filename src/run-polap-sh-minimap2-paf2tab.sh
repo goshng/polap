@@ -27,5 +27,6 @@ _tab=$3
 
 # Create the output file with the depth range
 cut -f1-11 "${_paf}" |
-	awk -v minlength="${_min_read_length}" '{if ($2>=minlength) {print}}' \
+	awk -v minlength="${_min_read_length}" \
+	'{if ($2>=minlength) {print}}' \
 		>"${_tab}"

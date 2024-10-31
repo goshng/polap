@@ -18,7 +18,9 @@
 # Ensure that the current script is sourced only once
 source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
+set +u
 [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
@@ -56,9 +58,19 @@ HEREDOC
 		awk '{print $1}' |
 		parallel touch {}
 
+	local _other_menus=(
+		"ptgaul-intra-base-length"
+		"single-intra-base-length"
+		"polap-rw-base-length"
+	)
+	for _menu in "${_other_menus[@]}"; do
+		touch "${_menu}"
+	done
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -97,6 +109,7 @@ HEREDOC
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -132,12 +145,22 @@ HEREDOC
 		awk '{print $1}' |
 		parallel rm -f {}
 
+	local _other_menus=(
+		"ptgaul-intra-base-length"
+		"single-intra-base-length"
+		"polap-rw-base-length"
+	)
+	for _menu in "${_other_menus[@]}"; do
+		rm -f "${_menu}"
+	done
+
 	# Leave the make-menus empty file.
 	touch make-menus
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -258,6 +281,11 @@ HEREDOC
 		_polap_log0 "    seeds"
 		_polap_log0 "    seeds-gene"
 		_polap_log0 "  assemble2"
+		_polap_log0 "    map-reads"
+		_polap_log0 "    test-reads"
+		_polap_log0 "      collect-reads"
+		_polap_log0 "    best-reads"
+		_polap_log0 "    best-flye2"
 		_polap_log0 "    select-reads"
 		_polap_log0 "    flye2"
 		_polap_log0 "  flye-polishing"
@@ -269,6 +297,7 @@ HEREDOC
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -860,4 +889,5 @@ HEREDOC
 	_polap_log3 "Function end: $(_polap_log0 $FUNCNAME | sed s/_run_polap_//)"\.
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }

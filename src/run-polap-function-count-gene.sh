@@ -18,7 +18,7 @@
 # Ensure that the current script is sourced only once
 source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
-[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+set +u; [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0; set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
@@ -91,7 +91,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$DEBUG" -eq 1 ] && set +x; return 0
 		exit $EXIT_SUCCESS
 	fi
 
@@ -128,7 +128,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$DEBUG" -eq 1 ] && set +x; return 0
 }
 
 ################################################################################
@@ -240,7 +240,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$DEBUG" -eq 1 ] && set +x; return 0
 		exit $EXIT_SUCCESS
 	fi
 
@@ -260,7 +260,7 @@ HEREDOC
 		_polap_log0 "  found1: ${_polap_var_ga_annotation_all}"
 		_polap_log0 "  so skipping the blast genome ..."
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$DEBUG" -eq 1 ] && set +x; return 0
 		return
 	fi
 
@@ -298,7 +298,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$DEBUG" -eq 1 ] && set +x; return 0
 }
 
 function _run_polap_cg() { # shortcut for menu count-gene

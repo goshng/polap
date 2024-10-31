@@ -35,7 +35,7 @@ local _polap_var_mtcontigname="${_polap_var_ga}/mt.contig.name-${JNUM}"
 local _polap_var_oga="${_polap_var_output}/${JNUM}"
 local _polap_var_oga_contigger="${_polap_var_oga}/30-contigger"
 # local _polap_var_oga="${_polap_var_ga}"
-local _polap_var_seeds="${_polap_var_oga}/seeds"
+local _polap_var_oga_seeds="${_polap_var_oga}/seeds"
 local _polap_var_links="${_polap_var_mtcontigs}/4-gfa.links"
 local _polap_var_mtdna="${_polap_var_ga}/51-mtdna"
 local _polap_var_compare="${_polap_var_ga}/52-compare"
@@ -51,6 +51,8 @@ local _polap_var_base_msbwt="${_polap_var_base}/msbwt/comp_msbwt.npy"
 local _polap_var_base_msbwt_tar_gz="${_polap_var_base}/msbwt.tar.gz"
 local _polap_var_base_nk_fq_gz="${_polap_var_base}/nk.fq.gz"
 local _polap_var_base_nk_fq_stats="${_polap_var_base}/nk.fq.stats"
+local _polap_var_base_lk_fq_gz="${_polap_var_base}/lk.fq.gz"
+local _polap_var_base_lk_fq_stats="${_polap_var_base}/lk.fq.stats"
 local _polap_var_bioproject_runinfo_all="${_polap_var_base}/bioproject.runinfo"
 local _polap_var_bioproject_txt="${_polap_var_base}/bioproject.txt"
 
@@ -174,7 +176,13 @@ local _polap_var_compare_oga_blastn3_length="${_polap_var_compare}/3-blastn3.len
 local _polap_var_compare_oga_blastn3="${_polap_var_compare}/3-blastn3.txt"
 
 # seeds
-local _polap_var_oga_seeds="${_polap_var_oga}/01-seeds"
+local _polap_var_oga_contig="${_polap_var_oga}/01-contig"
+local _polap_var_oga_reads="${_polap_var_oga}/02-reads"
+local _polap_var_oga_seeds="${_polap_var_oga}/03-seeds"
+local _polap_var_oga_sample="${_polap_var_oga}/04-subsample"
+local _polap_var_oga_flye="${_polap_var_oga}/05-flye"
+local _polap_var_oga_summary="${_polap_var_oga}/06-summary"
+local _polap_var_oga_plot="${_polap_var_oga}/07-plot"
 
 # mtdna
 local _polap_var_mtdna_1_gfa_all="${_polap_var_mtdna}/1-gfa.all.gfa"

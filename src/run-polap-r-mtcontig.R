@@ -61,6 +61,10 @@ parser <- add_option(parser, c("--out-annotation-depth-table"),
   action = "store",
   help = "Output4 contig-annotation-depth-table.txt"
 )
+parser <- add_option(parser, c("--out-pt-annotation-depth-table"),
+  action = "store",
+  help = "Output4 pt-contig-annotation-depth-table.txt"
+)
 parser <- add_option(parser, c("-c", "--contigger"),
   action = "store_true",
   default = FALSE,
@@ -84,6 +88,7 @@ if (is_null(args1$`flyeout-edges-stats`)) {
   output2 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
   output3 <- file.path(input_dir0, "contig-annotation-table.txt")
   output4 <- file.path(input_dir0, "contig-annotation-depth-table.txt")
+  output5 <- file.path(input_dir0, "pt-contig-annotation-depth-table.txt")
 
   args1 <- parse_args(parser, args = c(
     "--flyeout-edges-stats", input1,
@@ -93,6 +98,7 @@ if (is_null(args1$`flyeout-edges-stats`)) {
     "--out-annotation-all", output2,
     "--out-annotation-table", output3,
     "--out-annotation-depth-table", output4,
+    "--out-pt-annotation-depth-table", output5,
     "--contigger"
   ))
 }
@@ -144,7 +150,8 @@ copy_number_min <- median(z.1$V6)
 z %>%
   arrange(mt <= pt) %>%
   relocate(V9, .after = last_col()) %>%
-  rename(Contig = V1, Length = V2, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
+  select(V1, V2, V3, V6, mt, pt, V9) %>%
+  rename(Contig = V1, Length = V2, Depth = V3, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
   write.table(args1$`out-annotation`, row.names = F, quote = F)
 
 if (args1$mitochondrial == TRUE) {
@@ -163,6 +170,14 @@ if (args1$mitochondrial == TRUE) {
     select(V1, V2, V3, V6, mt, pt, V9) %>%
     rename(Contig = V1, Length = V2, Depth = V3, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
     write.table(args1$`out-annotation-depth-table`, row.names = F, quote = F)
+
+  z %>%
+    arrange(pt <= mt) %>%
+    relocate(V9, .after = last_col()) %>%
+    filter(mt < pt) %>%
+    select(V1, V2, V3, V6, mt, pt, V9) %>%
+    rename(Contig = V1, Length = V2, Depth = V3, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
+    write.table(args1$`out-pt-annotation-depth-table`, row.names = F, quote = F)
 } else {
   z %>%
     arrange(mt <= pt) %>%
@@ -182,6 +197,7 @@ if (args1$mitochondrial == TRUE) {
 }
 
 z.1 %>%
-  rename(Contig = V1, Length = V2, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
+  select(V1, V2, V3, V6, mt, pt, V9) %>%
+  rename(Contig = V1, Length = V2, Depth = V3, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
   relocate(Edge, .after = last_col()) %>%
   write.table(args1$`out-annotation-all`, row.names = F, quote = F)

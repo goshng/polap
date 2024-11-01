@@ -18,10 +18,38 @@
 # Ensure that the current script is sourced only once
 source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
-set +u; [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0; set -u
+set +u
+[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
+
+# depth_range=()
+# _pass-depth-range depth-range.txt depth_range
+function _pass-depth-range() {
+	local _depth_range=$1
+	local -n _r_arr=$2
+	# Check if there is a manual depth range file.
+	if [[ -s "${_depth_range}" ]]; then
+		_polap_log0 "  input3: ${_depth_range}"
+
+		# Extract numbers from the file
+		local numbers=$(awk 'NR==2 {print $1, $2}' "${_depth_range}")
+
+		# Store the numbers in variables
+		local depth_lower=$(echo $numbers | cut -d ' ' -f 1)
+		local depth_upper=$(echo $numbers | cut -d ' ' -f 2)
+
+		_polap_log0 "  custom depth range: $depth_lower ~ $depth_upper"
+		_polap_log3_cat "${_depth_range}"
+	else
+		_polap_log0 "  input4 not found: ${_depth_range}"
+		local depth_lower=0
+		local depth_upper=0
+	fi
+	_r_arr=($depth_lower $depth_upper)
+}
 
 ################################################################################
 # Selects contigs for an organelle-genome assembly.
@@ -111,7 +139,8 @@ HEREDOC
 		fi
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		return
 	fi
 
@@ -306,33 +335,8 @@ HEREDOC
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
-}
-
-# depth_range=()
-# _pass-depth-range depth-range.txt depth_range
-function _pass-depth-range() {
-	local _depth_range=$1
-	local -n _r_arr=$2
-	# Check if there is a manual depth range file.
-	if [[ -s "${_depth_range}" ]]; then
-		_polap_log0 "  input3: ${_depth_range}"
-
-		# Extract numbers from the file
-		local numbers=$(awk 'NR==2 {print $1, $2}' "${_depth_range}")
-
-		# Store the numbers in variables
-		local depth_lower=$(echo $numbers | cut -d ' ' -f 1)
-		local depth_upper=$(echo $numbers | cut -d ' ' -f 2)
-
-		_polap_log0 "  custom depth range: $depth_lower ~ $depth_upper"
-		_polap_log3_cat "${_depth_range}"
-	else
-		_polap_log0 "  input4 not found: ${_depth_range}"
-		local depth_lower=0
-		local depth_upper=0
-	fi
-	_r_arr=($depth_lower $depth_upper)
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -389,7 +393,8 @@ HEREDOC
 		fi
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		return
 	fi
 
@@ -486,7 +491,8 @@ HEREDOC
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -544,7 +550,8 @@ HEREDOC
 		fi
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		return
 	fi
 
@@ -641,7 +648,8 @@ HEREDOC
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -695,7 +703,8 @@ HEREDOC
 		fi
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		return
 	fi
 
@@ -819,7 +828,8 @@ HEREDOC
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -1151,9 +1161,8 @@ HEREDOC
 	# genes
 
 	# Continue for the select contig types 3, 4, or 5
-	_polap_log1 "  step 3: filtering GFA using the depth range in ${_polap_var_2_depth_range}"
-
 	local _polap_var_2_depth_range="${_polap_var_mtcontigs_2_custom_depth_range}"
+	_polap_log1 "  step 3: filtering GFA using the depth range in ${_polap_var_2_depth_range}"
 
 	if [[ -s "${_polap_var_mtcontigs_2_custom_depth_range}" ]]; then
 		local numbers=$(awk 'NR==2 {print $1, $2}' "${_polap_var_mtcontigs_2_custom_depth_range}")
@@ -1199,7 +1208,8 @@ HEREDOC
 		>"${MTCONTIGNAME}"
 		_polap_log2_cat "${MTCONTIGNAME}"
 		_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		return
 	fi
 
@@ -1226,7 +1236,7 @@ HEREDOC
 	fi
 
 	# Prepare links for finding connected components.
-	_polap_log2 "    step 4-2: preparing links for finding connected components: ${_polap_var_gfa_links}"
+	_polap_log2 "    step 4-2: preparing links for finding connected components"
 	_polap_log2 "      input: ${_polap_var_gfa_filtered}"
 	_polap_log2 "      output: ${_polap_var_links_tsv}"
 	_polap_log3_pipe "grep ^L ${_polap_var_gfa_filtered} | cut -f2,4 >${_polap_var_links_tsv}"
@@ -1256,7 +1266,8 @@ HEREDOC
 		_polap_log1 "  output2: ${_polap_var_mtcontig_table}"
 
 		_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		return
 	fi
 
@@ -1381,49 +1392,8 @@ HEREDOC
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
-}
-
-function _run_polap_seeds1() {
-	JNUM=1
-	_run_polap_seeds-1-annotation
-}
-
-function _run_polap_seeds2() {
-	JNUM=2
-	_run_polap_seeds-2-depth-range
-}
-
-function _run_polap_seeds3() {
-	die "Not implemented yet!"
-	JNUM=3
-	_run_polap_seeds-3-depth-range
-}
-
-function _run_polap_seeds4() {
-	JNUM=4
-	_run_polap_seeds-4-annotation-depth
-}
-
-function _run_polap_seeds5() {
-	JNUM=5
-	_arg_select_contig=1
-	_run_polap_seeds
-}
-
-function _run_polap_seeds6() {
-	die "Not implemented yet!"
-	JNUM=6
-	_arg_select_contig=2
-	_run_polap_seeds
-}
-
-function _run_polap_seeds7() {
-	JNUM=7
-	_arg_select_contig=1
-	_arg_menu[1]="manual"
-	_arg_menu[2]="2"
-	_run_polap_seeds
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -1584,7 +1554,8 @@ HEREDOC
 		fi
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		return
 	fi
 
@@ -1715,7 +1686,8 @@ HEREDOC
 		>"${MTCONTIGNAME}"
 		_polap_log0 "  output: ${MTCONTIGNAME} -> empty"
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		return
 	fi
 
@@ -1726,7 +1698,8 @@ HEREDOC
 		cut -f1 "${_preselection}" >"${MTCONTIGNAME}"
 		_polap_log0 "  output: ${MTCONTIGNAME} -> a single contig"
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		return
 	fi
 
@@ -1764,7 +1737,8 @@ HEREDOC
 			_polap_log0 "  output2: ${_polap_var_mtcontig_table}"
 
 			_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
-			[ "$DEBUG" -eq 1 ] && set +x; return 0
+			[ "$DEBUG" -eq 1 ] && set +x
+			return 0
 			return
 		fi
 		;;
@@ -1886,7 +1860,8 @@ HEREDOC
 		_polap_log0 "  output2: ${_polap_var_mtcontig_table}"
 
 		_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		return
 	fi
 
@@ -1988,17 +1963,8 @@ HEREDOC
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
-}
-
-################################################################################
-# Temporary
-# scb: JNUM -> --select-contig
-################################################################################
-function _run_polap_x-scb() {
-	# temporary
-	_arg_select_contig="${JNUM}"
-	_run_polap_x-select-contigs-by
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -2112,7 +2078,8 @@ HEREDOC
 		fi
 
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		exit $EXIT_SUCCESS
 	fi
 
@@ -2150,9 +2117,6 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
-}
-
-function _run_polap_x-sc() {
-	_run_polap_x-select-contigs
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }

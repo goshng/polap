@@ -101,7 +101,7 @@ if (args1$mitochondrial == TRUE) {
   # for mitochondria
   # filter by the depth range
   if (depth.range[1] > 0) {
-    x1 <- x1 |> filter(depth.range[1] <= V3, V3 <= depth.range[2])
+    x1 <- x1 |> filter(depth.range[1] <= Depth, Depth <= depth.range[2])
   }
 
   # filter by the minimum copy number
@@ -138,35 +138,34 @@ if (args1$mitochondrial == TRUE) {
   } else {
     tibble() |> write_tsv(args1$out)
   }
-  
 } else {
   # for plastid
   # filter by the depth range
   if (depth.range[1] > 0) {
-    x1 <- x1 |> filter(depth.range[1] <= V3, V3 <= depth.range[2])
+    x1 <- x1 |> filter(depth.range[1] <= Depth, Depth <= depth.range[2])
   }
-  
+
   # for plastid
   # filter by the minimum copy number
   if (args1$`copy-number` > 0) {
     x1 <- x1 |> filter(Copy >= args1$`copy-number`)
   }
-  
+
   # for plastid
   # filter by the minimum PT gene count
   if (args1$`gene-count` > 0) {
     x1 <- x1 |> filter(PT >= args1$`gene-count`)
   }
-  
+
   # depth range by mixture model
   # no code
-  
+
   # for plastid
   # filter by the MT/PT gene comparison among genes with PT > 0
   if (args1$`compare-mt-pt` == TRUE) {
     x1 <- x1 |> filter(PT > MT, PT > 0)
   }
-  
+
   # for plastid
   # filter by gene density: 1 MT gene per 100 kb
   if (args1$`gene-density` > 0) {
@@ -187,4 +186,3 @@ if (args1$mitochondrial == TRUE) {
     tibble() |> write_tsv(args1$out)
   }
 }
-

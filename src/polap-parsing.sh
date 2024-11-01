@@ -27,7 +27,7 @@
 # ARG_OPTIONAL_BOOLEAN([reduction-reads],[],[redo: no reduction of long-read data],[on])
 # ARG_OPTIONAL_BOOLEAN([contigger],[],[step1: use flye's 40-polishing result])
 # ARG_OPTIONAL_BOOLEAN([all-annotate],[],[step2: annotate all contigs])
-# ARG_OPTIONAL_BOOLEAN([use-edges],[],[step4: use flye's edges not contigs])
+# ARG_OPTIONAL_BOOLEAN([use-bridge],[],[step4: use flye's edges not contigs])
 # ARG_OPTIONAL_BOOLEAN([coverage-check],[],[step4: no coverage check for step 4])
 # ARG_OPTIONAL_BOOLEAN([resume],[],[step1,step4: flye option resume])
 # ARG_OPTIONAL_BOOLEAN([circularize],[u],[step4: circularize a contig])
@@ -79,10 +79,9 @@ _arg_log_is="off"
 _arg_log_stderr="off"
 _arg_coverage="50" # 2024-10-29 was change to 50
 _arg_flye_asm_coverage="30"
-_arg_pair_min="3000"
-_arg_bridge_min="3000"
 _arg_single_min="3000"
-_arg_rwx="3000"
+_arg_pair_min="3000"
+_arg_bridge_min="0"
 _arg_inum="0"
 _arg_jnum="1"
 _arg_start_index=0
@@ -101,7 +100,7 @@ _arg_flye="on"
 _arg_reduction_reads="on"
 _arg_contigger="off"
 _arg_all_annotate="off"
-_arg_use_edges="off"
+_arg_use_bridge="off"
 _arg_coverage_check="on"
 _arg_resume="off"
 _arg_plastid="off"
@@ -121,24 +120,28 @@ print_help() {
 POLAP - Plant organelle DNA long-read assembly pipeline.
 version ${_polap_version}
 
-Usage: polap <menu> [<menu2> [<menu3>]] [-l|--long-reads <arg>] [-o|--outdir <arg>]
-      [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [--sra <arg>]
-      [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]
-      [-m|--min-read-length <arg>] [-t|--threads <arg>]
-      [-c|--coverage <arg>] [--flye-coverage <arg>]
-      [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>]
-      [-i|--inum <arg>] [-j|--jnum <arg>] [-g|--genomesize <arg>]
-      [--bioproject <arg>] [--species <arg>] [--accession <arg>]
-      [--query <arg>] [--subject <arg>] [-M|--minimum <arg>]
-      [--(no-)reduction-reads] [--(no-)plastid] [--(no-)coverage-check]
-      [-u|--(no-)circularize] [--(no-)test] [--log <arg>] [--archive <arg>]
+Usage: polap <menu> [<menu2> [<menu3>]] [-o|--outdir <arg>]
+      [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
+      [-i|--inum <arg>] [-j|--jnum <arg>]
+      [-w|--single-min <arg>]
+      [-m|--min-read-length <arg>] 
+      [-t|--threads <arg>] [--(no-)test] [--log <arg>] 
       [--random-seed <arg>] [--version] [-h|--help]
 
-polap <menu> help
+Minor options:
+      [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]
+      [-c|--coverage <arg>] [--flye-asm-coverage <arg>]
+      [--bioproject <arg>] [--species <arg>] [--accession <arg>]
+      [--query <arg>] [--subject <arg>]
+      [--(no-)reduction-reads] [--(no-)coverage-check]
+      [--(no-)plastid]
+      [-u|--(no-)circularize] [--archive <arg>]
+      [--sra <arg>] [-x|--bridge-min <arg>] [-g|--genomesize <arg>]
+
+polap <menu> <help|--help>
 
 menu: assemble, assemble1, annotate, assemble2, flye-polishing,
-      make-menus, list, clean-menus, cleanup
-      reset,
+      make-menus, list, clean-menus, cleanup, reset,
       summary-reads, total-length-long, find-genome-size, reduce-data, flye1
       blast-genome, count-gene, select-contigs,
       select-reads,
@@ -218,9 +221,8 @@ Options:
     utilize, with a default value equal to the maximum number of available cores.
 
   -c, --coverage: coverage for the organelle-genome assembly (default: ${_arg_coverage})
-    Could change: 30 -> 50 so that it matches with ptGAUL.
     The option '-c' or '--coverage' specifies the coverage percentage for the 
-    organelle-genome assembly, with a default value of 30x. 
+    organelle-genome assembly for controlling the data size.
 
   -w, --single-min: minimum mapped bases or PAF 11th column (default: ${_arg_single_min})
 
@@ -294,7 +296,6 @@ Options:
     with a default setting of '<output>/polap.log'.
 
   -v, --verbose: use multiple times to increase the verbose level
-
   --version: Prints version
   -h: Prints polap global help
   --help: Prints menu help
@@ -622,9 +623,9 @@ parse_commandline() {
 			_arg_log_stderr="on"
 			test "${1:0:5}" = "--no-" && _arg_log_stderr="off"
 			;;
-		--no-use-edges | --use-edges)
-			_arg_use_edges="on"
-			test "${1:0:5}" = "--no-" && _arg_use_edges="off"
+		--no-use-bridge | --use-bridge)
+			_arg_use_bridge="on"
+			test "${1:0:5}" = "--no-" && _arg_use_bridge="off"
 			;;
 		--no-coverage-check | --coverage-check)
 			_arg_coverage_check="on"

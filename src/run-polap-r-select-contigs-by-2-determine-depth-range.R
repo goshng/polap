@@ -62,7 +62,7 @@ x0 <- read_delim(args1$table, delim = " ", show_col_types = FALSE)
 
 # Sort the data by the 'Copy' column in decreasing order
 cutoff_data <- x0 |>
-  dplyr::select(Contig, Length, V3, Copy, MT, PT, Edge) |>
+  dplyr::select(Contig, Length, Depth, Copy, MT, PT, Edge) |>
   arrange(desc(Copy)) |>
   # Calculate the cumulative sum of the 'Length' column
   mutate(cumulative_length = cumsum(Length)) |>
@@ -85,12 +85,12 @@ if (args1$mitochondrial == TRUE) {
 write_tsv(xt, args1$cdf)
 
 # remove large copy number contig so that SD is less than MEAN.
-mean1 <- mean(xt$V3)
-sd1 <- sd(xt$V3)
+mean1 <- mean(xt$Depth)
+sd1 <- sd(xt$Depth)
 while (mean1 < 1 * sd1 && nrow(xt) > 1) {
-  xt <- xt |> filter(V3 < max(V3))
-  mean1 <- mean(xt$V3)
-  sd1 <- sd(xt$V3)
+  xt <- xt |> filter(Depth < max(Depth))
+  mean1 <- mean(xt$Depth)
+  sd1 <- sd(xt$Depth)
 }
 
 write_tsv(xt, args1$cdf)
@@ -116,33 +116,33 @@ if (nrow(xt) > 1) {
   xt |>
     summarise(
       # 2024-10-19
-      # depth_lower_bound = round(max(min(V3), mean(V3) - sd(V3) * 3) / 3), # CHECK # FIXME
-      # depth_upper_bound = round(min(max(V3), mean(V3) + sd(V3) * 3) * 3),
-      depth_lower_bound = lbound(V3), # CHECK # FIXME
+      # depth_lower_bound = round(max(min(Depth), mean(Depth) - sd(Depth) * 3) / 3), # CHECK # FIXME
+      # depth_upper_bound = round(min(max(Depth), mean(Depth) + sd(Depth) * 3) * 3),
+      depth_lower_bound = lbound(Depth), # CHECK # FIXME
       depth_upper_bound = round(min(
-        max(V3), mean(V3) + sd(V3) * 2
+        max(Depth), mean(Depth) + sd(Depth) * 2
       ) * 3),
-      depth_min = min(V3),
-      depth_min2 = (mean(V3) - sd(V3) * 2) / 1,
-      depth_max = max(V3) * 3,
-      depth_max2 = (mean(V3) + sd(V3) * 2) * 3,
-      depth_median = median(V3),
-      depth_mean = mean(V3),
-      depth_sd = sd(V3),
+      depth_min = min(Depth),
+      depth_min2 = (mean(Depth) - sd(Depth) * 2) / 1,
+      depth_max = max(Depth) * 3,
+      depth_max2 = (mean(Depth) + sd(Depth) * 2) * 3,
+      depth_median = median(Depth),
+      depth_mean = mean(Depth),
+      depth_sd = sd(Depth),
     ) |>
     write_tsv(args1$out)
 } else if (nrow(xt) == 1) {
   xt |>
     summarise(
-      depth_lower_bound = min(V3),
-      depth_upper_bound = min(V3),
-      depth_min = min(V3),
+      depth_lower_bound = min(Depth),
+      depth_upper_bound = min(Depth),
+      depth_min = min(Depth),
       depth_min2 = 0,
-      depth_max = max(V3),
+      depth_max = max(Depth),
       depth_max2 = 0,
-      depth_median = median(V3),
-      depth_mean = mean(V3),
-      depth_sd = sd(V3),
+      depth_median = median(Depth),
+      depth_mean = mean(Depth),
+      depth_sd = sd(Depth),
     ) |>
     write_tsv(args1$out)
 } else {

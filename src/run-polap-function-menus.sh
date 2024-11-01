@@ -62,6 +62,9 @@ HEREDOC
 		"ptgaul-intra-base-length"
 		"single-intra-base-length"
 		"polap-rw-base-length"
+		"ptgaul-reads"
+		"intra-reads"
+		"polap-reads"
 	)
 	for _menu in "${_other_menus[@]}"; do
 		touch "${_menu}"
@@ -149,6 +152,9 @@ HEREDOC
 		"ptgaul-intra-base-length"
 		"single-intra-base-length"
 		"polap-rw-base-length"
+		"ptgaul-reads"
+		"intra-reads"
+		"polap-reads"
 	)
 	for _menu in "${_other_menus[@]}"; do
 		rm -f "${_menu}"
@@ -273,24 +279,22 @@ HEREDOC
 		_polap_log0 "    find-genome-size"
 		_polap_log0 "    reduce-data"
 		_polap_log0 "    flye1"
-		_polap_log0 "  annotate"
 		_polap_log0 "    edges-stats"
+		_polap_log0 "  annotate"
 		_polap_log0 "    blast-genome"
 		_polap_log0 "    count-gene"
 		_polap_log0 "  seeds"
-		_polap_log0 "    seeds"
 		_polap_log0 "    seeds-gene"
 		_polap_log0 "  assemble2"
 		_polap_log0 "    map-reads"
 		_polap_log0 "    test-reads"
-		_polap_log0 "      collect-reads"
-		_polap_log0 "    best-reads"
-		_polap_log0 "    best-flye2"
 		_polap_log0 "    select-reads"
 		_polap_log0 "    flye2"
+		_polap_log0 "polish"
 		_polap_log0 "  flye-polishing"
 		_polap_log0 "  prepare-polishing"
-		_polap_log0 "  polish"
+		_polap_log0 "mtdna"
+		_polap_log0 "  mauve-mtdna"
 		;;
 	esac
 

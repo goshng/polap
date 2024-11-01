@@ -29,9 +29,9 @@ parser <- add_option(parser, c("-t", "--table"),
   metavar = "<FILE>"
 )
 parser <- add_option(parser, c("-a", "--annotation"),
-                     action = "store",
-                     help = "Organelle annotation depth table",
-                     metavar = "<FILE>"
+  action = "store",
+  help = "Organelle annotation depth table",
+  metavar = "<FILE>"
 )
 parser <- add_option(parser, c("-m", "--mtcontigseed"),
   action = "store",
@@ -39,18 +39,18 @@ parser <- add_option(parser, c("-m", "--mtcontigseed"),
   metavar = "<FILE>"
 )
 parser <- add_option(parser, c("-o", "--out"),
-                     action = "store",
-                     help = "Output contig seeds filename"
+  action = "store",
+  help = "Output contig seeds filename"
 )
 parser <- add_option(parser, c("--out-annotation"),
-                     action = "store",
-                     help = "Output contig seeds filename"
+  action = "store",
+  help = "Output contig seeds filename"
 )
 parser <- add_option(parser, c("-l", "--length"),
-                     type = "integer",
-                     default = -1,
-                     help = "Maximum length of seed contigs [default off]",
-                     metavar = "number"
+  type = "integer",
+  default = -1,
+  help = "Maximum length of seed contigs [default off]",
+  metavar = "number"
 )
 args1 <- parse_args(parser)
 
@@ -59,7 +59,7 @@ args1 <- parse_args(parser)
 if (is_null(args1$table)) {
   s <- "bioprojects"
   o <- "PRJNA817235-Canavalia_ensiformis"
-  
+
   # input_dir0 <- file.path("/media/h2/goshng/figshare", s, o, "0")
   input_dir0 <- file.path(".")
   input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
@@ -67,13 +67,14 @@ if (is_null(args1$table)) {
   output1 <- file.path(input_dir0, "1-mtcontig.table.tsv")
   input3 <- file.path(input_dir0, "contig-annotation-depth-table.txt")
   output2 <- file.path(input_dir0, "contig-annotation-depth-table-seeds.txt")
-  
-  args1 <- parse_args(parser, args = c("--table", input1,
-                                       "-m", input2, 
-                                       "-a", input3,
-                                       "-o", output1, 
-                                       "--out-annotation", output2))
-  
+
+  args1 <- parse_args(parser, args = c(
+    "--table", input1,
+    "-m", input2,
+    "-a", input3,
+    "-o", output1,
+    "--out-annotation", output2
+  ))
 }
 
 output1 <- args1$out
@@ -89,7 +90,7 @@ xall <- x0 |>
   group_by(Edge) |>
   ungroup() |>
   distinct() |>
-  dplyr::select(-V4, -V5, -V7, -V8) |>
+  # dplyr::select(-V4, -V5, -V7, -V8) |>
   mutate(edgename = paste0("edge_", Edge)) |>
   relocate(edgename) |>
   arrange(Copy)
@@ -101,7 +102,7 @@ if (args1$length > 0) {
 
 # Not sure whether we need this:
 # Case: PRJNA838254-Prunus_padus
-# The results may need this because of no annotation but linked to 
+# The results may need this because of no annotation but linked to
 # those annotated.
 # filter(MT > PT, MT > 0) |>
 # arrange(Copy)
@@ -111,12 +112,11 @@ dir_path <- dirname(output1)
 
 if (file.access(dir_path, 2) == 0) {
   cat("Directory is writable.\n")
-  
+
   left_join(x1, xall) |>
     filter(!is.na(MT)) |>
     arrange(desc(MT > PT), desc(MT)) |>
     write_tsv(output1, col_names = FALSE)
-  
 } else {
   cat("Directory is not writable.\n")
 }
@@ -133,8 +133,8 @@ table2 <- read_delim(args1$table, delim = " ", show_col_types = FALSE)
 table1 <- read_delim(args1$annotation, delim = " ", show_col_types = FALSE)
 
 # Load table1 and table2
-#table1 <- read_tsv("path/to/contig-annotation-depth-table.txt")
-#table2 <- read_tsv("path/to/assembly_info_organelle_annotation_count-all.txt", col_names = FALSE)
+# table1 <- read_tsv("path/to/contig-annotation-depth-table.txt")
+# table2 <- read_tsv("path/to/assembly_info_organelle_annotation_count-all.txt", col_names = FALSE)
 
 # Load the edge names set
 edges <- read_lines(args1$mtcontigseed)
@@ -162,4 +162,3 @@ final_table <- bind_rows(table1, new_rows) %>%
 
 # Save the final table as a TSV file
 write_tsv(final_table, output2)
-

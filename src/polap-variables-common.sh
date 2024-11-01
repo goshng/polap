@@ -96,6 +96,10 @@ local _polap_var_ga_annotation_cdf_table="${_polap_var_ga}/contig-annotation-cdf
 local _polap_var_ga_annotation_depth_table_seed="${_polap_var_ga}/contig-annotation-depth-table-seed.txt"
 local _polap_var_ga_annotation_depth_table_seed_target="${_polap_var_ga}/contig-annotation-depth-table-seed-${JNUM}.txt"
 local _polap_var_ga_annotation_table="${_polap_var_ga}/contig-annotation-table.txt"
+# for PT annotation table
+local _polap_var_ga_pt_annotation_depth_table="${_polap_var_ga}/pt-contig-annotation-depth-table.txt"
+# local _polap_var_ga_pt_annotation_table="${_polap_var_ga}/pt-contig-annotation-table.txt"
+
 # not used any more: used to be a folder for _polap_var_ga_gfa_all _polap_var_ga_gfa_seq_part
 local _polap_var_ga_mtcontigs="${_polap_var_ga}/mtcontigs"
 local _polap_var_manual_copy_range="${_polap_var_ga}/1-manual.copy.range.txt"

@@ -18,7 +18,9 @@
 # Ensure that the current script is sourced only once
 source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
-set +u; [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0; set -u
+set +u
+[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
@@ -55,7 +57,7 @@ function _run_polap_assemble1() { # whole-genome genome assembly
 
 	help_message=$(
 		cat <<HEREDOC
-# Run the whole-genome assembly.
+# The Flye whole-genome assembly.
 #
 # Arguments:
 #   -o ${ODIR}
@@ -64,7 +66,7 @@ function _run_polap_assemble1() { # whole-genome genome assembly
 #   -b ${_arg_short_read2}: another short-read fastq data file
 #   -m ${_arg_min_read_length}: the long-read sequence length threshold
 #   -t ${_arg_threads}: the number of CPU cores
-#   -c ${_arg_coverage}: the Flye's coverage option
+#   -c ${_arg_coverage}: the coverage option
 #   -g <arg>: computed by find-genome-size menu or given by users
 # Inputs:
 #   ${_arg_long_reads}: a long-read fastq 
@@ -76,6 +78,7 @@ function _run_polap_assemble1() { # whole-genome genome assembly
 #   ${_polap_var_base_genome_size}
 #   ${_polap_var_base_nk_fq_gz}
 #   ${_polap_var_wga_contigger_gfa}
+#   ${_polap_var_contigger_edges_stats}
 Example: $0 ${_arg_menu[0]} [-o ${ODIR}] [-l ${_arg_long_reads}] [-a ${_arg_short_read1}] [-b ${_arg_short_read2}]
 HEREDOC
 	)
@@ -93,11 +96,18 @@ HEREDOC
 		fi
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		exit $EXIT_SUCCESS
 	fi
 
 	_polap_log0 "starting the whole-genome assembly on ${ODIR} ..."
+	_polap_log1 "  output1: ${_polap_var_base_fq_stats}"
+	_polap_log1 "  output2: ${_polap_var_base_long_total_length}"
+	_polap_log1 "  output3: ${_polap_var_base_genome_size}"
+	_polap_log1 "  output4: ${_polap_var_base_nk_fq_gz}"
+	_polap_log1 "  output5: ${_polap_var_wga_contigger_gfa}"
+	_polap_log1 "  output6: ${_polap_var_contigger_edges_stats}"
 
 	if [[ "${_arg_flye}" == "on" ]]; then
 		if [[ -d "${_polap_var_wga}" ]]; then
@@ -160,9 +170,20 @@ HEREDOC
 		fi
 	fi
 
+	if [ -s "${_polap_var_contigger_edges_stats}" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log2 "  skipping edges-stats ..."
+	else
+		_run_polap_edges-stats
+		if [ $? -eq $RETURN_FAIL ]; then
+			_polap_log0 "ERROR: edges-stats step failed."
+			return $RETURN_FAIL
+		fi
+	fi
+
 	_polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -261,15 +282,18 @@ HEREDOC
 	check_file_existence "${_polap_var_contigger_edges_fasta}"
 	check_file_existence "${_polap_var_base_nk_fq_gz}"
 
-	_polap_log1 "NEXT: $(basename $0) select-reads -o $ODIR -i $INUM -j $JNUM"
-	_run_polap_select-reads
-	if [[ "${_arg_flye}" == "on" ]]; then
-		_run_polap_flye2
-	else
-		_polap_log2 "  skipping flye2 ..."
+	_run_polap_map-reads
+	if [[ "${_arg_bridge}" == "on" ]]; then
+		_arg_menu[1]="polap-reads"
 	fi
+	_run_polap_select-reads
+	_run_polap_flye2
 
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	_polap_log1 "NEXT: $0 prepare-polishing -o $ODIR -i $INUM -j $JNUM"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -303,19 +327,19 @@ function _run_polap_assemble() { # whole-genome and then organelle-genome assemb
 
 	help_message=$(
 		cat <<HEREDOC
-# Runs the POLAP organelle-genome assembly with sequencing data.
+# Run the POLAP organelle-genome assembly with sequencing data.
 # 
 # Arguments:
 #   -o $ODIR: output folder (default: o)
 #   -l ${_arg_long_reads}: a long-read fastq data file
 #   -a ${_arg_short_read1}: a short-read fastq data file
 #   -b ${_arg_short_read2}: another short-read fastq data file
-#   --rwx <arg>: mapping length for read selection
+#   -w <arg>: mapping length for read selection
 #   -m <arg>: minimum read length
-#   -c <arg>: maximum coverage of reads 
-#   -t <arg>: number of CPUs
 #   -i <arg>: index of the source of an organelle-genome assembly
 #   -j <arg>: index of the target organelle-genome assembly
+#   -c <arg>: maximum coverage of reads 
+#   -t <arg>: number of CPUs
 #   --no-reduction-reads: no data reduction in a whole-genome assembly
 #   --no-coverage-check: no data reduction in an organelle-genome assembly
 #   --random-seed <arg>: 5-digit number
@@ -326,7 +350,7 @@ function _run_polap_assemble() { # whole-genome and then organelle-genome assemb
 #   ${_arg_short_read1}: a short-read fastq data file
 #   ${_arg_short_read2}: another short-read fastq data file
 # Outputs:
-#   ${MTDIR}/assembly_graph.gfa
+#   ${_polap_var_oga}/assembly_graph.gfa
 Example: $(basename $0) ${_arg_menu[0]} --test
 HEREDOC
 	)
@@ -335,24 +359,36 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
+	_polap_log0 "assembling the organelle genome ..."
+	_polap_log1 "  input1: ${_arg_long_reads}"
+	_polap_log1 "  input2: ${_arg_short_read1}"
+	_polap_log1 "  input3: ${_arg_short_read2}"
+	_polap_log1 "  output1: ${_polap_var_wga_contigger_gfa}"
+	_polap_log1 "  output2: ${_polap_var_wga_annotation}"
+	_polap_log1 "  output3: ${_polap_var_mtcontigname}"
+	_polap_log1 "  output4: ${_polap_var_contigger_gfa}"
+
 	# Not delete the output directory.
 	if [[ "${_arg_redo}" = "on" ]]; then
-		_polap_log3_cmd rm -rf "${ODIR}"
+		rm -rf "${ODIR}/${INUM}" "${ODIR}/${JNUM}"
+		rm -f "${ODIR}"/jellyfish_out* \
+			"${ODIR}"/*.txt \
+			"${ODIR}"/*.stats \
+			"${ODIR}"/*.gz
 	fi
-	mkdir -p "$ODIR"
 
 	# Run assembly, annotation, and contig selection steps
-	if [ -s "${_polap_var_wga_contigger_gfa}" ]; then
-		_polap_log1 "  skipping the whole-genome assembly"
+	if [[ -s "${_polap_var_wga_contigger_gfa}" ]] && [[ "${_arg_redo}" == "off" ]]; then
+		_polap_log1 "  found: ${_polap_var_wga_contigger_gfa}, skipping the whole-genome assembly"
 	else
 		check_file_existence "${_arg_long_reads}"
+		check_file_existence "${_arg_short_read1}"
 		_run_polap_assemble1
 	fi
 
-	if [ -s "${_polap_var_wga_annotation}" ]; then
-		_polap_log1 "  skipping the organelle annotation on the whole-genome"
+	if [[ -s "${_polap_var_wga_annotation}" ]] && [[ "${_arg_redo}" == "off" ]]; then
+		_polap_log1 "  found: ${_polap_var_wga_annotation}, skipping the organelle annotation on the whole-genome"
 	else
-		_run_polap_edges-stats
 		_run_polap_annotate
 	fi
 
@@ -360,44 +396,22 @@ HEREDOC
 	if [[ "${_arg_test}" = "on" ]]; then
 		_arg_plastid="on"
 	fi
-	_arg_menu[1]="auto"
-	_run_polap_seeds
 
-	_run_polap_assemble2
-	_run_polap_flye-polishing
-
-	return
-
-	INUM="${i}" _run_polap_edges-stats
-	INUM="${i}" _run_polap_annotate
-	JNUM="${i}" _run_polap_flye-polishing
-	INUM="${i}" _run_polap_select-mtdna
-
-	if [ -s "${_polap_var_base_msbwt}" ]; then
-		_polap_log1 "  skipping the preparation of short-read polishing ..."
+	if [[ -s "${_polap_var_mtcontigname}" ]] && [[ "${_arg_redo}" == "off" ]]; then
+		_polap_log0 "  found: ${_polap_var_mtcontigname}, skipping seed contig selection"
 	else
-		if [ -s "${_polap_var_base_msbwt_tar_gz}" ]; then
-			_polap_log1 "  decompressing ${_polap_var_base_msbwt_tar_gz} ... later when we polish it with the short-read data."
-			tar -zxf "${_polap_var_base_msbwt_tar_gz}" -C "${ODIR}"
-		else
-			_polap_log1 "  Do the preparation of short-read polishing ... early"
-			check_file_existence "${_arg_short_read1}"
-			check_file_existence "${_arg_short_read2}"
-			_run_polap_prepare-polishing
-		fi
+		_run_polap_seeds
 	fi
 
-	# Run the polishing step
-	for i in "${_arg_select_contig_numbers[@]}"; do
-		# Define the paths for mtDNA sequences to be polished
-		PA="${ODIR}/${i}/mt.0.fasta"
-		FA="${ODIR}/${i}/mt.1.fa"
+	if [[ -s "${_polap_var_oga_contigger_edges_gfa}" ]] && [[ "${_arg_redo}" == "off" ]]; then
+		_polap_log0 "  found: ${_polap_var_oga_contigger_edges_gfa}, skipping organelle-genome assembly"
+	else
+		_run_polap_assemble2
+	fi
 
-		if [ -s "${PA}" ] && [ -s "${_polap_var_base_msbwt}" ]; then
-			_run_polap_polish
-		fi
-	done
+	return $RETURN_SUCCESS
 
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }

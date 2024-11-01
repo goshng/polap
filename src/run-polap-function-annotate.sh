@@ -18,7 +18,9 @@
 # Ensure that the current script is sourced only once
 source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
-set +u; [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0; set -u
+set +u
+[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
@@ -70,7 +72,8 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		return
 	fi
 
@@ -80,6 +83,11 @@ HEREDOC
 	_polap_log1 "  creating GFA without sequence data: ${_polap_var_ga_gfa_all}"
 	_polap_log2 "    input: ${_polap_var_contigger_gfa}"
 	_polap_log2 "    output: ${_polap_var_ga_gfa_all}"
+
+	if [[ ! -s "${_polap_var_contigger_gfa}" ]]; then
+		_polap_log0 "ERROR: no such file: ${_polap_var_contigger_gfa}"
+		return $RETURN_FAIL
+	fi
 
 	if [ -s "${_polap_var_ga_gfa_all}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log1 "    found: ${_polap_var_ga_gfa_all}, so skipping ..."
@@ -121,7 +129,8 @@ HEREDOC
 	_polap_log1 "NEXT: $0 blast-genome -o $ODIR [-i ${INUM}]"
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -166,7 +175,8 @@ HEREDOC
 		_polap_log0_file "${_polap_var_annotation_table}".pdf
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		exit $EXIT_SUCCESS
 	fi
 
@@ -177,7 +187,8 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -232,7 +243,8 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		exit $EXIT_SUCCESS
 	fi
 
@@ -247,7 +259,8 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -267,14 +280,26 @@ function _run_polap_annotate() { # annotate edge sequences in edges_stats.txt
 
 	help_message=$(
 		cat <<HEREDOC
-# Annotates the genome assembly.
+# Annotate a Flye genome assembly.
 #
 # Arguments:
 #   -i $INUM: a Flye genome assembly number
 # Inputs:
 #   $INUM
 # Outputs:
-Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>]
+#   ${_polap_var_ga_annotation_all}
+#   ${_polap_var_ga_annotation}
+#   ${_polap_var_ga_annotation_depth_table}
+#   ${_polap_var_ga_annotation_table}
+#   ${_polap_var_ga_pt_annotation_depth_table}
+# View:
+#   all
+#   mt
+#   table
+#   pt-table
+#   no-depth
+Example: $0 ${_arg_menu[0]} -i ${INUM}
+Example: $0 ${_arg_menu[0]} view depth
 HEREDOC
 	)
 
@@ -284,24 +309,34 @@ HEREDOC
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		case "${_arg_menu[2]}" in
+		all)
+			_polap_log0_column "${_polap_var_ga_annotation_all}"
+			;;
+		table)
+			_polap_log0_column "${_polap_var_ga_annotation_depth_table}"
+			;;
+		no-depth)
+			_polap_log0_column "${_polap_var_ga_annotation_table}"
+			;;
+		mt)
+			_polap_log0_column "${_polap_var_ga_annotation}"
+			;;
+		pt-table)
+			_polap_log0_column "${_polap_var_ga_pt_annotation_depth_table}"
+			;;
+		*)
+			_polap_log0 "menu3: all, table, no-depth, mt, pt"
+			;;
+		esac
 
-		_polap_log0 column -t "${_polap_var_ga_annotation}"
-		if [ -s "${_polap_var_ga_annotation}" ]; then
-			column -t "${_polap_var_ga_annotation}" >&2
-		fi
-
-		_polap_log0 column -t "${_polap_var_ga_annotation_depth_table}"
-		if [ -s "${_polap_var_ga_annotation_depth_table}" ]; then
-			column -t "${_polap_var_ga_annotation_depth_table}" >&2
-		fi
-
-		_polap_log3_cmd touch "${ODIR}"
-		_polap_log3_cmd ln -f -s "${_polap_var_contigger_gfa#*/}" "${ODIR}"/wga.gfa
+		# _polap_log3_cmd touch "${ODIR}"
+		# _polap_log3_cmd ln -f -s "${_polap_var_contigger_gfa#*/}" "${ODIR}"/wga.gfa
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
-		exit $EXIT_SUCCESS
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 	fi
 
 	_polap_log0 "annotating edge sequence contigs with mitochondrial and plastid genes on the assembly number ${INUM} ..."
@@ -320,7 +355,8 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 function _run_polap_a() { # shortcut for annotate

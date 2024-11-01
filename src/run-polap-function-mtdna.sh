@@ -18,10 +18,76 @@
 # Ensure that the current script is sourced only once
 source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
-set +u; [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0; set -u
+set +u
+[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
+
+################################################################################
+# mauve alignment
+################################################################################
+function _run_polap_mauve-mtdna() {
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Set paths for bioproject data
+	source "$script_dir/polap-variables-bioproject.sh"
+	source "$script_dir/polap-variables-oga.sh"
+
+	# Help message
+	local help_message=$(
+		cat <<HEREDOC
+# Compare the known mitochondrial DNA (mtDNA) sequence with the newly assembled 
+# one for verification purposes.
+#
+# We utilize progressiveMauve to align two sequences and 
+# calculate the total length of the LCB, which is then divided by the length 
+# of a known mtDNA sequence. This approach provides a basic method for 
+# comparing two sequences, albeit not highly sophisticated.
+#
+# Arguments:
+#   -i $INUM
+# Inputs:
+#   a.fasta: known mtDNA in fasta format
+#   b.fasta: another DNA sequence in fasta format
+# Outputs:
+#   the ratio of LCB total length divided by the known mtDNA sequence
+Example: $0 ${_arg_menu[0]} -a a.fa -b b.fa
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	_polap_log3_pipe "progressiveMauve \
+    --output=${ODIR}/mt.xmfa \
+    ${_arg_short_read1} \
+    ${_arg_short_read2} \
+    >${_polap_output_dest} 2>&1"
+
+	# awk 'NR > 1 {sum += $2 - $1} END {print sum}' "${ODIR}/mt.xmfa.backbone" >"${ODIR}/mt.identity.length.txt"
+	awk 'NR > 1 {sum += ($1 > $2 ? $1 - $2 : $2 - $1)} END {print sum}' "${ODIR}/mt.xmfa.backbone" >"${ODIR}/mt.identity.length.txt"
+
+	local _alen=$(<"${ODIR}/mt.identity.length.txt")
+	_polap_utility_get_contig_length \
+		"${_arg_short_read1}" \
+		"${ODIR}/mt.reference.length.txt"
+	local _blen=$(<"${ODIR}/mt.reference.length.txt")
+	local _percent_identity=$(echo "scale=3; ${_alen}/${_blen}" | bc)
+	_polap_log0 "mauve_lcb_length_coverage: ${_percent_identity}"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
 
 ################################################################################
 # Blast the final mtDNA sequence against mitochondrial and plastid genes.
@@ -154,7 +220,8 @@ HEREDOC
 	echoerr "NEXT: $(basename $0) gene-table-mtdna -o $ODIR [-i $INUM]"
 
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -262,7 +329,8 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 source "$script_dir/run-polap-function-utilities.sh"
@@ -294,9 +362,9 @@ function _run_polap_get-mtdna() {
 # Note: A downloaded fasta file may have multiple sequences.
 #
 # 1. NCBI search for a mitochondrial genome:
-#   "(mitochondrion[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]"
+#   "(mitochondrion[Title] AND complete[Title] AND genome[Title]) AND <species>[Organism]"
 # 2. NCBI search for a plastid genome:
-#   "(chloroplast[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]"
+#   "(chloroplast[Title] AND complete[Title] AND genome[Title]) AND <species>[Organism]"
 #
 # Arguments:
 #   --species "scientific name" (highest priority)
@@ -330,16 +398,18 @@ HEREDOC
 		if [[ -s "${_polap_var_bioproject_mtdna_fasta2_accession}" ]]; then
 			_polap_log0_cat "${_polap_var_bioproject_mtdna_fasta2_accession}"
 			if [ -s "${_polap_var_bioproject_mtdna_fasta1}" ]; then
-				seqkit stats "${_polap_var_bioproject_mtdna_fasta1}" >&2
+				seqkit fx2tab -n -l "${_polap_var_bioproject_mtdna_fasta1}" >&3
+				seqkit stats "${_polap_var_bioproject_mtdna_fasta1}" >&3
 			else
 				_polap_log1 "No such file: ${_polap_var_bioproject_mtdna_fasta1}"
 				_polap_log0 "No organelle genome sequence"
 			fi
 			if [ -s "${_polap_var_bioproject_mtdna_fasta2}" ]; then
-				seqkit stats "${_polap_var_bioproject_mtdna_fasta2}" >&2
+				seqkit stats "${_polap_var_bioproject_mtdna_fasta2}" >&3
 			else
 				_polap_log1 "No such file: ${_polap_var_bioproject_mtdna_fasta2}"
 			fi
+
 		else
 			_polap_log0 "No result yet."
 		fi
@@ -354,7 +424,7 @@ HEREDOC
 	if [ -n "${_arg_species}" ]; then
 		_polap_log1 "  option --species: ${_arg_species}"
 		SPECIES="${_arg_species}"
-		_polap_log3_cmd mkdir -p "${_polap_var_bioproject}"
+		_polap_log3_cmd mkdir -p "${_polap_var_project}"
 	elif [ -s "${_polap_var_bioproject_species}" ]; then
 		if [[ -s "${_polap_var_bioproject_txt}" ]]; then
 			local bioproject_id=$(<"${_polap_var_bioproject_txt}")
@@ -441,7 +511,8 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 function _run_polap_gm() {
@@ -495,7 +566,8 @@ HEREDOC
 	echoerr "FILE: mt.3.pdf has been created."
 
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 ################################################################################
 # Selects mtDNA sequences from a GFA.
@@ -647,7 +719,8 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -778,7 +851,8 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 # Helper function to process the circular path and format the edge data

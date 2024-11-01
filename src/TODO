@@ -1,5 +1,11 @@
 # 2024-10-31
 
+variable change
+CONTIG_LENGTH -> _CONTIG_LENGTH
+
+Example: test
+Example: Anthoceros angustus
+
 Salix_dunni: single contig case -> no combined data
 1. cut half and use two contigs
 2. use the single contigs

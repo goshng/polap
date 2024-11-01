@@ -2,4 +2,5 @@
 conda install pandas
 conda install networkx
 conda install gfatools
+conda install progressivemauve
 conda install r::r-mixr

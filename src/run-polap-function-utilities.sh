@@ -193,6 +193,7 @@ function _log_command_versions() {
 	_polap_log0 "version: csvtk: $(csvtk version)"
 	_polap_log0 "version: bc: $(bc --version | head -1)"
 	_polap_log0 "version: gfatools: $(gfatools version | tail -1)"
+	_polap_log0 "version: progressiveMauve: $(progressiveMauve --version 2>&1)"
 
 	_polap_log0 "------------------------------"
 	_polap_log0 "conda environment: polap-fmlrc"
@@ -284,4 +285,73 @@ function get_sra_size() {
 		size_in_kb=$(echo "scale=2; $size_in_bytes / 1024" | bc)
 		echo "Size of $SRA_ACCESSION: $size_in_kb KB"
 	fi
+}
+
+################################################################################
+# creats a range file
+################################################################################
+function _create_range() {
+	# Extract arguments
+	local params="$1"
+	local output_file="$2"
+
+	# Extract the start, end, and count values from the input string
+	IFS=',' read -r start end count <<<"${params}"
+
+	# Initialize array
+	local numbers=()
+
+	# Handle the special case where start equals end and count is 1
+	if [[ "$start" == "$end" ]]; then
+		for ((i = 0; i < count; i++)); do
+			numbers+=("$start")
+		done
+	else
+		# Calculate the step
+		# Calculate the step size
+		local step=$(((end - start) / (count - 1)))
+
+		# Generate numbers and add to array
+		for ((i = 0; i < count; i++)); do
+			value=$((start + i * step))
+			numbers+=("$value")
+		done
+	fi
+
+	# Save array to a file
+	echo "${numbers[@]}" >"$output_file"
+}
+
+function _create_range_float() {
+	# Extract arguments
+	local params="$1"
+	local output_file="$2"
+
+	# Split params into start, end, and count
+	IFS=',' read -r start end count <<<"$params"
+
+	# Initialize array
+	local numbers=()
+
+	# Handle the special case where start equals end and count is 1
+	if [[ "$start" == "$end" ]]; then
+		for ((i = 0; i < count; i++)); do
+			numbers+=("$(printf "%.2f" "$start")")
+		done
+	else
+		# Calculate the step
+		local step
+		step=$(echo "($end - $start) / ($count - 1)" | bc -l)
+
+		# Generate numbers and add to array
+		for i in $(seq 0 $((count - 1))); do
+			value=$(echo "$start + $i * $step" | bc -l)
+			formatted_value=$(printf "%.2f" "$value")
+			numbers+=("$formatted_value")
+		done
+	fi
+
+	# Save the array to the output file
+	# printf "%s\n" "${numbers[@]}" >"$output_file"
+	echo "${numbers[@]}" >"$output_file"
 }

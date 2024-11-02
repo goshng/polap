@@ -441,6 +441,7 @@ function _run_polap_test-reads() { # selects reads mapped on a genome assembly
 #   combined-intra-base-length  -> combined
 #   combined-inter-base-ratio   -> combined
 #   combined-inter-base-length  -> combined
+#   bridge-inter-base-length  -> bridge
 #   combined-bridge-read-length -> combined
 # View:
 #   ptgaul-intra-base-length
@@ -449,6 +450,7 @@ function _run_polap_test-reads() { # selects reads mapped on a genome assembly
 Example: $0 ${_arg_menu[0]} [ptgaul-intra-base-length] --select-read-range 3000,27000,5
 Example: $0 ${_arg_menu[0]} single-intra-base-length -i 1 -j 2
 Example: $0 ${_arg_menu[0]} polap-rw-base-length --select-read-range 3000,27000,5
+Example: $0 ${_arg_menu[0]} bridge-inter-base-length
 Example: $0 ${_arg_menu[0]} polap-rw-base-length --select-read-range 3000,27000,5 --start-index 3
 Example: $0 ${_arg_menu[0]} view polap-rw-base-length -i 2 -j 3
 HEREDOC
@@ -482,6 +484,7 @@ HEREDOC
 	_polap_opt_dict["combined-intra-base-length"]="combined"
 	_polap_opt_dict["combined-inter-base-ratio"]="combined"
 	_polap_opt_dict["combined-inter-base-length"]="combined"
+	_polap_opt_dict["bridge-inter-base-length"]="pair"
 	_polap_opt_dict["polap-rw-base-length"]="combined"
 	_polap_opt_dict["combined-bridge-length"]="combined"
 	_polap_opt_dict["ptgaul-reads"]="ptgaul"
@@ -700,6 +703,9 @@ HEREDOC
 		combined-inter-base-length)
 			_arg_pair_min="${restored_array[i]}"
 			;;
+		bridge-inter-base-length)
+			_arg_pair_min="${restored_array[i]}"
+			;;
 		combined-bridge-read-length)
 			_arg_bridge_min="${restored_array[i]}"
 			;;
@@ -722,7 +728,8 @@ HEREDOC
 		_polap_log2 "    input1: ${_polap_var_mtcontigname}"
 		_polap_log2 "    input2: ${_polap_var_oga_contig}/contig.tab"
 		_polap_log2 "    output: ${_polap_var_oga_reads}/${_pread_sel}/${i}/${_read_names}.names"
-		_polap_log3_pipe "Rscript --vanilla ${script_dir}/run-polap-r-pairs.R \
+		if [[ "${_arg_use_bridge}" == "off" ]]; then
+			_polap_log3_pipe "Rscript --vanilla ${script_dir}/run-polap-r-pairs.R \
 	    -m ${_polap_var_mtcontigname} \
 		  -t ${_polap_var_oga_contig}/contig.tab \
 		  --out ${_polap_var_oga_reads}/${_pread_sel}/${i} \
@@ -731,6 +738,18 @@ HEREDOC
 		  -x ${_arg_bridge_min} \
       --all \
 		  >${_polap_output_dest} 2>&1"
+		else
+			_polap_log3_pipe "Rscript --vanilla ${script_dir}/run-polap-r-bridge.R \
+        --use-strand \
+	    -m ${_polap_var_mtcontigname} \
+		  -t ${_polap_var_oga_contig}/contig.tab \
+		  --out ${_polap_var_oga_reads}/${_pread_sel}/${i} \
+      -w ${_arg_single_min} \
+		  -r ${_arg_pair_min} \
+		  -x ${_arg_bridge_min} \
+      --all \
+		  >${_polap_output_dest} 2>&1"
+		fi
 
 		_polap_log1 "  selecting long reads for ${_pread_sel}"
 		_polap_log2 "    input1: ${_source_long_reads_fq}"

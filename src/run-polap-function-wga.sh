@@ -386,7 +386,7 @@ HEREDOC
 			${_polap_var_base_jellyfish_out}"
 		_polap_log2_file "${_polap_var_base_jellyfish_out_histo}"
 
-		_polap_log3_pipe "Rscript $script_dir/run-polap-jellyfish.R \
+		_polap_log3_pipe "Rscript $script_dir/run-polap-r-jellyfish.R \
 			${_polap_var_base_jellyfish_out_histo} \
 			${_polap_var_base_genome_size}"
 		# Check the exit status

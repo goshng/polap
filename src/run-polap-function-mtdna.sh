@@ -162,7 +162,7 @@ HEREDOC
 	_polap_log2 "INFO: tblastn complete"
 
 	# Process the tblastn results
-	"$script_dir"/run-polap-genes.R \
+	"$script_dir"/run-polap-r-genes.R \
 		"${_polap_var_chloroplot}/mtaa.blast" \
 		"${_polap_var_chloroplot}/mtaa.blast.bed" \
 		>/dev/null 2>&1
@@ -174,7 +174,7 @@ HEREDOC
 	# Create directory for gene bed files
 	mkdir "${_polap_var_chloroplot}/mtaa.bed"
 
-	"$script_dir"/run-polap-genes-bed4.R \
+	"$script_dir"/run-polap-r-genes-bed4.R \
 		"${_polap_var_chloroplot}/mtaa.blast" \
 		"${_polap_var_chloroplot}/mtaa.blast.bed4"
 

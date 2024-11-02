@@ -28,6 +28,135 @@ declare "$_POLAP_INCLUDE_=1"
 source "$script_dir/run-polap-function-utilities.sh"
 
 ################################################################################
+# create a dummy assembly for preparing seed contigs
+################################################################################
+function _run_polap_prepare-seeds() { # prepare seed contigs in a not usual way
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	source "$script_dir/polap-variables-oga.sh"
+
+	help_message=$(
+		cat <<HEREDOC
+# Prepare contig seeds from multiple assemblies or sequences
+#
+# Arguments:
+#   -i number1,number2,...
+#   -j $JNUM: destination Flye organelle assembly number
+#
+#   -f contig sequence file
+# Inputs:
+#   mulitple assemblies
+#   sequence file
+# Outputs:
+#   a dummy assembly
+Example: $0 ${_arg_menu[0]} -i 4,6 -j 7
+Example: $0 ${_arg_menu[0]} -f seed_contigs.fa
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
+
+	_polap_log0 "preparing seed contigs ..."
+	_polap_log1 "  assembly: $INUM (source) -> $JNUM (target) ..."
+	# if [[ -d "${ODIR}/${JNUM}" ]]; then
+	# 	_polap_log0 "ERROR: target assembly number ${JNUM} already exists."
+	# 	return $RETURN_SUCCESS
+	# fi
+	mkdir -p "${ODIR}/${JNUM}"
+	if [[ "${_arg_final_assembly}" == "mt.1.fa" ]]; then
+		_polap_log0 "  -i must have two or more assembly numbers"
+
+		# Initialize a counter
+		local counter=1
+
+		# Output file for concatenated FASTA
+		local output_file="${ODIR}/${JNUM}/seed_contigs.fa"
+
+		# Clear or create the output file
+		>"$output_file"
+		# Set IFS to a comma to split the string by commas
+		IFS=','
+
+		# Use a for loop to iterate over each number
+		for number in ${_arg_inum}; do
+			local fasta_file="${ODIR}/${number}/assembly.fasta"
+
+			if [[ ! -s "${fasta_file}" ]]; then
+				_polap_log0 "ERROR: no such file: ${fasta_file}"
+				return $RETURN_SUCCESS
+			fi
+
+			# Process each file, renaming sequence IDs
+			awk -v counter="$counter" '
+    /^>/ {
+        # Print a new sequence ID with "edge_" followed by the current counter
+        print ">edge_" counter
+        counter++
+        next
+    }
+    # Print the sequence lines as they are
+    {
+        print
+    }' "$fasta_file" >>"$output_file"
+
+			# Update the counter based on the number of sequences processed in the current file
+			sequences_in_file=$(grep -c "^>" "$fasta_file")
+			counter=$((counter + sequences_in_file))
+		done
+
+		# Reset IFS to default (optional, but good practice)
+		unset IFS
+
+		_polap_log0 "contig sequence file: $output_file"
+
+	else
+		# cp "${_arg_final_assembly}" "${ODIR}/${JNUM}/seed_contigs.fa"
+
+		# Input FASTA file
+		input_file="${_arg_final_assembly}"
+		# Output FASTA file
+		output_file="${ODIR}/${JNUM}/seed_contigs.fa"
+
+		# Initialize a counter
+		local counter=1
+
+		# Process the input file and rename sequence IDs
+		awk -v counter="$counter" '
+/^>/ {
+    # Print a new sequence ID with "edge_" followed by the current counter
+    print ">edge_" counter
+    counter++
+    next
+}
+# Print the sequence lines as they are
+{
+    print
+}' "$input_file" >"$output_file"
+
+		_polap_log0 "  ${output_file} is the contig sequence file."
+	fi
+
+	_polap_log3_cmd mkdir "${_polap_var_oga_contigger}"
+	_polap_log3_cmd cp "${output_file}" "${_polap_var_oga_contigger_edges_fasta}"
+	local KNUM=$((JNUM + 1))
+	seqkit seq -n -i "${output_file}" >"${_polap_var_oga}/mt.contig.name-${KNUM}"
+	_polap_log0_cat "${_polap_var_oga}/mt.contig.name-${KNUM}"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+################################################################################
 # Map reads on a genome assembly using minimap2.
 #
 # View:
@@ -313,14 +442,15 @@ function _run_polap_test-reads() { # selects reads mapped on a genome assembly
 #   combined-inter-base-ratio   -> combined
 #   combined-inter-base-length  -> combined
 #   combined-bridge-read-length -> combined
-#
+# View:
+#   ptgaul-intra-base-length
+#   single-intra-base-length
+#   polap-rw-base-length
 Example: $0 ${_arg_menu[0]} [ptgaul-intra-base-length] --select-read-range 3000,27000,5
-Example: $0 ${_arg_menu[0]} single-intra-base-length --select-read-range 3000,27000,5
+Example: $0 ${_arg_menu[0]} single-intra-base-length -i 1 -j 2
 Example: $0 ${_arg_menu[0]} polap-rw-base-length --select-read-range 3000,27000,5
 Example: $0 ${_arg_menu[0]} polap-rw-base-length --select-read-range 3000,27000,5 --start-index 3
-
-Example: $0 ${_arg_menu[0]} combined-intra-base-length --select-read-range 3000,27000,5
-Example: $0 ${_arg_menu[0]} combined-inter-base-length --select-read-range 9000,27000,4
+Example: $0 ${_arg_menu[0]} view polap-rw-base-length -i 2 -j 3
 HEREDOC
 	)
 
@@ -412,6 +542,11 @@ HEREDOC
 
 		_polap_log0 "See: ${_polap_var_oga_plot}/${_pread_sel}-summary.pdf"
 
+		local _project_dir=$(grep 'Project:' ${LOG_FILE} | tail -1 | cut -d: -f4 | head -n 1 | xargs)
+		local _species=$(grep 'species:' ${LOG_FILE} | tail -1 | cut -d: -f4 | head -n 1 | xargs)
+
+		local _md_file="${_polap_var_oga_plot}/figure-${_pread_sel}.md"
+		printf "%s\n\n" "# mtDNA of ${_species}: ${_pread_sel}" >"${_md_file}"
 		read -a restored_array <"${_polap_var_oga_contig}/${_pread_sel}.txt"
 		local array_length=${#restored_array[@]}
 		# Iterate over the array using an index
@@ -425,8 +560,13 @@ HEREDOC
 			else
 				_polap_log3_pipe "cp ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa \
 			    ${_polap_var_oga_plot}/${_pread_sel}/${_test_value}-graph_final.gfa"
+				printf "![${_test_value}](%s){ width=13%% }\n" ${_project_dir}/${_polap_var_oga_plot}/${_pread_sel}/${_test_value}-graph_final.png >>"${_md_file}"
 			fi
 		done
+		printf "\n![Numbers of bases and fragments: ${_pread_sel} of ${_species}](%s)\n" ${_project_dir}/${_polap_var_oga_plot}/${_pread_sel}-summary.pdf >>"${_md_file}"
+		printf "\n\n" >>"${_md_file}"
+		echo "\newpage" >>"${_md_file}"
+		printf "\n\n" >>"${_md_file}"
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
@@ -797,10 +937,23 @@ HEREDOC
 		return
 	fi
 
-	if [[ "${_arg_menu[1]}" == "infile" ]]; then
+	case "${_arg_menu[1]}" in
+	infile | ptgaul-reads)
 		_arg_menu[1]="ptgaul-reads"
 		_polap_log0 "  default set to read-selection: ${_arg_menu[1]}"
-	fi
+		;;
+	polap-reads)
+		_polap_log0 "  read-selection: ${_arg_menu[1]}"
+		;;
+	intra-reads)
+		_polap_log0 "  read-selection: ${_arg_menu[1]}"
+		;;
+	*)
+		_polap_log0 "ERROR: no such menu2 for select-reads: ${_arg_menu[1]}"
+		return $RETURN_FAIL
+		;;
+	esac
+
 	local _n_repeats="1"
 	if [[ "${_arg_menu[2]}" != "outfile" ]]; then
 		if [[ "${_n_repeats}" =~ ^[0-9]+$ ]]; then

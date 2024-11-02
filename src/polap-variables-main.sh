@@ -14,7 +14,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# variables 
+# variables
 INUM=${_arg_inum}
 JNUM=${_arg_jnum}
 if [ "${_arg_archive_is}" = "off" ]; then
@@ -30,7 +30,7 @@ fi
 SECONDS=0
 
 if [ "${_arg_log_is}" = "off" ]; then
-	LOG_FILE="${ODIR}/polap.log"
+	LOG_FILE="${ODIR}/${_arg_log}"
 	[[ ! -d "${ODIR}" ]] && mkdir -p "${ODIR}"
 else
 	LOG_FILE="${_arg_log}"

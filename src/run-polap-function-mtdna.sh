@@ -59,7 +59,7 @@ function _run_polap_mauve-mtdna() {
 #   b.fasta: another DNA sequence in fasta format
 # Outputs:
 #   the ratio of LCB total length divided by the known mtDNA sequence
-Example: $0 ${_arg_menu[0]} -a a.fa -b b.fa
+Example: $0 ${_arg_menu[0]} -a o/00-bioproject/2-mtdna.fasta -b o/1/assembly.fasta
 HEREDOC
 	)
 
@@ -376,8 +376,9 @@ function _run_polap_get-mtdna() {
 #   ${_polap_var_bioproject_mtdna_fasta2_accession}
 # Preconditions:
 #   get-bioproject
-Example: $(basename $0) ${_arg_menu[0]} --species "Anthoceros agrestis"
-Example: $(basename $0) ${_arg_menu[0]} -o o
+Example: $0 ${_arg_menu[0]} --species "Anthoceros agrestis"
+Example: $0 ${_arg_menu[0]} -o o
+Example: $0 ${_arg_menu[0]} view
 HEREDOC
 	)
 

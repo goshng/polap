@@ -123,6 +123,7 @@ else
 	_polap_log0 "ERROR: no such menu of $1"
 fi
 
+date +"%Y-%m-%d %H:%M:%S" >&3
 ELAPSED="Time at $(hostname): $((SECONDS / 3600))hrs $(((SECONDS / 60) % 60))min $((SECONDS % 60))sec - $CMD"
 echo "$ELAPSED"
 

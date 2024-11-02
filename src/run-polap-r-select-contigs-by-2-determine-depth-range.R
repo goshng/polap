@@ -55,28 +55,49 @@ if (is_null(args1$table)) {
   input_dir0 <- file.path(".")
   input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
   output1 <- file.path(input_dir0, "2-depth.range.by.cdf.copy.number.txt")
-  args1 <- parse_args(parser, args = c("--table", input1, "-o", output1))
+  output2 <- file.path(input_dir0, "contig-annotation-cdf-table.txt")
+  args1 <- parse_args(parser, args = c("--table", input1, "-o", output1, "-c", output2))
 }
 
 x0 <- read_delim(args1$table, delim = " ", show_col_types = FALSE)
 
+# PT > MT: the top most three -> max depth
+# this max depth -> range or lower baound of ptDNA
+# FIXME: test this with Anthoroces angustus
+# FIXME: Now, this would not work for ptDNA.
+pt_lower_bound <- x0 |>
+  dplyr::select(Contig, Length, Depth, Copy, MT, PT, Edge) |>
+  filter(PT > MT) |>
+  arrange(desc(PT)) |>
+  slice_head(n = 3) |>
+  summarise(max_depth = max(Depth, na.rm = TRUE) * 0.9) |>
+  pull(max_depth)
+
 # Sort the data by the 'Copy' column in decreasing order
 cutoff_data <- x0 |>
   dplyr::select(Contig, Length, Depth, Copy, MT, PT, Edge) |>
-  arrange(desc(Copy)) |>
+  arrange(desc(Depth)) |>
+  mutate(pseudo_MT = if_else(MT == 0, MT + 1, MT), 
+         pseudo_PT = if_else(PT == 0, PT + 1, PT)) |>
   # Calculate the cumulative sum of the 'Length' column
-  mutate(cumulative_length = cumsum(Length)) |>
+  filter(Depth < pt_lower_bound) |>
+  mutate(dispersion_MT = as.integer(Length / pseudo_MT)) |>
+  mutate(dispersion_PT = as.integer(Length / pseudo_PT)) |>
+  select(-pseudo_MT, -pseudo_PT) |>
+  filter(!(MT <= PT & dispersion_PT > 1e+4)) |>
+  filter(!(MT >= PT & dispersion_MT > 1e+5)) |>
   # Cut off rows at the given cumulative length of 3,000,000
-  filter(cumulative_length <= 3e+6) |>
-  filter(MT > 0 | PT > 0)
-
-
+  filter(MT > 0 | PT > 0) |>
+  mutate(cumulative_length = cumsum(Length)) |>
+  filter(cumulative_length <= 3e+6)
 
 # MT selection: x0 -> cutoff_data -> xt
 # gene density cutoff: 1 in 100 kb
 if (args1$mitochondrial == TRUE) {
   xt <- cutoff_data |>
-    filter(PT < MT)
+    filter(PT < MT, 
+           Depth < pt_lower_bound,
+           Copy > 0)
 } else {
   xt <- cutoff_data |>
     filter(PT > MT)

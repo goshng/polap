@@ -18,10 +18,75 @@
 # Ensure that the current script is sourced only once
 source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
-set +u; [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0; set -u
+set +u
+[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
+
+function _run_polap_report-table() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	help_message=$(
+		cat <<HEREDOC
+# Report info.
+#
+Example: $0 ${_arg_menu[0]} Brassica_rapa
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	local _project="${_arg_menu[1]}"
+	if [[ "${_arg_menu[1]}" == "infile" ]]; then
+		local _project=$(basename $PWD)
+	fi
+	_polap_log0 "Project: ${_project}"
+
+	local _l=$(basename "$(readlink -f l.fq)" .fastq)
+	_polap_log0 "Long SRA: ${_l}"
+	local _s=$(basename "$(readlink -f s1.fq)" .fastq)
+	_s=${_s%_1}
+	_polap_log0 "Short SRA: ${_s}"
+
+	_polap_utility_get_contig_length "${ODIR}/1/mt.0.fasta" "${ODIR}/1/mt.0.fasta.len"
+	local _l=$(<"${ODIR}/1/mt.0.fasta.len")
+	_polap_log0 "mtDNA total length: ${_l}"
+
+	_arg_menu[1]=$(basename "${_project}" | sed 's/_/ /g')
+	_run_polap_get-taxonomy-species
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+function _run_polap_get-taxonomy-species() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	help_message=$(
+		cat <<HEREDOC
+# Get taxonomy.
+#
+Example: $0 ${_arg_menu[0]} "Brassica rapa"
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	local _species="${_arg_menu[1]}"
+	if [[ "${_arg_menu[1]}" == "infile" ]]; then
+		local _species=$(basename "$PWD" | sed 's/_/ /g')
+	fi
+
+	MDATA="$ODIR/00-bioproject/taxonomy.txt"
+	_polap_log0 "species: ${_species}"
+	local _v=$(esearch -db taxonomy -query "${_species}" | efetch -format xml | xtract -pattern Taxon -block "LineageEx/Taxon" -sep ";" -element ScientificName)
+	_polap_log0 "taxonomy: ${_v}"
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
 
 ################################################################################
 # FIXME: something are complicated. Do we need it?

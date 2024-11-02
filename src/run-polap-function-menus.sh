@@ -285,6 +285,7 @@ HEREDOC
 		_polap_log0 "    count-gene"
 		_polap_log0 "  seeds"
 		_polap_log0 "    seeds-gene"
+		_polap_log0 "    prepare-seeds"
 		_polap_log0 "  assemble2"
 		_polap_log0 "    map-reads"
 		_polap_log0 "    test-reads"

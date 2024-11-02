@@ -33,8 +33,6 @@ declare "$_POLAP_INCLUDE_=1"
 
 source "$script_dir/run-polap-function-utilities.sh"
 
-local _polap_version=0.3.7
-
 print_version_history() {
 	local _message=$(
 		cat <<HEREDOC

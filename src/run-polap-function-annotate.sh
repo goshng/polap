@@ -25,9 +25,6 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-source "$script_dir/run-polap-function-blast-genome.sh"
-source "$script_dir/run-polap-function-count-gene.sh"
-
 ################################################################################
 #
 ################################################################################
@@ -41,7 +38,7 @@ function _run_polap_edges-stats() { # create an edge version of contigs_stats.tx
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-ga.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# Print help message if requested
 	help_message=$(
@@ -146,7 +143,7 @@ function _run_polap_depth-distribution() { # creates a depth distribution
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-mtcontig.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# Print help message if requested
 	help_message=$(
@@ -204,7 +201,7 @@ function _run_polap_annotate() { # annotate edge sequences in edges_stats.txt
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-ga.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	help_message=$(
 		cat <<HEREDOC
@@ -313,7 +310,7 @@ function _run_polap_count-gene() { # count MT and PT genes using edges_stats.txt
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-ga.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	help_message=$(
 		cat <<HEREDOC
@@ -492,7 +489,7 @@ function _run_polap_blast-genome() { # BLAST edge sequences on MT and PT genes
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-ga.sh"
+	source "$script_dir/polap-variables-common.sh"
 	local MTAA="$script_dir"/polap-mt.1.c70.3.faa
 	local PTAA="$script_dir"/polap-pt.2.c70.3.faa
 

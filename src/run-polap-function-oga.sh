@@ -39,7 +39,7 @@ function _run_polap_prepare-seeds() { # prepare seed contigs in a not usual way
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-oga.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	help_message=$(
 		cat <<HEREDOC
@@ -195,7 +195,7 @@ function _run_polap_map-reads() { # selects reads mapped on a genome assembly
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-oga.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	help_message=$(
 		cat <<HEREDOC
@@ -401,7 +401,7 @@ function _run_polap_test-reads() { # selects reads mapped on a genome assembly
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-oga.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	help_message=$(
 		cat <<HEREDOC
@@ -906,7 +906,7 @@ function _run_polap_select-reads() { # selects reads mapped on a genome assembly
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-oga.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	help_message=$(
 		cat <<HEREDOC
@@ -1004,7 +1004,7 @@ function _run_polap_flye2() { # executes Flye for an organelle-genome assembly
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-oga.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	if [[ "${_arg_menu[1]}" == "infile" ]]; then
 		_arg_menu[1]="ptgaul-reads"
@@ -1194,7 +1194,7 @@ function _run_polap_report-assembly() { # report an organelle-genome assembly re
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-wga.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# Help message
 	local help_message=$(
@@ -1212,8 +1212,8 @@ HEREDOC
 	)
 
 	# Set variables for file paths
-	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh"       # '.' means 'source'
 
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_log0 "${help_message}" && return
@@ -1238,7 +1238,7 @@ HEREDOC
 	# for i in "${_arg_select_contig_numbers[@]}"; do
 	# 	# Call the function corresponding to the current number (index is i-1)
 	# 	INUM="${i}"
-	# 	source "$script_dir/polap-variables-oga.sh" # '.' means 'source'
+	# 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 	# 	_polap_log0 $(cat "${_polap_var_wga}/mt.contig.name-${i}" | wc -l)
 	# 	_polap_log0_cat "${_polap_var_mtdna_compare}"
 	# done
@@ -1281,7 +1281,7 @@ HEREDOC
 			_polap_log1 "$file is the same as $unique_file."
 			INUM="${unique_file##*-}"
 		fi
-		source "$script_dir/polap-variables-oga.sh" # '.' means 'source'
+		source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 		_polap_log0 $(cat "${_polap_var_wga}/mt.contig.name-${i}" | wc -l)
 		_polap_log0_cat "${_polap_var_mtdna_compare}"
 	done
@@ -1347,7 +1347,7 @@ function _run_polap_x-v0.3.7-collect-reads() { # replaced by select-reads
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-oga.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# for contigs
 	#	_polap_var_contigger_edges_fasta=o/30-contigger/contigs.fasta
@@ -1531,10 +1531,10 @@ function _run_polap_x-v0.2.6-select-reads() { # selects reads mapped on a genome
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-base.sh"     # '.' means 'source'
-	source "$script_dir/polap-variables-mtcontig.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-oga.sh"      # '.' means 'source'
-	source "$script_dir/polap-variables-ga.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh"     # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh"      # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh"       # '.' means 'source'
 
 	local MTDIR="${_polap_var_oga}"                              # target: ${_polap_var_oga}
 	local MTSEEDSDIR="${_polap_var_oga}/seeds"                   # ${_polap_var_seeds} for oga-class
@@ -1844,7 +1844,7 @@ function _run_polap_x-select-reads() { # selects reads mapped on a genome assemb
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-oga.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	local MTDIR="${_polap_var_oga}"                              # target: ${_polap_var_oga}
 	local MTSEEDSDIR="${_polap_var_oga}/seeds"                   # ${_polap_var_seeds} for oga-class
@@ -2070,7 +2070,7 @@ function _run_polap_x-v0.2.6-flye2() { # executes Flye for an organelle-genome a
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-oga.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	local MTDIR="$ODIR"/$JNUM
 	MTSEEDSDIR="${MTDIR}"/seeds

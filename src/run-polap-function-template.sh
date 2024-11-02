@@ -33,7 +33,7 @@ function _run_polap_template() {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# Print help message if requested
 	help_message=$(

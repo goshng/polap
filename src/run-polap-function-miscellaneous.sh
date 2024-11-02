@@ -431,7 +431,7 @@ function _run_polap_x-check-coverage() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	LRNK="$ODIR/nk.fq.gz"
-	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	help_message=$(
 		cat <<HEREDOC

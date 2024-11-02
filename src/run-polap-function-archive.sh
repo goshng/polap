@@ -38,7 +38,7 @@ function _run_polap_archive() { # archive a POLAP output folder for later use
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-bioproject.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	if [ "${_arg_short_read1_is}" = "on" ]; then
 		_arg_archive="${_arg_short_read1}"
@@ -221,7 +221,7 @@ function _run_polap_cleanup() { # cleanup an POLAP output folder
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-oga.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# Print help message if requested
 	help_message=$(
@@ -269,7 +269,7 @@ source "$script_dir/run-polap-function-menus.sh"
 # Outputs:
 #   $ODIR
 ################################################################################
-function _run_polap_reset() { # initialize an output folder
+function _run_polap_init() { # initialize an output folder
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -280,8 +280,12 @@ function _run_polap_reset() { # initialize an output folder
 
 	help_message=$(
 		cat <<HEREDOC
-# A polap analysis process is initiated in a specified starting folder 
+# A polap analysis process is initiated in a specified starting folder
 # through the creation of an output folder.
+#
+# 1. Create an empty folder.
+# 2. Create empty menu files to facilitate effortless command inputting.
+# 3. Record all external software packages including their versions.
 #
 # Arguments:
 #   -o ${ODIR}: the output folder
@@ -303,8 +307,7 @@ HEREDOC
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 		if [[ -d "${ODIR}" ]]; then
-			ls "${ODIR}" >&3
-			# less "${ODIR}/${_arg_log}" >&3
+			ls -l "${ODIR}" >&3
 		else
 			_polap_log0 "No such output folder: ${ODIR}"
 		fi
@@ -314,35 +317,64 @@ HEREDOC
 		return
 	fi
 
-	if [ -d "$ODIR" -a "${_arg_yes}" = "off" ]; then
-		while true; do
-			read -p "Folder [$ODIR] already exists. Do you want to delete it? [y/n] " yn
-			case $yn in
-			[Yy]*)
-				rm -rf "${ODIR}"
-				break
-				;;
-			[Nn]*)
-				_polap_log0 "You cancelled the reset."
-				exit $EXIT_SUCCESS
-				;;
-			*) _polap_log0 "Please answer yes or no." ;;
-			esac
-		done
-	else
-		rm -rf "${ODIR}"
-	fi
-
 	mkdir -p "${ODIR}"
-	_polap_log0 "creating output folder [$ODIR] ..."
-	_polap_log1 "  Your output folder [$ODIR] is created."
+	_polap_log0 "creating output folder [$ODIR] if no such folder exists ..."
 	if [ "$ODIR" != "o" ]; then
 		_polap_log1 "  Use -o $ODIR option in all subsequent analysis"
 		_polap_log1 "  because your output folder is not the default of 'o'."
 	fi
 	_run_polap_make-menus
+	_log_command_versions
 
-	_polap_log1 NEXT: "$0" total-length-long -o "${ODIR}" -l "${_arg_long_reads}"
+	_polap_log1 "NEXT: $0 summary-reads -o ${ODIR} -l ${_arg_long_reads}"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+}
+
+################################################################################
+# View the polap log file.
+################################################################################
+function _run_polap_log() { # display the polap log
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	help_message=$(
+		cat <<HEREDOC
+# Display the polap log.
+#
+# Arguments:
+#   -o ${ODIR}: the output folder
+# Inputs: none
+# Outputs:
+#   ${ODIR}
+Example: $0 ${_arg_menu[0]} -o ${ODIR}
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		if [[ -d "${ODIR}" ]]; then
+			ls -l "${ODIR}" >&3
+		else
+			_polap_log0 "No such output folder: ${ODIR}"
+		fi
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
+		return
+	fi
+
+	less "${LOG_FILE}" >&3
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x

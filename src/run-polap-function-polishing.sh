@@ -45,7 +45,7 @@ function _run_polap_prepare-polishing() { # prepare the polishing using FMLRC
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	_polap_set-variables-short-read
-	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	help_message=$(
 		cat <<HEREDOC

@@ -41,7 +41,7 @@ function _polap_set-variables-short-read() {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Set paths for bioproject data
-	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	_polap_log0 "determining short-read data files ..."
 
@@ -88,7 +88,7 @@ function _polap_set-variables-long-read() {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Set paths for bioproject data
-	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	_polap_log0 "determining long-read data file ..."
 

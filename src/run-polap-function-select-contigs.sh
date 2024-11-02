@@ -73,8 +73,8 @@ function _run_polap_seeds-gene() {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-mtcontig.sh"
-	source "$script_dir/polap-variables-ga.sh"
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# Print help message if requested
 	help_message=$(
@@ -354,7 +354,7 @@ function _run_polap_x-seeds-2-depth-range() {
 
 	# Grouped file path declarations
 	JNUM=2
-	source "$script_dir/polap-variables-mtcontig.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# Print help message if requested
 	help_message=$(
@@ -510,7 +510,7 @@ function _run_polap_x-seeds-3-depth-range() {
 
 	# Grouped file path declarations
 	JNUM=3
-	source "$script_dir/polap-variables-mtcontig.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# Print help message if requested
 	help_message=$(
@@ -667,7 +667,7 @@ function _run_polap_x-seeds-4-annotation-depth() {
 
 	JNUM=4
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-mtcontig.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# Print help message if requested
 	help_message=$(
@@ -846,8 +846,8 @@ function _run_polap_seeds() { # select seed contigs
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-mtcontig.sh"
-	source "$script_dir/polap-variables-ga.sh"
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# Print help message if requested
 	help_message=$(
@@ -880,7 +880,7 @@ HEREDOC
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 		if [[ "${_arg_menu[2]}" =~ ^[0-9]+$ ]]; then
 			JNUM="${_arg_menu[2]}"
-			source "$script_dir/polap-variables-mtcontig.sh"
+			source "$script_dir/polap-variables-common.sh"
 			if [[ "${_arg_menu[2]}" = 8 ]]; then
 				local _file1="${_polap_var_1_custom_depth_range}"
 				local _file2="${_polap_var_mtcontigs_1_custom_depth_range}"
@@ -900,8 +900,8 @@ HEREDOC
 				fi
 			fi
 			JNUM="${_arg_menu[2]}"
-			source "$script_dir/polap-variables-mtcontig.sh"
-			source "$script_dir/polap-variables-ga.sh"
+			source "$script_dir/polap-variables-common.sh"
+			source "$script_dir/polap-variables-common.sh"
 			if [[ -s "${_polap_var_mtcontig_table}" ]]; then
 				_polap_log0_column "${_polap_var_mtcontig_table}"
 				_polap_log0 "---------------------------------"
@@ -1418,7 +1418,7 @@ function _run_polap_x-select-contigs-by() {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-mtcontig.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# Print help message if requested
 	help_message=$(
@@ -1980,7 +1980,7 @@ function _run_polap_x-select-contigs() {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-mtcontig.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	help_message=$(
 		cat <<HEREDOC
@@ -2057,7 +2057,7 @@ HEREDOC
 				fi
 			fi
 			JNUM="${_arg_menu[2]}"
-			source "$script_dir/polap-variables-mtcontig.sh"
+			source "$script_dir/polap-variables-common.sh"
 			if [[ -s "${_polap_var_mtcontig_table}" ]]; then
 				_polap_log0_cat "${_polap_var_mtcontig_table}"
 				_polap_log0 "---------------------------------"

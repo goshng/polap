@@ -273,7 +273,7 @@ HEREDOC
 	*)
 		_polap_log0 "assemble"
 		_polap_log0 "  assemble1"
-		_polap_log0 "    reset"
+		_polap_log0 "    init"
 		_polap_log0 "    summary-reads"
 		_polap_log0 "    total-length-long"
 		_polap_log0 "    find-genome-size"
@@ -338,12 +338,12 @@ HEREDOC
 	fi
 
 	source "$script_dir/polap-variables-main.sh"
-	source "$script_dir/polap-variables-base.sh"
-	source "$script_dir/polap-variables-bioproject.sh"
-	source "$script_dir/polap-variables-ga.sh"
-	source "$script_dir/polap-variables-wga.sh"
-	source "$script_dir/polap-variables-oga.sh"
-	source "$script_dir/polap-variables-mtcontig.sh"
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	local _index_bioproject=1
 
@@ -532,12 +532,12 @@ HEREDOC
 								_menu_selected_folder="${selected_folder%/}"
 								ODIR="${selected_folder%/}"
 								source "$script_dir/polap-variables-main.sh"
-								source "$script_dir/polap-variables-base.sh"
-								source "$script_dir/polap-variables-bioproject.sh"
-								source "$script_dir/polap-variables-ga.sh"
-								source "$script_dir/polap-variables-wga.sh"
-								source "$script_dir/polap-variables-oga.sh"
-								source "$script_dir/polap-variables-mtcontig.sh"
+								source "$script_dir/polap-variables-common.sh"
+								source "$script_dir/polap-variables-common.sh"
+								source "$script_dir/polap-variables-common.sh"
+								source "$script_dir/polap-variables-common.sh"
+								source "$script_dir/polap-variables-common.sh"
+								source "$script_dir/polap-variables-common.sh"
 								_polap_log0 "Now in BioProject: ${_menu_selected_folder}"
 							else
 								_polap_log0 "Stay at the current folder: ${ODIR}"
@@ -666,7 +666,7 @@ HEREDOC
 						_polap_log0 "--------------------------------------------------------------------------------"
 						_polap_log0 "organelle-genome assembly ${i}:"
 						INUM="${i}"
-						source "$script_dir/polap-variables-ga.sh"
+						source "$script_dir/polap-variables-common.sh"
 						_polap_log0_file "${_polap_var_contigger_gfa}"
 						if [[ -s "${_polap_var_contigger_gfa}" ]]; then
 							_polap_log0 "OGA Assembled: ${_polap_var_contigger_gfa}"

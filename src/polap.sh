@@ -55,8 +55,6 @@ source "$script_dir/polap-function-set-variables.sh"
 source "$script_dir/run-polap-function-wga.sh"
 
 # organelle-genome annotation
-source "$script_dir/run-polap-function-blast-genome.sh"
-source "$script_dir/run-polap-function-count-gene.sh"
 source "$script_dir/run-polap-function-annotate.sh"
 
 # read selection and organelle-genome assembly
@@ -100,14 +98,16 @@ if [ $# -eq 0 ]; then
 fi
 
 source "$script_dir/polap-variables-main.sh"
+source "$script_dir/polap-version.sh"
 
 # all message to a log file
 # https://stackoverflow.com/questions/49851882/how-to-log-echo-statement-with-timestamp-in-shell-script
 exec 3>&1 1>> >(logit)
 # exec 3>&1 1>> >(logit) 2>&1
 
-date +"%Y-%m-%d %H:%M:%S" >&3
+[[ "${_arg_clock}" == "on" ]] && date +"%Y-%m-%d %H:%M:%S" >&3
 CMD="$0 $*"
+echo "POLAP: ${_polap_version}"
 echo "CMD: $CMD"
 
 # subcommand function call
@@ -123,7 +123,7 @@ else
 	_polap_log0 "ERROR: no such menu of $1"
 fi
 
-date +"%Y-%m-%d %H:%M:%S" >&3
+[[ "${_arg_clock}" == "on" ]] && date +"%Y-%m-%d %H:%M:%S" >&3
 ELAPSED="Time at $(hostname): $((SECONDS / 3600))hrs $(((SECONDS / 60) % 60))min $((SECONDS % 60))sec - $CMD"
 echo "$ELAPSED"
 

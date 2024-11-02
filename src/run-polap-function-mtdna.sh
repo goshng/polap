@@ -38,8 +38,8 @@ function _run_polap_mauve-mtdna() {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Set paths for bioproject data
-	source "$script_dir/polap-variables-bioproject.sh"
-	source "$script_dir/polap-variables-oga.sh"
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# Help message
 	local help_message=$(
@@ -237,8 +237,8 @@ function _run_polap_compare-mtdna() {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Set paths for bioproject data
-	source "$script_dir/polap-variables-bioproject.sh"
-	source "$script_dir/polap-variables-oga.sh"
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# Help message
 	local help_message=$(
@@ -347,7 +347,7 @@ function _run_polap_get-mtdna() {
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-bioproject.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	if ! run_check_ncbitools; then
 		error_polap_conda
@@ -589,7 +589,7 @@ function _run_polap_select-mtdna() {
 
 	# Set variables
 	# CHECK: local function
-	source "$script_dir/polap-variables-mtdna.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# local FDIR="$ODIR/$INUM"
 	# local _polap_var_mtdna="$FDIR/mtdna"
@@ -738,7 +738,7 @@ function _run_polap_select-mtdna-org() {
 
 	# Set variables
 	# CHECK: local function
-	source "$script_dir/polap-variables-mtdna.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# local FDIR="$ODIR/$INUM"
 	# local _polap_var_mtdna="$FDIR/mtdna"

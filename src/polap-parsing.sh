@@ -104,6 +104,7 @@ _arg_use_bridge="off"
 _arg_coverage_check="on"
 _arg_resume="off"
 _arg_plastid="off"
+_arg_clock="off"
 _arg_yes="off"
 _arg_circularize="off"
 _arg_redo="off"
@@ -294,6 +295,9 @@ Options:
   --log: log file (default: <output>/polap.log)
     The log file option allows users to specify a custom log file location, 
     with a default setting of '<output>/polap.log'.
+
+  --clock: display the start and ending time (default: ${_arg_clock})
+    The clock option allows users to display both the start and end times.
 
   -v, --verbose: use multiple times to increase the verbose level
   --version: Prints version
@@ -630,6 +634,10 @@ parse_commandline() {
 		--no-coverage-check | --coverage-check)
 			_arg_coverage_check="on"
 			test "${1:0:5}" = "--no-" && _arg_coverage_check="off"
+			;;
+		--no-clock | --clock)
+			_arg_clock="on"
+			test "${1:0:5}" = "--no-" && _arg_clock="off"
 			;;
 		--no-plastid | --plastid)
 			_arg_plastid="on"

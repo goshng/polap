@@ -49,7 +49,7 @@ function _run_polap_get-bioproject-sra() {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "$script_dir/polap-variables-bioproject.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# Help message
 	local help_message=$(
@@ -232,7 +232,7 @@ function _run_polap_get-bioproject() { # get BioProject info from NCBI
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-bioproject.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	# Help message
 	local help_message=$(
@@ -395,8 +395,8 @@ function _run_polap_bioproject-prepare() { # bioproject data preparation
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Set variables for file paths
-	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
-	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# Set the output directory for the current job number
 	if [[ -s "${_polap_var_bioproject_txt}" ]]; then
@@ -602,8 +602,8 @@ function _run_polap_x-assemble-draft() { # called after bioproject-prepare
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-wga.sh"  # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh"  # '.' means 'source'
 
 	help_message=$(
 		cat <<HEREDOC
@@ -737,8 +737,8 @@ function _run_polap_bioproject-postprocess() { # postprocess the bioproject asse
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Set variables for file paths
-	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
-	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# Set the output directory for the current job number
 	if [[ -s "${_polap_var_bioproject_txt}" ]]; then
@@ -854,7 +854,7 @@ HEREDOC
 			else
 				_polap_log1 "  skipping the short-read polishing ..."
 				INUM="${i}"
-				source "$script_dir/polap-variables-oga.sh" # '.' means 'source'
+				source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 				local n1=$(cut -f1 "${_polap_var_bioproject_mtdna_fasta2_accession}")
 				local l1="0"
 				local l2="0"
@@ -903,8 +903,8 @@ function _run_polap_assemble-bioproject() { # main function for this bioproject 
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Set variables for file paths
-	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
-	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# Set the output directory for the current job number
 	if [[ -s "${_polap_var_bioproject_txt}" ]]; then

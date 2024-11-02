@@ -52,9 +52,9 @@ function _run_polap_summary-reads() { # statisics of the read dataset
 
 	# Set paths for bioproject data
 	_polap_set-variables-short-read
-	source "$script_dir/polap-variables-base.sh"
-	source "$script_dir/polap-variables-bioproject.sh"
-	source "$script_dir/polap-variables-oga.sh"
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-common.sh"
 
 	help_message=$(
 		cat <<HEREDOC
@@ -185,7 +185,7 @@ function _run_polap_total-length-long() { # total size (bp) of long-read data
 
 	# CHECK: local function
 	_polap_set-variables-long-read
-	source "$script_dir/polap-variables-base.sh"
+	source "$script_dir/polap-variables-common.sh"
 	source "$script_dir/run-polap-function-utilities.sh"
 
 	help_message=$(
@@ -288,9 +288,9 @@ function _run_polap_find-genome-size() { # estimate the whole genome size
 
 	# Set paths for bioproject data
 	_polap_set-variables-short-read
-	source "$script_dir/polap-variables-base.sh"       # '.' means 'source'
-	source "$script_dir/polap-variables-bioproject.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-oga.sh"        # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh"        # '.' means 'source'
 	source "$script_dir/run-polap-function-utilities.sh"
 
 	help_message=$(
@@ -439,7 +439,7 @@ function _run_polap_reduce-data() { # reduce the long-read data, if too big
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# CHECK: local function
-	source "$script_dir/polap-variables-base.sh"
+	source "$script_dir/polap-variables-common.sh"
 	_polap_set-variables-long-read
 	source "$script_dir/run-polap-function-utilities.sh"
 
@@ -698,8 +698,8 @@ function _run_polap_flye1() { # execute Flye for a whole-genome assembly
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# CHECK: local function
-	source "$script_dir/polap-variables-base.sh"
-	source "$script_dir/polap-variables-wga.sh"
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-common.sh"
 	source "$script_dir/run-polap-function-utilities.sh"
 
 	LRNK="${_polap_var_base_nk_fq_gz}"

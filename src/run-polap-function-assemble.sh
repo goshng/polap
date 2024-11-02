@@ -51,8 +51,8 @@ function _run_polap_assemble1() { # whole-genome genome assembly
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-wga.sh"  # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh"  # '.' means 'source'
 	LRNK="${_polap_var_base_nk_fq_gz}"
 
 	help_message=$(
@@ -232,8 +232,8 @@ function _run_polap_assemble2() { # organelle-genome assembly
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-ga.sh"   # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh"   # '.' means 'source'
 	LRNK="$ODIR/nk.fq.gz"
 	FDIR="$ODIR"/$INUM
 	local MTDIR="$ODIR"/$JNUM
@@ -322,8 +322,8 @@ function _run_polap_assemble() { # whole-genome and then organelle-genome assemb
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-base.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-wga.sh"  # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh"  # '.' means 'source'
 
 	help_message=$(
 		cat <<HEREDOC

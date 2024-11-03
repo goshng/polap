@@ -68,7 +68,7 @@ source "$script_dir/run-polap-function-template.sh"
 source "$script_dir/run-polap-function-bioproject.sh"
 
 # contig selection
-source "$script_dir/run-polap-function-select-contigs.sh"
+source "$script_dir/run-polap-function-seeds.sh"
 
 # mtDNA or ptDNA selection
 # mtDNA annotation and plotting

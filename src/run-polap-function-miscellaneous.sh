@@ -488,3 +488,61 @@ function _run_polap_x-help() {
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
+
+function _run_polap_x-symlink-fastq() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	# Loop through all .fastq files in the current directory
+	for file in *.fastq *.fq; do
+		# Check if the file is a long-read (ending in just .fastq without _1 or _2)
+		if [[ "$file" =~ ^[DES]RR[0-9]+\.fastq$ ]]; then
+			ln -s "$file" l.fq
+			_polap_log0 "Created soft link for long-read file: $file -> l.fq"
+		# Check if the file is a short-read pair _1.fastq
+		elif [[ "$file" =~ ^[DES]RR[0-9]+_1\.fastq$ ]]; then
+			ln -s "$file" s1.fq
+			_polap_log0 "Created soft link for short-read file 1: $file -> s1"
+		# Check if the file is a short-read pair _2.fastq
+		elif [[ "$file" =~ ^[DES]RR[0-9]+_2\.fastq$ ]]; then
+			ln -s "$file" s2.fq
+			_polap_log0 "Created soft link for short-read file 2: $file -> s2"
+		fi
+	done
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
+function _run_polap_x-prepend-gplv3() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	help_message=$(
+		cat <<HEREDOC
+# Prepend GPLv3 copyright to a file.
+Example: $0 ${_arg_menu[0]} <file>
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	# Define your files
+	if [[ "${_arg_menu[1]}" == "infile" ]]; then
+		_polap_log0 "ERROR: $0 ${_arg_menu[0]} <file>"
+		return $RETURN_SUCCESS
+	fi
+
+	local file1="${_arg_menu[1]}" # File to prepend
+
+	# Create a temporary file that will hold the combined content
+	local temp_file=$(mktemp)
+
+	# Combine the content of file1 and file2 into the temporary file
+	cat <(head -16 "${script_dir}/run-polap-function-template.sh") "$file1" >"$temp_file"
+
+	# Replace file2 with the new combined content
+	mv "$temp_file" "$file1"
+
+	_polap_log0 "$file1" now has a header of the POLAP GPLv3 copyright.
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}

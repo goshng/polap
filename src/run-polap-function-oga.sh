@@ -489,6 +489,7 @@ HEREDOC
 	_polap_opt_dict["combined-bridge-length"]="combined"
 	_polap_opt_dict["ptgaul-reads"]="ptgaul"
 	_polap_opt_dict["intra-reads"]="single"
+	_polap_opt_dict["bridge-reads"]="pair"
 	_polap_opt_dict["polap-reads"]="combined"
 
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
@@ -728,7 +729,7 @@ HEREDOC
 		_polap_log2 "    input1: ${_polap_var_mtcontigname}"
 		_polap_log2 "    input2: ${_polap_var_oga_contig}/contig.tab"
 		_polap_log2 "    output: ${_polap_var_oga_reads}/${_pread_sel}/${i}/${_read_names}.names"
-		if [[ "${_arg_use_bridge}" == "off" ]]; then
+		if [[ "${_arg_bridge_same_strand}" == "off" ]]; then
 			_polap_log3_pipe "Rscript --vanilla ${script_dir}/run-polap-r-pairs.R \
 	    -m ${_polap_var_mtcontigname} \
 		  -t ${_polap_var_oga_contig}/contig.tab \
@@ -962,6 +963,9 @@ HEREDOC
 		_polap_log0 "  default set to read-selection: ${_arg_menu[1]}"
 		;;
 	polap-reads)
+		_polap_log0 "  read-selection: ${_arg_menu[1]}"
+		;;
+	bridge-reads)
 		_polap_log0 "  read-selection: ${_arg_menu[1]}"
 		;;
 	intra-reads)
@@ -1213,7 +1217,7 @@ HEREDOC
 
 	# Set variables for file paths
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-common.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_log0 "${help_message}" && return
@@ -1531,10 +1535,10 @@ function _run_polap_x-v0.2.6-select-reads() { # selects reads mapped on a genome
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-common.sh"     # '.' means 'source'
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-common.sh"      # '.' means 'source'
-	source "$script_dir/polap-variables-common.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	local MTDIR="${_polap_var_oga}"                              # target: ${_polap_var_oga}
 	local MTSEEDSDIR="${_polap_var_oga}/seeds"                   # ${_polap_var_seeds} for oga-class

@@ -25,6 +25,33 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+function _run_polap_source-menus() { # makes menu commands as empty files.
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	help_message=$(
+		cat <<HEREDOC
+# Makes menu files for easier command completion.
+#
+# Arguments: none
+# Inputs: none
+# Outputs: empty files with filenames of menus.
+Example: $(basename $0) ${_arg_menu[0]}
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	source "$script_dir/polap-command-completion.sh"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
 ################################################################################
 # Makes menu commands as empty files.
 ################################################################################
@@ -280,9 +307,9 @@ HEREDOC
 		_polap_log0 "    reduce-data"
 		_polap_log0 "    flye1"
 		_polap_log0 "    edges-stats"
-		_polap_log0 "  annotate"
-		_polap_log0 "    blast-genome"
-		_polap_log0 "    count-gene"
+		_polap_log0 "    annotate"
+		_polap_log0 "      blast-genome"
+		_polap_log0 "      count-gene"
 		_polap_log0 "  seeds"
 		_polap_log0 "    seeds-gene"
 		_polap_log0 "    prepare-seeds"

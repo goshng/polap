@@ -27,7 +27,7 @@
 # ARG_OPTIONAL_BOOLEAN([reduction-reads],[],[redo: no reduction of long-read data],[on])
 # ARG_OPTIONAL_BOOLEAN([contigger],[],[step1: use flye's 40-polishing result])
 # ARG_OPTIONAL_BOOLEAN([all-annotate],[],[step2: annotate all contigs])
-# ARG_OPTIONAL_BOOLEAN([use-bridge],[],[step4: use flye's edges not contigs])
+# ARG_OPTIONAL_BOOLEAN([bridge-same-strand],[],[step4: use flye's edges not contigs])
 # ARG_OPTIONAL_BOOLEAN([coverage-check],[],[step4: no coverage check for step 4])
 # ARG_OPTIONAL_BOOLEAN([resume],[],[step1,step4: flye option resume])
 # ARG_OPTIONAL_BOOLEAN([circularize],[u],[step4: circularize a contig])
@@ -100,7 +100,8 @@ _arg_flye="on"
 _arg_reduction_reads="on"
 _arg_contigger="off"
 _arg_all_annotate="off"
-_arg_use_bridge="off"
+_arg_polap_reads="off"
+_arg_bridge_same_strand="off"
 _arg_coverage_check="on"
 _arg_resume="off"
 _arg_plastid="off"
@@ -112,24 +113,68 @@ _arg_test="off"
 _arg_verbose=1
 _arg_help="off"
 
-print_help() {
+source "$script_dir/polap-git-hash-version.sh"
+_polap_version=v0.3.7-"${_polap_git_hash_version}"
 
-	source "$script_dir/polap-version.sh"
+print_help() {
 
 	help_message=$(
 		cat <<HEREDOC
 POLAP - Plant organelle DNA long-read assembly pipeline.
 version ${_polap_version}
 
-Usage: polap <menu> [<menu2> [<menu3>]] [-o|--outdir <arg>]
+Usage: $0 <menu> [<menu2> [<menu3>]] [-o|--outdir <arg>]
       [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
       [-i|--inum <arg>] [-j|--jnum <arg>]
-      [-w|--single-min <arg>]
-      [-m|--min-read-length <arg>] 
+      [-w|--single-min <arg>] [-m|--min-read-length <arg>] 
       [-t|--threads <arg>] [--(no-)test] [--log <arg>] 
       [--random-seed <arg>] [--version] [-h|--help]
 
-Minor options:
+Assemble mtDNA:
+  $0 assemble -l <arg> -a <arg> [-b <arg>]
+ 
+Polish an mtDNA using FMLRC:
+  $0 prepare-polishing  -a <arg> [-b <arg>]
+  $0 polish -p <arg> -f <arg>
+
+Assemble mtDNA in two steps with manual seed contig selection:
+  $0 assemble1 -l <arg> -a <arg> [-b <arg>] [-m <arg>]
+  $0 assemble2 -i <arg> -j <arg> [-w <arg>] [-c <arg>]
+
+Assemble mtDNA in three steps with semi-automatic seed contig selection:
+  $0 assemble1 -l <arg> -a <arg> [-b <arg>] [-m <arg>]
+  $0 seeds -i <arg> -j <arg>
+  $0 assemble2 -i <arg> -j <arg> [-w <arg>] [-c <arg>]
+
+Assemble mtDNA in step-by-step:
+  $0 init -o <arg>
+  $0 summary-reads -a <arg> [-b <arg>]
+  $0 total-length-long -l <arg>
+  $0 find-genome-size -a <arg> [-b <arg>]
+  $0 reduce-data -l <arg> [-m <arg>]
+  $0 flye1 [-t <arg>]
+  $0 annotate -i <arg>
+  $0 seeds [-i <arg>] -j <arg>
+  $0 map-reads [-i <arg>] -j <arg>
+  $0 test-reads [-i <arg>] -j <arg> -w <arg> [-c <arg>]
+  $0 select-reads [-i <arg>] -j <arg> -w <arg> [-c <arg>]
+  $0 flye2 [-i <arg>] -j <arg>
+
+Others menus:
+  $0 blast-genome -i <arg>
+  $0 count-genes -i <arg>
+  $0 flye-polishing  -j <arg>
+  $0 make-menus
+  $0 clean-menus
+  $0 list
+
+BioProject menus:
+  $0 get-bioproject --bioproject <arg>
+  $0 bioproject-prepare -o <arg>
+  $0 get-bioproject-sra --sra <arg>
+  $0 get-mtdna --species <arg>
+
+Other options:
       [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]
       [-c|--coverage <arg>] [--flye-asm-coverage <arg>]
       [--bioproject <arg>] [--species <arg>] [--accession <arg>]
@@ -139,59 +184,13 @@ Minor options:
       [-u|--(no-)circularize] [--archive <arg>]
       [--sra <arg>] [-x|--bridge-min <arg>] [-g|--genomesize <arg>]
 
-polap <menu> <help|--help>
-
-menu: assemble, assemble1, annotate, assemble2, flye-polishing,
-      make-menus, list, clean-menus, cleanup, reset,
+menu: assemble, assemble1, annotate, assemble2, flye-polishing, 
+      make-menus, list, clean-menus, cleanup, init,
       summary-reads, total-length-long, find-genome-size, reduce-data, flye1
-      blast-genome, count-gene, select-contigs,
-      select-reads,
-      map-reads, test-reads, best-reads, best-flye2,
-      flye2,
+      blast-genome, count-gene, seeds,
+      prepare-seeds, map-reads, test-reads, select-reads, flye2,
       flye-polishing, prepare-polishing, polish,
       version
-
-Menu: menus
-  polap make-menus
-  polap clean-menus
-  polap list
-
-Menu: assemble [default]
-  polap assemble -o <arg> -l <arg> -a <arg> [-b <arg>] [--rw <arg>] [-m <arg>] [-c <arg>]
-
-Menu: assemble1
-  polap assemble1 -o <arg> -l <arg> -a <arg> [-b <arg>] [-m <arg>] [-c <arg>]
-  polap reset -o <arg> [--yes]
-  polap summary-reads -a <arg> [-b <arg>]
-  polap total-length-long -l <arg>
-  polap find-genome-size  -a <arg> [-b <arg>]
-  polap reduce-data -l <arg>] [-m <arg>]
-  polap flye1 [-t <arg>] [-c <arg>]
-
-Menu: annotate
-  polap annotate -i <arg>
-  polap blast-genome -i <arg>
-  polap count-genes -i <arg>
-
-Menu: seeds
-  polap seeds -o <arg> -i <arg> -j <arg>
-
-Menu: assemble2
-  polap assemble2 -o <arg> -i <arg> -j <arg> --rw <arg> [-c <arg>]
-  or
-  polap select-reads -i <arg> -j <arg> --rw <arg> [-c <arg>]
-  polap flye2 -j <arg>
-
-Menu: polishing
-  polap flye-polishing  -j <arg>
-  polap prepare-polishing  -a <arg> [-b <arg>]
-  polap polish -p <arg> -f <arg>
-
-Menu: bioproject
-  polap get-bioproject --bioproject <arg>
-  polap bioproject-prepare -o <arg>
-  polap get-bioproject-sra --sra <arg>
-  polap get-mtdna --species <arg>
 
 Options:
   -o, --outdir: output folder name (default: ${_arg_outdir})
@@ -289,6 +288,14 @@ Options:
     neither --asm-coverage nor --genome-size in flye execution.
     This option is the same as --flye-asm-coverage set to 0.
 
+  --polap-reads: use intra- and inter-contig read selection (default: ${_arg_polap_reads})
+    The default read selection is ptGAUL's approach.
+
+  --bridge-same-strand: (default: ${_arg_bridge_same_strand})
+    When linking two inverted repeats, enabling this feature ensures that 
+    the strands are equal for the two mapped IR contigs.
+    FIXME: currently only plus strand is used.
+
   --species: Species scientific name (no default)
 	--sra: SRA data (no default)
 
@@ -307,7 +314,7 @@ Options:
 Place your long-read and short-read files at a folder:
 long-read file: l.fq
 short-read file: s1.fq, s2.fq
-Execute: polap reset
+Execute: polap init
 HEREDOC
 	)
 
@@ -627,9 +634,13 @@ parse_commandline() {
 			_arg_log_stderr="on"
 			test "${1:0:5}" = "--no-" && _arg_log_stderr="off"
 			;;
-		--no-use-bridge | --use-bridge)
-			_arg_use_bridge="on"
-			test "${1:0:5}" = "--no-" && _arg_use_bridge="off"
+		--no-polap-reads | --polap-reads)
+			_arg_polap_reads="on"
+			test "${1:0:5}" = "--no-" && _arg_polap_reads="off"
+			;;
+		--no-bridge-same-strand | --bridge-same-strand)
+			_arg_bridge_same_strand="on"
+			test "${1:0:5}" = "--no-" && _arg_bridge_same_strand="off"
 			;;
 		--no-coverage-check | --coverage-check)
 			_arg_coverage_check="on"
@@ -679,9 +690,12 @@ parse_commandline() {
 		--no-test | --test)
 			_arg_test="on"
 			test "${1:0:5}" = "--no-" && _arg_test="off"
+			if [[ "${_arg_test}" == "on" ]]; then
+				_arg_plastid="on"
+			fi
 			;;
 		--version)
-			echo $0 v${_polap_version}
+			echo $0 ${_polap_version}
 			exit 0
 			;;
 		-q | --quiet)

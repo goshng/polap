@@ -38,6 +38,25 @@ source "$script_dir/run-polap-function-utilities.sh"
 # Runs the whole-genome assembly.
 ################################################################################
 
+function _polap_summary-generated-reads() {
+	local _fastq_gz=$1
+	local _fastq_stats=$2
+
+	if [ -s "${_fastq_stats}" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log1 "  found: ${_fastq_stats}, so skipping POLAP long-read statisics ..."
+		_polap_log2_cat "${_fastq_stats}"
+	else
+		if [ -s "${_fastq_gz}" ]; then
+			_polap_log3_pipe "seqkit stats -T ${_fastq_gz} \
+				>${_fastq_stats}"
+			_polap_log1 "  output2: ${_fastq_stats}"
+			_polap_log2_cat "${_fastq_stats}"
+		else
+			_polap_log1 "  no such file: ${_fastq_gz}, so skipping POLAP long-read statisics ..."
+		fi
+	fi
+}
+
 ################################################################################
 # Statisics of the short-read and POLAP's long-read (nk.fq.gz) dataset.
 ################################################################################
@@ -69,14 +88,17 @@ function _run_polap_summary-reads() { # statisics of the read dataset
 # Inputs:
 #   ${_arg_short_read1}: a short-read fastq data file
 #   ${_arg_short_read2}: another short-read fastq data file (optional)
+#   ${_polap_var_base_nk_fq_gz}: POLAP generate nk.fq.gz
+#   ${_polap_var_base_lk_fq_gz}: POLAP generate lk.fq.gz
 # Outputs:
 #   ${_polap_var_base_fq_stats}: short-read data statisics
 #   ${_polap_var_base_nk_fq_stats}: POLAP long-read data statisics
+#   ${_polap_var_base_lk_fq_stats}: POLAP long-read data statisics
 # Precondition:
 #   (for BioProjectID case)
 #   get-bioproject --bioproject <BioProjectID> -o ${ODIR}
-Example: $(basename "$0") ${_arg_menu[0]} -a <file> [-b <file>]
-Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR} --bioproject use
+Example: $0 ${_arg_menu[0]} -a <file> [-b <file>]
+Example: $0 ${_arg_menu[0]} -o ${ODIR} --bioproject use
 HEREDOC
 	)
 
@@ -142,19 +164,13 @@ HEREDOC
 	_polap_log1 "  output1: ${_polap_var_base_fq_stats}"
 	_polap_log2_cat "${_polap_var_base_fq_stats}"
 
-	if [ -s "${_polap_var_base_nk_fq_stats}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log1 "  found: ${_polap_var_base_nk_fq_stats}, so skipping POLAP long-read statisics ..."
-		_polap_log2_cat "${_polap_var_base_nk_fq_stats}"
-	else
-		if [ -s "${_polap_var_base_nk_fq_gz}" ]; then
-			_polap_log3_pipe "seqkit stats -T ${_polap_var_base_nk_fq_gz} \
-				>${_polap_var_base_nk_fq_stats}"
-			_polap_log1 "  output2: ${_polap_var_base_nk_fq_stats}"
-			_polap_log2_cat "${_polap_var_base_nk_fq_stats}"
-		else
-			_polap_log0 "  no such file: ${_polap_var_base_nk_fq_gz}, so skipping POLAP long-read statisics ..."
-		fi
-	fi
+	_polap_summary-generated-reads \
+		"${_polap_var_base_nk_fq_gz}" \
+		"${_polap_var_base_nk_fq_stats}"
+
+	_polap_summary-generated-reads \
+		"${_polap_var_base_lk_fq_gz}" \
+		"${_polap_var_base_lk_fq_stats}"
 
 	_polap_log1 NEXT: $0 total-length-long -o "$ODIR" -l ${_arg_long_reads}
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -190,7 +206,7 @@ function _run_polap_total-length-long() { # total size (bp) of long-read data
 
 	help_message=$(
 		cat <<HEREDOC
-# Computes the total number of nucleotides of long-read data.
+# Compute the total number of nucleotides of long-read data.
 #
 # Arguments:
 #   -l ${_arg_long_reads}: a long-read fastq data file (the highest priority)
@@ -288,9 +304,9 @@ function _run_polap_find-genome-size() { # estimate the whole genome size
 
 	# Set paths for bioproject data
 	_polap_set-variables-short-read
-	source "$script_dir/polap-variables-common.sh"       # '.' means 'source'
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-common.sh"        # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 	source "$script_dir/run-polap-function-utilities.sh"
 
 	help_message=$(
@@ -450,7 +466,7 @@ function _run_polap_reduce-data() { # reduce the long-read data, if too big
 #
 # Outputs:
 # 1. ${_polap_var_base_lk_fq_gz}: reads longer than ${_arg_min_read_length} bp
-# 2. ${_polap_var_base_nk_fq_gz}: subsample of ${_polap_var_base_nk_fq_gz}
+# 2. ${_polap_var_base_nk_fq_gz}: subsample of ${_arg_long_reads}
 #
 # Steps:
 # 1. Firstly, generate a long-read DNA sequence of ${_arg_min_read_length}
@@ -468,11 +484,11 @@ function _run_polap_reduce-data() { # reduce the long-read data, if too big
 #   or
 #   --bioproject use
 #   -o ${ODIR}: ${ODIR}/0-bioproject (the least priority)
-#
 #   -m ${_arg_min_read_length}: the long-read sequence length threshold
 #   -c ${_arg_coverage}: the target coverage
-#   --reduction-reads (default) or --no-reduction-reads
-#   --random-seed 11 for seqkit default seed
+#   --no-reduction-reads
+#   --random-seed 11: for seqkit default seed
+#   --test
 # Inputs:
 #   ${_polap_var_base_genome_size}
 #   ${_polap_var_base_long_total_length}
@@ -527,7 +543,7 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	_polap_log0 "reducing the long-read data ${_arg_long_reads} with the minimum length of ${_arg_min_read_length} bp or the target coverage of ${_arg_coverage}x ..."
+	_polap_log0 "reducing the long-read data ${_arg_long_reads} for the whole- and organelle-genome assemblies ..."
 
 	# Check for required files
 	check_folder_existence "${ODIR}"
@@ -557,6 +573,8 @@ HEREDOC
 		return
 	fi
 
+	_polap_log0 "  reducing ${_arg_long_reads} -> ${_polap_var_base_lk_fq_gz} with the minimum length of ${_arg_min_read_length} bp"
+
 	if [[ -s "${_polap_var_base_lk_fq_gz}" ]] && [[ "${_arg_redo}" == "off" ]]; then
 		_polap_log0 "  found: ${_polap_var_base_lk_fq_gz}, so skipping the long-read data reduction."
 	else
@@ -582,7 +600,9 @@ HEREDOC
 		_polap_log2_column "${_polap_var_base_lk_fq_stats}"
 	fi
 
-	if [[ -s "${_polap_var_base_nk_fq_gz}" ]] && [[ "${_arg_redo}" == "on" ]]; then
+	_polap_log0 "  reducing ${_arg_long_reads} -> ${_polap_var_base_nk_fq_gz} with the target coverage of ${_arg_coverage}x ..."
+
+	if [[ -s "${_polap_var_base_nk_fq_gz}" ]] && [[ "${_arg_redo}" == "off" ]]; then
 		_polap_log0 "  found: ${_polap_var_base_nk_fq_gz}, so skipping the long-read data reduction."
 	else
 		# subsample the long-read data so that the target coverage is ${_arg_coverage}.
@@ -706,21 +726,23 @@ function _run_polap_flye1() { # execute Flye for a whole-genome assembly
 
 	help_message=$(
 		cat <<HEREDOC
-# Executes Flye for a whole-genome assembly upto the contigger stage
+# Flye whole-genome assembly upto the contigger stage
 #
 # Arguments:
 #   -t ${_arg_threads}: the number of CPU cores
-#   -c ${_arg_coverage}: the Flye's coverage option
+#   --flye-asm-coverage ${_arg_flye_asm_coverage}: the Flye's coverage option
 #   -g <arg>: computed by find-genome-size menu or given by users
+#   --test
 # Inputs:
-#   $ODIR/short_expected_genome_size.txt (ignored with -g option)
 #   ${_polap_var_base_nk_fq_gz}
+#   $ODIR/short_expected_genome_size.txt (ignored with -g option)
 # Outputs:
-#   $ODIR/0/30-contigger/contigs.fasta
-#   $ODIR/0/30-contigger/contigs_stats.txt
-#   $ODIR/0/30-contigger/graph_final.fasta
 #   ${_polap_var_wga_contigger_gfa}
-Example: $(basename $0) ${_arg_menu[0]} [-t|--threads <arg>] [-c|--coverage <arg>] [-g|--genomesize <arg>]
+#   ${_polap_var_contigger_edges_fasta}
+#   ${_polap_var_wga_contigger_contigs_stats}
+#   ${_polap_var_wga_contigger_contigs_fasta}
+Example: $0 ${_arg_menu[0]}
+Example: $0 ${_arg_menu[0]} --test
 HEREDOC
 	)
 
@@ -731,7 +753,7 @@ HEREDOC
 	check_file_existence "$ODIR/short_expected_genome_size.txt"
 	check_file_existence "${_polap_var_base_nk_fq_gz}"
 
-	_polap_log0 "assembling the genome using the reduced long-read data ..."
+	_polap_log0 "flye whole-genome assembly using the reduced long-read data ..."
 	_polap_log1 "  input1: ${_polap_var_base_genome_size}"
 	_polap_log1 "  input2: ${_polap_var_base_nk_fq_gz}"
 

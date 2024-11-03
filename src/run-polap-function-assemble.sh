@@ -52,7 +52,7 @@ function _run_polap_assemble1() { # whole-genome genome assembly
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-common.sh"  # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 	LRNK="${_polap_var_base_nk_fq_gz}"
 
 	help_message=$(
@@ -180,6 +180,16 @@ HEREDOC
 		fi
 	fi
 
+	if [ -s "${_polap_var_ga_annotation_all}" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log2 "  skipping annotation ..."
+	else
+		_run_polap_annotate
+		if [ $? -eq $RETURN_FAIL ]; then
+			_polap_log0 "ERROR: annotation step failed."
+			return $RETURN_FAIL
+		fi
+	fi
+
 	_polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
@@ -233,7 +243,7 @@ function _run_polap_assemble2() { # organelle-genome assembly
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-common.sh"   # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 	LRNK="$ODIR/nk.fq.gz"
 	FDIR="$ODIR"/$INUM
 	local MTDIR="$ODIR"/$JNUM
@@ -283,7 +293,7 @@ HEREDOC
 	check_file_existence "${_polap_var_base_nk_fq_gz}"
 
 	_run_polap_map-reads
-	if [[ "${_arg_bridge}" == "on" ]]; then
+	if [[ "${_arg_polap_reads}" == "on" ]]; then
 		_arg_menu[1]="polap-reads"
 	fi
 	_run_polap_select-reads
@@ -323,7 +333,7 @@ function _run_polap_assemble() { # whole-genome and then organelle-genome assemb
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-common.sh"  # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	help_message=$(
 		cat <<HEREDOC
@@ -386,16 +396,16 @@ HEREDOC
 		_run_polap_assemble1
 	fi
 
-	if [[ -s "${_polap_var_wga_annotation}" ]] && [[ "${_arg_redo}" == "off" ]]; then
-		_polap_log1 "  found: ${_polap_var_wga_annotation}, skipping the organelle annotation on the whole-genome"
-	else
-		_run_polap_annotate
-	fi
+	# if [[ -s "${_polap_var_wga_annotation}" ]] && [[ "${_arg_redo}" == "off" ]]; then
+	# 	_polap_log1 "  found: ${_polap_var_wga_annotation}, skipping the organelle annotation on the whole-genome"
+	# else
+	# 	_run_polap_annotate
+	# fi
 
 	# Select seed contigs
-	if [[ "${_arg_test}" = "on" ]]; then
-		_arg_plastid="on"
-	fi
+	# if [[ "${_arg_test}" = "on" ]]; then
+	# 	_arg_plastid="on"
+	# fi
 
 	if [[ -s "${_polap_var_mtcontigname}" ]] && [[ "${_arg_redo}" == "off" ]]; then
 		_polap_log0 "  found: ${_polap_var_mtcontigname}, skipping seed contig selection"

@@ -59,9 +59,10 @@ v0.2.6
 HEREDOC
 	)
 
-	echo "${_message}"
+	_polap_log0 "${_message}"
 }
 
 function _run_polap_version() { # display version of all
+	print_version_history
 	_log_command_versions
 }

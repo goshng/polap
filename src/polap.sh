@@ -98,7 +98,6 @@ if [ $# -eq 0 ]; then
 fi
 
 source "$script_dir/polap-variables-main.sh"
-source "$script_dir/polap-version.sh"
 
 # all message to a log file
 # https://stackoverflow.com/questions/49851882/how-to-log-echo-statement-with-timestamp-in-shell-script
@@ -116,10 +115,9 @@ if declare -f "_run_polap_${_arg_menu[0]}" >/dev/null 2>&1; then
 	# _run_polap_"$@" # same as "$1" "$2" "$3" ... for full argument list
 	_run_polap_${_arg_menu[0]}
 else
-	_polap_log0 "Menu: assemble, assemble1, annotate, assemble2,"
-	_polap_log0 "      reset, total-length-long, find-genome-size, reduce-data, flye1,"
-	_polap_log0 "      blast-genome, count-gene, select-contigs, select-reads, flye2,"
-	_polap_log0 "      flye-polishing, prepare-polishing, polish,"
+	_polap_log0 "Menu: assemble, init, prepare-polishing, polish"
+	_polap_log0 "  assemble1, total-length-long, find-genome-size, reduce-data, flye1, annotate"
+	_polap_log0 "  assemble2, select-seeds, map-reads, test-reads, select-reads, flye2"
 	_polap_log0 "ERROR: no such menu of $1"
 fi
 

@@ -15,9 +15,6 @@
 ################################################################################
 
 # variables
-source "$script_dir/polap-git-hash-version.sh"
-_polap_version=v0.3.7-"${_polap_git_hash_version}"
-
 INUM=${_arg_inum}
 JNUM=${_arg_jnum}
 if [ "${_arg_archive_is}" = "off" ]; then

@@ -441,13 +441,13 @@ HEREDOC
 		_polap_log3_column "${_polap_var_ga_annotation_all}"
 	fi
 
-	if [[ ${_arg_test} == "on" ]]; then
-		_polap_log0 "creating ${_polap_var_ga}/mt.contig.name-1 for testing purpose ..."
-		_polap_log0 "  you would have to edit it for a real data-set."
-		echo edge_1 >"${_polap_var_ga}"/mt.contig.name-1
-		echo edge_2 >>"${_polap_var_ga}"/mt.contig.name-1
-		echo edge_3 >>"${_polap_var_ga}"/mt.contig.name-1
-	fi
+	# if [[ ${_arg_test} == "on" ]]; then
+	# 	_polap_log0 "creating ${_polap_var_ga}/mt.contig.name-1 for testing purpose ..."
+	# 	_polap_log0 "  you would have to edit it for a real data-set."
+	# 	echo edge_1 >"${_polap_var_ga}"/mt.contig.name-1
+	# 	echo edge_2 >>"${_polap_var_ga}"/mt.contig.name-1
+	# 	echo edge_3 >>"${_polap_var_ga}"/mt.contig.name-1
+	# fi
 
 	ANUMNEXT=$((INUM + 1))
 	_polap_log1 NEXT: $0 seeds -o "$ODIR" -i $INUM -j $ANUMNEXT

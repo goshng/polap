@@ -18,7 +18,9 @@
 # Ensure that the current script is sourced only once
 source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
-set +u; [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0; set -u
+set +u
+[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
@@ -74,7 +76,8 @@ HEREDOC
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 		ls -l "${ODIR}/msbwt" >&2
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		exit $EXIT_SUCCESS
 	fi
 
@@ -126,7 +129,8 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -152,16 +156,17 @@ function _run_polap_polish() { # polish organelle genome sequences using FMLRC
 
 	help_message=$(
 		cat <<HEREDOC
-# Polishes using FMLRC.
+# Polish a draft sequence using FMLRC.
+#
 # Arguments:
 #   -p ${_arg_unpolished_fasta}: a long-read draft genome assembly
 #   -f ${_arg_final_assembly}: a final genome assembly sequence name
 # Inputs:
-#   $ODIR/msbwt/comp_msbwt.npy
+#   ${_polap_var_base_msbwt}
 #   ${_arg_unpolished_fasta}
 # Outputs:
 #   ${_arg_final_assembly}
-Example: $(basename "$0") ${_arg_menu[0]} [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]
+Example: $0 ${_arg_menu[0]} -p <arg>] -f <arg>
 HEREDOC
 	)
 
@@ -177,15 +182,15 @@ HEREDOC
 		exit $EXIT_ERROR
 	fi
 
-	if [[ ! -s "$ODIR/msbwt/comp_msbwt.npy" ]]; then
-		_polap_log0 "ERROR: no msbwt at $ODIR/msbwt/comp_msbwt.npy"
+	if [[ ! -s "${_polap_var_base_msbwt}" ]]; then
+		_polap_log0 "ERROR: no msbwt at ${_polap_var_base_msbwt}"
 		_polap_log0 "HINT: $0 prepare-polishing [-a s1.fq] [-b s2.fq]"
 		exit $EXIT_ERROR
 	fi
 
 	_polap_log1 "INFO: executing fmlrc on the draft sequence ${_arg_unpolished_fasta} ... be patient!"
-	if [[ -s "${PA}" ]]; then
-		fmlrc -p "${_arg_threads}" "$ODIR"/msbwt/comp_msbwt.npy "${PA}" "${FA}" >/dev/null 2>&1
+	if [[ -s "${_arg_unpolished_fasta}" ]]; then
+		fmlrc -p "${_arg_threads}" "${_polap_var_base_msbwt}" "${_arg_unpolished_fasta}" "${_arg_final_assembly}" >/dev/null 2>&1
 	else
 		_polap_log0 "ERROR: no unpolished fasta file: [${_arg_unpolished_fasta}]"
 		exit $EXIT_ERROR
@@ -195,5 +200,6 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }

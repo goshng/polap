@@ -55,8 +55,6 @@ source "$script_dir/polap-function-set-variables.sh"
 source "$script_dir/run-polap-function-wga.sh"
 
 # organelle-genome annotation
-source "$script_dir/run-polap-function-blast-genome.sh"
-source "$script_dir/run-polap-function-count-gene.sh"
 source "$script_dir/run-polap-function-annotate.sh"
 
 # read selection and organelle-genome assembly
@@ -106,8 +104,9 @@ source "$script_dir/polap-variables-main.sh"
 exec 3>&1 1>> >(logit)
 # exec 3>&1 1>> >(logit) 2>&1
 
-date +"%Y-%m-%d %H:%M:%S" >&3
+[[ "${_arg_clock}" == "on" ]] && date +"%Y-%m-%d %H:%M:%S" >&3
 CMD="$0 $*"
+echo "POLAP: ${_polap_version}"
 echo "CMD: $CMD"
 
 # subcommand function call
@@ -116,14 +115,13 @@ if declare -f "_run_polap_${_arg_menu[0]}" >/dev/null 2>&1; then
 	# _run_polap_"$@" # same as "$1" "$2" "$3" ... for full argument list
 	_run_polap_${_arg_menu[0]}
 else
-	_polap_log0 "Menu: assemble, assemble1, annotate, assemble2,"
-	_polap_log0 "      reset, total-length-long, find-genome-size, reduce-data, flye1,"
-	_polap_log0 "      blast-genome, count-gene, select-contigs, select-reads, flye2,"
-	_polap_log0 "      flye-polishing, prepare-polishing, polish,"
+	_polap_log0 "Menu: assemble, init, prepare-polishing, polish"
+	_polap_log0 "  assemble1, total-length-long, find-genome-size, reduce-data, flye1, annotate"
+	_polap_log0 "  assemble2, select-seeds, map-reads, test-reads, select-reads, flye2"
 	_polap_log0 "ERROR: no such menu of $1"
 fi
 
-date +"%Y-%m-%d %H:%M:%S" >&3
+[[ "${_arg_clock}" == "on" ]] && date +"%Y-%m-%d %H:%M:%S" >&3
 ELAPSED="Time at $(hostname): $((SECONDS / 3600))hrs $(((SECONDS / 60) % 60))min $((SECONDS % 60))sec - $CMD"
 echo "$ELAPSED"
 

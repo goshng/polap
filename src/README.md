@@ -104,7 +104,7 @@ source "$script_dir/polap-variables-common.sh"
 # local _polap_var_depth_range_by_depth_mixture="${_polap_var_mtcontigs}/1-depth.range.by.depth.mixture.txt"
 # local _polap_var_mixfit="${_polap_var_mtcontigs}/1-mixfit.txt"
 
-# # run-polap-r-select-contigs-by-2-determine-depth-range.R
+# # run-polap-r-determine-depth-range.R
 # local _polap_var_depth_range_by_cdf_copy_number="${_polap_var_mtcontigs}/2-depth.range.by.cdf.copy.number.txt"
 
 # # run-polap-select-contigs-by-1-annotation.R
@@ -116,22 +116,22 @@ source "$script_dir/polap-variables-common.sh"
 
 # # Step 3: filtering GFA using the depth range from step 2
 # # run-polap-select-contigs-by-3-subset-by-depth.R
-# local _polap_var_gfa_all="${_polap_var_mtcontigs}/3-gfa.all.gfa"
-# local _polap_var_gfa_seq_part="${_polap_var_mtcontigs}/3-gfa.seq.part.tsv"
-# local _polap_var_gfa_seq_filtered="${_polap_var_mtcontigs}/3-gfa.seq.filtered.txt"
+# local _polap_var_mtcontigs_gfa_all="${_polap_var_mtcontigs}/3-gfa.all.gfa"
+# local _polap_var_mtcontigs_gfa_seq_part="${_polap_var_mtcontigs}/3-gfa.seq.part.tsv"
+# local _polap_var_mtcontigs_gfa_seq_filtered="${_polap_var_mtcontigs}/3-gfa.seq.filtered.txt"
 
 # # Step 4: preparing the graph for finding connected components
-# local _polap_var_gfa_seq_filtered_edge="${_polap_var_mtcontigs}/2-gfa.seq.filtered.edge.txt"
-# local _polap_var_gfa_filtered="${_polap_var_mtcontigs}/2-gfa.filtered.gfa"
+# local _polap_var_mtcontigs_gfa_seq_filtered_edge="${_polap_var_mtcontigs}/2-gfa.seq.filtered.edge.txt"
+# local _polap_var_mtcontigs_gfa_depthfiltered_gfa="${_polap_var_mtcontigs}/2-gfa.filtered.gfa"
 
-# local _polap_var_links_tsv="${_polap_var_links}.tsv"
-# local _polap_var_links_number="${_polap_var_links}.number.txt"
-# local _polap_var_links_order="${_polap_var_links}.order.txt"
-# local _polap_var_links_contig="${_polap_var_links}.contig.txt"
-# local _polap_var_links_contig_na="${_polap_var_links}.contig.na.txt"
+# local _polap_var_mtcontigs_links_tsv="${_polap_var_mtcontigs_links}.tsv"
+# local _polap_var_mtcontigs_links_number="${_polap_var_mtcontigs_links}.number.txt"
+# local _polap_var_mtcontigs_links_order="${_polap_var_mtcontigs_links}.order.txt"
+# local _polap_var_mtcontigs_links_contig="${_polap_var_mtcontigs_links}.contig.txt"
+# local _polap_var_mtcontigs_links_contig_na="${_polap_var_mtcontigs_links}.contig.na.txt"
 
 # # Step 5: Find connected components using Python script
-# local _polap_var_links_seed="${_polap_var_mtcontigs}/5-gfa.links.seed.txt"
+# local _polap_var_mtcontigs_links_seed="${_polap_var_mtcontigs}/5-gfa.links.seed.txt"
 
 # # Step 6: converting the depth-filtered contigs in edge with numbers
-# local _polap_var_links_mtcontig="${_polap_var_mtcontigs}/6-gfa.links.mtcontig.txt"
+# local _polap_var_mtcontigs_links_mtcontig="${_polap_var_mtcontigs}/6-gfa.links.mtcontig.txt"

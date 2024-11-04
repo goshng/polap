@@ -139,10 +139,9 @@ table1 <- read_delim(args1$annotation, delim = " ", show_col_types = FALSE)
 # Load the edge names set
 edges <- read_lines(args1$mtcontigseed)
 
-# Process table2 by removing columns V4, V5, V7, V8 and renaming V3 as Depth
+# Process table2 by removing columns V4, V5, V7, V8 and renaming Depth as Depth
 table2_processed <- table2 %>%
-  select(Contig, Length, V3, Copy, MT, PT, Edge) %>%
-  rename(Depth = V3)
+  select(Contig, Length, Depth, Copy, MT, PT, Edge)
 
 # Check if each Contig in table1 exists in the set of edge names
 table1 <- table1 %>%

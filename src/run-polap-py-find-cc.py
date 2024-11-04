@@ -1,5 +1,27 @@
-# Python program to print connected
-# components in an undirected graph
+################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
+# Python script to print connected components in an undirected graph
+#
+# Links:
+# 1. IO processing
+# https://chatgpt.com/c/66dbce52-c6ec-800e-a940-629c6a333d31
+#
+# 2. DFS(Depth First Search)
+# https://www.geeksforgeeks.org/python-program-for-depth-first-search-or-dfs-for-a-graph/
 
 import sys
 
@@ -128,6 +150,7 @@ if __name__ == "__main__":
     # g.addEdge(1, 0)
     # g.addEdge(2, 1)
     # g.addEdge(3, 4)
+    # not using networkx
     cc = g.connectedComponents()
     # print("Following are connected components")
     # print(cc)

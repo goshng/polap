@@ -56,6 +56,7 @@ source "$script_dir/run-polap-function-wga.sh"
 
 # organelle-genome annotation
 source "$script_dir/run-polap-function-annotate.sh"
+source "$script_dir/run-polap-function-annotate-contig.sh"
 
 # read selection and organelle-genome assembly
 source "$script_dir/run-polap-function-oga.sh"

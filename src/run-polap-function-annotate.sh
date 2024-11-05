@@ -244,6 +244,9 @@ HEREDOC
 		no-depth)
 			_polap_log0_column "${_polap_var_ga_annotation_table}"
 			;;
+		contig)
+			_polap_log0_column "${_polap_var_ga_annotation_table_contig}"
+			;;
 		mt)
 			_polap_log0_column "${_polap_var_ga_annotation}"
 			;;
@@ -251,7 +254,7 @@ HEREDOC
 			_polap_log0_column "${_polap_var_ga_pt_annotation_depth_table}"
 			;;
 		*)
-			_polap_log0 "menu3: all, table, no-depth, mt, pt"
+			_polap_log0 "menu3: all, table, no-depth, mt, pt-table"
 			;;
 		esac
 
@@ -419,6 +422,15 @@ HEREDOC
 		return
 	fi
 
+	_polap_log1 "  creating annotation tables"
+	_polap_log2 "    input1: ${_polap_var_contigger_edges_stats}"
+	_polap_log2 "    input2: ${_polap_var_ann_MTGENECOUNT}"
+	_polap_log2 "    input3: ${_polap_var_ann_PTGENECOUNT}"
+	_polap_log2 "    output1: ${_polap_var_ga_annotation}"
+	_polap_log2 "    output2: ${_polap_var_ga_annotation_all}"
+	_polap_log2 "    output3: ${_polap_var_ga_annotation_table}"
+	_polap_log2 "    output4: ${_polap_var_ga_annotation_depth_table}"
+	_polap_log2 "    output5: ${_polap_var_ga_pt_annotation_depth_table}"
 	local _command1="Rscript $script_dir/run-polap-r-mtcontig.R \
 		--flyeout-edges-stats ${_polap_var_contigger_edges_stats} \
     --mt-gene-count ${_polap_var_ann_MTGENECOUNT} \

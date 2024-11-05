@@ -70,6 +70,11 @@ parser <- add_option(parser, c("-c", "--contigger"),
   default = FALSE,
   help = "Use 30-contigger flye output"
 )
+parser <- add_option(parser, c("--version-contig"),
+  action = "store_true",
+  default = FALSE,
+  help = "Use contigs_stats.txt not edges_stats.txt"
+)
 args1 <- parse_args(parser)
 
 if (is_null(args1$`flyeout-edges-stats`)) {
@@ -82,6 +87,7 @@ if (is_null(args1$`flyeout-edges-stats`)) {
   # Or where you have your data to work on.
   input_dir0 <- file.path(".")
   input1 <- file.path(input_dir0, "edges_stats.txt")
+  input1_1 <- file.path(input_dir0, "contigs_stats.txt")
   input2 <- file.path(input_dir0, "mt.gene.count")
   input3 <- file.path(input_dir0, "pt.gene.count")
   output1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count.txt")
@@ -89,6 +95,7 @@ if (is_null(args1$`flyeout-edges-stats`)) {
   output3 <- file.path(input_dir0, "contig-annotation-table.txt")
   output4 <- file.path(input_dir0, "contig-annotation-depth-table.txt")
   output5 <- file.path(input_dir0, "pt-contig-annotation-depth-table.txt")
+  output3_1 <- file.path(input_dir0, "contig-annotation-table-contig.txt")
 
   args1 <- parse_args(parser, args = c(
     "--flyeout-edges-stats", input1,
@@ -101,6 +108,7 @@ if (is_null(args1$`flyeout-edges-stats`)) {
     "--out-pt-annotation-depth-table", output5,
     "--contigger"
   ))
+
 }
 
 # flye_dir <- args[1]
@@ -180,7 +188,7 @@ if (args1$mitochondrial == TRUE) {
     write.table(args1$`out-pt-annotation-depth-table`, row.names = F, quote = F)
 } else {
   z %>%
-    arrange(mt <= pt) %>%
+    arrange(mt >= pt) %>%
     relocate(V9, .after = last_col()) %>%
     filter(mt < pt) %>%
     select(V1, V2, V6, mt, pt, V9) %>%
@@ -188,12 +196,20 @@ if (args1$mitochondrial == TRUE) {
     write.table(args1$`out-annotation-table`, row.names = F, quote = F)
 
   z %>%
-    arrange(mt <= pt) %>%
+    arrange(mt >= pt) %>%
     relocate(V9, .after = last_col()) %>%
     filter(mt < pt) %>%
     select(V1, V2, V3, V6, mt, pt, V9) %>%
     rename(Contig = V1, Length = V2, Depth = V3, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
     write.table(args1$`out-annotation-depth-table`, row.names = F, quote = F)
+
+  z %>%
+    arrange(pt >= mt) %>%
+    relocate(V9, .after = last_col()) %>%
+    filter(mt > pt) %>%
+    select(V1, V2, V3, V6, mt, pt, V9) %>%
+    rename(Contig = V1, Length = V2, Depth = V3, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
+    write.table(args1$`out-pt-annotation-depth-table`, row.names = F, quote = F)
 }
 
 z.1 %>%
@@ -201,3 +217,4 @@ z.1 %>%
   rename(Contig = V1, Length = V2, Depth = V3, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
   relocate(Edge, .after = last_col()) %>%
   write.table(args1$`out-annotation-all`, row.names = F, quote = F)
+

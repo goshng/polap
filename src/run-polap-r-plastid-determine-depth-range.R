@@ -52,7 +52,7 @@ if (is_null(args1$table)) {
   input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
   output1 <- file.path(input_dir0, "2-depth.range.by.cdf.copy.number.txt")
   output2 <- file.path(input_dir0, "contig-annotation-cdf-table.txt")
-  args1 <- parse_args(parser, args = c("--table", input1, "-o", output1, "-c", output2))
+  args1 <- parse_args(parser, args = c("--plastid", "--table", input1, "-o", output1, "-c", output2))
 }
 
 # Steps;
@@ -86,7 +86,7 @@ pt_lower_bound <- x0 |>
   filter(PT > MT) |>
   arrange(desc(PT)) |>
   slice_head(n = 3) |>
-  summarise(max_depth = max(Depth, na.rm = TRUE) * 0.9) |>
+  summarise(max_depth = max(Depth, na.rm = TRUE) * 0.5) |>
   pull(max_depth)
 
 # Sort the data by the 'Copy' column in decreasing order
@@ -98,7 +98,7 @@ cutoff_data <- x0 |>
     pseudo_PT = if_else(PT == 0, PT + 1, PT)
   ) |>
   # Calculate the cumulative sum of the 'Length' column
-  filter(Depth < pt_lower_bound) |>
+  filter(Depth > pt_lower_bound) |>
   mutate(dispersion_MT = as.integer(Length / pseudo_MT)) |>
   mutate(dispersion_PT = as.integer(Length / pseudo_PT)) |>
   select(-pseudo_MT, -pseudo_PT) |>
@@ -107,7 +107,7 @@ cutoff_data <- x0 |>
   # Cut off rows at the given cumulative length of 3,000,000
   filter(MT > 0 | PT > 0) |>
   mutate(cumulative_length = cumsum(Length)) |>
-  filter(cumulative_length <= 3e+6)
+  filter(cumulative_length <= 1e+6)
 
 # MT selection: x0 -> cutoff_data -> xt
 # gene density cutoff: 1 in 100 kb
@@ -159,10 +159,7 @@ lbound <- function(x) {
 if (nrow(xt) > 1) {
   xt |>
     summarise(
-      # 2024-10-19
-      # depth_lower_bound = round(max(min(Depth), mean(Depth) - sd(Depth) * 3) / 3), # CHECK # FIXME
-      # depth_upper_bound = round(min(max(Depth), mean(Depth) + sd(Depth) * 3) * 3),
-      depth_lower_bound = lbound(Depth), # CHECK # FIXME
+      depth_lower_bound = lbound(Depth),
       depth_upper_bound = round(min(
         max(Depth), mean(Depth) + sd(Depth) * 2
       ) * 3),

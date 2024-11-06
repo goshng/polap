@@ -30,9 +30,6 @@ local _polap_var_contigger="${_polap_var_ga}/30-contigger"
 # _polap_var_ga_contigger better than _polap_var_contigger
 local _polap_var_ga_contigger="${_polap_var_ga}/30-contigger"
 local _polap_var_ann="${_polap_var_ga}/50-annotation"
-local _polap_var_mtcontigs="${_polap_var_ga}/51-mtcontigs/${JNUM}"
-# local _polap_var_mtcontigs="${_polap_var_ga}/${JNUM}/mtcontigs"
-# local _polap_var_mtcontigs="${_polap_var_ga}/60-mtcontigs"
 local MTCONTIGNAME="${_polap_var_ga}/mt.contig.name-${JNUM}"
 local _polap_var_mtcontigname="${_polap_var_ga}/mt.contig.name-${JNUM}"
 local _polap_var_oga="${_polap_var_output}/${JNUM}"
@@ -140,32 +137,7 @@ local _polap_var_ann_PTGENECOUNT="${_polap_var_ann}/pt.gene.count"
 local _polap_var_ann_PTGENECOUNT_TMP="${_polap_var_ann}/pt.gene.count.tmp"
 
 # common: mtcontigs
-local _polap_var_mtcontigs_depth_range_preselection="${_polap_var_mtcontigs}/depth.range.preselection.txt"
-local _polap_var_mtcontigs_depth_range_graphfilter="${_polap_var_mtcontigs}/depth.range.graphfilter.txt"
-local _polap_var_mtcontigs_1_custom_depth_range="${_polap_var_mtcontigs}/custom.depth.range-1.txt"
-local _polap_var_mtcontigs_2_custom_depth_range="${_polap_var_mtcontigs}/custom.depth.range-2.txt"
-local _polap_var_mtcontigs_preselection="${_polap_var_mtcontigs}/1-preselection.by.gene.density.txt"
-local _polap_var_mtcontigs_gfa_all="${_polap_var_mtcontigs}/3-gfa.all.gfa"
-local _polap_var_mtcontigs_gfa_seq_filtered="${_polap_var_mtcontigs}/3-gfa.seq.depthfiltered.txt"
-local _polap_var_mtcontigs_gfa_seq_part="${_polap_var_mtcontigs}/3-gfa.seq.all.tsv"
-local _polap_var_mtcontigs_gfa_seq_filtered_edge="${_polap_var_mtcontigs}/4-gfa.seq.depthfiltered.edge.txt"
-local _polap_var_mtcontigs_gfa_depthfiltered_gfa="${_polap_var_mtcontigs}/4-gfa.depthfiltered.gfa"
-
-local _polap_var_mtcontigs_links="${_polap_var_mtcontigs}/4-gfa.links"
-local _polap_var_mtcontigs_links_tsv="${_polap_var_mtcontigs}/4-gfa.links.tsv"
-local _polap_var_mtcontigs_links_contig_na="${_polap_var_mtcontigs}/4-gfa.links.contig.na.txt"
-local _polap_var_mtcontigs_links_contig="${_polap_var_mtcontigs}/4-gfa.links.contig.txt"
-local _polap_var_mtcontigs_links_number="${_polap_var_mtcontigs}/4-gfa.links.number.txt"
-local _polap_var_mtcontigs_links_order="${_polap_var_mtcontigs}/4-gfa.links.order.txt"
-local _polap_var_mtcontigs_links_seed="${_polap_var_mtcontigs}/5-gfa.links.seed.txt"
-local _polap_var_mtcontigs_links_mtcontig="${_polap_var_mtcontigs}/6-gfa.links.mtcontig.txt"
-local _polap_var_mtcontigs_7mtcontigname="${_polap_var_mtcontigs}/7-mt.contig.name.txt"
-local _polap_var_mtcontig_table="${_polap_var_mtcontigs}/8-mtcontig.table.tsv"
-# delete these later
-local _polap_var_mtcontigs_2_depth_range_by_cdf_copy_number="${_polap_var_mtcontigs}/2-depth.range.by.cdf.copy.number.txt"
-local _polap_var_mtcontig_table="${_polap_var_mtcontigs}/8-mtcontig.table.tsv"
-# delete these later
-local _polap_var_mtcontigs_2_depth_range_by_cdf_copy_number="${_polap_var_mtcontigs}/2-depth.range.by.cdf.copy.number.txt"
+# moved to polap-variables-mtcontigs.sh
 
 # oga
 local _polap_var_oga_assembly_graph_gfa="${_polap_var_oga}/assembly_graph.gfa"

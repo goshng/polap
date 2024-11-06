@@ -84,6 +84,7 @@ _arg_pair_min="3000"
 _arg_bridge_min="0"
 _arg_inum="0"
 _arg_jnum="1"
+_arg_knum="1"
 _arg_start_index=0
 _arg_select_contig="1"
 _arg_select_contig_numbers=(1 2 3 4 5 6)
@@ -123,36 +124,39 @@ print_help() {
 POLAP - Plant organelle DNA long-read assembly pipeline.
 version ${_polap_version}
 
-Usage: $0 <menu> [<menu2> [<menu3>]] [-o|--outdir <arg>]
+Usage: $0 [<menu> [<menu2> [<menu3>]]] [-o|--outdir <arg>]
       [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
-      [-i|--inum <arg>] [-j|--jnum <arg>]
-      [-w|--single-min <arg>] [-m|--min-read-length <arg>] 
-      [-t|--threads <arg>] [--(no-)test] [--log <arg>] 
+      [-i|--inum <arg>] [-j|--jnum <arg>] [-w|--single-min <arg>]
+      [-m|--min-read-length <arg>] [-t|--threads <arg>] [--test] [--log <arg>] 
       [--random-seed <arg>] [--version] [-h|--help]
 
-Assemble mtDNA:
+Assemble mitochondrial DNA (mtDNA) in a single command (not tested yet):
+  $0 -l <arg> -a <arg> [-b <arg>]
   $0 assemble -l <arg> -a <arg> [-b <arg>]
  
-Polish an mtDNA using FMLRC:
+Perform a polishing of the mtDNA sequence utilizing the FMLRC protocol:
   $0 prepare-polishing  -a <arg> [-b <arg>]
   $0 polish -p <arg> -f <arg>
 
-Assemble mtDNA in two steps with manual seed contig selection:
+To assemble mitochondrial DNA (mtDNA), follow a two-step process involving
+manual seed contig selection:
   $0 assemble1 -l <arg> -a <arg> [-b <arg>] [-m <arg>]
   $0 assemble2 -i <arg> -j <arg> [-w <arg>] [-c <arg>]
 
-Assemble mtDNA in three steps with semi-automatic seed contig selection:
+To assemble mitochondrial DNA (mtDNA), follow a three-step process
+that utilizes semi-automatic seed contig selection:
   $0 assemble1 -l <arg> -a <arg> [-b <arg>] [-m <arg>]
   $0 seeds -i <arg> -j <arg>
   $0 assemble2 -i <arg> -j <arg> [-w <arg>] [-c <arg>]
 
-Assemble mtDNA in step-by-step:
+To assemble mitochondrial DNA (mtDNA), follow a series of sequential steps:
   $0 init -o <arg>
   $0 summary-reads -a <arg> [-b <arg>]
   $0 total-length-long -l <arg>
   $0 find-genome-size -a <arg> [-b <arg>]
   $0 reduce-data -l <arg> [-m <arg>]
   $0 flye1 [-t <arg>]
+  $0 edges-stats -i <arg>
   $0 annotate -i <arg>
   $0 seeds [-i <arg>] -j <arg>
   $0 map-reads [-i <arg>] -j <arg>
@@ -163,7 +167,7 @@ Assemble mtDNA in step-by-step:
 Others menus:
   $0 blast-genome -i <arg>
   $0 count-genes -i <arg>
-  $0 flye-polishing  -j <arg>
+  $0 flye-polishing -j <arg>
   $0 make-menus
   $0 clean-menus
   $0 list
@@ -179,9 +183,9 @@ Other options:
       [-c|--coverage <arg>] [--flye-asm-coverage <arg>]
       [--bioproject <arg>] [--species <arg>] [--accession <arg>]
       [--query <arg>] [--subject <arg>]
-      [--(no-)reduction-reads] [--(no-)coverage-check]
-      [--(no-)plastid]
-      [-u|--(no-)circularize] [--archive <arg>]
+      [--no-reduction-reads] [--no-coverage-check]
+      [--plastid]
+      [--archive <arg>]
       [--sra <arg>] [-x|--bridge-min <arg>] [-g|--genomesize <arg>]
 
 menu: assemble, assemble1, annotate, assemble2, flye-polishing, 
@@ -211,27 +215,7 @@ Options:
     The option '-b' or '--short-read2' specifies a short-read fastq file 2, 
     with a default value of 's2.fq'. The second short-read data file, 
     if provided, is considered optional.
-
-  -m, --min-read-length: minimum length of long reads (default: ${_arg_min_read_length})
-    The option '-m' or '--min-read-length' specifies the minimum length of 
-    long reads, with a default value of 3000. 
-
-  -t, --threads: number of CPUs (default: maximum number of cores)
-    The option '-t' or '--threads' specifies the number of CPU threads to 
-    utilize, with a default value equal to the maximum number of available cores.
-
-  -c, --coverage: coverage for the organelle-genome assembly (default: ${_arg_coverage})
-    The option '-c' or '--coverage' specifies the coverage percentage for the 
-    organelle-genome assembly for controlling the data size.
-
-  -w, --single-min: minimum mapped bases or PAF 11th column (default: ${_arg_single_min})
-
-  -r, --pair-min: minimum mapped bases or PAF 11th column (default: ${_arg_pair_min})
-
-  -x, --bridge-min: minimum bridging read length or PAF 7th column (default: ${_arg_bridge_min})
-
-  --rw: --single-min and --pair-min all set to the same value (default: ${_arg_single_min})
-    --bridge-min is set to 0.
+    (Note: not tested yet; -a & -b are required.)
 
   -i, --inum: previous output number of organelle-genome assembly (default: ${_arg_inum})
     The option '-i' or '--inum' specifies the previous output number 
@@ -242,9 +226,35 @@ Options:
     The option '-j' or '--jnum' allows users to specify the current output number 
     for an organelle-genome assembly, with a default value of '1'.
 
-  -g, --genomesize: expected genome size (default: estimated with a short-read dataset)
+  -m, --min-read-length: minimum length of long reads (default: ${_arg_min_read_length})
+    The option '-m' or '--min-read-length' specifies the minimum length of 
+    long reads, with a default value of 3000. 
 
-  -u, --circularize, --no-circularize: circularize a contig (off by default)
+  -t, --threads: number of CPUs (default: maximum number of cores)
+    The option '-t' or '--threads' specifies the number of CPU threads to 
+    utilize, with a default value equal to the maximum number of available 
+    cores.
+
+  -c, --coverage: coverage for the organelle-genome assembly (default: ${_arg_coverage})
+    The option '-c' or '--coverage' specifies the coverage percentage for the 
+    organelle-genome assembly for controlling the data size.
+
+  -w, --single-min: minimum mapped bases or PAF 11th column (default: ${_arg_single_min})
+    This parameter ensures that the alignment level between a long-read and a
+    seed contig is properly controlled. For plant mitochondrial DNAs, a DNA
+    fragment size of approximately 3 kilobases appears to be more effective
+    than the smaller 1-kilobase fragment. In the case of plastid DNAs, a
+    fragment size of 1 kilobase (kb) might be more suitable, requiring an
+    adjustment to the -m option accordingly.
+
+  -x, --bridge-min: minimum bridging read length or PAF 2nd column (default: ${_arg_bridge_min})
+    Note: it is not tested yet.
+
+  -g, --genomesize: expected genome size (default: estimated with a short-read dataset)
+    Users can assemble an organelle genome when they have a genome size
+    estimate. But, we require a short-read dataset to determine the genome size
+    for the whole-genome assembly process. Polishing a long-read assembly
+    necessitates the use of a short-read dataset.
 
   -p, --unpolished-fasta: polishing sequence in fasta format (default: ${_arg_unpolished_fasta})
     The option enables the polishing of sequences in a FASTA format, 
@@ -253,18 +263,20 @@ Options:
   -f, --final-assembly: final assembly in fasta format (default: ${_arg_final_assembly})
     The final assembly in FASTA format, with a default file name of 'mt.1.fa'. 
 
-  --reduction-reads, --no-reduction-reads: reduction of long-read data before assemble1 (on by default)
-    In the process of whole-genome assembly, we utilize a reduced amount of long-read data.
-    The size of coverage is set by --coverage (default: ${_arg_coverage})
+  --no-reduction-reads: reduction of long-read data before assemble1
+    In the process of whole-genome assembly, we utilize a reduced amount of
+    long-read data. By default, we reduce the size of a long-read dataset prior
+    to performing a whole-genome assembly.
+    Note: The size of coverage is set by --coverage (default: ${_arg_coverage})
 
-  --coverage-check, --no-coverage-check: coverage check before assemble2 step (on by default)
-    In the process of organelle-genome assembly, we reduce the seed reads.
-    In the process of assembling organelle genomes, we reduce the size of selected seed reads.
-    The size of coverage is set by --coverage (default: ${_arg_coverage})
+  --no-coverage-check: coverage check before assemble2 step
+    By default, in the process of assembling organelle genomes, we reduce
+    the size of selected seed reads.
+    Note: The size of coverage is set by --coverage (default: ${_arg_coverage})
 
-  --yes, --no-yes: alway yes for a question or deletes output completely (off by default)
+  --yes: always yes for a question or deletes output completely (off by default)
 
-  --redo, --no-redo: (off by default)
+  --redo: redo a POLAP pipeline (off by default)
     The command specifies that any previously generated intermediate results 
     should be disregarded and new calculations performed from scratch.
 
@@ -272,13 +284,14 @@ Options:
     It specifies the values for ptGAUL read-selection minimum number of 
     bases or ratios. For the start and end values of a ratio, real numbers must 
     fall within the range of 0 to 1.
-    For further information, please refer to the menu "test-reads" for help.
+    Note: refer to the menu "test-reads" for help.
 
   --start-index: used by test-reads
 
-  --random-seed: 5-digit number (default automatically assigned; 11 used in seqkit sample)
+  --random-seed: 5-digit number (default automatically assigned)
     To ensure reproducibility, you can supply a random number seed 
     to facilitate sampling of reads.
+    seqkit sample random seed; 11 used in seqkit sample.
 
   --flye-asm-coverage: Flye --asm-coverage (default: ${_arg_flye_asm_coverage})
     Flye --asm-coverage is a parameter used with the assembly coverage of Flye.
@@ -287,17 +300,17 @@ Options:
     The flag '--no-flye-asm-coverage' indicates that we use Flye option 
     neither --asm-coverage nor --genome-size in flye execution.
     This option is the same as --flye-asm-coverage set to 0.
+    Note: not tested yet!
 
   --polap-reads: use intra- and inter-contig read selection (default: ${_arg_polap_reads})
     The default read selection is ptGAUL's approach.
+    This option allows long reads that are mapped within a seed contig and
+    between two contigs.
 
   --bridge-same-strand: (default: ${_arg_bridge_same_strand})
     When linking two inverted repeats, enabling this feature ensures that 
     the strands are equal for the two mapped IR contigs.
-    FIXME: currently only plus strand is used.
-
-  --species: Species scientific name (no default)
-	--sra: SRA data (no default)
+    Note: currently only plus strand is used.
 
   --log: log file (default: <output>/polap.log)
     The log file option allows users to specify a custom log file location, 
@@ -305,6 +318,9 @@ Options:
 
   --clock: display the start and ending time (default: ${_arg_clock})
     The clock option allows users to display both the start and end times.
+
+  --species: Species scientific name (no default)
+	--sra: SRA data (no default)
 
   -v, --verbose: use multiple times to increase the verbose level
   --version: Prints version
@@ -522,6 +538,17 @@ parse_commandline() {
 			;;
 		-j*)
 			_arg_jnum="${_key##-j}"
+			;;
+		-k | --knum)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_knum="$2"
+			shift
+			;;
+		--knum=*)
+			_arg_knum="${_key##--knum=}"
+			;;
+		-k*)
+			_arg_knum="${_key##-k}"
 			;;
 		--start-index)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

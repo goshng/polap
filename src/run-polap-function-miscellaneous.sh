@@ -489,7 +489,7 @@ function _run_polap_x-help() {
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
-function _run_polap_x-symlink-fastq() {
+function _run_polap_x-link-fastq() {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	# Loop through all .fastq files in the current directory
@@ -510,6 +510,7 @@ function _run_polap_x-symlink-fastq() {
 	done
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	return 0
 }
 
 function _run_polap_x-prepend-gplv3() {
@@ -545,4 +546,22 @@ HEREDOC
 	_polap_log0 "$file1" now has a header of the POLAP GPLv3 copyright.
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	return 0
+}
+
+# copy seed test data
+function _run_polap_x-copy-seed-test() {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+
+	local _id=$(basename $PWD)
+	local _base_name="${_polap_var_ga_annotation_all##*/}"
+	local _base_name="${_base_name%.*}"
+	_polap_log0_cmd cp "${_polap_var_ga_annotation_all}" "$HOME/all/polap/github/trash/${_base_name}_${_id}.txt"
+
+	echo "input1 <- file.path(input_dir0, \"${_base_name}_${_id}.txt\")" >>"${script_dir}/run-polap-r-determine-depth-range.txt"
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	return 0
 }

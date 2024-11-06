@@ -753,7 +753,7 @@ HEREDOC
 	check_file_existence "$ODIR/short_expected_genome_size.txt"
 	check_file_existence "${_polap_var_base_nk_fq_gz}"
 
-	_polap_log0 "flye whole-genome assembly using the reduced long-read data ..."
+	_polap_log0 "flye whole-genome assembly using the reduced long-read data: ${_polap_var_base_nk_fq_gz}"
 	_polap_log1 "  input1: ${_polap_var_base_genome_size}"
 	_polap_log1 "  input2: ${_polap_var_base_nk_fq_gz}"
 

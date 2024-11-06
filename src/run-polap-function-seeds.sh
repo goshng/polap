@@ -110,16 +110,18 @@ function _polap_seeds_create-automatic-depth-range() {
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
+	local _type=$1
+
 	if [[ "${_arg_plastid}" == "on" ]]; then
 		_polap_log2 "  using plastid depth range ..."
-		local _command1="Rscript $script_dir/run-polap-r-plastid-determine-depth-range.R \
+		local _command1="Rscript $script_dir/run-polap-r-plastid-determine-depth-range_${_type}.R \
 				-t ${_polap_var_annotation_table} \
 				-c ${_polap_var_ga_annotation_cdf_table} \
 				-o ${_polap_var_mtcontigs_1_custom_depth_range} \
         --plastid \
 				2>$_polap_output_dest"
 	else
-		local _command1="Rscript $script_dir/run-polap-r-determine-depth-range.R \
+		local _command1="Rscript $script_dir/run-polap-r-determine-depth-range_${_type}.R \
 				-t ${_polap_var_annotation_table} \
 				-c ${_polap_var_ga_annotation_cdf_table} \
 				-o ${_polap_var_mtcontigs_1_custom_depth_range} \
@@ -352,7 +354,7 @@ function _polap_seeds_final-mtcontig() {
 	_polap_log1 "  step 8-2: mt.contig.table with contig seed marks"
 	_polap_log2 "    input1: ${_polap_var_annotation_table}"
 	_polap_log2 "    input2: ${_polap_var_ga_annotation_depth_table}"
-	_polap_log2 "    input3: ${_polap_var_mtcontigs_8mtcontigname}"
+	_polap_log2 "    input3: ${_polap_var_mtcontigs_7mtcontigname}"
 	_polap_log2 "    output1: ${_polap_var_ga_annotation_depth_table_seed_target}"
 	local _command1="Rscript $script_dir/run-polap-r-final-seed-mtcontig.R \
 		-t ${_polap_var_annotation_table} \
@@ -361,6 +363,53 @@ function _polap_seeds_final-mtcontig() {
     -o ${_polap_var_ga_annotation_depth_table_seed_target} \
 		2>$_polap_output_dest"
 	_polap_log3_pipe "${_command1}"
+
+}
+
+function _run_polap_choose-seed() { # select seed contigs
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Grouped file path declarations
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-mtcontigs.sh"
+
+	# Print help message if requested
+	help_message=$(
+		cat <<HEREDOC
+# Select contigs based on gene density, a customized depth of coverage, and 
+# an analysis of the assembly graph.
+#
+# Arguments:
+#   -i $INUM: source Flye (usually whole-genome) assembly number
+#   -j $JNUM: destination Flye organelle assembly number
+#   -k $KNUM: destination Flye organelle assembly number
+#   --plastid
+# Inputs:
+#   ${_polap_var_mtcontigs_7mtcontigname}
+# Outputs:
+#   ${_polap_var_mtcontigname}
+Example: $0 ${_arg_menu[0]} -i 1 -j 2 -k 1
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+
+		return
+	fi
+
+	# We initiate the process of selecting seed contigs.
+	_polap_log0 "choose seed contigs using the assembly graph: ${INUM} (source) -> ${JNUM} (target) ..."
 
 	if [[ -s "${_polap_var_mtcontig_table}" ]]; then
 		_polap_log3_column "${_polap_var_mtcontig_table}"
@@ -379,6 +428,11 @@ function _polap_seeds_final-mtcontig() {
 			paste -sd',' "${_polap_var_mtcontigname}" >&2
 		fi
 	fi
+
+	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 ################################################################################
@@ -396,6 +450,7 @@ function _run_polap_seeds() { # select seed contigs
 
 	# Grouped file path declarations
 	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-mtcontigs.sh"
 
 	# Print help message if requested
 	help_message=$(
@@ -486,7 +541,7 @@ function _run_polap_seeds() { # select seed contigs
 #   ${_polap_var_annotation_table}
 #   ${_polap_var_wga}/1-mtcontig.depth.stats.txt for manual depth range in --select-contig 1
 # Outputs:
-#   ${MTCONTIGNAME}
+#   ${_polap_var_mtcontigs_7mtcontigname}
 # Menus:
 #   auto -> creating the depth-range values, then making a mt.contig.name
 #   manual
@@ -496,7 +551,8 @@ function _run_polap_seeds() { # select seed contigs
 # View:
 #   depth-range <- for step 1
 #   preselection <- for step 2
-Example: $0 ${_arg_menu[0]} auto
+Example: $0 ${_arg_menu[0]} -k 1
+Example: $0 ${_arg_menu[0]} -k 2
 Example: $0 ${_arg_menu[0]} manual --plastid <- for test (range: 4~9)
 Example: $0 ${_arg_menu[0]} manual 1 <- two depth-range files are the same
 Example: $0 ${_arg_menu[0]} manual 2 <- two different depth-range files
@@ -504,6 +560,8 @@ Example: $0 ${_arg_menu[0]} manual two-value-textfile.txt (for both depth-range)
 Example: $0 ${_arg_menu[0]} add|remove
 Example: $0 ${_arg_menu[0]} bandage
 Example: $0 ${_arg_menu[0]} add new <- for a new mt.contig.name
+Example: $0 ${_arg_menu[0]} view -k 1
+Example: $0 ${_arg_menu[0]} view table -k 2
 HEREDOC
 	)
 
@@ -523,9 +581,7 @@ HEREDOC
 			_polap_log0_column "${_polap_var_mtcontigs_preselection}"
 		fi
 
-		if [[ "${_arg_menu[2]}" =~ ^[0-9]+$ ]]; then
-			JNUM="${_arg_menu[2]}"
-			source "$script_dir/polap-variables-common.sh"
+		if [[ "${_arg_menu[2]}" == "table" ]]; then
 			_polap_log0 "---"
 			_polap_log0_cat "${_polap_var_mtcontigs_1_custom_depth_range}"
 			local MTCONTIGNAME="${_polap_var_ga}"/mt.contig.name-"${_arg_menu[2]}"
@@ -539,8 +595,6 @@ HEREDOC
 					paste -sd',' "${MTCONTIGNAME}" >&2
 				fi
 			fi
-			JNUM="${_arg_menu[2]}"
-			source "$script_dir/polap-variables-common.sh"
 			if [[ -s "${_polap_var_mtcontig_table}" ]]; then
 				_polap_log0_column "${_polap_var_mtcontig_table}"
 				_polap_log0 "---------------------------------"
@@ -598,9 +652,10 @@ HEREDOC
 				sort -u ${MTCONTIGNAME} -o ${MTCONTIGNAME}
 				echo "Duplicates removed. Goodbye!"
 
-				_polap_seeds_final-mtcontig
+				# _polap_seeds_final-mtcontig
 
-				exit 0
+				exit
+
 			else
 				echo "Invalid input. Please enter a valid number or type 'quit'/'exit' to stop."
 			fi
@@ -631,13 +686,14 @@ HEREDOC
 	check_file_existence "${_polap_var_ga_contigger_edges_gfa}"
 	check_file_existence "${_polap_var_annotation_table}"
 
+	# step 1. manual custom depth-range or automatic depth-range
+	_polap_log1 "  step 1: determining the depth-range either manually or automatically ..."
+
 	# A fresh start at the mtcontigs folder.
 	_polap_log2 "  cleaning up (delete and create) the base mtcontigs folder: ${_polap_var_mtcontigs}"
 	_polap_log3_cmd rm -rf "${_polap_var_mtcontigs}"
 	_polap_log3_cmd mkdir -p "${_polap_var_mtcontigs}"
 
-	# step 1. manual custom depth-range or automatic depth-range
-	_polap_log1 "  step 1: determining the depth-range either manually or automatically ..."
 	_polap_log2 "    output1: ${_polap_var_mtcontigs_depth_range_graphfilter}"
 	_polap_log2 "    output2: ${_polap_var_mtcontigs_depth_range_graphfilter}"
 
@@ -653,7 +709,23 @@ HEREDOC
 		_polap_log1 "  determines the depth range automatically ..."
 		_polap_log2 "    input1: ${_polap_var_annotation_table}"
 		_polap_log2 "    output1: ${_polap_var_mtcontigs_2_depth_range_by_cdf_copy_number}"
-		_polap_seeds_create-automatic-depth-range
+
+		_polap_seeds_create-automatic-depth-range "${_arg_knum}"
+		# case "${_arg_knum}" in
+		# 1)
+		# 	_polap_seeds_create-automatic-depth-range 1
+		# 	;;
+		# 2)
+		# 	_polap_seeds_create-automatic-depth-range 2
+		# 	;;
+		# 3)
+		# 	_polap_seeds_create-automatic-depth-range 3
+		# 	;;
+		# *)
+		# 	_polap_log0 "ERROR: ${_arg_menu[1]} <number>"
+		# 	return 0
+		# 	;;
+		# esac
 	fi
 
 	_polap_log3_pipe "cp ${_polap_var_mtcontigs_1_custom_depth_range} \
@@ -732,6 +804,24 @@ HEREDOC
 	fi
 
 	_polap_seeds_final-mtcontig "${_is_auto}"
+
+	if [[ -s "${_polap_var_mtcontig_table}" ]]; then
+		_polap_log3_column "${_polap_var_mtcontig_table}"
+		_polap_log2_pipe "cut -f1 ${_polap_var_mtcontig_table} \
+      >${_polap_var_mtcontigs_8mtcontigname}"
+	else
+		die "ERROR: no final mtcontig: ${_polap_var_mtcontig_table}"
+	fi
+
+	if [[ -s "${_polap_var_mtcontigs_8mtcontigname}" ]]; then
+		_polap_log1_cat "${_polap_var_mtcontigs_8mtcontigname}"
+		_polap_log0 "---"
+		if [[ "${_arg_log_stderr}" = "off" ]]; then
+			paste -sd',' "${_polap_var_mtcontigs_8mtcontigname}" >&3
+		else
+			paste -sd',' "${_polap_var_mtcontigs_8mtcontigname}" >&2
+		fi
+	fi
 
 	local ANUMNEXT=$((INUM + 1))
 	_polap_log1 NEXT: $0 map-reads -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]

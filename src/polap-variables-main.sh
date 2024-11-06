@@ -17,6 +17,7 @@
 # variables
 INUM=${_arg_inum}
 JNUM=${_arg_jnum}
+KNUM=${_arg_knum}
 if [ "${_arg_archive_is}" = "off" ]; then
 	_arg_archive="${ODIR}-a"
 fi

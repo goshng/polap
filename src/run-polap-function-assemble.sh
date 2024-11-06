@@ -295,6 +295,12 @@ HEREDOC
 	_run_polap_map-reads
 	if [[ "${_arg_polap_reads}" == "on" ]]; then
 		_arg_menu[1]="polap-reads"
+
+		local _n=$(wc -l <"${MTCONTIGNAME}")
+		if [[ "${_n}" -eq 1 ]]; then
+			_polap_log0 "  single seed contig; read-selection type change: polap-reads -> intra-reads"
+			_arg_menu[1]="intra-reads"
+		fi
 	fi
 	_run_polap_select-reads
 	_run_polap_flye2

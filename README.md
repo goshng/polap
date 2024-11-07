@@ -107,6 +107,8 @@ This way, you can seamlessly transition between environments, keeping dependenci
 
 ### Using github source
 
+If you're unable to install Polap via the Bioconda package, you can install it directly from the GitHub source. Ensure that **Miniconda** is installed beforehand, as Polap relies on tools, including **Flye**, **Minimap2**, **Jellyfish**, and others.
+
 1. Download the source code of Polap available at [Polap](https://github.com/goshng/polap)'s github website:
 
    ```bash
@@ -173,10 +175,27 @@ After successfully running the test dataset with Polap, you have two options for
 
    ```bash
    (polap) $ git clone https://github.com/goshng/polap.git
+   (polap) $ cd polap
    (polap) $ src/polap.sh
    ```
 
 For simplicity, the instructions below assume you installed Polap using Bioconda. In cases where you cloned the GitHub repository, replace `polap` with `src/polap.sh` as needed. If you're experienced with the command line, this setup will feel straightforward. Otherwise, follow the steps in this README closely.
+
+### Help Message
+
+Polap operates primarily through subcommands, also called "menus." Key menus include `assemble1`, `annotate`, and `assemble2`, each with its own help message.
+
+To view the general help message, run Polap without any options:
+
+```bash
+(polap) $ polap
+```
+
+To see help for a specific menu, such as `assemble1`, use:
+
+```bash
+(polap) $ polap assemble1 help
+```
 
 ### Input Data
 
@@ -190,12 +209,6 @@ For simplicity, the instructions below assume you installed Polap using Bioconda
 
 2. **File Requirements**:  
    If you don't specify input file paths with options, Polap will expect three files named `l.fq`, `s1.fq`, and `s2.fq` in the current working directory where you execute the Polap script. Make sure these files are uncompressed. You can also specify the files using the options `-l`, `-a`, and `-b`.
-
-3. **Help Message**:  
-   Run Polap without any options to display a help message:
-   ```bash
-   (polap) $ polap
-   ```
 
 ### Whole-Genome Assembly
 
@@ -274,7 +287,7 @@ $ conda activate polap-fmlrc
 
 The final polished mitochondrial genome sequence will be saved as `mt.1.fa`.
 
-### Uninstalling Polap
+## Uninstalling Polap
 
 To completely remove Polap and its associated environments, follow these steps:
 
@@ -295,11 +308,11 @@ To completely remove Polap and its associated environments, follow these steps:
    (base) $ conda remove -n polap-fmlrc --all
    ```
 
-### Sample Datasets
+## Sample Datasets
 
 A sample dataset demonstrating Polap’s capabilities is available on Figshare: [Polap data analysis of 11 datasets](https://figshare.com/s/07305fd4e18c74080fbc).
 
-### Creating the MT Contig Name File
+## MT Contig Name File
 
 To prepare an MT contig name file, list the contig names you suspect are of mitochondrial origin. Select these contigs based on three key features:
 
@@ -335,9 +348,9 @@ edge_2
 edge_3
 ```
 
-# Options
+## Options
 
-## Menu options
+### Menu options
 
 `assemble1`
 
@@ -360,7 +373,7 @@ preparation
 
 : [FMLRC](https://github.com/holtjma/fmlrc) short-read polishing
 
-## General options
+### General options
 
 POLAP - Plant organelle DNA long-read assembly pipeline.
 version v0.3.7-eadc43f

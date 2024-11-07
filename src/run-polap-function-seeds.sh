@@ -517,7 +517,7 @@ HEREDOC
 	done
 
 	# Create a temporary file to store hashes and file paths
-	local hash_file="${_polap_var_mtcontigs}/file_hashes.tmp"
+	local hash_file="${_polap_var_ga_mtcontigs}/file_hashes.tmp"
 	>"$hash_file" # Ensure the file is empty
 	for i in "${knum_array[@]}"; do
 		KNUM=$i
@@ -535,37 +535,52 @@ HEREDOC
 
 	# Sort by hash and remove duplicates, keeping only the first occurrence
 	# This will give a list of unique files by content
-	awk '!seen[$1]++' "$hash_file" >"${_polap_var_mtcontigs}/unique_files_by_content.txt"
+	awk '!seen[$1]++' "$hash_file" >"${_polap_var_ga_mtcontigs}/unique_files_by_content.txt"
 
 	# Display the result
 	_polap_log0 "List of unique files by content:"
-	_polap_log0 "mt.contig.name files: ${_polap_var_mtcontigs}/unique_files_by_content.txt"
+	_polap_log0 "mt.contig.name files: ${_polap_var_ga_mtcontigs}/unique_files_by_content.txt"
 
 	# Temporary file to store files with fewer than 10 lines
-	filtered_file="${_polap_var_mtcontigs}/filtered_files.tmp"
+	filtered_file="${_polap_var_ga_mtcontigs}/filtered_files.tmp"
 	>"$filtered_file" # Ensure the file is empty
 
-	# Filter files with less than 10 lines
+	# Initialize index counter
+	local index=${JNUM}
+
+	rm -f "${_polap_var_ga}"/mt.contig.name-*
+
+	# Loop through each unique file
 	while IFS=" " read -r hash file; do
+		# Compute the new filename based on JNUM and index
+		local new_filename="${_polap_var_ga}/mt.contig.name-${index}"
+
 		# Check if file is not empty and line count is less than 10
 		if [[ -f "$file" ]]; then
 			line_count=$(wc -l <"$file")
-			if ((line_count < 10)); then
+			if ((line_count < 15)); then
+				# Copy the unique file to the new filename
+				_polap_log3_cmd cp "$file" "$new_filename"
 				echo "$line_count $file" >>"$filtered_file"
 			fi
 		fi
-	done <"${_polap_var_mtcontigs}/unique_files_by_content.txt"
+		# Increment the index
+		((index++))
+	done <"${_polap_var_ga_mtcontigs}/unique_files_by_content.txt"
 
-	if [[ -s "$filtered_file" ]]; then
-		# Select the file with the largest number of lines from the filtered files
-		local largest_file=$(sort -nr "$filtered_file" | head -n 1 | cut -d ' ' -f 2-)
+	_polap_log0 "  seed contig name files:"
+	ls "${_polap_var_ga}"/mt.contig.name-* >&3
 
-		# Display the result
-		_polap_log0 "    File with unique content and largest number of lines (under 10 lines): ${largest_file}"
-		_polap_log3_pipe "cp ${largest_file} ${_polap_var_mtcontigname}"
-	else
-		_polap_log0 "ERROR: no seed contig files with less than 10 contigs."
-	fi
+	# if [[ -s "$filtered_file" ]]; then
+	# 	# Select the file with the largest number of lines from the filtered files
+	# 	local largest_file=$(sort -nr "$filtered_file" | head -n 1 | cut -d ' ' -f 2-)
+	#
+	# 	# Display the result
+	# 	_polap_log0 "    File with unique content and largest number of lines (under 10 lines): ${largest_file}"
+	# 	_polap_log3_pipe "cp ${largest_file} ${_polap_var_mtcontigname}"
+	# else
+	# 	_polap_log0 "ERROR: no seed contig files with less than 10 contigs."
+	# fi
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

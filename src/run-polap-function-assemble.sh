@@ -342,7 +342,6 @@ function _run_polap_assemble() { # whole-genome and then organelle-genome assemb
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	help_message=$(
 		cat <<HEREDOC
@@ -422,13 +421,25 @@ HEREDOC
 		_run_polap_seeds
 	fi
 
-	if [[ -s "${_polap_var_oga_contigger_edges_gfa}" ]] && [[ "${_arg_redo}" == "off" ]]; then
-		_polap_log0 "  found: ${_polap_var_oga_contigger_edges_gfa}, skipping organelle-genome assembly"
-	else
-		_run_polap_assemble2
-	fi
+	# Loop over all files that match the pattern "mt.contig.name-<number>"
+	for file in "${_polap_var_ga}"/mt.contig.name-*; do
+		# Extract the <number> part using parameter expansion
+		file=$(basename $file)
+		local number="${file#mt.contig.name-}"
 
-	return $RETURN_SUCCESS
+		# Alternatively, you could use regex if preferred
+		# [[ $file =~ mt\.contig\.name-([0-9]+) ]] && number="${BASH_REMATCH[1]}"
+
+		# Output the extracted number
+		_polap_log0 "File: $file, Number: $number"
+		JNUM="${number}"
+		source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+		if [[ -s "${_polap_var_oga_contigger_edges_gfa}" ]] && [[ "${_arg_redo}" == "off" ]]; then
+			_polap_log0 "  found: ${_polap_var_oga_contigger_edges_gfa}, skipping organelle-genome assembly"
+		else
+			_run_polap_assemble2
+		fi
+	done
 
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x

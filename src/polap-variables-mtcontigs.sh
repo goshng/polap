@@ -15,6 +15,7 @@
 ################################################################################
 
 # common: mtcontigs
+local _polap_var_ga_mtcontigs="${_polap_var_ga}/51-mtcontigs"
 local _polap_var_mtcontigs="${_polap_var_ga}/51-mtcontigs/${KNUM}"
 local _polap_var_mtcontigs_depth_range_preselection="${_polap_var_mtcontigs}/depth.range.preselection.txt"
 local _polap_var_mtcontigs_depth_range_graphfilter="${_polap_var_mtcontigs}/depth.range.graphfilter.txt"

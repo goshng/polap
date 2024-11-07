@@ -16,7 +16,6 @@
 ################################################################################
 
 suppressPackageStartupMessages(library("optparse"))
-suppressPackageStartupMessages(library("mixR"))
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))
 suppressPackageStartupMessages(library("purrr"))

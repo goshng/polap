@@ -23,7 +23,10 @@ SCRIPT_NAME="${SCRIPT_NAME//./_}"
 SCRIPT_NAME=$(echo "$SCRIPT_NAME" | tr '[:lower:]' '[:upper:]')
 _POLAP_INCLUDE_="_POLAP_INCLUDE_${SCRIPT_NAME}"
 set +u
-[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
+  set -u
+  return 0
+fi 
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #

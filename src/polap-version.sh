@@ -25,7 +25,10 @@
 source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
-[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
+  set -u
+  return 0
+fi 
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #

@@ -327,6 +327,11 @@ Options:
   -h: Prints polap global help
   --help: Prints menu help
 
+Example:
+git clone https://github.com/goshng/polap.git
+cd polap/test
+polap --test
+
 Place your long-read and short-read files at a folder:
 long-read file: l.fq
 short-read file: s1.fq, s2.fq

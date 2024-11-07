@@ -20,9 +20,9 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
@@ -114,6 +114,7 @@ function _polap_seeds_create-automatic-depth-range() {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	local _type=$1
+	local -n result_ref=$2
 
 	if [[ "${_arg_plastid}" == "on" ]]; then
 		_polap_log2 "  using plastid depth range ..."
@@ -138,8 +139,11 @@ function _polap_seeds_create-automatic-depth-range() {
 		_polap_log1 "    we use one depth-range for contig preselection and graph filtering"
 		_polap_log3_pipe "cp ${_polap_var_mtcontigs_1_custom_depth_range} \
       ${_polap_var_mtcontigs_2_custom_depth_range}"
+		_polap_log2 "    Automatically generated depth range!"
+		result_ref="depth-range"
 	else
-		die "No automatically generated depth range!"
+		_polap_log2 "    No automatically generated depth range!"
+		result_ref="no depth-range"
 	fi
 }
 
@@ -439,10 +443,141 @@ HEREDOC
 }
 
 ################################################################################
-# Selects contigs using gene density and custom depth range.
 #
 ################################################################################
 function _run_polap_seeds() { # select seed contigs
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Grouped file path declarations
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-variables-mtcontigs.sh"
+
+	# Print help message if requested
+	help_message=$(
+		cat <<HEREDOC
+# Select contigs using seeds-graph, seeds-gene, ...
+#
+# Arguments:
+#   -i $INUM: source Flye (usually whole-genome) assembly number
+#   -j $JNUM: destination Flye organelle assembly number
+#   --plastid
+# Inputs:
+#   ${_polap_var_assembly_graph_final_gfa}
+#   ${_polap_var_annotation_table}
+#   ${_polap_var_wga}/1-mtcontig.depth.stats.txt for manual depth range in --select-contig 1
+# Outputs:
+#   ${_polap_var_mtcontigs_7mtcontigname}
+Example: $0 ${_arg_menu[0]} -k 1
+Example: $0 ${_arg_menu[0]} -k 2
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+
+		return
+	fi
+
+	# We initiate the process of selecting seed contigs.
+	_polap_log0 "selecting seed contigs using the assembly graph: ${INUM} (source) -> ${JNUM} (target) ..."
+	_polap_log1 "  input1: ${_polap_var_ga_contigger_edges_gfa}"
+	_polap_log1 "  input2: ${_polap_var_annotation_table}"
+
+	# Create the array based on the value of _arg_plastid
+	if [[ "$_arg_plastid" == "on" ]]; then
+		knum_array=(1 6)
+	else
+		knum_array=({1..6}) # This creates an array of 1 through 6
+	fi
+
+	# Loop over the array and assign each element to KNUM, then call _run_polap_seeds
+	for i in "${knum_array[@]}"; do
+		KNUM=$i
+		_polap_log2 "  running _run_polap_seeds with KNUM=$KNUM"
+
+		# Grouped file path declarations
+		source "$script_dir/polap-variables-mtcontigs.sh"
+		_run_polap_seeds-graph
+
+		if [[ -s "${_polap_var_mtcontigs_8mtcontigname}" ]]; then
+			_polap_log0_cat "${_polap_var_mtcontigs_8mtcontigname}"
+		else
+			_polap_log0 "  no such file: ${_polap_var_mtcontigs_8mtcontigname}"
+		fi
+	done
+
+	# Create a temporary file to store hashes and file paths
+	local hash_file="${_polap_var_mtcontigs}/file_hashes.tmp"
+	>"$hash_file" # Ensure the file is empty
+	for i in "${knum_array[@]}"; do
+		KNUM=$i
+		source "$script_dir/polap-variables-mtcontigs.sh"
+		if [[ -s "${_polap_var_mtcontigs_8mtcontigname}" ]]; then
+			md5sum "${_polap_var_mtcontigs_8mtcontigname}" >>"$hash_file"
+		fi
+	done
+
+	if [[ -s "${hash_file}" ]]; then
+		_polap_log2_cat "${hash_file}"
+	else
+		die "ERROR: no seed contig file of the contig selection types!"
+	fi
+
+	# Sort by hash and remove duplicates, keeping only the first occurrence
+	# This will give a list of unique files by content
+	awk '!seen[$1]++' "$hash_file" >"${_polap_var_mtcontigs}/unique_files_by_content.txt"
+
+	# Display the result
+	_polap_log0 "List of unique files by content:"
+	_polap_log0 "mt.contig.name files: ${_polap_var_mtcontigs}/unique_files_by_content.txt"
+
+	# Temporary file to store files with fewer than 10 lines
+	filtered_file="${_polap_var_mtcontigs}/filtered_files.tmp"
+	>"$filtered_file" # Ensure the file is empty
+
+	# Filter files with less than 10 lines
+	while IFS=" " read -r hash file; do
+		# Check if file is not empty and line count is less than 10
+		if [[ -f "$file" ]]; then
+			line_count=$(wc -l <"$file")
+			if ((line_count < 10)); then
+				echo "$line_count $file" >>"$filtered_file"
+			fi
+		fi
+	done <"${_polap_var_mtcontigs}/unique_files_by_content.txt"
+
+	if [[ -s "$filtered_file" ]]; then
+		# Select the file with the largest number of lines from the filtered files
+		local largest_file=$(sort -nr "$filtered_file" | head -n 1 | cut -d ' ' -f 2-)
+
+		# Display the result
+		_polap_log0 "    File with unique content and largest number of lines (under 10 lines): ${largest_file}"
+		_polap_log3_pipe "cp ${largest_file} ${_polap_var_mtcontigname}"
+	else
+		_polap_log0 "ERROR: no seed contig files with less than 10 contigs."
+	fi
+
+	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+################################################################################
+# Selects contigs using gene density and custom depth range.
+#
+################################################################################
+function _run_polap_seeds-graph() { # select seed contigs
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -682,7 +817,7 @@ HEREDOC
 	fi
 
 	# We initiate the process of selecting seed contigs.
-	_polap_log0 "selecting seed contigs using the assembly graph: ${INUM} (source) -> ${JNUM} (target) ..."
+	_polap_log0 "selecting seed contigs using the assembly graph: seed selection type=${KNUM} of ${INUM} (source) -> ${JNUM} (target) ..."
 	_polap_log1 "  input1: ${_polap_var_ga_contigger_edges_gfa}"
 	_polap_log1 "  input2: ${_polap_var_annotation_table}"
 
@@ -713,22 +848,11 @@ HEREDOC
 		_polap_log2 "    input1: ${_polap_var_annotation_table}"
 		_polap_log2 "    output1: ${_polap_var_mtcontigs_2_depth_range_by_cdf_copy_number}"
 
-		_polap_seeds_create-automatic-depth-range "${_arg_knum}"
-		# case "${_arg_knum}" in
-		# 1)
-		# 	_polap_seeds_create-automatic-depth-range 1
-		# 	;;
-		# 2)
-		# 	_polap_seeds_create-automatic-depth-range 2
-		# 	;;
-		# 3)
-		# 	_polap_seeds_create-automatic-depth-range 3
-		# 	;;
-		# *)
-		# 	_polap_log0 "ERROR: ${_arg_menu[1]} <number>"
-		# 	return 0
-		# 	;;
-		# esac
+		local _returned_result=""
+		_polap_seeds_create-automatic-depth-range "${KNUM}" _returned_result
+		if [[ "${_returned_result}" != "depth-range" ]]; then
+			return 0
+		fi
 	fi
 
 	_polap_log3_pipe "cp ${_polap_var_mtcontigs_1_custom_depth_range} \

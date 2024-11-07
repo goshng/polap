@@ -1,6 +1,6 @@
 {% set name = "polap" %}
 {% set version = "0.3.7" %}
-{% set sha256 = "8b4bdc93d7c42705dee93179e93a6f9223779b77f0ec17cf11ac22c6c5dcad5d" %}
+{% set sha256 = "8dd857d8b0a33d692467440c1017beabb171bfde7dae2aa5bd5ebcebd09e70eb" %}
 
 package:
   name: "{{ name }}"
@@ -12,7 +12,7 @@ source:
 
 build:
   noarch: generic
-  number: 0
+  number: 1
   run_exports:
     - {{ pin_subpackage('polap', max_pin="x.x") }}
 

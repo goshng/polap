@@ -2,6 +2,14 @@
 
 Polap is a specialized pipeline designed to assemble plant mitochondrial DNA (mtDNA) using the **Flye** long-read assembler, supplemented by organellar gene annotation to guide contig selection. Inspired by **ptGAUL** (a chloroplast assembly pipeline), Polap integrates Flye's capabilities with gene annotation to identify and assemble mtDNA contigs from whole-genome data.
 
+## Description
+
+**Polap** is a specialized meta-assembly pipeline that enhances the functionality of the [Flye](https://github.com/fenderglass/Flye) assembler. Serving as a Flye helper pipeline, Polap incorporates organellar gene annotation, aiding in the educated guess of selection of organelle-origin contigs from Flye's whole-genome assembly. The name "Polap" is inspired by the [ptGAUL](https://github.com/Bean061/ptgaul) chloroplast genome assembly pipeline created by Wenbin Zhou, as Polap similarly focuses on organellar genomes, specifically plant mitochondrial DNA (mtDNA).
+
+The pipeline combines the **Flye** assembler with [FMLRC](https://github.com/holtjma/fmlrc) (a sequence polishing tool by Matt Holt) and applies sequencing depth analysis to identify contigs belonging to the mitochondrial genome. Leveraging both Flye-generated assemblies and organellar gene annotations, Polap helps users identify candidate mtDNA contigs based on sequencing depth and gene presence, enabling targeted selection and assembly of mtDNA.
+
+Polap originated as an extension of ptGAUL, with a specific focus on assembling plant mtDNA from long-read sequencing data. The workflow begins by conducting a Flye whole-genome assembly, generating contigs without a reference genome. These contigs are then analyzed with [BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi) to confirm the presence of mtDNA or chloroplast (ptDNA) genes. Using depth and copy number metrics, Polap allows users to identify likely mtDNA contigs, collects them, and performs a final targeted mtDNA assembly. The pipeline concludes with polishing using FMLRC, resulting in an accurate, high-quality mtDNA assembly.
+
 ## Key Features
 
 - **Flexible Assembly**: Polap utilizes Flye as a "black-box" assembler, adding custom logic to filter and identify organelle-specific contigs.
@@ -20,7 +28,9 @@ Polap is a specialized pipeline designed to assemble plant mitochondrial DNA (mt
 - **Dependencies**: Requires BASH (>= 3.0) and **Miniconda**
 - **Installation**: Can be installed via Bioconda or manually from the GitHub source.
 
-### Quick Start
+## Quick Start
+
+### Using Bioconda package
 
 1. Install Miniconda:
    ```bash
@@ -63,21 +73,9 @@ Polap is a specialized pipeline designed to assemble plant mitochondrial DNA (mt
 
 For more detailed installation and usage instructions, please read along with this **README**.
 
-# Description
+### Short-read polishing Requirement: FMLRC
 
-**Polap** is a specialized meta-assembly pipeline that enhances the functionality of the [Flye](https://github.com/fenderglass/Flye) assembler. Serving as a Flye helper pipeline, Polap incorporates organellar gene annotation, aiding in the educated guess of selection of organelle-origin contigs from Flye's whole-genome assembly. The name "Polap" is inspired by the [ptGAUL](https://github.com/Bean061/ptgaul) chloroplast genome assembly pipeline created by Wenbin Zhou, as Polap similarly focuses on organellar genomes, specifically plant mitochondrial DNA (mtDNA).
-
-The pipeline combines the **Flye** assembler with [FMLRC](https://github.com/holtjma/fmlrc) (a sequence polishing tool by Matt Holt) and applies sequencing depth analysis to identify contigs belonging to the mitochondrial genome. Leveraging both Flye-generated assemblies and organellar gene annotations, Polap helps users identify candidate mtDNA contigs based on sequencing depth and gene presence, enabling targeted selection and assembly of mtDNA.
-
-Polap originated as an extension of ptGAUL, with a specific focus on assembling plant mtDNA from long-read sequencing data. The workflow begins by conducting a Flye whole-genome assembly, generating contigs without a reference genome. These contigs are then analyzed with [BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi) to confirm the presence of mtDNA or chloroplast (ptDNA) genes. Using depth and copy number metrics, Polap allows users to identify likely mtDNA contigs, collects them, and performs a final targeted mtDNA assembly. The pipeline concludes with polishing using FMLRC, resulting in an accurate, high-quality mtDNA assembly.
-
-# FMLRC Requirements
-
-Here's how to create a separate Conda environment for **FMLRC** while maintaining compatibility with **Polap's** environment. This setup ensures that FMLRC and Polap can function independently without conflicts.
-
-# Short-read polishing Requirement: create a Separate Conda Environment for FMLRC
-
-Following the previous setup, you'll need to create a new environment specifically for FMLRC. This will prevent any compatibility issues with Polap's main environment.
+Here's how to create a separate Conda environment for **FMLRC** while maintaining compatibility with **Polap's** environment. This setup ensures that FMLRC and Polap can function independently without conflicts. Following the previous setup, you'll need to create a new environment specifically for FMLRC. This will prevent any compatibility issues with Polap's main environment.
 
 1. **Create the FMLRC Environment**:
 
@@ -107,7 +105,7 @@ Following the previous setup, you'll need to create a new environment specifical
 
 This way, you can seamlessly transition between environments, keeping dependencies separate for both Polap and FMLRC.
 
-## Using github source
+### Using github source
 
 1. Download the source code of Polap available at [Polap](https://github.com/goshng/polap)'s github website:
 
@@ -157,7 +155,7 @@ This way, you can seamlessly transition between environments, keeping dependenci
 
 Your final mitochondrial genome sequence is `mt.1.fa`.
 
-# Using Polap
+## Usage with main Polap menus
 
 After successfully running the test dataset with Polap, you have two options for executing Polap, depending on your installation method.
 

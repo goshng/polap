@@ -98,7 +98,7 @@ run [Polap](https://github.com/goshng/polap) with a test dataset.
 
 If you see a screen output ending with the something like this:
 
-    NEXT: polap prepare-polishing [-a s1.fq] [-b s2.fq]
+    ERROR: no seed contig file of the contig selection types!
 
 You may be ready to use [Polap](https://github.com/goshng/polap). But,
 make sure that you do not have error messages from
@@ -144,7 +144,7 @@ Run Polap with a test dataset.
 
 If you see a screen output ending with the something like this:
 
-    NEXT: polap prepare-polishing [-a s1.fq] [-b s2.fq]
+    ERROR: no seed contig file of the contig selection types!
 
 You may be ready to use [Polap](https://github.com/goshng/polap).
 Continued from the previous command lines,

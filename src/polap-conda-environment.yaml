@@ -31,3 +31,4 @@ dependencies:
   - conda-forge::networkx
   - conda-forge::pandas
   - conda-forge::gfatools
+  - bioconda::progressivemauve

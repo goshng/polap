@@ -20,15 +20,34 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
 source "$script_dir/run-polap-function-utilities.sh"
+
+function _polap_oga_determine-long-read-file() {
+	local -n result_ref=$1
+
+	if [[ "${_arg_long_reads_is}" == "off" ]]; then
+		if [[ -s "${_polap_var_base_lk_fq_gz}" ]]; then
+			_polap_log2 "    we utilize all available size-limited long-read data for our analysis: ${_polap_var_base_lk_fq_gz}"
+			result_ref="${_polap_var_base_lk_fq_gz}"
+		elif [[ -s "${_polap_var_base_nk_fq_gz}" ]]; then
+			_polap_log2 "    we utilize the sampled and size-limited long-read data for our analysis: ${_polap_var_base_nk_fq_gz}"
+			result_ref="${_polap_var_base_nk_fq_gz}"
+		else
+			die "ERROR: no such file: ${_polap_var_base_lk_fq_gz}, ${_polap_var_base_nk_fq_gz}"
+		fi
+	else
+		_polap_log2 "    we utilize the long-read data supplied through the command-line option -l."
+		result_ref="${_arg_long_reads}"
+	fi
+}
 
 ################################################################################
 # create a dummy assembly for preparing seed contigs
@@ -212,6 +231,7 @@ function _run_polap_map-reads() { # selects reads mapped on a genome assembly
 #   ${_polap_var_mtcontigname}
 #   ${_polap_var_contigger_edges_fasta}
 #   ${_polap_var_base_lk_fq_gz}
+#   ${_polap_var_base_nk_fq_gz}
 # Outputs:
 #   ${_polap_var_oga_contig}/contig.fa
 #   ${_polap_var_oga_contig}/contig.paf
@@ -224,7 +244,7 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
-	_polap_log0 "mapping long-reads on the seed contigs ..."
+	_polap_log0 "mapping long-read data on the seed contigs ..."
 	_polap_log1 "  assembly: $INUM (source) -> $JNUM (target) ..."
 	_polap_log1 "  input1: ${_polap_var_mtcontigname}"
 	_polap_log1 "  input2: ${_polap_var_contigger_edges_fasta}"
@@ -268,8 +288,14 @@ HEREDOC
 
 	_polap_log1 "  creates ${_polap_var_oga_contig}"
 	_polap_log3_cmd mkdir -p "${_polap_var_oga_contig}"
-	_polap_log3_cmd ln -s "$PWD/${_polap_var_base_nk_fq_gz}" -t "${_polap_var_oga}"
-	_polap_log3_cmd ln -s "$PWD/${_polap_var_base_lk_fq_gz}" -t "${_polap_var_oga}"
+
+	_polap_log1 "  determines which long-read data to use ..."
+
+	local _source_long_reads_fq=""
+	_polap_oga_determine-long-read-file _source_long_reads_fq
+
+	# _polap_log3_cmd ln -s "$PWD/${_polap_var_base_nk_fq_gz}" -t "${_polap_var_oga}"
+	# _polap_log3_cmd ln -s "$PWD/${_polap_var_base_lk_fq_gz}" -t "${_polap_var_oga}"
 	_polap_log1 "  extracts contig sequeces from the assembly: ${_polap_var_contigger_edges_fasta}"
 	_polap_log2 "    input1: ${_polap_var_contigger_edges_fasta}"
 	_polap_log2 "    input2: ${_polap_var_mtcontigname}"
@@ -328,14 +354,14 @@ HEREDOC
 
 	_polap_log1 "  mapping long-read data on the seed contigs using minimap2 ..."
 	_polap_log2 "    input1: ${_polap_var_oga_contig}/contig.fa"
-	_polap_log2 "    input2: ${_polap_var_base_lk_fq_gz}"
+	_polap_log2 "    input2: ${_source_long_reads_fq}"
 	_polap_log2 "    output: ${_polap_var_oga_contig}/contig.paf"
 	if [[ -s "${_polap_var_oga_contig}"/contig.paf ]] && [[ "${_arg_redo}" = "off" ]]; then
 		_polap_log1 "  found: ${_polap_var_oga_reads}/contig.paf, skipping the minimap2 mapping step ..."
 	else
 		_polap_log3_pipe "minimap2 -cx map-ont \
       ${_polap_var_oga_contig}/contig.fa \
-      ${_polap_var_base_lk_fq_gz} \
+      ${_source_long_reads_fq} \
       -t ${_arg_threads} \
       -o ${_polap_var_oga_contig}/contig.paf \
       >${_polap_output_dest} 2>&1"
@@ -616,16 +642,9 @@ HEREDOC
 	_polap_log2_cat "${_polap_var_oga_contig}/contig_total_length.txt"
 
 	_polap_log1 "  determines which long-read data to use ..."
+	local _source_long_reads_fq=""
+	_polap_oga_determine-long-read-file _source_long_reads_fq
 
-	if [[ "${_arg_long_reads_is}" == "off" ]]; then
-		local _source_long_reads_fq="${_polap_var_base_lk_fq_gz}"
-		_polap_log2 "    we utilize all available size-limited long-read data for our analysis."
-
-	else
-		local _source_long_reads_fq="${_arg_long_reads}"
-		_polap_log2 "    we utilize the long-read data supplied through the command-line option -l."
-
-	fi
 	_polap_log1 "  input2: ${_source_long_reads_fq}"
 	if [[ -s "${_source_long_reads_fq}" ]]; then
 		_polap_log2 "  input1: ${_source_long_reads_fq} for a source of long-read data"
@@ -796,21 +815,25 @@ HEREDOC
 		_polap_log2 "    result1 (total size of reads mapped contigs): ${_seeds_length_bp}"
 		local _expected_organelle_coverage=$((_seeds_length / CONTIG_LENGTH))
 		_polap_log2 "    result2 (expected organelle coverage): ${_expected_organelle_coverage}x"
-		if [[ "$_expected_organelle_coverage" -gt "${_arg_coverage}" ]] &&
-			[[ "${_arg_coverage_check}" == "on" ]]; then
-			local _rate=$(echo "scale=5; ${_arg_coverage}/$_expected_organelle_coverage" | bc)
-			_polap_log0 "  long-read data reduction by rate of ${_rate} <= COV[${_arg_coverage}] / long-read organelle coverage[$_expected_organelle_coverage]"
-			_polap_log1 "    sampling long-read data by ${_rate} ... wait ..."
-			local _random_seed=${_arg_random_seed:-$RANDOM}
-			# local _random_seed=11
-			_polap_log1 "    random seed for reducing long reads mapped on potential seed contigs: ${_random_seed}"
-			_polap_log3_pipe "seqkit sample \
+		if [[ "$_expected_organelle_coverage" -gt "${_arg_coverage}" ]]; then
+			if [[ "${_arg_coverage_check}" == "on" ]]; then
+				local _rate=$(echo "scale=5; ${_arg_coverage}/$_expected_organelle_coverage" | bc)
+				_polap_log0 "  long-read data reduction by rate of ${_rate} <= COV[${_arg_coverage}] / long-read organelle coverage[$_expected_organelle_coverage]"
+				_polap_log1 "    sampling long-read data by ${_rate} ... wait ..."
+				local _random_seed=${_arg_random_seed:-$RANDOM}
+				# local _random_seed=11
+				_polap_log1 "    random seed for reducing long reads mapped on potential seed contigs: ${_random_seed}"
+				_polap_log3_pipe "seqkit sample \
         -p ${_rate} \
         -s ${_random_seed} \
 			  ${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz \
         -o ${_polap_var_oga_sample}/${_pread_sel}/${i}.fq.gz \
         2>${_polap_output_dest}"
-			touch ${_polap_var_oga_sample}/${_pread_sel}/${i}.random.seed.${_random_seed}
+				touch ${_polap_var_oga_sample}/${_pread_sel}/${i}.random.seed.${_random_seed}
+			else
+				_polap_log0 "    no reduction of the long-read data because of the option --no-coverage-check: expected coverage: ${_expected_organelle_coverage}"
+				_polap_log3_cmd ln -s $(realpath "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz") "${_polap_var_oga_sample}/${_pread_sel}/${i}.fq.gz"
+			fi
 		else
 			_polap_log0 "    no reduction of the long-read data because $_expected_organelle_coverage < ${_arg_coverage}"
 			_polap_log3_cmd ln -s $(realpath "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz") "${_polap_var_oga_sample}/${_pread_sel}/${i}.fq.gz"
@@ -1075,7 +1098,8 @@ HEREDOC
 
 	_polap_log1 "  executing the organelle-genome assembly using flye on $JNUM ..."
 	_polap_log1 "    input1: ${_long_reads}"
-	_polap_log1 "    output: ${_polap_var_oga}/30-contigger/graph_final.gfa"
+	_polap_log1 "    output1: ${_polap_var_oga}/30-contigger/graph_final.gfa"
+	_polap_log1 "    output2: ${_polap_var_oga}/assembly_graph.gfa"
 	local _command1="flye \
     --nano-raw ${_long_reads} \
 		--out-dir ${_polap_var_oga} \
@@ -1085,8 +1109,8 @@ HEREDOC
 		2>${_polap_output_dest}"
 	_polap_log3_pipe "${_command1}"
 
-	_polap_log0 "  output: the assembly fasta: ${_polap_var_oga_contigger_edges_fasta}"
 	_polap_log0 "  output: the assembly graph: ${_polap_var_oga_contigger_edges_gfa}"
+	_polap_log0 "  output: the assembly graph: ${_polap_var_oga_assembly_graph_gfa}"
 	jnum_next=$((JNUM + 1))
 	_polap_log1 "  create and edit $ODIR/$JNUM/mt.contig.name-${jnum_next} and rerun assemble2"
 

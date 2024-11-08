@@ -39,6 +39,7 @@ local _polap_var_mtcontigs_links_mtcontig="${_polap_var_mtcontigs}/6-gfa.links.m
 local _polap_var_mtcontigs_7mtcontigname="${_polap_var_mtcontigs}/7-mt.contig.name.txt"
 local _polap_var_mtcontigs_8mtcontigname="${_polap_var_mtcontigs}/8-mt.contig.name.txt"
 local _polap_var_mtcontig_table="${_polap_var_mtcontigs}/8-mtcontig.table.tsv"
+local _polap_var_mtcontigs_annotation_table_seed="${_polap_var_mtcontigs}/8-mtcontig-annotation-table-seed.txt"
 # delete these later
 local _polap_var_mtcontigs_2_depth_range_by_cdf_copy_number="${_polap_var_mtcontigs}/2-depth.range.by.cdf.copy.number.txt"
 local _polap_var_mtcontig_table="${_polap_var_mtcontigs}/8-mtcontig.table.tsv"

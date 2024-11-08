@@ -343,7 +343,7 @@ function _polap_seeds_final-mtcontig() {
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	local _is_auto=$1
+	# local _is_auto=$1 not using it anymore? for --length 1000000 option below
 
 	_polap_log1 "  step 8-1: filtering by max length 1 Mb of contig seeds"
 	_polap_log1 "    1 Mb length filtering for auto"
@@ -362,15 +362,27 @@ function _polap_seeds_final-mtcontig() {
 	_polap_log2 "    input1: ${_polap_var_annotation_table}"
 	_polap_log2 "    input2: ${_polap_var_ga_annotation_depth_table}"
 	_polap_log2 "    input3: ${_polap_var_mtcontigs_7mtcontigname}"
-	_polap_log2 "    output1: ${_polap_var_ga_annotation_depth_table_seed_target}"
+	_polap_log2 "    output1: ${_polap_var_mtcontigs_annotation_table_seed}"
 	local _command1="Rscript $script_dir/run-polap-r-final-seed-mtcontig.R \
 		-t ${_polap_var_annotation_table} \
 		-a ${_polap_var_ga_annotation_depth_table} \
 		-m ${_polap_var_mtcontigs_7mtcontigname} \
-    -o ${_polap_var_ga_annotation_depth_table_seed_target} \
+    -o ${_polap_var_mtcontigs_annotation_table_seed} \
 		2>$_polap_output_dest"
 	_polap_log3_pipe "${_command1}"
 
+}
+
+function _polap_seeds_report-mtcontig() {
+	if [[ -s "${_polap_var_mtcontigs_8mtcontigname}" ]]; then
+		_polap_log1_cat "${_polap_var_mtcontigs_8mtcontigname}"
+		_polap_log0 "---"
+		if [[ "${_arg_log_stderr}" = "off" ]]; then
+			paste -sd',' "${_polap_var_mtcontigs_8mtcontigname}" >&3
+		else
+			paste -sd',' "${_polap_var_mtcontigs_8mtcontigname}" >&2
+		fi
+	fi
 }
 
 function _run_polap_choose-seed() { # select seed contigs
@@ -485,11 +497,46 @@ HEREDOC
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 
-		return
+		local index="${_arg_menu[2]}"
+		local new_filename_table="${_polap_var_ga}/mtcontig-annotation-table-seed-${index}.txt"
+		_polap_log0_column "${new_filename_table}"
+
+		local _mt_contig_name="${_polap_var_ga}/mt.contig.name-${index}"
+		if [[ -s "${_mt_contig_name}" ]]; then
+			_polap_log0 "---"
+			if [[ "${_arg_log_stderr}" = "off" ]]; then
+				paste -sd',' "${_mt_contig_name}" >&3
+			else
+				paste -sd',' "${_mt_contig_name}" >&2
+			fi
+		fi
+		return 0
+	fi
+
+	# Backup mt.contig.name files.
+	if [[ "${_arg_menu[1]}" == "backup" ]]; then
+		# Format the current date as YYYY-MM-DD
+		local folder_name=$(date +"%Y-%m-%d")
+		# Create the folder with the formatted date as its name
+		mkdir "${_polap_var_ga}/backup-mt.contig.name-$folder_name"
+		mv "${_polap_var_ga}"/mt.contig.name-* "${_polap_var_ga}/backup-mt.contig.name-$folder_name"
+		return 0
 	fi
 
 	# We initiate the process of selecting seed contigs.
 	_polap_log0 "selecting seed contigs using the assembly graph: ${INUM} (source) -> ${JNUM} (target) ..."
+
+	if [[ "${_arg_menu[1]}" = "bandage" ]]; then
+		# Prompt the user for input
+		read -p "Enter edges using Bandage (e.g., edge_265, edge_520, edge_425): " edges
+
+		# Convert the input string into new lines (replace ", " with newlines)
+		local formatted_edges=$(echo "$edges" | tr ', ' '\n' | sed '/^ *$/d')
+		echo "${formatted_edges}" >"${MTCONTIGNAME}"
+		# _polap_seeds_final-mtcontig
+		return $RETURN_SUCCESS
+	fi
+
 	_polap_log1 "  input1: ${_polap_var_ga_contigger_edges_gfa}"
 	_polap_log1 "  input2: ${_polap_var_annotation_table}"
 
@@ -545,32 +592,62 @@ HEREDOC
 	filtered_file="${_polap_var_ga_mtcontigs}/filtered_files.tmp"
 	>"$filtered_file" # Ensure the file is empty
 
-	# Initialize index counter
-	local index=${JNUM}
-
 	rm -f "${_polap_var_ga}"/mt.contig.name-*
 
 	# Loop through each unique file
 	while IFS=" " read -r hash file; do
 		# Compute the new filename based on JNUM and index
-		local new_filename="${_polap_var_ga}/mt.contig.name-${index}"
+		# local new_filename="${_polap_var_ga}/mt.contig.name-${index}"
+		# local new_filename_table="${_polap_var_ga}/mtcontig-annotation-table-seed-${index}.txt"
 
 		# Check if file is not empty and line count is less than 10
 		if [[ -f "$file" ]]; then
 			line_count=$(wc -l <"$file")
-			if ((line_count < 15)); then
+			if ((line_count < 30)); then
 				# Copy the unique file to the new filename
-				_polap_log3_cmd cp "$file" "$new_filename"
+				# _polap_log3_cmd cp "$file" "$new_filename"
+				# third_field=$(echo "$file" | awk -F '/' '{print $4}')
+				# cp "${_polap_var_ga_mtcontigs}/${third_field}/8-mtcontig-annotation-table-seed.txt" \
+				# 	"${new_filename_table}"
 				echo "$line_count $file" >>"$filtered_file"
 			fi
 		fi
 		# Increment the index
-		((index++))
+		# ((index++))
 	done <"${_polap_var_ga_mtcontigs}/unique_files_by_content.txt"
+
+	# Initialize index counter
+	local index=${JNUM}
+
+	# Loop through each unique file
+	while IFS=" " read -r line_count file; do
+		# Compute the new filename based on JNUM and index
+		local new_filename="${_polap_var_ga}/mt.contig.name-${index}"
+		local new_filename_table="${_polap_var_ga}/mtcontig-annotation-table-seed-${index}.txt"
+
+		# Check if file is not empty and line count is less than 10
+		if [[ -f "$file" ]]; then
+			line_count=$(wc -l <"$file")
+			# Copy the unique file to the new filename
+			_polap_log3_cmd cp "$file" "$new_filename"
+			third_field=$(echo "$file" | awk -F '/' '{print $4}')
+			cp "${_polap_var_ga_mtcontigs}/${third_field}/8-mtcontig-annotation-table-seed.txt" \
+				"${new_filename_table}"
+		fi
+		# Increment the index
+		((index++))
+	done <"${filtered_file}"
 
 	_polap_log0 "  seed contig name files:"
 	ls "${_polap_var_ga}"/mt.contig.name-* >&3
 
+	for file in "${_polap_var_ga}"/mt.contig.name-*; do
+		# Extract the <number> part using parameter expansion
+		file=$(basename $file)
+		local number="${file#mt.contig.name-}"
+
+		_polap_log0 "NEXT: $0 assemble2 -o ${ODIR} -i ${INUM} -j ${number}"
+	done
 	# if [[ -s "$filtered_file" ]]; then
 	# 	# Select the file with the largest number of lines from the filtered files
 	# 	local largest_file=$(sort -nr "$filtered_file" | head -n 1 | cut -d ' ' -f 2-)
@@ -827,7 +904,7 @@ HEREDOC
 		# Convert the input string into new lines (replace ", " with newlines)
 		local formatted_edges=$(echo "$edges" | tr ', ' '\n')
 		echo "${formatted_edges}" >"${MTCONTIGNAME}"
-		_polap_seeds_final-mtcontig
+		# _polap_seeds_final-mtcontig
 		return $RETURN_SUCCESS
 	fi
 

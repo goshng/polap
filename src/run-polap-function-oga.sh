@@ -221,17 +221,16 @@ function _run_polap_map-reads() { # selects reads mapped on a genome assembly
 
 	help_message=$(
 		cat <<HEREDOC
-# Map long reads mapped on a genome assembly.
+# Map long reads on a Flye genome assembly.
 #
 # Arguments:
 #   -i $INUM: source Flye (usually whole-genome) assembly number (or 0)
 #   -j $JNUM: destination Flye organelle assembly number
-#   -l <arg>: long-read data default:${_polap_var_base_lk_fq_gz}
+#   -l ${_arg_long_reads}: long-read data default:${_polap_var_base_lk_fq_gz}
 # Inputs:
 #   ${_polap_var_mtcontigname}
 #   ${_polap_var_contigger_edges_fasta}
-#   ${_polap_var_base_lk_fq_gz}
-#   ${_polap_var_base_nk_fq_gz}
+#   ${_polap_var_base_lk_fq_gz} or ${_polap_var_base_nk_fq_gz}
 # Outputs:
 #   ${_polap_var_oga_contig}/contig.fa
 #   ${_polap_var_oga_contig}/contig.paf
@@ -402,58 +401,25 @@ HEREDOC
 }
 
 ################################################################################
-# Best reads on a range of values
+# Test organelle assemblies on a range of w values.
 #
-# call collect-reads on a range of possible values
-#
-# X -> Y
-#
-#   ptgaul-intra-base-ratio  -> ptgaul
-#   ptgaul-intra-base-length -> ptgaul
-#   single-intra-read-ratio   -> single
-#   single-intra-base-ratio   -> single
-#   single-intra-base-length  -> single
-#   combined-intra-read-ratio   -> combined
-#   combined-intra-base-ratio   -> combined
-#   combined-intra-base-length  -> combined
-#   combined-inter-base-ratio   -> combined
-#   combined-inter-base-length  -> combined
-#   combined-bridge-read-length -> combined
-#
-################################################################################
-function _run_polap_test-reads() { # selects reads mapped on a genome assembly
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
-	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
-
-	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
-	local _polap_output_dest="/dev/null"
-	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
-
-	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-
-	help_message=$(
-		cat <<HEREDOC
-# Best reads on a range of values
-#
-# Menus:
-#   ptgaul, intra, inter, bridge
 # Arguments:
 #   -i $INUM: source Flye (usually whole-genome) assembly number
 #   -j $JNUM: destination Flye organelle assembly number
-#   --select-read-range <start,end,count>
+#   -s, --select-read-range <start,end,count>
 #   --start-index <index>: to start at somewhere not start
 # Inputs:
 #   ${_polap_var_mtcontigname}
 #   ${_polap_var_contigger_edges_fasta}
-#   input long read data: 1. ${_polap_var_base_lk_fq_gz}
-#                         <- input data used for the whole-genome assembly
-#                         2. ${_arg_long_reads}
-#                         <- input long-read data so that we could use nk
+#   input long read data to use (priority order):
+#     1. ${_polap_var_base_lk_fq_gz}
+#     2. ${_polap_var_base_nk_fq_gz}
+#     3. ${_arg_long_reads}
 # Outputs:
 #   ${_polap_var_oga_contig}: map-reads output
-#   ${_polap_var_oga_reads}: read names
-#   ${_polap_var_oga_seeds}: reads
+#   ${_polap_var_oga_reads}: mapped read names
+#   ${_polap_var_oga_seeds}: mapped reads
+#   ${_polap_var_oga_sample}: subsample of the mapped reads
 #   ${_polap_var_oga_flye}: assemblies
 #   ${_polap_var_oga_summary}: summary
 #   ${_polap_var_oga_plot}: plot or table using range in contig folder and summary
@@ -472,6 +438,52 @@ function _run_polap_test-reads() { # selects reads mapped on a genome assembly
 #   combined-inter-base-length  -> combined
 #   bridge-inter-base-length  -> bridge
 #   combined-bridge-read-length -> combined
+# View:
+#   ptgaul-intra-base-length
+#   single-intra-base-length
+#   polap-rw-base-length
+################################################################################
+function _run_polap_test-reads() { # selects reads mapped on a genome assembly
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+
+	help_message=$(
+		cat <<HEREDOC
+# Test organelle assemblies on a range of w values.
+#
+# Arguments:
+#   -i $INUM: source Flye (usually whole-genome) assembly number
+#   -j $JNUM: destination Flye organelle assembly number
+#   -s, --select-read-range <start,end,count>
+#   --start-index <index>: to start at somewhere not start
+# Inputs:
+#   ${_polap_var_mtcontigname}
+#   ${_polap_var_contigger_edges_fasta}
+#   input long read data to use (priority order): 
+#     1. ${_polap_var_base_lk_fq_gz}
+#     2. ${_polap_var_base_nk_fq_gz}
+#     3. ${_arg_long_reads}
+# Outputs:
+#   ${_polap_var_oga_contig}: map-reads output
+#   ${_polap_var_oga_reads}: mapped read names
+#   ${_polap_var_oga_seeds}: mapped reads
+#   ${_polap_var_oga_sample}: subsample of the mapped reads
+#   ${_polap_var_oga_flye}: assemblies
+#   ${_polap_var_oga_summary}: summary
+#   ${_polap_var_oga_plot}: plot or table using range in contig folder and summary
+#
+# Menus:
+#   ptgaul-intra-base-length -> ptgaul --select-read-range 3000,27000,5
+#   single-intra-base-length  -> single
+#   polap-rw-base-length -> combined
+#   bridge-inter-base-length  -> bridge
 # View:
 #   ptgaul-intra-base-length
 #   single-intra-base-length
@@ -744,7 +756,7 @@ HEREDOC
 
 		_polap_log3_cmd mkdir -p "${_polap_var_oga_reads}/${_pread_sel}/${i}"
 
-		_polap_log1 "(${i}) selecting read names for ${_pread_sel}: ${_test_value}"
+		_polap_log0 "  (${i}) selecting read names for ${_pread_sel}: w = ${_test_value} (bp)"
 		_polap_log2 "    single-min: ${_arg_single_min}"
 		_polap_log2 "    pair-min: ${_arg_pair_min}"
 		_polap_log2 "    bridge-min: ${_arg_bridge_min}"
@@ -937,32 +949,33 @@ function _run_polap_select-reads() { # selects reads mapped on a genome assembly
 
 	help_message=$(
 		cat <<HEREDOC
-# Best reads on a range of values
+# Test organelle-assembly results with a chosen w value multiple times.
 #
 # Arguments:
 #   -i $INUM: source Flye (usually whole-genome) assembly number
 #   -j $JNUM: destination Flye organelle assembly number
+#   -w ${_arg_single_min}: minimum minimap2 alignment length for a single contig
 # Inputs:
 #   ${_polap_var_mtcontigname}
 #   ${_polap_var_contigger_edges_fasta}
-#   input long read data: 1. ${_polap_var_base_lk_fq_gz}
-#                         <- input data used for the whole-genome assembly
-#                         2. ${_arg_long_reads}
-#                         <- input long-read data so that we could use nk
+#   input long read data to use (priority order): 
+#     1. ${_polap_var_base_lk_fq_gz}
+#     2. ${_polap_var_base_nk_fq_gz}
+#     3. ${_arg_long_reads}
 # Outputs:
 #   ${_polap_var_oga_contig}: map-reads output
-#   ${_polap_var_oga_reads}: read names
-#   ${_polap_var_oga_seeds}: reads
+#   ${_polap_var_oga_reads}: mapped read names
+#   ${_polap_var_oga_seeds}: mapped reads
+#   ${_polap_var_oga_sample}: subsample of the mapped reads
 #   ${_polap_var_oga_flye}: assemblies
 #   ${_polap_var_oga_summary}: summary
 #   ${_polap_var_oga_plot}: plot or table using range in contig folder and summary
-#
 # Menus:
 #   ptgaul-reads [number of repeats]
 #   intra-reads [number of repeats]
 #   polap-reads [number of repeats]
 Example: $0 ${_arg_menu[0]} [ptgaul-reads] -w 3000
-Example: $0 ${_arg_menu[0]} intra-reads -w 3000
+Example: $0 ${_arg_menu[0]} intra-reads -w 5000
 Example: $0 ${_arg_menu[0]} polap-reads -w 3000 5
 HEREDOC
 	)
@@ -1046,7 +1059,8 @@ function _run_polap_flye2() { # executes Flye for an organelle-genome assembly
 
 	help_message=$(
 		cat <<HEREDOC
-# Executes Flye for an organelle-genome assembly
+# Execute Flye for an organelle-genome assembly.
+#
 # Arguments:
 #   -j $JNUM: destination Flye organelle assembly number
 #   -t ${_arg_threads}: the number of CPU cores
@@ -1055,11 +1069,8 @@ function _run_polap_flye2() { # executes Flye for an organelle-genome assembly
 #   ${_polap_var_oga_sample}/${_pread_sel}/0.fq.gz
 #   ${_polap_var_oga_contig}/contig.fa
 # Outputs:
-#   ${_polap_var_oga}/contig_total_length.txt
-#   ${_polap_var_oga}/30-contigger/contigs.fasta
-#   ${_polap_var_oga}/30-contigger/contigs_stats.txt
-#   ${_polap_var_oga}/30-contigger/graph_final.fasta
-#   ${_polap_var_oga}/30-contigger/graph_final.gfa
+#   ${_polap_var_oga_assembly_graph_gfa}
+#   ${_polap_var_oga_contigger_edges_gfa}
 Example: $0 ${_arg_menu[0]} [ptgaul-reads] -j <arg>
 Example: $0 ${_arg_menu[0]} intra-reads -j <arg>
 Example: $0 ${_arg_menu[0]} polap-reads -j <arg>

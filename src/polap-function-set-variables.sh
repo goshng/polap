@@ -20,9 +20,9 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
@@ -46,7 +46,7 @@ function _polap_set-variables-short-read() {
 	# Set paths for bioproject data
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
-	_polap_log0 "determining short-read data files ..."
+	_polap_log1 "determining short-read data files ..."
 
 	# if --bioproject is used, we use 0-bioproject.
 	# otherwise, -l option is used.
@@ -78,7 +78,8 @@ function _polap_set-variables-short-read() {
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }
 
 function _polap_set-variables-long-read() {
@@ -93,7 +94,7 @@ function _polap_set-variables-long-read() {
 	# Set paths for bioproject data
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
-	_polap_log0 "determining long-read data file ..."
+	_polap_log1 "determining long-read data file ..."
 
 	# if --bioproject is used, we use 0-bioproject.
 	# otherwise, -l option is used.
@@ -112,6 +113,7 @@ function _polap_set-variables-long-read() {
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 	return $RETURN_SUCCESS
 }

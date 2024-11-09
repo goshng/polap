@@ -20,9 +20,9 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
@@ -259,7 +259,6 @@ HEREDOC
 		_polap_log0 annotate
 		_polap_log0 seeds
 		_polap_log0 assemble2
-		_polap_log0 flye-polishing
 		_polap_log0 prepare-polishing
 		_polap_log0 polish
 		;;
@@ -270,7 +269,7 @@ HEREDOC
 		_polap_log0 assemble2
 		;;
 	assemble1)
-		_polap_log0 "reset"
+		_polap_log0 "init"
 		_polap_log0 "summary-reads"
 		_polap_log0 "total-length-long"
 		_polap_log0 "find-genome-size"
@@ -283,20 +282,18 @@ HEREDOC
 		_polap_log0 "count-gene"
 		;;
 	seeds)
-		_polap_log0 "seeds-1-annotation"
-		_polap_log0 "seeds-2-depth-range"
-		_polap_log0 "seeds-4-annotation-depth"
 		_polap_log0 "seeds"
 		;;
 	assemble2)
+		_polap_log0 "map-reads"
+		_polap_log0 "test-reads"
 		_polap_log0 "select-reads"
 		_polap_log0 "flye2"
 		;;
 	mtdna)
-		_polap_log0 "select-mtdna"
+		_polap_log0 "mauve-mtdna"
 		;;
 	polish)
-		_polap_log0 "flye-polishing"
 		_polap_log0 "prepare-polishing"
 		_polap_log0 "polish"
 		;;
@@ -309,23 +306,22 @@ HEREDOC
 		_polap_log0 "    find-genome-size"
 		_polap_log0 "    reduce-data"
 		_polap_log0 "    flye1"
-		_polap_log0 "    edges-stats"
 		_polap_log0 "    annotate"
+		_polap_log0 "      edges-stats"
 		_polap_log0 "      blast-genome"
 		_polap_log0 "      count-gene"
 		_polap_log0 "  seeds"
-		_polap_log0 "    seeds-gene"
 		_polap_log0 "    prepare-seeds"
 		_polap_log0 "  assemble2"
 		_polap_log0 "    map-reads"
 		_polap_log0 "    test-reads"
 		_polap_log0 "    select-reads"
 		_polap_log0 "    flye2"
+		_polap_log0 "prepare-polishing"
 		_polap_log0 "polish"
-		_polap_log0 "  flye-polishing"
-		_polap_log0 "  prepare-polishing"
-		_polap_log0 "mtdna"
+		_polap_log0 "Additional menus:"
 		_polap_log0 "  mauve-mtdna"
+		_polap_log0 "  log"
 		;;
 	esac
 

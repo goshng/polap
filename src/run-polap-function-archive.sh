@@ -20,9 +20,9 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
@@ -353,9 +353,11 @@ function _run_polap_log() { # display the polap log
 #
 # Arguments:
 #   -o ${ODIR}: the output folder
-# Inputs: none
+#   --log <FILE>
+# Inputs:
+#   ${LOG_FILE}
 # Outputs:
-#   ${ODIR}
+#   a page view of the log file: ${LOG_FILE}
 Example: $0 ${_arg_menu[0]} -o ${ODIR}
 HEREDOC
 	)
@@ -373,7 +375,7 @@ HEREDOC
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
-		return
+		return 0
 	fi
 
 	less "${LOG_FILE}" >&3
@@ -381,4 +383,5 @@ HEREDOC
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }

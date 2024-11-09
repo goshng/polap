@@ -482,11 +482,12 @@ function _run_polap_seeds() { # select seed contigs
 # Inputs:
 #   ${_polap_var_assembly_graph_final_gfa}
 #   ${_polap_var_annotation_table}
-#   ${_polap_var_wga}/1-mtcontig.depth.stats.txt for manual depth range in --select-contig 1
 # Outputs:
-#   ${_polap_var_mtcontigs_7mtcontigname}
-Example: $0 ${_arg_menu[0]} -k 1
-Example: $0 ${_arg_menu[0]} -k 2
+#   ${_polap_var_mtcontigs_8mtcontigname}
+# View:
+#   <number> for the mt.contig.name-<number>
+Example: $0 ${_arg_menu[0]} -i 0 -j 1
+Example: $0 ${_arg_menu[0]} view 1 
 HEREDOC
 	)
 

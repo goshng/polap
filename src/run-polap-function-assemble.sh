@@ -55,12 +55,11 @@ function _run_polap_assemble1() { # whole-genome genome assembly
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 	LRNK="${_polap_var_base_nk_fq_gz}"
 
 	help_message=$(
 		cat <<HEREDOC
-# The Flye whole-genome assembly.
+# The Flye whole-genome is assembled using the long-read data.
 #
 # Arguments:
 #   -o ${ODIR}
@@ -80,6 +79,7 @@ function _run_polap_assemble1() { # whole-genome genome assembly
 #   ${_polap_var_base_long_total_length}
 #   ${_polap_var_base_genome_size}
 #   ${_polap_var_base_nk_fq_gz}
+#   ${_polap_var_base_lk_fq_gz}
 #   ${_polap_var_wga_contigger_gfa}
 #   ${_polap_var_contigger_edges_stats}
 Example: $0 ${_arg_menu[0]} [-o ${ODIR}] [-l ${_arg_long_reads}] [-a ${_arg_short_read1}] [-b ${_arg_short_read2}]
@@ -261,30 +261,22 @@ function _run_polap_assemble2() { # organelle-genome assembly
 
 	help_message=$(
 		cat <<HEREDOC
-# Selects reads mapped on a genome assembly and assembles an organelle genome.
+# Select reads mapped on a genome assembly and assembles an organelle genome.
 #
 # Arguments:
 #   -i $INUM: source Flye (usually whole-genome) assembly number
 #   -j $JNUM: destination Flye organelle assembly number
-#   -r ${_arg_pair_min}: minimum minimap2 alignment length for a pair of contigs
-#   -x ${_arg_bridge_min}: minimum long-read length for connecting the pair of contigs
 #   -w ${_arg_single_min}: minimum minimap2 alignment length for a single contig
-#   -t ${_arg_threads}: the number of CPU cores
 #   -c ${_arg_coverage}: the Flye's coverage option
-#   -g <arg>: computed by find-genome-size menu or given by users
+#   -t ${_arg_threads}: the number of CPU cores
+#   -g <arg>: computed by seed contig size or given by users
 # Inputs:
-#   ${MTCONTIGNAME}
+#   ${_polap_var_mtcontigname}
 #   ${_polap_var_contigger_edges_fasta}
 # Outputs:
-#   ${MTDIR}/contig.fa
-#   ${MTSEEDSDIR}/1.names
-#   ${MTSEEDSDIR}/2.fq.gz
-#   ${MTDIR}/contig_total_length.txt
-#   ${MTDIR}/30-contigger/contigs.fasta
-#   ${MTDIR}/30-contigger/contigs_stats.txt
-#   ${MTDIR}/30-contigger/graph_final.fasta
-#   ${MTDIR}/30-contigger/graph_final.gfa
-Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>] [-r|--pair-min <arg>] [-x|--bridge-min <arg>] [-w|--single-min <arg>] [-t|--threads <arg>] [-c|--coverage <arg>]
+#   ${_polap_var_oga_assembly_graph_gfa}
+#   ${_polap_var_oga_contigger_edges_gfa}
+Example: $0 ${_arg_menu[0]} -i ${INUM} -j ${JNUM} -w ${_arg_single_min}
 HEREDOC
 	)
 

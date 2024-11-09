@@ -26,9 +26,9 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
@@ -84,13 +84,13 @@ function _run_polap_summary-reads() { # statisics of the read dataset
 #
 # Arguments:
 #   -a ${_arg_short_read1}: a short-read fastq data file
-#   -b ${_arg_short_read2}: another short-read fastq data file (optional)
+#   -b ${_arg_short_read2}: another short-read fastq data file (optional: not tested yet!)
 #   or
 #   --bioproject use
 #   -o ${ODIR}
 # Inputs:
 #   ${_arg_short_read1}: a short-read fastq data file
-#   ${_arg_short_read2}: another short-read fastq data file (optional)
+#   ${_arg_short_read2}: another short-read fastq data file (optional: not tested yet!)
 #   ${_polap_var_base_nk_fq_gz}: POLAP generate nk.fq.gz
 #   ${_polap_var_base_lk_fq_gz}: POLAP generate lk.fq.gz
 # Outputs:
@@ -308,13 +308,11 @@ function _run_polap_find-genome-size() { # estimate the whole genome size
 	# Set paths for bioproject data
 	_polap_set-variables-short-read
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 	source "$script_dir/run-polap-function-utilities.sh"
 
 	help_message=$(
 		cat <<HEREDOC
-# Estimates the whole genome size using short-read data.
+# Estimate the whole genome size applying the short-read dataset to JellyFish.
 #
 # Arguments:
 #   -a ${_arg_short_read1}: a short-read fastq data file
@@ -327,13 +325,13 @@ function _run_polap_find-genome-size() { # estimate the whole genome size
 #   ${_arg_short_read2}: another short-read fastq data file (optional)
 # Outputs:
 #   ${_polap_var_base_genome_size}
-Example: $(basename "$0") ${_arg_menu[0]} -a <file> [-b <file>]
-Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR} --bioproject use
+Example: $0 ${_arg_menu[0]} -a <file> [-b <file>]
+Example: $0 ${_arg_menu[0]} -o ${ODIR} --bioproject use
 HEREDOC
 	)
 
 	# Display help message
-	[[ "${_arg_menu[1]}" == "help" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Display the content of output files
@@ -431,22 +429,16 @@ HEREDOC
 }
 
 ################################################################################
-# Checks if the long-read coverage is less than ${_arg_coverage}.
-#
-# If so, keep the long read data.
-# If not, sample long reads upto that coverage.
-# Deletes long reads shorter than a sequence length threshold e.g., 3 kb.
-#
-# Arguments:
-#   -l $_arg_long_reads: a long-read fastq data file
-#   -m ${_arg_min_read_length}: the long-read sequence length threshold
-#   --reduction-reads (default) or --no-reduction-reads
-# Inputs:
-#   $ODIR/short_expected_genome_size.txt
-#   $ODIR/long_total_length.txt
-#   $_arg_long_reads
-# Outputs:
-#   ${_polap_var_base_nk_fq_gz}
+# Steps:
+# 1. Firstly, generate a long-read DNA sequence of ${_arg_min_read_length}
+#    base pairs (bp) to serve as the foundation for further analysis and
+#    experimentation.
+# 2. subsample the long-read data to achieve a desired level of coverage.
+#    Checks whether the long-read coverage falls below the specified threshold of ${_arg_coverage}.
+#    If the condition is met, retain the full-length read data;
+#    otherwise, sample the long reads up to a certain level of coverage.
+# 3. delete long reads that are shorter than a specified sequence length
+#    threshold, such as 3 kilobases.
 ################################################################################
 function _run_polap_reduce-data() { # reduce the long-read data, if too big
 	# Enable debugging if DEBUG is set
@@ -464,23 +456,7 @@ function _run_polap_reduce-data() { # reduce the long-read data, if too big
 
 	help_message=$(
 		cat <<HEREDOC
-# FIXME: test it. Reduce the long-read data for a Flye genome assembly.
 # Reduce the long-read data for a Flye genome assembly.
-#
-# Outputs:
-# 1. ${_polap_var_base_lk_fq_gz}: reads longer than ${_arg_min_read_length} bp
-# 2. ${_polap_var_base_nk_fq_gz}: subsample of ${_arg_long_reads}
-#
-# Steps:
-# 1. Firstly, generate a long-read DNA sequence of ${_arg_min_read_length}
-#    base pairs (bp) to serve as the foundation for further analysis and
-#    experimentation.
-# 2. subsample the long-read data to achieve a desired level of coverage.
-#    Checks whether the long-read coverage falls below the specified threshold of ${_arg_coverage}.
-#    If the condition is met, retain the full-length read data; 
-#    otherwise, sample the long reads up to a certain level of coverage.
-# 3. delete long reads that are shorter than a specified sequence length 
-#    threshold, such as 3 kilobases.
 #
 # Arguments:
 #   -l $_arg_long_reads: a long-read fastq data file
@@ -722,7 +698,6 @@ function _run_polap_flye1() { # execute Flye for a whole-genome assembly
 
 	# CHECK: local function
 	source "$script_dir/polap-variables-common.sh"
-	source "$script_dir/polap-variables-common.sh"
 	source "$script_dir/run-polap-function-utilities.sh"
 
 	LRNK="${_polap_var_base_nk_fq_gz}"
@@ -742,8 +717,6 @@ function _run_polap_flye1() { # execute Flye for a whole-genome assembly
 # Outputs:
 #   ${_polap_var_wga_contigger_gfa}
 #   ${_polap_var_contigger_edges_fasta}
-#   ${_polap_var_wga_contigger_contigs_stats}
-#   ${_polap_var_wga_contigger_contigs_fasta}
 Example: $0 ${_arg_menu[0]}
 Example: $0 ${_arg_menu[0]} --test
 HEREDOC

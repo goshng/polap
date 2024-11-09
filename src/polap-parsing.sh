@@ -51,7 +51,7 @@ die() {
 }
 
 begins_with_short_option() {
-	local first_option all_short_options='loabpfmtcrxwijgMuvh'
+	local first_option all_short_options='loabpfmtcrxwijgMuvhs'
 	first_option="${1:0:1}"
 	test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
 }
@@ -160,7 +160,7 @@ To assemble mitochondrial DNA (mtDNA), follow a series of sequential steps:
   $0 annotate -i <arg>
   $0 seeds [-i <arg>] -j <arg>
   $0 map-reads [-i <arg>] -j <arg>
-  $0 test-reads [-i <arg>] -j <arg> -w <arg> [-c <arg>]
+  $0 test-reads [-i <arg>] -j <arg> -s <begin>,<end>,<count> [-c <arg>]
   $0 select-reads [-i <arg>] -j <arg> -w <arg> [-c <arg>]
   $0 flye2 [-i <arg>] -j <arg>
 
@@ -280,7 +280,7 @@ Options:
     The command specifies that any previously generated intermediate results 
     should be disregarded and new calculations performed from scratch.
 
-  --select-read-range: start,end,number for the range of read selection (default: ${_arg_select_read_range})
+  -s, --select-read-range: start,end,number for the range of read selection (default: ${_arg_select_read_range})
     It specifies the values for ptGAUL read-selection minimum number of 
     bases or ratios. For the start and end values of a ratio, real numbers must 
     fall within the range of 0 to 1.
@@ -640,7 +640,7 @@ parse_commandline() {
 		--subject=*)
 			_arg_subject="${_key##--subject=}"
 			;;
-		--select-read-range)
+		-s | --select-read-range)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_select_read_range="$2"
 			_arg_select_read_range_is="on"

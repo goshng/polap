@@ -20,9 +20,9 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
@@ -157,6 +157,8 @@ function _run_polap_polish() { # polish organelle genome sequences using FMLRC
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
+	source "$script_dir/polap-variables-common.sh"
+
 	help_message=$(
 		cat <<HEREDOC
 # Polish a draft sequence using FMLRC.
@@ -169,7 +171,7 @@ function _run_polap_polish() { # polish organelle genome sequences using FMLRC
 #   ${_arg_unpolished_fasta}
 # Outputs:
 #   ${_arg_final_assembly}
-Example: $0 ${_arg_menu[0]} -p <arg>] -f <arg>
+Example: $0 ${_arg_menu[0]} -p ${_arg_unpolished_fasta} -f ${_arg_final_assembly}
 HEREDOC
 	)
 

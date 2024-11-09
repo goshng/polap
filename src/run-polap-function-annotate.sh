@@ -20,9 +20,9 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
@@ -277,9 +277,11 @@ HEREDOC
 	elif [ -s "${_polap_var_ga_annotation_all}" ] && [ "${_arg_redo}" = "on" ]; then
 		_polap_log0 "  found: ${_polap_var_ga_annotation_all}, with --redo option, so backup the annotation ..."
 		_polap_log3_cmd cp -p ${_polap_var_ga_annotation_all} ${_polap_var_ga_annotation_all_backup}
+		_run_polap_edges-stats
 		_run_polap_blast-genome
 		_run_polap_count-gene
 	else
+		_run_polap_edges-stats
 		_run_polap_blast-genome
 		_run_polap_count-gene
 	fi
@@ -329,29 +331,13 @@ function _run_polap_count-gene() { # count MT and PT genes using edges_stats.txt
 #   ${_polap_var_ann_MTGENECOUNT}
 #   ${_polap_var_ann_PTGENECOUNT}
 # Outputs:
-#   ${_polap_var_ga}/mt.contig.name-1
-#   ${_polap_var_ga}/mt.contig.name-2
-#   ${_polap_var_ga}/assembly_info_organelle_annotation_count.txt
 #   ${_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt
-#   ${_polap_var_ga}/contig-annotation-table.txt 
-#   ${_polap_var_ga}/contig-annotation-depth-table.txt 
-# Usage:
-#   assembly graph: ${_polap_var_ga}"/30-contigger/graph_final.gfa
-# 	column -t ${_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt | less -S
-#   column -t ${_polap_var_ga}/assembly_info_organelle_annotation_count.txt | less -S
-#   column -t ${_polap_var_ga}/contig-annotation-table.txt | less -S
-# Example file: ${_polap_var_ga}/mt.contig.name-1
-# 	edge_1
-#   edge_2
-#   edge_3
-# edit ${_polap_var_ga}/mt.contig.name-1 for mtDNA contig candidates
-# edit ${_polap_var_ga}/mt.contig.name-<destination flye number> for mtDNA contig candidates
 # View:
 #   all
 #   short
 #   table
 #   depth
-Example: $(basename "$0") ${_arg_menu[0]} -i ${INUM}
+Example: $0 ${_arg_menu[0]} -i ${INUM}
 HEREDOC
 	)
 

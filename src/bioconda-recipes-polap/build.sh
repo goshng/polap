@@ -47,13 +47,13 @@ files=(polap
 	run-polap-r-cc2mtcontig.R
 	run-polap-r-depth-distribution.R
 	run-polap-r-depthfilter-gfa.R
+	run-polap-r-determine-depth-range.R
 	run-polap-r-determine-depth-range_1.R
 	run-polap-r-determine-depth-range_2.R
 	run-polap-r-determine-depth-range_3.R
 	run-polap-r-determine-depth-range_4.R
 	run-polap-r-determine-depth-range_5.R
 	run-polap-r-determine-depth-range_6.R
-	run-polap-r-determine-depth-range.R
 	run-polap-r-edges-stats.R
 	run-polap-r-final-filter-mtcontig.R
 	run-polap-r-final-mtcontig.R
@@ -65,9 +65,9 @@ files=(polap
 	run-polap-r-mtcontig-contig.R
 	run-polap-r-mtcontig.R
 	run-polap-r-pairs.R
+	run-polap-r-plastid-determine-depth-range.R
 	run-polap-r-plastid-determine-depth-range_1.R
 	run-polap-r-plastid-determine-depth-range_6.R
-	run-polap-r-plastid-determine-depth-range.R
 	run-polap-r-plot-mtdna.R
 	run-polap-r-prepare-cc.R
 	run-polap-r-preselect-annotation.R

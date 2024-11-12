@@ -30,9 +30,10 @@ fi
 
 SECONDS=0
 
+[[ ! -d "${ODIR}" ]] && mkdir -p "${ODIR}"
+[[ ! -d "${ODIR}/tmp" ]] && mkdir -p "${ODIR}/tmp"
 if [ "${_arg_log_is}" = "off" ]; then
 	LOG_FILE="${ODIR}/${_arg_log}"
-	[[ ! -d "${ODIR}" ]] && mkdir -p "${ODIR}"
 else
 	LOG_FILE="${_arg_log}"
 fi

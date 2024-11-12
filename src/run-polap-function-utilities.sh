@@ -20,9 +20,9 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
@@ -355,3 +355,26 @@ function _create_range_float() {
 	# printf "%s\n" "${numbers[@]}" >"$output_file"
 	echo "${numbers[@]}" >"$output_file"
 }
+
+# _polap_tempfiles=() # Initialize an array to hold temp files
+
+# Function to create temp files and add them to the array
+function _polap_create_tempfile() {
+	local tmp=$(mktemp ${ODIR}/tmp/XXX)
+	# _polap_tempfiles+=("$tmp")
+	echo "$tmp"
+}
+
+# Create multiple temp files
+# tempfile1=$(create_tempfile)
+# tempfile2=$(create_tempfile)
+
+function _polap_delete_tempfiles() {
+	# Set up a trap to delete all files in the array
+	rm -f "${ODIR}/tmp"/*
+}
+
+# function _polap_delete_tempfiles() {
+# 	# Set up a trap to delete all files in the array
+# 	trap 'rm -f "${_polap_tempfiles[@]}"' EXIT
+# }

@@ -90,6 +90,8 @@ _arg_select_contig="1"
 _arg_select_contig_numbers=(1 2 3 4 5 6)
 _arg_select_read_range="3000,39000,7"
 _arg_select_read_range_is="off"
+_arg_report_x="5000,7000,9000,11000,13000,15000,17000"
+_arg_report_x_is="off"
 _arg_random_seed=
 _arg_genomesize=
 _arg_bioproject=
@@ -644,6 +646,12 @@ parse_commandline() {
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_select_read_range="$2"
 			_arg_select_read_range_is="on"
+			shift
+			;;
+		--report-x)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_report_x="$2"
+			_arg_report_x_is="on"
 			shift
 			;;
 		--no-reduction-reads | --reduction-reads)

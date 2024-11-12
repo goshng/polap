@@ -39,7 +39,20 @@ parser <- add_option(parser, c("-g", "--gfa"),
 parser <- add_option(parser, c("--depth"),
   action = "store",
   help = "Depth range",
+  default = NULL,
   metavar = "<FILE>"
+)
+parser <- add_option(parser, c("--lower-bound-depth"),
+  action = "store",
+  type = "integer",
+  default = NULL,
+  help = "A lower-bound depth"
+)
+parser <- add_option(parser, c("--upper-bound-depth"),
+  action = "store",
+  type = "integer",
+  default = NULL,
+  help = "A upper-bound depth"
 )
 parser <- add_option(parser, c("-o", "--out"),
   action = "store",
@@ -60,14 +73,22 @@ if (is_null(args1$gfa)) {
 }
 
 x1 <- read_tsv(args1$gfa, col_names = FALSE, show_col_types = FALSE)
+
+if (is_null(args1$depth)) {
+stopifnot(!is_null(args1$`lower-bound-depth`))    
+stopifnot(!is_null(args1$`upper-bound-depth`))    
+v1 <- args1$`lower-bound-depth`
+v2 <- args1$`upper-bound-depth`
+} else {
 x2 <- read_tsv(args1$depth, show_col_types = FALSE)
+v1 <- x2$depth_lower_bound
+v2 <- x2$depth_upper_bound
+}
 
 y <- x1 |>
   separate(X5, into = c("dp", "i", "depth"), sep = ":") |>
   mutate(depth = as.integer(depth))
 
-v1 <- x2$depth_lower_bound
-v2 <- x2$depth_upper_bound
 
 y |>
   filter(v1 <= depth, depth <= v2) |>

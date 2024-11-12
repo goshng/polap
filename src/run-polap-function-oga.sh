@@ -513,6 +513,12 @@ HEREDOC
 
 	_polap_log0 "test read-selection ..."
 
+	declare -A _menu_type_dict
+	_menu_type_dict["ptgaul"]="ptgaul-intra-base-length"
+	_menu_type_dict["intra"]="single-intra-base-length"
+	_menu_type_dict["polap"]="polap-rw-base-length"
+	_menu_type_dict["bridge"]="bridge-inter-base-length"
+
 	declare -A _polap_opt_dict
 	_polap_opt_dict["ptgaul-flye-asm-coverage"]="ptgaul"
 	_polap_opt_dict["ptgaul-intra-base-ratio"]="ptgaul"
@@ -541,6 +547,9 @@ HEREDOC
 			_polap_log0 "  default set to read-selection: ${_arg_menu[2]}"
 		fi
 		local _pread_sel="${_arg_menu[2]}"
+		if [[ -v _menu_type_dict["${_pread_sel}"] ]]; then
+			_pread_sel="${_menu_type_dict["${_pread_sel}"]}"
+		fi
 
 		if [[ -v _polap_opt_dict["${_pread_sel}"] ]]; then
 			local _read_names=${_polap_opt_dict["${_pread_sel}"]}
@@ -620,6 +629,56 @@ HEREDOC
 		return
 	fi
 
+	if [[ "${_arg_menu[1]}" == "report" ]]; then
+		local _pread_sel="${_arg_menu[2]}"
+		if [[ -v _menu_type_dict["${_pread_sel}"] ]]; then
+			_pread_sel="${_menu_type_dict["${_pread_sel}"]}"
+		fi
+		local output_file="${_polap_var_oga_summary}/${_pread_sel}/summary.tsv"
+		_polap_log1 "  selecting read names for ${_pread_sel}"
+		_polap_log2 "    input1: ${output_file}"
+		_polap_log2 "    output: ${_polap_var_oga_plot}/${_pread_sel}/summary.pdf"
+		if [[ "${_arg_report_x_is}" == "off" ]]; then
+			_polap_log3_pipe "Rscript ${script_dir}/run-polap-r-test-reads-bar-graph.R \
+			-i ${output_file} \
+			--out ${_polap_var_oga_plot}/${_pread_sel}-summary.pdf \
+			>${_polap_output_dest} 2>&1"
+		else
+			_polap_log3_pipe "Rscript ${script_dir}/run-polap-r-test-reads-bar-graph.R \
+			-i ${output_file} \
+			-s ${_arg_report_x} \
+			--out ${_polap_var_oga_plot}/${_pread_sel}-summary.pdf \
+			>${_polap_output_dest} 2>&1"
+		fi
+
+		_polap_log0 "See: ${_polap_var_oga_plot}/${_pread_sel}-summary.pdf"
+
+		# Convert the string to an array by changing the IFS to a comma
+		IFS=',' read -r -a restored_array <<<"${_arg_report_x}"
+
+		local _project_dir="project-xyz"
+		local _md_file="${_polap_var_oga_plot}/figure-${_pread_sel}.md"
+		printf "%s\n\n" "# mtDNA ${_pread_sel}" >"${_md_file}"
+		# read -a restored_array <"${_polap_var_oga_contig}/${_pread_sel}.txt"
+		local array_length=${#restored_array[@]}
+		# Iterate over the array using an index
+		for ((i = ${_arg_start_index}; i < array_length; i++)); do
+			local _test_value="${restored_array[i]}"
+			printf "![${_test_value}](%s){ width=13%% }\n" ${_project_dir}/${_polap_var_oga_plot}/${_pread_sel}/${_test_value}-graph_final.png >>"${_md_file}"
+		done
+		printf "\n![Numbers of bases and fragments: ${_pread_sel}](%s)\n" ${_project_dir}/${_polap_var_oga_plot}/${_pread_sel}-summary.pdf >>"${_md_file}"
+		printf "\n\n" >>"${_md_file}"
+		echo "\newpage" >>"${_md_file}"
+		printf "\n\n" >>"${_md_file}"
+		_polap_log0 "See: ${_md_file}"
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
+		return
+	fi
+
 	##############################################################################
 	# Set the default submenu option for the main menu
 	#   _pread_sel: submenu
@@ -629,6 +688,9 @@ HEREDOC
 		_polap_log0 "  default set to read-selection: ${_arg_menu[1]}"
 	fi
 	local _pread_sel="${_arg_menu[1]}"
+	if [[ -v _menu_type_dict["${_pread_sel}"] ]]; then
+		_pread_sel="${_menu_type_dict["${_pread_sel}"]}"
+	fi
 
 	if [[ -v _polap_opt_dict["${_pread_sel}"] ]]; then
 		local _read_names=${_polap_opt_dict["${_pread_sel}"]}

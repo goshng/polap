@@ -216,7 +216,7 @@ function _polap_seeds_depthfilter-gfa() {
 	_polap_log1 "      input1: ${_polap_var_ga_contigger_edges_gfa}"
 	_polap_log2 "      output: ${_polap_var_mtcontigs_gfa_all}"
 	_polap_log3_pipe "gfatools view \
-		-S ${_polap_var_assembly_graph_final_gfa} \
+		-S ${_polap_var_ga_contigger_edges_gfa} \
 		>${_polap_var_mtcontigs_gfa_all} \
 		2>$_polap_output_dest"
 
@@ -270,7 +270,7 @@ function _polap_seeds_prepare-cc() {
 
 	_polap_log3_pipe "gfatools view -S \
 		-l @${_polap_var_mtcontigs_gfa_seq_filtered_edge} \
-		${_polap_var_assembly_graph_final_gfa} \
+		${_polap_var_ga_contigger_edges_gfa} \
 		2>$_polap_output_dest \
 		>${_polap_var_mtcontigs_gfa_depthfiltered_gfa}"
 

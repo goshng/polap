@@ -104,6 +104,13 @@ local _polap_var_manual_copy_range="${_polap_var_ga}/1-manual.copy.range.txt"
 local _polap_var_manual_depth_range="${_polap_var_ga}/1-manual.depth.range.txt"
 
 # _polap_var_contigger
+#
+# use only one of them:
+# _polap_var_assembly_graph_final_gfa
+# _polap_var_contigger_edges_gfa
+# _polap_var_contigger_gfa="${_polap_var_contigger}/graph_final.gfa"
+# _polap_var_ga_contigger_edges_gfa="${_polap_var_ga_contigger}/graph_final.gfa"
+# _polap_var_ga_contigger_gfa="${_polap_var_ga_contigger}/graph_final.gfa"
 local _polap_var_assembly_graph_final_gfa="${_polap_var_contigger}/graph_final.gfa"
 local _polap_var_contigger_contigs_fasta="${_polap_var_contigger}/contigs.fasta"
 local _polap_var_contigger_contigs_stats="${_polap_var_contigger}/contigs_stats.txt"

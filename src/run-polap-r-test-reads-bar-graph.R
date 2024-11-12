@@ -33,51 +33,81 @@ parser <- add_option(parser, c("-o", "--output"),
   action = "store",
   help = "Output graph"
 )
+parser <- add_option(parser, c("-s", "--sizes"),
+  action = "store",
+  type = "character",
+  help = "Comma-separated list of sizes, e.g., '5000,7000,9000'"
+)
 args1 <- parse_args(parser)
 
 if (is_null(args1$input)) {
   input_dir0 <- file.path(".")
-  input1 <- file.path(input_dir0, "output.tsv")
-  output1 <- file.path(input_dir0, "output.pdf")
+  input1 <- file.path(input_dir0, "summary.tsv")
+  output1 <- file.path(input_dir0, "summary.pdf")
+  input2 <- "5000,7000,9000,11000,13000"
 
-  args1 <- parse_args(parser, args = c("--input", input1, "--output", output1))
+  args1 <- parse_args(parser, args = c("--input", input1, "--output", output1, "--sizes", input2))
 }
 
-
+# Split sizes into a vector if provided
+if (!is.null(args1$sizes)) {
+  selected_sizes <- as.numeric(unlist(strsplit(args1$sizes, ",")))
+} else {
+  selected_sizes <- NULL
+  cat("No sizes provided.\n")
+}
 
 # Load the data from the combined TSV file using readr
-data <- read_tsv(args1$input)
+data <- read_tsv(args1$input, show_col_types = FALSE)
 
+# Vector with selected sizes
+# selected_sizes <- c(5000, 7000, 9000, 11000, 13000, 15000, 17000)
 
-# Normalize the bases data to match the fragments scale
+# Filter the data to only include rows with the selected sizes
+if (is.null(selected_sizes)) {
+  filtered_data <- data
+} else {
+  filtered_data <- data %>% filter(size %in% selected_sizes)
+}
+
+# Normalize bases and depth by the maximum fragments value
 fragments_max <- max(data$fragments)
-data <- data %>%
-  mutate(Normalized_Bases = bases / max(bases) * fragments_max)
+data <- filtered_data %>%
+  mutate(
+    Normalized_Bases = bases / max(bases) * fragments_max,
+    Normalized_Depth = depth / max(depth) * fragments_max
+  )
 
-# Select only bases and fragments columns for plotting
+# Select all three metrics for plotting
 plot_data <- data %>%
-  select(size, fragments, Normalized_Bases) %>%
+  select(size, fragments, Normalized_Bases, Normalized_Depth) %>%
   pivot_longer(
-    cols = c("fragments", "Normalized_Bases"),
+    cols = c("fragments", "Normalized_Bases", "Normalized_Depth"),
     names_to = "Dataset", values_to = "Value"
   )
 
-# Plot with categorical X-axis and grayscale fill
+# Plot with categorical X-axis, using bars for each property and adding text labels to depth bars
 p1 <- ggplot(plot_data, aes(x = factor(size), y = Value, fill = Dataset)) +
   geom_bar(stat = "identity", position = "dodge") +
+  geom_text(
+    data = subset(plot_data, Dataset == "Normalized_Depth"),
+    aes(label = round(data$depth, 0)),
+    vjust = -0.3,
+    hjust = -1.5,
+    size = 3.5
+  ) +
   labs(x = "Size", y = "Fragments Value") +
   scale_y_continuous(
     name = "Fragments",
     sec.axis = sec_axis(~ . * max(data$bases) / fragments_max, name = "Bases")
   ) +
-  scale_fill_manual(values = c("fragments" = "gray70", "Normalized_Bases" = "gray40")) +
+  scale_fill_manual(values = c("fragments" = "gray80", "Normalized_Bases" = "gray70", "Normalized_Depth" = "gray60")) +
   theme_minimal() +
   theme(
     legend.position = "none",
     axis.title.y.left = element_text(color = "black"),
     axis.title.y.right = element_text(color = "black")
   )
-
 
 # Save the plot as a PDF
 ggsave(args1$output, plot = p1, device = "pdf", width = 8, height = 6)

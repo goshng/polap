@@ -111,15 +111,15 @@ Whether you do the `polap seeds` procedure or not, you could check two files. Fi
 polap annotate view table
 ```
 
-| Contig   | Length  | Depth | Copy | MT  | PT  | Edge |
-| :------- | :------ | :---- | :--- | :-- | :-- | :--- |
-| edge_47  | 286811  | 69    | 10   | 25  | 1   | 47   |
-| edge_729 | 50873   | 64    | 9    | 9   | 1   | 729  |
-| edge_46  | 1532068 | 14    | 2    | 3   | 0   | 46   |
-| edge_75  | 4781975 | 12    | 2    | 3   | 1   | 75   |
-| edge_55  | 4374598 | 13    | 2    | 1   | 0   | 55   |
-| edge_718 | 27942   | 78    | 11   | 1   | 0   | 718  |
-| edge_732 | 17165   | 74    | 11   | 1   | 0   | 732  |
+| Contig   |  Length | Depth | Copy |  MT |  PT | Edge |
+| :------- | ------: | ----: | ---: | --: | --: | ---: |
+| edge_47  |  286811 |    69 |   10 |  25 |   1 |   47 |
+| edge_729 |   50873 |    64 |    9 |   9 |   1 |  729 |
+| edge_46  | 1532068 |    14 |    2 |   3 |   0 |   46 |
+| edge_75  | 4781975 |    12 |    2 |   3 |   1 |   75 |
+| edge_55  | 4374598 |    13 |    2 |   1 |   0 |   55 |
+| edge_718 |   27942 |    78 |   11 |   1 |   0 |  718 |
+| edge_732 |   17165 |    74 |   11 |   1 |   0 |  732 |
 
 Second, open the whole-genome assembly file named `o/0/30-contigger/graph_final.gfa` using **[Bandage](https://rrwick.github.io/Bandage/)** and search the genome assembly for those that were annotated with more mtDNA than ptDNA genes. In the plant organelle gene annotation table, each row represents a contig sequence annotated with at least one plant organelle gene. Although Polap does not automatically select mtDNA-related contigs, it could help you guess which ones might originate from plant mtDNA. The table has several columns for a row:
 
@@ -138,7 +138,13 @@ You would choose contig names with the following properties:
 
 Now, go back to the Bandage genome assembly graph to locate one or some of your choice of candidate seed mtDNA contigs.
 Watch [YouTube](https://youtu.be/2dViWNEqueU) to see how you could copy contig names using the Bandage software.
-Here, you would select contigs with a depth range that you think mtDNA contigs should have. In the example of [YouTube](https://youtu.be/2dViWNEqueU), all depth values of the selected contigs are inclusivly in between 61x and 78x.
+Here, you would select contigs with a depth range that you think mtDNA contigs should have.
+
+```
+edge_264, edge_266, edge_47, edge_718, edge_729, edge_732
+```
+
+In the example of [YouTube](https://youtu.be/2dViWNEqueU), all depth values of the selected contigs are inclusivly in between 61x and 78x.
 Come back to the terminal where you have executed `polap assemble1`, and execute the following:
 
 ```bash
@@ -149,6 +155,17 @@ Then, paste or type in your copy of contig names to the question:
 
 ```bash
 Enter edges using Bandage (e.g., edge_265, edge_520, edge_425):
+```
+
+This would create `o/0/mt.contig.name-1` with following content.
+
+```
+edge_47
+edge_729
+edge_718
+edge_732
+edge_264
+edge_266
 ```
 
 You have prepared a list of seed contigs for an organelle-genome assembly. Execute the following:
@@ -389,15 +406,15 @@ After completing the whole-genome assembly, you can visualize the genome assembl
 (polap) $ polap annotate view table
 ```
 
-| Contig   | Length  | Depth | Copy | MT  | PT  | Edge |
-| :------- | :------ | :---- | :--- | :-- | :-- | :--- |
-| edge_47  | 286811  | 69    | 10   | 25  | 1   | 47   |
-| edge_729 | 50873   | 64    | 9    | 9   | 1   | 729  |
-| edge_46  | 1532068 | 14    | 2    | 3   | 0   | 46   |
-| edge_75  | 4781975 | 12    | 2    | 3   | 1   | 75   |
-| edge_55  | 4374598 | 13    | 2    | 1   | 0   | 55   |
-| edge_718 | 27942   | 78    | 11   | 1   | 0   | 718  |
-| edge_732 | 17165   | 74    | 11   | 1   | 0   | 732  |
+| Contig   |  Length | Depth | Copy |  MT |  PT | Edge |
+| :------- | ------: | ----: | ---: | --: | --: | ---: |
+| edge_47  |  286811 |    69 |   10 |  25 |   1 |   47 |
+| edge_729 |   50873 |    64 |    9 |   9 |   1 |  729 |
+| edge_46  | 1532068 |    14 |    2 |   3 |   0 |   46 |
+| edge_75  | 4781975 |    12 |    2 |   3 |   1 |   75 |
+| edge_55  | 4374598 |    13 |    2 |   1 |   0 |   55 |
+| edge_718 |   27942 |    78 |   11 |   1 |   0 |  718 |
+| edge_732 |   17165 |    74 |   11 |   1 |   0 |  732 |
 
 If you can identify mitochondrial DNA contigs manually, you can proceed with those to the organelle-genome assembly using `polap assemble2`. But, take your time to choose seed contigs in the following section.
 
@@ -423,10 +440,17 @@ This seed contig selection step is subjective, so you may need to carefully revi
 You’ll use both the graph visualization of the genome assembly `o/0/30-contigger/graph_final.gfa`, and the annotation table files to select candidate contigs. Once identified, prepare a text file (`o/0/mt.contig.name-1`) with each selected edge sequence name on a new line. Note that edge sequence names should start with `edge_`, not `contig_`. An example file might look like this:
 
 ```
-edge_1
-edge_2
-edge_3
+
 ```
+
+edge_47
+edge_729
+edge_718
+edge_732
+edge_264
+edge_266
+
+````
 
 Your could visualize the whole-genome assembly graph using the Bandage software to select contigs. You would choose contig names with the following properties:
 
@@ -439,7 +463,7 @@ Come back to the terminal where you have executed `polap assemble1`, and execute
 
 ```bash
 polap seeds bandage
-```
+````
 
 Then, paste or type in your copy of contig names to the question:
 
@@ -523,22 +547,25 @@ For additional guidance on identifying mtDNA contigs, a [YouTube](https://youtu.
 
 Example table:
 
-| Contig   | Length  | Depth | Copy | MT  | PT  | Edge |
-| :------- | :------ | :---- | :--- | :-- | :-- | :--- |
-| edge_47  | 286811  | 69    | 10   | 25  | 1   | 47   |
-| edge_729 | 50873   | 64    | 9    | 9   | 1   | 729  |
-| edge_46  | 1532068 | 14    | 2    | 3   | 0   | 46   |
-| edge_75  | 4781975 | 12    | 2    | 3   | 1   | 75   |
-| edge_55  | 4374598 | 13    | 2    | 1   | 0   | 55   |
-| edge_718 | 27942   | 78    | 11   | 1   | 0   | 718  |
-| edge_732 | 17165   | 74    | 11   | 1   | 0   | 732  |
+| Contig   |  Length | Depth | Copy |  MT |  PT | Edge |
+| :------- | ------: | ----: | ---: | --: | --: | ---: |
+| edge_47  |  286811 |    69 |   10 |  25 |   1 |   47 |
+| edge_729 |   50873 |    64 |    9 |   9 |   1 |  729 |
+| edge_46  | 1532068 |    14 |    2 |   3 |   0 |   46 |
+| edge_75  | 4781975 |    12 |    2 |   3 |   1 |   75 |
+| edge_55  | 4374598 |    13 |    2 |   1 |   0 |   55 |
+| edge_718 |   27942 |    78 |   11 |   1 |   0 |  718 |
+| edge_732 |   17165 |    74 |   11 |   1 |   0 |  732 |
 
 After reviewing the table, edit `o/0/mt.contig.name-1` to include the names of candidate mtDNA contigs. Each line should list an edge, without any empty lines. Here’s an example:
 
 ```
-edge_1
-edge_2
-edge_3
+edge_47
+edge_729
+edge_718
+edge_732
+edge_264
+edge_266
 ```
 
 ### Genome assembly numbers
@@ -788,7 +815,7 @@ Place your long-read and short-read files at a folder:
 Execute: polap init
 ```
 
-#### Detailed description of the options
+#### Detailed description of some of the options
 
 `-o` _DIRECTORY_, `--outdir` _DIRECTORY_ : Write output files to _DIRECTORY_. The default output directory is
 `o`.

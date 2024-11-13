@@ -245,11 +245,15 @@ HEREDOC
 			if [[ "${_arg_markdown}" == "off" ]]; then
 				_polap_log0_column "${_polap_var_ga_annotation_depth_table}"
 			else
-				csvtk space2tab "${_polap_var_ga_annotation_table}" | csvtk tab2csv | csvtk csv2md >&3
+				csvtk space2tab "${_polap_var_ga_annotation_depth_table}" | csvtk tab2csv | csvtk csv2md >&3
 			fi
 			;;
 		no-depth)
-			_polap_log0_column "${_polap_var_ga_annotation_table}"
+			if [[ "${_arg_markdown}" == "off" ]]; then
+				_polap_log0_column "${_polap_var_ga_annotation_table}"
+			else
+				csvtk space2tab "${_polap_var_ga_annotation_table}" | csvtk tab2csv | csvtk csv2md >&3
+			fi
 			;;
 		contig)
 			_polap_log0_column "${_polap_var_ga_annotation_table_contig}"
@@ -258,7 +262,11 @@ HEREDOC
 			_polap_log0_column "${_polap_var_ga_annotation}"
 			;;
 		pt-table)
-			_polap_log0_column "${_polap_var_ga_pt_annotation_depth_table}"
+			if [[ "${_arg_markdown}" == "off" ]]; then
+				_polap_log0_column "${_polap_var_ga_pt_annotation_depth_table}"
+			else
+				csvtk space2tab "${_polap_var_ga_pt_annotation_depth_table}" | csvtk tab2csv | csvtk csv2md >&3
+			fi
 			;;
 		*)
 			_polap_log0 "menu3: all, table, no-depth, mt, pt-table"

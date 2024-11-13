@@ -12,13 +12,13 @@ Polap originated as an extension of ptGAUL, with a specific focus on assembling 
 
 ## Key Features
 
-- **Flexible Assembly**: Polap utilizes Flye as a "black-box" assembler, adding custom logic to filter and identify organelle-specific contigs.
-- **Rough Organellar Gene Annotation**: Enables Polap to select contigs from mitochondrial and chloroplast origins, focusing specifically on the target mtDNA.
+- **Rough organellar gene annotation**: Enables Polap to select contigs from mitochondrial and chloroplast origins, focusing specifically on the target mtDNA.
+- **Organellar seed contig selection**: (Not tested yet!) Polap adds custom logic to filter and identify organelle-specific contigs.
 
 ## How It Works
 
 1. **Initial whole-genome assembly**: Flye performs a whole-genome assembly on the input long reads. We need paired-end short-read data to estimate the genome size using **JellyFish**. The current version of Flye does not require a genome size for the genome assembly, but we have not test it yet. Because Polap still needs short-read data for a final polishing using FMLRC, it uses short-read data to estimate the genome size that might help Flye perform a whole-genome assembly with less memory and computing time.
-2. **Seed contig selection**: Using BLAST, Polap identifies mtDNA-related contigs based on the presence of organelle genes. Users need to manually select mitochondrial-origin contigs using organelle gene annotation tables that are made by **Flye** and modified by **Polap**.
+2. **Organellar seed contig selection**: Using BLAST, Polap identifies mtDNA-related contigs based on the presence of organelle genes. Users need to manually select mitochondrial-origin contigs using organelle gene annotation tables that are made by **Flye** and modified by **Polap**.
 3. **Organelle-gename assembly**: Selected mtDNA seed contigs and the input long-read sequencing data are aligned using **[Minimap2](https://github.com/lh3/minimap2)** and those reads that are well mapped on the input long reads are fed into **Flye** to assembly the organellar genome. We borrow the approach of **ptGAUL** in this long-read selection.
 4. **Final Polishing**: The selected mtDNA contigs undergo polishing with FMLRC for accurate genome assembly. Short-read sequence polishing uses **FMLRC** for high-quality, error-corrected assemblies of the target mitochondrial genome as suggested by **ptGAUL**.
 
@@ -30,7 +30,7 @@ Polap originated as an extension of ptGAUL, with a specific focus on assembling 
 
 ## Quick Start
 
-1. Install Miniconda:
+#### 1. Install [Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install):
 
 ```bash
 mkdir -p ~/miniconda3
@@ -39,9 +39,9 @@ bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
 rm ~/miniconda3/miniconda.sh
 ```
 
-2. Install the Bioconda package, Polap:
+After installing, close and reopen your terminal application.
 
-After installing, close and reopen your terminal application or refresh it by running the following command:
+#### 2. Install the Bioconda package, Polap:
 
 ```bash
 source ~/miniconda3/bin/activate
@@ -63,7 +63,7 @@ If you see this output, then you are ready to use the long-read assembly pipelin
 ERROR: no seed contig file of the contig selection types!
 ```
 
-3. Test the short-read polishing:
+#### 3. Test the short-read polishing:
 
 Then, polish the provided sequence file, `mt.0.fasta`, which is a test file for the short-read polishing.
 
@@ -75,7 +75,7 @@ diff mt.0.fa mt.1.fa
 
 If you see no output from the command, `diff mt.0.fa mt.0.fa`, then you are ready to use the polishing procedure as well.
 
-4. Use your data to obtain a plant mtDNA sequence:
+#### 4. Use your data to assemble a plant mtDNA sequence:
 
 Now, if you have your Illumina paired-end short- and Oxford Nanopore long-read data files, put those in a folder and rename them as follows. Assume that you have three fastq files:
 
@@ -93,7 +93,7 @@ mv SRR30757340_2.fastq s2.fq
 mv SRR30757341.fastq l.fq
 ```
 
-Then, execute the Polap command as you did in the provided test data:
+Then, execute the Polap command as you do in the provided test data:
 
 ```bash
 polap assemble1
@@ -111,16 +111,6 @@ Whether you do the `polap seeds` procedure or not, you could check two files. Fi
 polap annotate view table
 ```
 
-Second, open the whole-genome assembly file named `o/0/30-contigger/graph_final.gfa` using **[Bandage](https://rrwick.github.io/Bandage/)** and search the genome assembly for those that were annotated with more mtDNA than ptDNA genes. In the plant organelle gene annotation table, each row represents a contig sequence annotated with at least one plant organelle gene. Although Polap does not automatically select mtDNA-related contigs, it could help you guess which ones might originate from plant mtDNA. The table has several columns for a row:
-
-1. Contig: the name of a contig sequence
-2. Length: the length of the contig sequence
-3. Depth: the read coverage of the contig sequence
-4. Copy: the depth value of the contig divided by the median of all the depth values
-5. MT: the number of rough mitochondrial genes annotated
-6. PT: the number of rough plastid genes annotated
-7. Edge: the edge number of the contig sequence (the same number of the contig name in the row)
-
 | Contig   | Length  | Depth | Copy | MT  | PT  | Edge |
 | :------- | :------ | :---- | :--- | :-- | :-- | :--- |
 | edge_47  | 286811  | 69    | 10   | 25  | 1   | 47   |
@@ -130,6 +120,16 @@ Second, open the whole-genome assembly file named `o/0/30-contigger/graph_final.
 | edge_55  | 4374598 | 13    | 2    | 1   | 0   | 55   |
 | edge_718 | 27942   | 78    | 11   | 1   | 0   | 718  |
 | edge_732 | 17165   | 74    | 11   | 1   | 0   | 732  |
+
+Second, open the whole-genome assembly file named `o/0/30-contigger/graph_final.gfa` using **[Bandage](https://rrwick.github.io/Bandage/)** and search the genome assembly for those that were annotated with more mtDNA than ptDNA genes. In the plant organelle gene annotation table, each row represents a contig sequence annotated with at least one plant organelle gene. Although Polap does not automatically select mtDNA-related contigs, it could help you guess which ones might originate from plant mtDNA. The table has several columns for a row:
+
+1. Contig: the name of a contig sequence
+2. Length: the length of the contig sequence
+3. Depth: the read coverage of the contig sequence
+4. Copy: the depth value of the contig divided by the median of all the depth values
+5. MT: the number of rough mitochondrial genes annotated
+6. PT: the number of rough plastid genes annotated
+7. Edge: the edge number of the contig sequence (the same number of the contig name in the row)
 
 You would choose contig names with the following properties:
 
@@ -162,7 +162,7 @@ If you are very lucky, you might already have a good candidate for your mtDNA fr
 After the Polap's organelle-genome assembly step like above, you have two paths to follow. One is to stop there and extract an mtDNA sequence by following a path in the organelle-genome assembly graph using the Bandage software. The other is to consider the organelle-genome assembly as a whole-genome assembly and repeat the same procedure of seed contig selection and one more organelle-genome assembly step. We will consider the other scenario later and assume that you are lucky to have an mtDNA sequence from the organelle-genome assembly.
 
 Flye creates your long-read polished assembly graph as a file named `o/1/assembly_graph.gfa`.
-Extract the mitochondrial genome sequence by opening `o/1/assembly_graph.gfa` in [Bandage](https://rrwick.github.io/Bandage/). Save this sequence as `mt.0.fasta` for the long-read mitochondrial genome assembly. You should be able to extract a draft organelle genome sequence from the assembly by watching [YouTube](https://youtu.be/UF-0UIc2ZDY) in Korean. The audio does not matter, so just watch the YouTube if you have never used the Bandage software before.
+Extract the mitochondrial genome sequence by opening `o/1/assembly_graph.gfa` in [Bandage](https://rrwick.github.io/Bandage/). Save this sequence as `mt.0.fasta` for the long-read mitochondrial genome assembly. You should be able to extract a draft organelle genome sequence from the assembly by watching [YouTube](https://youtu.be/UF-0UIc2ZDY) that I would use in an undergraduate lecture in Korean. The audio does not matter, so just watch the YouTube if you have never used the Bandage software before.
 
 Now, you have prepared a mtDNA draft sequence in the FASTA file named `mt.0.fasta`. From here to the finished mtDNA genome, the credit is due to **ptGAUL**, which uses **FMLRC** for the short-read polishing step. Polap has a handy menu called `polap prepare-polishing` and `polap polish` for the procedure. The former command converts your short-read data to a file in a format **FMLRC** could use to polish your draft mtDNA genome sequence in the latter command. You could have executed the first command `polap prepare-polishing` before the Flye whole-genome assembly. Execute the following:
 
@@ -173,6 +173,8 @@ polap polish
 
 Your final mtDNA genome assembly is in the file named `mt.1.fa`, that you use [GeSeq](https://chlorobox.mpimp-golm.mpg.de/geseq.html) to actually annotate.
 For more detailed installation and usage instructions, please read along with this **README**.
+
+## Detailed installation
 
 ### Using Bioconda package
 
@@ -514,20 +516,10 @@ To prepare an MT contig name file, list the contig names you suspect are of mito
 Contigs are labeled as edges, each suffixed with a number. To examine the whole-genome assembly graph, use Bandage to open `o/0/30-contigger/graph_final.gfa`. You can also view organelle annotations and copy numbers with the following command:
 
 ```bash
-$ column -t o/0/30-contigger/contigs_stats.txt
-```
-
-or
-
-```bash
 polap annotate view table
 ```
 
 For additional guidance on identifying mtDNA contigs, a [YouTube](https://youtu.be/29OaiFCqAzI) tutorial in Korean is available. The following example shows a Flye assembly table with gene counts, where the `Copy` column indicates the copy number, `MT` represents mitochondrial genes, and `PT` represents plastid genes. The `Edge` column lists edge numbers that make up each contig.
-
-```bash
-polap annotate view table
-```
 
 Example table:
 

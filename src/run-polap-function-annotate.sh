@@ -242,7 +242,11 @@ HEREDOC
 			_polap_log0_column "${_polap_var_ga_annotation_all}"
 			;;
 		table)
-			_polap_log0_column "${_polap_var_ga_annotation_depth_table}"
+			if [[ "${_arg_markdown}" == "off" ]]; then
+				_polap_log0_column "${_polap_var_ga_annotation_depth_table}"
+			else
+				csvtk space2tab "${_polap_var_ga_annotation_table}" | csvtk tab2csv | csvtk csv2md >&3
+			fi
 			;;
 		no-depth)
 			_polap_log0_column "${_polap_var_ga_annotation_table}"
@@ -366,7 +370,8 @@ HEREDOC
 			;;
 		table)
 			if [[ -s "${_polap_var_ga_annotation_table}" ]]; then
-				_polap_log0_column "${_polap_var_ga_annotation_table}"
+				# _polap_log0_column "${_polap_var_ga_annotation_table}"
+				csvtk space2tab "${_polap_var_ga_annotation_table}" | csvtk tab2csv | csvtk csv2md
 			else
 				_polap_log0 "No such file: ${_polap_var_ga_annotation_table}"
 			fi

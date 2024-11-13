@@ -494,6 +494,7 @@ Example: $0 ${_arg_menu[0]} polap-rw-base-length --select-read-range 3000,27000,
 Example: $0 ${_arg_menu[0]} bridge-inter-base-length
 Example: $0 ${_arg_menu[0]} polap-rw-base-length --select-read-range 3000,27000,5 --start-index 3
 Example: $0 ${_arg_menu[0]} view polap-rw-base-length -i 2 -j 3
+Example: $0 ${_arg_menu[0]} report ptgaul --report-x 3000,5000,7000,9000,11000
 HEREDOC
 	)
 
@@ -559,12 +560,18 @@ HEREDOC
 			return
 		fi
 
-		cat ${_polap_var_oga_summary}/${_pread_sel}/*.bases \
-			>"${_polap_var_oga_summary}/${_pread_sel}/bases.txt"
-		cat ${_polap_var_oga_summary}/${_pread_sel}/*.fragments \
-			>"${_polap_var_oga_summary}/${_pread_sel}/fragments.txt"
-		cat ${_polap_var_oga_summary}/${_pread_sel}/*.depth \
-			>"${_polap_var_oga_summary}/${_pread_sel}/depth.txt"
+		last_number=$(ls ${_polap_var_oga_summary}/${_pread_sel}/*.bases | sed 's#.*/##' | sed 's/\.bases//' | sort -n | tail -1)
+		for i in $(seq 0 "$last_number"); do
+			cat "${_polap_var_oga_summary}/${_pread_sel}/$i.bases"
+		done >"${_polap_var_oga_summary}/${_pread_sel}/bases.txt"
+
+		for i in $(seq 0 "$last_number"); do
+			cat "${_polap_var_oga_summary}/${_pread_sel}/$i.fragments"
+		done >"${_polap_var_oga_summary}/${_pread_sel}/fragments.txt"
+
+		for i in $(seq 0 "$last_number"); do
+			cat "${_polap_var_oga_summary}/${_pread_sel}/$i.depth"
+		done >"${_polap_var_oga_summary}/${_pread_sel}/depth.txt"
 
 		# Define filenames
 		local file1="${_polap_var_oga_contig}/${_pread_sel}.txt"

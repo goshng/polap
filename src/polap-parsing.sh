@@ -99,6 +99,8 @@ _arg_species=
 _arg_accession=
 _arg_query=
 _arg_subject=
+# Add options of on and off
+_arg_markdown="off"
 _arg_flye="on"
 _arg_reduction_reads="on"
 _arg_contigger="off"
@@ -320,6 +322,8 @@ Options:
 
   --clock: display the start and ending time (default: ${_arg_clock})
     The clock option allows users to display both the start and end times.
+
+  --markdown: display the table in markdown format (default: ${_arg_markdown})
 
   --species: Species scientific name (no default)
 	--sra: SRA data (no default)
@@ -657,6 +661,11 @@ parse_commandline() {
 		--no-reduction-reads | --reduction-reads)
 			_arg_reduction_reads="on"
 			test "${1:0:5}" = "--no-" && _arg_reduction_reads="off"
+			;;
+			# Add options of on and off
+		--no-markdown | --markdown)
+			_arg_markdown="on"
+			test "${1:0:5}" = "--no-" && _arg_markdown="off"
 			;;
 		--no-flye | --flye)
 			_arg_flye="on"

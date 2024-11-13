@@ -440,17 +440,13 @@ This seed contig selection step is subjective, so you may need to carefully revi
 You’ll use both the graph visualization of the genome assembly `o/0/30-contigger/graph_final.gfa`, and the annotation table files to select candidate contigs. Once identified, prepare a text file (`o/0/mt.contig.name-1`) with each selected edge sequence name on a new line. Note that edge sequence names should start with `edge_`, not `contig_`. An example file might look like this:
 
 ```
-
-```
-
 edge_47
 edge_729
 edge_718
 edge_732
 edge_264
 edge_266
-
-````
+```
 
 Your could visualize the whole-genome assembly graph using the Bandage software to select contigs. You would choose contig names with the following properties:
 
@@ -463,7 +459,7 @@ Come back to the terminal where you have executed `polap assemble1`, and execute
 
 ```bash
 polap seeds bandage
-````
+```
 
 Then, paste or type in your copy of contig names to the question:
 

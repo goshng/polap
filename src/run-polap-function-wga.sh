@@ -100,8 +100,8 @@ function _run_polap_summary-reads() { # statisics of the read dataset
 # Precondition:
 #   (for BioProjectID case)
 #   get-bioproject --bioproject <BioProjectID> -o ${ODIR}
-Example: $0 ${_arg_menu[0]} -a <file> [-b <file>]
-Example: $0 ${_arg_menu[0]} -o ${ODIR} --bioproject use
+Example: $(basename "$0") ${_arg_menu[0]} -a <file> [-b <file>]
+Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR} --bioproject use
 HEREDOC
 	)
 
@@ -175,7 +175,7 @@ HEREDOC
 		"${_polap_var_base_lk_fq_gz}" \
 		"${_polap_var_base_lk_fq_stats}"
 
-	_polap_log1 NEXT: $0 total-length-long -o "$ODIR" -l ${_arg_long_reads}
+	_polap_log1 NEXT: $(basename "$0") total-length-long -o "$ODIR" -l ${_arg_long_reads}
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
@@ -272,7 +272,7 @@ HEREDOC
 	local _total_long_read=$(_polap_utility_convert_bp ${LONG_TOTAL_LENGTH})
 	_polap_log0 "  total length of the long-read dataset (bases): ${_total_long_read}"
 
-	_polap_log1 NEXT: $0 find-genome-size -o "$ODIR" -a "${_arg_short_read1}" -b "${_arg_short_read2}"
+	_polap_log1 NEXT: $(basename "$0") find-genome-size -o "$ODIR" -a "${_arg_short_read1}" -b "${_arg_short_read2}"
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
@@ -325,8 +325,8 @@ function _run_polap_find-genome-size() { # estimate the whole genome size
 #   ${_arg_short_read2}: another short-read fastq data file (optional)
 # Outputs:
 #   ${_polap_var_base_genome_size}
-Example: $0 ${_arg_menu[0]} -a <file> [-b <file>]
-Example: $0 ${_arg_menu[0]} -o ${ODIR} --bioproject use
+Example: $(basename "$0") ${_arg_menu[0]} -a <file> [-b <file>]
+Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR} --bioproject use
 HEREDOC
 	)
 
@@ -420,7 +420,7 @@ HEREDOC
 	local _expected_genome_size=$(_polap_utility_convert_bp ${EXPECTED_GENOME_SIZE})
 	_polap_log0 "  expected genome size using short-read data (bases): ${_expected_genome_size}"
 
-	_polap_log1 NEXT: $0 reduce-data -o "$ODIR" -l "${_arg_long_reads}" [-m "${_arg_min_read_length}"]
+	_polap_log1 NEXT: $(basename "$0") reduce-data -o "$ODIR" -l "${_arg_long_reads}" [-m "${_arg_min_read_length}"]
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -477,9 +477,9 @@ function _run_polap_reduce-data() { # reduce the long-read data, if too big
 #   ${_polap_var_base_nk_fq_gz}: subsample of ${_polap_var_base_nk_fq_gz}
 # Menu:
 #   split <N>: splits ${_polap_var_base_lk_fq_gz} into N parts.
-Example: $0 ${_arg_menu[0]} -l <arg> -m <arg>
-Example: $0 ${_arg_menu[0]} -o ${ODIR} --bioproject use
-Example: $0 ${_arg_menu[0]} split 10
+Example: $(basename "$0") ${_arg_menu[0]} -l <arg> -m <arg>
+Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR} --bioproject use
+Example: $(basename "$0") ${_arg_menu[0]} split 10
 HEREDOC
 	)
 
@@ -661,9 +661,9 @@ HEREDOC
 		_polap_log2_column "${_polap_var_base_nk_fq_stats}"
 	fi
 
-	_polap_log1 "NEXT (for testing purpose only): $0 flye1 -g 150000"
-	_polap_log1 "NEXT (for testing purpose only): $0 flye1 --test"
-	_polap_log1 "NEXT: $0 flye1 -o $ODIR [-t ${_arg_threads}] [-c ${_arg_coverage}]"
+	_polap_log1 "NEXT (for testing purpose only): $(basename "$0") flye1 -g 150000"
+	_polap_log1 "NEXT (for testing purpose only): $(basename "$0") flye1 --test"
+	_polap_log1 "NEXT: $(basename "$0") flye1 -o $ODIR [-t ${_arg_threads}] [-c ${_arg_coverage}]"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -717,8 +717,8 @@ function _run_polap_flye1() { # execute Flye for a whole-genome assembly
 # Outputs:
 #   ${_polap_var_wga_contigger_gfa}
 #   ${_polap_var_contigger_edges_fasta}
-Example: $0 ${_arg_menu[0]}
-Example: $0 ${_arg_menu[0]} --test
+Example: $(basename "$0") ${_arg_menu[0]}
+Example: $(basename "$0") ${_arg_menu[0]} --test
 HEREDOC
 	)
 
@@ -761,7 +761,8 @@ HEREDOC
 		# 	>${_polap_output_dest} 2>&1"
 
 		local _command1="flye \
-      --nano-raw ${_polap_var_base_nk_fq_gz} \
+      ${_arg_flye_data_type} \
+      ${_polap_var_base_nk_fq_gz} \
 			--out-dir ${_polap_var_wga} \
 			--threads ${_arg_threads}"
 		if [[ "${_arg_flye_asm_coverage}" -gt 0 ]]; then
@@ -783,8 +784,8 @@ HEREDOC
 	fi
 
 	_polap_log1 "  assembly graph in the flye contigger stage: ${_polap_var_wga_contigger_gfa}"
-	_polap_log1 "NEXT: $0 edges-stats -o $ODIR [-i ${INUM}]"
-	_polap_log1 "NEXT: $0 annotate -o $ODIR [-i ${INUM}]"
+	_polap_log1 "NEXT: $(basename "$0") edges-stats -o $ODIR [-i ${INUM}]"
+	_polap_log1 "NEXT: $(basename "$0") annotate -o $ODIR [-i ${INUM}]"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

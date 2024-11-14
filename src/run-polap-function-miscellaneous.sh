@@ -35,7 +35,7 @@ function _run_polap_report-table() {
 		cat <<HEREDOC
 # Report info.
 #
-Example: $0 ${_arg_menu[0]} Brassica_rapa
+Example: $(basename "$0") ${_arg_menu[0]} Brassica_rapa
 HEREDOC
 	)
 
@@ -71,7 +71,7 @@ function _run_polap_get-taxonomy-species() {
 		cat <<HEREDOC
 # Get taxonomy.
 #
-Example: $0 ${_arg_menu[0]} "Brassica rapa"
+Example: $(basename "$0") ${_arg_menu[0]} "Brassica rapa"
 HEREDOC
 	)
 
@@ -522,7 +522,7 @@ function _run_polap_x-prepend-gplv3() {
 	help_message=$(
 		cat <<HEREDOC
 # Prepend GPLv3 copyright to a file.
-Example: $0 ${_arg_menu[0]} <file>
+Example: $(basename "$0") ${_arg_menu[0]} <file>
 HEREDOC
 	)
 
@@ -531,7 +531,7 @@ HEREDOC
 
 	# Define your files
 	if [[ "${_arg_menu[1]}" == "infile" ]]; then
-		_polap_log0 "ERROR: $0 ${_arg_menu[0]} <file>"
+		_polap_log0 "ERROR: $(basename "$0") ${_arg_menu[0]} <file>"
 		return $RETURN_SUCCESS
 	fi
 

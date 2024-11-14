@@ -321,14 +321,21 @@ function _run_polap_annotate-contig() { # annotate v0.2.6 for contigs_stats.txt
 
 	help_message=$(
 		cat <<HEREDOC
-# Annotates the genome assembly.
+# Annotates the genome assembly using contig sequences not edge ones.
 #
 # Arguments:
 #   -i $INUM: a Flye genome assembly number
 # Inputs:
 #   $INUM
 # Outputs:
-Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>]
+#   ${_polap_var_ga_annotation_all}
+#   ${_polap_var_ga_annotation}
+#   ${_polap_var_ga_annotation_table}
+# View:
+#   all   -> ${_polap_var_ga_annotation_all}
+#   mt    -> ${_polap_var_ga_annotation}
+#   table -> ${_polap_var_ga_annotation_table}
+Example: ${_polap_command_string} ${_arg_menu[0]} -i ${INUM}
 HEREDOC
 	)
 
@@ -339,20 +346,33 @@ HEREDOC
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 
-		# local _polap_var_ga_annotation="${_polap_var_ga}/assembly_info_organelle_annotation_count.txt"
-		# local _polap_var_ga_annotation_all="${_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt"
-		_polap_log0 column -t "${_polap_var_ga_annotation}"
-		if [ -s "${_polap_var_ga_annotation}" ]; then
-			column -t "${_polap_var_ga_annotation}" >&2
+		if [ ! -s "${_polap_var_ga_annotation_all}" ]; then
+			_polap_log0 "ERROR: no such file: ${_polap_var_ga_annotation_all}"
 		fi
 
-		_polap_log0 column -t "${_polap_var_ga_annotation_depth_table}"
-		if [ -s "${_polap_var_ga_annotation_depth_table}" ]; then
-			column -t "${_polap_var_ga_annotation_depth_table}" >&2
+		if [ ! -s "${_polap_var_ga_annotation}" ]; then
+			_polap_log0 "ERROR: no such file: ${_polap_var_ga_annotation}"
 		fi
 
-		_polap_log3_cmd touch "${ODIR}"
-		_polap_log3_cmd ln -f -s "${_polap_var_contigger_gfa#*/}" "${ODIR}"/wga.gfa
+		if [ ! -s "${_polap_var_ga_annotation_table}" ]; then
+			_polap_log0 "ERROR: no such file: ${_polap_var_ga_annotation_table}"
+		fi
+
+		case "${_arg_menu[2]}" in
+		all)
+			_polap_log0_column "${_polap_var_ga_annotation_all}"
+			;;
+		mt)
+			_polap_log0_column "${_polap_var_ga_annotation}"
+			;;
+		table | *)
+			if [[ "${_arg_markdown}" == "off" ]]; then
+				_polap_log0_column "${_polap_var_ga_annotation_table}"
+			else
+				csvtk space2tab "${_polap_var_ga_annotation_table}" | csvtk tab2csv | csvtk csv2md -a l,r,r,r,r,r >&3
+			fi
+			;;
+		esac
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled

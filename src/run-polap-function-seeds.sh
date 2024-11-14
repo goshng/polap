@@ -358,16 +358,40 @@ function _polap_seeds_final-mtcontig() {
 		2>$_polap_output_dest"
 	_polap_log3_pipe "${_command1}"
 
-	_polap_log1 "  step 8-2: mt.contig.table with contig seed marks"
+	_polap_seeds_final-seeds-mtcontig \
+		"${_polap_var_mtcontigs_7mtcontigname}" \
+		"${_polap_var_ga_annotation_depth_table_seed}"
+	# _polap_log1 "  step 8-2: mt.contig.table with contig seed marks"
+	# _polap_log2 "    input1: ${_polap_var_annotation_table}"
+	# _polap_log2 "    input2: ${_polap_var_ga_annotation_depth_table}"
+	# _polap_log2 "    input3: ${_polap_var_mtcontigs_7mtcontigname}"
+	# _polap_log2 "    output1: ${_polap_var_mtcontigs_annotation_table_seed}"
+	# local _command1="Rscript $script_dir/run-polap-r-final-seed-mtcontig.R \
+	# 	-t ${_polap_var_annotation_table} \
+	# 	-a ${_polap_var_ga_annotation_depth_table} \
+	# 	-m ${_polap_var_mtcontigs_7mtcontigname} \
+	#    -o ${_polap_var_mtcontigs_annotation_table_seed} \
+	# 	2>$_polap_output_dest"
+	# _polap_log3_pipe "${_command1}"
+
+}
+
+function _polap_seeds_final-seeds-mtcontig() {
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+	local _mt_contig_name=$1
+	local _annotation_table_seed_target=$2
+
+	_polap_log1 "  annotation table with contig seed marks"
 	_polap_log2 "    input1: ${_polap_var_annotation_table}"
 	_polap_log2 "    input2: ${_polap_var_ga_annotation_depth_table}"
-	_polap_log2 "    input3: ${_polap_var_mtcontigs_7mtcontigname}"
-	_polap_log2 "    output1: ${_polap_var_mtcontigs_annotation_table_seed}"
+	_polap_log2 "    input3: ${_mt_contig_name}"
+	_polap_log2 "    output1: ${_annotation_table_seed_target}"
 	local _command1="Rscript $script_dir/run-polap-r-final-seed-mtcontig.R \
 		-t ${_polap_var_annotation_table} \
 		-a ${_polap_var_ga_annotation_depth_table} \
-		-m ${_polap_var_mtcontigs_7mtcontigname} \
-    -o ${_polap_var_mtcontigs_annotation_table_seed} \
+		-m ${_mt_contig_name} \
+    -o ${_annotation_table_seed_target} \
 		2>$_polap_output_dest"
 	_polap_log3_pipe "${_command1}"
 
@@ -413,7 +437,7 @@ function _run_polap_choose-seed() { # select seed contigs
 #   ${_polap_var_mtcontigs_7mtcontigname}
 # Outputs:
 #   ${_polap_var_mtcontigname}
-Example: $0 ${_arg_menu[0]} -i 1 -j 2 -k 1
+Example: $(basename "$0") ${_arg_menu[0]} -i 1 -j 2 -k 1
 HEREDOC
 	)
 
@@ -484,10 +508,16 @@ function _run_polap_seeds() { # select seed contigs
 #   ${_polap_var_annotation_table}
 # Outputs:
 #   ${_polap_var_mtcontigs_8mtcontigname}
+# Menu:
+#   bandage
+#   annotation
+#   backup
 # View:
 #   <number> for the mt.contig.name-<number>
-Example: $0 ${_arg_menu[0]} -i 0 -j 1
-Example: $0 ${_arg_menu[0]} view 1 
+Example: $(basename "$0") ${_arg_menu[0]} -i 0 -j 1
+Example: $(basename "$0") ${_arg_menu[0]} view 1 
+Example: $(basename "$0") ${_arg_menu[0]} annotation
+Example: $(basename "$0") ${_arg_menu[0]} bandage
 HEREDOC
 	)
 
@@ -538,6 +568,14 @@ HEREDOC
 		return $RETURN_SUCCESS
 	fi
 
+	if [[ "${_arg_menu[1]}" = "annotation" ]]; then
+		# Prompt the user for input
+		_polap_log0_cat "${_polap_var_mtcontigname}"
+		_polap_seeds_final-seeds-mtcontig \
+			"${_polap_var_mtcontigname}" \
+			"${_polap_var_ga_annotation_depth_table_seed_target}"
+		return $RETURN_SUCCESS
+	fi
 	_polap_log1 "  input1: ${_polap_var_ga_contigger_edges_gfa}"
 	_polap_log1 "  input2: ${_polap_var_annotation_table}"
 
@@ -647,7 +685,7 @@ HEREDOC
 		file=$(basename $file)
 		local number="${file#mt.contig.name-}"
 
-		_polap_log0 "NEXT: $0 assemble2 -o ${ODIR} -i ${INUM} -j ${number}"
+		_polap_log0 "NEXT: $(basename "$0") assemble2 -o ${ODIR} -i ${INUM} -j ${number}"
 	done
 	# if [[ -s "$filtered_file" ]]; then
 	# 	# Select the file with the largest number of lines from the filtered files
@@ -782,17 +820,17 @@ function _run_polap_seeds-graph() { # select seed contigs
 # View:
 #   depth-range <- for step 1
 #   preselection <- for step 2
-Example: $0 ${_arg_menu[0]} -k 1
-Example: $0 ${_arg_menu[0]} -k 2
-Example: $0 ${_arg_menu[0]} manual --plastid <- for test (range: 4~9)
-Example: $0 ${_arg_menu[0]} manual 1 <- two depth-range files are the same
-Example: $0 ${_arg_menu[0]} manual 2 <- two different depth-range files
-Example: $0 ${_arg_menu[0]} manual two-value-textfile.txt (for both depth-range)
-Example: $0 ${_arg_menu[0]} add|remove
-Example: $0 ${_arg_menu[0]} bandage
-Example: $0 ${_arg_menu[0]} add new <- for a new mt.contig.name
-Example: $0 ${_arg_menu[0]} view -k 1
-Example: $0 ${_arg_menu[0]} view table -k 2
+Example: $(basename "$0") ${_arg_menu[0]} -k 1
+Example: $(basename "$0") ${_arg_menu[0]} -k 2
+Example: $(basename "$0") ${_arg_menu[0]} manual --plastid <- for test (range: 4~9)
+Example: $(basename "$0") ${_arg_menu[0]} manual 1 <- two depth-range files are the same
+Example: $(basename "$0") ${_arg_menu[0]} manual 2 <- two different depth-range files
+Example: $(basename "$0") ${_arg_menu[0]} manual two-value-textfile.txt (for both depth-range)
+Example: $(basename "$0") ${_arg_menu[0]} add|remove
+Example: $(basename "$0") ${_arg_menu[0]} bandage
+Example: $(basename "$0") ${_arg_menu[0]} add new <- for a new mt.contig.name
+Example: $(basename "$0") ${_arg_menu[0]} view -k 1
+Example: $(basename "$0") ${_arg_menu[0]} view table -k 2
 HEREDOC
 	)
 
@@ -1044,8 +1082,8 @@ HEREDOC
 	fi
 
 	local ANUMNEXT=$((INUM + 1))
-	_polap_log1 NEXT: $0 map-reads -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
-	_polap_log1 NEXT: $0 assemble2 -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
+	_polap_log1 NEXT: $(basename "$0") map-reads -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
+	_polap_log1 NEXT: $(basename "$0") assemble2 -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -1115,10 +1153,10 @@ function _run_polap_seeds-gene() {
 #   ${_polap_var_wga}/1-mtcontig.depth.stats.txt for manual depth range in --select-contig 1
 # Outputs:
 #   ${MTCONTIGNAME}
-Example: $0 ${_arg_menu[0]} -i <arg> -j <arg> [auto]
-Example: $0 ${_arg_menu[0]} -i <arg> -j <arg> <only|annotation>
-Example: $0 ${_arg_menu[0]} -i <arg> -j <arg> <manual|depth>
-Example: $0 ${_arg_menu[0]} -i <arg> -j <arg> view
+Example: $(basename "$0") ${_arg_menu[0]} -i <arg> -j <arg> [auto]
+Example: $(basename "$0") ${_arg_menu[0]} -i <arg> -j <arg> <only|annotation>
+Example: $(basename "$0") ${_arg_menu[0]} -i <arg> -j <arg> <manual|depth>
+Example: $(basename "$0") ${_arg_menu[0]} -i <arg> -j <arg> view
 HEREDOC
 	)
 

@@ -64,7 +64,7 @@ function _run_polap_archive() { # archive a POLAP output folder for later use
 #   ${ODIR}
 # Outputs:
 #   ${_arg_archive}
-Example: $0 ${_arg_menu[0]} -o <folder1> -a <folder2>
+Example: $(basename "$0") ${_arg_menu[0]} -o <folder1> -a <folder2>
 HEREDOC
 	)
 
@@ -313,7 +313,7 @@ function _run_polap_filter-gfa-with-edge() { # archive a POLAP output folder for
 # Inputs:
 #   ${ODIR}
 # Outputs:
-Example: $0 ${_arg_menu[0]} -o <folder1>
+Example: $(basename "$0") ${_arg_menu[0]} -o <folder1>
 HEREDOC
 	)
 
@@ -403,7 +403,7 @@ function _run_polap_package() { # archive a POLAP output folder for later use
 #   ${ODIR}
 # Outputs:
 #   ${_arg_archive}
-Example: $0 ${_arg_menu[0]} -o <folder1> -a <folder2>
+Example: $(basename "$0") ${_arg_menu[0]} -o <folder1> -a <folder2>
 HEREDOC
 	)
 
@@ -530,7 +530,7 @@ function _run_polap_cleanup() { # cleanup an POLAP output folder
 #   ${ODIR}
 # Outputs:
 #
-Example: $0 ${_arg_menu[0]} -j <arg>
+Example: $(basename "$0") ${_arg_menu[0]} -j <arg>
 HEREDOC
 	)
 
@@ -587,7 +587,7 @@ function _run_polap_init() { # initialize an output folder
 # Inputs: none
 # Outputs:
 #   ${ODIR}
-Example: $0 ${_arg_menu[0]} -o ${ODIR}
+Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR}
 HEREDOC
 	)
 
@@ -621,7 +621,7 @@ HEREDOC
 	_run_polap_make-menus
 	_log_command_versions
 
-	_polap_log1 "NEXT: $0 summary-reads -o ${ODIR} -l ${_arg_long_reads}"
+	_polap_log1 "NEXT: $(basename "$0") summary-reads -o ${ODIR} -l ${_arg_long_reads}"
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
@@ -650,7 +650,7 @@ function _run_polap_log() { # display the polap log
 #   ${LOG_FILE}
 # Outputs:
 #   a page view of the log file: ${LOG_FILE}
-Example: $0 ${_arg_menu[0]} -o ${ODIR}
+Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR}
 HEREDOC
 	)
 

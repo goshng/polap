@@ -65,8 +65,11 @@ if (is_null(args1$table)) {
 
 output2 <- paste0(args1$out)
 
+# table2: "assembly_info_organelle_annotation_count-all.txt"
 table2 <- read_delim(args1$table, delim = " ", show_col_types = FALSE)
+# table1: contig-annotation-depth-table.txt
 table1 <- read_delim(args1$annotation, delim = " ", show_col_types = FALSE)
+# edges: mt.conting.name-1
 edges <- read_lines(args1$`mt-contig-name`)
 
 # Process table2 by removing columns V4, V5, V7, V8 and renaming Depth as Depth

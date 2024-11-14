@@ -117,9 +117,12 @@ _arg_redo="off"
 _arg_test="off"
 _arg_verbose=1
 _arg_help="off"
+# flye options
+_arg_flye_data_type="--nano-raw"
 
 source "$script_dir/polap-git-hash-version.sh"
 _polap_version=v0.3.7-"${_polap_git_hash_version}"
+_polap_command_string=polap
 
 print_help() {
 
@@ -128,59 +131,59 @@ print_help() {
 POLAP - Plant organelle DNA long-read assembly pipeline.
 version ${_polap_version}
 
-Usage: $0 [<menu> [<menu2> [<menu3>]]] [-o|--outdir <arg>]
+Usage: ${_polap_command_string} [<menu> [<menu2> [<menu3>]]] [-o|--outdir <arg>]
       [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
       [-i|--inum <arg>] [-j|--jnum <arg>] [-w|--single-min <arg>]
       [-m|--min-read-length <arg>] [-t|--threads <arg>] [--test] [--log <arg>] 
       [--random-seed <arg>] [--version] [-h|--help]
 
 Assemble mitochondrial DNA (mtDNA) in a single command (not tested yet):
-  $0 -l <arg> -a <arg> [-b <arg>]
-  $0 assemble -l <arg> -a <arg> [-b <arg>]
+  ${_polap_command_string} -l <arg> -a <arg> [-b <arg>]
+  ${_polap_command_string} assemble -l <arg> -a <arg> [-b <arg>]
  
 Perform a polishing of the mtDNA sequence utilizing the FMLRC protocol:
-  $0 prepare-polishing  -a <arg> [-b <arg>]
-  $0 polish -p <arg> -f <arg>
+  ${_polap_command_string} prepare-polishing  -a <arg> [-b <arg>]
+  ${_polap_command_string} polish -p <arg> -f <arg>
 
 To assemble mitochondrial DNA (mtDNA), follow a two-step process involving
 manual seed contig selection:
-  $0 assemble1 -l <arg> -a <arg> [-b <arg>] [-m <arg>]
-  $0 assemble2 -i <arg> -j <arg> [-w <arg>] [-c <arg>]
+  ${_polap_command_string} assemble1 -l <arg> -a <arg> [-b <arg>] [-m <arg>]
+  ${_polap_command_string} assemble2 -i <arg> -j <arg> [-w <arg>] [-c <arg>]
 
 To assemble mitochondrial DNA (mtDNA), follow a three-step process
 that utilizes semi-automatic seed contig selection:
-  $0 assemble1 -l <arg> -a <arg> [-b <arg>] [-m <arg>]
-  $0 seeds -i <arg> -j <arg>
-  $0 assemble2 -i <arg> -j <arg> [-w <arg>] [-c <arg>]
+  ${_polap_command_string} assemble1 -l <arg> -a <arg> [-b <arg>] [-m <arg>]
+  ${_polap_command_string} seeds -i <arg> -j <arg>
+  ${_polap_command_string} assemble2 -i <arg> -j <arg> [-w <arg>] [-c <arg>]
 
 To assemble mitochondrial DNA (mtDNA), follow a series of sequential steps:
-  $0 init -o <arg>
-  $0 summary-reads -a <arg> [-b <arg>]
-  $0 total-length-long -l <arg>
-  $0 find-genome-size -a <arg> [-b <arg>]
-  $0 reduce-data -l <arg> [-m <arg>]
-  $0 flye1 [-t <arg>]
-  $0 edges-stats -i <arg>
-  $0 annotate -i <arg>
-  $0 seeds [-i <arg>] -j <arg>
-  $0 map-reads [-i <arg>] -j <arg>
-  $0 test-reads [-i <arg>] -j <arg> -s <begin>,<end>,<count> [-c <arg>]
-  $0 select-reads [-i <arg>] -j <arg> -w <arg> [-c <arg>]
-  $0 flye2 [-i <arg>] -j <arg>
+  ${_polap_command_string} init -o <arg>
+  ${_polap_command_string} summary-reads -a <arg> [-b <arg>]
+  ${_polap_command_string} total-length-long -l <arg>
+  ${_polap_command_string} find-genome-size -a <arg> [-b <arg>]
+  ${_polap_command_string} reduce-data -l <arg> [-m <arg>]
+  ${_polap_command_string} flye1 [-t <arg>]
+  ${_polap_command_string} edges-stats -i <arg>
+  ${_polap_command_string} annotate -i <arg>
+  ${_polap_command_string} seeds [-i <arg>] -j <arg>
+  ${_polap_command_string} map-reads [-i <arg>] -j <arg>
+  ${_polap_command_string} test-reads [-i <arg>] -j <arg> -s <begin>,<end>,<count> [-c <arg>]
+  ${_polap_command_string} select-reads [-i <arg>] -j <arg> -w <arg> [-c <arg>]
+  ${_polap_command_string} flye2 [-i <arg>] -j <arg>
 
 Others menus:
-  $0 blast-genome -i <arg>
-  $0 count-genes -i <arg>
-  $0 flye-polishing -j <arg>
-  $0 make-menus
-  $0 clean-menus
-  $0 list
+  ${_polap_command_string} blast-genome -i <arg>
+  ${_polap_command_string} count-genes -i <arg>
+  ${_polap_command_string} flye-polishing -j <arg>
+  ${_polap_command_string} make-menus
+  ${_polap_command_string} clean-menus
+  ${_polap_command_string} list
 
 BioProject menus:
-  $0 get-bioproject --bioproject <arg>
-  $0 bioproject-prepare -o <arg>
-  $0 get-bioproject-sra --sra <arg>
-  $0 get-mtdna --species <arg>
+  ${_polap_command_string} get-bioproject --bioproject <arg>
+  ${_polap_command_string} bioproject-prepare -o <arg>
+  ${_polap_command_string} get-bioproject-sra --sra <arg>
+  ${_polap_command_string} get-mtdna --species <arg>
 
 Other options:
       [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]
@@ -250,9 +253,6 @@ Options:
     than the smaller 1-kilobase fragment. In the case of plastid DNAs, a
     fragment size of 1 kilobase (kb) might be more suitable, requiring an
     adjustment to the -m option accordingly.
-
-  -x, --bridge-min: minimum bridging read length or PAF 2nd column (default: ${_arg_bridge_min})
-    Note: it is not tested yet.
 
   -g, --genomesize: expected genome size (default: estimated with a short-read dataset)
     Users can assemble an organelle genome when they have a genome size
@@ -324,6 +324,13 @@ Options:
     The clock option allows users to display both the start and end times.
 
   --markdown: display the table in markdown format (default: ${_arg_markdown})
+
+  Experimental (not tested yet!):
+  --flye-nano-raw (default), --flye-nano-corr, --flye-nano-hq:
+  --flye-pacbio-raw, --flye-pacbio-corr, --flye-pacbio-hifi:
+    The Flye program requires a specific input data type.
+    If one switch is activated, the other switches are automatically deactivated.
+    Note: not tested yet!
 
   --species: Species scientific name (no default)
 	--sra: SRA data (no default)
@@ -721,6 +728,24 @@ parse_commandline() {
 			if test -n "$_next" -a "$_next" != "$_key"; then
 				{ begins_with_short_option "$_next" && shift && set -- "-u" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
 			fi
+			;;
+		--flye-pacbio-raw)
+			_arg_flye_data_type="--pacbio-raw"
+			;;
+		--flye-pacbio-corr)
+			_arg_flye_data_type="--pacbio-corr"
+			;;
+		--flye-pacbio-hifi)
+			_arg_flye_data_type="--pacbio-hifi"
+			;;
+		--flye-nano-raw)
+			_arg_flye_data_type="--nano-raw"
+			;;
+		--flye-nano-corr)
+			_arg_flye_data_type="--nano-corr"
+			;;
+		--flye-nano-fq)
+			_arg_flye_data_type="--nano-fq"
 			;;
 		--log)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

@@ -161,7 +161,7 @@ function _run_polap_clean-menus() { # deletes menu command empty files
 # Arguments: none
 # Inputs: none
 # Outputs: no empty menu files
-Example: $0 ${_arg_menu[0]}
+Example: $(basename "$0") ${_arg_menu[0]}
 HEREDOC
 	)
 
@@ -216,7 +216,7 @@ function _run_polap_list() { # List POLAP menus.
 # List menus. A POLAP menu is a first argument of the command.
 #
 # You need to execute make-menus menu if nothing is displayed.
-Example: $0 ${_arg_menu[0]} [all|main|assemble|assemble1|annotate|seeds|assemble2|mtdna|polish]
+Example: $(basename "$0") ${_arg_menu[0]} [all|main|assemble|assemble1|annotate|seeds|assemble2|mtdna|polish]
 HEREDOC
 	)
 

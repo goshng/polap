@@ -658,7 +658,7 @@ Other options:
     [--no-reduction-reads] [--no-coverage-check]
     [--plastid]
     [--archive <arg>]
-    [--sra <arg>] [-x|--bridge-min <arg>] [-g|--genomesize <arg>]
+    [--sra <arg>] [-g|--genomesize <arg>]
 
 menu: assemble, assemble1, annotate, assemble2, flye-polishing,
     make-menus, list, clean-menus, cleanup, init,
@@ -718,9 +718,6 @@ Options:
     than the smaller 1-kilobase fragment. In the case of plastid DNAs, a
     fragment size of 1 kilobase (kb) might be more suitable, requiring an
     adjustment to the -m option accordingly.
-
-  -x, --bridge-min: minimum bridging read length or PAF 2nd column (default: 0)
-    Note: it is not tested yet.
 
   -g, --genomesize: expected genome size (default: estimated with a short-read dataset)
     Users can assemble an organelle genome when they have a genome size

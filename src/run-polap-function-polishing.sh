@@ -171,7 +171,7 @@ function _run_polap_polish() { # polish organelle genome sequences using FMLRC
 #   ${_arg_unpolished_fasta}
 # Outputs:
 #   ${_arg_final_assembly}
-Example: $0 ${_arg_menu[0]} -p ${_arg_unpolished_fasta} -f ${_arg_final_assembly}
+Example: $(basename "$0") ${_arg_menu[0]} -p ${_arg_unpolished_fasta} -f ${_arg_final_assembly}
 HEREDOC
 	)
 
@@ -189,7 +189,7 @@ HEREDOC
 
 	if [[ ! -s "${_polap_var_base_msbwt}" ]]; then
 		_polap_log0 "ERROR: no msbwt at ${_polap_var_base_msbwt}"
-		_polap_log0 "HINT: $0 prepare-polishing [-a s1.fq] [-b s2.fq]"
+		_polap_log0 "HINT: $(basename "$0") prepare-polishing [-a s1.fq] [-b s2.fq]"
 		exit $EXIT_ERROR
 	fi
 

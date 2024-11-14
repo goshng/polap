@@ -20,9 +20,9 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
@@ -353,11 +353,15 @@ function _polap_log3_head() {
 }
 
 function _polap_log0_column() {
-	verbose_column 0 "$@"
-	if [[ "${_arg_log_stderr}" = "off" ]]; then
-		verbose_column 1 "$@" >&3
+	if [[ -s "$1" ]]; then
+		verbose_column 0 "$@"
+		if [[ "${_arg_log_stderr}" = "off" ]]; then
+			verbose_column 1 "$@" >&3
+		else
+			verbose_column 1 "$@" >&2
+		fi
 	else
-		verbose_column 1 "$@" >&2
+		_polap_log0 "ERROR: no such file: $1"
 	fi
 }
 

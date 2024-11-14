@@ -82,7 +82,7 @@ function _run_polap_assemble1() { # whole-genome genome assembly
 #   ${_polap_var_base_lk_fq_gz}
 #   ${_polap_var_wga_contigger_gfa}
 #   ${_polap_var_contigger_edges_stats}
-Example: $0 ${_arg_menu[0]} [-o ${ODIR}] [-l ${_arg_long_reads}] [-a ${_arg_short_read1}] [-b ${_arg_short_read2}]
+Example: $(basename "$0") ${_arg_menu[0]} [-o ${ODIR}] [-l ${_arg_long_reads}] [-a ${_arg_short_read1}] [-b ${_arg_short_read2}]
 HEREDOC
 	)
 
@@ -276,7 +276,7 @@ function _run_polap_assemble2() { # organelle-genome assembly
 # Outputs:
 #   ${_polap_var_oga_assembly_graph_gfa}
 #   ${_polap_var_oga_contigger_edges_gfa}
-Example: $0 ${_arg_menu[0]} -i ${INUM} -j ${JNUM} -w ${_arg_single_min}
+Example: $(basename "$0") ${_arg_menu[0]} -i ${INUM} -j ${JNUM} -w ${_arg_single_min}
 HEREDOC
 	)
 
@@ -300,7 +300,7 @@ HEREDOC
 	_run_polap_select-reads
 	_run_polap_flye2
 
-	_polap_log1 "NEXT: $0 prepare-polishing -o $ODIR -i $INUM -j $JNUM"
+	_polap_log1 "NEXT: $(basename "$0") prepare-polishing -o $ODIR -i $INUM -j $JNUM"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	[ "$DEBUG" -eq 1 ] && set +x

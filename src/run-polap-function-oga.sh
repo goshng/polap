@@ -77,8 +77,8 @@ function _run_polap_prepare-seeds() { # prepare seed contigs in a not usual way
 #   sequence file
 # Outputs:
 #   a dummy assembly
-Example: $0 ${_arg_menu[0]} -i 4,6 -j 7
-Example: $0 ${_arg_menu[0]} -f seed_contigs.fa
+Example: $(basename "$0") ${_arg_menu[0]} -i 4,6 -j 7
+Example: $(basename "$0") ${_arg_menu[0]} -f seed_contigs.fa
 HEREDOC
 	)
 
@@ -235,7 +235,7 @@ function _run_polap_map-reads() { # selects reads mapped on a genome assembly
 #   ${_polap_var_oga_contig}/contig.fa
 #   ${_polap_var_oga_contig}/contig.paf
 #   ${_polap_var_oga_contig}/contig.tab
-Example: $0 ${_arg_menu[0]} -i ${INUM} -j ${JNUM}
+Example: $(basename "$0") ${_arg_menu[0]} -i ${INUM} -j ${JNUM}
 HEREDOC
 	)
 
@@ -372,7 +372,7 @@ HEREDOC
 	# cut -f1-11 "${_polap_var_oga}"/contig.paf | awk -v minlength="${_arg_min_read_length}" '{if ($2>=minlength) {print}}' >"${_polap_var_oga}"/contig.tab
 	_polap_log3_cmd bash "$script_dir/run-polap-sh-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_polap_var_oga_contig}/contig.paf" "${_polap_var_oga_contig}/contig.tab"
 
-	_polap_log1 "NEXT: $0 reads -o ${ODIR} -i ${INUM} -j ${JNUM}"
+	_polap_log1 "NEXT: $(basename "$0") reads -o ${ODIR} -i ${INUM} -j ${JNUM}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -392,7 +392,7 @@ HEREDOC
 		fi
 	fi
 
-	_polap_log1 NEXT: $0 flye2 -o "$ODIR" -j "$JNUM" -t "${_arg_threads}" -c "${_arg_coverage}"
+	_polap_log1 NEXT: $(basename "$0") flye2 -o "$ODIR" -j "$JNUM" -t "${_arg_threads}" -c "${_arg_coverage}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -488,13 +488,13 @@ function _run_polap_test-reads() { # selects reads mapped on a genome assembly
 #   ptgaul-intra-base-length
 #   single-intra-base-length
 #   polap-rw-base-length
-Example: $0 ${_arg_menu[0]} [ptgaul-intra-base-length] --select-read-range 3000,27000,5
-Example: $0 ${_arg_menu[0]} single-intra-base-length -i 1 -j 2
-Example: $0 ${_arg_menu[0]} polap-rw-base-length --select-read-range 3000,27000,5
-Example: $0 ${_arg_menu[0]} bridge-inter-base-length
-Example: $0 ${_arg_menu[0]} polap-rw-base-length --select-read-range 3000,27000,5 --start-index 3
-Example: $0 ${_arg_menu[0]} view polap-rw-base-length -i 2 -j 3
-Example: $0 ${_arg_menu[0]} report ptgaul --report-x 3000,5000,7000,9000,11000
+Example: $(basename "$0") ${_arg_menu[0]} [ptgaul-intra-base-length] --select-read-range 3000,27000,5
+Example: $(basename "$0") ${_arg_menu[0]} single-intra-base-length -i 1 -j 2
+Example: $(basename "$0") ${_arg_menu[0]} polap-rw-base-length --select-read-range 3000,27000,5
+Example: $(basename "$0") ${_arg_menu[0]} bridge-inter-base-length
+Example: $(basename "$0") ${_arg_menu[0]} polap-rw-base-length --select-read-range 3000,27000,5 --start-index 3
+Example: $(basename "$0") ${_arg_menu[0]} view polap-rw-base-length -i 2 -j 3
+Example: $(basename "$0") ${_arg_menu[0]} report ptgaul --report-x 3000,5000,7000,9000,11000
 HEREDOC
 	)
 
@@ -924,7 +924,8 @@ HEREDOC
 		_polap_log2 "    input1: ${_polap_var_oga_sample}/${_pread_sel}/${i}.fq.gz"
 		_polap_log2 "    output: ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
 		local _command1="flye \
-      --nano-raw ${_polap_var_oga_sample}/${_pread_sel}/${i}.fq.gz \
+      ${_arg_flye_data_type} \
+      ${_polap_var_oga_sample}/${_pread_sel}/${i}.fq.gz \
 		  --out-dir ${_polap_var_oga_flye}/${_pread_sel}/${i} \
 		  --threads ${_arg_threads}"
 		if [[ "${_arg_flye_asm_coverage}" -gt 0 ]]; then
@@ -1043,9 +1044,9 @@ function _run_polap_select-reads() { # selects reads mapped on a genome assembly
 #   ptgaul-reads [number of repeats]
 #   intra-reads [number of repeats]
 #   polap-reads [number of repeats]
-Example: $0 ${_arg_menu[0]} [ptgaul-reads] -w 3000
-Example: $0 ${_arg_menu[0]} intra-reads -w 5000
-Example: $0 ${_arg_menu[0]} polap-reads -w 3000 5
+Example: $(basename "$0") ${_arg_menu[0]} [ptgaul-reads] -w 3000
+Example: $(basename "$0") ${_arg_menu[0]} intra-reads -w 5000
+Example: $(basename "$0") ${_arg_menu[0]} polap-reads -w 3000 5
 HEREDOC
 	)
 
@@ -1140,9 +1141,9 @@ function _run_polap_flye2() { # executes Flye for an organelle-genome assembly
 # Outputs:
 #   ${_polap_var_oga_assembly_graph_gfa}
 #   ${_polap_var_oga_contigger_edges_gfa}
-Example: $0 ${_arg_menu[0]} [ptgaul-reads] -j <arg>
-Example: $0 ${_arg_menu[0]} intra-reads -j <arg>
-Example: $0 ${_arg_menu[0]} polap-reads -j <arg>
+Example: $(basename "$0") ${_arg_menu[0]} [ptgaul-reads] -j <arg>
+Example: $(basename "$0") ${_arg_menu[0]} intra-reads -j <arg>
+Example: $(basename "$0") ${_arg_menu[0]} polap-reads -j <arg>
 HEREDOC
 	)
 
@@ -1181,7 +1182,8 @@ HEREDOC
 	_polap_log1 "    output1: ${_polap_var_oga}/30-contigger/graph_final.gfa"
 	_polap_log1 "    output2: ${_polap_var_oga}/assembly_graph.gfa"
 	local _command1="flye \
-    --nano-raw ${_long_reads} \
+    ${_arg_flye_data_type} \
+    ${_long_reads} \
 		--out-dir ${_polap_var_oga} \
 		--threads ${_arg_threads} \
 		--asm-coverage ${_arg_flye_asm_coverage} \
@@ -1245,7 +1247,7 @@ function _run_polap_flye-polishing() { # finish a Flye organelle-genome assembly
 #   ${MTDIR}/30-contigger
 # Outputs:
 #   ${MTDIR}/assembly_graph.gfa
-Example: $0 ${_arg_menu[0]} -j <arg>
+Example: $(basename "$0") ${_arg_menu[0]} -j <arg>
 HEREDOC
 	)
 
@@ -1482,7 +1484,7 @@ function _run_polap_x-v0.3.7-collect-reads() { # replaced by select-reads
 #   ${_polap_var_oga_seeds}/single.fq.gz   <- single-mapped reads, if we have many such reads
 #   ${_polap_var_oga_seeds}/pair.fq.gz     <- only pair-mapped reads (not useful)
 #   ${_polap_var_oga_seeds}/combined.fq.gz <- single-mapped reads plus pair-mapped reads
-Example: $0 ${_arg_menu[0]} -i ${INUM} -j ${JNUM}
+Example: $(basename "$0") ${_arg_menu[0]} -i ${INUM} -j ${JNUM}
 HEREDOC
 	)
 
@@ -1603,7 +1605,7 @@ HEREDOC
     ${_polap_var_oga_reads}/combined.names |\
     gzip >${_polap_var_oga_seeds}/combined.fq.gz"
 
-	_polap_log1 NEXT: $0 flye2 -o "$ODIR" -j "$JNUM" -t "${_arg_threads}" -c "${_arg_coverage}"
+	_polap_log1 NEXT: $(basename "$0") flye2 -o "$ODIR" -j "$JNUM" -t "${_arg_threads}" -c "${_arg_coverage}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -1671,7 +1673,7 @@ function _run_polap_x-v0.2.6-select-reads() { # selects reads mapped on a genome
 #   ${MTSEEDSDIR}/1.fq.gz <- single-mapped reads
 #   ${MTSEEDSDIR}/2.fq.gz <- reduced single-mapped reads, if we have many such reads
 #   ${MTSEEDSDIR}/3.fq.gz <- reduced single-mapped reads plus pair-mapped reads
-Example: $0 ${_arg_menu[0]} -i ${INUM} -j ${JNUM} --rwx ${_arg_rwx}
+Example: $(basename "$0") ${_arg_menu[0]} -i ${INUM} -j ${JNUM} --rwx ${_arg_rwx}
 HEREDOC
 	)
 
@@ -1935,7 +1937,7 @@ HEREDOC
 		fi
 	fi
 
-	_polap_log1 NEXT: $0 flye2 -o "$ODIR" -j "$JNUM" -t "${_arg_threads}" -c "${_arg_coverage}"
+	_polap_log1 NEXT: $(basename "$0") flye2 -o "$ODIR" -j "$JNUM" -t "${_arg_threads}" -c "${_arg_coverage}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -1982,8 +1984,8 @@ function _run_polap_x-select-reads() { # selects reads mapped on a genome assemb
 # Outputs:
 #   ${_polap_var_oga_seeds}/2.fq.gz <- reduced single-mapped reads, if we have many such reads
 #   ${_polap_var_oga_seeds}/3.fq.gz <- reduced single-mapped reads plus pair-mapped reads
-Example: $0 ${_arg_menu[0]} -j ${JNUM}
-Example: $0 ${_arg_menu[0]} -j ${JNUM} -l l.fq
+Example: $(basename "$0") ${_arg_menu[0]} -j ${JNUM}
+Example: $(basename "$0") ${_arg_menu[0]} -j ${JNUM} -l l.fq
 HEREDOC
 	)
 
@@ -2129,11 +2131,12 @@ HEREDOC
 		fi
 
 		local _command1="flye \
-    --nano-raw ${_polap_var_oga_seeds}/${_i_seed}.fq.gz \
-		--out-dir ${_polap_var_oga_seeds}/${_i_seed} \
-		--threads ${_arg_threads} \
-		--asm-coverage ${_arg_flye_asm_coverage} \
-		--genome-size $CONTIG_LENGTH"
+      ${_arg_flye_data_type} \
+      ${_polap_var_oga_seeds}/${_i_seed}.fq.gz \
+		  --out-dir ${_polap_var_oga_seeds}/${_i_seed} \
+		  --threads ${_arg_threads} \
+		  --asm-coverage ${_arg_flye_asm_coverage} \
+		  --genome-size $CONTIG_LENGTH"
 		if [[ "${_arg_menu[1]}" = "polishing" ]]; then
 			_command1+=" \
 		  --resume"
@@ -2142,11 +2145,11 @@ HEREDOC
 		  --stop-after contigger"
 		fi
 		_command1+=" \
-		2>${_polap_output_dest}"
+		  2>${_polap_output_dest}"
 		_polap_log3_pipe "${_command1}"
 	done
 
-	_polap_log1 NEXT: $0 flye2 -o "$ODIR" -j "$JNUM" -t "${_arg_threads}" -c "${_arg_coverage}"
+	_polap_log1 NEXT: $(basename "$0") flye2 -o "$ODIR" -j "$JNUM" -t "${_arg_threads}" -c "${_arg_coverage}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -2203,8 +2206,8 @@ function _run_polap_x-v0.2.6-flye2() { # executes Flye for an organelle-genome a
 #   ${MTDIR}/30-contigger/contigs_stats.txt
 #   ${MTDIR}/30-contigger/graph_final.fasta
 #   ${MTDIR}/30-contigger/graph_final.gfa
-Example: $0 ${_arg_menu[0]} -j <arg>
-Example: $0 ${_arg_menu[0]} -j <arg> polishing
+Example: $(basename "$0") ${_arg_menu[0]} -j <arg>
+Example: $(basename "$0") ${_arg_menu[0]} -j <arg> polishing
 HEREDOC
 	)
 
@@ -2272,15 +2275,15 @@ HEREDOC
 		_polap_log0 "  output: the long-read polished assembly graph: $PWD/${_polap_var_oga_assembly_graph_gfa}"
 		_polap_log0 "  DO: extract a draft organelle genome sequence (mt.0.fasta)"
 		_polap_log0 "      from the polished assembly graph before short-read polishing"
-		_polap_log1 "NEXT: $0 prepare-polishing -a ${_arg_short_read1} -b ${_arg_short_read2}"
+		_polap_log1 "NEXT: $(basename "$0") prepare-polishing -a ${_arg_short_read1} -b ${_arg_short_read2}"
 	else
 		_polap_log0 "  output: the assembly fasta: ${_polap_var_oga_contigger_edges_fasta}"
 		_polap_log0 "  output: the assembly graph: ${_polap_var_oga_contigger_edges_gfa}"
 		jnum_next=$((JNUM + 1))
 		_polap_log1 "  create and edit $ODIR/$JNUM/mt.contig.name-${jnum_next}"
-		_polap_log1 "NEXT: $0 assemble2 -o ${ODIR} -i ${JNUM} -j ${jnum_next}"
+		_polap_log1 "NEXT: $(basename "$0") assemble2 -o ${ODIR} -i ${JNUM} -j ${jnum_next}"
 		_polap_log1 or you could finish with Flye organelle-genome assembly with its polishing stage.
-		_polap_log1 "NEXT: $0 flye-polishing -o ${ODIR} -j $${JNUM}"
+		_polap_log1 "NEXT: $(basename "$0") flye-polishing -o ${ODIR} -j $${JNUM}"
 	fi
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"

@@ -44,10 +44,10 @@ function _run_polap_template() {
 #   -i $INUM: source Flye (usually whole-genome) assembly number
 #
 # Inputs:
-#   ${_polap_var_annotation_table}
+#   ${_polap_var_ga_annotation_all}
 #
 # Outputs:
-#   ${MTCONTIGNAME}
+#   ${_polap_var_mtcontigname}
 #
 # See:
 #   run-polap-select-contigs-by-table-1.R for the description of --select-contig option

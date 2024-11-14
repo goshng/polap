@@ -10,15 +10,15 @@ script_dir=src
 common() {
 	source "$script_dir/polap-variables-common.sh"
 	declare -p \
-		_polap_var_output \
-		_polap_var_base \
+		_polap_var_outdir \
+		_polap_var_outdir \
 		_polap_var_project \
 		_polap_var_wga \
 		_polap_var_ga \
-		_polap_var_contigger \
+		_polap_var_ga_contigger \
 		_polap_var_ga_contigger \
 		_polap_var_ann \
-		MTCONTIGNAME \
+		_polap_var_mtcontigname \
 		_polap_var_mtcontigname \
 		_polap_var_oga \
 		_polap_var_oga_contigger \
@@ -26,42 +26,42 @@ common() {
 		_polap_var_oga_seeds \
 		_polap_var_mtdna \
 		_polap_var_compare \
-		_polap_var_base_fq_stats \
-		_polap_var_base_genome_size \
-		_polap_var_base_jellyfish_out \
-		_polap_var_base_jellyfish_out_histo \
-		_polap_var_base_l_fq_gz \
-		_polap_var_base_long_total_length \
-		_polap_var_base_msbwt \
-		_polap_var_base_msbwt_tar_gz \
-		_polap_var_base_nk_fq_gz \
-		_polap_var_base_nk_fq_stats \
-		_polap_var_base_lk_fq_gz \
-		_polap_var_base_lk_fq_stats \
-		_polap_var_bioproject_runinfo_all \
-		_polap_var_bioproject_txt \
-		_polap_var_bioproject_blastn1 \
-		_polap_var_bioproject_blastn2 \
-		_polap_var_bioproject_blastn3 \
-		_polap_var_bioproject_blastn3_length \
-		_polap_var_bioproject_mtdna_fasta1 \
-		_polap_var_bioproject_mtdna_fasta1_stats \
-		_polap_var_bioproject_mtdna_fasta2 \
-		_polap_var_bioproject_mtdna_fasta2_accession \
-		_polap_var_bioproject_passed \
-		_polap_var_bioproject_runinfo \
-		_polap_var_bioproject_species \
-		_polap_var_bioproject_sra_long_read \
-		_polap_var_bioproject_sra_per_species \
-		_polap_var_bioproject_sra_short_read \
-		_polap_var_bioproject_taxon_id \
-		_polap_var_bioproject_taxonomy \
+		_polap_var_outdir_fq_stats \
+		_polap_var_outdir_genome_size \
+		_polap_var_outdir_jellyfish_out \
+		_polap_var_outdir_jellyfish_out_histo \
+		_polap_var_outdir_l_fq_gz \
+		_polap_var_outdir_long_total_length \
+		_polap_var_outdir_msbwt \
+		_polap_var_outdir_msbwt_tar_gz \
+		_polap_var_outdir_nk_fq_gz \
+		_polap_var_outdir_nk_fq_stats \
+		_polap_var_outdir_lk_fq_gz \
+		_polap_var_outdir_lk_fq_stats \
+		_polap_var_project_runinfo_all \
+		_polap_var_project_txt \
+		_polap_var_project_blastn1 \
+		_polap_var_project_blastn2 \
+		_polap_var_project_blastn3 \
+		_polap_var_project_blastn3_length \
+		_polap_var_project_mtdna_fasta1 \
+		_polap_var_project_mtdna_fasta1_stats \
+		_polap_var_project_mtdna_fasta2 \
+		_polap_var_project_mtdna_fasta2_accession \
+		_polap_var_project_passed \
+		_polap_var_project_runinfo \
+		_polap_var_project_species \
+		_polap_var_project_sra_long_read \
+		_polap_var_project_sra_per_species \
+		_polap_var_project_sra_short_read \
+		_polap_var_project_taxon_id \
+		_polap_var_project_taxonomy \
 		_polap_var_wga_annotation \
 		_polap_var_wga_contigger \
 		_polap_var_wga_contigger_contigs_fasta \
 		_polap_var_wga_contigger_contigs_stats \
-		_polap_var_wga_contigger_gfa \
-		_polap_var_annotation_table \
+		_polap_var_wga_contigger_edges_gfa \
+		_polap_var_ga_annotation_all \
 		_polap_var_ga_annotation_all \
 		_polap_var_ga_annotation \
 		_polap_var_ga_annotation_depth_table \
@@ -76,19 +76,19 @@ common() {
 		_polap_var_ga_mtcontigs \
 		_polap_var_manual_copy_range \
 		_polap_var_manual_depth_range \
-		_polap_var_assembly_graph_final_gfa \
-		_polap_var_contigger_contigs_fasta \
-		_polap_var_contigger_contigs_stats \
-		_polap_var_contigger_edges_fasta \
-		_polap_var_contigger_edges_gfa \
-		_polap_var_contigger_edges_stats \
-		_polap_var_contigger_gfa \
+		_polap_var_ga_contigger_edges_gfa \
 		_polap_var_ga_contigger_contigs_fasta \
 		_polap_var_ga_contigger_contigs_stats \
 		_polap_var_ga_contigger_edges_fasta \
 		_polap_var_ga_contigger_edges_gfa \
 		_polap_var_ga_contigger_edges_stats \
-		_polap_var_ga_contigger_gfa \
+		_polap_var_ga_contigger_edges_gfa \
+		_polap_var_ga_contigger_contigs_fasta \
+		_polap_var_ga_contigger_contigs_stats \
+		_polap_var_ga_contigger_edges_fasta \
+		_polap_var_ga_contigger_edges_gfa \
+		_polap_var_ga_contigger_edges_stats \
+		_polap_var_ga_contigger_edges_gfa \
 		_polap_var_ga_gfa_all \
 		_polap_var_ga_gfa_seq_part \
 		_polap_var_ann_CONTIGDB \
@@ -118,7 +118,7 @@ common() {
 		_polap_var_oga_contig \
 		_polap_var_oga_reads \
 		_polap_var_oga_seeds \
-		_polap_var_oga_sample \
+		_polap_var_oga_subsample \
 		_polap_var_oga_flye \
 		_polap_var_oga_summary \
 		_polap_var_oga_plot \

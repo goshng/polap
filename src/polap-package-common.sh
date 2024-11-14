@@ -27,10 +27,10 @@ local _ppack_var_project="${_ppack_var_output}/00-bioproject"
 local _ppack_var_wga="${_ppack_var_output}/0"
 local _ppack_var_ga="${_ppack_var_output}/${INUM}"
 local _ppack_var_contigger="${_ppack_var_ga}/30-contigger"
-# _polap_var_ga_contigger better than _polap_var_contigger
+# _polap_var_ga_contigger better than _polap_var_ga_contigger
 local _ppack_var_ga_contigger="${_ppack_var_ga}/30-contigger"
 local _ppack_var_ann="${_ppack_var_ga}/50-annotation"
-local MTCONTIGNAME="${_ppack_var_ga}/mt.contig.name-${JNUM}"
+local _polap_var_mtcontigname="${_ppack_var_ga}/mt.contig.name-${JNUM}"
 local _ppack_var_mtcontigname="${_ppack_var_ga}/mt.contig.name-${JNUM}"
 local _ppack_var_oga="${_ppack_var_output}/${JNUM}"
 local _ppack_var_oga_contigger="${_ppack_var_oga}/30-contigger"
@@ -103,7 +103,7 @@ local _ppack_var_ga_mtcontigs="${_ppack_var_ga}/mtcontigs"
 local _ppack_var_manual_copy_range="${_ppack_var_ga}/1-manual.copy.range.txt"
 local _ppack_var_manual_depth_range="${_ppack_var_ga}/1-manual.depth.range.txt"
 
-# _polap_var_contigger
+# _polap_var_ga_contigger
 local _ppack_var_assembly_graph_final_gfa="${_ppack_var_contigger}/graph_final.gfa"
 local _ppack_var_contigger_contigs_fasta="${_ppack_var_contigger}/contigs.fasta"
 local _ppack_var_contigger_contigs_stats="${_ppack_var_contigger}/contigs_stats.txt"

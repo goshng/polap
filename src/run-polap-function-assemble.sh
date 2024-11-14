@@ -42,7 +42,7 @@ declare "$_POLAP_INCLUDE_=1"
 #   $ODIR/long_total_length.txt
 #   $ODIR/jellyfish_out.histo
 #   $ODIR/short_expected_genome_size.txt
-#   ${_polap_var_base_nk_fq_gz}
+#   ${_polap_var_outdir_nk_fq_gz}
 #   $FDIR
 ################################################################################
 function _run_polap_assemble1() { # whole-genome genome assembly
@@ -55,7 +55,7 @@ function _run_polap_assemble1() { # whole-genome genome assembly
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-	LRNK="${_polap_var_base_nk_fq_gz}"
+	LRNK="${_polap_var_outdir_nk_fq_gz}"
 
 	help_message=$(
 		cat <<HEREDOC
@@ -75,13 +75,13 @@ function _run_polap_assemble1() { # whole-genome genome assembly
 #   ${_arg_short_read1}: a short-read fastq data file
 #   ${_arg_short_read2}: another short-read fastq data file
 # Outputs:
-#   ${_polap_var_base_fq_stats}
-#   ${_polap_var_base_long_total_length}
-#   ${_polap_var_base_genome_size}
-#   ${_polap_var_base_nk_fq_gz}
-#   ${_polap_var_base_lk_fq_gz}
-#   ${_polap_var_wga_contigger_gfa}
-#   ${_polap_var_contigger_edges_stats}
+#   ${_polap_var_outdir_fq_stats}
+#   ${_polap_var_outdir_long_total_length}
+#   ${_polap_var_outdir_genome_size}
+#   ${_polap_var_outdir_nk_fq_gz}
+#   ${_polap_var_outdir_lk_fq_gz}
+#   ${_polap_var_wga_contigger_edges_gfa}
+#   ${_polap_var_ga_contigger_edges_stats}
 Example: $(basename "$0") ${_arg_menu[0]} [-o ${ODIR}] [-l ${_arg_long_reads}] [-a ${_arg_short_read1}] [-b ${_arg_short_read2}]
 HEREDOC
 	)
@@ -92,10 +92,10 @@ HEREDOC
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
-		if [[ -s "${_polap_var_wga_contigger_gfa}" ]]; then
-			_polap_log0_file "${_polap_var_wga_contigger_gfa}"
+		if [[ -s "${_polap_var_wga_contigger_edges_gfa}" ]]; then
+			_polap_log0_file "${_polap_var_wga_contigger_edges_gfa}"
 		else
-			_polap_log0 "No such file: ${_polap_var_wga_contigger_gfa}"
+			_polap_log0 "No such file: ${_polap_var_wga_contigger_edges_gfa}"
 		fi
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
@@ -105,12 +105,12 @@ HEREDOC
 	fi
 
 	_polap_log0 "starting the whole-genome assembly on ${ODIR} ..."
-	_polap_log1 "  output1: ${_polap_var_base_fq_stats}"
-	_polap_log1 "  output2: ${_polap_var_base_long_total_length}"
-	_polap_log1 "  output3: ${_polap_var_base_genome_size}"
-	_polap_log1 "  output4: ${_polap_var_base_nk_fq_gz}"
-	_polap_log1 "  output5: ${_polap_var_wga_contigger_gfa}"
-	_polap_log1 "  output6: ${_polap_var_contigger_edges_stats}"
+	_polap_log1 "  output1: ${_polap_var_outdir_fq_stats}"
+	_polap_log1 "  output2: ${_polap_var_outdir_long_total_length}"
+	_polap_log1 "  output3: ${_polap_var_outdir_genome_size}"
+	_polap_log1 "  output4: ${_polap_var_outdir_nk_fq_gz}"
+	_polap_log1 "  output5: ${_polap_var_wga_contigger_edges_gfa}"
+	_polap_log1 "  output6: ${_polap_var_ga_contigger_edges_stats}"
 
 	if [[ "${_arg_flye}" == "on" ]]; then
 		if [[ -d "${_polap_var_wga}" ]]; then
@@ -133,7 +133,7 @@ HEREDOC
 		fi
 	fi
 
-	if [ -s "${_polap_var_base_fq_stats}" ] && [ "${_arg_redo}" = "off" ]; then
+	if [ -s "${_polap_var_outdir_fq_stats}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping summary-reads ..."
 	else
 		if [[ "${_arg_flye}" == "on" ]]; then
@@ -143,27 +143,27 @@ HEREDOC
 		fi
 	fi
 
-	if [ -s "${_polap_var_base_long_total_length}" ] && [ "${_arg_redo}" = "off" ]; then
+	if [ -s "${_polap_var_outdir_long_total_length}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping total-length-long ..."
 	else
 		_run_polap_total-length-long
 	fi
 
-	if [ -s "${_polap_var_base_genome_size}" ] && [ "${_arg_redo}" = "off" ]; then
+	if [ -s "${_polap_var_outdir_genome_size}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping find-genome-size ..."
 	else
 		_run_polap_find-genome-size
 	fi
 
-	if [ -s "${_polap_var_base_nk_fq_gz}" ] && [ "${_arg_redo}" = "off" ]; then
+	if [ -s "${_polap_var_outdir_nk_fq_gz}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping reduce-data ..."
 	else
 		_run_polap_reduce-data
 	fi
 
-	check_file_existence "${_polap_var_base_nk_fq_gz}"
+	check_file_existence "${_polap_var_outdir_nk_fq_gz}"
 
-	if [ -s "${_polap_var_wga_contigger_gfa}" ] && [ "${_arg_redo}" = "off" ]; then
+	if [ -s "${_polap_var_wga_contigger_edges_gfa}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping flye1 ..."
 	else
 		if [[ "${_arg_flye}" == "on" ]]; then
@@ -173,7 +173,7 @@ HEREDOC
 		fi
 	fi
 
-	if [ -s "${_polap_var_contigger_edges_stats}" ] && [ "${_arg_redo}" = "off" ]; then
+	if [ -s "${_polap_var_ga_contigger_edges_stats}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping edges-stats ..."
 	else
 		_run_polap_edges-stats
@@ -252,12 +252,12 @@ function _run_polap_assemble2() { # organelle-genome assembly
 	local MTDIR="$ODIR"/$JNUM
 	local MTSEEDSDIR="${MTDIR}"/seeds
 
-	MTCONTIGNAME="$FDIR"/mt.contig.name-"$JNUM"
+	_polap_var_mtcontigname="$FDIR"/mt.contig.name-"$JNUM"
 
 	# for contigs
 	#	assembly_graph_final_fasta=o/30-contigger/contigs.fasta
 	#	for edges
-	# _polap_var_contigger_edges_fasta="$FDIR"/30-contigger/graph_final.fasta
+	# _polap_var_ga_contigger_edges_fasta="$FDIR"/30-contigger/graph_final.fasta
 
 	help_message=$(
 		cat <<HEREDOC
@@ -272,7 +272,7 @@ function _run_polap_assemble2() { # organelle-genome assembly
 #   -g <arg>: computed by seed contig size or given by users
 # Inputs:
 #   ${_polap_var_mtcontigname}
-#   ${_polap_var_contigger_edges_fasta}
+#   ${_polap_var_ga_contigger_edges_fasta}
 # Outputs:
 #   ${_polap_var_oga_assembly_graph_gfa}
 #   ${_polap_var_oga_contigger_edges_gfa}
@@ -283,15 +283,15 @@ HEREDOC
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
-	check_file_existence "${MTCONTIGNAME}"
-	check_file_existence "${_polap_var_contigger_edges_fasta}"
-	check_file_existence "${_polap_var_base_nk_fq_gz}"
+	check_file_existence "${_polap_var_mtcontigname}"
+	check_file_existence "${_polap_var_ga_contigger_edges_fasta}"
+	check_file_existence "${_polap_var_outdir_nk_fq_gz}"
 
 	_run_polap_map-reads
 	if [[ "${_arg_polap_reads}" == "on" ]]; then
 		_arg_menu[1]="polap-reads"
 
-		local _n=$(wc -l <"${MTCONTIGNAME}")
+		local _n=$(wc -l <"${_polap_var_mtcontigname}")
 		if [[ "${_n}" -eq 1 ]]; then
 			_polap_log0 "  single seed contig; read-selection type change: polap-reads -> intra-reads"
 			_arg_menu[1]="intra-reads"
@@ -373,10 +373,10 @@ HEREDOC
 	_polap_log1 "  input1: ${_arg_long_reads}"
 	_polap_log1 "  input2: ${_arg_short_read1}"
 	_polap_log1 "  input3: ${_arg_short_read2}"
-	_polap_log1 "  output1: ${_polap_var_wga_contigger_gfa}"
+	_polap_log1 "  output1: ${_polap_var_wga_contigger_edges_gfa}"
 	_polap_log1 "  output2: ${_polap_var_wga_annotation}"
 	_polap_log1 "  output3: ${_polap_var_mtcontigname}"
-	_polap_log1 "  output4: ${_polap_var_contigger_gfa}"
+	_polap_log1 "  output4: ${_polap_var_ga_contigger_edges_gfa}"
 
 	# Not delete the output directory.
 	if [[ "${_arg_redo}" = "on" ]]; then
@@ -388,8 +388,8 @@ HEREDOC
 	fi
 
 	# Run assembly, annotation, and contig selection steps
-	if [[ -s "${_polap_var_wga_contigger_gfa}" ]] && [[ "${_arg_redo}" == "off" ]]; then
-		_polap_log1 "  found: ${_polap_var_wga_contigger_gfa}, skipping the whole-genome assembly"
+	if [[ -s "${_polap_var_wga_contigger_edges_gfa}" ]] && [[ "${_arg_redo}" == "off" ]]; then
+		_polap_log1 "  found: ${_polap_var_wga_contigger_edges_gfa}, skipping the whole-genome assembly"
 	else
 		check_file_existence "${_arg_long_reads}"
 		check_file_existence "${_arg_short_read1}"

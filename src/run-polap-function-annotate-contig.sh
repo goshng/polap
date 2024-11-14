@@ -49,7 +49,7 @@ function _run_polap_blast-genome-contig() { # v0.2.6: BLAST contig sequences on 
 # Arguments:
 #   -i $INUM: a Flye genome assembly number
 # Inputs:
-#   ${_polap_var_contigger_contigs_stats}
+#   ${_polap_var_ga_contigger_contigs_stats}
 # Outputs:
 #   ${_polap_var_ann_MTGENECOUNT}
 #   ${_polap_var_ann_PTGENECOUNT}
@@ -83,8 +83,8 @@ HEREDOC
 		return
 	fi
 
-	if [ ! -s "${_polap_var_contigger_contigs_stats}" ]; then
-		_polap_log0 "ERROR: no contig_stats.txt file: ${_polap_var_contigger_contigs_stats}"
+	if [ ! -s "${_polap_var_ga_contigger_contigs_stats}" ]; then
+		_polap_log0 "ERROR: no contig_stats.txt file: ${_polap_var_ga_contigger_contigs_stats}"
 		exit $EXIT_ERROR
 	fi
 
@@ -96,12 +96,12 @@ HEREDOC
 	_polap_log3 mkdir -p "${_polap_var_ann}"
 	mkdir -p "${_polap_var_ann}"
 
-	_polap_log1 "  input1: ${_polap_var_contigger_contigs_stats}"
-	_polap_log1 "  input2: ${_polap_var_contigger_contigs_fasta}"
+	_polap_log1 "  input1: ${_polap_var_ga_contigger_contigs_stats}"
+	_polap_log1 "  input2: ${_polap_var_ga_contigger_contigs_fasta}"
 
 	#src/run-polap-select.R o/30-contigger/contigs_stats.txt o/50-annotation/contig.name
 	_polap_log2 "  contig sequence names in file: ${_polap_var_ann_CONTIGNAME}"
-	grep -v "#" "${_polap_var_contigger_contigs_stats}" |
+	grep -v "#" "${_polap_var_ga_contigger_contigs_stats}" |
 		cut -f 1 >"${_polap_var_ann_CONTIGNAME}"
 
 	# seqkit grep --threads ${_arg_threads} -f "$CONTIGNAME" \
@@ -109,15 +109,15 @@ HEREDOC
 	# 	-o "${_polap_var_ann}"/contig.fasta \
 	# 	>/dev/null 2>&1
 	_polap_log2 "  contig sequence file: ${_polap_var_ann_CONTIGFILE}"
-	cp "${_polap_var_contigger_contigs_fasta}" "${_polap_var_ann_CONTIGFILE}"
+	cp "${_polap_var_ga_contigger_contigs_fasta}" "${_polap_var_ann_CONTIGFILE}"
 
 	_polap_log2 "  making BLASTDB of the contig sequences: ${_polap_var_ann_CONTIGDB}"
 	_polap_log3 makeblastdb -dbtype nucl \
-		-in "${_polap_var_contigger_contigs_fasta}" \
+		-in "${_polap_var_ga_contigger_contigs_fasta}" \
 		-out "${_polap_var_ann_CONTIGDB}" \
 		>${_polap_output_dest} 2>&1
 	makeblastdb -dbtype nucl \
-		-in "${_polap_var_contigger_contigs_fasta}" \
+		-in "${_polap_var_ga_contigger_contigs_fasta}" \
 		-out "${_polap_var_ann_CONTIGDB}" \
 		>${_polap_output_dest} 2>&1
 

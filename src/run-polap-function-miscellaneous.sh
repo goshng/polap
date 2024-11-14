@@ -425,7 +425,7 @@ HEREDOC
 # Arguments:
 #   -p mt.0.fasta
 # Inputs:
-#   ${_polap_var_base_nk_fq_gz}
+#   ${_polap_var_outdir_nk_fq_gz}
 #   ${_arg_unpolished_fasta}
 # Outputs:
 #   ${_arg_final_assembly}
@@ -443,7 +443,7 @@ function _run_polap_x-check-coverage() {
 # Arguments:
 #   -p ${_arg_unpolished_fasta}: a draft genome
 # Inputs:
-#   ${_polap_var_base_nk_fq_gz}
+#   ${_polap_var_outdir_nk_fq_gz}
 #   ${_arg_unpolished_fasta}
 # Outputs:
 Example: $(basename "$0") ${_arg_menu[0]} [-p|--unpolished-fasta <arg>]
@@ -455,7 +455,7 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	if [ -z "${_arg_unpolished_fasta}" ] && [ -z "${_polap_var_base_nk_fq_gz}" ]; then
+	if [ -z "${_arg_unpolished_fasta}" ] && [ -z "${_polap_var_outdir_nk_fq_gz}" ]; then
 		echoerr "ERROR: no -p option are used."
 		echoerr "INFO: --p mt.0.fasta"
 	else
@@ -465,12 +465,12 @@ HEREDOC
 			exit $EXIT_ERROR
 		fi
 
-		if [[ ! -s "${_polap_var_base_nk_fq_gz}" ]]; then
-			echoall "ERROR: no such file ${_polap_var_base_nk_fq_gz}"
+		if [[ ! -s "${_polap_var_outdir_nk_fq_gz}" ]]; then
+			echoall "ERROR: no such file ${_polap_var_outdir_nk_fq_gz}"
 			exit $EXIT_ERROR
 		fi
 
-		minimap2 -t "${_arg_threads}" -ax map-ont "${_arg_unpolished_fasta}" "${_polap_var_base_nk_fq_gz}" 2>/dev/null |
+		minimap2 -t "${_arg_threads}" -ax map-ont "${_arg_unpolished_fasta}" "${_polap_var_outdir_nk_fq_gz}" 2>/dev/null |
 			samtools view -u 2>/dev/null |
 			samtools sort -o "$ODIR"/1.bam \
 				>/dev/null 2>&1

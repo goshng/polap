@@ -48,7 +48,7 @@ function _run_polap_archive() { # archive a POLAP output folder for later use
 	fi
 
 	local FDIR="$ODIR"/$INUM
-	local MTCONTIGNAME="$FDIR"/mt.contig.name-"$JNUM"
+	local _polap_var_mtcontigname="$FDIR"/mt.contig.name-"$JNUM"
 	local _polap_var_source_0="${_polap_var_wga}"
 	local _polap_var_source_0_30_contigger="$FDIR"/"$JNUM"/mtcontigs
 
@@ -167,8 +167,8 @@ HEREDOC
 	done
 
 	_polap_log1 "compressing the long-read data file ..."
-	if [ -s "${_polap_var_base_sra_long_fastq}" ]; then
-		gzip -c "${_polap_var_base_sra_long_fastq}" \
+	if [ -s "${_polap_var_outdir_sra_long_fastq}" ]; then
+		gzip -c "${_polap_var_outdir_sra_long_fastq}" \
 			>"${_arg_archive}/l.fq.gz"
 	fi
 	_polap_log1 "compressing the short-read polishing data file ..."
@@ -331,10 +331,10 @@ HEREDOC
 		# Copy all contents from the "whole-genome" assembly folder into a new location.
 		_polap_log1 "  step 3-1: creating GFA without sequence data"
 		_polap_log1 "    input1: ${_polap_var_ga_contigger_edges_gfa}"
-		_polap_log2 "    output: ${_polap_var_assembly_graph_final_gfa}.without.sequences"
+		_polap_log2 "    output: ${_polap_var_ga_contigger_edges_gfa}.without.sequences"
 		_polap_log3_pipe "gfatools view \
-		    -S ${_polap_var_assembly_graph_final_gfa} \
-		    >${_polap_var_assembly_graph_final_gfa}.without.sequences \
+		    -S ${_polap_var_ga_contigger_edges_gfa} \
+		    >${_polap_var_ga_contigger_edges_gfa}.without.sequences \
 		    2>$_polap_output_dest"
 	fi
 
@@ -416,9 +416,9 @@ HEREDOC
 	rsync -a -f"+ */" -f"- *" "${ODIR}"/ "${_arg_archive}"/
 
 	# Copy all contents from the base directory into a new location.
-	cp -fp "${_polap_var_base_genome_size}" \
+	cp -fp "${_polap_var_outdir_genome_size}" \
 		"${_ppack_var_base_genome_size}" 2>/dev/null
-	cp -fp "${_polap_var_base_long_total_length}" \
+	cp -fp "${_polap_var_outdir_long_total_length}" \
 		"${_ppack_var_base_long_total_length}" 2>/dev/null
 	rsync -a "${_polap_var_project}"/ "${_ppack_var_project}"/ 2>/dev/null
 
@@ -437,13 +437,13 @@ HEREDOC
 			_polap_log1 "      input1: ${_polap_var_ga_contigger_edges_gfa}"
 			_polap_log2 "      output: ${_ppack_var_ga_contigger_edges_gfa}"
 			_polap_log3_pipe "gfatools view \
-		    -S ${_polap_var_assembly_graph_final_gfa} \
+		    -S ${_polap_var_ga_contigger_edges_gfa} \
 		    >${_ppack_var_assembly_graph_final_gfa}.without.sequences \
 		    2>$_polap_output_dest"
 		fi
 
 		# _polap_archive_gfa-depth-filtered \
-		# 	${_polap_var_assembly_graph_final_gfa} \
+		# 	${_polap_var_ga_contigger_edges_gfa} \
 		# 	1000,1500 \
 		# 	${_ppack_var_assembly_graph_final_gfa}
 
@@ -537,13 +537,13 @@ HEREDOC
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
-	_polap_log3_cmd rm -f "${_polap_var_base_lk_fq_gz}"
+	_polap_log3_cmd rm -f "${_polap_var_outdir_lk_fq_gz}"
 	_polap_log3_cmd rm -rf "${_polap_var_oga}"/{00-assembly,10-consensus,20-repeat,40-polishing}
 	_polap_log3_cmd rm -rf "${_polap_var_oga_contig}"/{contig.paf,contig.tab}
 	for _pread_sel in ptgaul-intra-base-length single-intra-base-length combined-intra-base-length; do
 		_polap_log3_cmd rm -rf "${_polap_var_oga_reads}/${_pread_sel}"
 		_polap_log3_cmd rm -rf "${_polap_var_oga_seeds}/${_pread_sel}"
-		_polap_log3_cmd rm -rf "${_polap_var_oga_sample}/${_pread_sel}"
+		_polap_log3_cmd rm -rf "${_polap_var_oga_subsample}/${_pread_sel}"
 	done
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"

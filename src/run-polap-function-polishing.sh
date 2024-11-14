@@ -84,16 +84,16 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	if [ -s "${_polap_var_base_msbwt_tar_gz}" ]; then
-		_polap_log1_file "${_polap_var_base_msbwt_tar_gz}"
-		if [[ -s "${_polap_var_base_msbwt}" ]]; then
-			_polap_log1_file "${_polap_var_base_msbwt}"
+	if [ -s "${_polap_var_outdir_msbwt_tar_gz}" ]; then
+		_polap_log1_file "${_polap_var_outdir_msbwt_tar_gz}"
+		if [[ -s "${_polap_var_outdir_msbwt}" ]]; then
+			_polap_log1_file "${_polap_var_outdir_msbwt}"
 			_polap_log1 "  skipping the short-read polishing preparation."
 		else
-			tar -zxf "${_polap_var_base_msbwt_tar_gz}" -C "${ODIR}"
+			tar -zxf "${_polap_var_outdir_msbwt_tar_gz}" -C "${ODIR}"
 		fi
-	elif [[ -s "${_polap_var_base_msbwt}" ]]; then
-		_polap_log1_file "${_polap_var_base_msbwt}"
+	elif [[ -s "${_polap_var_outdir_msbwt}" ]]; then
+		_polap_log1_file "${_polap_var_outdir_msbwt}"
 		_polap_log1 "  skipping the short-read polishing preparation."
 	else
 
@@ -167,7 +167,7 @@ function _run_polap_polish() { # polish organelle genome sequences using FMLRC
 #   -p ${_arg_unpolished_fasta}: a long-read draft genome assembly
 #   -f ${_arg_final_assembly}: a final genome assembly sequence name
 # Inputs:
-#   ${_polap_var_base_msbwt}
+#   ${_polap_var_outdir_msbwt}
 #   ${_arg_unpolished_fasta}
 # Outputs:
 #   ${_arg_final_assembly}
@@ -187,15 +187,15 @@ HEREDOC
 		exit $EXIT_ERROR
 	fi
 
-	if [[ ! -s "${_polap_var_base_msbwt}" ]]; then
-		_polap_log0 "ERROR: no msbwt at ${_polap_var_base_msbwt}"
+	if [[ ! -s "${_polap_var_outdir_msbwt}" ]]; then
+		_polap_log0 "ERROR: no msbwt at ${_polap_var_outdir_msbwt}"
 		_polap_log0 "HINT: $(basename "$0") prepare-polishing [-a s1.fq] [-b s2.fq]"
 		exit $EXIT_ERROR
 	fi
 
 	_polap_log1 "INFO: executing fmlrc on the draft sequence ${_arg_unpolished_fasta} ... be patient!"
 	if [[ -s "${_arg_unpolished_fasta}" ]]; then
-		fmlrc -p "${_arg_threads}" "${_polap_var_base_msbwt}" "${_arg_unpolished_fasta}" "${_arg_final_assembly}" >/dev/null 2>&1
+		fmlrc -p "${_arg_threads}" "${_polap_var_outdir_msbwt}" "${_arg_unpolished_fasta}" "${_arg_final_assembly}" >/dev/null 2>&1
 	else
 		_polap_log0 "ERROR: no unpolished fasta file: [${_arg_unpolished_fasta}]"
 		exit $EXIT_ERROR

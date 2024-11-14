@@ -39,13 +39,13 @@ conda install r::r-mixr
 
 # FIXME
 
-╰─ grep \_polap_var_annotation_table polap-variables-\*.sh ─╯
-polap-variables-mtcontig.sh:local \_polap_var_annotation_table="${_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt"
-polap-variables-mtdna.sh:local _polap_var_annotation_table="${\_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt"
+╰─ grep \_polap_var_ga_annotation_all polap-variables-\*.sh ─╯
+polap-variables-mtcontig.sh:local \_polap_var_ga_annotation_all="${_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt"
+polap-variables-mtdna.sh:local _polap_var_ga_annotation_all="${\_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt"
 
-╰─ grep \_polap_var_assembly_graph_final_gfa polap-variables-\*.sh ─╯
-polap-variables-ga.sh:local \_polap_var_assembly_graph_final_gfa="${_polap_var_contigger}/graph_final.gfa"
-polap-variables-mtcontig.sh:local _polap_var_assembly_graph_final_gfa="${\_polap_var_contigger}/graph_final.gfa"
+╰─ grep \_polap_var_ga_contigger_edges_gfa polap-variables-\*.sh ─╯
+polap-variables-ga.sh:local \_polap_var_ga_contigger_edges_gfa="${_polap_var_ga_contigger}/graph_final.gfa"
+polap-variables-mtcontig.sh:local _polap_var_ga_contigger_edges_gfa="${\_polap_var_ga_contigger}/graph_final.gfa"
 
 ╰─ grep \_polap_var_wga_annotation polap-variables-\*.sh ─╯
 polap-variables-ga.sh:local \_polap_var_wga_annotation="${_polap_var_wga}/assembly_info_organelle_annotation_count-all.txt"
@@ -53,9 +53,9 @@ polap-variables-wga.sh:local _polap_var_wga_annotation="${\_polap_var_wga}/assem
 
 ╰─ grep \_polap_var_wga_contigger polap-variables-\*.sh ─╯
 polap-variables-ga.sh:local \_polap_var_wga_contigger="${_polap_var_wga}/30-contigger"
-polap-variables-ga.sh:local _polap_var_wga_contigger_gfa="${\_polap_var_wga_contigger}/graph_final.gfa"
+polap-variables-ga.sh:local _polap_var_wga_contigger_edges_gfa="${\_polap_var_wga_contigger}/graph_final.gfa"
 polap-variables-wga.sh:local \_polap_var_wga_contigger="${_polap_var_wga}/30-contigger"
-polap-variables-wga.sh:local _polap_var_wga_contigger_gfa="${\_polap_var_wga_contigger}/graph_final.gfa"
+polap-variables-wga.sh:local _polap_var_wga_contigger_edges_gfa="${\_polap_var_wga_contigger}/graph_final.gfa"
 polap-variables-wga.sh:local \_polap_var_wga_contigger_contigs_stats="${_polap_var_wga_contigger}/contigs_stats.txt"
 polap-variables-wga.sh:local _polap_var_wga_contigger_contigs_fasta="${\_polap_var_wga_contigger}/contigs.fasta"
 ################################################################################

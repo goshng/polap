@@ -262,54 +262,54 @@ HEREDOC
 
 	check_folder_existence "${ODIR}"
 
-	local n1=$(cut -f1 "${_polap_var_bioproject_mtdna_fasta2_accession}")
-	local l1=$(seqkit stats -T "${_polap_var_bioproject_mtdna_fasta2}" |
+	local n1=$(cut -f1 "${_polap_var_project_mtdna_fasta2_accession}")
+	local l1=$(seqkit stats -T "${_polap_var_project_mtdna_fasta2}" |
 		csvtk cut -t -f sum_len |
 		csvtk del-header)
 
 	# Run blastn between known mtDNA and assembled mtDNA (first round)
 	blastn -query "${_polap_var_compare_mtdna1}" \
-		-subject "${_polap_var_bioproject_mtdna_fasta2}" \
+		-subject "${_polap_var_project_mtdna_fasta2}" \
 		-outfmt "6 qseqid qstart sseqid sstart sstrand" \
 		>"${_polap_var_compare_oga_blastn1}"
 
 	blastn -query "${_polap_var_compare_mtdna1}" \
-		-subject "${_polap_var_bioproject_mtdna_fasta2}" \
+		-subject "${_polap_var_project_mtdna_fasta2}" \
 		>"${_polap_var_compare_oga_blastn1}.full"
 
 	_polap_log2_file "${_polap_var_compare_oga_blastn1}"
 
 	# Determine the strand orientation
 	if [ -s "${_polap_var_compare_oga_blastn1}" ]; then
-		local _polap_var_bioproject_strand=$(cut -f5 "${_polap_var_compare_oga_blastn1}" | head -n 1)
+		local _polap_var_project_strand=$(cut -f5 "${_polap_var_compare_oga_blastn1}" | head -n 1)
 	else
 		_polap_log1 "No hit in ${_polap_var_compare_oga_blastn1}"
-		local n1=$(cut -f1 "${_polap_var_bioproject_mtdna_fasta2_accession}")
+		local n1=$(cut -f1 "${_polap_var_project_mtdna_fasta2_accession}")
 		printf "%s\t%d\t0\t0\n" ${n1} ${l1} >"${_polap_var_compare_mtdna_compare}"
 		return
 	fi
 
 	# Reverse sequence if the strand is negative
-	if [ "${_polap_var_bioproject_strand}" = "plus" ]; then
+	if [ "${_polap_var_project_strand}" = "plus" ]; then
 		cp "${_polap_var_compare_mtdna1}" "${_polap_var_compare_mtdna2}"
 	else
 		seqkit seq -t dna -v -p -r "${_polap_var_compare_mtdna1}" -o "${_polap_var_compare_mtdna2}"
 	fi
 
 	# Run blastn (second round)
-	blastn -query "${_polap_var_compare_mtdna2}" -subject "${_polap_var_bioproject_mtdna_fasta2}" \
+	blastn -query "${_polap_var_compare_mtdna2}" -subject "${_polap_var_project_mtdna_fasta2}" \
 		-outfmt "6 qseqid qstart sseqid sstart sstrand" \
 		>"${_polap_var_compare_oga_blastn2}"
 
 	_polap_log2_file "${_polap_var_compare_oga_blastn2}"
 
 	# Restart sequence alignment at the lowest start position
-	local _polap_var_bioproject_restart_position=$(sort -n -k4 "${_polap_var_compare_oga_blastn2}" | head -n 1 | cut -f2)
-	_polap_log2 "LOG: restart position: ${_polap_var_bioproject_restart_position}"
-	seqkit restart -i "${_polap_var_bioproject_restart_position}" "${_polap_var_compare_mtdna2}" -o "${_polap_var_compare_mtdna3}"
+	local _polap_var_project_restart_position=$(sort -n -k4 "${_polap_var_compare_oga_blastn2}" | head -n 1 | cut -f2)
+	_polap_log2 "LOG: restart position: ${_polap_var_project_restart_position}"
+	seqkit restart -i "${_polap_var_project_restart_position}" "${_polap_var_compare_mtdna2}" -o "${_polap_var_compare_mtdna3}"
 
 	# Run blastn (third round)
-	blastn -query "${_polap_var_compare_mtdna3}" -subject "${_polap_var_bioproject_mtdna_fasta2}" \
+	blastn -query "${_polap_var_compare_mtdna3}" -subject "${_polap_var_project_mtdna_fasta2}" \
 		-outfmt "6 qseqid qstart sseqid sstart sstrand length pident" \
 		>"${_polap_var_compare_oga_blastn3}"
 
@@ -325,7 +325,7 @@ HEREDOC
 
 	local l2=$(<"${_polap_var_compare_oga_blastn3_length}")
 	local c1=$(echo "scale=3; ${l2}/${l1}" | bc)
-	_polap_log2 "Length of ${_polap_var_bioproject_mtdna_fasta2}: ${l1}"
+	_polap_log2 "Length of ${_polap_var_project_mtdna_fasta2}: ${l1}"
 	_polap_log2 "Length of match alignment: ${l2}"
 	_polap_log1 "length coverage: ${c1}"
 	printf "%s\t%d\t%d\t%f\n" ${n1} ${l1} ${l2} ${c1} >"${_polap_var_compare_mtdna_compare}"
@@ -374,9 +374,9 @@ function _run_polap_get-mtdna() {
 #   or
 #   -o ${ODIR} (next priority)
 # Outputs:
-#   ${_polap_var_bioproject_mtdna_fasta1}
-#   ${_polap_var_bioproject_mtdna_fasta2}
-#   ${_polap_var_bioproject_mtdna_fasta2_accession}
+#   ${_polap_var_project_mtdna_fasta1}
+#   ${_polap_var_project_mtdna_fasta2}
+#   ${_polap_var_project_mtdna_fasta2_accession}
 # Preconditions:
 #   get-bioproject
 Example: $(basename "$0") ${_arg_menu[0]} --species "Anthoceros agrestis"
@@ -389,9 +389,9 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	if [[ ${_arg_menu[1]} == "file" ]]; then
-		if [[ -s "${_polap_var_bioproject_species}" ]]; then
-			_polap_log0_file "${_polap_var_bioproject_species}"
-			_polap_log0_cat "${_polap_var_bioproject_species}"
+		if [[ -s "${_polap_var_project_species}" ]]; then
+			_polap_log0_file "${_polap_var_project_species}"
+			_polap_log0_cat "${_polap_var_project_species}"
 		else
 			_polap_log0 "No species file."
 		fi
@@ -399,19 +399,19 @@ HEREDOC
 	fi
 
 	if [[ ${_arg_menu[1]} == "view" ]]; then
-		if [[ -s "${_polap_var_bioproject_mtdna_fasta2_accession}" ]]; then
-			_polap_log0_cat "${_polap_var_bioproject_mtdna_fasta2_accession}"
-			if [ -s "${_polap_var_bioproject_mtdna_fasta1}" ]; then
-				seqkit fx2tab -n -l "${_polap_var_bioproject_mtdna_fasta1}" >&3
-				seqkit stats "${_polap_var_bioproject_mtdna_fasta1}" >&3
+		if [[ -s "${_polap_var_project_mtdna_fasta2_accession}" ]]; then
+			_polap_log0_cat "${_polap_var_project_mtdna_fasta2_accession}"
+			if [ -s "${_polap_var_project_mtdna_fasta1}" ]; then
+				seqkit fx2tab -n -l "${_polap_var_project_mtdna_fasta1}" >&3
+				seqkit stats "${_polap_var_project_mtdna_fasta1}" >&3
 			else
-				_polap_log1 "No such file: ${_polap_var_bioproject_mtdna_fasta1}"
+				_polap_log1 "No such file: ${_polap_var_project_mtdna_fasta1}"
 				_polap_log0 "No organelle genome sequence"
 			fi
-			if [ -s "${_polap_var_bioproject_mtdna_fasta2}" ]; then
-				seqkit stats "${_polap_var_bioproject_mtdna_fasta2}" >&3
+			if [ -s "${_polap_var_project_mtdna_fasta2}" ]; then
+				seqkit stats "${_polap_var_project_mtdna_fasta2}" >&3
 			else
-				_polap_log1 "No such file: ${_polap_var_bioproject_mtdna_fasta2}"
+				_polap_log1 "No such file: ${_polap_var_project_mtdna_fasta2}"
 			fi
 
 		else
@@ -429,31 +429,31 @@ HEREDOC
 		_polap_log1 "  option --species: ${_arg_species}"
 		SPECIES="${_arg_species}"
 		_polap_log3_cmd mkdir -p "${_polap_var_project}"
-	elif [ -s "${_polap_var_bioproject_species}" ]; then
-		if [[ -s "${_polap_var_bioproject_txt}" ]]; then
-			local bioproject_id=$(<"${_polap_var_bioproject_txt}")
-			local n=$(wc -l <"${_polap_var_bioproject_species}")
+	elif [ -s "${_polap_var_project_species}" ]; then
+		if [[ -s "${_polap_var_project_txt}" ]]; then
+			local bioproject_id=$(<"${_polap_var_project_txt}")
+			local n=$(wc -l <"${_polap_var_project_species}")
 			if [[ "${n}" -gt 1 ]]; then
-				_polap_log0_file "${_polap_var_bioproject_species}"
-				_polap_log0_cat "${_polap_var_bioproject_species}"
+				_polap_log0_file "${_polap_var_project_species}"
+				_polap_log0_cat "${_polap_var_project_species}"
 				die "ERROR: you have multiple species names in BioProject: ${bioproject_id}"
 			fi
-			SPECIES=$(<"${_polap_var_bioproject_species}")
+			SPECIES=$(<"${_polap_var_project_species}")
 			_polap_log0 "  bioproject's species: $SPECIES"
 		else
 			die "ERROR: you have not run the menu: get-bioproject on the output folder [${ODIR}], yet!"
 		fi
 	elif [ -n "${_arg_bioproject}" ]; then
 		_run_polap_get-bioproject
-		if [ -s "${_polap_var_bioproject_species}" ]; then
-			local bioproject_id=$(<"${_polap_var_bioproject_txt}")
-			local n=$(wc -l <"${_polap_var_bioproject_species}")
+		if [ -s "${_polap_var_project_species}" ]; then
+			local bioproject_id=$(<"${_polap_var_project_txt}")
+			local n=$(wc -l <"${_polap_var_project_species}")
 			if [[ "${n}" -gt 1 ]]; then
-				_polap_log0_file "${_polap_var_bioproject_species}"
-				_polap_log0_cat "${_polap_var_bioproject_species}"
+				_polap_log0_file "${_polap_var_project_species}"
+				_polap_log0_cat "${_polap_var_project_species}"
 				die "ERROR: you have multiple species names in BioProject: ${bioproject_id}"
 			fi
-			SPECIES=$(<"${_polap_var_bioproject_species}")
+			SPECIES=$(<"${_polap_var_project_species}")
 			_polap_log1 "  bioproject's species: $SPECIES"
 		else
 			die "  no species name is provided in the BioProject: ${_arg_bioproject}"
@@ -469,24 +469,24 @@ HEREDOC
 		esearch \
 			-db nuccore \
 			-query "(mitochondrion[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]" |
-			efetch -format fasta >"${_polap_var_bioproject_mtdna_fasta1}"
+			efetch -format fasta >"${_polap_var_project_mtdna_fasta1}"
 	else
 		_polap_log1 "  downloading chloroplast complete genomes of ${SPECIES} ..."
 		esearch \
 			-db nuccore \
 			-query "(chloroplast[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]" |
-			efetch -format fasta >"${_polap_var_bioproject_mtdna_fasta1}"
+			efetch -format fasta >"${_polap_var_project_mtdna_fasta1}"
 	fi
-	_polap_log2_file "${_polap_var_bioproject_mtdna_fasta1}"
+	_polap_log2_file "${_polap_var_project_mtdna_fasta1}"
 
 	# Check if the fasta file was successfully downloaded
 	_polap_log1 "  step 3: check if the fasta file was successfully downloaded"
-	if [ -s "${_polap_var_bioproject_mtdna_fasta1}" ]; then
+	if [ -s "${_polap_var_project_mtdna_fasta1}" ]; then
 		seqkit fx2tab --length --name --header-line \
-			"${_polap_var_bioproject_mtdna_fasta1}" \
-			>"${_polap_var_bioproject_mtdna_fasta1_stats}"
+			"${_polap_var_project_mtdna_fasta1}" \
+			>"${_polap_var_project_mtdna_fasta1_stats}"
 
-		local n=$(seqkit stats -T "${_polap_var_bioproject_mtdna_fasta1}" |
+		local n=$(seqkit stats -T "${_polap_var_project_mtdna_fasta1}" |
 			csvtk cut -t -f num_seqs |
 			csvtk del-header)
 
@@ -494,23 +494,23 @@ HEREDOC
 			_polap_log2 "  multiple (${n}) accession numbers for the organelle genome sequences"
 		fi
 
-		seqkit head -n 1 "${_polap_var_bioproject_mtdna_fasta1}" \
-			-o "${_polap_var_bioproject_mtdna_fasta2}"
+		seqkit head -n 1 "${_polap_var_project_mtdna_fasta1}" \
+			-o "${_polap_var_project_mtdna_fasta2}"
 
-		seqkit seq -ni "${_polap_var_bioproject_mtdna_fasta2}" \
-			-o "${_polap_var_bioproject_mtdna_fasta2_accession}"
+		seqkit seq -ni "${_polap_var_project_mtdna_fasta2}" \
+			-o "${_polap_var_project_mtdna_fasta2_accession}"
 
-		local accession=$(<"${_polap_var_bioproject_mtdna_fasta2_accession}")
-		_polap_log2_cat "${_polap_var_bioproject_mtdna_fasta1_stats}"
+		local accession=$(<"${_polap_var_project_mtdna_fasta2_accession}")
+		_polap_log2_cat "${_polap_var_project_mtdna_fasta1_stats}"
 		_polap_log0 "Species: ${SPECIES}"
 		_polap_log0 "NCBI accession: ${accession}"
 	else
-		echo "no mtDNA" >"${_polap_var_bioproject_mtdna_fasta2_accession}"
+		echo "no mtDNA" >"${_polap_var_project_mtdna_fasta2_accession}"
 		_polap_log0 "No mtDNA sequence found for the species: ${SPECIES}"
 		rm -f \
-			"${_polap_var_bioproject_mtdna_fasta1_stats}" \
-			"${_polap_var_bioproject_mtdna_fasta1}" \
-			"${_polap_var_bioproject_mtdna_fasta2}"
+			"${_polap_var_project_mtdna_fasta1_stats}" \
+			"${_polap_var_project_mtdna_fasta1}" \
+			"${_polap_var_project_mtdna_fasta2}"
 	fi
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -599,7 +599,7 @@ function _run_polap_select-mtdna() {
 	#
 	# # File paths
 	# local _polap_var_assembly_graph_gfa="$FDIR/assembly_graph.gfa"
-	# local _polap_var_annotation_table="$FDIR/assembly_info_organelle_annotation_count-all.txt"
+	# local _polap_var_ga_annotation_all="$FDIR/assembly_info_organelle_annotation_count-all.txt"
 	# local _polap_var_mt_fasta="$FDIR/mt.0.fasta"
 	# local _polap_var_mt_edges="$FDIR/mt.0.edges"
 	# local _polap_var_mtdna_1_gfa_all="${_polap_var_mtdna}/1-gfa.all.gfa"
@@ -620,7 +620,7 @@ function _run_polap_select-mtdna() {
 #
 # Inputs:
 #   ${_polap_var_assembly_graph_gfa}
-#   ${_polap_var_annotation_table}
+#   ${_polap_var_ga_annotation_all}
 #
 # Outputs:
 #   ${_polap_var_mt_fasta}
@@ -634,14 +634,14 @@ HEREDOC
 
 	# Check for required files
 	check_file_existence "${_polap_var_assembly_graph_gfa}"
-	check_file_existence "${_polap_var_annotation_table}"
+	check_file_existence "${_polap_var_ga_annotation_all}"
 
 	# Create necessary directories
 	rm -rf "${_polap_var_mtdna}"
 	mkdir -p "${_polap_var_mtdna}"
 
 	_polap_log1_file "Input GFA: ${_polap_var_assembly_graph_gfa}"
-	_polap_log1_file "Input Annotation Table: ${_polap_var_annotation_table}"
+	_polap_log1_file "Input Annotation Table: ${_polap_var_ga_annotation_all}"
 
 	# Convert GFA to FASTA
 	gfatools gfa2fa "${_polap_var_assembly_graph_gfa}" \
@@ -748,7 +748,7 @@ function _run_polap_select-mtdna-org() {
 	#
 	# # File paths
 	# local _polap_var_assembly_graph_gfa="$FDIR/assembly_graph.gfa"
-	# local _polap_var_annotation_table="$FDIR/assembly_info_organelle_annotation_count-all.txt"
+	# local _polap_var_ga_annotation_all="$FDIR/assembly_info_organelle_annotation_count-all.txt"
 	# local _polap_var_mt_fasta="$FDIR/mt.0.fasta"
 	# local _polap_var_mt_edges="$FDIR/mt.0.edges"
 	# local _polap_var_mtdna_1_gfa_all="${_polap_var_mtdna}/1-gfa.all.gfa"
@@ -769,7 +769,7 @@ function _run_polap_select-mtdna-org() {
 #
 # Inputs:
 #   ${_polap_var_assembly_graph_gfa}
-#   ${_polap_var_annotation_table}
+#   ${_polap_var_ga_annotation_all}
 #
 # Outputs:
 #   ${_polap_var_mt_fasta}
@@ -783,14 +783,14 @@ HEREDOC
 
 	# Check for required files
 	check_file_existence "${_polap_var_assembly_graph_gfa}"
-	check_file_existence "${_polap_var_annotation_table}"
+	check_file_existence "${_polap_var_ga_annotation_all}"
 
 	# Create necessary directories
 	rm -rf "${_polap_var_mtdna}"
 	mkdir -p "${_polap_var_mtdna}"
 
 	_polap_log1_file "Input GFA: ${_polap_var_assembly_graph_gfa}"
-	_polap_log1_file "Input Annotation Table: ${_polap_var_annotation_table}"
+	_polap_log1_file "Input Annotation Table: ${_polap_var_ga_annotation_all}"
 
 	# Convert GFA to FASTA
 	gfatools gfa2fa "${_polap_var_assembly_graph_gfa}" \

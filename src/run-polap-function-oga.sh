@@ -34,14 +34,14 @@ function _polap_oga_determine-long-read-file() {
 	local -n result_ref=$1
 
 	if [[ "${_arg_long_reads_is}" == "off" ]]; then
-		if [[ -s "${_polap_var_base_lk_fq_gz}" ]]; then
-			_polap_log2 "    we utilize all available size-limited long-read data for our analysis: ${_polap_var_base_lk_fq_gz}"
-			result_ref="${_polap_var_base_lk_fq_gz}"
-		elif [[ -s "${_polap_var_base_nk_fq_gz}" ]]; then
-			_polap_log2 "    we utilize the sampled and size-limited long-read data for our analysis: ${_polap_var_base_nk_fq_gz}"
-			result_ref="${_polap_var_base_nk_fq_gz}"
+		if [[ -s "${_polap_var_outdir_lk_fq_gz}" ]]; then
+			_polap_log2 "    we utilize all available size-limited long-read data for our analysis: ${_polap_var_outdir_lk_fq_gz}"
+			result_ref="${_polap_var_outdir_lk_fq_gz}"
+		elif [[ -s "${_polap_var_outdir_nk_fq_gz}" ]]; then
+			_polap_log2 "    we utilize the sampled and size-limited long-read data for our analysis: ${_polap_var_outdir_nk_fq_gz}"
+			result_ref="${_polap_var_outdir_nk_fq_gz}"
 		else
-			die "ERROR: no such file: ${_polap_var_base_lk_fq_gz}, ${_polap_var_base_nk_fq_gz}"
+			die "ERROR: no such file: ${_polap_var_outdir_lk_fq_gz}, ${_polap_var_outdir_nk_fq_gz}"
 		fi
 	else
 		_polap_log2 "    we utilize the long-read data supplied through the command-line option -l."
@@ -196,11 +196,11 @@ HEREDOC
 # Inputs:
 #   _polap_var_mtcontigname="${_polap_var_ga}/mt.contig.name-${JNUM}"
 #   ${_polap_var_mtcontigname} <- $INUM and $JNUM
-#   ${MTCONTIGNAME} <- $INUM and $JNUM
-#   ${_polap_var_contigger_edges_fasta} <- $INUM
-#   ${_polap_var_base_nk_fq_gz}
-#   ${_polap_var_base_lk_fq_gz}
-#   ${_polap_var_base_l_fq_gz}
+#   ${_polap_var_mtcontigname} <- $INUM and $JNUM
+#   ${_polap_var_ga_contigger_edges_fasta} <- $INUM
+#   ${_polap_var_outdir_nk_fq_gz}
+#   ${_polap_var_outdir_lk_fq_gz}
+#   ${_polap_var_outdir_l_fq_gz}
 #
 # Outputs:
 #   _polap_var_oga_reads="${_polap_var_oga}/02-reads"
@@ -226,11 +226,11 @@ function _run_polap_map-reads() { # selects reads mapped on a genome assembly
 # Arguments:
 #   -i $INUM: source Flye (usually whole-genome) assembly number (or 0)
 #   -j $JNUM: destination Flye organelle assembly number
-#   -l ${_arg_long_reads}: long-read data default:${_polap_var_base_lk_fq_gz}
+#   -l ${_arg_long_reads}: long-read data default:${_polap_var_outdir_lk_fq_gz}
 # Inputs:
 #   ${_polap_var_mtcontigname}
-#   ${_polap_var_contigger_edges_fasta}
-#   ${_polap_var_base_lk_fq_gz} or ${_polap_var_base_nk_fq_gz}
+#   ${_polap_var_ga_contigger_edges_fasta}
+#   ${_polap_var_outdir_lk_fq_gz} or ${_polap_var_outdir_nk_fq_gz}
 # Outputs:
 #   ${_polap_var_oga_contig}/contig.fa
 #   ${_polap_var_oga_contig}/contig.paf
@@ -246,7 +246,7 @@ HEREDOC
 	_polap_log0 "mapping long-read data on the seed contigs ..."
 	_polap_log1 "  assembly: $INUM (source) -> $JNUM (target) ..."
 	_polap_log1 "  input1: ${_polap_var_mtcontigname}"
-	_polap_log1 "  input2: ${_polap_var_contigger_edges_fasta}"
+	_polap_log1 "  input2: ${_polap_var_ga_contigger_edges_fasta}"
 
 	if [[ -s "${_polap_var_oga_contig}/contig.tab" ]] && [[ "${_arg_redo}" == "on" ]]; then
 		_polap_log0 "  found: ${_polap_var_oga_reads}/contig.tab, so skipping mapping long-read data ..."
@@ -258,8 +258,8 @@ HEREDOC
 		exit $EXIT_ERROR
 	fi
 
-	if [ ! -s "${_polap_var_contigger_edges_fasta}" ]; then
-		_polap_log0 "ERROR: no assembly fasta file: ${_polap_var_contigger_edges_fasta}"
+	if [ ! -s "${_polap_var_ga_contigger_edges_fasta}" ]; then
+		_polap_log0 "ERROR: no assembly fasta file: ${_polap_var_ga_contigger_edges_fasta}"
 		exit $EXIT_ERROR
 	fi
 
@@ -293,15 +293,15 @@ HEREDOC
 	local _source_long_reads_fq=""
 	_polap_oga_determine-long-read-file _source_long_reads_fq
 
-	# _polap_log3_cmd ln -s "$PWD/${_polap_var_base_nk_fq_gz}" -t "${_polap_var_oga}"
-	# _polap_log3_cmd ln -s "$PWD/${_polap_var_base_lk_fq_gz}" -t "${_polap_var_oga}"
-	_polap_log1 "  extracts contig sequeces from the assembly: ${_polap_var_contigger_edges_fasta}"
-	_polap_log2 "    input1: ${_polap_var_contigger_edges_fasta}"
+	# _polap_log3_cmd ln -s "$PWD/${_polap_var_outdir_nk_fq_gz}" -t "${_polap_var_oga}"
+	# _polap_log3_cmd ln -s "$PWD/${_polap_var_outdir_lk_fq_gz}" -t "${_polap_var_oga}"
+	_polap_log1 "  extracts contig sequeces from the assembly: ${_polap_var_ga_contigger_edges_fasta}"
+	_polap_log2 "    input1: ${_polap_var_ga_contigger_edges_fasta}"
 	_polap_log2 "    input2: ${_polap_var_mtcontigname}"
 	_polap_log2 "    output: ${_polap_var_oga_contig}/contig.fa"
 	_polap_log3_pipe "seqkit grep \
     -f ${_polap_var_mtcontigname} \
-		${_polap_var_contigger_edges_fasta} \
+		${_polap_var_ga_contigger_edges_fasta} \
 		-o ${_polap_var_oga_contig}/contig.fa \
 		2>${_polap_output_dest}"
 
@@ -329,7 +329,7 @@ HEREDOC
 			# seqkit subseq -r 1:"$B" "${_polap_var_oga}"/contig.fa -o "${_polap_var_oga}"/c1.fa >/dev/null 2>&1
 			# seqkit subseq -r "$C":"$A" "${_polap_var_oga}"/contig.fa -o "${_polap_var_oga}"/c2.fa >/dev/null 2>&1
 			# cat "${_polap_var_oga}"/c?.fa | seqkit replace -p '.+' -r 'edge_{nr}' -o "${_polap_var_oga}"/contig.fa >/dev/null 2>&1
-			# cp "${_polap_var_mtcontigname}" "${MTCONTIGNAME}"-backup
+			# cp "${_polap_var_mtcontigname}" "${_polap_var_mtcontigname}"-backup
 			# echo -e "edge_1\nedge_2" >"${_polap_var_mtcontigname}"
 
 			_polap_log1 "    creating new ${_polap_var_oga_reads}/contig.fa and ${_polap_var_mtcontigname}"
@@ -384,7 +384,7 @@ HEREDOC
 	if [[ ${_arg_circularize} == "on" ]]; then
 		_polap_log1 "  circularize option: putting seed contigs back to the original mt.contig.name and ${_polap_var_oga}/contig.fa"
 		if [[ -s "${_polap_var_mtcontigname}"-backup ]]; then
-			mv "${_polap_var_mtcontigname}"-backup "${MTCONTIGNAME}"
+			mv "${_polap_var_mtcontigname}"-backup "${_polap_var_mtcontigname}"
 			mv "${_polap_var_oga}/contig.fa-backup" "${_polap_var_oga}/contig.fa"
 		else
 			echo "DEV: not implemented yet"
@@ -410,16 +410,16 @@ HEREDOC
 #   --start-index <index>: to start at somewhere not start
 # Inputs:
 #   ${_polap_var_mtcontigname}
-#   ${_polap_var_contigger_edges_fasta}
+#   ${_polap_var_ga_contigger_edges_fasta}
 #   input long read data to use (priority order):
-#     1. ${_polap_var_base_lk_fq_gz}
-#     2. ${_polap_var_base_nk_fq_gz}
+#     1. ${_polap_var_outdir_lk_fq_gz}
+#     2. ${_polap_var_outdir_nk_fq_gz}
 #     3. ${_arg_long_reads}
 # Outputs:
 #   ${_polap_var_oga_contig}: map-reads output
 #   ${_polap_var_oga_reads}: mapped read names
 #   ${_polap_var_oga_seeds}: mapped reads
-#   ${_polap_var_oga_sample}: subsample of the mapped reads
+#   ${_polap_var_oga_subsample}: subsample of the mapped reads
 #   ${_polap_var_oga_flye}: assemblies
 #   ${_polap_var_oga_summary}: summary
 #   ${_polap_var_oga_plot}: plot or table using range in contig folder and summary
@@ -465,16 +465,16 @@ function _run_polap_test-reads() { # selects reads mapped on a genome assembly
 #   --start-index <index>: to start at somewhere not start
 # Inputs:
 #   ${_polap_var_mtcontigname}
-#   ${_polap_var_contigger_edges_fasta}
+#   ${_polap_var_ga_contigger_edges_fasta}
 #   input long read data to use (priority order): 
-#     1. ${_polap_var_base_lk_fq_gz}
-#     2. ${_polap_var_base_nk_fq_gz}
+#     1. ${_polap_var_outdir_lk_fq_gz}
+#     2. ${_polap_var_outdir_nk_fq_gz}
 #     3. ${_arg_long_reads}
 # Outputs:
 #   ${_polap_var_oga_contig}: map-reads output
 #   ${_polap_var_oga_reads}: mapped read names
 #   ${_polap_var_oga_seeds}: mapped reads
-#   ${_polap_var_oga_sample}: subsample of the mapped reads
+#   ${_polap_var_oga_subsample}: subsample of the mapped reads
 #   ${_polap_var_oga_flye}: assemblies
 #   ${_polap_var_oga_summary}: summary
 #   ${_polap_var_oga_plot}: plot or table using range in contig folder and summary
@@ -767,7 +767,7 @@ HEREDOC
 		_polap_log0 "  deleting the folder like ${_polap_var_oga_reads}/${_pread_sel}"
 		rm -rf "${_polap_var_oga_reads}/${_pread_sel}"
 		rm -rf "${_polap_var_oga_seeds}/${_pread_sel}"
-		rm -rf "${_polap_var_oga_sample}/${_pread_sel}"
+		rm -rf "${_polap_var_oga_subsample}/${_pread_sel}"
 		rm -rf "${_polap_var_oga_flye}/${_pread_sel}"
 		rm -rf "${_polap_var_oga_summary}/${_pread_sel}"
 		rm -rf "${_polap_var_oga_plot}/${_pread_sel}"
@@ -776,7 +776,7 @@ HEREDOC
 	_polap_log2 "  creating folders for read selection type: ${_pread_sel}"
 	_polap_log3_cmd mkdir -p "${_polap_var_oga_reads}/${_pread_sel}"
 	_polap_log3_cmd mkdir -p "${_polap_var_oga_seeds}/${_pread_sel}"
-	_polap_log3_cmd mkdir -p "${_polap_var_oga_sample}/${_pread_sel}"
+	_polap_log3_cmd mkdir -p "${_polap_var_oga_subsample}/${_pread_sel}"
 	_polap_log3_cmd mkdir -p "${_polap_var_oga_flye}/${_pread_sel}"
 	_polap_log3_cmd mkdir -p "${_polap_var_oga_summary}/${_pread_sel}"
 	_polap_log3_cmd mkdir -p "${_polap_var_oga_plot}/${_pread_sel}"
@@ -863,17 +863,17 @@ HEREDOC
 		# Split the names
 		# split "${_polap_var_oga_reads}/${_pread_sel}/${i}/${_read_names}.names"
 
-		if [[ -d "${_polap_var_base_lk_fq_gz}.split" ]]; then
+		if [[ -d "${_polap_var_outdir_lk_fq_gz}.split" ]]; then
 			mkdir -p "${_polap_var_oga_seeds}/${_pread_sel}/${i}"
-			ls "${_polap_var_base_lk_fq_gz}.split"/*.fq.gz |
+			ls "${_polap_var_outdir_lk_fq_gz}.split"/*.fq.gz |
 				parallel seqtk subseq {} "${_polap_var_oga_reads}/${_pread_sel}/${i}/${_read_names}.names" ">" "${_polap_var_oga_seeds}/${_pread_sel}/${i}/${_read_names}".{/}.fq
 
-			# cat "${_polap_var_base_lk_fq_gz}.split"/*.fq.gz.fq |
+			# cat "${_polap_var_outdir_lk_fq_gz}.split"/*.fq.gz.fq |
 			cat "${_polap_var_oga_seeds}/${_pread_sel}/${i}/${_read_names}".*.fq.gz.fq |
 				gzip >"${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz"
 			rm -rf "${_polap_var_oga_seeds}/${_pread_sel}/${i}"
 			# rm -f "${_polap_var_oga_seeds}/${_pread_sel}/${i}/${_read_names}".*.fq.gz.fq
-			# rm -f "${_polap_var_base_lk_fq_gz}.split"/*.fq.gz.fq
+			# rm -f "${_polap_var_outdir_lk_fq_gz}.split"/*.fq.gz.fq
 		else
 			_polap_log3_pipe "seqtk subseq \
 		    ${_source_long_reads_fq} \
@@ -908,24 +908,24 @@ HEREDOC
         -p ${_rate} \
         -s ${_random_seed} \
 			  ${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz \
-        -o ${_polap_var_oga_sample}/${_pread_sel}/${i}.fq.gz \
+        -o ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz \
         2>${_polap_output_dest}"
-				touch ${_polap_var_oga_sample}/${_pread_sel}/${i}.random.seed.${_random_seed}
+				touch ${_polap_var_oga_subsample}/${_pread_sel}/${i}.random.seed.${_random_seed}
 			else
 				_polap_log0 "    no reduction of the long-read data because of the option --no-coverage-check: expected coverage: ${_expected_organelle_coverage}"
-				_polap_log3_cmd ln -s $(realpath "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz") "${_polap_var_oga_sample}/${_pread_sel}/${i}.fq.gz"
+				_polap_log3_cmd ln -s $(realpath "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz") "${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
 			fi
 		else
 			_polap_log0 "    no reduction of the long-read data because $_expected_organelle_coverage < ${_arg_coverage}"
-			_polap_log3_cmd ln -s $(realpath "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz") "${_polap_var_oga_sample}/${_pread_sel}/${i}.fq.gz"
+			_polap_log3_cmd ln -s $(realpath "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz") "${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
 		fi
 
 		_polap_log1 "  flye assembly for ${_pread_sel}"
-		_polap_log2 "    input1: ${_polap_var_oga_sample}/${_pread_sel}/${i}.fq.gz"
+		_polap_log2 "    input1: ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
 		_polap_log2 "    output: ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
 		local _command1="flye \
       ${_arg_flye_data_type} \
-      ${_polap_var_oga_sample}/${_pread_sel}/${i}.fq.gz \
+      ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz \
 		  --out-dir ${_polap_var_oga_flye}/${_pread_sel}/${i} \
 		  --threads ${_arg_threads}"
 		if [[ "${_arg_flye_asm_coverage}" -gt 0 ]]; then
@@ -1027,16 +1027,16 @@ function _run_polap_select-reads() { # selects reads mapped on a genome assembly
 #   -w ${_arg_single_min}: minimum minimap2 alignment length for a single contig
 # Inputs:
 #   ${_polap_var_mtcontigname}
-#   ${_polap_var_contigger_edges_fasta}
+#   ${_polap_var_ga_contigger_edges_fasta}
 #   input long read data to use (priority order): 
-#     1. ${_polap_var_base_lk_fq_gz}
-#     2. ${_polap_var_base_nk_fq_gz}
+#     1. ${_polap_var_outdir_lk_fq_gz}
+#     2. ${_polap_var_outdir_nk_fq_gz}
 #     3. ${_arg_long_reads}
 # Outputs:
 #   ${_polap_var_oga_contig}: map-reads output
 #   ${_polap_var_oga_reads}: mapped read names
 #   ${_polap_var_oga_seeds}: mapped reads
-#   ${_polap_var_oga_sample}: subsample of the mapped reads
+#   ${_polap_var_oga_subsample}: subsample of the mapped reads
 #   ${_polap_var_oga_flye}: assemblies
 #   ${_polap_var_oga_summary}: summary
 #   ${_polap_var_oga_plot}: plot or table using range in contig folder and summary
@@ -1136,7 +1136,7 @@ function _run_polap_flye2() { # executes Flye for an organelle-genome assembly
 #   -t ${_arg_threads}: the number of CPU cores
 #   -g <arg>: computed by find-genome-size menu or given by users
 # Inputs:
-#   ${_polap_var_oga_sample}/${_pread_sel}/0.fq.gz
+#   ${_polap_var_oga_subsample}/${_pread_sel}/0.fq.gz
 #   ${_polap_var_oga_contig}/contig.fa
 # Outputs:
 #   ${_polap_var_oga_assembly_graph_gfa}
@@ -1157,9 +1157,9 @@ HEREDOC
 
 	_polap_log0 "flye2 runs on the assembly ${JNUM}"
 	local _contig_fa="${_polap_var_oga_contig}/contig.fa"
-	local _long_reads="${_polap_var_oga_sample}/${_pread_sel}/0.fq.gz"
+	local _long_reads="${_polap_var_oga_subsample}/${_pread_sel}/0.fq.gz"
 	_polap_log1 "  input1: ${_polap_var_oga_contig}/contig.fa"
-	_polap_log1 "  input2: ${_polap_var_oga_sample}/${_pread_sel}/0.fq.gz"
+	_polap_log1 "  input2: ${_polap_var_oga_subsample}/${_pread_sel}/0.fq.gz"
 
 	if [ ! -s "${_contig_fa}" ]; then
 		_polap_log0 "ERROR: no selected-contig file: ${_contig_fa}"
@@ -1340,11 +1340,11 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	_polap_log0 $(cut -f1 "${_polap_var_bioproject_txt}")
-	_polap_log0 $(cut -f1 "${_polap_var_bioproject_sra_long_read}")
-	_polap_log0 $(cut -f1 "${_polap_var_bioproject_sra_short_read}")
-	_polap_log0 $(cut -f1 "${_polap_var_bioproject_species}")
-	_polap_log0 $(cut -f1 "${_polap_var_bioproject_mtdna_fasta2_accession}")
+	_polap_log0 $(cut -f1 "${_polap_var_project_txt}")
+	_polap_log0 $(cut -f1 "${_polap_var_project_sra_long_read}")
+	_polap_log0 $(cut -f1 "${_polap_var_project_sra_short_read}")
+	_polap_log0 $(cut -f1 "${_polap_var_project_species}")
+	_polap_log0 $(cut -f1 "${_polap_var_project_mtdna_fasta2_accession}")
 
 	# wc -l "${_polap_var_wga}/mt.contig.name-"? | awk '$2 != "total" {print $1}' | head -5 >&2
 
@@ -1388,7 +1388,7 @@ HEREDOC
 			unique_files+=("$file")
 			echo "$file is unique."
 
-			MTCONTIGNAME="$file"
+			_polap_var_mtcontigname="$file"
 			INUM="${i}"
 		else
 			_polap_log1 "$file is the same as $unique_file."
@@ -1463,7 +1463,7 @@ function _run_polap_x-v0.3.7-collect-reads() { # replaced by select-reads
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# for contigs
-	#	_polap_var_contigger_edges_fasta=o/30-contigger/contigs.fasta
+	#	_polap_var_ga_contigger_edges_fasta=o/30-contigger/contigs.fasta
 	# for edges
 
 	help_message=$(
@@ -1476,8 +1476,8 @@ function _run_polap_x-v0.3.7-collect-reads() { # replaced by select-reads
 #   -l ${_arg_long_reads}
 # Inputs:
 #   ${_polap_var_mtcontigname}
-#   ${_polap_var_contigger_edges_fasta}
-#   input long read data: 1. ${_polap_var_base_lk_fq_gz} <- input data used for the whole-genome assembly
+#   ${_polap_var_ga_contigger_edges_fasta}
+#   input long read data: 1. ${_polap_var_outdir_lk_fq_gz} <- input data used for the whole-genome assembly
 #                         2. ${_arg_long_reads}          <- input long-read data
 # Outputs:
 #   ${_polap_var_oga_seeds}/ptgaul.fq.gz   <- ptGAUL read-selection
@@ -1561,7 +1561,7 @@ HEREDOC
 	_polap_log0 "extracting reads using read names ..."
 
 	if [[ "${_arg_long_reads_is}" == "off" ]]; then
-		local _source_long_reads_fq="${_polap_var_base_lk_fq_gz}"
+		local _source_long_reads_fq="${_polap_var_outdir_lk_fq_gz}"
 	else
 		local _source_long_reads_fq="${_arg_long_reads}"
 	fi
@@ -1623,8 +1623,8 @@ HEREDOC
 #   -x ${_arg_bridge_min}: minimum long-read length for connecting the pair of contigs
 #   -w ${_arg_single_min}: minimum minimap2 alignment length for a single contig
 # Inputs:
-#   ${MTCONTIGNAME}
-#   ${_polap_var_contigger_edges_fasta}
+#   ${_polap_var_mtcontigname}
+#   ${_polap_var_ga_contigger_edges_fasta}
 # Outputs:
 #   ${MTSEEDSDIR}
 #   ${MTDIR}/contig.fa
@@ -1651,10 +1651,10 @@ function _run_polap_x-v0.2.6-select-reads() { # selects reads mapped on a genome
 
 	local MTDIR="${_polap_var_oga}"                              # target: ${_polap_var_oga}
 	local MTSEEDSDIR="${_polap_var_oga}/seeds"                   # ${_polap_var_seeds} for oga-class
-	local MTCONTIGNAME="${_polap_var_ga}/mt.contig.name-${JNUM}" # ${_polap_var_mtcontigname}
+	local _polap_var_mtcontigname="${_polap_var_ga}/mt.contig.name-${JNUM}" # ${_polap_var_mtcontigname}
 
 	# for contigs
-	#	_polap_var_contigger_edges_fasta=o/30-contigger/contigs.fasta
+	#	_polap_var_ga_contigger_edges_fasta=o/30-contigger/contigs.fasta
 	# for edges
 
 	help_message=$(
@@ -1666,8 +1666,8 @@ function _run_polap_x-v0.2.6-select-reads() { # selects reads mapped on a genome
 #   -j $JNUM: destination Flye organelle assembly number
 #   --rwx ${_arg_rwx}: set the option values of -r, -x, -w to the same one
 # Inputs:
-#   ${MTCONTIGNAME}
-#   ${_polap_var_contigger_edges_fasta}
+#   ${_polap_var_mtcontigname}
+#   ${_polap_var_ga_contigger_edges_fasta}
 # Outputs:
 #   ${MTDIR}/contig.fa
 #   ${MTSEEDSDIR}/1.fq.gz <- single-mapped reads
@@ -1681,17 +1681,17 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
-	_polap_log0 "selecting long-reads mapped on the seed contigs in file: ${MTCONTIGNAME} and ${_polap_var_contigger_edges_fasta}"
-	_polap_log1 "  input1: ${MTCONTIGNAME}"
-	_polap_log1 "  input2: ${_polap_var_contigger_edges_fasta}"
+	_polap_log0 "selecting long-reads mapped on the seed contigs in file: ${_polap_var_mtcontigname} and ${_polap_var_ga_contigger_edges_fasta}"
+	_polap_log1 "  input1: ${_polap_var_mtcontigname}"
+	_polap_log1 "  input2: ${_polap_var_ga_contigger_edges_fasta}"
 
-	if [ ! -s "${MTCONTIGNAME}" ]; then
-		_polap_log0 "ERROR: no such mt.contig.name file: ${MTCONTIGNAME}"
+	if [ ! -s "${_polap_var_mtcontigname}" ]; then
+		_polap_log0 "ERROR: no such mt.contig.name file: ${_polap_var_mtcontigname}"
 		exit $EXIT_ERROR
 	fi
 
-	if [ ! -s "${_polap_var_contigger_edges_fasta}" ]; then
-		_polap_log0 "ERROR: no assembly fasta file: ${_polap_var_contigger_edges_fasta}"
+	if [ ! -s "${_polap_var_ga_contigger_edges_fasta}" ]; then
+		_polap_log0 "ERROR: no assembly fasta file: ${_polap_var_ga_contigger_edges_fasta}"
 		exit $EXIT_ERROR
 	fi
 
@@ -1723,20 +1723,20 @@ HEREDOC
 
 	_polap_log1 "  creates ${MTSEEDSDIR}"
 	_polap_log3_cmd mkdir -p "${MTSEEDSDIR}"
-	_polap_log3_cmd ln -s "$PWD/${_polap_var_base_nk_fq_gz}" -t "${MTDIR}"
-	_polap_log1 "  extracts contig sequeces from the assembly: ${_polap_var_contigger_edges_fasta}"
-	_polap_log2 "    input1: ${_polap_var_contigger_edges_fasta}"
-	_polap_log2 "    input2: ${MTCONTIGNAME}"
+	_polap_log3_cmd ln -s "$PWD/${_polap_var_outdir_nk_fq_gz}" -t "${MTDIR}"
+	_polap_log1 "  extracts contig sequeces from the assembly: ${_polap_var_ga_contigger_edges_fasta}"
+	_polap_log2 "    input1: ${_polap_var_ga_contigger_edges_fasta}"
+	_polap_log2 "    input2: ${_polap_var_mtcontigname}"
 	_polap_log2 "    output: ${MTDIR}/contig.fa"
 	_polap_log3_pipe "seqkit grep \
     --threads ${_arg_threads} \
-    -f ${MTCONTIGNAME} \
-		${_polap_var_contigger_edges_fasta} \
+    -f ${_polap_var_mtcontigname} \
+		${_polap_var_ga_contigger_edges_fasta} \
 		-o ${MTDIR}/contig.fa \
 		2>${_polap_output_dest}"
 
 	# we could circularize a single contig.
-	local contig_count=$(wc -l <"${MTCONTIGNAME}")
+	local contig_count=$(wc -l <"${_polap_var_mtcontigname}")
 	_polap_log1 "  number of seed contigs: ${contig_count}"
 	if [[ ${_arg_circularize} == "on" ]]; then
 		if [ "$contig_count" -eq 1 ]; then
@@ -1744,12 +1744,12 @@ HEREDOC
 			_polap_log1 "  circularizes the single seed contig ..."
 			_polap_log2 "    input1: ${MTDIR}"
 			_polap_log2 "    input2: ${MTDIR}/contig.fa"
-			_polap_log2 "    input3: ${MTCONTIGNAME}"
-			_polap_log2 "    output1: ${MTCONTIGNAME}-backup"
-			_polap_log2 "    output2: (new) ${MTCONTIGNAME}"
+			_polap_log2 "    input3: ${_polap_var_mtcontigname}"
+			_polap_log2 "    output1: ${_polap_var_mtcontigname}-backup"
+			_polap_log2 "    output2: (new) ${_polap_var_mtcontigname}"
 			_polap_log2 "    output3: ${MTDIR}/contig.fa-backup"
 			_polap_log2 "    output4: (new) ${MTDIR}/contig.fa"
-			_polap_log3_cmd bash "$script_dir/run-polap-sh-half-cut.sh" "${MTDIR}" "${MTDIR}/contig.fa" "${MTCONTIGNAME}"
+			_polap_log3_cmd bash "$script_dir/run-polap-sh-half-cut.sh" "${MTDIR}" "${MTDIR}/contig.fa" "${_polap_var_mtcontigname}"
 
 			# cp "${MTDIR}/contig.fa" "${MTDIR}/contig.fa-backup"
 			# seqkit fx2tab --length --name "${MTDIR}"/contig.fa -o "${MTDIR}"/contig.fa.len >/dev/null 2>&1
@@ -1759,10 +1759,10 @@ HEREDOC
 			# seqkit subseq -r 1:"$B" "${MTDIR}"/contig.fa -o "${MTDIR}"/c1.fa >/dev/null 2>&1
 			# seqkit subseq -r "$C":"$A" "${MTDIR}"/contig.fa -o "${MTDIR}"/c2.fa >/dev/null 2>&1
 			# cat "${MTDIR}"/c?.fa | seqkit replace -p '.+' -r 'edge_{nr}' -o "${MTDIR}"/contig.fa >/dev/null 2>&1
-			# cp "${MTCONTIGNAME}" "${MTCONTIGNAME}"-backup
-			# echo -e "edge_1\nedge_2" >"${MTCONTIGNAME}"
+			# cp "${_polap_var_mtcontigname}" "${_polap_var_mtcontigname}"-backup
+			# echo -e "edge_1\nedge_2" >"${_polap_var_mtcontigname}"
 
-			_polap_log1 "    creating new ${MTDIR}/contig.fa and ${MTCONTIGNAME}"
+			_polap_log1 "    creating new ${MTDIR}/contig.fa and ${_polap_var_mtcontigname}"
 
 		else
 			_polap_log0 "Not implemented yet!"
@@ -1791,14 +1791,14 @@ HEREDOC
 
 	_polap_log1 "  mapping long-read data on the seed contigs using minimap2 ..."
 	_polap_log2 "    input1: ${MTDIR}/contig.fa"
-	_polap_log2 "    input2: ${_polap_var_base_nk_fq_gz}"
+	_polap_log2 "    input2: ${_polap_var_outdir_nk_fq_gz}"
 	_polap_log2 "    output: ${MTDIR}/contig.paf"
 	if [[ -s "${MTDIR}"/contig.paf ]] && [[ "${_arg_redo}" = "off" ]]; then
 		_polap_log1 "  found: ${MTDIR}/contig.paf, skipping the minimap2 mapping step ..."
 	else
 		_polap_log3_pipe "minimap2 -cx map-ont \
       ${MTDIR}/contig.fa \
-      ${_polap_var_base_nk_fq_gz} \
+      ${_polap_var_outdir_nk_fq_gz} \
       -t ${_arg_threads} \
       -o ${MTDIR}/contig.paf \
       >${_polap_output_dest} 2>&1"
@@ -1817,19 +1817,19 @@ HEREDOC
 	_polap_log2 "    p_mapping (POLAP pairs alignment minimum)=${_arg_pair_min}"
 	_polap_log2 "    s_mapping (POLAP single alignment minimum)=${_arg_single_min}"
 	_polap_log2 "    min_len_read=${_arg_min_read_length}"
-	_polap_log2 "    input1: ${MTCONTIGNAME}"
+	_polap_log2 "    input1: ${_polap_var_mtcontigname}"
 	_polap_log2 "    input2: ${MTDIR}/contig.tab"
 	_polap_log2 "    output: ${MTSEEDSDIR}/single.names for reads mapped on a single contig"
 	_polap_log2 "    output: ${MTSEEDSDIR}/<edge1>-<edge2>.name for reads mapped on contig pairs"
 	_polap_log3_pipe "Rscript --vanilla ${script_dir}/run-polap-pairs.R \
-		${MTCONTIGNAME} \
+		${_polap_var_mtcontigname} \
 		${MTDIR}/contig.tab \
 		${MTSEEDSDIR} \
 		${_arg_pair_min} \
     ${_arg_bridge_min} \
     ${_arg_single_min} \
     >${_polap_output_dest} 2>&1"
-	# "$script_dir"/run-polap-pairs.R "${MTCONTIGNAME}" ${MTDIR}/contig.tab ${MTSEEDSDIR} ${_arg_pair_min} ${_arg_bridge_min} ${_arg_single_min} >/dev/null 2>&1
+	# "$script_dir"/run-polap-pairs.R "${_polap_var_mtcontigname}" ${MTDIR}/contig.tab ${MTSEEDSDIR} ${_arg_pair_min} ${_arg_bridge_min} ${_arg_single_min} >/dev/null 2>&1
 
 	# cat "${MTSEEDSDIR}/"*".name" "${MTSEEDSDIR}"/single.names | sort | uniq >"${MTSEEDSDIR}"/1.names
 	_polap_log1 "  creates names of reads mapped on a single name in ${MTSEEDSDIR}/1.names"
@@ -1837,12 +1837,12 @@ HEREDOC
 	_polap_log2 "    output: ${MTSEEDSDIR}/1.names"
 	_polap_log3_pipe "cat ${MTSEEDSDIR}/single.names | sort | uniq >${MTSEEDSDIR}/1.names"
 
-	# seqkit grep --threads ${_arg_threads} -f "${MTSEEDSDIR}"/1.names ${_polap_var_base_nk_fq_gz} -o "${MTSEEDSDIR}"/1.fq.gz >/dev/null 2>&1
+	# seqkit grep --threads ${_arg_threads} -f "${MTSEEDSDIR}"/1.names ${_polap_var_outdir_nk_fq_gz} -o "${MTSEEDSDIR}"/1.fq.gz >/dev/null 2>&1
 	_polap_log1 "  creating reads mapped on a single contig in ${MTSEEDSDIR}/1.fq.gz"
-	_polap_log2 "    input1: ${_polap_var_base_nk_fq_gz}"
+	_polap_log2 "    input1: ${_polap_var_outdir_nk_fq_gz}"
 	_polap_log2 "    input2: ${MTSEEDSDIR}/1.names"
 	_polap_log2 "    output: ${MTSEEDSDIR}/1.fq.gz"
-	seqtk subseq "${_polap_var_base_nk_fq_gz}" "${MTSEEDSDIR}"/1.names | gzip >"${MTSEEDSDIR}"/1.fq.gz
+	seqtk subseq "${_polap_var_outdir_nk_fq_gz}" "${MTSEEDSDIR}"/1.names | gzip >"${MTSEEDSDIR}"/1.fq.gz
 
 	_polap_log1 "  computing the total size of the single-mapped reads ..."
 	_polap_log2 "    input1: ${MTSEEDSDIR}/1.fq.gz"
@@ -1900,7 +1900,7 @@ HEREDOC
 	# single.names.2: single-mapped reads -> read data
 	# 1.names.2: reads used for organelle-genome
 	# use:
-	# seqtk subseq ${_polap_var_base_nk_fq_gz} ${MTSEEDSDIR}/1.names.2 | gzip >${MTSEEDSDIR}/3.fq.gz
+	# seqtk subseq ${_polap_var_outdir_nk_fq_gz} ${MTSEEDSDIR}/1.names.2 | gzip >${MTSEEDSDIR}/3.fq.gz
 	_polap_log1 "  adding pair-mapped bridging long reads to the single-mapped data ..."
 	local C=$(ls -1 "${MTSEEDSDIR}/"*".name" 2>/dev/null | wc -l)
 	if [ "$C" != 0 ]; then
@@ -1912,13 +1912,13 @@ HEREDOC
 
 		_polap_log3 "  FIXME: _polap_log3_cmd or _polap_log3_pipe for cat *"
 		cat "${MTSEEDSDIR}/"*".name" "${MTSEEDSDIR}"/single.names.2 | sort | uniq >"${MTSEEDSDIR}/1.names.2"
-		# seqkit grep --threads ${_arg_threads} -f "${MTSEEDSDIR}"/1.names.2 ${_polap_var_base_nk_fq_gz} -o "${MTSEEDSDIR}"/2.fq.gz >/dev/null 2>&1
+		# seqkit grep --threads ${_arg_threads} -f "${MTSEEDSDIR}"/1.names.2 ${_polap_var_outdir_nk_fq_gz} -o "${MTSEEDSDIR}"/2.fq.gz >/dev/null 2>&1
 
 		_polap_log1 "  extracting single- and pair-mapped reads ..."
-		_polap_log2 "    input1: ${_polap_var_base_nk_fq_gz}"
+		_polap_log2 "    input1: ${_polap_var_outdir_nk_fq_gz}"
 		_polap_log2 "    input1: ${MTSEEDSDIR}/1.names.2"
 		_polap_log2 "    output: ${MTSEEDSDIR}/3.fq.gz"
-		_polap_log3_pipe "seqtk subseq ${_polap_var_base_nk_fq_gz} ${MTSEEDSDIR}/1.names.2 | gzip >${MTSEEDSDIR}/3.fq.gz"
+		_polap_log3_pipe "seqtk subseq ${_polap_var_outdir_nk_fq_gz} ${MTSEEDSDIR}/1.names.2 | gzip >${MTSEEDSDIR}/3.fq.gz"
 	else
 		_polap_log1 "    no pair-mapped reads: 2.fq.gz -> 3.fq.gz"
 		_polap_log3_cmd ln -s $(realpath "${MTSEEDSDIR}"/2.fq.gz) "${MTSEEDSDIR}"/3.fq.gz
@@ -1928,8 +1928,8 @@ HEREDOC
 	# put the backup to the original
 	if [[ ${_arg_circularize} == "on" ]]; then
 		_polap_log1 "  circularize option: putting seed contigs back to the original mt.contig.name and ${MTDIR}/contig.fa"
-		if [[ -s "${MTCONTIGNAME}"-backup ]]; then
-			mv "${MTCONTIGNAME}"-backup "${MTCONTIGNAME}"
+		if [[ -s "${_polap_var_mtcontigname}"-backup ]]; then
+			mv "${_polap_var_mtcontigname}"-backup "${_polap_var_mtcontigname}"
 			mv "${MTDIR}/contig.fa-backup" "${MTDIR}/contig.fa"
 		else
 			echo "DEV: not implemented yet"
@@ -1961,10 +1961,10 @@ function _run_polap_x-select-reads() { # selects reads mapped on a genome assemb
 
 	local MTDIR="${_polap_var_oga}"                              # target: ${_polap_var_oga}
 	local MTSEEDSDIR="${_polap_var_oga}/seeds"                   # ${_polap_var_seeds} for oga-class
-	local MTCONTIGNAME="${_polap_var_ga}/mt.contig.name-${JNUM}" # ${_polap_var_mtcontigname}
+	local _polap_var_mtcontigname="${_polap_var_ga}/mt.contig.name-${JNUM}" # ${_polap_var_mtcontigname}
 
 	# for contigs
-	#	_polap_var_contigger_edges_fasta=o/30-contigger/contigs.fasta
+	#	_polap_var_ga_contigger_edges_fasta=o/30-contigger/contigs.fasta
 	# for edges
 
 	help_message=$(
@@ -1975,12 +1975,12 @@ function _run_polap_x-select-reads() { # selects reads mapped on a genome assemb
 #   -j ${JNUM}: destination Flye organelle assembly number
 #   -l ${_arg_long_reads}
 # Inputs:
-#   input long read data: 1. ${_polap_var_base_nk_fq_gz} <- input data used for the whole-genome assembly
+#   input long read data: 1. ${_polap_var_outdir_nk_fq_gz} <- input data used for the whole-genome assembly
 #                         2. ${_arg_long_reads}          <- input long-read data
 #   ${ODIR}/${JNUM}/seeds/1.names         <- single-mapped read
 #   ${ODIR}/${JNUM}/seeds/single.names.2  <- reduced single-mapped read
 #   ${ODIR}/${JNUM}/seeds/1.names.2       <- reduced single-mapped read + pair-mapped read
-#   ${_polap_var_contigger_edges_fasta}
+#   ${_polap_var_ga_contigger_edges_fasta}
 # Outputs:
 #   ${_polap_var_oga_seeds}/2.fq.gz <- reduced single-mapped reads, if we have many such reads
 #   ${_polap_var_oga_seeds}/3.fq.gz <- reduced single-mapped reads plus pair-mapped reads
@@ -2023,7 +2023,7 @@ HEREDOC
 	_polap_log0 "extracting reads using read names ..."
 
 	if [[ "${_arg_long_reads_is}" == "off" ]]; then
-		local _source_long_reads_fq="${_polap_var_base_nk_fq_gz}"
+		local _source_long_reads_fq="${_polap_var_outdir_nk_fq_gz}"
 	else
 		local _source_long_reads_fq="${_arg_long_reads}"
 	fi
@@ -2066,14 +2066,14 @@ HEREDOC
     ${MTSEEDSDIR}/1.names.2 |\
     gzip >${_polap_var_oga_seeds}/3.fq.gz"
 
-	_polap_log1 "  extracts contig sequeces from the assembly: ${_polap_var_contigger_edges_fasta}"
-	_polap_log2 "    input1: ${_polap_var_contigger_edges_fasta}"
-	_polap_log2 "    input2: ${MTCONTIGNAME}"
+	_polap_log1 "  extracts contig sequeces from the assembly: ${_polap_var_ga_contigger_edges_fasta}"
+	_polap_log2 "    input1: ${_polap_var_ga_contigger_edges_fasta}"
+	_polap_log2 "    input2: ${_polap_var_mtcontigname}"
 	_polap_log2 "    output: ${MTDIR}/contig.fa"
 	_polap_log3_pipe "seqkit grep \
     --threads ${_arg_threads} \
-    -f ${MTCONTIGNAME} \
-		${_polap_var_contigger_edges_fasta} \
+    -f ${_polap_var_mtcontigname} \
+		${_polap_var_ga_contigger_edges_fasta} \
 		-o ${MTDIR}/contig.fa \
 		2>${_polap_output_dest}"
 
@@ -2094,7 +2094,7 @@ HEREDOC
 	# single.names.2: single-mapped reads -> read data
 	# 1.names.2: reads used for organelle-genome
 	# use:
-	# seqtk subseq ${_polap_var_base_nk_fq_gz} ${MTSEEDSDIR}/1.names.2 | gzip >${MTSEEDSDIR}/3.fq.gz
+	# seqtk subseq ${_polap_var_outdir_nk_fq_gz} ${MTSEEDSDIR}/1.names.2 | gzip >${MTSEEDSDIR}/3.fq.gz
 
 	_polap_log0 "assembling the organelle-genome using single-mapped or pair-mapped reads ..."
 

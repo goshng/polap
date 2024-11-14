@@ -119,14 +119,14 @@ function _polap_seeds_create-automatic-depth-range() {
 	if [[ "${_arg_plastid}" == "on" ]]; then
 		_polap_log2 "  using plastid depth range ..."
 		local _command1="Rscript $script_dir/run-polap-r-plastid-determine-depth-range_${_type}.R \
-				-t ${_polap_var_annotation_table} \
+				-t ${_polap_var_ga_annotation_all} \
 				-c ${_polap_var_ga_annotation_cdf_table} \
 				-o ${_polap_var_mtcontigs_1_custom_depth_range} \
         --plastid \
 				2>$_polap_output_dest"
 	else
 		local _command1="Rscript $script_dir/run-polap-r-determine-depth-range_${_type}.R \
-				-t ${_polap_var_annotation_table} \
+				-t ${_polap_var_ga_annotation_all} \
 				-c ${_polap_var_ga_annotation_cdf_table} \
 				-o ${_polap_var_mtcontigs_1_custom_depth_range} \
 				2>$_polap_output_dest"
@@ -169,11 +169,11 @@ function _polap_seeds_preselect-contigs() {
 	_polap_log2 "    gene count comparison: MT > PT"
 	_polap_log2 "    depth range: $depth_lower ~ $depth_upper"
 	_polap_log2 "    input1: ${_polap_var_mtcontigs_depth_range_preselection}"
-	_polap_log2 "    input2: ${_polap_var_annotation_table}"
+	_polap_log2 "    input2: ${_polap_var_ga_annotation_all}"
 	_polap_log2 "    output: ${_polap_var_mtcontigs_preselection}"
 	local _command1="Rscript $script_dir/run-polap-r-preselect-annotation.R  \
 		--out ${_polap_var_mtcontigs_preselection} \
-		--table ${_polap_var_annotation_table} \
+		--table ${_polap_var_ga_annotation_all} \
 		--depth-range ${depth_lower},${depth_upper} \
 		--compare-mt-pt \
 		--gene-density 10"
@@ -239,9 +239,9 @@ function _polap_seeds_depthfilter-gfa() {
 			2>$_polap_output_dest"
 	else
 		_polap_log0 "    no such file: ${_polap_var_mtcontigs_depth_range_graphfilter}"
-		_polap_log0 "    ${MTCONTIGNAME} -> empty or no seed contigs"
-		>"${MTCONTIGNAME}"
-		_polap_log2_cat "${MTCONTIGNAME}"
+		_polap_log0 "    ${_polap_var_mtcontigname} -> empty or no seed contigs"
+		>"${_polap_var_mtcontigname}"
+		_polap_log2_cat "${_polap_var_mtcontigname}"
 		_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 		[ "$DEBUG" -eq 1 ] && set +x
 		return 0
@@ -291,9 +291,9 @@ function _polap_seeds_prepare-cc() {
 	else
 		# no links -> just current selection
 		_polap_log3_pipe "cut -f2 ${_polap_var_mtcontigs_gfa_depthfiltered_gfa} |
-			sort | uniq >${MTCONTIGNAME}"
-		_polap_log0 "  output1: ${MTCONTIGNAME}"
-		_polap_log2_cat "${MTCONTIGNAME}"
+			sort | uniq >${_polap_var_mtcontigname}"
+		_polap_log0 "  output1: ${_polap_var_mtcontigname}"
+		_polap_log2_cat "${_polap_var_mtcontigname}"
 
 		_polap_seeds_final-mtcontig
 
@@ -347,11 +347,11 @@ function _polap_seeds_final-mtcontig() {
 
 	_polap_log1 "  step 8-1: filtering by max length 1 Mb of contig seeds"
 	_polap_log1 "    1 Mb length filtering for auto"
-	_polap_log2 "    input1: ${_polap_var_annotation_table}"
+	_polap_log2 "    input1: ${_polap_var_ga_annotation_all}"
 	_polap_log2 "    input2: ${_polap_var_mtcontigs_7mtcontigname}"
 	_polap_log2 "    output1: ${_polap_var_mtcontig_table}"
 	local _command1="Rscript $script_dir/run-polap-r-final-filter-mtcontig.R \
-		-t ${_polap_var_annotation_table} \
+		-t ${_polap_var_ga_annotation_all} \
 		-m ${_polap_var_mtcontigs_7mtcontigname} \
     -o ${_polap_var_mtcontig_table} \
     --length 1000000 \
@@ -362,12 +362,12 @@ function _polap_seeds_final-mtcontig() {
 		"${_polap_var_mtcontigs_7mtcontigname}" \
 		"${_polap_var_ga_annotation_depth_table_seed}"
 	# _polap_log1 "  step 8-2: mt.contig.table with contig seed marks"
-	# _polap_log2 "    input1: ${_polap_var_annotation_table}"
+	# _polap_log2 "    input1: ${_polap_var_ga_annotation_all}"
 	# _polap_log2 "    input2: ${_polap_var_ga_annotation_depth_table}"
 	# _polap_log2 "    input3: ${_polap_var_mtcontigs_7mtcontigname}"
 	# _polap_log2 "    output1: ${_polap_var_mtcontigs_annotation_table_seed}"
 	# local _command1="Rscript $script_dir/run-polap-r-final-seed-mtcontig.R \
-	# 	-t ${_polap_var_annotation_table} \
+	# 	-t ${_polap_var_ga_annotation_all} \
 	# 	-a ${_polap_var_ga_annotation_depth_table} \
 	# 	-m ${_polap_var_mtcontigs_7mtcontigname} \
 	#    -o ${_polap_var_mtcontigs_annotation_table_seed} \
@@ -383,12 +383,12 @@ function _polap_seeds_final-seeds-mtcontig() {
 	local _annotation_table_seed_target=$2
 
 	_polap_log1 "  annotation table with contig seed marks"
-	_polap_log2 "    input1: ${_polap_var_annotation_table}"
+	_polap_log2 "    input1: ${_polap_var_ga_annotation_all}"
 	_polap_log2 "    input2: ${_polap_var_ga_annotation_depth_table}"
 	_polap_log2 "    input3: ${_mt_contig_name}"
 	_polap_log2 "    output1: ${_annotation_table_seed_target}"
 	local _command1="Rscript $script_dir/run-polap-r-final-seed-mtcontig.R \
-		-t ${_polap_var_annotation_table} \
+		-t ${_polap_var_ga_annotation_all} \
 		-a ${_polap_var_ga_annotation_depth_table} \
 		-m ${_mt_contig_name} \
     -o ${_annotation_table_seed_target} \
@@ -504,8 +504,8 @@ function _run_polap_seeds() { # select seed contigs
 #   -j $JNUM: destination Flye organelle assembly number
 #   --plastid
 # Inputs:
-#   ${_polap_var_assembly_graph_final_gfa}
-#   ${_polap_var_annotation_table}
+#   ${_polap_var_ga_contigger_edges_gfa}
+#   ${_polap_var_ga_annotation_all}
 # Outputs:
 #   ${_polap_var_mtcontigs_8mtcontigname}
 # Menu:
@@ -563,7 +563,7 @@ HEREDOC
 
 		# Convert the input string into new lines (replace ", " with newlines)
 		local formatted_edges=$(echo "$edges" | tr ', ' '\n' | sed '/^ *$/d')
-		echo "${formatted_edges}" >"${MTCONTIGNAME}"
+		echo "${formatted_edges}" >"${_polap_var_mtcontigname}"
 		# _polap_seeds_final-mtcontig
 		return $RETURN_SUCCESS
 	fi
@@ -577,7 +577,7 @@ HEREDOC
 		return $RETURN_SUCCESS
 	fi
 	_polap_log1 "  input1: ${_polap_var_ga_contigger_edges_gfa}"
-	_polap_log1 "  input2: ${_polap_var_annotation_table}"
+	_polap_log1 "  input2: ${_polap_var_ga_annotation_all}"
 
 	# Create the array based on the value of _arg_plastid
 	if [[ "$_arg_plastid" == "on" ]]; then
@@ -806,8 +806,8 @@ function _run_polap_seeds-graph() { # select seed contigs
 #   -j $JNUM: destination Flye organelle assembly number
 #   --plastid
 # Inputs:
-#   ${_polap_var_assembly_graph_final_gfa}
-#   ${_polap_var_annotation_table}
+#   ${_polap_var_ga_contigger_edges_gfa}
+#   ${_polap_var_ga_annotation_all}
 #   ${_polap_var_wga}/1-mtcontig.depth.stats.txt for manual depth range in --select-contig 1
 # Outputs:
 #   ${_polap_var_mtcontigs_7mtcontigname}
@@ -853,15 +853,15 @@ HEREDOC
 		if [[ "${_arg_menu[2]}" == "table" ]]; then
 			_polap_log0 "---"
 			_polap_log0_cat "${_polap_var_mtcontigs_1_custom_depth_range}"
-			local MTCONTIGNAME="${_polap_var_ga}"/mt.contig.name-"${_arg_menu[2]}"
+			local _polap_var_mtcontigname="${_polap_var_ga}"/mt.contig.name-"${_arg_menu[2]}"
 			# cat "${_polap_var_ga}"/mt.contig.name-"${_arg_menu[2]}" >&3
-			if [[ -s "${MTCONTIGNAME}" ]]; then
-				_polap_log1_cat "${MTCONTIGNAME}"
+			if [[ -s "${_polap_var_mtcontigname}" ]]; then
+				_polap_log1_cat "${_polap_var_mtcontigname}"
 				_polap_log0 "---"
 				if [[ "${_arg_log_stderr}" = "off" ]]; then
-					paste -sd',' "${MTCONTIGNAME}" >&3
+					paste -sd',' "${_polap_var_mtcontigname}" >&3
 				else
-					paste -sd',' "${MTCONTIGNAME}" >&2
+					paste -sd',' "${_polap_var_mtcontigname}" >&2
 				fi
 			fi
 			if [[ -s "${_polap_var_mtcontig_table}" ]]; then
@@ -897,8 +897,8 @@ HEREDOC
 	if [[ "${_arg_menu[1]}" == "add" ]]; then
 
 		if [[ "${_arg_menu[2]}" == "new" ]]; then
-			_polap_log0 "you are making a completely new seed contig file: ${MTCONTIGNAME}"
-			rm -f "${MTCONTIGNAME}"
+			_polap_log0 "you are making a completely new seed contig file: ${_polap_var_mtcontigname}"
+			rm -f "${_polap_var_mtcontigname}"
 		fi
 
 		# Function to append edge_ to the number and write to file
@@ -911,14 +911,14 @@ HEREDOC
 				edge_name="edge_$input"
 
 				# Append the result to the file (replace with your file path)
-				echo "$edge_name" >>"${MTCONTIGNAME}"
+				echo "$edge_name" >>"${_polap_var_mtcontigname}"
 
 				echo "Appended $edge_name to the file."
 			elif [[ "$input" == "quit" || "$input" == "exit" ]]; then
 				echo "Exiting and removing duplicates from the file..."
 
 				# Remove duplicates by sorting and keeping only unique entries
-				sort -u ${MTCONTIGNAME} -o ${MTCONTIGNAME}
+				sort -u ${_polap_var_mtcontigname} -o ${_polap_var_mtcontigname}
 				echo "Duplicates removed. Goodbye!"
 
 				# _polap_seeds_final-mtcontig
@@ -942,7 +942,7 @@ HEREDOC
 
 		# Convert the input string into new lines (replace ", " with newlines)
 		local formatted_edges=$(echo "$edges" | tr ', ' '\n')
-		echo "${formatted_edges}" >"${MTCONTIGNAME}"
+		echo "${formatted_edges}" >"${_polap_var_mtcontigname}"
 		# _polap_seeds_final-mtcontig
 		return $RETURN_SUCCESS
 	fi
@@ -950,10 +950,10 @@ HEREDOC
 	# We initiate the process of selecting seed contigs.
 	_polap_log0 "selecting seed contigs using the assembly graph: seed selection type=${KNUM} of ${INUM} (source) -> ${JNUM} (target) ..."
 	_polap_log1 "  input1: ${_polap_var_ga_contigger_edges_gfa}"
-	_polap_log1 "  input2: ${_polap_var_annotation_table}"
+	_polap_log1 "  input2: ${_polap_var_ga_annotation_all}"
 
 	check_file_existence "${_polap_var_ga_contigger_edges_gfa}"
-	check_file_existence "${_polap_var_annotation_table}"
+	check_file_existence "${_polap_var_ga_annotation_all}"
 
 	# step 1. manual custom depth-range or automatic depth-range
 	_polap_log1 "  step 1: determining the depth-range either manually or automatically ..."
@@ -976,7 +976,7 @@ HEREDOC
 	else
 		_is_auto="on"
 		_polap_log1 "  determines the depth range automatically ..."
-		_polap_log2 "    input1: ${_polap_var_annotation_table}"
+		_polap_log2 "    input1: ${_polap_var_ga_annotation_all}"
 		_polap_log2 "    output1: ${_polap_var_mtcontigs_2_depth_range_by_cdf_copy_number}"
 
 		local _returned_result=""
@@ -995,13 +995,13 @@ HEREDOC
 	# seed-contig selection.
 	_polap_log1 "  step 2: pre-select contigs based on organelle gene annotation"
 	_polap_log2 "    input1: ${_polap_var_mtcontigs_depth_range_preselection}"
-	_polap_log2 "    input2: ${_polap_var_annotation_table}"
+	_polap_log2 "    input2: ${_polap_var_ga_annotation_all}"
 	_polap_log2 "    output: ${_polap_var_mtcontigs_preselection}"
 	_polap_seeds_preselect-contigs
 
 	# Continue for the select contig types 3, 4, or 5
 	_polap_log1 "  step 3: filtering GFA using the depth range"
-	_polap_log2 "    input1: ${_polap_var_assembly_graph_final_gfa}"
+	_polap_log2 "    input1: ${_polap_var_ga_contigger_edges_gfa}"
 	_polap_log2 "    input2: ${_polap_var_mtcontigs_depth_range_graphfilter}"
 	_polap_seeds_depthfilter-gfa
 	_polap_log2 "    output: ${_polap_var_mtcontigs_gfa_seq_filtered}"
@@ -1050,7 +1050,7 @@ HEREDOC
 		_polap_log3_head "${_polap_var_mtcontigs_links_mtcontig}"
 	fi
 
-	_polap_log2 "  step 7: concatenating the graph depth-filtered edges and annotation-filtered NA edges: ${MTCONTIGNAME}"
+	_polap_log2 "  step 7: concatenating the graph depth-filtered edges and annotation-filtered NA edges: ${_polap_var_mtcontigname}"
 	_polap_log2 "    input1: ${_polap_var_mtcontigs_links_mtcontig}"
 	_polap_log2 "    input2: ${_polap_var_mtcontigs_links_contig_na}"
 	_polap_log2 "    output: ${_polap_var_mtcontigs_7mtcontigname}"
@@ -1148,11 +1148,11 @@ function _run_polap_seeds-gene() {
 #   -j $JNUM: destination Flye organelle assembly number
 #   --select-contig [1|2|3]
 # Inputs:
-#   ${_polap_var_assembly_graph_final_gfa}
-#   ${_polap_var_annotation_table}
+#   ${_polap_var_ga_contigger_edges_gfa}
+#   ${_polap_var_ga_annotation_all}
 #   ${_polap_var_wga}/1-mtcontig.depth.stats.txt for manual depth range in --select-contig 1
 # Outputs:
-#   ${MTCONTIGNAME}
+#   ${_polap_var_mtcontigname}
 Example: $(basename "$0") ${_arg_menu[0]} -i <arg> -j <arg> [auto]
 Example: $(basename "$0") ${_arg_menu[0]} -i <arg> -j <arg> <only|annotation>
 Example: $(basename "$0") ${_arg_menu[0]} -i <arg> -j <arg> <manual|depth>
@@ -1190,10 +1190,10 @@ HEREDOC
 	_polap_log1 "  cleaning up (delete and create) the base mtcontigs folder: ${_polap_var_mtcontigs}"
 	_polap_log3_cmd rm -rf "${_polap_var_mtcontigs}"
 	_polap_log3_cmd mkdir -p "${_polap_var_mtcontigs}"
-	check_file_existence "${_polap_var_assembly_graph_final_gfa}"
-	check_file_existence "${_polap_var_annotation_table}"
-	_polap_log1 "  input1: ${_polap_var_assembly_graph_final_gfa}"
-	_polap_log1 "  input2: ${_polap_var_annotation_table}"
+	check_file_existence "${_polap_var_ga_contigger_edges_gfa}"
+	check_file_existence "${_polap_var_ga_annotation_all}"
+	_polap_log1 "  input1: ${_polap_var_ga_contigger_edges_gfa}"
+	_polap_log1 "  input2: ${_polap_var_ga_annotation_all}"
 	_polap_log1 "  input3: ${_polap_var_mtcontigs_1_custom_depth_range}"
 	_polap_log1 "  input4: ${_polap_var_mtcontigs_2_custom_depth_range}"
 
@@ -1240,10 +1240,10 @@ HEREDOC
 		_polap_log1 "    determines the depth range automatically ..."
 		_polap_log2 "      using the length distribution of contigs sorted"
 		_polap_log2 "      by copy numbers and organelle gene counts"
-		_polap_log2 "      input1: ${_polap_var_annotation_table}"
+		_polap_log2 "      input1: ${_polap_var_ga_annotation_all}"
 		_polap_log2 "      output1: ${_polap_var_mtcontigs_2_depth_range_by_cdf_copy_number}"
 		local _command1="Rscript $script_dir/run-polap-r-determine-depth-range.R \
-				-t ${_polap_var_annotation_table} \
+				-t ${_polap_var_ga_annotation_all} \
 				-o ${_polap_var_mtcontigs_2_depth_range_by_cdf_copy_number}"
 		if [[ "${_arg_plastid}" = "on" ]]; then
 			_command1+=" \
@@ -1285,10 +1285,10 @@ HEREDOC
 	_polap_log2 "    minimum gene density for mtDNA: 10 per 1 Mb"
 	_polap_log2 "    gene count comparison: MT > PT"
 	_polap_log2 "    depth range: $depth_lower ~ $depth_upper"
-	_polap_log2 "    input1: ${_polap_var_annotation_table}"
+	_polap_log2 "    input1: ${_polap_var_ga_annotation_all}"
 	_polap_log2 "    output: ${_polap_var_mtcontigs_preselection}"
 	local _command1="Rscript $script_dir/run-polap-r-preselect-annotation.R  \
-		--table ${_polap_var_annotation_table} \
+		--table ${_polap_var_ga_annotation_all} \
 		--out ${_polap_var_mtcontigs_preselection} \
 		--depth-range ${depth_lower},${depth_upper} \
 		--compare-mt-pt \
@@ -1310,15 +1310,15 @@ HEREDOC
 
 	if [[ -s "${_polap_var_mtcontigs_preselection}" ]]; then
 		_polap_log0_column "${_polap_var_mtcontigs_preselection}"
-		_polap_log2 "  creating the seed contig file: ${MTCONTIGNAME}"
+		_polap_log2 "  creating the seed contig file: ${_polap_var_mtcontigname}"
 		_polap_log2 "    input1: ${_polap_var_mtcontigs_preselection}"
-		_polap_log2 "    output1: ${MTCONTIGNAME}"
-		_polap_log3_pipe "cut -f1 ${_polap_var_mtcontigs_preselection} >${MTCONTIGNAME}"
+		_polap_log2 "    output1: ${_polap_var_mtcontigname}"
+		_polap_log3_pipe "cut -f1 ${_polap_var_mtcontigs_preselection} >${_polap_var_mtcontigname}"
 	else
 		_polap_log0 "  no such file: ${_polap_var_mtcontigs_preselection}"
 	fi
 
-	_polap_log0 "  output1: ${MTCONTIGNAME}"
+	_polap_log0 "  output1: ${_polap_var_mtcontigname}"
 
 	_polap_seeds_final-mtcontig
 

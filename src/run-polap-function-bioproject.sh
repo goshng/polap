@@ -40,7 +40,7 @@ source "$script_dir/polap-constants.sh"
 #   SRA ID
 # Outputs:
 #   BioProject ID
-#   FILE: ${_polap_var_bioproject_txt}
+#   FILE: ${_polap_var_project_txt}
 ################################################################################
 function _run_polap_get-bioproject-sra() {
 	# Enable debugging if DEBUG is set
@@ -66,7 +66,7 @@ function _run_polap_get-bioproject-sra() {
 #   SRA ID
 # Outputs:
 #   BioProject ID
-#   FILE: ${_polap_var_bioproject_txt}
+#   FILE: ${_polap_var_project_txt}
 Example: $(basename $0) ${_arg_menu[0]} --sra <SRA ID>
 HEREDOC
 	)
@@ -75,10 +75,10 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	if [[ ${_arg_menu[1]} == "view" ]]; then
-		if [[ -s "${_polap_var_bioproject_txt}" ]]; then
-			_polap_log0_cat "${_polap_var_bioproject_txt}"
+		if [[ -s "${_polap_var_project_txt}" ]]; then
+			_polap_log0_cat "${_polap_var_project_txt}"
 		else
-			_polap_log0 "No such file: ${_polap_var_bioproject_txt}"
+			_polap_log0 "No such file: ${_polap_var_project_txt}"
 		fi
 		exit $EXIT_SUCCESS
 	fi
@@ -92,7 +92,7 @@ HEREDOC
 		efetch -format runinfo |
 		csvtk cut -f BioProject |
 		csvtk del-header \
-			>"${_polap_var_bioproject_txt}"
+			>"${_polap_var_project_txt}"
 
 	_polap_log1_file "${ODIR}/bioproject.txt"
 	_polap_log0 $(head -n 1 "${ODIR}/bioproject.txt")
@@ -116,13 +116,13 @@ function _run_polap_copy-sra-bioproject() {
 	# Set variables for file paths
 	local _polap_var_assembly="${ODIR}/${INUM}"
 	# local _polap_var_assembly="${ODIR}"
-	local _polap_var_bioproject="${_polap_var_assembly}/70-bioproject"
-	local _polap_var_bioproject_runinfo_all="${_polap_var_bioproject}/1-runinfo.all"
-	local _polap_var_bioproject_runinfo="${_polap_var_bioproject}/1-runinfo.tsv"
-	local _polap_var_bioproject_sra_long_read="${_polap_var_bioproject}/1-sra-long-read.tsv"
-	local _polap_var_bioproject_sra_short_read="${_polap_var_bioproject}/1-sra-short-read.tsv"
-	local _polap_var_bioproject_species="${_polap_var_bioproject}/1-species.txt"
-	local _polap_var_bioproject_passed="${_polap_var_bioproject}/1-passed.txt"
+	local _polap_var_project="${_polap_var_assembly}/70-bioproject"
+	local _polap_var_project_runinfo_all="${_polap_var_project}/1-runinfo.all"
+	local _polap_var_project_runinfo="${_polap_var_project}/1-runinfo.tsv"
+	local _polap_var_project_sra_long_read="${_polap_var_project}/1-sra-long-read.tsv"
+	local _polap_var_project_sra_short_read="${_polap_var_project}/1-sra-short-read.tsv"
+	local _polap_var_project_species="${_polap_var_project}/1-species.txt"
+	local _polap_var_project_passed="${_polap_var_project}/1-passed.txt"
 
 	# Help message
 	local help_message=$(
@@ -139,7 +139,7 @@ function _run_polap_copy-sra-bioproject() {
 #   -b $SR2: bioproject ID not working
 # Inputs:
 #   bioproject ID
-#   ${_polap_var_bioproject_runinfo}
+#   ${_polap_var_project_runinfo}
 # Outputs:
 #   copy commands ...
 Example: $(basename $0) ${_arg_menu[0]} -o PRJNA574453
@@ -150,8 +150,8 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && echo "${help_message}" >&2 && exit $EXIT_SUCCESS
 
 	# Clean and create the bioproject directory
-	# rm -rf "${_polap_var_bioproject}"
-	# mkdir -p "${_polap_var_bioproject}"
+	# rm -rf "${_polap_var_project}"
+	# mkdir -p "${_polap_var_project}"
 
 	# Set the BioProject ID
 	local BIOPRJ="$SR2"
@@ -160,56 +160,56 @@ HEREDOC
 	# esearch -db bioproject -query "$BIOPRJ" |
 	# 	elink -target sra |
 	# 	efetch -format runinfo \
-	# 		>${_polap_var_bioproject_runinfo_all}
+	# 		>${_polap_var_project_runinfo_all}
 
-	check_file_existence "${_polap_var_bioproject_runinfo_all}"
-	check_file_existence "${_polap_var_bioproject_runinfo}"
-	check_file_existence "${_polap_var_bioproject_sra_long_read}"
-	check_file_existence "${_polap_var_bioproject_sra_short_read}"
-	check_file_existence "${_polap_var_bioproject_species}"
+	check_file_existence "${_polap_var_project_runinfo_all}"
+	check_file_existence "${_polap_var_project_runinfo}"
+	check_file_existence "${_polap_var_project_sra_long_read}"
+	check_file_existence "${_polap_var_project_sra_short_read}"
+	check_file_existence "${_polap_var_project_species}"
 
-	# cat "${_polap_var_bioproject_runinfo_all}" |
+	# cat "${_polap_var_project_runinfo_all}" |
 	# 	csvtk cut -f Run,bases,LibraryName,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName |
-	# 	csvtk csv2tab >"${_polap_var_bioproject_runinfo}"
+	# 	csvtk csv2tab >"${_polap_var_project_runinfo}"
 	#
 	# # Log the output file
-	# _polap_log2_file "downloaded: ${_polap_var_bioproject_runinfo}"
+	# _polap_log2_file "downloaded: ${_polap_var_project_runinfo}"
 	#
 	# # Select SRA long and short read data
 	# "$script_dir/run-polap-assemble-bioproject-1-select-sra.R" \
-	# 	"${_polap_var_bioproject_runinfo}" \
-	# 	"${_polap_var_bioproject_sra_long_read}" \
-	# 	"${_polap_var_bioproject_sra_short_read}" \
-	# 	"${_polap_var_bioproject_species}" \
+	# 	"${_polap_var_project_runinfo}" \
+	# 	"${_polap_var_project_sra_long_read}" \
+	# 	"${_polap_var_project_sra_short_read}" \
+	# 	"${_polap_var_project_species}" \
 	# 	2>"$_polap_output_dest"
 	#
 	# # Log the long and short read SRA files
-	# _polap_log2_file "output1: ${_polap_var_bioproject_sra_long_read}"
-	# _polap_log2_file "output2: ${_polap_var_bioproject_sra_short_read}"
-	# _polap_log2_file "output3: ${_polap_var_bioproject_species}"
+	# _polap_log2_file "output1: ${_polap_var_project_sra_long_read}"
+	# _polap_log2_file "output2: ${_polap_var_project_sra_short_read}"
+	# _polap_log2_file "output3: ${_polap_var_project_species}"
 
 	# Check if the long-read dataset exists
-	if [ ! -s "${_polap_var_bioproject_sra_long_read}" ]; then
+	if [ ! -s "${_polap_var_project_sra_long_read}" ]; then
 		die "ERROR: no long-read dataset for the BioProject: $BIOPRJ"
 	fi
 
 	# Check if the short-read dataset exists
-	if [ ! -s "${_polap_var_bioproject_sra_short_read}" ]; then
+	if [ ! -s "${_polap_var_project_sra_short_read}" ]; then
 		die "ERROR: no short-read dataset for the BioProject: $BIOPRJ"
 	fi
 
-	if [ ! -s "${_polap_var_bioproject_species}" ]; then
+	if [ ! -s "${_polap_var_project_species}" ]; then
 		die "ERROR: no species name for the BioProject: $BIOPRJ"
 	fi
 
 	# _polap_log1 "LOG: $BIOPRJ - passed"
-	# touch "${_polap_var_bioproject_passed}"
+	# touch "${_polap_var_project_passed}"
 
-	local lsra=$(cut -f 1 "${_polap_var_bioproject_sra_long_read}")
+	local lsra=$(cut -f 1 "${_polap_var_project_sra_long_read}")
 	_polap_log1 "scp gingko:${lsra}.fastq.gz $BIOPRJ/"
 	scp gingko:${lsra}.fastq.gz $BIOPRJ/
 
-	local ssra=$(cut -f 1 "${_polap_var_bioproject_sra_short_read}")
+	local ssra=$(cut -f 1 "${_polap_var_project_sra_short_read}")
 	_polap_log1 "scp gingko:${ssra}_1.fastq.gz $BIOPRJ/"
 	scp gingko:${ssra}_1.fastq.gz $BIOPRJ/
 	_polap_log1 "scp gingko:${ssra}_2.fastq.gz $BIOPRJ/"
@@ -249,7 +249,7 @@ function _run_polap_get-bioproject() { # get BioProject info from NCBI
 # Inputs:
 #   bioproject ID
 # Outputs:
-#   ${_polap_var_bioproject_runinfo}
+#   ${_polap_var_project_runinfo}
 # Usage:
 #   PRJNA557253 - multiple species
 Example: $(basename $0) ${_arg_menu[0]} --bioproject PRJNA574453
@@ -262,27 +262,27 @@ HEREDOC
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
-		if [ -s "${_polap_var_bioproject_runinfo}" ]; then
-			_polap_log0_file "${_polap_var_bioproject_runinfo}"
-			_polap_log0_cat "${_polap_var_bioproject_runinfo}"
+		if [ -s "${_polap_var_project_runinfo}" ]; then
+			_polap_log0_file "${_polap_var_project_runinfo}"
+			_polap_log0_cat "${_polap_var_project_runinfo}"
 			_polap_log0 ""
 		else
 			_polap_log0 "No BioProject info."
 		fi
-		if [ -s "${_polap_var_bioproject_sra_long_read}" ]; then
-			_polap_log0_file "${_polap_var_bioproject_sra_long_read}"
-			_polap_log0_cat "${_polap_var_bioproject_sra_long_read}"
+		if [ -s "${_polap_var_project_sra_long_read}" ]; then
+			_polap_log0_file "${_polap_var_project_sra_long_read}"
+			_polap_log0_cat "${_polap_var_project_sra_long_read}"
 			_polap_log0 ""
-			SRA=$(cut -f1 "${_polap_var_bioproject_sra_long_read}")
+			SRA=$(cut -f1 "${_polap_var_project_sra_long_read}")
 			echo $SRA >"${ODIR}/sra.txt"
 		else
 			_polap_log0 "No long-read info."
 		fi
-		if [ -s "${_polap_var_bioproject_sra_short_read}" ]; then
-			_polap_log0_file "${_polap_var_bioproject_sra_short_read}"
-			_polap_log0_cat "${_polap_var_bioproject_sra_short_read}"
+		if [ -s "${_polap_var_project_sra_short_read}" ]; then
+			_polap_log0_file "${_polap_var_project_sra_short_read}"
+			_polap_log0_cat "${_polap_var_project_sra_short_read}"
 			_polap_log0 ""
-			SRA=$(cut -f1 "${_polap_var_bioproject_sra_short_read}")
+			SRA=$(cut -f1 "${_polap_var_project_sra_short_read}")
 			echo $SRA >>"${ODIR}/sra.txt"
 		else
 			_polap_log0 "No short-read info."
@@ -307,54 +307,54 @@ HEREDOC
 
 	# Set the BioProject ID
 	_polap_log0 "BioProject: ${BIOPRJ}"
-	echo "${BIOPRJ}" >"${_polap_var_bioproject_txt}"
+	echo "${BIOPRJ}" >"${_polap_var_project_txt}"
 
 	# Delete the 0-bioproject folder.
-	if [[ -d "${_polap_var_bioproject}" ]]; then
-		_polap_log3_cmd rm -rf "${_polap_var_bioproject}"
+	if [[ -d "${_polap_var_project}" ]]; then
+		_polap_log3_cmd rm -rf "${_polap_var_project}"
 	fi
 
 	# Fetch the run information for the given BioProject
-	if [[ ! -s "${_polap_var_bioproject_runinfo_all}" ]] || [[ "${_arg_redo}" = "on" ]]; then
-		_polap_log0 "  downloading ${_polap_var_bioproject_runinfo_all} ..."
+	if [[ ! -s "${_polap_var_project_runinfo_all}" ]] || [[ "${_arg_redo}" = "on" ]]; then
+		_polap_log0 "  downloading ${_polap_var_project_runinfo_all} ..."
 		esearch -db bioproject -query "$BIOPRJ" |
 			elink -target sra |
 			efetch -format runinfo \
-				>${_polap_var_bioproject_runinfo_all}
+				>${_polap_var_project_runinfo_all}
 	else
-		_polap_log0 "  found: ${_polap_var_bioproject_runinfo_all}, so skipping downloading the runinfo ..."
+		_polap_log0 "  found: ${_polap_var_project_runinfo_all}, so skipping downloading the runinfo ..."
 	fi
 
 	# create the 0-bioproject folder
-	_polap_log1 "  creating output folder: ${_polap_var_bioproject}"
-	_polap_log3_cmd mkdir -p "${_polap_var_bioproject}"
+	_polap_log1 "  creating output folder: ${_polap_var_project}"
+	_polap_log3_cmd mkdir -p "${_polap_var_project}"
 
-	check_file_existence "${_polap_var_bioproject_runinfo_all}"
+	check_file_existence "${_polap_var_project_runinfo_all}"
 
 	# Log the output file
-	_polap_log1 "  extracting some columns in TSV: ${_polap_var_bioproject_runinfo}"
-	_polap_log3_pipe "cat ${_polap_var_bioproject_runinfo_all} |\
+	_polap_log1 "  extracting some columns in TSV: ${_polap_var_project_runinfo}"
+	_polap_log3_pipe "cat ${_polap_var_project_runinfo_all} |\
     csvtk cut -f Run,bases,LibraryName,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName |\
-    csvtk csv2tab >${_polap_var_bioproject_runinfo}"
+    csvtk csv2tab >${_polap_var_project_runinfo}"
 
 	# Select SRA long and short read data
 	_polap_log1 "  run-polap-r-get-bioproject-1.R"
-	_polap_log2 "    input1: ${_polap_var_bioproject_runinfo}"
-	_polap_log2 "    output1: ${_polap_var_bioproject_sra_long_read}"
-	_polap_log2 "    output2: ${_polap_var_bioproject_sra_short_read}"
-	_polap_log2 "    output3: ${_polap_var_bioproject_species}"
-	_polap_log2 "    output4: ${_polap_var_bioproject_sra_per_species}"
+	_polap_log2 "    input1: ${_polap_var_project_runinfo}"
+	_polap_log2 "    output1: ${_polap_var_project_sra_long_read}"
+	_polap_log2 "    output2: ${_polap_var_project_sra_short_read}"
+	_polap_log2 "    output3: ${_polap_var_project_species}"
+	_polap_log2 "    output4: ${_polap_var_project_sra_per_species}"
 	_polap_log3_pipe "Rscript $script_dir/run-polap-r-get-bioproject-1.R \
-		${_polap_var_bioproject_runinfo} \
-		${_polap_var_bioproject_sra_long_read} \
-		${_polap_var_bioproject_sra_short_read} \
-		${_polap_var_bioproject_species} \
-		${_polap_var_bioproject_sra_per_species} \
+		${_polap_var_project_runinfo} \
+		${_polap_var_project_sra_long_read} \
+		${_polap_var_project_sra_short_read} \
+		${_polap_var_project_species} \
+		${_polap_var_project_sra_per_species} \
 		2>$_polap_output_dest"
 
 	# Iterate through each line of the file, skipping the header
 	_polap_log1 "  creating output folders per species ..."
-	local input_file="${_polap_var_bioproject_sra_per_species}"
+	local input_file="${_polap_var_project_sra_per_species}"
 	tail -n +2 "$input_file" | while IFS=$'\t' read -r ScientificName Run_Nano Run_Illumina; do
 		_polap_log2 "    taxon: ${ScientificName}"
 
@@ -364,16 +364,16 @@ HEREDOC
 
 		# Create a directory with the taxon ID as the name
 		_polap_log3_cmd mkdir -p "$taxon_id_folder"
-		# grep "^${Run_Nano}" "${_polap_var_bioproject_runinfo}" >"$taxon_id_folder/1-sra-long-read.tsv"
-		# grep "^${Run_Illumina}" "${_polap_var_bioproject_runinfo}" >"$taxon_id_folder/1-sra-short-read.tsv"
-		_polap_log3_pipe "grep ^${Run_Nano} ${_polap_var_bioproject_runinfo} >$taxon_id_folder/1-sra-long-read.tsv"
-		_polap_log3_pipe "grep ^${Run_Illumina} ${_polap_var_bioproject_runinfo} >$taxon_id_folder/1-sra-short-read.tsv"
+		# grep "^${Run_Nano}" "${_polap_var_project_runinfo}" >"$taxon_id_folder/1-sra-long-read.tsv"
+		# grep "^${Run_Illumina}" "${_polap_var_project_runinfo}" >"$taxon_id_folder/1-sra-short-read.tsv"
+		_polap_log3_pipe "grep ^${Run_Nano} ${_polap_var_project_runinfo} >$taxon_id_folder/1-sra-long-read.tsv"
+		_polap_log3_pipe "grep ^${Run_Illumina} ${_polap_var_project_runinfo} >$taxon_id_folder/1-sra-short-read.tsv"
 
 		_polap_log0 "    creates a taxon directory: ${bioproject_species_base}"
 		_polap_log3_cmd mkdir -p "${bioproject_species_folder}"
 		_polap_log3_cmd touch "${bioproject_species_base}/log-need-to-fetch-data.txt"
-		_polap_log3_cmd cp "${_polap_var_bioproject_txt}" "${bioproject_species_base}"
-		_polap_log3_cmd cp "${_polap_var_bioproject}"/*.{tsv,txt} "${bioproject_species_folder}"
+		_polap_log3_cmd cp "${_polap_var_project_txt}" "${bioproject_species_base}"
+		_polap_log3_cmd cp "${_polap_var_project}"/*.{tsv,txt} "${bioproject_species_folder}"
 		_polap_log3_cmd cp "${taxon_id_folder}"/*.tsv "${bioproject_species_folder}"
 		# _polap_log3_cmd cp "$taxon_id_folder/1-sra-long-read.tsv" "${bioproject_species_folder}"
 		# _polap_log3_cmd cp "$taxon_id_folder/1-sra-short-read.tsv" "${bioproject_species_folder}"
@@ -402,13 +402,13 @@ function _run_polap_bioproject-prepare() { # bioproject data preparation
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# Set the output directory for the current job number
-	if [[ -s "${_polap_var_bioproject_txt}" ]]; then
-		_arg_bioproject=$(<"${_polap_var_bioproject_txt}")
+	if [[ -s "${_polap_var_project_txt}" ]]; then
+		_arg_bioproject=$(<"${_polap_var_project_txt}")
 		local BIOPRJ="${_arg_bioproject}"
 	else
-		_polap_log0 "NOTE: you have no ${_polap_var_bioproject_txt}"
-		_polap_log0 "  save BioProject ID in ${_polap_var_bioproject_txt}"
-		_polap_log0 "  if you already have the folder ${_polap_var_bioproject}"
+		_polap_log0 "NOTE: you have no ${_polap_var_project_txt}"
+		_polap_log0 "  save BioProject ID in ${_polap_var_project_txt}"
+		_polap_log0 "  if you already have the folder ${_polap_var_project}"
 		if [ "${_arg_short_read2_is}" = "on" ]; then
 			_arg_bioproject="${SR2}"
 		fi
@@ -434,15 +434,15 @@ function _run_polap_bioproject-prepare() { # bioproject data preparation
 #   -b or --bioproject <BioProject ID>
 #
 #   long-read input data in the order of priority
-#   ${_polap_var_base_nk_fq_gz}
-#   ${_polap_var_base_l_fq_gz}
-#   ${_polap_var_bioproject_sra_long_read}
+#   ${_polap_var_outdir_nk_fq_gz}
+#   ${_polap_var_outdir_l_fq_gz}
+#   ${_polap_var_project_sra_long_read}
 #   to download the data if no such file
 #
 #   short-read input data in the order of priority
-#   ${_polap_var_base_msbwt_tar_gz}
-# 	${_polap_var_base_msbwt}
-#   ${_polap_var_bioproject_sra_short_read} 
+#   ${_polap_var_outdir_msbwt_tar_gz}
+# 	${_polap_var_outdir_msbwt}
+#   ${_polap_var_project_sra_short_read} 
 #   to download the data if no such file
 # Outputs:
 #   Long- and short-read data files
@@ -470,11 +470,11 @@ HEREDOC
 	fi
 
 	# Get the long-read information from NCBI
-	if [ -s "${_polap_var_bioproject_sra_long_read}" ]; then
-		_polap_log1 "  using SRA info at: ${_polap_var_bioproject_sra_long_read}"
-		_polap_log1_cat "${_polap_var_bioproject_sra_long_read}"
+	if [ -s "${_polap_var_project_sra_long_read}" ]; then
+		_polap_log1 "  using SRA info at: ${_polap_var_project_sra_long_read}"
+		_polap_log1_cat "${_polap_var_project_sra_long_read}"
 	else
-		_polap_log0 "ERROR: no such file: ${_polap_var_bioproject_sra_long_read}"
+		_polap_log0 "ERROR: no such file: ${_polap_var_project_sra_long_read}"
 		return
 		# _run_polap_get-bioproject
 	fi
@@ -482,12 +482,12 @@ HEREDOC
 	# Fetch the long-read dataset
 	if [ -s "${LRNK}" ]; then
 		_polap_log1 "  we use the long-read data: ${LRNK}"
-		_long_read_data="${_polap_var_base_nk_fq_gz}"
-	elif [[ -s "${_polap_var_base_l_fq_gz}" ]]; then
-		_polap_log1 "  we use the long-read data: ${_polap_var_base_l_fq_gz}"
-		_long_read_data="${_polap_var_base_l_fq_gz}"
-	elif [ -s "${_polap_var_bioproject_sra_long_read}" ]; then
-		local SRA=$(cut -f1 "${_polap_var_bioproject_sra_long_read}")
+		_long_read_data="${_polap_var_outdir_nk_fq_gz}"
+	elif [[ -s "${_polap_var_outdir_l_fq_gz}" ]]; then
+		_polap_log1 "  we use the long-read data: ${_polap_var_outdir_l_fq_gz}"
+		_long_read_data="${_polap_var_outdir_l_fq_gz}"
+	elif [ -s "${_polap_var_project_sra_long_read}" ]; then
+		local SRA=$(cut -f1 "${_polap_var_project_sra_long_read}")
 		LR="${ODIR}/${SRA}.fastq"
 		if [ -s "${LR}" ]; then
 			_polap_log2_file "${LR}"
@@ -504,16 +504,16 @@ HEREDOC
 	fi
 
 	# Fetch the short-read dataset
-	if [ -s "${_polap_var_base_msbwt_tar_gz}" ]; then
-		_polap_log1 "  we use the short-read data in: ${_polap_var_base_msbwt_tar_gz}"
-		_short_read_data1=${_polap_var_base_msbwt_tar_gz}
-		# check_file_existence "${_polap_var_base_genome_size}"
-	elif [[ -s "${_polap_var_base_msbwt}" ]]; then
-		_polap_log1 "  we use the short-read data in: ${_polap_var_base_msbwt}"
-		_short_read_data1=${_polap_var_base_msbwt}
-		# check_file_existence "${_polap_var_base_genome_size}"
-	elif [ -s "${_polap_var_bioproject_sra_short_read}" ]; then
-		local SRA=$(cut -f1 "${_polap_var_bioproject_sra_short_read}")
+	if [ -s "${_polap_var_outdir_msbwt_tar_gz}" ]; then
+		_polap_log1 "  we use the short-read data in: ${_polap_var_outdir_msbwt_tar_gz}"
+		_short_read_data1=${_polap_var_outdir_msbwt_tar_gz}
+		# check_file_existence "${_polap_var_outdir_genome_size}"
+	elif [[ -s "${_polap_var_outdir_msbwt}" ]]; then
+		_polap_log1 "  we use the short-read data in: ${_polap_var_outdir_msbwt}"
+		_short_read_data1=${_polap_var_outdir_msbwt}
+		# check_file_existence "${_polap_var_outdir_genome_size}"
+	elif [ -s "${_polap_var_project_sra_short_read}" ]; then
+		local SRA=$(cut -f1 "${_polap_var_project_sra_short_read}")
 		SR1="${ODIR}/${SRA}_1.fastq"
 		SR2="${ODIR}/${SRA}_2.fastq"
 		if [ -s "${SR1}" ]; then
@@ -530,10 +530,10 @@ HEREDOC
 			gunzip "${SR2}.gz"
 		fi
 		# if [ -s "${SR1}" ]; then
-		# 	seqkit stats -T "${SR1}" >"${_polap_var_base_fq_stats}"
+		# 	seqkit stats -T "${SR1}" >"${_polap_var_outdir_fq_stats}"
 		# fi
 		# if [ -s "${SR2}" ]; then
-		# 	seqkit stats -T "${SR2}" >>"${_polap_var_base_fq_stats}"
+		# 	seqkit stats -T "${SR2}" >>"${_polap_var_outdir_fq_stats}"
 		# fi
 
 		if [ ! -s "${SR1}" ] || [ ! -s "${SR2}" ]; then
@@ -553,9 +553,9 @@ HEREDOC
 	# check_file_existence "${SR1}"
 	# check_file_existence "${SR2}"
 	#
-	# if [ -s "${_polap_var_base_fq_stats}" ]; then
-	# 	_polap_log2_file "${_polap_var_base_fq_stats}"
-	# 	_polap_log3_cat "${_polap_var_base_fq_stats}"
+	# if [ -s "${_polap_var_outdir_fq_stats}" ]; then
+	# 	_polap_log2_file "${_polap_var_outdir_fq_stats}"
+	# 	_polap_log3_cat "${_polap_var_outdir_fq_stats}"
 	# else
 	# 	_run_polap_summary-reads
 	# fi
@@ -564,12 +564,12 @@ HEREDOC
 	# _run_polap_find-genome-size
 	# _run_polap_reduce-data
 
-	if [ -s "${_polap_var_base_msbwt}" ]; then
+	if [ -s "${_polap_var_outdir_msbwt}" ]; then
 		_polap_log1 "  skipping the preparation of short-read polishing ..."
 	else
-		if [ -s "${_polap_var_base_msbwt_tar_gz}" ]; then
-			_polap_log1 "  decompressing ${_polap_var_base_msbwt_tar_gz} ... later when we polish it with the short-read data."
-			# tar zxf "${_polap_var_base_msbwt_tar_gz}"
+		if [ -s "${_polap_var_outdir_msbwt_tar_gz}" ]; then
+			_polap_log1 "  decompressing ${_polap_var_outdir_msbwt_tar_gz} ... later when we polish it with the short-read data."
+			# tar zxf "${_polap_var_outdir_msbwt_tar_gz}"
 		else
 			_polap_log1 "  Do the preparation of short-read polishing ... early"
 			check_file_existence "${SR1}"
@@ -634,7 +634,7 @@ HEREDOC
 	mkdir -p "$ODIR"
 
 	# Run assembly, annotation, and contig selection steps
-	if [ -s "${_polap_var_wga_contigger_gfa}" ]; then
+	if [ -s "${_polap_var_wga_contigger_edges_gfa}" ]; then
 		_polap_log1 "  skipping the whole-genome assembly"
 	else
 		_run_polap_assemble1
@@ -684,11 +684,11 @@ HEREDOC
 			unique_files+=("$file")
 			echo "$file is unique."
 
-			MTCONTIGNAME="$file"
+			_polap_var_mtcontigname="$file"
 			# check the mt.contig.name-1
-			if [ -s "$MTCONTIGNAME" ]; then
+			if [ -s "$_polap_var_mtcontigname" ]; then
 				# Run secondary assembly, polishing, and mtDNA selection steps
-				_polap_log1_file "${MTCONTIGNAME}"
+				_polap_log1_file "${_polap_var_mtcontigname}"
 
 				if [ -s "${ODIR}/${JNUM}/30-contigger/graph_final.gfa" ] && [ "${_arg_redo}" = "off" ]; then
 					_polap_log2 "  skipping organelle-genome assembly -i 0 -j ${JNUM} ..."
@@ -716,7 +716,7 @@ HEREDOC
 					INUM="${i}" _run_polap_select-mtdna
 				fi
 			else
-				_polap_log1 "LOG: $MTCONTIGNAME is empty for select-contig type $i ..."
+				_polap_log1 "LOG: $_polap_var_mtcontigname is empty for select-contig type $i ..."
 			fi
 		else
 			_polap_log1 "$file is the same as $unique_file."
@@ -744,13 +744,13 @@ function _run_polap_bioproject-postprocess() { # postprocess the bioproject asse
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# Set the output directory for the current job number
-	if [[ -s "${_polap_var_bioproject_txt}" ]]; then
-		_arg_bioproject=$(<"${_polap_var_bioproject_txt}")
+	if [[ -s "${_polap_var_project_txt}" ]]; then
+		_arg_bioproject=$(<"${_polap_var_project_txt}")
 		local BIOPRJ="${_arg_bioproject}"
 	else
-		_polap_log0 "NOTE: you have no ${_polap_var_bioproject_txt}"
-		_polap_log0 "  save BioProject ID in ${_polap_var_bioproject_txt}"
-		_polap_log0 "  if you already have the folder ${_polap_var_bioproject}"
+		_polap_log0 "NOTE: you have no ${_polap_var_project_txt}"
+		_polap_log0 "  save BioProject ID in ${_polap_var_project_txt}"
+		_polap_log0 "  if you already have the folder ${_polap_var_project}"
 		if [ "${_arg_short_read2_is}" = "on" ]; then
 			_arg_bioproject="${SR2}"
 		fi
@@ -776,15 +776,15 @@ function _run_polap_bioproject-postprocess() { # postprocess the bioproject asse
 #   -b or --bioproject <BioProject ID>
 #
 #   long-read input data in the order of priority
-#   ${_polap_var_base_nk_fq_gz}
-#   ${_polap_var_base_l_fq_gz}
-#   ${_polap_var_bioproject_sra_long_read}
+#   ${_polap_var_outdir_nk_fq_gz}
+#   ${_polap_var_outdir_l_fq_gz}
+#   ${_polap_var_project_sra_long_read}
 #   to download the data if no such file
 #
 #   short-read input data in the order of priority
-#   ${_polap_var_base_msbwt_tar_gz}
-# 	${_polap_var_base_msbwt}
-#   ${_polap_var_bioproject_sra_short_read} 
+#   ${_polap_var_outdir_msbwt_tar_gz}
+# 	${_polap_var_outdir_msbwt}
+#   ${_polap_var_project_sra_short_read} 
 #   to download the data if no such file
 # Outputs:
 #   Long- and short-read data files
@@ -800,12 +800,12 @@ HEREDOC
 
 	_polap_log0 "protprocessing the organelle genome assembly of BioProject ${BIOPRJ} ..."
 
-	if [ -s "${_polap_var_base_msbwt}" ]; then
+	if [ -s "${_polap_var_outdir_msbwt}" ]; then
 		_polap_log1 "  skipping the preparation of short-read polishing ..."
 	else
-		if [ -s "${_polap_var_base_msbwt_tar_gz}" ]; then
-			_polap_log1 "  decompressing ${_polap_var_base_msbwt_tar_gz} ..."
-			tar -zxf "${_polap_var_base_msbwt_tar_gz}" -C "${ODIR}"
+		if [ -s "${_polap_var_outdir_msbwt_tar_gz}" ]; then
+			_polap_log1 "  decompressing ${_polap_var_outdir_msbwt_tar_gz} ..."
+			tar -zxf "${_polap_var_outdir_msbwt_tar_gz}" -C "${ODIR}"
 		else
 			_polap_log1 "  Do the preparation of short-read polishing ... early"
 			check_file_existence "${SR1}"
@@ -819,7 +819,7 @@ HEREDOC
 		# Define the paths for mtDNA sequences to be polished
 		PA="${ODIR}/${i}/mt.0.fasta"
 		FA="${ODIR}/${i}/mt.1.fa"
-		check_file_existence "${_polap_var_base_msbwt}"
+		check_file_existence "${_polap_var_outdir_msbwt}"
 
 		if [ -s "${PA}" ]; then
 			if [ -s "${FA}" ]; then
@@ -836,15 +836,15 @@ HEREDOC
 	# Download the known reference mtDNA sequence in fasta format if available
 	# -o PRJNA914763
 	# INUM=0
-	# if [ -s "${_polap_var_bioproject_mtdna_fasta2}" ]; then
+	# if [ -s "${_polap_var_project_mtdna_fasta2}" ]; then
 	# 	_polap_log2 "  skipping downloading mtDNA from NCBI"
-	# 	_polap_log2 "  we use the mtDNA: ${_polap_var_bioproject_mtdna_fasta2}"
+	# 	_polap_log2 "  we use the mtDNA: ${_polap_var_project_mtdna_fasta2}"
 	# else
 	# 	_run_polap_get-mtdna
 	#
 	# fi
 
-	if [[ -s "${_polap_var_bioproject_mtdna_fasta2}" ]]; then
+	if [[ -s "${_polap_var_project_mtdna_fasta2}" ]]; then
 
 		# Compare the known mtDNA and the assembled one.
 		for i in "${_arg_select_contig_numbers[@]}"; do
@@ -858,7 +858,7 @@ HEREDOC
 				_polap_log1 "  skipping the short-read polishing ..."
 				INUM="${i}"
 				source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-				local n1=$(cut -f1 "${_polap_var_bioproject_mtdna_fasta2_accession}")
+				local n1=$(cut -f1 "${_polap_var_project_mtdna_fasta2_accession}")
 				local l1="0"
 				local l2="0"
 				local c1="0"
@@ -866,7 +866,7 @@ HEREDOC
 			fi
 		done
 	else
-		_polap_log0 "No known mtDNA for $(<${_polap_var_bioproject_species})"
+		_polap_log0 "No known mtDNA for $(<${_polap_var_project_species})"
 	fi
 
 	# Finalize the assemble-bioproject function.
@@ -910,13 +910,13 @@ function _run_polap_assemble-bioproject() { # main function for this bioproject 
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# Set the output directory for the current job number
-	if [[ -s "${_polap_var_bioproject_txt}" ]]; then
-		_arg_bioproject=$(<"${_polap_var_bioproject_txt}")
+	if [[ -s "${_polap_var_project_txt}" ]]; then
+		_arg_bioproject=$(<"${_polap_var_project_txt}")
 		local BIOPRJ="${_arg_bioproject}"
 	else
-		_polap_log0 "NOTE: you have no ${_polap_var_bioproject_txt}"
-		_polap_log0 "  save BioProject ID in ${_polap_var_bioproject_txt}"
-		_polap_log0 "  if you already have the folder ${_polap_var_bioproject}"
+		_polap_log0 "NOTE: you have no ${_polap_var_project_txt}"
+		_polap_log0 "  save BioProject ID in ${_polap_var_project_txt}"
+		_polap_log0 "  if you already have the folder ${_polap_var_project}"
 		if [ "${_arg_short_read2_is}" = "on" ]; then
 			_arg_bioproject="${SR2}"
 		fi
@@ -942,15 +942,15 @@ function _run_polap_assemble-bioproject() { # main function for this bioproject 
 #   -b or --bioproject <BioProject ID>
 #
 #   long-read input data in the order of priority
-#   ${_polap_var_base_nk_fq_gz}
-#   ${_polap_var_base_l_fq_gz}
-#   ${_polap_var_bioproject_sra_long_read}
+#   ${_polap_var_outdir_nk_fq_gz}
+#   ${_polap_var_outdir_l_fq_gz}
+#   ${_polap_var_project_sra_long_read}
 #   to download the data if no such file
 #
 #   short-read input data in the order of priority
-#   ${_polap_var_base_msbwt_tar_gz}
-# 	${_polap_var_base_msbwt}
-#   ${_polap_var_bioproject_sra_short_read} 
+#   ${_polap_var_outdir_msbwt_tar_gz}
+# 	${_polap_var_outdir_msbwt}
+#   ${_polap_var_project_sra_short_read} 
 #   to download the data if no such file
 # Outputs:
 #   mt.1.fa

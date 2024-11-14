@@ -54,9 +54,9 @@ function _polap_set-variables-short-read() {
 		if [ -z "${_arg_bioproject}" ]; then
 			_polap_log1 "  we use the default short-read1 data filename: ${_arg_short_read1}"
 		else
-			_polap_log1 "  we use the short-reads data 1 info: ${_polap_var_bioproject_sra_short_read}"
-			check_file_existence "${_polap_var_bioproject_sra_short_read}"
-			local SRA=$(cut -f1 "${_polap_var_bioproject_sra_short_read}")
+			_polap_log1 "  we use the short-reads data 1 info: ${_polap_var_project_sra_short_read}"
+			check_file_existence "${_polap_var_project_sra_short_read}"
+			local SRA=$(cut -f1 "${_polap_var_project_sra_short_read}")
 			_arg_short_read1="${ODIR}/${SRA}_1.fastq"
 		fi
 	else
@@ -67,9 +67,9 @@ function _polap_set-variables-short-read() {
 		if [ -z "${_arg_bioproject}" ]; then
 			_polap_log1 "  we use the default short-read2 data filename: ${_arg_short_read2}"
 		else
-			_polap_log1 "  we use the short-reads data 2 info: ${_polap_var_bioproject_sra_short_read}"
-			check_file_existence "${_polap_var_bioproject_sra_short_read}"
-			local SRA=$(cut -f1 "${_polap_var_bioproject_sra_short_read}")
+			_polap_log1 "  we use the short-reads data 2 info: ${_polap_var_project_sra_short_read}"
+			check_file_existence "${_polap_var_project_sra_short_read}"
+			local SRA=$(cut -f1 "${_polap_var_project_sra_short_read}")
 			_arg_short_read2="${ODIR}/${SRA}_2.fastq"
 		fi
 	else
@@ -102,9 +102,9 @@ function _polap_set-variables-long-read() {
 		if [ -z "${_arg_bioproject}" ]; then
 			_polap_log1 "  we use the default long-reads data filename: ${_arg_long_reads}"
 		else
-			_polap_log1 "  we use the long-reads data: ${_polap_var_bioproject_sra_long_read}"
-			check_file_existence "${_polap_var_bioproject_sra_long_read}"
-			local SRA=$(cut -f1 "${_polap_var_bioproject_sra_long_read}")
+			_polap_log1 "  we use the long-reads data: ${_polap_var_project_sra_long_read}"
+			check_file_existence "${_polap_var_project_sra_long_read}"
+			local SRA=$(cut -f1 "${_polap_var_project_sra_long_read}")
 			_arg_long_reads="${ODIR}/${SRA}.fastq"
 		fi
 	else

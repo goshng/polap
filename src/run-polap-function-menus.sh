@@ -639,15 +639,15 @@ HEREDOC
 				case $choice in
 				1)
 					# src/polap.sh -o "${ODIR}" get-mtdna file
-					_polap_log0_cat "${_polap_var_bioproject_species}"
+					_polap_log0_cat "${_polap_var_project_species}"
 					;;
 				2)
 					_polap_log0 "..."
 					src/polap.sh -o "${ODIR}" get-mtdna --log-stderr
-					if [ -s "${_polap_var_bioproject_mtdna_fasta2}" ]; then
-						seqkit stats "${_polap_var_bioproject_mtdna_fasta2}" >&3
+					if [ -s "${_polap_var_project_mtdna_fasta2}" ]; then
+						seqkit stats "${_polap_var_project_mtdna_fasta2}" >&3
 					else
-						_polap_log0 "No mtDNA sequence found for the species: $(<${_polap_var_bioproject_species})"
+						_polap_log0 "No mtDNA sequence found for the species: $(<${_polap_var_project_species})"
 					fi
 					;;
 				3)
@@ -655,17 +655,17 @@ HEREDOC
 					read -r choice
 					_polap_log0_only "${choice}"
 					src/polap.sh -o "${ODIR}" get-mtdna --species "${choice}" --log-stderr
-					if [ -s "${_polap_var_bioproject_mtdna_fasta2}" ]; then
-						seqkit stats "${_polap_var_bioproject_mtdna_fasta2}"
+					if [ -s "${_polap_var_project_mtdna_fasta2}" ]; then
+						seqkit stats "${_polap_var_project_mtdna_fasta2}"
 					else
 						_polap_log0 "No mtDNA sequence found for the species: ${choice}"
 					fi
 					;;
 				4)
-					if [ -s "${_polap_var_bioproject_mtdna_fasta2}" ]; then
-						seqkit stats "${_polap_var_bioproject_mtdna_fasta2}" >&2
+					if [ -s "${_polap_var_project_mtdna_fasta2}" ]; then
+						seqkit stats "${_polap_var_project_mtdna_fasta2}" >&2
 					else
-						_polap_log0 "No mtDNA sequence found for the species: $(<${_polap_var_bioproject_species})"
+						_polap_log0 "No mtDNA sequence found for the species: $(<${_polap_var_project_species})"
 					fi
 					;;
 				5)
@@ -680,8 +680,8 @@ HEREDOC
 					ls -l "${ODIR}" >&3
 					;;
 				status)
-					_polap_log0_file "${_polap_var_wga_contigger_gfa}"
-					if [[ -s "${_polap_var_wga_contigger_gfa}" ]]; then
+					_polap_log0_file "${_polap_var_wga_contigger_edges_gfa}"
+					if [[ -s "${_polap_var_wga_contigger_edges_gfa}" ]]; then
 						_polap_log0 "WGA Assembled: ${ODIR}"
 					else
 						_polap_log0 "WGA not assembled yet: ${ODIR}"
@@ -693,9 +693,9 @@ HEREDOC
 						_polap_log0 "organelle-genome assembly ${i}:"
 						INUM="${i}"
 						source "$script_dir/polap-variables-common.sh"
-						_polap_log0_file "${_polap_var_contigger_gfa}"
-						if [[ -s "${_polap_var_contigger_gfa}" ]]; then
-							_polap_log0 "OGA Assembled: ${_polap_var_contigger_gfa}"
+						_polap_log0_file "${_polap_var_ga_contigger_edges_gfa}"
+						if [[ -s "${_polap_var_ga_contigger_edges_gfa}" ]]; then
+							_polap_log0 "OGA Assembled: ${_polap_var_ga_contigger_edges_gfa}"
 						else
 							_polap_log0 "OGA not assembled yet!"
 						fi

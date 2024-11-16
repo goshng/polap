@@ -16,21 +16,21 @@
 
 # Global option variables
 #
-# ODIR
-# INUM
-# JNUM
+# _arg_outdir
+# _arg_inum
+# _arg_jnum
 
 # common variables used across multiple scripts
-local _polap_var_outdir="${ODIR}"
+local _polap_var_outdir="${_arg_outdir}"
 local _polap_var_project="${_polap_var_outdir}/00-bioproject"
 local _polap_var_wga="${_polap_var_outdir}/0"
-local _polap_var_ga="${_polap_var_outdir}/${INUM}"
+local _polap_var_ga="${_polap_var_outdir}/${_arg_inum}"
 local _polap_var_ga_contigger="${_polap_var_ga}/30-contigger"
 # _polap_var_ga_contigger better than _polap_var_ga_contigger
 local _polap_var_ga_contigger="${_polap_var_ga}/30-contigger"
 local _polap_var_ann="${_polap_var_ga}/50-annotation"
-local _polap_var_mtcontigname="${_polap_var_ga}/mt.contig.name-${JNUM}"
-local _polap_var_oga="${_polap_var_outdir}/${JNUM}"
+local _polap_var_mtcontigname="${_polap_var_ga}/mt.contig.name-${_arg_jnum}"
+local _polap_var_oga="${_polap_var_outdir}/${_arg_jnum}"
 local _polap_var_oga_contigger="${_polap_var_oga}/30-contigger"
 # local _polap_var_oga="${_polap_var_ga}"
 local _polap_var_oga_seeds="${_polap_var_oga}/seeds"
@@ -38,11 +38,13 @@ local _polap_var_mtdna="${_polap_var_ga}/52-mtdna"
 local _polap_var_compare="${_polap_var_ga}/53-compare"
 
 # base
-local _polap_var_outdir_fq_stats="${_polap_var_outdir}/fq.stats"
+local _polap_var_outdir_s1_fq_stats="${_polap_var_outdir}/s1.fq.stats"
+local _polap_var_outdir_s2_fq_stats="${_polap_var_outdir}/s2.fq.stats"
 local _polap_var_outdir_genome_size="${_polap_var_outdir}/short_expected_genome_size.txt"
 local _polap_var_outdir_jellyfish_out="${_polap_var_outdir}/jellyfish_out"
 local _polap_var_outdir_jellyfish_out_histo="${_polap_var_outdir}/jellyfish_out.histo"
 local _polap_var_outdir_l_fq_gz="${_polap_var_outdir}/l.fq.gz"
+local _polap_var_outdir_l_fq_stats="${_polap_var_outdir}/l.fq.stats"
 local _polap_var_outdir_long_total_length="${_polap_var_outdir}/long_total_length.txt"
 local _polap_var_outdir_msbwt="${_polap_var_outdir}/msbwt/comp_msbwt.npy"
 local _polap_var_outdir_msbwt_tar_gz="${_polap_var_outdir}/msbwt.tar.gz"
@@ -72,11 +74,13 @@ local _polap_var_project_taxon_id="${_polap_var_project}/1-taxon-id.txt"
 local _polap_var_project_taxonomy="${_polap_var_project}/1-taxonomy.txt"
 
 # wga
-local _polap_var_wga_annotation="${_polap_var_wga}/assembly_info_organelle_annotation_count-all.txt"
+local _polap_var_wga_annotation_all="${_polap_var_wga}/assembly_info_organelle_annotation_count-all.txt"
 local _polap_var_wga_contigger="${_polap_var_wga}/30-contigger"
 local _polap_var_wga_contigger_contigs_fasta="${_polap_var_wga_contigger}/contigs.fasta"
 local _polap_var_wga_contigger_contigs_stats="${_polap_var_wga_contigger}/contigs_stats.txt"
 local _polap_var_wga_contigger_edges_gfa="${_polap_var_wga_contigger}/graph_final.gfa"
+local _polap_var_wga_contigger_edges_fasta="${_polap_var_wga_contigger}/graph_final.fasta"
+local _polap_var_wga_contigger_edges_stats="${_polap_var_wga_contigger}/edges_stats.txt"
 
 # ga
 local _polap_var_ga_annotation_all="${_polap_var_ga}/assembly_info_organelle_annotation_count-all.txt"
@@ -89,17 +93,16 @@ local _polap_var_ga_annotation_all_backup="${_polap_var_ga}/assembly_info_organe
 local _polap_var_ga_annotation_cdf_table="${_polap_var_ga}/contig-annotation-cdf-table.txt"
 # delete table_seed not table_seed_target
 local _polap_var_ga_annotation_depth_table_seed="${_polap_var_ga}/contig-annotation-depth-table-seed.txt"
-local _polap_var_ga_annotation_depth_table_seed_target="${_polap_var_ga}/contig-annotation-depth-table-seed-${JNUM}.txt"
+local _polap_var_ga_annotation_depth_table_seed_target="${_polap_var_ga}/contig-annotation-depth-table-seed-${_arg_jnum}.txt"
 # for PT annotation table
 local _polap_var_ga_pt_annotation_depth_table="${_polap_var_ga}/pt-contig-annotation-depth-table.txt"
-local _polap_var_ga_pt_annotation_depth_table_seed_target="${_polap_var_ga}/pt-contig-annotation-depth-table-seed-${JNUM}.txt"
+local _polap_var_ga_pt_annotation_depth_table_seed_target="${_polap_var_ga}/pt-contig-annotation-depth-table-seed-${_arg_jnum}.txt"
 # local _polap_var_ga_pt_annotation_table="${_polap_var_ga}/pt-contig-annotation-table.txt"
 
 # not used any more: used to be a folder for _polap_var_ga_gfa_all _polap_var_ga_gfa_seq_part
 # FIXME: delete these three lines
-local _polap_var_ga_mtcontigs="${_polap_var_ga}/mtcontigs"
-local _polap_var_manual_copy_range="${_polap_var_ga}/1-manual.copy.range.txt"
-local _polap_var_manual_depth_range="${_polap_var_ga}/1-manual.depth.range.txt"
+# local _polap_var_manual_copy_range="${_polap_var_ga}/1-manual.copy.range.txt"
+# local _polap_var_manual_depth_range="${_polap_var_ga}/1-manual.depth.range.txt"
 
 # _polap_var_ga_contigger
 local _polap_var_ga_contigger_edges_gfa="${_polap_var_ga_contigger}/graph_final.gfa"

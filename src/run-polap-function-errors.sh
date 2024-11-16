@@ -15,63 +15,41 @@
 ################################################################################
 
 ################################################################################
-# Tip!
-# How to extract commands that were expected:
-# src/polap.sh reduce-data --redo -v -v -v 2>&1 | grep -E "^rm|^seqkit|^ln"
-################################################################################
-
-################################################################################
 # Ensure that the current script is sourced only once
 source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
-if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-	set -u
-	return 0
-fi
+[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-source "$script_dir/run-polap-function-utilities.sh"
+_polap_error_message() {
+	local _polap_errno=$1
 
-function print_version_history {
-	local _message=$(
-		cat <<HEREDOC
-POLAP - Plant organelle DNA long-read assembly pipeline.
-version ${_polap_version}
+	case "${_polap_errno}" in
+	${_POLAP_ERR_NO_EDGES_GFA})
+		_polap_log0 "ERROR: No contigger edges gfa: ${_polap_var_ga_contigger_edges_gfa}"
+		;;
+	${_POLAP_ERR_NO_GENOME_SIZE})
+		_polap_log0 "ERROR: No genome size estimate"
+		;;
+	${_POLAP_ERR_NO_NK_FQ})
+		_polap_log0 "ERROR: No long-read data for the whole-genome assembly"
+		;;
+	${_POLAP_ERR_NO_SEEDS})
+		_polap_log0 "ERROR: no seed contig file of the contig selection types!"
+		;;
+	${_POLAP_ERR_NO_DISK_SPACE})
+		_polap_log0 "ERROR: no disk space available for a POLAP analysis!"
+		;;
+	2 | 3)
+		echo 2 or 3
+		;;
+	*)
+		echo default
+		;;
+	esac
 
-------
-v0.3.8
-------
-- Target: Revision 1
-
-------
-v0.3.7
-------
-- Add proper column names in annotation tables
-
-------
-v0.3.6
-------
-- Add a semi-automatic seed contig selection
-
-------
-v0.2.6
-------
-- Bioconda package is available.
-
-POLAP - Plant organelle DNA long-read assembly pipeline.
-version ${_polap_version}
-printing out packages employed by POLAP to the log: ${LOG_FILE} ...
-HEREDOC
-	)
-
-	_polap_log0 "${_message}"
-}
-
-function _run_polap_version { # display version of all
-	print_version_history
-	_log_command_versions
 }

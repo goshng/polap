@@ -29,9 +29,9 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 ################################################################################
-# Archive the ${ODIR} folder to ${_arg_archive}
+# Archive the ${_arg_outdir} folder to ${_arg_archive}
 ################################################################################
-function _run_polap_archive() { # archive a POLAP output folder for later use
+function _run_polap_archive { # archive a POLAP output folder for later use
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -47,21 +47,21 @@ function _run_polap_archive() { # archive a POLAP output folder for later use
 		_arg_archive="${_arg_short_read1}"
 	fi
 
-	local FDIR="$ODIR"/$INUM
-	local _polap_var_mtcontigname="$FDIR"/mt.contig.name-"$JNUM"
+	local FDIR="${_arg_outdir}"/${_arg_inum}
+	local _polap_var_mtcontigname="$FDIR"/mt.contig.name-"${_arg_jnum}"
 	local _polap_var_source_0="${_polap_var_wga}"
-	local _polap_var_source_0_30_contigger="$FDIR"/"$JNUM"/mtcontigs
+	local _polap_var_source_0_30_contigger="$FDIR"/"${_arg_jnum}"/mtcontigs
 
 	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
-# Archive the ${ODIR} folder to ${_arg_archive}
+# Archive the ${_arg_outdir} folder to ${_arg_archive}
 #
 # Arguments:
-#   -o ${ODIR}: the source output folder to archive
+#   -o ${_arg_outdir}: the source output folder to archive
 #   -a ${_arg_archive}: the target output folder for the archive
 # Inputs:
-#   ${ODIR}
+#   ${_arg_outdir}
 # Outputs:
 #   ${_arg_archive}
 Example: $(basename "$0") ${_arg_menu[0]} -o <folder1> -a <folder2>
@@ -71,7 +71,7 @@ HEREDOC
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
-	_polap_log0_log "archiving ${ODIR} to ${_arg_archive} ..."
+	_polap_log0_log "archiving ${_arg_outdir} to ${_arg_archive} ..."
 
 	local source_folders=(
 		./0-bioproject
@@ -172,21 +172,21 @@ HEREDOC
 			>"${_arg_archive}/l.fq.gz"
 	fi
 	_polap_log1 "compressing the short-read polishing data file ..."
-	if [ -s "${ODIR}/msbwt/comp_msbwt.npy" ]; then
-		cd "${ODIR}"
+	if [ -s "${_arg_outdir}/msbwt/comp_msbwt.npy" ]; then
+		cd "${_arg_outdir}"
 		tar zcf ../"${_arg_archive}/msbwt.tar.gz" msbwt
 		cd -
 	fi
 
-	cp -p "${ODIR}"/log* "${_arg_archive}/"
+	cp -p "${_arg_outdir}"/log* "${_arg_archive}/"
 
 	_polap_log1 "copying folders ..."
 	for f in "${source_files0[@]}"; do
-		_polap_log2 "cp -p" "${ODIR}/${f}" "${_arg_archive}/${f}"
-		cp -p "${ODIR}/${f}" "${_arg_archive}/${f}"
+		_polap_log2 "cp -p" "${_arg_outdir}/${f}" "${_arg_archive}/${f}"
+		cp -p "${_arg_outdir}/${f}" "${_arg_archive}/${f}"
 	done
 
-	for gfa in $(find "${ODIR}" -name graph_final.gfa); do
+	for gfa in $(find "${_arg_outdir}" -name graph_final.gfa); do
 		local b="${gfa%/30-contigger/graph_final.gfa}"
 		# Extract the final directory name from the path (e.g., "0" or "1")
 		b=$(basename "${b}")
@@ -197,8 +197,8 @@ HEREDOC
 		_polap_log2 "mkdir -p" "${_arg_archive}/${b}/30-contigger"
 		mkdir -p "${_arg_archive}/${b}/30-contigger"
 		for f in "${source_files1[@]}"; do
-			_polap_log2 "cp -p" "${ODIR}/${b}/${f}" "${_arg_archive}/${b}/${f}"
-			cp -p "${ODIR}/${b}/${f}" "${_arg_archive}/${b}/${f}"
+			_polap_log2 "cp -p" "${_arg_outdir}/${b}/${f}" "${_arg_archive}/${b}/${f}"
+			cp -p "${_arg_outdir}/${b}/${f}" "${_arg_archive}/${b}/${f}"
 		done
 		cp -p "${_polap_var_wga}/mt.contig.name-${b}" "${_arg_archive}/0/"
 	done
@@ -211,7 +211,7 @@ HEREDOC
 ################################################################################
 # To filter a GFA file by a specific depth range
 ################################################################################
-function _polap_archive_gfa-depth-filtered() {
+function _polap_archive_gfa-depth-filtered {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -285,7 +285,7 @@ function _polap_archive_gfa-depth-filtered() {
 	[ "$DEBUG" -eq 1 ] && set +x
 }
 
-function _run_polap_filter-gfa-with-edge() { # archive a POLAP output folder for later use
+function _run_polap_filter-gfa-with-edge { # archive a POLAP output folder for later use
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -309,9 +309,9 @@ function _run_polap_filter-gfa-with-edge() { # archive a POLAP output folder for
 # for the v0.2.6 version.
 #
 # Arguments:
-#   -o ${ODIR}: the source output folder to archive
+#   -o ${_arg_outdir}: the source output folder to archive
 # Inputs:
-#   ${ODIR}
+#   ${_arg_outdir}
 # Outputs:
 Example: $(basename "$0") ${_arg_menu[0]} -o <folder1>
 HEREDOC
@@ -324,7 +324,7 @@ HEREDOC
 	_polap_log1 "  input1: ${_polap_var_ga_annotation_table}"
 	_polap_log1 "  input2: ${_polap_var_mtcontigname}"
 
-	INUM="0"
+	_arg_inum="0"
 	source "$script_dir/polap-variables-common.sh"
 
 	if [[ -s "${_polap_var_ga_contigger_edges_gfa}" ]]; then
@@ -374,7 +374,7 @@ HEREDOC
 	[ "$DEBUG" -eq 1 ] && set +x
 }
 
-function _run_polap_package() { # archive a POLAP output folder for later use
+function _run_polap_package { # archive a POLAP output folder for later use
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -394,13 +394,13 @@ function _run_polap_package() { # archive a POLAP output folder for later use
 	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
-# Package the ${ODIR} folder to ${_arg_archive}
+# Package the ${_arg_outdir} folder to ${_arg_archive}
 #
 # Arguments:
-#   -o ${ODIR}: the source output folder to archive
+#   -o ${_arg_outdir}: the source output folder to archive
 #   -a ${_arg_archive}: the target output folder for the archive
 # Inputs:
-#   ${ODIR}
+#   ${_arg_outdir}
 # Outputs:
 #   ${_arg_archive}
 Example: $(basename "$0") ${_arg_menu[0]} -o <folder1> -a <folder2>
@@ -410,10 +410,10 @@ HEREDOC
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
-	_polap_log0 "packaging ${ODIR} to ${_arg_archive} ..."
+	_polap_log0 "packaging ${_arg_outdir} to ${_arg_archive} ..."
 
 	# Create a directory structure that mirrors the existing hierarchy by duplicating all folders and subfolders.
-	rsync -a -f"+ */" -f"- *" "${ODIR}"/ "${_arg_archive}"/
+	rsync -a -f"+ */" -f"- *" "${_arg_outdir}"/ "${_arg_archive}"/
 
 	# Copy all contents from the base directory into a new location.
 	cp -fp "${_polap_var_outdir_genome_size}" \
@@ -423,11 +423,11 @@ HEREDOC
 	rsync -a "${_polap_var_project}"/ "${_ppack_var_project}"/ 2>/dev/null
 
 	# copy mt.contig.name files
-	for dir in $(find ${ODIR} -maxdepth 1 -type d -regex '.*/[0-9]+$' | sort); do
+	for dir in $(find ${_arg_outdir} -maxdepth 1 -type d -regex '.*/[0-9]+$' | sort); do
 		local _assembly_number=$(basename "$dir")
 
-		INUM="${_assembly_number}"
-		JNUM="${_assembly_number}"
+		_arg_inum="${_assembly_number}"
+		_arg_jnum="${_assembly_number}"
 		source "$script_dir/polap-variables-common.sh"
 		source "$script_dir/polap-package-common.sh"
 
@@ -483,8 +483,8 @@ HEREDOC
 		# Check if basename is a positive number
 		if [[ "${_assembly_number}" =~ ^[0-9]+$ ]] && [ "${_assembly_number}" -gt 0 ]; then
 			_polap_log0 "Processing directory: $dir with basename: ${_assembly_number}"
-			INUM="${_assembly_number}"
-			JNUM="${_assembly_number}"
+			_arg_inum="${_assembly_number}"
+			_arg_jnum="${_assembly_number}"
 			source "$script_dir/polap-variables-common.sh"
 			source "$script_dir/polap-package-common.sh"
 			# Your processing code here
@@ -504,9 +504,9 @@ HEREDOC
 }
 
 ################################################################################
-# Clean up the ${ODIR}.
+# Clean up the ${_arg_outdir}.
 ################################################################################
-function _run_polap_cleanup() { # cleanup an POLAP output folder
+function _run_polap_cleanup { # cleanup an POLAP output folder
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -521,13 +521,13 @@ function _run_polap_cleanup() { # cleanup an POLAP output folder
 	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
-# Clean up the ${ODIR}.
+# Clean up the ${_arg_outdir}.
 #
 # Arguments:
-#   -o ${ODIR}: the output directory
-#   -j ${JNUM}: the target assembly
+#   -o ${_arg_outdir}: the output directory
+#   -j ${_arg_jnum}: the target assembly
 # Inputs:
-#   ${ODIR}
+#   ${_arg_outdir}
 # Outputs:
 #
 Example: $(basename "$0") ${_arg_menu[0]} -j <arg>
@@ -559,12 +559,12 @@ source "$script_dir/run-polap-function-menus.sh"
 #
 # creating an output folder.
 # Arguments:
-#   -o $ODIR
+#   -o ${_arg_outdir}
 # Inputs: nothing
 # Outputs:
-#   $ODIR
+#   ${_arg_outdir}
 ################################################################################
-function _run_polap_init() { # initialize an output folder
+function _run_polap_init { # initialize an output folder
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -583,11 +583,11 @@ function _run_polap_init() { # initialize an output folder
 # 3. Record all external software packages including their versions.
 #
 # Arguments:
-#   -o ${ODIR}: the output folder
+#   -o ${_arg_outdir}: the output folder
 # Inputs: none
 # Outputs:
-#   ${ODIR}
-Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR}
+#   ${_arg_outdir}
+Example: $(basename "$0") ${_arg_menu[0]} -o ${_arg_outdir}
 HEREDOC
 	)
 
@@ -601,10 +601,10 @@ HEREDOC
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
-		if [[ -d "${ODIR}" ]]; then
-			ls -l "${ODIR}" >&3
+		if [[ -d "${_arg_outdir}" ]]; then
+			ls -l "${_arg_outdir}" >&3
 		else
-			_polap_log0 "No such output folder: ${ODIR}"
+			_polap_log0 "No such output folder: ${_arg_outdir}"
 		fi
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
@@ -612,16 +612,16 @@ HEREDOC
 		return
 	fi
 
-	mkdir -p "${ODIR}"
-	_polap_log0 "creating output folder [$ODIR] if no such folder exists ..."
-	if [ "$ODIR" != "o" ]; then
-		_polap_log1 "  Use -o $ODIR option in all subsequent analysis"
+	mkdir -p "${_arg_outdir}"
+	_polap_log0 "creating output folder [${_arg_outdir}] if no such folder exists ..."
+	if [ "${_arg_outdir}" != "o" ]; then
+		_polap_log1 "  Use -o ${_arg_outdir} option in all subsequent analysis"
 		_polap_log1 "  because your output folder is not the default of 'o'."
 	fi
 	_run_polap_make-menus
 	_log_command_versions
 
-	_polap_log1 "NEXT: $(basename "$0") summary-reads -o ${ODIR} -l ${_arg_long_reads}"
+	_polap_log1 "NEXT: $(basename "$0") summary-reads -o ${_arg_outdir} -l ${_arg_long_reads}"
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
@@ -630,7 +630,7 @@ HEREDOC
 ################################################################################
 # View the polap log file.
 ################################################################################
-function _run_polap_log() { # display the polap log
+function _run_polap_log { # display the polap log
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -644,13 +644,13 @@ function _run_polap_log() { # display the polap log
 # Display the polap log.
 #
 # Arguments:
-#   -o ${ODIR}: the output folder
+#   -o ${_arg_outdir}: the output folder
 #   --log <FILE>
 # Inputs:
 #   ${LOG_FILE}
 # Outputs:
 #   a page view of the log file: ${LOG_FILE}
-Example: $(basename "$0") ${_arg_menu[0]} -o ${ODIR}
+Example: $(basename "$0") ${_arg_menu[0]} -o ${_arg_outdir}
 HEREDOC
 	)
 
@@ -659,10 +659,10 @@ HEREDOC
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
-		if [[ -d "${ODIR}" ]]; then
-			ls -l "${ODIR}" >&3
+		if [[ -d "${_arg_outdir}" ]]; then
+			ls -l "${_arg_outdir}" >&3
 		else
-			_polap_log0 "No such output folder: ${ODIR}"
+			_polap_log0 "No such output folder: ${_arg_outdir}"
 		fi
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled

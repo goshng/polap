@@ -20,9 +20,9 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
@@ -34,3 +34,11 @@ EXIT_FAIL=1
 EXIT_ERROR=2
 RETURN_SUCCESS=0
 RETURN_FAIL=1
+
+# More constants
+_POLAP_ERR_NO_EDGES_GFA=11
+_POLAP_ERR_NO_GENOME_SIZE=12
+_POLAP_ERR_NO_NK_FQ=13
+_POLAP_ERR_NO_SEEDS=14
+_POLAP_ERR_NO_DISK_SPACE=15
+_POLAP_ERR_MENU_MAP_READS=51

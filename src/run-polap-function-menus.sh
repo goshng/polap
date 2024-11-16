@@ -28,7 +28,7 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-function _run_polap_source-menus() { # makes menu commands as empty files.
+function _run_polap_source-menus { # makes menu commands as empty files.
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -58,7 +58,7 @@ HEREDOC
 ################################################################################
 # Makes menu commands as empty files.
 ################################################################################
-function _run_polap_make-menus() { # makes menu commands as empty files.
+function _run_polap_make-menus { # makes menu commands as empty files.
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -84,7 +84,7 @@ HEREDOC
 		grep run_polap |
 		grep -v run_polap_x |
 		sed 's/function _run_polap_//' |
-		sed 's/() {//' |
+		sed 's/ {//' |
 		awk '{print $1}' |
 		parallel touch {}
 
@@ -110,7 +110,7 @@ HEREDOC
 # Makes menu commands as empty files.
 # Creates menus prefixed with x.
 ################################################################################
-function _run_polap_make-menus-all() { # makes all menu commands as empty files including development version
+function _run_polap_make-menus-all { # makes all menu commands as empty files including development version
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -135,7 +135,7 @@ HEREDOC
 		grep "^function _run_polap" |
 		grep run_polap |
 		sed 's/function _run_polap_//' |
-		sed 's/() {//' |
+		sed 's/ {//' |
 		awk '{print $1}' |
 		parallel touch {}
 
@@ -149,7 +149,7 @@ HEREDOC
 # Deletes menu commands.
 # Leaves make-menus command.
 ################################################################################
-function _run_polap_clean-menus() { # deletes menu command empty files
+function _run_polap_clean-menus { # deletes menu command empty files
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -174,7 +174,7 @@ HEREDOC
 		grep "^function _run_polap" |
 		grep run_polap |
 		sed 's/function _run_polap_//' |
-		sed 's/() {//' |
+		sed 's/ {//' |
 		awk '{print $1}' |
 		parallel rm -f {}
 
@@ -190,6 +190,8 @@ HEREDOC
 		rm -f "${_menu}"
 	done
 
+	find . -maxdepth 1 -type f -empty -delete
+
 	# Leave the make-menus empty file.
 	touch make-menus
 
@@ -202,7 +204,7 @@ HEREDOC
 ################################################################################
 # Lists menu of POLAP.
 ################################################################################
-function _run_polap_list() { # List POLAP menus.
+function _run_polap_list { # List POLAP menus.
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -215,8 +217,7 @@ function _run_polap_list() { # List POLAP menus.
 		cat <<HEREDOC
 # List menus. A POLAP menu is a first argument of the command.
 #
-# You need to execute make-menus menu if nothing is displayed.
-Example: $(basename "$0") ${_arg_menu[0]} [all|main|assemble|assemble1|annotate|seeds|assemble2|mtdna|polish]
+Example: $(basename "$0") ${_arg_menu[0]} [all|main|assemble1|annotate|seeds|assemble2|polish]
 HEREDOC
 	)
 
@@ -230,7 +231,7 @@ HEREDOC
 			grep run_polap |
 			grep -v run_polap_x |
 			sed 's/function _run_polap_//' |
-			sed 's/() {//' |
+			sed 's/ {//' |
 			sort >&3
 		;;
 	dev)
@@ -241,7 +242,7 @@ HEREDOC
 		fi
 		grep -n "^function _run_polap" "$script_dir"/*polap*.sh |
 			sed 's/function _run_polap_//' |
-			sed 's/() {//' |
+			sed 's/ {//' |
 			awk -F'/' '{print $NF}' |
 			sort >&3
 		;;
@@ -250,23 +251,16 @@ HEREDOC
 			grep "^function _run_polap" |
 			grep run_polap |
 			sed 's/function _run_polap_//' |
-			sed 's/() {//' |
+			sed 's/ {//' |
 			sort >&3
 		;;
 	main)
-		_polap_log0 assemble
-		_polap_log0 assemble1
-		_polap_log0 annotate
-		_polap_log0 seeds
-		_polap_log0 assemble2
-		_polap_log0 prepare-polishing
-		_polap_log0 polish
-		;;
-	assemble)
-		_polap_log0 assemble1
-		_polap_log0 annotate
-		_polap_log0 seeds
-		_polap_log0 assemble2
+		_polap_log0 "assemble1"
+		_polap_log0 "seeds"
+		_polap_log0 "assemble2"
+		_polap_log0 "annotate"
+		_polap_log0 "prepare-polishing"
+		_polap_log0 "polish"
 		;;
 	assemble1)
 		_polap_log0 "init"
@@ -275,6 +269,7 @@ HEREDOC
 		_polap_log0 "find-genome-size"
 		_polap_log0 "reduce-data"
 		_polap_log0 "flye1"
+		_polap_log0 "annotate"
 		;;
 	annotate)
 		_polap_log0 "edges-stats"
@@ -283,6 +278,7 @@ HEREDOC
 		;;
 	seeds)
 		_polap_log0 "seeds"
+		_polap_log0 "prepare-seeds"
 		;;
 	assemble2)
 		_polap_log0 "map-reads"
@@ -301,10 +297,10 @@ HEREDOC
 		_polap_log0 "assemble"
 		_polap_log0 "  assemble1"
 		_polap_log0 "    init"
-		_polap_log0 "    summary-reads"
 		_polap_log0 "    total-length-long"
 		_polap_log0 "    find-genome-size"
 		_polap_log0 "    reduce-data"
+		_polap_log0 "    summary-reads"
 		_polap_log0 "    flye1"
 		_polap_log0 "    annotate"
 		_polap_log0 "      edges-stats"
@@ -334,7 +330,7 @@ HEREDOC
 ################################################################################
 #
 ################################################################################
-function _run_polap_menu() { # Interactive menu interface
+function _run_polap_menu { # Interactive menu interface
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -357,10 +353,10 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap__polap_log00 "${help_message}" && return
 
 	if [[ "${_arg_menu[1]}" != "infile" ]]; then
-		_polap_log0 "ODIR: ${_arg_menu[1]}"
-		ODIR="${_arg_menu[1]}"
+		_polap_log0 "_arg_outdir: ${_arg_menu[1]}"
+		_arg_outdir="${_arg_menu[1]}"
 	else
-		_polap_log0 "ODIR: ${ODIR}"
+		_polap_log0 "_arg_outdir: ${_arg_outdir}"
 	fi
 
 	source "$script_dir/polap-variables-main.sh"
@@ -385,7 +381,7 @@ HEREDOC
 		_polap_log0 "T. Test"
 		_polap_log0 "E. Exit"
 		_polap_log0 "--------------------------------------------------"
-		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${ODIR}"
+		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${_arg_outdir}"
 		_polap_log0 "===================="
 		_polap_log0_n "Enter your choice [2] (or just press ENTER): "
 	}
@@ -399,7 +395,7 @@ HEREDOC
 		_polap_log0 "2. Clean-up just BioProject folder"
 		_polap_log0 "M. Back to Main Menu"
 		_polap_log0 "--------------------------------------------------"
-		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${ODIR}"
+		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${_arg_outdir}"
 		_polap_log0 "===================="
 		_polap_log0_n "Enter your choice: "
 	}
@@ -432,7 +428,7 @@ HEREDOC
 		_polap_log0 "W. Whole-genome assembly"
 		_polap_log0 "M. Back to Main Menu"
 		_polap_log0 "--------------------------------------------------"
-		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${ODIR}"
+		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${_arg_outdir}"
 		_polap_log0 "===================="
 		_polap_log0_n "Enter your choice: "
 	}
@@ -446,7 +442,7 @@ HEREDOC
 		_polap_log0 "2. Display seeds for a particular approach"
 		_polap_log0 "M. Back to Main Menu"
 		_polap_log0 "--------------------------------------------------"
-		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${ODIR}"
+		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${_arg_outdir}"
 		_polap_log0 "===================="
 		_polap_log0_n "Enter your choice: "
 	}
@@ -472,7 +468,7 @@ HEREDOC
 		_polap_log0 "D. Clean OGA"
 		_polap_log0 "M. Back to Main Menu"
 		_polap_log0 "--------------------------------------------------"
-		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${ODIR}"
+		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${_arg_outdir}"
 		_polap_log0 "===================="
 		_polap_log0_n "Enter your choice: "
 	}
@@ -485,7 +481,7 @@ HEREDOC
 		_polap_log0 "1. Annotation"
 		_polap_log0 "M. Back to Main Menu"
 		_polap_log0 "--------------------------------------------------"
-		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${ODIR}"
+		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${_arg_outdir}"
 		_polap_log0 "===================="
 		_polap_log0_n "Enter your choice: "
 	}
@@ -498,7 +494,7 @@ HEREDOC
 		_polap_log0 "1. Annotation"
 		_polap_log0 "M. Back to Main Menu"
 		_polap_log0 "--------------------------------------------------"
-		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${ODIR}"
+		_polap_log0 "POLAP Output Folder (${_index_bioproject}): ${_arg_outdir}"
 		_polap_log0 "===================="
 		_polap_log0_n "Enter your choice: "
 	}
@@ -556,7 +552,7 @@ HEREDOC
 								_polap_log0 "You selected: $selected_folder"
 								ls -l "$selected_folder" >&2
 								_menu_selected_folder="${selected_folder%/}"
-								ODIR="${selected_folder%/}"
+								_arg_outdir="${selected_folder%/}"
 								source "$script_dir/polap-variables-main.sh"
 								source "$script_dir/polap-variables-common.sh"
 								source "$script_dir/polap-variables-common.sh"
@@ -566,7 +562,7 @@ HEREDOC
 								source "$script_dir/polap-variables-common.sh"
 								_polap_log0 "Now in BioProject: ${_menu_selected_folder}"
 							else
-								_polap_log0 "Stay at the current folder: ${ODIR}"
+								_polap_log0 "Stay at the current folder: ${_arg_outdir}"
 							fi
 							current_menu="species"
 						fi
@@ -638,12 +634,12 @@ HEREDOC
 				_polap_log0_only "${choice}"
 				case $choice in
 				1)
-					# src/polap.sh -o "${ODIR}" get-mtdna file
+					# src/polap.sh -o "${_arg_outdir}" get-mtdna file
 					_polap_log0_cat "${_polap_var_project_species}"
 					;;
 				2)
 					_polap_log0 "..."
-					src/polap.sh -o "${ODIR}" get-mtdna --log-stderr
+					src/polap.sh -o "${_arg_outdir}" get-mtdna --log-stderr
 					if [ -s "${_polap_var_project_mtdna_fasta2}" ]; then
 						seqkit stats "${_polap_var_project_mtdna_fasta2}" >&3
 					else
@@ -654,7 +650,7 @@ HEREDOC
 					_polap_log0_n "Enter spceice name you want to search for in NCBI: "
 					read -r choice
 					_polap_log0_only "${choice}"
-					src/polap.sh -o "${ODIR}" get-mtdna --species "${choice}" --log-stderr
+					src/polap.sh -o "${_arg_outdir}" get-mtdna --species "${choice}" --log-stderr
 					if [ -s "${_polap_var_project_mtdna_fasta2}" ]; then
 						seqkit stats "${_polap_var_project_mtdna_fasta2}"
 					else
@@ -669,29 +665,29 @@ HEREDOC
 					fi
 					;;
 				5)
-					src/polap.sh -o "${ODIR}" seeds-1-annotation --log-stderr
+					src/polap.sh -o "${_arg_outdir}" seeds-1-annotation --log-stderr
 					current_menu="contigs"
 					;;
 				6)
-					src/polap.sh -o "${ODIR}" seeds view --log-stderr
+					src/polap.sh -o "${_arg_outdir}" seeds view --log-stderr
 					current_menu="contigs"
 					;;
 				ls)
-					ls -l "${ODIR}" >&3
+					ls -l "${_arg_outdir}" >&3
 					;;
 				status)
 					_polap_log0_file "${_polap_var_wga_contigger_edges_gfa}"
 					if [[ -s "${_polap_var_wga_contigger_edges_gfa}" ]]; then
-						_polap_log0 "WGA Assembled: ${ODIR}"
+						_polap_log0 "WGA Assembled: ${_arg_outdir}"
 					else
-						_polap_log0 "WGA not assembled yet: ${ODIR}"
+						_polap_log0 "WGA not assembled yet: ${_arg_outdir}"
 					fi
 					;;
 				o)
 					for i in {1..8}; do
 						_polap_log0 "--------------------------------------------------------------------------------"
 						_polap_log0 "organelle-genome assembly ${i}:"
-						INUM="${i}"
+						_arg_inum="${i}"
 						source "$script_dir/polap-variables-common.sh"
 						_polap_log0_file "${_polap_var_ga_contigger_edges_gfa}"
 						if [[ -s "${_polap_var_ga_contigger_edges_gfa}" ]]; then
@@ -706,52 +702,52 @@ HEREDOC
 					_polap_log0_cmd rm -rf ${_polap_var_wga}/?
 					_polap_log0_cmd rm -rf ${_polap_var_wga}/1-custom.depth.range.txt
 					_polap_log0_cmd rm -rf ${_polap_var_wga}/2-custom.depth.range.txt
-					_polap_log0_cmd rm -rf ${ODIR}/{1..9}
+					_polap_log0_cmd rm -rf ${_arg_outdir}/{1..9}
 					_polap_log0_cmd rm -f ${_polap_var_wga}/mt.contig.name-?
 					;;
 				d)
 					_polap_log0 "..."
-					local SRA_L=$(cut -f1 ${ODIR}/0-bioproject/1-sra-long-read.tsv)
-					local SRA_S=$(cut -f1 ${ODIR}/0-bioproject/1-sra-short-read.tsv)
+					local SRA_L=$(cut -f1 ${_arg_outdir}/0-bioproject/1-sra-long-read.tsv)
+					local SRA_S=$(cut -f1 ${_arg_outdir}/0-bioproject/1-sra-short-read.tsv)
 					_polap_log0 "Long-read SRA ID: ${SRA_L}"
 					_polap_log0 "Short-read SRA ID: ${SRA_S}"
 					;;
 				l)
 					_polap_log0_n "getting the file size ... "
-					local SRA_L=$(cut -f1 ${ODIR}/0-bioproject/1-sra-long-read.tsv)
+					local SRA_L=$(cut -f1 ${_arg_outdir}/0-bioproject/1-sra-long-read.tsv)
 					_polap_log0_n "long-read SRA ID: ${SRA_L}: "
 					_polap_log0 $(get_sra_size ${SRA_L})
 					if confirm "Do you want to download SRA: ${SRA_L}"; then
 						_polap_log0 "downloading the long-read ..."
 						directory_name=$(dirname "$0")
 						${directory_name}/run-polap-ncbitools fetch sra ${SRA_L}
-						_polap_log3_cmd mv ${SRA_L}.fastq ${ODIR}/
-						_polap_log0 "moving ${SRA_L}.fastq to ${ODIR}"
+						_polap_log3_cmd mv ${SRA_L}.fastq ${_arg_outdir}/
+						_polap_log0 "moving ${SRA_L}.fastq to ${_arg_outdir}"
 					else
 						_polap_log0 "You cancelled the operation."
 					fi
 					;;
 				s)
 					_polap_log0_n "getting the file size ... "
-					local SRA_S=$(cut -f1 ${ODIR}/0-bioproject/1-sra-short-read.tsv)
+					local SRA_S=$(cut -f1 ${_arg_outdir}/0-bioproject/1-sra-short-read.tsv)
 					_polap_log0_n "short-read SRA ID: ${SRA_S}: "
 					_polap_log0 $(get_sra_size ${SRA_S})
 					if confirm "Do you want to download SRA: ${SRA_S}"; then
 						_polap_log0 "downloading the short-read ..."
 						directory_name=$(dirname "$0")
 						${directory_name}/run-polap-ncbitools fetch sra ${SRA_S}
-						_polap_log3_cmd mv ${SRA_L}_?.fastq ${ODIR}/
-						_polap_log0 "moving " ${SRA_S}_?.fastq "to ${ODIR}"
+						_polap_log3_cmd mv ${SRA_L}_?.fastq ${_arg_outdir}/
+						_polap_log0 "moving " ${SRA_S}_?.fastq "to ${_arg_outdir}"
 					else
 						_polap_log0 "You cancelled the operation."
 					fi
-					_polap_log0 "moving" ${SRA_S}_?.fastq "to ${ODIR}"
+					_polap_log0 "moving" ${SRA_S}_?.fastq "to ${_arg_outdir}"
 					;;
 				w)
-					$0 assemble-bioproject -o ${ODIR} --log-stderr
+					$0 assemble-bioproject -o ${_arg_outdir} --log-stderr
 					;;
 				o)
-					$0 assemble2 -o ${ODIR} --log-stderr
+					$0 assemble2 -o ${_arg_outdir} --log-stderr
 					;;
 				m | e) current_menu="main" ;; # Go back to Main Menu
 				*) _polap_log0 "Invalid choice, please select a valid option." ;;
@@ -763,10 +759,10 @@ HEREDOC
 				_polap_log0_only "${choice}"
 				case $choice in
 				0)
-					_polap_log0_cmd src/polap.sh -o "${ODIR}" seeds auto -j 8 --log-stderr
+					_polap_log0_cmd src/polap.sh -o "${_arg_outdir}" seeds auto -j 8 --log-stderr
 					;;
 				1)
-					src/polap.sh -o "${ODIR}" seeds1 --log-stderr
+					src/polap.sh -o "${_arg_outdir}" seeds1 --log-stderr
 					if [[ -s "${_polap_var_mtcontig_table}" ]]; then
 						_polap_log0_cat "${_polap_var_mtcontig_table}"
 					else
@@ -774,22 +770,22 @@ HEREDOC
 					fi
 					;;
 				2)
-					src/polap.sh -o "${ODIR}" seeds2 --log-stderr
+					src/polap.sh -o "${_arg_outdir}" seeds2 --log-stderr
 					;;
 				3)
-					src/polap.sh -o "${ODIR}" seeds3 --log-stderr
+					src/polap.sh -o "${_arg_outdir}" seeds3 --log-stderr
 					;;
 				4)
-					src/polap.sh -o "${ODIR}" seeds4 create --log-stderr
+					src/polap.sh -o "${_arg_outdir}" seeds4 create --log-stderr
 					;;
 				5)
-					src/polap.sh -o "${ODIR}" seeds5 --log-stderr
+					src/polap.sh -o "${_arg_outdir}" seeds5 --log-stderr
 					;;
 				6)
-					src/polap.sh -o "${ODIR}" seeds6 --log-stderr
+					src/polap.sh -o "${_arg_outdir}" seeds6 --log-stderr
 					;;
 				7)
-					src/polap.sh -o "${ODIR}" seeds7 create --log-stderr
+					src/polap.sh -o "${_arg_outdir}" seeds7 create --log-stderr
 					;;
 				8)
 					# Prompt user for input
@@ -800,17 +796,17 @@ HEREDOC
 					fi
 					_polap_log0_only "${choice}"
 					local _index_bioproject="${choice}"
-					src/polap.sh -o "${ODIR}" seeds view "${choice}" --log-stderr
+					src/polap.sh -o "${_arg_outdir}" seeds view "${choice}" --log-stderr
 					;;
 				a)
 					for i in {1..8}; do
 						_polap_log0 "--------------------------------------------------------------------------------"
 						_polap_log0 "Seed contig selection ${i}:"
-						src/polap.sh -o "${ODIR}" seeds view "${i}" --log-stderr
+						src/polap.sh -o "${_arg_outdir}" seeds view "${i}" --log-stderr
 					done
 					;;
 				9)
-					src/polap.sh -o "${ODIR}" seeds view --log-stderr
+					src/polap.sh -o "${_arg_outdir}" seeds view --log-stderr
 					current_menu="contigs"
 					;;
 				c)
@@ -834,7 +830,7 @@ HEREDOC
 					_polap_log0_n "Enter the Bandage edge names: "
 					read -r choice
 					_polap_log0 "  creating ${_source_assembly}/mt.contig.name-${_target_assembly} ..."
-					echo "${choice}" | tr -d ' ' | tr ',' '\n' >"${ODIR}/${_source_assembly}/mt.contig.name-${_target_assembly}"
+					echo "${choice}" | tr -d ' ' | tr ',' '\n' >"${_arg_outdir}/${_source_assembly}/mt.contig.name-${_target_assembly}"
 					;;
 				x)
 					# Prompt user for input
@@ -853,14 +849,14 @@ HEREDOC
 					fi
 					_polap_log0_only "${choice}"
 					local _rwx_number="${choice}"
-					src/polap.sh assemble2 -j "${_j_number}" --rwx "${_rwx_number}" -o "${ODIR}" --log-stderr
+					src/polap.sh assemble2 -j "${_j_number}" --rwx "${_rwx_number}" -o "${_arg_outdir}" --log-stderr
 					;;
 				d)
 					_polap_log0 "..."
 					_polap_log0_cmd rm -rf ${_polap_var_wga}/?
 					_polap_log0_cmd rm -rf ${_polap_var_wga}/1-custom.depth.range.txt
 					_polap_log0_cmd rm -rf ${_polap_var_wga}/2-custom.depth.range.txt
-					_polap_log0_cmd rm -rf ${ODIR}/{1..9}
+					_polap_log0_cmd rm -rf ${_arg_outdir}/{1..9}
 					_polap_log0_cmd rm -f ${_polap_var_wga}/mt.contig.name-?
 					;;
 				m | e) current_menu="main" ;; # Go back to Main Menu
@@ -876,7 +872,7 @@ HEREDOC
 				case $choice in
 				1)
 					_polap_log0 "Not implemented yet!"
-					# src/polap.sh -o "${ODIR}" get-mtdna file
+					# src/polap.sh -o "${_arg_outdir}" get-mtdna file
 					;;
 				2)
 					_polap_log0 "File permissions..."
@@ -895,7 +891,7 @@ HEREDOC
 				case $choice in
 				1)
 					_polap_log0 "Not implemented yet!"
-					# src/polap.sh -o "${ODIR}" get-mtdna file
+					# src/polap.sh -o "${_arg_outdir}" get-mtdna file
 					;;
 				2)
 					_polap_log0 "File permissions..."

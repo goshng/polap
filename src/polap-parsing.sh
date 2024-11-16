@@ -121,7 +121,7 @@ _arg_help="off"
 _arg_flye_data_type="--nano-raw"
 
 source "$script_dir/polap-git-hash-version.sh"
-_polap_version=v0.3.7-"${_polap_git_hash_version}"
+_polap_version=v0.3.7.2-"${_polap_git_hash_version}"
 _polap_command_string=polap
 
 print_help() {
@@ -193,7 +193,7 @@ Other options:
       [--no-reduction-reads] [--no-coverage-check]
       [--plastid]
       [--archive <arg>]
-      [--sra <arg>] [-x|--bridge-min <arg>] [-g|--genomesize <arg>]
+      [--sra <arg>] [-g|--genomesize <arg>]
 
 menu: assemble, assemble1, annotate, assemble2, flye-polishing, 
       make-menus, list, clean-menus, cleanup, init,

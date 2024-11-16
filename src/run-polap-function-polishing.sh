@@ -38,9 +38,9 @@ declare "$_POLAP_INCLUDE_=1"
 #   s1.fq
 #   s2.fq
 # Outputs:
-#   $$ODIR/msbwt
+#   $${_arg_outdir}/msbwt
 ################################################################################
-function _run_polap_prepare-polishing() { # prepare the polishing using FMLRC
+function _run_polap_prepare-polishing { # prepare the polishing using FMLRC
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -64,11 +64,11 @@ function _run_polap_prepare-polishing() { # prepare the polishing using FMLRC
 #   ${_arg_short_read1}
 #   ${_arg_short_read2}
 # Outputs:
-#   $ODIR/msbwt/comp_msbwt.npy
+#   ${_arg_outdir}/msbwt/comp_msbwt.npy
 # Precondition:
 #   get-bioproject --bioproject ${_arg_bioproject}
 Example: $(basename "$0") ${_arg_menu[0]} [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
-Example: $(basename "$0") ${_arg_menu[0]} -o $ODIR
+Example: $(basename "$0") ${_arg_menu[0]} -o ${_arg_outdir}
 HEREDOC
 	)
 
@@ -77,7 +77,7 @@ HEREDOC
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
-		ls -l "${ODIR}/msbwt" >&2
+		ls -l "${_arg_outdir}/msbwt" >&2
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
 		return 0
@@ -90,7 +90,7 @@ HEREDOC
 			_polap_log1_file "${_polap_var_outdir_msbwt}"
 			_polap_log1 "  skipping the short-read polishing preparation."
 		else
-			tar -zxf "${_polap_var_outdir_msbwt_tar_gz}" -C "${ODIR}"
+			tar -zxf "${_polap_var_outdir_msbwt_tar_gz}" -C "${_arg_outdir}"
 		fi
 	elif [[ -s "${_polap_var_outdir_msbwt}" ]]; then
 		_polap_log1_file "${_polap_var_outdir_msbwt}"
@@ -115,14 +115,14 @@ HEREDOC
 				awk 'NR % 4 == 2' | sort | tr NT TN |
 				ropebwt2 -LR 2>"${_polap_output_dest}" |
 				tr NT TN |
-				msbwt convert "$ODIR"/msbwt \
+				msbwt convert "${_arg_outdir}"/msbwt \
 					>/dev/null 2>&1
 		elif [[ ${_arg_short_read1} = *.fq.gz ]] || [[ ${_arg_short_read1} = *.fastq.gz ]]; then
 			zcat "${_arg_short_read1}" "${_arg_short_read2}" |
 				awk 'NR % 4 == 2' | sort | tr NT TN |
 				ropebwt2 -LR 2>"${_polap_output_dest}" |
 				tr NT TN |
-				msbwt convert "$ODIR"/msbwt \
+				msbwt convert "${_arg_outdir}"/msbwt \
 					>/dev/null 2>&1
 		fi
 		conda deactivate
@@ -143,12 +143,12 @@ HEREDOC
 #   -p mt.0.fasta
 #   -f mt.1.fa
 # Inputs:
-#   $ODIR/msbwt/comp_msbwt.npy
+#   ${_arg_outdir}/msbwt/comp_msbwt.npy
 #   ${_arg_unpolished_fasta}
 # Outputs:
 #   ${_arg_final_assembly}
 ################################################################################
-function _run_polap_polish() { # polish organelle genome sequences using FMLRC
+function _run_polap_polish { # polish organelle genome sequences using FMLRC
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"

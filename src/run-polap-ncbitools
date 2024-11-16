@@ -26,17 +26,17 @@
 
 set -e
 
-function version() {
+function version {
 	cat <<EOM
 $(basename "$0") version 0.1
 EOM
 }
 
-function help() {
+function help {
 	usage
 }
 
-function usage() {
+function usage {
 	cat <<EOM
 $(basename "$0") <subcommand> [format]
 

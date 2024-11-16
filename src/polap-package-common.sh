@@ -16,23 +16,23 @@
 
 # Global option variables
 #
-# ODIR
-# INUM
-# JNUM
+# _arg_outdir
+# _arg_inum
+# _arg_jnum
 
 # common variables used across multiple scripts
 local _ppack_var_output="${_arg_archive}"
 local _ppack_var_base="${_ppack_var_output}"
 local _ppack_var_project="${_ppack_var_output}/00-bioproject"
 local _ppack_var_wga="${_ppack_var_output}/0"
-local _ppack_var_ga="${_ppack_var_output}/${INUM}"
+local _ppack_var_ga="${_ppack_var_output}/${_arg_inum}"
 local _ppack_var_contigger="${_ppack_var_ga}/30-contigger"
 # _polap_var_ga_contigger better than _polap_var_ga_contigger
 local _ppack_var_ga_contigger="${_ppack_var_ga}/30-contigger"
 local _ppack_var_ann="${_ppack_var_ga}/50-annotation"
-local _polap_var_mtcontigname="${_ppack_var_ga}/mt.contig.name-${JNUM}"
-local _ppack_var_mtcontigname="${_ppack_var_ga}/mt.contig.name-${JNUM}"
-local _ppack_var_oga="${_ppack_var_output}/${JNUM}"
+local _polap_var_mtcontigname="${_ppack_var_ga}/mt.contig.name-${_arg_jnum}"
+local _ppack_var_mtcontigname="${_ppack_var_ga}/mt.contig.name-${_arg_jnum}"
+local _ppack_var_oga="${_ppack_var_output}/${_arg_jnum}"
 local _ppack_var_oga_contigger="${_ppack_var_oga}/30-contigger"
 # local _ppack_var_oga="${_ppack_var_ga}"
 local _ppack_var_oga_seeds="${_ppack_var_oga}/seeds"
@@ -91,10 +91,10 @@ local _ppack_var_ga_annotation_table_contig="${_ppack_var_ga}/contig-annotation-
 local _ppack_var_ga_annotation_all_backup="${_ppack_var_ga}/assembly_info_organelle_annotation_count-all.txt.backup"
 local _ppack_var_ga_annotation_cdf_table="${_ppack_var_ga}/contig-annotation-cdf-table.txt"
 local _ppack_var_ga_annotation_depth_table_seed="${_ppack_var_ga}/contig-annotation-depth-table-seed.txt"
-local _ppack_var_ga_annotation_depth_table_seed_target="${_ppack_var_ga}/contig-annotation-depth-table-seed-${JNUM}.txt"
+local _ppack_var_ga_annotation_depth_table_seed_target="${_ppack_var_ga}/contig-annotation-depth-table-seed-${_arg_jnum}.txt"
 # for PT annotation table
 local _ppack_var_ga_pt_annotation_depth_table="${_ppack_var_ga}/pt-contig-annotation-depth-table.txt"
-local _ppack_var_ga_pt_annotation_depth_table_seed_target="${_ppack_var_ga}/pt-contig-annotation-depth-table-seed-${JNUM}.txt"
+local _ppack_var_ga_pt_annotation_depth_table_seed_target="${_ppack_var_ga}/pt-contig-annotation-depth-table-seed-${_arg_jnum}.txt"
 # local _ppack_var_ga_pt_annotation_table="${_ppack_var_ga}/pt-contig-annotation-table.txt"
 
 # not used any more: used to be a folder for _polap_var_ga_gfa_all _polap_var_ga_gfa_seq_part

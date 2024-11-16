@@ -32,7 +32,7 @@ declare "$_POLAP_INCLUDE_=1"
 # _polap_seeds_get-depth-range-of depth-range.txt depth_range
 # ${depth_raneg[0]}
 # ${depth_raneg[1]}
-function _polap_seeds_get-depth-range-of() {
+function _polap_seeds_get-depth-range-of {
 	local _depth_range=$1
 	local -n _r_arr=$2
 	# Check if there is a manual depth range file.
@@ -59,7 +59,7 @@ function _polap_seeds_get-depth-range-of() {
 # If not using an existing depth range file, then request that users provide
 # two specific values to generate such a file.
 ################################################################################
-function _polap_seeds_create-manual-depth-range() {
+function _polap_seeds_create-manual-depth-range {
 	local _two_value_textfile="${_arg_menu[2]}"
 
 	if [[ -s "${_two_value_textfile}" ]]; then
@@ -109,7 +109,7 @@ function _polap_seeds_create-manual-depth-range() {
 # using the length distribution of contigs sorted"
 # by copy numbers and organelle gene counts"
 ################################################################################
-function _polap_seeds_create-automatic-depth-range() {
+function _polap_seeds_create-automatic-depth-range {
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
@@ -151,7 +151,7 @@ function _polap_seeds_create-automatic-depth-range() {
 # Pre-select contigs that have been identified to originate from the
 # mitochondrial genome.
 ################################################################################
-function _polap_seeds_preselect-contigs() {
+function _polap_seeds_preselect-contigs {
 
 	if [[ -s "${_polap_var_mtcontigs_depth_range_preselection}" ]]; then
 		# Extract numbers from the file
@@ -195,7 +195,7 @@ function _polap_seeds_preselect-contigs() {
 
 ################################################################################
 ################################################################################
-function _polap_seeds_depthfilter-gfa() {
+function _polap_seeds_depthfilter-gfa {
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
@@ -256,7 +256,7 @@ function _polap_seeds_depthfilter-gfa() {
 ################################################################################
 # Prepare data
 ################################################################################
-function _polap_seeds_prepare-cc() {
+function _polap_seeds_prepare-cc {
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
@@ -339,7 +339,7 @@ function _polap_seeds_prepare-cc() {
 ################################################################################
 # Finalize the mt.contig.name.
 ################################################################################
-function _polap_seeds_final-mtcontig() {
+function _polap_seeds_final-mtcontig {
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
@@ -360,7 +360,8 @@ function _polap_seeds_final-mtcontig() {
 
 	_polap_seeds_final-seeds-mtcontig \
 		"${_polap_var_mtcontigs_7mtcontigname}" \
-		"${_polap_var_ga_annotation_depth_table_seed}"
+		"${_polap_var_mtcontigs_annotation_table_seed}"
+	# "${_polap_var_ga_annotation_depth_table_seed}"
 	# _polap_log1 "  step 8-2: mt.contig.table with contig seed marks"
 	# _polap_log2 "    input1: ${_polap_var_ga_annotation_all}"
 	# _polap_log2 "    input2: ${_polap_var_ga_annotation_depth_table}"
@@ -376,7 +377,7 @@ function _polap_seeds_final-mtcontig() {
 
 }
 
-function _polap_seeds_final-seeds-mtcontig() {
+function _polap_seeds_final-seeds-mtcontig {
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 	local _mt_contig_name=$1
@@ -397,7 +398,7 @@ function _polap_seeds_final-seeds-mtcontig() {
 
 }
 
-function _polap_seeds_report-mtcontig() {
+function _polap_seeds_report-mtcontig {
 	if [[ -s "${_polap_var_mtcontigs_8mtcontigname}" ]]; then
 		_polap_log1_cat "${_polap_var_mtcontigs_8mtcontigname}"
 		_polap_log0 "---"
@@ -409,7 +410,7 @@ function _polap_seeds_report-mtcontig() {
 	fi
 }
 
-function _run_polap_choose-seed() { # select seed contigs
+function _run_polap_choose-seed { # select seed contigs
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -429,9 +430,9 @@ function _run_polap_choose-seed() { # select seed contigs
 # an analysis of the assembly graph.
 #
 # Arguments:
-#   -i $INUM: source Flye (usually whole-genome) assembly number
-#   -j $JNUM: destination Flye organelle assembly number
-#   -k $KNUM: destination Flye organelle assembly number
+#   -i ${_arg_inum}: source Flye (usually whole-genome) assembly number
+#   -j ${_arg_jnum}: destination Flye organelle assembly number
+#   -k ${_arg_knum}: destination Flye organelle assembly number
 #   --plastid
 # Inputs:
 #   ${_polap_var_mtcontigs_7mtcontigname}
@@ -452,7 +453,7 @@ HEREDOC
 	fi
 
 	# We initiate the process of selecting seed contigs.
-	_polap_log0 "choose seed contigs using the assembly graph: ${INUM} (source) -> ${JNUM} (target) ..."
+	_polap_log0 "choose seed contigs using the assembly graph: ${_arg_inum} (source) -> ${_arg_jnum} (target) ..."
 
 	if [[ -s "${_polap_var_mtcontig_table}" ]]; then
 		_polap_log3_column "${_polap_var_mtcontig_table}"
@@ -479,9 +480,9 @@ HEREDOC
 }
 
 ################################################################################
-#
+# Prepare seed contigs using a Flye genome assembly.
 ################################################################################
-function _run_polap_seeds() { # select seed contigs
+function _run_polap_seeds { # select seed contigs
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -497,25 +498,24 @@ function _run_polap_seeds() { # select seed contigs
 	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
-# Select contigs using seeds-graph, seeds-gene, ...
+# Select contigs using seeds-graph
 #
 # Arguments:
-#   -i $INUM: source Flye (usually whole-genome) assembly number
-#   -j $JNUM: destination Flye organelle assembly number
+#   -i ${_arg_inum}: source Flye (usually whole-genome) assembly number
+#   -j ${_arg_jnum}: destination Flye organelle assembly number
 #   --plastid
 # Inputs:
 #   ${_polap_var_ga_contigger_edges_gfa}
 #   ${_polap_var_ga_annotation_all}
 # Outputs:
-#   ${_polap_var_mtcontigs_8mtcontigname}
+#   ${_polap_var_mtcontigname} or more such files
 # Menu:
 #   bandage
 #   annotation
-#   backup
 # View:
 #   <number> for the mt.contig.name-<number>
 Example: $(basename "$0") ${_arg_menu[0]} -i 0 -j 1
-Example: $(basename "$0") ${_arg_menu[0]} view 1 
+Example: $(basename "$0") ${_arg_menu[0]} view -i 0 -j 2
 Example: $(basename "$0") ${_arg_menu[0]} annotation
 Example: $(basename "$0") ${_arg_menu[0]} bandage
 HEREDOC
@@ -527,21 +527,17 @@ HEREDOC
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		_polap_log0_column "${_polap_var_ga_annotation_depth_table_seed_target}"
 
-		local index="${_arg_menu[2]}"
-		local new_filename_table="${_polap_var_ga}/mtcontig-annotation-table-seed-${index}.txt"
-		_polap_log0_column "${new_filename_table}"
-
-		local _mt_contig_name="${_polap_var_ga}/mt.contig.name-${index}"
-		if [[ -s "${_mt_contig_name}" ]]; then
+		if [[ -s "${_polap_var_mtcontigname}" ]]; then
 			_polap_log0 "---"
 			if [[ "${_arg_log_stderr}" = "off" ]]; then
-				paste -sd',' "${_mt_contig_name}" >&3
+				paste -sd',' "${_polap_var_mtcontigname}" >&3
 			else
-				paste -sd',' "${_mt_contig_name}" >&2
+				paste -sd',' "${_polap_var_mtcontigname}" >&2
 			fi
 		fi
-		return 0
+		return $RETURN_SUCCESS
 	fi
 
 	# Backup mt.contig.name files.
@@ -551,11 +547,8 @@ HEREDOC
 		# Create the folder with the formatted date as its name
 		mkdir "${_polap_var_ga}/backup-mt.contig.name-$folder_name"
 		mv "${_polap_var_ga}"/mt.contig.name-* "${_polap_var_ga}/backup-mt.contig.name-$folder_name"
-		return 0
+		return $RETURN_SUCCESS
 	fi
-
-	# We initiate the process of selecting seed contigs.
-	_polap_log0 "selecting seed contigs using the assembly graph: ${INUM} (source) -> ${JNUM} (target) ..."
 
 	if [[ "${_arg_menu[1]}" = "bandage" ]]; then
 		# Prompt the user for input
@@ -576,93 +569,70 @@ HEREDOC
 			"${_polap_var_ga_annotation_depth_table_seed_target}"
 		return $RETURN_SUCCESS
 	fi
+
+	# We initiate the process of selecting seed contigs.
+	_polap_log0 "selecting seed contigs using the assembly graph: ${_arg_inum} (source) -> ${_arg_jnum} (target) ..."
 	_polap_log1 "  input1: ${_polap_var_ga_contigger_edges_gfa}"
 	_polap_log1 "  input2: ${_polap_var_ga_annotation_all}"
 
+	rm -f "${_polap_var_ga}"/mt.contig.name-*
+
 	# Create the array based on the value of _arg_plastid
 	if [[ "$_arg_plastid" == "on" ]]; then
-		knum_array=(1 6)
+		local knum_array=(1 6)
 	else
-		knum_array=({1..6}) # This creates an array of 1 through 6
+		local knum_array=({1..6}) # This creates an array of 1 through 6
 	fi
 
-	# Loop over the array and assign each element to KNUM, then call _run_polap_seeds
-	for i in "${knum_array[@]}"; do
-		KNUM=$i
-		_polap_log2 "  running _run_polap_seeds with KNUM=$KNUM"
+	# 1. file_hashed.tmp
+	# 2. unique_files_by_content.txt
+	# 3. filtered_files.tmp
 
-		# Grouped file path declarations
-		source "$script_dir/polap-variables-mtcontigs.sh"
-		_run_polap_seeds-graph
-
-		if [[ -s "${_polap_var_mtcontigs_8mtcontigname}" ]]; then
-			_polap_log0_cat "${_polap_var_mtcontigs_8mtcontigname}"
-		else
-			_polap_log0 "  no such file: ${_polap_var_mtcontigs_8mtcontigname}"
-		fi
-	done
+	_polap_log3_cmd mkdir -p "${_polap_var_ga_mtcontigs}"
 
 	# Create a temporary file to store hashes and file paths
 	local hash_file="${_polap_var_ga_mtcontigs}/file_hashes.tmp"
 	>"$hash_file" # Ensure the file is empty
 	for i in "${knum_array[@]}"; do
-		KNUM=$i
+		_arg_knum=$i
 		source "$script_dir/polap-variables-mtcontigs.sh"
+		_run_polap_seeds-graph
+
 		if [[ -s "${_polap_var_mtcontigs_8mtcontigname}" ]]; then
 			md5sum "${_polap_var_mtcontigs_8mtcontigname}" >>"$hash_file"
 		fi
 	done
 
 	if [[ -s "${hash_file}" ]]; then
-		_polap_log2_cat "${hash_file}"
+		_polap_log3_cat "${hash_file}"
 	else
-		die "ERROR: no seed contig file of the contig selection types!"
+		return "${_POLAP_ERR_NO_SEEDS}"
 	fi
 
-	# Sort by hash and remove duplicates, keeping only the first occurrence
 	# This will give a list of unique files by content
 	awk '!seen[$1]++' "$hash_file" >"${_polap_var_ga_mtcontigs}/unique_files_by_content.txt"
-
-	# Display the result
-	_polap_log0 "List of unique files by content:"
-	_polap_log0 "mt.contig.name files: ${_polap_var_ga_mtcontigs}/unique_files_by_content.txt"
 
 	# Temporary file to store files with fewer than 10 lines
 	filtered_file="${_polap_var_ga_mtcontigs}/filtered_files.tmp"
 	>"$filtered_file" # Ensure the file is empty
-
-	rm -f "${_polap_var_ga}"/mt.contig.name-*
-
-	# Loop through each unique file
 	while IFS=" " read -r hash file; do
-		# Compute the new filename based on JNUM and index
-		# local new_filename="${_polap_var_ga}/mt.contig.name-${index}"
-		# local new_filename_table="${_polap_var_ga}/mtcontig-annotation-table-seed-${index}.txt"
-
-		# Check if file is not empty and line count is less than 10
+		# Check if file is not empty and line count is less than 30
 		if [[ -f "$file" ]]; then
-			line_count=$(wc -l <"$file")
+			local line_count=$(wc -l <"$file")
 			if ((line_count < 30)); then
-				# Copy the unique file to the new filename
-				# _polap_log3_cmd cp "$file" "$new_filename"
-				# third_field=$(echo "$file" | awk -F '/' '{print $4}')
-				# cp "${_polap_var_ga_mtcontigs}/${third_field}/8-mtcontig-annotation-table-seed.txt" \
-				# 	"${new_filename_table}"
 				echo "$line_count $file" >>"$filtered_file"
 			fi
 		fi
-		# Increment the index
-		# ((index++))
 	done <"${_polap_var_ga_mtcontigs}/unique_files_by_content.txt"
 
 	# Initialize index counter
-	local index=${JNUM}
+	local index=${_arg_jnum}
 
 	# Loop through each unique file
 	while IFS=" " read -r line_count file; do
-		# Compute the new filename based on JNUM and index
+		# Compute the new filename based on _arg_jnum and index
 		local new_filename="${_polap_var_ga}/mt.contig.name-${index}"
-		local new_filename_table="${_polap_var_ga}/mtcontig-annotation-table-seed-${index}.txt"
+		local new_filename_table="${_polap_var_ga}/contig-annotation-table-seed-${index}.txt"
 
 		# Check if file is not empty and line count is less than 10
 		if [[ -f "$file" ]]; then
@@ -677,7 +647,7 @@ HEREDOC
 		((index++))
 	done <"${filtered_file}"
 
-	_polap_log0 "  seed contig name files:"
+	_polap_log0 "seed contig name files:"
 	ls "${_polap_var_ga}"/mt.contig.name-* >&3
 
 	for file in "${_polap_var_ga}"/mt.contig.name-*; do
@@ -685,18 +655,8 @@ HEREDOC
 		file=$(basename $file)
 		local number="${file#mt.contig.name-}"
 
-		_polap_log0 "NEXT: $(basename "$0") assemble2 -o ${ODIR} -i ${INUM} -j ${number}"
+		_polap_log0 "NEXT: $(basename "$0") assemble2 -o ${_arg_outdir} -i ${_arg_inum} -j ${number}"
 	done
-	# if [[ -s "$filtered_file" ]]; then
-	# 	# Select the file with the largest number of lines from the filtered files
-	# 	local largest_file=$(sort -nr "$filtered_file" | head -n 1 | cut -d ' ' -f 2-)
-	#
-	# 	# Display the result
-	# 	_polap_log0 "    File with unique content and largest number of lines (under 10 lines): ${largest_file}"
-	# 	_polap_log3_pipe "cp ${largest_file} ${_polap_var_mtcontigname}"
-	# else
-	# 	_polap_log0 "ERROR: no seed contig files with less than 10 contigs."
-	# fi
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -705,10 +665,9 @@ HEREDOC
 }
 
 ################################################################################
-# Selects contigs using gene density and custom depth range.
-#
+# Select contigs using gene density and custom depth range.
 ################################################################################
-function _run_polap_seeds-graph() { # select seed contigs
+function _run_polap_seeds-graph { # select seed contigs
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -737,7 +696,6 @@ function _run_polap_seeds-graph() { # select seed contigs
 # 1. document automatic depth-range in step 1
 # 2. document preselection in step 2
 # 3. document run-polap-r-final-mtcontig.R in step 8
-# FIXME: contig version needs to be replaced by edge version.
 #
 # 1: determine the depth-range either manually or automatically
 #   Determining the depth range can be done either by manual adjustment or 
@@ -802,8 +760,8 @@ function _run_polap_seeds-graph() { # select seed contigs
 #   report the selected seed contigs
 #
 # Arguments:
-#   -i $INUM: source Flye (usually whole-genome) assembly number
-#   -j $JNUM: destination Flye organelle assembly number
+#   -i ${_arg_inum}: source Flye (usually whole-genome) assembly number
+#   -j ${_arg_jnum}: destination Flye organelle assembly number
 #   --plastid
 # Inputs:
 #   ${_polap_var_ga_contigger_edges_gfa}
@@ -948,7 +906,7 @@ HEREDOC
 	fi
 
 	# We initiate the process of selecting seed contigs.
-	_polap_log0 "selecting seed contigs using the assembly graph: seed selection type=${KNUM} of ${INUM} (source) -> ${JNUM} (target) ..."
+	_polap_log0 "selecting seed contigs using the assembly graph: seed selection type=${_arg_knum} of ${_arg_inum} (source) -> ${_arg_jnum} (target) ..."
 	_polap_log1 "  input1: ${_polap_var_ga_contigger_edges_gfa}"
 	_polap_log1 "  input2: ${_polap_var_ga_annotation_all}"
 
@@ -980,7 +938,7 @@ HEREDOC
 		_polap_log2 "    output1: ${_polap_var_mtcontigs_2_depth_range_by_cdf_copy_number}"
 
 		local _returned_result=""
-		_polap_seeds_create-automatic-depth-range "${KNUM}" _returned_result
+		_polap_seeds_create-automatic-depth-range "${_arg_knum}" _returned_result
 		if [[ "${_returned_result}" != "depth-range" ]]; then
 			return 0
 		fi
@@ -1081,9 +1039,9 @@ HEREDOC
 		fi
 	fi
 
-	local ANUMNEXT=$((INUM + 1))
-	_polap_log1 NEXT: $(basename "$0") map-reads -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
-	_polap_log1 NEXT: $(basename "$0") assemble2 -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
+	local ANUMNEXT=$((_arg_inum + 1))
+	_polap_log1 NEXT: $(basename "$0") map-reads -o "${_arg_outdir}" [-i ${_arg_inum}] [-j $ANUMNEXT]
+	_polap_log1 NEXT: $(basename "$0") assemble2 -o "${_arg_outdir}" [-i ${_arg_inum}] [-j $ANUMNEXT]
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -1103,7 +1061,7 @@ HEREDOC
 # We need to read GFA files to manipulate.
 # We need to determine connected components.
 ################################################################################
-function _run_polap_seeds-gene() {
+function _run_polap_seeds-gene {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -1144,8 +1102,8 @@ function _run_polap_seeds-gene() {
 # Annotation. Depth range. 
 #
 # Arguments:
-#   -i $INUM: source Flye (usually whole-genome) assembly number
-#   -j $JNUM: destination Flye organelle assembly number
+#   -i ${_arg_inum}: source Flye (usually whole-genome) assembly number
+#   -j ${_arg_jnum}: destination Flye organelle assembly number
 #   --select-contig [1|2|3]
 # Inputs:
 #   ${_polap_var_ga_contigger_edges_gfa}
@@ -1186,7 +1144,7 @@ HEREDOC
 	# 1. depth range for the contig preselection in the step 1.
 	# 2. depth range for the graph filtering in later steps.
 
-	_polap_log0 "selecting seed contigs using genes and depths: ${INUM} (source) -> ${JNUM} (target) ..."
+	_polap_log0 "selecting seed contigs using genes and depths: ${_arg_inum} (source) -> ${_arg_jnum} (target) ..."
 	_polap_log1 "  cleaning up (delete and create) the base mtcontigs folder: ${_polap_var_mtcontigs}"
 	_polap_log3_cmd rm -rf "${_polap_var_mtcontigs}"
 	_polap_log3_cmd mkdir -p "${_polap_var_mtcontigs}"

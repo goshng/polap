@@ -20,15 +20,15 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-function _run_polap_report-table() {
+function _run_polap_report-table {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
@@ -54,8 +54,8 @@ HEREDOC
 	_s=${_s%_1}
 	_polap_log0 "Short SRA: ${_s}"
 
-	_polap_utility_get_contig_length "${ODIR}/1/mt.0.fasta" "${ODIR}/1/mt.0.fasta.len"
-	local _l=$(<"${ODIR}/1/mt.0.fasta.len")
+	_polap_utility_get_contig_length "${_arg_outdir}/1/mt.0.fasta" "${_arg_outdir}/1/mt.0.fasta.len"
+	local _l=$(<"${_arg_outdir}/1/mt.0.fasta.len")
 	_polap_log0 "mtDNA total length: ${_l}"
 
 	_arg_menu[1]=$(basename "${_project}" | sed 's/_/ /g')
@@ -64,7 +64,7 @@ HEREDOC
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
-function _run_polap_get-taxonomy-species() {
+function _run_polap_get-taxonomy-species {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
@@ -83,7 +83,7 @@ HEREDOC
 		local _species=$(basename "$PWD" | sed 's/_/ /g')
 	fi
 
-	MDATA="$ODIR/00-bioproject/taxonomy.txt"
+	MDATA="${_arg_outdir}/00-bioproject/taxonomy.txt"
 	_polap_log0 "species: ${_species}"
 	local _v=$(esearch -db taxonomy -query "${_species}" | efetch -format xml | xtract -pattern Taxon -block "LineageEx/Taxon" -sep ";" -element ScientificName)
 	_polap_log0 "taxonomy: ${_v}"
@@ -94,13 +94,13 @@ HEREDOC
 ################################################################################
 # FIXME: something are complicated. Do we need it?
 ################################################################################
-function _run_polap_x-bioproject2() {
+function _run_polap_x-bioproject2 {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
-	mkdir $ODIR
-	BIOPRJ=$_arg_bioproject
+	mkdir ${_arg_outdir}
+	# BIOPRJ=$_arg_bioproject
 
-	MDATA="$ODIR/accessions_demo.txt"
+	MDATA="${_arg_outdir}/accessions_demo.txt"
 	esearch -db bioproject -query $BIOPRJ | elink -target biosample | efetch -format docsum | xtract.Linux -pattern DocumentSummary -block Ids -element Id -group SRA >${MDATA}
 	SRSs=$(cat ${MDATA} | while read LINE; do
 		NCOL=$(echo ${LINE} | wc -w)
@@ -115,7 +115,7 @@ function _run_polap_x-bioproject2() {
 	for SRS in ${SRSs[@]}; do
 		esearch -db SRA -query ${SRS} | efetch -format runinfo
 		# esearch -db SRA -query ${SRS} | efetch -format runinfo | tail -n +2
-	done >$ODIR/accessions_demo.tab
+	done >${_arg_outdir}/accessions_demo.tab
 	# csvtk cut -f Run,bases,LibraryName,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName | csvtk pretty 1>&2
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
@@ -128,7 +128,7 @@ function _run_polap_x-bioproject2() {
 # Outputs:
 #   SRR10190639.fastq
 ###############################################################################
-function _run_polap_x-ncbi-fetch-sra() {
+function _run_polap_x-ncbi-fetch-sra {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
@@ -172,7 +172,7 @@ HEREDOC
 # Arguments:
 #   --sra SRR10190639
 ################################################################################
-function _run_polap_x-ncbi-fetch-sra-runinfo() {
+function _run_polap_x-ncbi-fetch-sra-runinfo {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
@@ -215,12 +215,65 @@ HEREDOC
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
+function _run_polap_x-check-disk-space {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	local _polap_return=${RETURN_SUCCESS}
+
+	help_message=$(
+		cat <<HEREDOC
+# Roughly compute the space for a POLAP analysis.
+# Arguments:
+#   long-read sra ID
+#   short-read sra ID
+Example: $(basename $0) ${_arg_menu[0]} SRR10190639 SRR10250248
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	if [[ "${_arg_menu[1]}" == "infile" ]] || [[ "${_arg_menu[2]}" == "outfile" ]]; then
+		_polap_echo0 "${help_message}"
+		return
+	fi
+
+	local _sra1="${_arg_menu[1]}"
+	local _sra2="${_arg_menu[2]}"
+
+	local _bases1=$(esearch -db sra -query "${_sra1}" |
+		efetch -format runinfo |
+		csvtk cut -f "bases" |
+		csvtk del-header)
+
+	local _bases2=$(esearch -db sra -query "${_sra2}" |
+		efetch -format runinfo |
+		csvtk cut -f "bases" |
+		csvtk del-header)
+
+	local _available_disk_space=$(df --block-size=1 --output=avail ${_arg_outdir} | tail -1)
+
+	local _required_disk_space=$(((_bases1 + _bases2) * 5))
+
+	local _required_disk_space_bp=$(_polap_utility_convert_bp ${_required_disk_space})
+	_polap_log0 "required disk space: ${_required_disk_space_bp}"
+	local _available_disk_space_bp=$(_polap_utility_convert_bp ${_available_disk_space})
+	_polap_log0 "available disk space: ${_available_disk_space_bp}"
+
+	if ((_required_disk_space > _available_disk_space)); then
+		_polap_return=${_POLAP_ERR_NO_DISK_SPACE}
+	fi
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	return ${_polap_return}
+}
+
 ################################################################################
 # Fetches mtDNA genome sequence by species name.
 # Arguments:
 #   --species
 ################################################################################
-function _run_polap_x-ncbi-fetch-mtdna-genbank() {
+function _run_polap_x-ncbi-fetch-mtdna-genbank {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
@@ -261,7 +314,7 @@ HEREDOC
 # Outputs:
 #   <accession>.fa
 ################################################################################
-function _run_polap_x-ncbi-fetch-mtdna-nucleotide() {
+function _run_polap_x-ncbi-fetch-mtdna-nucleotide {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
@@ -307,7 +360,7 @@ HEREDOC
 # Outputs:
 #   pairwise-alignment.txt
 ################################################################################
-function _run_polap_x-align-two-dna-sequences() {
+function _run_polap_x-align-two-dna-sequences {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
@@ -360,7 +413,7 @@ HEREDOC
 #   query: mt.1.fa or the assembled sequence
 #   subject: a known mtDNA sequence
 ################################################################################
-function _run_polap_x-clustal() {
+function _run_polap_x-clustal {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
@@ -430,10 +483,10 @@ HEREDOC
 # Outputs:
 #   ${_arg_final_assembly}
 ################################################################################
-function _run_polap_x-check-coverage() {
+function _run_polap_x-check-coverage {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
-	LRNK="$ODIR/nk.fq.gz"
+	LRNK="${_arg_outdir}/nk.fq.gz"
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	help_message=$(
@@ -472,9 +525,9 @@ HEREDOC
 
 		minimap2 -t "${_arg_threads}" -ax map-ont "${_arg_unpolished_fasta}" "${_polap_var_outdir_nk_fq_gz}" 2>/dev/null |
 			samtools view -u 2>/dev/null |
-			samtools sort -o "$ODIR"/1.bam \
+			samtools sort -o "${_arg_outdir}"/1.bam \
 				>/dev/null 2>&1
-		samtools coverage -A -w 32 "$ODIR"/1.bam 1>&2
+		samtools coverage -A -w 32 "${_arg_outdir}"/1.bam 1>&2
 
 		_polap_log1 INFO: conda env create -f "$script_dir"/environment-fmlrc.yaml
 		_polap_log1 INFO: conda activate polap-fmlrc
@@ -484,7 +537,7 @@ HEREDOC
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
-function _run_polap_x-help() {
+function _run_polap_x-help {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	print_x-help 1>&2
@@ -492,7 +545,7 @@ function _run_polap_x-help() {
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
-function _run_polap_x-link-fastq() {
+function _run_polap_x-link-fastq {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	# Loop through all .fastq files in the current directory
@@ -516,7 +569,7 @@ function _run_polap_x-link-fastq() {
 	return 0
 }
 
-function _run_polap_x-prepend-gplv3() {
+function _run_polap_x-prepend-gplv3 {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
@@ -553,7 +606,7 @@ HEREDOC
 }
 
 # copy seed test data
-function _run_polap_x-copy-seed-test() {
+function _run_polap_x-copy-seed-test {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
@@ -567,4 +620,17 @@ function _run_polap_x-copy-seed-test() {
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 	return 0
+}
+
+function _polap_gfatools-gfa2fasta {
+	if [[ ! -s "${_polap_var_ga_contigger_edges_fasta}" ]]; then
+		if [[ -s "${_polap_var_ga_contigger_edges_gfa}" ]]; then
+			_polap_log3_pipe "gfatools gfa2fa \
+		    ${_polap_var_ga_contigger_edges_gfa} \
+		    >${_polap_var_ga_contigger_edges_fasta} \
+        2>${_polap_output_dest}"
+		else
+			return ${_POLAP_ERR_NO_EDGES_GFA}
+		fi
+	fi
 }

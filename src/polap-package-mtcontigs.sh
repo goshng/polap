@@ -16,7 +16,7 @@
 
 # common: mtcontigs
 local _ppack_var_ga_mtcontigs="${_ppack_var_ga}/51-mtcontigs"
-local _ppack_var_mtcontigs="${_ppack_var_ga}/51-mtcontigs/${KNUM}"
+local _ppack_var_mtcontigs="${_ppack_var_ga}/51-mtcontigs/${_arg_knum}"
 local _ppack_var_mtcontigs_depth_range_preselection="${_ppack_var_mtcontigs}/depth.range.preselection.txt"
 local _ppack_var_mtcontigs_depth_range_graphfilter="${_ppack_var_mtcontigs}/depth.range.graphfilter.txt"
 local _ppack_var_mtcontigs_1_custom_depth_range="${_ppack_var_mtcontigs}/custom.depth.range-1.txt"

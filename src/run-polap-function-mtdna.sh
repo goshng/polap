@@ -20,9 +20,9 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
@@ -31,7 +31,7 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 # mauve alignment
 ################################################################################
-function _run_polap_mauve-mtdna() {
+function _run_polap_mauve-mtdna {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -56,7 +56,7 @@ function _run_polap_mauve-mtdna() {
 # comparing two sequences, albeit not highly sophisticated.
 #
 # Arguments:
-#   -i $INUM
+#   -i ${_arg_inum}
 # Inputs:
 #   a.fasta: known mtDNA in fasta format
 #   b.fasta: another DNA sequence in fasta format
@@ -70,19 +70,19 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	_polap_log3_pipe "progressiveMauve \
-    --output=${ODIR}/mt.xmfa \
+    --output=${_arg_outdir}/mt.xmfa \
     ${_arg_short_read1} \
     ${_arg_short_read2} \
     >${_polap_output_dest} 2>&1"
 
-	# awk 'NR > 1 {sum += $2 - $1} END {print sum}' "${ODIR}/mt.xmfa.backbone" >"${ODIR}/mt.identity.length.txt"
-	awk 'NR > 1 {sum += ($1 > $2 ? $1 - $2 : $2 - $1)} END {print sum}' "${ODIR}/mt.xmfa.backbone" >"${ODIR}/mt.identity.length.txt"
+	# awk 'NR > 1 {sum += $2 - $1} END {print sum}' "${_arg_outdir}/mt.xmfa.backbone" >"${_arg_outdir}/mt.identity.length.txt"
+	awk 'NR > 1 {sum += ($1 > $2 ? $1 - $2 : $2 - $1)} END {print sum}' "${_arg_outdir}/mt.xmfa.backbone" >"${_arg_outdir}/mt.identity.length.txt"
 
-	local _alen=$(<"${ODIR}/mt.identity.length.txt")
+	local _alen=$(<"${_arg_outdir}/mt.identity.length.txt")
 	_polap_utility_get_contig_length \
 		"${_arg_short_read1}" \
-		"${ODIR}/mt.reference.length.txt"
-	local _blen=$(<"${ODIR}/mt.reference.length.txt")
+		"${_arg_outdir}/mt.reference.length.txt"
+	local _blen=$(<"${_arg_outdir}/mt.reference.length.txt")
 	local _percent_identity=$(echo "scale=3; ${_alen}/${_blen}" | bc)
 	_polap_log0 "mauve_lcb_length_coverage: ${_percent_identity}"
 
@@ -95,7 +95,7 @@ HEREDOC
 ################################################################################
 # Blast the final mtDNA sequence against mitochondrial and plastid genes.
 ################################################################################
-function _run_polap_blast-mtdna() {
+function _run_polap_blast-mtdna {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 
@@ -122,7 +122,7 @@ function _run_polap_blast-mtdna() {
 #   ${_arg_final_assembly}: mtDNA sequence
 # Outputs:
 #
-Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>] -f mt.1.fa -o [$ODIR]
+Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>] -f mt.1.fa -o [${_arg_outdir}]
 HEREDOC
 	)
 
@@ -220,7 +220,7 @@ HEREDOC
 	ls "${_polap_var_chloroplot}"/*.check \
 		>"$_polap_output_dest"
 
-	echoerr "NEXT: $(basename $0) gene-table-mtdna -o $ODIR [-i $INUM]"
+	echoerr "NEXT: $(basename $0) gene-table-mtdna -o ${_arg_outdir} [-i ${_arg_inum}]"
 
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
@@ -230,7 +230,7 @@ HEREDOC
 ################################################################################
 # Compares the known mtDNA sequence and the assembled one.
 ################################################################################
-function _run_polap_compare-mtdna() {
+function _run_polap_compare-mtdna {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -249,18 +249,18 @@ function _run_polap_compare-mtdna() {
 # Compares the known mtDNA sequence and the assembled one.
 #
 # Arguments:
-#   -i $INUM
+#   -i ${_arg_inum}
 # Inputs:
 #   ${_polap_var_compare_mtdna3}
 # Outputs:
-Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>] -f mt.1.fa -o [$ODIR]
+Example: $(basename "$0") ${_arg_menu[0]} [-i|--inum <arg>] -f mt.1.fa -o [${_arg_outdir}]
 HEREDOC
 	)
 
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
-	check_folder_existence "${ODIR}"
+	check_folder_existence "${_arg_outdir}"
 
 	local n1=$(cut -f1 "${_polap_var_project_mtdna_fasta2_accession}")
 	local l1=$(seqkit stats -T "${_polap_var_project_mtdna_fasta2}" |
@@ -341,7 +341,7 @@ source "$script_dir/run-polap-function-utilities.sh"
 ################################################################################
 # Downloads the mtDNA sequence for a given species name.
 ################################################################################
-function _run_polap_get-mtdna() {
+function _run_polap_get-mtdna {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -372,7 +372,7 @@ function _run_polap_get-mtdna() {
 # Arguments:
 #   --species "scientific name" (highest priority)
 #   or
-#   -o ${ODIR} (next priority)
+#   -o ${_arg_outdir} (next priority)
 # Outputs:
 #   ${_polap_var_project_mtdna_fasta1}
 #   ${_polap_var_project_mtdna_fasta2}
@@ -441,7 +441,7 @@ HEREDOC
 			SPECIES=$(<"${_polap_var_project_species}")
 			_polap_log0 "  bioproject's species: $SPECIES"
 		else
-			die "ERROR: you have not run the menu: get-bioproject on the output folder [${ODIR}], yet!"
+			die "ERROR: you have not run the menu: get-bioproject on the output folder [${_arg_outdir}], yet!"
 		fi
 	elif [ -n "${_arg_bioproject}" ]; then
 		_run_polap_get-bioproject
@@ -519,14 +519,10 @@ HEREDOC
 	return 0
 }
 
-function _run_polap_gm() {
-	_run_polap_get-mtdna
-
-}
 ################################################################################
 # Gene table for importing to the Chloroplot R package.
 ################################################################################
-function _run_polap_plot-mtdna() {
+function _run_polap_plot-mtdna {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 
@@ -547,7 +543,7 @@ function _run_polap_plot-mtdna() {
 # Counts genes annotated on a genome assembly and plots the mtDNA genome.
 # Arguments:
 #   -f ${_arg_final_assembly}
-#   -i $INUM: a Flye genome assembly number
+#   -i ${_arg_inum}: a Flye genome assembly number
 # Inputs:
 #   ${_arg_final_assembly}: mtDNA sequence
 # Outputs:
@@ -558,7 +554,7 @@ HEREDOC
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && echo "${help_message}" >&2 && exit $EXIT_SUCCESS
 
-	_polap_log1 "LOG: Plotting mitochondrial DNA genome for Flye assembly $INUM..."
+	_polap_log1 "LOG: Plotting mitochondrial DNA genome for Flye assembly ${_arg_inum}..."
 
 	# Run the R script to generate the mtDNA plot
 	"$script_dir/run-polap-r-plot-mtdna.R " \
@@ -581,7 +577,7 @@ HEREDOC
 # FIXME: need to check because assembly_graph.gfa and graph_final.gfa are different.
 # extraction: uses assembly_graph.gfa
 ################################################################################
-function _run_polap_select-mtdna() {
+function _run_polap_select-mtdna {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -594,7 +590,7 @@ function _run_polap_select-mtdna() {
 	# CHECK: local function
 	source "$script_dir/polap-variables-common.sh"
 
-	# local FDIR="$ODIR/$INUM"
+	# local FDIR="${_arg_outdir}/${_arg_inum}"
 	# local _polap_var_mtdna="$FDIR/mtdna"
 	#
 	# # File paths
@@ -616,7 +612,7 @@ function _run_polap_select-mtdna() {
 # Selects mtDNA sequences from a GFA.
 #
 # Arguments:
-#   -i $INUM: organelle assembly number
+#   -i ${_arg_inum}: organelle assembly number
 #
 # Inputs:
 #   ${_polap_var_assembly_graph_gfa}
@@ -730,7 +726,7 @@ HEREDOC
 ################################################################################
 # Before 2024-09-27
 ################################################################################
-function _run_polap_select-mtdna-org() {
+function _run_polap_select-mtdna-org {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -743,7 +739,7 @@ function _run_polap_select-mtdna-org() {
 	# CHECK: local function
 	source "$script_dir/polap-variables-common.sh"
 
-	# local FDIR="$ODIR/$INUM"
+	# local FDIR="${_arg_outdir}/${_arg_inum}"
 	# local _polap_var_mtdna="$FDIR/mtdna"
 	#
 	# # File paths
@@ -765,7 +761,7 @@ function _run_polap_select-mtdna-org() {
 # Selects mtDNA sequences from a GFA.
 #
 # Arguments:
-#   -i $INUM: organelle assembly number
+#   -i ${_arg_inum}: organelle assembly number
 #
 # Inputs:
 #   ${_polap_var_assembly_graph_gfa}

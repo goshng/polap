@@ -18,12 +18,14 @@
 # Ensure that the current script is sourced only once
 source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
-set +u; [[ -n "${!_POLAP_INCLUDE_}" ]] && return 0; set -u
+set +u
+[[ -n "${!_POLAP_INCLUDE_}" ]] && return 0
+set -u
 declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-function _run_polap_template {
+function _run_polap_test {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -38,7 +40,7 @@ function _run_polap_template {
 	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
-# Template for an external shell script
+# Test codes.
 #
 # Arguments:
 #   -i ${_arg_inum}: source Flye (usually whole-genome) assembly number
@@ -63,32 +65,19 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x; return 0
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
 		exit $EXIT_SUCCESS
 	fi
 
-	echo "verbose level: ${_arg_verbose}" >&2
-	echoall "command: $0"
-	echoall "function: $FUNCNAME"
-	echoall "menu2: [$1]"
-	echoall "menu3: [$2]"
-	echoerr "LOG: echoerr"
-	echoall "LOG: echoall"
-
-	echoerr "LOG: echoerr"
-	verbose_echo 0 "Log level   - screen        polap.log file" 1>&2
-	_polap_log0 "Log level 0 - nothing        minimal log - --quiet"
-	_polap_log1 "Log level 1 - minimal        step info and main io files"
-	_polap_log2 "Log level 2 - main io files  inside of function: file input/output --verbose"
-	_polap_log3 "Log level 3 - files inside   all log or details of file contents --verbose --verbose"
-	_polap_log0_file "log0.file: main assembly input/output"
-	_polap_log1_file "log1.file: step main input/output"
-	_polap_log2_file "log2.file: inside detail input/output"
-	_polap_log3_file "log3.file: all input/output"
-
-	_polap_log0 "var: ${_polap_var_apple}"
+	if _polap_gfatools-gfa2fasta; then
+		_polap_log0 "success: $?"
+	else
+		_polap_error_message $?
+	fi
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x; return 0
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }

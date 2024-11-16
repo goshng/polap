@@ -15,11 +15,8 @@
 ################################################################################
 
 # variables
-INUM=${_arg_inum}
-JNUM=${_arg_jnum}
-KNUM=${_arg_knum}
 if [ "${_arg_archive_is}" = "off" ]; then
-	_arg_archive="${ODIR}-a"
+	_arg_archive="${_arg_outdir}-a"
 fi
 
 # tuning variables for optimal performance
@@ -30,10 +27,10 @@ fi
 
 SECONDS=0
 
-[[ ! -d "${ODIR}" ]] && mkdir -p "${ODIR}"
-[[ ! -d "${ODIR}/tmp" ]] && mkdir -p "${ODIR}/tmp"
+[[ ! -d "${_arg_outdir}" ]] && mkdir -p "${_arg_outdir}"
+[[ ! -d "${_arg_outdir}/tmp" ]] && mkdir -p "${_arg_outdir}/tmp"
 if [ "${_arg_log_is}" = "off" ]; then
-	LOG_FILE="${ODIR}/${_arg_log}"
+	LOG_FILE="${_arg_outdir}/${_arg_log}"
 else
 	LOG_FILE="${_arg_log}"
 fi
@@ -41,7 +38,7 @@ fi
 ################################################################################
 # for the magic logit function
 ################################################################################
-function logit() {
+function logit {
 	while read; do
 		# echo "$(date) $REPLY" >> ${LOG_FILE}
 		# -1 means "current time"

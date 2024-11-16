@@ -28,7 +28,7 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-function _run_polap_blast-genome-contig() { # v0.2.6: BLAST contig sequences on MT and PT genes
+function _run_polap_blast-genome-contig { # v0.2.6: BLAST contig sequences on MT and PT genes
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -47,7 +47,7 @@ function _run_polap_blast-genome-contig() { # v0.2.6: BLAST contig sequences on 
 # Blasts the genome assembly of a Flye run againt the plant organelle genes.
 #
 # Arguments:
-#   -i $INUM: a Flye genome assembly number
+#   -i ${_arg_inum}: a Flye genome assembly number
 # Inputs:
 #   ${_polap_var_ga_contigger_contigs_stats}
 # Outputs:
@@ -70,7 +70,7 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	_polap_log0 "blasting contigs with mitochondrial and plastid genes on the assembly number ${INUM} ..."
+	_polap_log0 "blasting contigs with mitochondrial and plastid genes on the assembly number ${_arg_inum} ..."
 
 	# Checks the output files earlier than the input.
 	if [[ -s "${_polap_var_ann_MTGENECOUNT}" ]] &&
@@ -204,14 +204,14 @@ HEREDOC
 	_polap_log1 "  output2: ${_polap_var_ann_PTGENECOUNT}"
 
 	_polap_log1 "NEXT (for testing purpose only): $(basename "$0") count-gene --test"
-	_polap_log1 "NEXT: $(basename $0) count-gene -o $ODIR [-i $INUM]"
+	_polap_log1 "NEXT: $(basename $0) count-gene -o ${_arg_outdir} [-i ${_arg_inum}]"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 }
 
-function _run_polap_count-gene-contig() { # v0.2.6: count MT and PT genes
+function _run_polap_count-gene-contig { # v0.2.6: count MT and PT genes
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -228,7 +228,7 @@ function _run_polap_count-gene-contig() { # v0.2.6: count MT and PT genes
 # Counts genes annotated on a genome assembly.
 #
 # Arguments:
-#   -i $INUM: a Flye genome assembly number
+#   -i ${_arg_inum}: a Flye genome assembly number
 # Inputs:
 #   ${_polap_var_ga}/30-contigger/contigs_stats.txt
 #   ${_polap_var_ann_MTGENECOUNT}
@@ -268,7 +268,7 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	_polap_log0 "counting mitochondrial and plastid genes on the assembly number ${INUM} ..."
+	_polap_log0 "counting mitochondrial and plastid genes on the assembly number ${_arg_inum} ..."
 
 	_polap_log0 "  input1: ${_polap_var_ga}/30-contigger/contigs_stats.txt"
 	_polap_log0 "  input2: ${_polap_var_ann_MTGENECOUNT}"
@@ -295,9 +295,9 @@ HEREDOC
 		echo edge_3 >>"${_polap_var_ga}"/mt.contig.name-1
 	fi
 
-	ANUMNEXT=$((INUM + 1))
-	_polap_log1 NEXT: $(basename "$0") select-reads -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
-	_polap_log1 NEXT: $(basename "$0") assemble2 -o "$ODIR" [-i $INUM] [-j $ANUMNEXT]
+	ANUMNEXT=$((_arg_inum + 1))
+	_polap_log1 NEXT: $(basename "$0") select-reads -o "${_arg_outdir}" [-i ${_arg_inum}] [-j $ANUMNEXT]
+	_polap_log1 NEXT: $(basename "$0") assemble2 -o "${_arg_outdir}" [-i ${_arg_inum}] [-j $ANUMNEXT]
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -307,7 +307,7 @@ HEREDOC
 ################################################################################
 # Annotates the genome assembly.
 ################################################################################
-function _run_polap_annotate-contig() { # annotate v0.2.6 for contigs_stats.txt
+function _run_polap_annotate-contig { # annotate v0.2.6 for contigs_stats.txt
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -324,9 +324,9 @@ function _run_polap_annotate-contig() { # annotate v0.2.6 for contigs_stats.txt
 # Annotates the genome assembly using contig sequences not edge ones.
 #
 # Arguments:
-#   -i $INUM: a Flye genome assembly number
+#   -i ${_arg_inum}: a Flye genome assembly number
 # Inputs:
-#   $INUM
+#   ${_arg_inum}
 # Outputs:
 #   ${_polap_var_ga_annotation_all}
 #   ${_polap_var_ga_annotation}
@@ -335,7 +335,7 @@ function _run_polap_annotate-contig() { # annotate v0.2.6 for contigs_stats.txt
 #   all   -> ${_polap_var_ga_annotation_all}
 #   mt    -> ${_polap_var_ga_annotation}
 #   table -> ${_polap_var_ga_annotation_table}
-Example: ${_polap_command_string} ${_arg_menu[0]} -i ${INUM}
+Example: ${_polap_command_string} ${_arg_menu[0]} -i ${_arg_inum}
 HEREDOC
 	)
 
@@ -380,7 +380,7 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	_polap_log0 "annotating contigs with mitochondrial and plastid genes on the assembly number ${INUM} ..."
+	_polap_log0 "annotating contigs with mitochondrial and plastid genes on the assembly number ${_arg_inum} ..."
 
 	if [ -s "${_polap_var_ga_annotation_all}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log0 "  found: ${_polap_var_ga_annotation_all}, so skipping the annotation ..."

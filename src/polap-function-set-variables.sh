@@ -34,7 +34,7 @@ declare "$_POLAP_INCLUDE_=1"
 # ${_arg_short_read2}
 # depending on the options provided.
 ################################################################################
-function _polap_set-variables-short-read() {
+function _polap_set-variables-short-read {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -57,7 +57,7 @@ function _polap_set-variables-short-read() {
 			_polap_log1 "  we use the short-reads data 1 info: ${_polap_var_project_sra_short_read}"
 			check_file_existence "${_polap_var_project_sra_short_read}"
 			local SRA=$(cut -f1 "${_polap_var_project_sra_short_read}")
-			_arg_short_read1="${ODIR}/${SRA}_1.fastq"
+			_arg_short_read1="${_arg_outdir}/${SRA}_1.fastq"
 		fi
 	else
 		_polap_log1 "  we use the short-read given by the option -a"
@@ -70,7 +70,7 @@ function _polap_set-variables-short-read() {
 			_polap_log1 "  we use the short-reads data 2 info: ${_polap_var_project_sra_short_read}"
 			check_file_existence "${_polap_var_project_sra_short_read}"
 			local SRA=$(cut -f1 "${_polap_var_project_sra_short_read}")
-			_arg_short_read2="${ODIR}/${SRA}_2.fastq"
+			_arg_short_read2="${_arg_outdir}/${SRA}_2.fastq"
 		fi
 	else
 		_polap_log1 "  we use the short-read given by the option -b"
@@ -82,7 +82,7 @@ function _polap_set-variables-short-read() {
 	return 0
 }
 
-function _polap_set-variables-long-read() {
+function _polap_set-variables-long-read {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -105,7 +105,7 @@ function _polap_set-variables-long-read() {
 			_polap_log1 "  we use the long-reads data: ${_polap_var_project_sra_long_read}"
 			check_file_existence "${_polap_var_project_sra_long_read}"
 			local SRA=$(cut -f1 "${_polap_var_project_sra_long_read}")
-			_arg_long_reads="${ODIR}/${SRA}.fastq"
+			_arg_long_reads="${_arg_outdir}/${SRA}.fastq"
 		fi
 	else
 		_polap_log1 "  we use the long-reads given by the option -l"

@@ -1,9 +1,9 @@
 #/usr/bin/bash
 
-ODIR=ODIR
-INUM=INUM
-JNUM=JNUM
-KNUM=KNUM
+_arg_outdir=_arg_outdir
+_arg_inum=_arg_inum
+_arg_jnum=_arg_jnum
+_arg_knum=_arg_knum
 
 script_dir=src
 
@@ -56,7 +56,7 @@ common() {
 		_polap_var_project_sra_short_read \
 		_polap_var_project_taxon_id \
 		_polap_var_project_taxonomy \
-		_polap_var_wga_annotation \
+		_polap_var_wga_annotation_all \
 		_polap_var_wga_contigger \
 		_polap_var_wga_contigger_contigs_fasta \
 		_polap_var_wga_contigger_contigs_stats \

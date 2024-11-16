@@ -16,14 +16,14 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# "$script_dir"/run-polap-mtcontig.R "$ODIR" \
-# 	"$ODIR"/50-annotation/mt.contig.name \
-# 	"$ODIR"/assembly_info_organelle_annotation_count.txt \
+# "$script_dir"/run-polap-mtcontig.R "${_arg_outdir}" \
+# 	"${_arg_outdir}"/50-annotation/mt.contig.name \
+# 	"${_arg_outdir}"/assembly_info_organelle_annotation_count.txt \
 # 	--contigger \
 # 	>/dev/null 2>&1
-# echo "USE: assembly graph: "$ODIR"/30-contigger/graph_final.gfa"
-# echo "USE: execute $ column -t "$ODIR"/assembly_info_organelle_annotation_count.txt"
-# echo "INFO: edit "$ODIR"/50-annotation/mt.contig.name-1 for mtDNA contig candidates"
+# echo "USE: assembly graph: "${_arg_outdir}"/30-contigger/graph_final.gfa"
+# echo "USE: execute $ column -t "${_arg_outdir}"/assembly_info_organelle_annotation_count.txt"
+# echo "INFO: edit "${_arg_outdir}"/50-annotation/mt.contig.name-1 for mtDNA contig candidates"
 
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))

@@ -35,7 +35,7 @@ source "$script_dir/run-polap-function-log.sh"
 # try a command
 ################################################################################
 
-function try() { "$@" || die "cannot $*"; }
+function try { "$@" || die "cannot $*"; }
 
 ################################################################################
 # Function to convert base pairs to the highest appropriate unit
@@ -43,7 +43,7 @@ function try() { "$@" || die "cannot $*"; }
 # bp=31846726397
 # convert_bp $bp
 ################################################################################
-function _polap_utility_convert_bp() {
+function _polap_utility_convert_bp {
 	local bp=${1%.*}
 	if ((bp >= 1000000000000)); then
 		echo "$(bc <<<"scale=1; $bp/1000000000000") Tbp"
@@ -61,7 +61,7 @@ function _polap_utility_convert_bp() {
 ################################################################################
 # Get contig total length
 ################################################################################
-function _polap_utility_get_contig_length() {
+function _polap_utility_get_contig_length {
 	local contig_file="$1"
 	local length_file="$2"
 	_polap_log3_pipe "seqkit stats -Ta $contig_file |
@@ -73,7 +73,7 @@ function _polap_utility_get_contig_length() {
 ################################################################################
 # Function to check if commands are available, taking an array as argument
 ################################################################################
-function check_commands() {
+function check_commands {
 	local cmd_array=("$@") # Capture all the passed arguments into an array
 	for cmd in "${cmd_array[@]}"; do
 		command -v "$cmd" >/dev/null 2>&1 || {
@@ -88,7 +88,7 @@ function check_commands() {
 # Checks if required main commands are available.
 # called early in the code such as reset menu.
 ###############################################################################
-function run_check1() {
+function run_check1 {
 	local commands=(
 		"bc"
 		"seqkit"
@@ -110,7 +110,7 @@ function run_check1() {
 # Checks if FMLRC related commands are available.
 # called by prepare-polishing menu.
 ###############################################################################
-function run_check2() {
+function run_check2 {
 	local commands=(
 		"msbwt"
 		"ropebwt2"
@@ -125,7 +125,7 @@ function run_check2() {
 # Checks if ncbitools related commands are available.
 # called by fetch
 ###############################################################################
-function run_check3() {
+function run_check3 {
 	local commands=(
 		"prefetch"
 		"vdb-validate"
@@ -139,7 +139,7 @@ function run_check3() {
 ###############################################################################
 # Checks if ncbitools related commands are available.
 ###############################################################################
-function run_check_ncbitools() {
+function run_check_ncbitools {
 	local commands=(
 		"makeblastdb"
 		"tblastn"
@@ -153,7 +153,7 @@ function run_check_ncbitools() {
 ###############################################################################
 # Logs all commands
 ###############################################################################
-function _log_command_versions() {
+function _log_command_versions {
 	local commands=(
 		# main
 		"bc"
@@ -211,7 +211,7 @@ function _log_command_versions() {
 ###############################################################################
 # Function to prompt for confirmation
 ###############################################################################
-function confirm() {
+function confirm {
 	while true; do
 		read -p "$1 [y/n]: " response
 		case "$response" in
@@ -225,7 +225,7 @@ function confirm() {
 ###############################################################################
 # Ouputs error messages for executing polap without a proper conda environment.
 ###############################################################################
-function error_polap_conda() {
+function error_polap_conda {
 	_polap_log0 "ERROR: change your conda environment to polap."
 	_polap_log0 "SUGGESTION: do the following steps for setting up the polap conda environment"
 	_polap_log0 "$ git clone https://github.com/goshng/polap.git"
@@ -239,7 +239,7 @@ function error_polap_conda() {
 }
 
 # Helper function for checking if a file exists
-function check_file_existence() {
+function check_file_existence {
 	local file=$1
 	if [ ! -s "$file" ]; then
 		die "ERROR: No such file: $file"
@@ -247,7 +247,7 @@ function check_file_existence() {
 	fi
 }
 
-function check_folder_existence() {
+function check_folder_existence {
 	local folder=$1
 	if [ ! -d "$folder" ]; then
 		die "ERROR: No such folder: $folder"
@@ -256,7 +256,7 @@ function check_folder_existence() {
 }
 
 # Function to check and display the size of an SRA accession in GB, MB, or KB
-function get_sra_size() {
+function get_sra_size {
 	# Check if the user provided an SRA accession
 	if [ -z "$1" ]; then
 		echo "Usage: get_sra_size <SRA_ACCESSION>"
@@ -290,7 +290,7 @@ function get_sra_size() {
 ################################################################################
 # creats a range file
 ################################################################################
-function _create_range() {
+function _create_range {
 	# Extract arguments
 	local params="$1"
 	local output_file="$2"
@@ -322,7 +322,7 @@ function _create_range() {
 	echo "${numbers[@]}" >"$output_file"
 }
 
-function _create_range_float() {
+function _create_range_float {
 	# Extract arguments
 	local params="$1"
 	local output_file="$2"
@@ -359,8 +359,8 @@ function _create_range_float() {
 # _polap_tempfiles=() # Initialize an array to hold temp files
 
 # Function to create temp files and add them to the array
-function _polap_create_tempfile() {
-	local tmp=$(mktemp ${ODIR}/tmp/XXX)
+function _polap_create_tempfile {
+	local tmp=$(mktemp ${_arg_outdir}/tmp/XXX)
 	# _polap_tempfiles+=("$tmp")
 	echo "$tmp"
 }
@@ -369,12 +369,12 @@ function _polap_create_tempfile() {
 # tempfile1=$(create_tempfile)
 # tempfile2=$(create_tempfile)
 
-function _polap_delete_tempfiles() {
+function _polap_delete_tempfiles {
 	# Set up a trap to delete all files in the array
-	rm -f "${ODIR}/tmp"/*
+	rm -f "${_arg_outdir}/tmp"/*
 }
 
-# function _polap_delete_tempfiles() {
+# function _polap_delete_tempfiles {
 # 	# Set up a trap to delete all files in the array
 # 	trap 'rm -f "${_polap_tempfiles[@]}"' EXIT
 # }

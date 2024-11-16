@@ -43,13 +43,13 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 # vvv  PLACE YOUR CODE HERE  vvv
 
 _polap_var_function_verbose=4
-ODIR="${_arg_outdir%/}"
 
 ################################################################################
 # include bash shell files
 ################################################################################
 
 source "$script_dir/polap-constants.sh"
+source "$script_dir/run-polap-function-errors.sh"
 source "$script_dir/run-polap-function-utilities.sh"
 source "$script_dir/run-polap-function-log.sh"
 source "$script_dir/run-polap-function-menus.sh"
@@ -87,6 +87,8 @@ source "$script_dir/run-polap-function-assemble.sh"
 # miscellaneous
 source "$script_dir/run-polap-function-miscellaneous.sh"
 
+source "$script_dir/run-polap-function-test.sh"
+
 ################################################################################
 # All of the variables at our disposal
 ################################################################################
@@ -116,7 +118,11 @@ echo "CMD: $CMD"
 if declare -f "_run_polap_${_arg_menu[0]}" >/dev/null 2>&1; then
 	# invoke that function, passing arguments through
 	# _run_polap_"$@" # same as "$1" "$2" "$3" ... for full argument list
-	_run_polap_${_arg_menu[0]}
+	if _run_polap_${_arg_menu[0]}; then
+		_polap_log3 "menu ${_arg_menu[0]} has been finished."
+	else
+		_polap_error_message $?
+	fi
 else
 	_polap_log0 "Menu: assemble, prepare-polishing, polish"
 	_polap_log0 "  assemble1, total-length-long, find-genome-size, reduce-data, flye1, annotate"

@@ -32,7 +32,7 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-function _polap_include() {
+function _polap_include {
 	local input_string="$1"
 	# Extract the basename
 	local script_name=$(basename "${input_string}")

@@ -26,7 +26,7 @@ Polap originated as an extension of ptGAUL, with a specific focus on assembling 
 
 - **Operating System**: Linux (not compatible with macOS or Windows)
 - **Dependencies**: Requires [Bash](https://www.gnu.org/software/bash/) (>= 3.0) and **[Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/)**
-- **Installation**: Can be installed via [Bioconda](https://bioconda.github.io/) or manually from the Github source available at [Polap](https://github.com/goshng/polap)
+- **Installation**: Can be installed via [Bioconda](https://bioconda.github.io/)'s [Polap conda package](https://anaconda.org/bioconda/polap) or manually from the Github source available at [Polap](https://github.com/goshng/polap)
 
 ## Quick Start
 
@@ -41,7 +41,7 @@ rm ~/miniconda3/miniconda.sh
 
 After installing, close and reopen your terminal application.
 
-#### 2. Install the Bioconda package, Polap:
+#### 2. Install the Bioconda package, [Polap](https://anaconda.org/bioconda/polap):
 
 ```bash
 source ~/miniconda3/bin/activate
@@ -60,7 +60,7 @@ polap assemble --test
 If you see this output, then you are ready to use the long-read assembly pipeline.
 
 ```bash
-ERROR: no seed contig file of the contig selection types!
+output: the assembly graph: o/1/assembly_graph.gfa
 ```
 
 #### 3. Test the short-read polishing:
@@ -168,6 +168,14 @@ You could see seed contigs that were added to the previous annotation table:
 polap annotate view seed
 ```
 
+Under the column `Seed` of the annotation table, `A` denotes that the contig was part of the initial annotation, `G` that the contig was added to the seed set via the genome assembly graph, and `X` the contig was not part of the seed set though it was in the initial annotation.
+
+| Contig | Length | Depth | Copy |  MT |  PT | Seed |
+| :----- | -----: | ----: | ---: | --: | --: | ---: |
+| edge_2 |  19223 |     3 |    0 |  11 |  13 |    X |
+| edge_3 |  21885 |     6 |    1 |   4 |  24 |    A |
+| edge_1 |  39736 |     6 |    1 |  16 |  16 |    G |
+
 You have prepared a list of seed contigs for an organelle-genome assembly. Execute the following:
 
 ```bash
@@ -193,7 +201,7 @@ For more detailed installation and usage instructions, please read along with th
 
 ## Detailed installation
 
-### Using Bioconda package
+### Using [Bioconda](https://bioconda.github.io/) package
 
 1. Install Miniconda by following the installation procedure:
 
@@ -233,7 +241,7 @@ For more detailed installation and usage instructions, please read along with th
    ```
 7. Check the output:
    ```bash
-   ERROR: no seed contig file of the contig selection types!
+   output: the assembly graph: o/1/assembly_graph.gfa
    ```
 
 We need one more step for the installation.
@@ -314,7 +322,7 @@ If you're unable to install Polap via the Bioconda package, you can install it d
 6. If you see a screen output ending with the something like this:
 
    ```bash
-   ERROR: no seed contig file of the contig selection types!
+   output: the assembly graph: o/1/assembly_graph.gfa
    ```
 
 7. Polishing with a short-read data:

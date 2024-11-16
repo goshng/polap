@@ -268,6 +268,25 @@ HEREDOC
 	return ${_polap_return}
 }
 
+function _run_polap_x-link-sra {
+	# Loop through all .fastq files in the current directory
+	for file in *.fastq; do
+		# Check if the file is a long-read (ending in just .fastq without _1 or _2)
+		if [[ "$file" =~ ^[DES]RR[0-9]+\.fastq$ ]]; then
+			ln -s "$file" l.fq
+			_polap_log0 "Created soft link for long-read file: $file -> l.fq"
+		# Check if the file is a short-read pair _1.fastq
+		elif [[ "$file" =~ ^[DES]RR[0-9]+_1\.fastq$ ]]; then
+			ln -s "$file" s1.fq
+			_polap_log0 "Created soft link for short-read file 1: $file -> s1"
+		# Check if the file is a short-read pair _2.fastq
+		elif [[ "$file" =~ ^[DES]RR[0-9]+_2\.fastq$ ]]; then
+			ln -s "$file" s2.fq
+			_polap_log0 "Created soft link for short-read file 2: $file -> s2"
+		fi
+	done
+}
+
 ################################################################################
 # Fetches mtDNA genome sequence by species name.
 # Arguments:

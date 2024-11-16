@@ -165,16 +165,27 @@ edge_266
 You could see seed contigs that were added to the previous annotation table:
 
 ```bash
-polap annotate view seed
+polap seeds view
 ```
 
 Under the column `Seed` of the annotation table, `A` denotes that the contig was part of the initial annotation, `G` that the contig was added to the seed set via the genome assembly graph, and `X` the contig was not part of the seed set though it was in the initial annotation.
 
-| Contig | Length | Depth | Copy |  MT |  PT | Seed |
-| :----- | -----: | ----: | ---: | --: | --: | ---: |
-| edge_2 |  19223 |     3 |    0 |  11 |  13 |    X |
-| edge_3 |  21885 |     6 |    1 |   4 |  24 |    A |
-| edge_1 |  39736 |     6 |    1 |  16 |  16 |    G |
+| Contig    | Length | Depth | Copy |  MT |  PT | Seed |
+| :-------- | -----: | ----: | ---: | --: | --: | ---: |
+| edge_28   | 385224 |     7 |    2 |  11 |   2 |    A |
+| edge_30   | 129617 |     8 |    3 |  11 |   1 |    A |
+| edge_33   | 100315 |     7 |    2 |   7 |   0 |    A |
+| edge_2864 |  11463 |   284 |   95 |   6 |   4 |    X |
+| edge_31   |  60195 |     8 |    3 |   4 |   1 |    A |
+| edge_2803 |  79961 |     8 |    3 |   4 |   0 |    A |
+| edge_29   | 129920 |     6 |    2 |   3 |   2 |    A |
+| edge_2    | 384522 |     3 |    1 |   2 |   0 |    X |
+| edge_1282 |   3250 |   517 |  172 |   2 |   1 |    X |
+| edge_2817 |  47958 |     8 |    3 |   2 |   1 |    A |
+| edge_1888 | 231323 |     3 |    1 |   1 |   0 |    X |
+| edge_1510 | 123019 |     3 |    1 |   0 |   0 |    G |
+| edge_2802 |  20149 |    13 |    4 |   0 |   0 |    G |
+| edge_32   |   8681 |    18 |    6 |   0 |   0 |    G |
 
 You have prepared a list of seed contigs for an organelle-genome assembly. Execute the following:
 

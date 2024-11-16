@@ -557,7 +557,14 @@ HEREDOC
 		# Convert the input string into new lines (replace ", " with newlines)
 		local formatted_edges=$(echo "$edges" | tr ', ' '\n' | sed '/^ *$/d')
 		echo "${formatted_edges}" >"${_polap_var_mtcontigname}"
-		# _polap_seeds_final-mtcontig
+
+		local file=$(basename ${_polap_var_mtcontigname})
+		local number="${file#mt.contig.name-}"
+		local _ga_annotation_depth_table_seed_target="${_polap_var_ga}/contig-annotation-depth-table-seed-${number}.txt"
+		_polap_seeds_final-seeds-mtcontig \
+			"${_polap_var_mtcontigname}" \
+			"${_ga_annotation_depth_table_seed_target}"
+
 		return $RETURN_SUCCESS
 	fi
 
@@ -650,10 +657,16 @@ HEREDOC
 	_polap_log0 "seed contig name files:"
 	ls "${_polap_var_ga}"/mt.contig.name-* >&3
 
-	for file in "${_polap_var_ga}"/mt.contig.name-*; do
+	for _mtcontigname in "${_polap_var_ga}"/mt.contig.name-*; do
 		# Extract the <number> part using parameter expansion
-		file=$(basename $file)
+
+		local file=$(basename ${_mtcontigname})
 		local number="${file#mt.contig.name-}"
+		local _ga_annotation_depth_table_seed_target="${_polap_var_ga}/contig-annotation-depth-table-seed-${number}.txt"
+
+		_polap_seeds_final-seeds-mtcontig \
+			"${_mtcontigname}" \
+			"${_ga_annotation_depth_table_seed_target}"
 
 		_polap_log0 "NEXT: $(basename "$0") assemble2 -o ${_arg_outdir} -i ${_arg_inum} -j ${number}"
 	done
@@ -901,6 +914,14 @@ HEREDOC
 		# Convert the input string into new lines (replace ", " with newlines)
 		local formatted_edges=$(echo "$edges" | tr ', ' '\n')
 		echo "${formatted_edges}" >"${_polap_var_mtcontigname}"
+
+		local file=$(basename ${_polap_var_mtcontigname})
+		local number="${file#mt.contig.name-}"
+		local _ga_annotation_depth_table_seed_target="${_polap_var_ga}/contig-annotation-depth-table-seed-${number}.txt"
+		_polap_seeds_final-seeds-mtcontig \
+			"${_polap_var_mtcontigname}" \
+			"${_ga_annotation_depth_table_seed_target}"
+
 		# _polap_seeds_final-mtcontig
 		return $RETURN_SUCCESS
 	fi

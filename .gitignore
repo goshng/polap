@@ -14,6 +14,7 @@ not-used-snippets/
 t
 ptGAUL.sh
 ptGAUL2.sh
+build.sh
 
 # Makefile
 Makefile

@@ -49,9 +49,9 @@ conda config --add channels bioconda
 conda config --add channels conda-forge
 conda config --set channel_priority strict
 conda create --name polap bioconda::polap
-wget https://github.com/goshng/polap/archive/refs/tags/0.3.7.1.zip
-unzip 0.3.7.1.zip
-cd polap-0.3.7.1
+wget https://github.com/goshng/polap/archive/refs/tags/0.3.7.2.zip
+unzip 0.3.7.2.zip
+cd polap-0.3.7.2
 conda env create -f src/polap-conda-environment-fmlrc.yaml
 cd test
 polap assemble --test
@@ -99,13 +99,7 @@ Then, execute the Polap command as you do in the provided test data:
 polap assemble1
 ```
 
-Once it completes a whole-genome assembly, then try to find mtDNA seed contigs (Experimental or not tested yet):
-
-```bash
-polap seeds
-```
-
-Whether you do the `polap seeds` procedure or not, you could check two files. First, you could display a plant organelle gene annotation table for the genes that were roughly annotated by Polap using the NCBI organelle protein sequences that were downloaded May, 2023 using the following command:
+Once it completes a whole-genome assembly, then try to find mtDNA seed contigs by displaying a plant organelle gene annotation table for the genes that were roughly annotated by Polap using the NCBI organelle protein sequences that were downloaded May, 2023 using the following command:
 
 ```bash
 polap annotate view table
@@ -166,6 +160,12 @@ edge_718
 edge_732
 edge_264
 edge_266
+```
+
+You could see seed contigs that were added to the previous annotation table:
+
+```bash
+polap annotate view seed
 ```
 
 You have prepared a list of seed contigs for an organelle-genome assembly. Execute the following:
@@ -623,10 +623,10 @@ that utilizes semi-automatic seed contig selection (not working yet):
 
 To assemble mitochondrial DNA (mtDNA), follow a series of sequential steps:
     polap init -o <arg>
-    polap summary-reads -a <arg> [-b <arg>]
     polap total-length-long -l <arg>
     polap find-genome-size -a <arg> [-b <arg>]
     polap reduce-data -l <arg> [-m <arg>]
+    polap summary-reads -a <arg> [-b <arg>]
     polap flye1 [-t <arg>]
     polap edges-stats -i <arg>
     polap annotate -i <arg>
@@ -829,13 +829,14 @@ the `s2.fq` at the current directory. The FASTQ file must be a
 regular file not compressed one. Two short-read data files are
 required.
 
-`-p` _FILE_, `--unpolished-fasta` _FILE_ : Specify the unpolished FASTA file. If this option is not specified,
-the default 2nd short-read file will be used. It will be the
-`mt.0.fasta` at the current directory.
+`-w` _NUMBER_, `--pair-min` _NUMBER_ : Specify the minimum mapped bases or PAF 11th column (default:
+`3000`).
 
-`-f` _FILE_, `--final-assembly` _FILE_ : Specify the final genome assembly FASTA file. If this option is not
-specified, the default long-read file will be used. It will be the
-`mt.1.fa` at the current directory.
+`-i` _NUMBER_, `--inum` _NUMBER_ : Specify the previous output number of organelle-genome assembly
+(default: `0`).
+
+`-j` _NUMBER_, `--jnum` _NUMBER_ : Specify the current output number of organelle-genome assembly
+(default: `1`).
 
 `-m` _NUMBER_, `--min-read-length` _NUMBER_ : Specify the minimum length of long-read sequences. If this option is
 not specified, the default minimum length will be used. It will be
@@ -845,16 +846,15 @@ the `3000`.
 
 `-c` _NUMBER_, `--coverage` _NUMBER_ : Specify coverage for the 2nd assembly (default: `30`).
 
-`-r` _NUMBER_, `--pair-min` _NUMBER_ : Specify the minimum mapped bases or PAF 11th column (default:
-`3000`).
+`-p` _FILE_, `--unpolished-fasta` _FILE_ : Specify the unpolished FASTA file. If this option is not specified,
+the default 2nd short-read file will be used. It will be the
+`mt.0.fasta` at the current directory.
 
-`-i` _NUMBER_, `--inum` _NUMBER_ : Specify the previous output number of organelle-genome assembly
-(default: `0`).
+`-f` _FILE_, `--final-assembly` _FILE_ : Specify the final genome assembly FASTA file. If this option is not
+specified, the default long-read file will be used. It will be the
+`mt.1.fa` at the current directory.
 
-`-j` _NUMBER_, `--jnum` _NUMBER_ : Specify the current output number of organelle-genome assembly
-(default: `1`).
-
-`-v`, `--version` : Print version.
+`--version` : Print version.
 
 `--help` : Show usage message of a menu.
 
@@ -862,7 +862,4 @@ the `3000`.
 
 # Authors
 
-Copyright 2024 Sungshin Women's University. Released
-under the
-[GNU General Public License version 3](https://www.gnu.org/licenses/gpl-3.0-standalone.html)
-This software carries no warranty of any kind.
+Copyright 2024 Sungshin Women's University. Released under the [GNU General Public License version 3](https://www.gnu.org/licenses/gpl-3.0-standalone.html), this software carries no warranty of any kind.

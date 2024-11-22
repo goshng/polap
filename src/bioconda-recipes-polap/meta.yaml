@@ -1,6 +1,6 @@
 {% set name = "polap" %}
 {% set version = "0.3.7.3" %}
-{% set sha256 = "c2a119c986035519b8252f4d85c91cfa060371ee0decc8c5d400b87428a81cfe" %}
+{% set sha256 = "755ff93913c687c01a32bdd434bd5fcfeb73ce94c7ddf19bf2304184f294d8bf" %}
 
 package:
   name: "{{ name }}"

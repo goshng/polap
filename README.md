@@ -212,6 +212,7 @@ For more detailed installation and usage instructions, please read along with th
 
 ## Using BioProject data
 
+Note that using Polap's `assemble` menu is experimential or not tested yet!
 One could try to use BioProject datasets to assemble mtDNA genomes. The following is a template bash script where you could replace `long` with SRA accession for an Oxford Nanopore long-read dataset, and `short` with that of an Illumina short-read dataset.
 
 ```bash
@@ -223,7 +224,7 @@ cp -s short_2.fastq s2.fq
 polap assemble
 ```
 
-### Type 1
+The following examples are the cases where one could relativetly easily locate the mitochondrial-origin seed contigs in the Flye whole-genome assembly.
 
 1. mtDNA assembly of _Spirodela polyrhiza_:
 
@@ -247,9 +248,7 @@ cp -s SRR19182971_2.fastq s2.fq
 polap assemble
 ```
 
-### Type 2
-
-1. mtDNA assembly of _Anthoceros agrestis_:
+3. mtDNA assembly of _Anthoceros agrestis_:
 
 ```bash
 polap x-ncbi-fetch-sra --sra SRR10190639
@@ -259,8 +258,6 @@ cp -s SRR10250248_1.fastq s1.fq
 cp -s SRR10250248_2.fastq s2.fq
 polap assemble
 ```
-
-### Type 3
 
 ## Detailed instructions of installation
 

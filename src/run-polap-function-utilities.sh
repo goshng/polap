@@ -378,3 +378,18 @@ function _polap_delete_tempfiles {
 # 	# Set up a trap to delete all files in the array
 # 	trap 'rm -f "${_polap_tempfiles[@]}"' EXIT
 # }
+#
+
+function _polap_gunzip-fastq {
+	# Example file name (replace this with your file or a loop to handle multiple files)
+	# fastq_file="example.fastq.gz"
+	local fastq_file=$1
+	local new_file="${fastq_file}"
+
+	# Check if the file is gzipped
+	if file "$fastq_file" | grep -q "gzip compressed"; then
+		gunzip "$fastq_file"
+		new_file="${fastq_file%.gz}"
+	fi
+	echo "${new_file}"
+}

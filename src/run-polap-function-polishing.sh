@@ -67,8 +67,7 @@ function _run_polap_prepare-polishing { # prepare the polishing using FMLRC
 #   ${_arg_outdir}/msbwt/comp_msbwt.npy
 # Precondition:
 #   get-bioproject --bioproject ${_arg_bioproject}
-Example: $(basename "$0") ${_arg_menu[0]} [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
-Example: $(basename "$0") ${_arg_menu[0]} -o ${_arg_outdir}
+Example: $(basename "$0") ${_arg_menu[0]} -a ${_arg_short_read1} [-b ${_arg_short_read2}]
 HEREDOC
 	)
 
@@ -106,17 +105,57 @@ HEREDOC
 			exit $EXIT_ERROR
 		fi
 
-		check_file_existence "${_arg_short_read1}"
-		check_file_existence "${_arg_short_read2}"
+		# check_file_existence "${_arg_short_read1}"
 
 		_polap_log1 "excuting ropebwt2 and msbwt on the short reads ... be patient!"
+
+		# one or two files
+		# fq or gzipped fq
+		# exist or not
+		#!/bin/bash
+
+		_polap_log1 "  decompressing short-read data if necessary..."
+		if [[ -s "${_arg_short_read1}" ]]; then
+			_arg_short_read1=$(_polap_gunzip-fastq "${_arg_short_read1}")
+		else
+			_arg_short_read1=""
+		fi
+		if [[ -s "${_arg_short_read2}" ]]; then
+			_arg_short_read2=$(_polap_gunzip-fastq "${_arg_short_read2}")
+		else
+			_arg_short_read2=""
+		fi
+		if [[ -n "${_arg_short_read1}" ]]; then
+			_polap_log0 "    short-read1: ${_arg_short_read1}"
+		else
+			_polap_log0 "    short-read1: no such data file"
+		fi
+		if [[ -n "${_arg_short_read2}" ]]; then
+			_polap_log0 "    short-read2: ${_arg_short_read2}"
+		else
+			_polap_log0 "    short-read2: no such data file"
+		fi
+
 		if [[ ${_arg_short_read1} = *.fastq || ${_arg_short_read1} = *.fq ]]; then
-			cat "${_arg_short_read1}" "${_arg_short_read2}" |
+			_polap_log0 "    short-read1 file: ${_arg_short_read1}"
+		else
+			_polap_log0 "    short-read1: no fastq or fq file: ${_arg_short_read1}"
+		fi
+
+		if [[ ${_arg_short_read2} = *.fastq || ${_arg_short_read2} = *.fq ]]; then
+			_polap_log0 "    short-read2 file: ${_arg_short_read2}"
+		else
+			_polap_log0 "    short-read2: no fastq or fq file: ${_arg_short_read2}"
+		fi
+
+		if [[ ${_arg_short_read1} = *.fastq || ${_arg_short_read1} = *.fq ]]; then
+			cat "${_arg_short_read1}" "${_arg_short_read2:-/dev/null}" |
 				awk 'NR % 4 == 2' | sort | tr NT TN |
 				ropebwt2 -LR 2>"${_polap_output_dest}" |
 				tr NT TN |
 				msbwt convert "${_arg_outdir}"/msbwt \
 					>/dev/null 2>&1
+			_polap_log0 "  creating ${_arg_outdir}/msbwt ..."
 		elif [[ ${_arg_short_read1} = *.fq.gz ]] || [[ ${_arg_short_read1} = *.fastq.gz ]]; then
 			zcat "${_arg_short_read1}" "${_arg_short_read2}" |
 				awk 'NR % 4 == 2' | sort | tr NT TN |
@@ -124,7 +163,12 @@ HEREDOC
 				tr NT TN |
 				msbwt convert "${_arg_outdir}"/msbwt \
 					>/dev/null 2>&1
+			_polap_log0 "  creating ${_arg_outdir}/msbwt ..."
+		else
+			_polap_log0 "ERROR: short-read1: no fastq or fq file: ${_arg_short_read1}"
+			_polap_log0 "ERROR: short-read2: no fastq or fq file: ${_arg_short_read2}"
 		fi
+
 		conda deactivate
 	fi
 

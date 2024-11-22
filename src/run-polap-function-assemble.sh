@@ -154,13 +154,27 @@ HEREDOC
 		_run_polap_find-genome-size
 	fi
 
+	# prepare-polishing early on to delete short-read data files
+	if [ -s "${_polap_var_outdir_msbwt}" ]; then
+		_polap_log1 "  skipping the preparation of short-read polishing ..."
+	else
+		if [ -s "${_polap_var_outdir_msbwt_tar_gz}" ]; then
+			_polap_log1 "  decompressing ${_polap_var_outdir_msbwt_tar_gz} ... later when we polish it with the short-read data."
+			# tar zxf "${_polap_var_outdir_msbwt_tar_gz}"
+		else
+			_polap_log0 "  Do the preparation of short-read polishing ... early"
+			check_file_existence "${_arg_short_read1}"
+			_run_polap_prepare-polishing
+		fi
+	fi
+
 	if [ -s "${_polap_var_outdir_nk_fq_gz}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping reduce-data ..."
 	else
 		_run_polap_reduce-data
 	fi
 
-	if [ -s "${_polap_var_outdir_s1_fq_stats}" ] && [ "${_arg_redo}" = "off" ]; then
+	if [ -s "${_polap_var_outdir_lk_fq_stats}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping summary-reads ..."
 	else
 		_run_polap_summary-reads
@@ -399,7 +413,7 @@ HEREDOC
 
 	# We need a way of extracting mtDNA sequences.
 	# _run_polap_select-mtdna
-	# _run_polap_prepare-polishing
+	# _run_polap_preepare-polishing
 	# _run_polap_polish
 
 	# Disable debugging if previously enabled

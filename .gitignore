@@ -15,6 +15,7 @@ t
 ptGAUL.sh
 ptGAUL2.sh
 build.sh
+o
 
 # Makefile
 Makefile

@@ -36,6 +36,7 @@ function _run_polap_test {
 
 	# Grouped file path declarations
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+	source "$script_dir/polap-package-common.sh"   # '.' means 'source'
 
 	# Print help message if requested
 	help_message=$(
@@ -70,10 +71,36 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	if _polap_gfatools-gfa2fasta; then
-		_polap_log0 "success: $?"
-	else
-		_polap_error_message $?
+	if [[ "${_arg_menu[1]}" == "gfa2fasta" ]]; then
+		if _polap_gfatools-gfa2fasta; then
+			_polap_log0 "success: $?"
+		else
+			_polap_error_message $?
+		fi
+	fi
+
+	if [[ "${_arg_menu[1]}" == "archive" ]]; then
+		_polap_log0 "_arg_archive=${_arg_archive}"
+		_polap_log0 "_ppack_var_outdir=${_ppack_var_outdir}"
+		_polap_log0 "_polap_var_ga=${_polap_var_ga}"
+		_polap_log0 "_ppack_var_ga=${_ppack_var_ga}"
+		_polap_log0 "_ppack_var_mt_edges=${_ppack_var_mt_edges}"
+	fi
+
+	if [[ "${_arg_menu[1]}" == "gunzip-short-read" ]]; then
+		if [[ -s "${_arg_short_read1}" ]]; then
+			_arg_short_read1=$(_polap_gunzip-fastq "${_arg_short_read1}")
+		else
+			_arg_short_read1=""
+		fi
+		if [[ -s "${_arg_short_read2}" ]]; then
+			_arg_short_read2=$(_polap_gunzip-fastq "${_arg_short_read2}")
+		else
+			_arg_short_read2=""
+		fi
+
+		_polap_log0 "short-read1: ${_arg_short_read1}"
+		_polap_log0 "short-read2: ${_arg_short_read2}"
 	fi
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"

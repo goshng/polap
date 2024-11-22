@@ -210,7 +210,59 @@ polap polish
 Your final mtDNA genome assembly is in the file named `mt.1.fa`, that you use [GeSeq](https://chlorobox.mpimp-golm.mpg.de/geseq.html) to actually annotate.
 For more detailed installation and usage instructions, please read along with this **README**.
 
-## Detailed installation
+## Using BioProject data
+
+One could try to use BioProject datasets to assemble mtDNA genomes. The following is a template bash script where you could replace `long` with SRA accession for an Oxford Nanopore long-read dataset, and `short` with that of an Illumina short-read dataset.
+
+```bash
+polap x-ncbi-fetch-sra --sra long
+polap x-ncbi-fetch-sra --sra short
+cp -s long.fastq l.fq
+cp -s short_1.fastq s1.fq
+cp -s short_2.fastq s2.fq
+polap assemble
+```
+
+### Type 1
+
+1. mtDNA assembly of _Spirodela polyrhiza_:
+
+```bash
+polap x-ncbi-fetch-sra --sra SRR11472010
+polap x-ncbi-fetch-sra --sra SRR11472009
+cp -s SRR11472010.fastq l.fq
+cp -s SRR11472009_1.fastq s1.fq
+cp -s SRR11472009_2.fastq s2.fq
+polap assemble
+```
+
+2. mtDNA assembly of _Taraxacum mongolicum_:
+
+```bash
+polap x-ncbi-fetch-sra --sra SRR19182970
+polap x-ncbi-fetch-sra --sra SRR19182971
+cp -s SRR19182970.fastq l.fq
+cp -s SRR19182971_1.fastq s1.fq
+cp -s SRR19182971_2.fastq s2.fq
+polap assemble
+```
+
+### Type 2
+
+1. mtDNA assembly of _Anthoceros agrestis_:
+
+```bash
+polap x-ncbi-fetch-sra --sra SRR10190639
+polap x-ncbi-fetch-sra --sra SRR10250248
+cp -s SRR10190639.fastq l.fq
+cp -s SRR10250248_1.fastq s1.fq
+cp -s SRR10250248_2.fastq s2.fq
+polap assemble
+```
+
+### Type 3
+
+## Detailed instructions of installation
 
 ### Using [Bioconda](https://bioconda.github.io/) package
 

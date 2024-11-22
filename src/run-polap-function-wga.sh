@@ -52,10 +52,10 @@ function _polap_summary-generated-reads {
 		if [ -s "${_fastq_gz}" ]; then
 			_polap_log3_pipe "seqkit stats -T ${_fastq_gz} \
 				>${_fastq_stats}"
-			_polap_log1 "  output2: ${_fastq_stats}"
+			_polap_log1 "  output: ${_fastq_stats}"
 			_polap_log2_cat "${_fastq_stats}"
 		else
-			_polap_log1 "  no such file: ${_fastq_gz}, so skipping POLAP long-read statisics ..."
+			_polap_log1 "  no such file: ${_fastq_gz}, so skipping read statisics ..."
 		fi
 	fi
 }
@@ -179,14 +179,6 @@ HEREDOC
 	_polap_summary-generated-reads \
 		"${_arg_long_reads}" \
 		"${_polap_var_outdir_l_fq_stats}"
-
-	_polap_summary-generated-reads \
-		"${_arg_short_read1}" \
-		"${_polap_var_outdir_s1_fq_stats}"
-
-	_polap_summary-generated-reads \
-		"${_arg_short_read2}" \
-		"${_polap_var_outdir_s2_fq_stats}"
 
 	_polap_summary-generated-reads \
 		"${_polap_var_outdir_nk_fq_gz}" \
@@ -441,6 +433,15 @@ HEREDOC
 	local _expected_genome_size_bp=$(_polap_utility_convert_bp ${_EXPECTED_GENOME_SIZE})
 	_polap_log0 "  expected genome size using short-read data (bases): ${_expected_genome_size_bp}"
 
+	_polap_log0 "  summary statisics of the short-read data ..."
+	_polap_summary-generated-reads \
+		"${_arg_short_read1}" \
+		"${_polap_var_outdir_s1_fq_stats}"
+
+	_polap_summary-generated-reads \
+		"${_arg_short_read2}" \
+		"${_polap_var_outdir_s2_fq_stats}"
+
 	_polap_log1 NEXT: $(basename "$0") reduce-data -o "${_arg_outdir}" -l "${_arg_long_reads}" [-m "${_arg_min_read_length}"]
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -628,7 +629,7 @@ HEREDOC
 					_polap_log1 "  sampling long-read data by ${_RATE} ..."
 					_polap_log1 "    ${_RATE} <= target long-read genome coverage[${_arg_coverage}]/expected long-read genome coverage[${_EXPECTED_LONG_COVERAGE}] ..."
 					local _random_seed=${_arg_random_seed:-$RANDOM}
-					_polap_log0 "  random seed for reducing the whole-genome assembly long-read data: ${_random_seed}"
+					_polap_log1 "  random seed for reducing the whole-genome assembly long-read data: ${_random_seed}"
 					# _polap_log3 "seqkit sample -p ${_RATE} ${_arg_long_reads} -o ${nfq_file}"
 					# seqkit sample -p "${_RATE}" "${_arg_long_reads}" -o "${nfq_file}" >${_polap_output_dest} 2>&1
 					_polap_log3_pipe "seqkit sample \
@@ -642,7 +643,7 @@ HEREDOC
               --threads 4 \
 		          -o ${_polap_var_outdir_nk_fq_gz} \
               >${_polap_output_dest} 2>&1"
-					_polap_log3_cmd touch "${_polap_var_outdir_nk_fq_gz}.random.seed.${_random_seed}"
+					_polap_log3_pipe "echo ${_random_seed} >${_polap_var_outdir_nk_fq_gz}.random.seed.${_random_seed}"
 					_polap_log1 "  ${nfq_file}: a reduced long-read data is created"
 				else
 					_polap_log0 "  target coverage: ${_arg_coverage}"
@@ -802,7 +803,9 @@ HEREDOC
 
 	fi
 
+	ln -s "${_polap_var_wga_contigger_edges_gfa}" "${_polap_var_output_wga_gfa}"
 	_polap_log1 "  assembly graph in the flye contigger stage: ${_polap_var_wga_contigger_edges_gfa}"
+	_polap_log1 "  assembly graph in the flye contigger stage: ${_polap_var_output_wga_gfa}"
 	_polap_log1 "NEXT: $(basename "$0") edges-stats -o ${_arg_outdir} [-i ${_arg_inum}]"
 	_polap_log1 "NEXT: $(basename "$0") annotate -o ${_arg_outdir} [-i ${_arg_inum}]"
 

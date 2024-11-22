@@ -317,6 +317,7 @@ HEREDOC
 		_polap_log0 "polish"
 		_polap_log0 "Additional menus:"
 		_polap_log0 "  mauve-mtdna"
+		_polap_log0 "  mtdna-edges"
 		_polap_log0 "  log"
 		;;
 	esac

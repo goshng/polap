@@ -527,7 +527,13 @@ HEREDOC
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
-		_polap_log0_column "${_polap_var_ga_annotation_depth_table_seed_target}"
+
+		if [[ "${_arg_markdown}" == "off" ]]; then
+			_polap_log0 "$(basename $0) seeds annotation -i ${_arg_inum} -j ${_arg_jnum}"
+			_polap_log0_column "${_polap_var_ga_annotation_depth_table_seed_target}"
+		else
+			csvtk space2tab "${_polap_var_ga_annotation_depth_table_seed_target}" | csvtk tab2csv | csvtk csv2md -a l,r,r,r,r,r,r >&3
+		fi
 
 		if [[ -s "${_polap_var_mtcontigname}" ]]; then
 			_polap_log0 "---"

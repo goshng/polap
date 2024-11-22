@@ -40,22 +40,21 @@ function _run_polap_archive { # archive a POLAP output folder for later use
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	# Grouped file path declarations
-	source "$script_dir/polap-variables-common.sh"
-
 	if [ "${_arg_short_read1_is}" = "on" ]; then
 		_arg_archive="${_arg_short_read1}"
 	fi
 
-	local FDIR="${_arg_outdir}"/${_arg_inum}
-	local _polap_var_mtcontigname="$FDIR"/mt.contig.name-"${_arg_jnum}"
-	local _polap_var_source_0="${_polap_var_wga}"
-	local _polap_var_source_0_30_contigger="$FDIR"/"${_arg_jnum}"/mtcontigs
+	# Grouped file path declarations
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-package-common.sh"
 
 	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
 # Archive the ${_arg_outdir} folder to ${_arg_archive}
+#
+# Step 1. package
+# Step 2. do more
 #
 # Arguments:
 #   -o ${_arg_outdir}: the source output folder to archive
@@ -73,135 +72,9 @@ HEREDOC
 
 	_polap_log0_log "archiving ${_arg_outdir} to ${_arg_archive} ..."
 
-	local source_folders=(
-		./0-bioproject
-		./0/30-contigger
-	)
+	_run_polap_package
 
-	local source_files0=(
-		./0-bioproject/2-mtdna.fasta
-		./0-bioproject/1-species.txt
-		./0-bioproject/2-mtdna.accession
-		./0-bioproject/1-sra-short-read.tsv
-		./0-bioproject/1-taxonomy.txt
-		./0-bioproject/1-mtdna.fasta
-		./0-bioproject/1-taxon-id.txt
-		./0-bioproject/1-sra-long-read.tsv
-		./0-bioproject/1-runinfo.all
-		./0-bioproject/1-runinfo.tsv
-		./0-bioproject/1-mtdna.fasta.stats
-		./0-bioproject/1-passed.txt
-		./short_expected_genome_size.txt
-		./long_total_length.txt
-		./fq.stats
-		./nk.fq.stats
-		./nk.fq.gz
-		./0/30-contigger/graph_final.gfa
-		./0/30-contigger/contigs_stats.txt
-		./0/30-contigger/contigs.fasta
-		./0/30-contigger/graph_final.fasta
-		./0/assembly_info_organelle_annotation_count-all.txt
-		./0/assembly_info_organelle_annotation_count.txt
-		./0/contig-annotation-table.txt
-	)
-
-	local source_files1=(
-		./30-contigger/graph_final.gfa
-		./30-contigger/contigs_stats.txt
-		./30-contigger/contigs.fasta
-		./30-contigger/graph_final.fasta
-		./mt.0.fasta
-		./mt.1.fa
-	)
-
-	local source_files2=(
-		./1/mt.0.fasta
-		./1/contig-annotation-table.txt
-		./1/30-contigger
-		./1/30-contigger/graph_final.gfa
-		./1/30-contigger/scaffolds_links.txt
-		./1/30-contigger/contigs_stats.txt
-		./1/30-contigger/contigs.fasta
-		./1/30-contigger/contigs.fasta.fai
-		./1/30-contigger/graph_final.fasta
-		./1/30-contigger/graph_final.gv
-		./1/assembly_graph.gv
-		./1/contig_total_length.txt
-		./1/assembly.fasta
-		./1/mt.0.edges
-		./1/mt.1.fa
-		./1/assembly_info_organelle_annotation_count-all.txt
-		./1/contig.fa
-		./1/assembly_info_organelle_annotation_count.txt
-		./1/params.json
-		./1/assembly_graph.gfa
-		./1/contig.tab
-		./0/mt.contig.name-6
-		./0/mt.contig.name-5
-		./0/mt.contig.name-3
-		./0/mt.contig.name-1
-		./0/mt.contig.name-2
-		./organelle-assembly_0-3
-		./organelle-assembly_0-2
-		./organelle-assembly_0-6
-		./organelle-assembly_0-5
-		./organelle-assembly_0-4
-	)
-
-	if [ -d "${_arg_archive}" ]; then
-		if confirm "Do you want to redo? It will delete the folder ${_arg_archive}"; then
-			_polap_log0 "deleting the folder: ${_arg_archive} ..."
-			rm -rf "${_arg_archive}"
-		else
-			_polap_log0 "You cancelled the operation."
-			_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-			[ "$DEBUG" -eq 1 ] && set +x
-			exit $EXIT_SUCCESS
-		fi
-	fi
-
-	_polap_log1 "creating folders ..."
-	for f in "${source_folders[@]}"; do
-		_polap_log2 "mkdir -p ${_arg_archive}/${f}"
-		mkdir -p "${_arg_archive}/${f}"
-	done
-
-	_polap_log1 "compressing the long-read data file ..."
-	if [ -s "${_polap_var_outdir_sra_long_fastq}" ]; then
-		gzip -c "${_polap_var_outdir_sra_long_fastq}" \
-			>"${_arg_archive}/l.fq.gz"
-	fi
-	_polap_log1 "compressing the short-read polishing data file ..."
-	if [ -s "${_arg_outdir}/msbwt/comp_msbwt.npy" ]; then
-		cd "${_arg_outdir}"
-		tar zcf ../"${_arg_archive}/msbwt.tar.gz" msbwt
-		cd -
-	fi
-
-	cp -p "${_arg_outdir}"/log* "${_arg_archive}/"
-
-	_polap_log1 "copying folders ..."
-	for f in "${source_files0[@]}"; do
-		_polap_log2 "cp -p" "${_arg_outdir}/${f}" "${_arg_archive}/${f}"
-		cp -p "${_arg_outdir}/${f}" "${_arg_archive}/${f}"
-	done
-
-	for gfa in $(find "${_arg_outdir}" -name graph_final.gfa); do
-		local b="${gfa%/30-contigger/graph_final.gfa}"
-		# Extract the final directory name from the path (e.g., "0" or "1")
-		b=$(basename "${b}")
-		# Skip if the directory path is "o/0"
-		if [ "${b}" == "0" ]; then
-			continue
-		fi
-		_polap_log2 "mkdir -p" "${_arg_archive}/${b}/30-contigger"
-		mkdir -p "${_arg_archive}/${b}/30-contigger"
-		for f in "${source_files1[@]}"; do
-			_polap_log2 "cp -p" "${_arg_outdir}/${b}/${f}" "${_arg_archive}/${b}/${f}"
-			cp -p "${_arg_outdir}/${b}/${f}" "${_arg_archive}/${b}/${f}"
-		done
-		cp -p "${_polap_var_wga}/mt.contig.name-${b}" "${_arg_archive}/0/"
-	done
+	cp -pr "${_polap_var_outdir_msbwt_dir}" "${_ppack_var_outdir}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -383,13 +256,13 @@ function _run_polap_package { # archive a POLAP output folder for later use
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	# Grouped file path declarations
-	source "$script_dir/polap-variables-common.sh"
-	source "$script_dir/polap-package-common.sh"
-
 	if [ "${_arg_short_read1_is}" = "on" ]; then
 		_arg_archive="${_arg_short_read1}"
 	fi
+
+	# Grouped file path declarations
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/polap-package-common.sh"
 
 	# Print help message if requested
 	help_message=$(
@@ -417,10 +290,14 @@ HEREDOC
 
 	# Copy all contents from the base directory into a new location.
 	cp -fp "${_polap_var_outdir_genome_size}" \
-		"${_ppack_var_base_genome_size}" 2>/dev/null
+		"${_ppack_var_outdir_genome_size}" 2>"${_polap_output_dest}"
 	cp -fp "${_polap_var_outdir_long_total_length}" \
-		"${_ppack_var_base_long_total_length}" 2>/dev/null
-	rsync -a "${_polap_var_project}"/ "${_ppack_var_project}"/ 2>/dev/null
+		"${_ppack_var_outdir_long_total_length}" 2>"${_polap_output_dest}"
+	cp -fp "${_polap_var_outdir}"/*.stats \
+		"${_ppack_var_outdir}" 2>"${_polap_output_dest}"
+	cp -fp "${_polap_var_outdir}"/*.random.* \
+		"${_ppack_var_outdir}" 2>"${_polap_output_dest}"
+	rsync -a "${_polap_var_project}"/ "${_ppack_var_project}"/ 2>"${_polap_output_dest}"
 
 	# copy mt.contig.name files
 	for dir in $(find ${_arg_outdir} -maxdepth 1 -type d -regex '.*/[0-9]+$' | sort); do
@@ -438,9 +315,24 @@ HEREDOC
 			_polap_log2 "      output: ${_ppack_var_ga_contigger_edges_gfa}"
 			_polap_log3_pipe "gfatools view \
 		    -S ${_polap_var_ga_contigger_edges_gfa} \
-		    >${_ppack_var_assembly_graph_final_gfa}.without.sequences \
+		    >${_ppack_var_ga_contigger_edges_gfa}.without.sequences \
 		    2>$_polap_output_dest"
 		fi
+
+		if [[ -s "${_polap_var_ga_annotation}" ]]; then
+			cut -f 1 ${_polap_var_ga_annotation} | grep edge |
+				cat - "${_polap_var_ga}"/mt.contig.name-* |
+				sort | uniq >"${_polap_var_ga}"/all.mt.contig.name
+
+			_polap_log3_pipe "gfatools view \
+		    -l @${_polap_var_ga}/all.mt.contig.name \
+    	  ${_polap_var_ga_contigger_edges_gfa} \
+    	  2>${_polap_output_dest} \
+    	  >${_ppack_var_ga_contigger_edges_gfa}"
+		fi
+
+		# gfatools gfa2fa ${_ppack_var_ga_contigger_edges_gfa} \
+		# 	>${_ppack_var_ga_contigger_edges_fasta}
 
 		# _polap_archive_gfa-depth-filtered \
 		# 	${_polap_var_ga_contigger_edges_gfa} \
@@ -465,11 +357,11 @@ HEREDOC
 					cp -fp "${_file}" "${_file_selected_edges}"
 				fi
 
-				_polap_log3_pipe "gfatools view \
-		      -l @${_file_selected_edges} \
-    	  	${_polap_var_ga_contigger_edges_gfa} \
-    	  	2>$_polap_output_dest \
-    	  	>${_ppack_var_ga_contigger}/graph_final-${number}.gfa"
+				# _polap_log3_pipe "gfatools view \
+				#     -l @${_file_selected_edges} \
+				# 	  	${_polap_var_ga_contigger_edges_gfa} \
+				# 	  	2>$_polap_output_dest \
+				# 	  	>${_ppack_var_ga_contigger}/graph_final-${number}.gfa"
 
 				cp -fp -t "${_ppack_var_ga}" \
 					"${_polap_var_ga_annotation_all}" \
@@ -488,15 +380,29 @@ HEREDOC
 			source "$script_dir/polap-variables-common.sh"
 			source "$script_dir/polap-package-common.sh"
 			# Your processing code here
-			rsync -a "${_polap_var_oga}/01-contig"/*.txt "${_ppack_var_oga}/01-contig/" 2>/dev/null
-			rsync -a "${_polap_var_oga}/06-summary/" "${_ppack_var_oga}/06-summary/" 2>/dev/null
-			rsync -a "${_polap_var_oga}/07-plot/" "${_ppack_var_oga}/07-plot/" 2>/dev/null
-			cp -fp "${_polap_var_oga_assembly_graph_gfa}" "${_ppack_var_oga}" 2>/dev/null
-			cp -fp "${_polap_var_oga}"/*.png "${_ppack_var_oga}" 2>/dev/null
+			rsync -a "${_polap_var_oga}/01-contig"/*.txt \
+				"${_ppack_var_oga}/01-contig/" 2>/dev/null
+			rsync -a "${_polap_var_oga}/02-reads/" \
+				"${_ppack_var_oga}/02-reads/" 2>/dev/null
+			rsync -a "${_polap_var_oga}/04-subsample/" \
+				"${_ppack_var_oga}/04-subsample/" 2>/dev/null
+			find ${_ppack_var_oga}/04-subsample -type f -name "*.gz" -delete
+			rsync -a "${_polap_var_oga}/06-summary/" \
+				"${_ppack_var_oga}/06-summary/" 2>/dev/null
+			rsync -a "${_polap_var_oga}/07-plot/" \
+				"${_ppack_var_oga}/07-plot/" 2>/dev/null
+			cp -fp "${_polap_var_oga_assembly_graph_gfa}" \
+				"${_ppack_var_oga}" 2>/dev/null
+			cp -fp "${_polap_var_oga}"/*.png \
+				"${_ppack_var_oga}" 2>/dev/null
+			cp -fp "${_polap_var_ga_contigger_edges_gfa}" \
+				"${_ppack_var_ga_contigger_edges_gfa}"
 		fi
 	done
 
 	cp -pf "${LOG_FILE}" "${_arg_archive}"
+
+	find ${_arg_archive} -type d -empty -delete
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

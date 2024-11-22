@@ -63,8 +63,12 @@ function _run_polap_edges-stats { # create an edge version of contigs_stats.txt
 #   -i ${_arg_inum}: source Flye (usually whole-genome) assembly number
 # Inputs:
 #   ${_polap_var_ga_contigger_edges_gfa}
+#   or
+#   ${_polap_var_ga_assembly_graph_gfa} (not implemented yet!)
 # Outputs:
 #   ${_polap_var_ga_contigger_edges_stats}
+#   or
+#   ${_polap_var_ga_assembly_graph_edges_stats} (not implemented yet!)
 Example: $(basename "$0") ${_arg_menu[0]} -i ${_arg_inum}
 HEREDOC
 	)
@@ -218,6 +222,8 @@ function _run_polap_annotate { # annotate edge sequences in edges_stats.txt
 #
 # Arguments:
 #   -i ${_arg_inum}: a Flye genome assembly number
+#   --contigger (default: on)
+#   --no-contigger (not implemented yet!)
 # Inputs:
 #   ${_arg_inum}
 # Outputs:

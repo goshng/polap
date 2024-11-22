@@ -759,7 +759,10 @@ HEREDOC
 	esac
 
 	# Check if one wants to replace the previous run
-	if [[ -d "${_polap_var_oga_reads}/${_pread_sel}" ]] && [[ "${_arg_start_index}" -eq 0 ]]; then
+	if [[ -d "${_polap_var_oga_reads}/${_pread_sel}" ]] &&
+		[[ "${_arg_start_index}" -eq 0 ]] &&
+		[[ "${_arg_yes}" == "off" ]] &&
+		[[ "${_arg_redo}" == "off" ]]; then
 		if confirm "Do you want to redo the test-reads of ${_pread_sel} on assembly ${_arg_jnum}"?; then
 			_arg_redo="on"
 		else
@@ -915,7 +918,7 @@ HEREDOC
 			  ${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz \
         -o ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz \
         2>${_polap_output_dest}"
-				touch ${_polap_var_oga_subsample}/${_pread_sel}/${i}.random.seed.${_random_seed}
+				_polap_log3_pipe "echo ${_random_seed} >${_polap_var_oga_subsample}/${_pread_sel}/${i}.random.seed.${_random_seed}"
 			else
 				_polap_log0 "    no reduction of the long-read data because of the option --no-coverage-check: expected coverage: ${_expected_organelle_coverage}"
 				_polap_log3_cmd ln -s $(realpath "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz") "${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
@@ -1072,6 +1075,11 @@ HEREDOC
 		return
 	fi
 
+	if [[ "${_arg_polap_reads}" == "on" ]]; then
+		_arg_menu[1]="polap-reads"
+		_polap_log0 "  use --polap-reads option, so menu1 becomes ${_arg_menu[1]}"
+	fi
+
 	case "${_arg_menu[1]}" in
 	infile | ptgaul-reads)
 		_arg_menu[1]="ptgaul-reads"
@@ -1130,6 +1138,10 @@ function _run_polap_flye2 { # executes Flye for an organelle-genome assembly
 		_polap_log0 "  default set to read-selection: ${_arg_menu[1]}"
 	else
 		_polap_log0 "  read-selection: ${_arg_menu[1]}"
+	fi
+	if [[ "${_arg_polap_reads}" == "on" ]]; then
+		_arg_menu[1]="polap-reads"
+		_polap_log0 "  use --polap-reads option, so menu1 becomes ${_arg_menu[1]}"
 	fi
 	local _pread_sel=${_arg_menu[1]}
 
@@ -1197,8 +1209,10 @@ HEREDOC
 		2>${_polap_output_dest}"
 	_polap_log3_pipe "${_command1}"
 
+	ln -s "${_polap_var_oga_assembly_graph_gfa}" "${_polap_var_output_oga_gfa}"
 	_polap_log0 "  output: the assembly graph: ${_polap_var_oga_contigger_edges_gfa}"
 	_polap_log0 "  output: the assembly graph: ${_polap_var_oga_assembly_graph_gfa}"
+	_polap_log0 "  output: the assembly graph: ${_polap_var_output_oga_gfa}"
 	jnum_next=$((_arg_jnum + 1))
 	_polap_log1 "  create and edit ${_arg_outdir}/${_arg_jnum}/mt.contig.name-${jnum_next} and rerun assemble2"
 

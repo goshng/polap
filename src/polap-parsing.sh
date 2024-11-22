@@ -103,7 +103,7 @@ _arg_subject=
 _arg_markdown="off"
 _arg_flye="on"
 _arg_reduction_reads="on"
-_arg_contigger="off"
+_arg_contigger="on"
 _arg_all_annotate="off"
 _arg_polap_reads="off"
 _arg_bridge_same_strand="off"
@@ -121,7 +121,7 @@ _arg_help="off"
 _arg_flye_data_type="--nano-raw"
 
 source "$script_dir/polap-git-hash-version.sh"
-_polap_version=v0.3.7.2-"${_polap_git_hash_version}"
+_polap_version=v0.3.7.3-"${_polap_git_hash_version}"
 _polap_command_string=polap
 
 print_help() {
@@ -379,13 +379,16 @@ parse_commandline() {
 		-o | --outdir)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_outdir="$2"
+			_arg_outdir="${_arg_outdir%/}"
 			shift
 			;;
 		--outdir=*)
 			_arg_outdir="${_key##--outdir=}"
+			_arg_outdir="${_arg_outdir%/}"
 			;;
 		-o*)
 			_arg_outdir="${_key##-o}"
+			_arg_outdir="${_arg_outdir%/}"
 			;;
 		-a | --short-read1)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

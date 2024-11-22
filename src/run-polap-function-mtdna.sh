@@ -552,7 +552,7 @@ HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && echo "${help_message}" >&2 && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	_polap_log1 "LOG: Plotting mitochondrial DNA genome for Flye assembly ${_arg_inum}..."
 
@@ -563,18 +563,89 @@ HEREDOC
 		2>"$_polap_output_dest"
 
 	# Output file information
-	echoerr "FILE: mt.3.pdf has been created."
+	_polap_log0 "FILE: mt.3.pdf has been created."
 
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 	return 0
 }
+
+function _run_polap_mtdna-edges {
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Set variables
+	source "$script_dir/polap-variables-common.sh"
+
+	# Help message
+	local help_message=$(
+		cat <<HEREDOC
+# Selects mtDNA sequences from a GFA.
+#
+# Arguments:
+#   -j ${_arg_jnum}: organelle assembly number
+#
+# Inputs:
+#   ${_polap_var_oga_assembly_graph_gfa}
+#
+# Outputs:
+#   ${_polap_var_oga_mt_fasta}
+#
+Example: $(basename $0) ${_arg_menu[0]} -j <arg>
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	# Create necessary directories
+	rm -rf "${_polap_var_mtdna}"
+	mkdir -p "${_polap_var_mtdna}"
+
+	# Prompt the user for input
+	read -p "Enter edges using Bandage (e.g., edge_265, edge_520, edge_425): " edges
+
+	# Convert the input string into new lines (replace ", " with newlines)
+	local formatted_edges=$(echo "$edges" | tr ', ' '\n' | sed '/^ *$/d')
+	echo "${formatted_edges}" >"${_polap_var_mtdna_names}"
+
+	_polap_log1_file "Input GFA: ${_polap_var_oga_assembly_graph_gfa}"
+	# _polap_log1_file "Input Annotation Table: ${_polap_var_ga_annotation_all}"
+	#
+	_polap_log3_pipe "gfatools view \
+		-l @${_polap_var_mtdna_names} \
+		${_polap_var_oga_assembly_graph_gfa} \
+		2>$_polap_output_dest \
+		>${_polap_var_mtdna_sub_gfa}"
+
+	_polap_log0 "subgfa: ${_polap_var_mtdna_sub_gfa}"
+
+	# Convert GFA to FASTA
+	_polap_log3_pipe "gfatools gfa2fa ${_polap_var_mtdna_sub_gfa} \
+		>${_polap_var_mtdna_fasta} \
+		2>$_polap_output_dest"
+
+	cp ${_polap_var_mtdna_fasta} ${_polap_var_oga_mt_fasta}
+
+	_polap_log0 "FASTA of the input GFA: ${_polap_var_oga_mt_fasta}"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
 ################################################################################
 # Selects mtDNA sequences from a GFA.
 #
 # annotation: uses 30-contigger/graph_final.gfa
 #
-# FIXME: need to check because assembly_graph.gfa and graph_final.gfa are different.
 # extraction: uses assembly_graph.gfa
 ################################################################################
 function _run_polap_select-mtdna {
@@ -612,44 +683,64 @@ function _run_polap_select-mtdna {
 # Selects mtDNA sequences from a GFA.
 #
 # Arguments:
-#   -i ${_arg_inum}: organelle assembly number
+#   -j ${_arg_jnum}: organelle assembly number
 #
 # Inputs:
-#   ${_polap_var_assembly_graph_gfa}
-#   ${_polap_var_ga_annotation_all}
+#   ${_polap_var_oga_assembly_graph_gfa}
 #
 # Outputs:
-#   ${_polap_var_mt_fasta}
+#   ${_polap_var_oga_mt_fasta}
 #
-Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>]
+Example: $(basename $0) ${_arg_menu[0]} -j <arg>
 HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && echo "${help_message}" >&2 && exit $EXIT_SUCCESS
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	if [[ "${_arg_menu[1]}" = "bandage" ]]; then
+		# Prompt the user for input
+		read -p "Enter edges using Bandage (e.g., edge_265, edge_520, edge_425): " edges
+
+		# Convert the input string into new lines (replace ", " with newlines)
+		local formatted_edges=$(echo "$edges" | tr ', ' '\n' | sed '/^ *$/d')
+		echo "${formatted_edges}" >"${_polap_var_mtdna_names}"
+
+		return $RETURN_SUCCESS
+	fi
 
 	# Check for required files
-	check_file_existence "${_polap_var_assembly_graph_gfa}"
-	check_file_existence "${_polap_var_ga_annotation_all}"
+	# check_file_existence "${_polap_var_assembly_graph_gfa}"
+	# check_file_existence "${_polap_var_ga_annotation_all}"
 
 	# Create necessary directories
-	rm -rf "${_polap_var_mtdna}"
-	mkdir -p "${_polap_var_mtdna}"
+	# _polap_log3_cmd rm -rf "${_polap_var_mtdna}"
+	# _polap_log3_cmd mkdir -p "${_polap_var_mtdna}"
 
-	_polap_log1_file "Input GFA: ${_polap_var_assembly_graph_gfa}"
-	_polap_log1_file "Input Annotation Table: ${_polap_var_ga_annotation_all}"
+	_polap_log1_file "Input GFA: ${_polap_var_oga_assembly_graph_gfa}"
+	# _polap_log1_file "Input Annotation Table: ${_polap_var_ga_annotation_all}"
+	#
+	_polap_log3_pipe "gfatools view \
+		-l @${_polap_var_mtdna_names} \
+		${_polap_var_oga_assembly_graph_gfa} \
+		2>$_polap_output_dest \
+		>${_polap_var_mtdna_sub_gfa}"
+
+	_polap_log0 "subgfa: ${_polap_var_mtdna_sub_gfa}"
 
 	# Convert GFA to FASTA
-	gfatools gfa2fa "${_polap_var_assembly_graph_gfa}" \
-		>"${_polap_var_mtdna_fasta}" \
-		2>"$_polap_output_dest"
+	_polap_log3_pipe "gfatools gfa2fa ${_polap_var_mtdna_sub_gfa} \
+		>${_polap_var_mtdna_fasta} \
+		2>$_polap_output_dest"
 
 	_polap_log2_file "FASTA of the input GFA: ${_polap_var_mtdna_fasta}"
 
+	return
+
 	# Step 1: List connected components (GFA processing)
-	gfatools view -S "${_polap_var_assembly_graph_gfa}" \
-		>"${_polap_var_mtdna_1_gfa_all}" \
-		2>"$_polap_output_dest"
+	_polap_log3_pipe "gfatools view -S ${_polap_var_assembly_graph_gfa} \
+		>${_polap_var_mtdna_1_gfa_all} \
+		2>$_polap_output_dest"
 
 	_polap_log2_file "GFA content: ${_polap_var_mtdna_1_gfa_all}"
 

@@ -88,6 +88,7 @@ source "$script_dir/run-polap-function-assemble.sh"
 source "$script_dir/run-polap-function-miscellaneous.sh"
 
 source "$script_dir/run-polap-function-test.sh"
+source "$script_dir/run-polap-function-taxonomy.sh"
 
 ################################################################################
 # All of the variables at our disposal

@@ -248,6 +248,18 @@ function _polap_log3_cmd {
 	"$@"
 }
 
+function _polap_log0_pipe {
+	verbose_echo_trim 0 "$@"
+	verbose_echo_trim 1 "$@" >&3
+	eval "$@"
+}
+
+function _polap_log1_pipe {
+	verbose_echo_trim 0 "$@"
+	verbose_echo_trim 2 "$@" >&3
+	eval "$@"
+}
+
 function _polap_log2_pipe {
 	verbose_echo_trim 0 "$@"
 	verbose_echo_trim 3 "$@" >&3

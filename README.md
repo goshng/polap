@@ -61,9 +61,10 @@ bash polap-revision1.sh patch
 bash polap-revision1.sh install-fmlrc
 --> select [A]ll to the question: replace polap-0.3.7.3/.gitignore? [y]es, [n]o, [A]ll, [N]one, [r]ename: A
 bash polap-revision1.sh test
+conda activate polap
 ```
 
-After completing this step, you can move on to the step 3 of testing the short-read polishing process.
+After completing this step, you can move on to the step 3 of [testing the short-read polishing](#3.-test-the-short-read-polishing:) process.
 
 ```bash
 wget https://github.com/goshng/polap/archive/refs/tags/0.3.7.3.zip
@@ -71,6 +72,7 @@ unzip 0.3.7.3.zip
 cd polap-0.3.7.3
 conda env create -f src/polap-conda-environment-fmlrc.yaml
 cd test
+conda activate polap
 polap assemble --test
 ```
 

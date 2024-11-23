@@ -51,7 +51,7 @@ conda config --set channel_priority strict
 conda create -y --name polap bioconda::polap
 ```
 
-Note: We currently have a problem in the Bioconda package. For the time being, following these instead.
+Note: We currently have a problem in the Bioconda package. For the time being, follow this script instead.
 
 ```bash
 git clone https://github.com/goshng/polap.git

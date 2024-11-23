@@ -1,3 +1,15 @@
+# 2024-11-22
+
+- create test datasets
+- devise more seed selection criteria
+- select mtDNA from the graph
+- custom flye for polap
+- custom flye with faster whole-genome assembly
+- error handling
+- geseq annotation and automatic NCBI submission
+
+why geseq annotation?
+
 # 2024-10-31
 
 variable change

@@ -16,6 +16,12 @@ ptGAUL.sh
 ptGAUL2.sh
 build.sh
 o
+flye.md
+flye2.md
+geseq.md
+trans-spliced-gene.md
+single-gene.md
+repeats.md
 
 # Makefile
 Makefile

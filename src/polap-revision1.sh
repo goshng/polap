@@ -5,24 +5,34 @@ S=('Spirodela_polyrhiza' 'Taraxacum_mongolicum' 'Trifolium_pratense' 'Salix_dunn
 # Input parameter
 species_folder="$1"
 
-_polap_cmd="../src/polap.sh"
+_polap_cmd="src/polap.sh"
+# _polap_cmd="polap"
+_polap_version="0.3.7.3"
 _media_dir="/media/h1/run/mtdna"
 
 help_message=$(
 	cat <<HEREDOC
-# Revision1
+# Polap data analysis for the revision 1
 #
 # Edit two variables:
 # _polap_cmd=${_polap_cmd}
 # _media_dir=${_media_dir}
 #
 # Argument:
+<species_folder>: run polap on the species_folder
+install-conda: install Miniconda3
+setup-conda: setup Miniconda3 for Bioconda
+install-polap: install Polap
+download-polap: download Polap
+clean: delete analyses
+install-fmlrc
+test-polap
 mkdir: create the 11 species folders.
 rm: delete the 11 species folders.
 link-fastq: create links to the input data at ${_media_dir} for the 11 folders.
+delete-links: delete all links in the current folder and its subfolders.
 copy-fastq: copy the input data at ${_media_dir} to the 11 folders.
 scopy-fastq <ssh-hostname>: transfer the input data at ${_media_dir} to the remote computers.
-delete-links: delete all links in the current folder and its subfolders.
 zip: compress the 11 species folders.
 plot: create the supplementary figures for the -w option tests.
 table: create a table for the 11 test data.
@@ -34,18 +44,7 @@ HEREDOC
 # Check if the species folder is provided
 if [[ -z "$species_folder" ]]; then
 	echo "Usage: $0 <species_folder>"
-	echo "       $0 mkdir"
-	echo "       $0 rm"
-	echo "       $0 link-fastq"
-	echo "       $0 delete-links"
-	echo "       $0 copy-fastq"
-	echo "       $0 scopy-fastq host1"
-	echo "       $0 zip"
-	echo "       $0 plot"
-	echo "       $0 table"
-	echo "       $0 sync 0"
-	echo "       $0 sync 1"
-	echo "       $0 package"
+	echo "       $0 <arg1> <arg2>"
 	echo "${help_message}"
 	exit 1
 fi
@@ -70,6 +69,7 @@ common_operations() {
 	local long_sra="$1"
 	local short_sra="$2"
 
+	source ~/miniconda3/bin/activate polap
 	if [[ -s "o1/0/mt.contig.name-1" ]]; then
 		mkdir -p o/0
 		cp -p o2/*.txt o
@@ -274,6 +274,48 @@ case "$species_folder" in
 	;;
 "Carex_pseudochinensis")
 	run_carex_pseudochinensis
+	;;
+"install-conda")
+	mkdir -p ~/miniconda3
+	wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+	bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+	rm ~/miniconda3/miniconda.sh
+	echo After installing Miniconda3, close and reopen your terminal application.
+	;;
+"setup-conda")
+	source ~/miniconda3/bin/activate
+	conda config --add channels bioconda
+	conda config --add channels conda-forge
+	conda config --set channel_priority strict
+	;;
+"install-polap")
+	conda create --name polap bioconda::polap
+	;;
+"download-polap")
+	wget https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
+	unzip ${_polap_version}.zip
+	cd polap-${_polap_version}
+	;;
+"clean")
+	rm -f ${_polap_version}.zip
+	rm -rf polap-${_polap_version}
+	;;
+"install-fmlrc")
+	wget https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
+	unzip ${_polap_version}.zip
+	cd polap-${_polap_version}
+	conda env create -f src/polap-conda-environment-fmlrc.yaml
+	;;
+"test-polap")
+	cd polap-${_polap_version}
+	cd test
+	source ~/miniconda3/bin/activate polap
+	polap assemble --test
+	;;
+"uninstall")
+	# source ~/miniconda3/bin/deactivate
+	conda remove -n polap --all
+	conda remove -n polap-fmlrc --all
 	;;
 "delete-links")
 	find . -type l -delete

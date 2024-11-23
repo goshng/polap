@@ -312,14 +312,15 @@ case "$species_folder" in
 	cd polap-${_polap_version}
 	conda env create -f src/polap-conda-environment-fmlrc.yaml
 	;;
-"patch-polap")
+"patch-polap" | "patch")
 	wget https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
 	unzip ${_polap_version}.zip
-	cd polap-${_polap_version}
-	bash src/polap-build.sh >build.sh
+	cd polap-${_polap_version}/src
+	bash polap-build.sh >../build.sh
+	cd ..
 	PREFIX="$HOME/miniconda3/envs/polap" bash build.sh
 	;;
-"test-polap")
+"test-polap" | "test")
 	cd polap-${_polap_version}
 	cd test
 	source ~/miniconda3/bin/activate polap
@@ -409,16 +410,16 @@ case "$species_folder" in
 		V1="${i}"
 		rm -rf $V1
 		mkdir $V1
-		src/polap.sh package -o ../revision/$V1/o --archive $V1/o
+		${_polap_cmd} package -o ../revision/$V1/o --archive $V1/o
 		if [[ "$V1" == "Salix_dunnii" ]]; then
-			src/polap.sh -o $V1/o test-reads report ptgaul
-			src/polap.sh -o $V1/o test-reads report intra
+			${_polap_cmd} -o $V1/o test-reads report ptgaul
+			${_polap_cmd} -o $V1/o test-reads report intra
 		elif [[ "$V1" == "Lolium_perenne" ]]; then
-			src/polap.sh -o $V1/o test-reads report ptgaul --report-x 5000,7000,9000,11000,13000,15000,17000
-			src/polap.sh -o $V1/o test-reads report polap --report-x 5000,7000,9000,11000,13000,15000,17000
+			${_polap_cmd} -o $V1/o test-reads report ptgaul --report-x 5000,7000,9000,11000,13000,15000,17000
+			${_polap_cmd} -o $V1/o test-reads report polap --report-x 5000,7000,9000,11000,13000,15000,17000
 		else
-			src/polap.sh -o $V1/o test-reads report ptgaul
-			src/polap.sh -o $V1/o test-reads report polap
+			${_polap_cmd} -o $V1/o test-reads report ptgaul
+			${_polap_cmd} -o $V1/o test-reads report polap
 		fi
 	done
 	;;

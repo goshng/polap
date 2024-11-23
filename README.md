@@ -49,9 +49,22 @@ conda config --add channels bioconda
 conda config --add channels conda-forge
 conda config --set channel_priority strict
 conda create --name polap bioconda::polap
-wget https://github.com/goshng/polap/archive/refs/tags/0.3.7.2.zip
-unzip 0.3.7.2.zip
-cd polap-0.3.7.2
+```
+
+Note: We currently have a problem in the Bioconda package. For the time being, following these instead.
+```bash
+polap get-revision1
+bash polap-revision1.sh patch
+bash polap-revision1.sh install-fmlrc
+bash polap-revision1.sh test
+```
+
+After completing this step, you can move on to the step 3 of testing the short-read polishing process.
+
+```bash
+wget https://github.com/goshng/polap/archive/refs/tags/0.3.7.3.zip
+unzip 0.3.7.3.zip
+cd polap-0.3.7.3
 conda env create -f src/polap-conda-environment-fmlrc.yaml
 cd test
 polap assemble --test

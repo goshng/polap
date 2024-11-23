@@ -784,6 +784,19 @@ Options:
     The option '-j' or '--jnum' allows users to specify the current output number
     for an organelle-genome assembly, with a default value of '1'.
 
+  -w, --single-min: minimum mapped bases or PAF 11th column (default: 3000)
+    This parameter ensures that the alignment level between a long-read and a
+    seed contig is properly controlled. For plant mitochondrial DNAs, a DNA
+    fragment size of approximately 3 kilobases appears to be more effective
+    than the smaller 1-kilobase fragment. In the case of plastid DNAs, a
+    fragment size of 1 kilobase (kb) might be more suitable, requiring an
+    adjustment to the -m option accordingly.
+
+  --polap-reads: use intra- and inter-contig read selection (default: off)
+    The default read selection is ptGAUL's approach.
+    This option allows long reads that are mapped within a seed contig and
+    between two contigs.
+
   -m, --min-read-length: minimum length of long reads (default: 3000)
     The option '-m' or '--min-read-length' specifies the minimum length of
     long reads, with a default value of 3000.
@@ -796,14 +809,6 @@ Options:
   -c, --coverage: coverage for the organelle-genome assembly (default: 50)
     The option '-c' or '--coverage' specifies the coverage percentage for the
     organelle-genome assembly for controlling the data size.
-
-  -w, --single-min: minimum mapped bases or PAF 11th column (default: 3000)
-    This parameter ensures that the alignment level between a long-read and a
-    seed contig is properly controlled. For plant mitochondrial DNAs, a DNA
-    fragment size of approximately 3 kilobases appears to be more effective
-    than the smaller 1-kilobase fragment. In the case of plastid DNAs, a
-    fragment size of 1 kilobase (kb) might be more suitable, requiring an
-    adjustment to the -m option accordingly.
 
   -g, --genomesize: expected genome size (default: estimated with a short-read dataset)
     Users can assemble an organelle genome when they have a genome size
@@ -857,11 +862,6 @@ Options:
     This option is the same as --flye-asm-coverage set to 0.
     Note: not tested yet!
 
-  --polap-reads: use intra- and inter-contig read selection (default: off)
-    The default read selection is ptGAUL's approach.
-    This option allows long reads that are mapped within a seed contig and
-    between two contigs.
-
   --bridge-same-strand: (default: off)
     When linking two inverted repeats, enabling this feature ensures that
     the strands are equal for the two mapped IR contigs.
@@ -876,7 +876,6 @@ Options:
 
   --species: Species scientific name (no default)
   --sra: SRA data (no default)
-
   -v, --verbose: use multiple times to increase the verbose level
   --version: Prints version
   -h: Prints polap global help
@@ -915,7 +914,7 @@ the `s2.fq` at the current directory. The FASTQ file must be a
 regular file not compressed one. Two short-read data files are
 required.
 
-`-w` _NUMBER_, `--pair-min` _NUMBER_ : Specify the minimum mapped bases or PAF 11th column (default:
+`-w` _NUMBER_, `--single-min` _NUMBER_ : Specify the minimum mapped bases or PAF 11th column (default:
 `3000`).
 
 `-i` _NUMBER_, `--inum` _NUMBER_ : Specify the previous output number of organelle-genome assembly

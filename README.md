@@ -85,6 +85,7 @@ output: the assembly graph: o/1/assembly_graph.gfa
 Then, polish the provided sequence file, `mt.0.fasta`, which is a test file for the short-read polishing.
 
 ```bash
+cd polap-0.3.7.3/test
 polap prepare-polishing
 polap polish
 diff mt.0.fa mt.1.fa

@@ -52,10 +52,14 @@ conda create --name polap bioconda::polap
 ```
 
 Note: We currently have a problem in the Bioconda package. For the time being, following these instead.
+
 ```bash
-polap get-revision1
+git clone https://github.com/goshng/polap.git
+polap/src/polap.sh get-revision1
 bash polap-revision1.sh patch
+--> select [A]ll to the question: replace polap-0.3.7.3/.gitignore? [y]es, [n]o, [A]ll, [N]one, [r]ename: A
 bash polap-revision1.sh install-fmlrc
+--> select [A]ll to the question: replace polap-0.3.7.3/.gitignore? [y]es, [n]o, [A]ll, [N]one, [r]ename: A
 bash polap-revision1.sh test
 ```
 

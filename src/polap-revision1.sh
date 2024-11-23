@@ -299,7 +299,7 @@ case "$species_folder" in
 	;;
 "download-polap")
 	wget https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
-	unzip ${_polap_version}.zip
+	unzip -o -q ${_polap_version}.zip
 	cd polap-${_polap_version}
 	;;
 "clean")
@@ -308,13 +308,13 @@ case "$species_folder" in
 	;;
 "install-fmlrc")
 	wget https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
-	unzip ${_polap_version}.zip
+	unzip -o -q ${_polap_version}.zip
 	cd polap-${_polap_version}
 	conda env create -f src/polap-conda-environment-fmlrc.yaml
 	;;
 "patch-polap" | "patch")
 	wget https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
-	unzip ${_polap_version}.zip
+	unzip -o -q ${_polap_version}.zip
 	cd polap-${_polap_version}/src
 	bash polap-build.sh >../build.sh
 	cd ..

@@ -48,7 +48,7 @@ source ~/miniconda3/bin/activate
 conda config --add channels bioconda
 conda config --add channels conda-forge
 conda config --set channel_priority strict
-conda create --name polap bioconda::polap
+conda create -y --name polap bioconda::polap
 ```
 
 Note: We currently have a problem in the Bioconda package. For the time being, following these instead.
@@ -57,14 +57,14 @@ Note: We currently have a problem in the Bioconda package. For the time being, f
 git clone https://github.com/goshng/polap.git
 polap/src/polap.sh get-revision1
 bash polap-revision1.sh patch
---> select [A]ll to the question: replace polap-0.3.7.3/.gitignore? [y]es, [n]o, [A]ll, [N]one, [r]ename: A
+> select [A]ll to the question: replace polap-0.3.7.3/.gitignore? [y]es, [n]o, [A]ll, [N]one, [r]ename: A
 bash polap-revision1.sh install-fmlrc
---> select [A]ll to the question: replace polap-0.3.7.3/.gitignore? [y]es, [n]o, [A]ll, [N]one, [r]ename: A
+> select [A]ll to the question: replace polap-0.3.7.3/.gitignore? [y]es, [n]o, [A]ll, [N]one, [r]ename: A
 bash polap-revision1.sh test
 conda activate polap
 ```
 
-After completing this step, you can move on to the step 3 of [testing the short-read polishing](#3.-test-the-short-read-polishing:) process.
+After completing this step, you can move on to the step 3 of [testing the short-read polishing](#3-test-the-short-read-polishing) process.
 
 ```bash
 wget https://github.com/goshng/polap/archive/refs/tags/0.3.7.3.zip

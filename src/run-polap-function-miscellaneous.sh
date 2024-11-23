@@ -653,3 +653,12 @@ function _polap_gfatools-gfa2fasta {
 		fi
 	fi
 }
+
+function _run_polap_get-revision1 {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	cp -p "$script_dir/polap-revision1.sh" .
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	return 0
+}

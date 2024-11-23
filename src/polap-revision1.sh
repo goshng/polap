@@ -5,8 +5,11 @@ S=('Spirodela_polyrhiza' 'Taraxacum_mongolicum' 'Trifolium_pratense' 'Salix_dunn
 # Input parameter
 species_folder="$1"
 
-_polap_cmd="src/polap.sh"
-# _polap_cmd="polap"
+if [[ -d "src" ]]; then
+	_polap_cmd="src/polap.sh"
+else
+	_polap_cmd="polap"
+fi
 _polap_version="0.3.7.3"
 _media_dir="/media/h1/run/mtdna"
 
@@ -22,11 +25,14 @@ help_message=$(
 <species_folder>: run polap on the species_folder
 install-conda: install Miniconda3
 setup-conda: setup Miniconda3 for Bioconda
-install-polap: install Polap
+install-polap or install: install Polap
+install-fmlrc: install ptGAUL's FMLRC short-read polishing tools
+patch-polap: update the miniconda3/envs/polap/bin/polap with the github version
+Carex_pseudochinensis: test with mtDNA of Carex pseudochinensis
+test-polap: test Polap run with a test dataset
 download-polap: download Polap
 clean: delete analyses
-install-fmlrc
-test-polap
+uninstall: uninstall Polap
 mkdir: create the 11 species folders.
 rm: delete the 11 species folders.
 link-fastq: create links to the input data at ${_media_dir} for the 11 folders.
@@ -288,7 +294,7 @@ case "$species_folder" in
 	conda config --add channels conda-forge
 	conda config --set channel_priority strict
 	;;
-"install-polap")
+"install-polap" | "install")
 	conda create --name polap bioconda::polap
 	;;
 "download-polap")
@@ -305,6 +311,13 @@ case "$species_folder" in
 	unzip ${_polap_version}.zip
 	cd polap-${_polap_version}
 	conda env create -f src/polap-conda-environment-fmlrc.yaml
+	;;
+"patch-polap")
+	wget https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
+	unzip ${_polap_version}.zip
+	cd polap-${_polap_version}
+	bash src/polap-build.sh >build.sh
+	PREFIX="$HOME/miniconda3/envs/polap" bash build.sh
 	;;
 "test-polap")
 	cd polap-${_polap_version}

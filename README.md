@@ -30,7 +30,11 @@ Polap originated as an extension of ptGAUL, with a specific focus on assembling 
 
 ## Quick Start
 
+Open a new terminal in a Linux computer, such as one with Ubuntu.
+
 #### 1. Install [Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install):
+
+Download and install **[Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/)**.
 
 ```bash
 mkdir -p ~/miniconda3
@@ -39,33 +43,38 @@ bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
 rm ~/miniconda3/miniconda.sh
 ```
 
-After installing, close and reopen your terminal application.
-
-#### 2. Install the Bioconda package, [Polap](https://anaconda.org/bioconda/polap):
+After installing, close and reopen your terminal application. Then, execute the followings to setup the conda channels for `polap`.
 
 ```bash
 source ~/miniconda3/bin/activate
 conda config --add channels bioconda
 conda config --add channels conda-forge
 conda config --set channel_priority strict
-conda create -y --name polap polap
 ```
 
-Setup `polap-fmlrc` conda environment and run the test data.
+#### 2. Install the Bioconda package, [Polap](https://anaconda.org/bioconda/polap):
+
+Setup `polap` and `polap-fmlrc` conda environments.
 
 ```bash
-wget https://github.com/goshng/polap/archive/refs/tags/0.3.7.3.zip
-unzip 0.3.7.3.zip
-conda env create -f polap-0.3.7.3/src/polap-conda-environment-fmlrc.yaml
-cd test
+conda create -y --name polap polap
 conda activate polap
+base_dir=$(dirname "$(command -v polap)") && conda env create -f $base_dir/polap-conda-environment-fmlrc.yaml
+```
+
+Run the test data.
+
+```bash
+wget -q https://github.com/goshng/polap/archive/refs/tags/0.3.7.3.zip
+unzip -o -q 0.3.7.3.zip
+cd polap-0.3.7.3/test
 polap assemble --test
 ```
 
 If you see this output, then you are ready to use the long-read assembly pipeline.
 
 ```bash
-output: the assembly graph: o/1/assembly_graph.gfa
+output: the assembly graph: 2-oga.gfa
 ```
 
 After completing this step, you can move on to the step 3 of [testing the short-read polishing](#3-test-the-short-read-polishing) process.
@@ -75,6 +84,8 @@ After completing this step, you can move on to the step 3 of [testing the short-
 Then, polish the provided sequence file, `mt.0.fasta`, which is a test file for the short-read polishing.
 
 ```bash
+wget -q https://github.com/goshng/polap/archive/refs/tags/0.3.7.3.zip
+unzip -o -q 0.3.7.3.zip
 cd polap-0.3.7.3/test
 polap prepare-polishing
 polap polish
@@ -309,7 +320,7 @@ polap assemble
    ```
 7. Check the output:
    ```bash
-   output: the assembly graph: o/1/assembly_graph.gfa
+   output: the assembly graph: 2-oga.gfa
    ```
 
 We need one more step for the installation.
@@ -390,7 +401,7 @@ If you're unable to install Polap via the Bioconda package, you can install it d
 6. If you see a screen output ending with the something like this:
 
    ```bash
-   output: the assembly graph: o/1/assembly_graph.gfa
+   output: the assembly graph: 2-oga.gfa
    ```
 
 7. Polishing with a short-read data:

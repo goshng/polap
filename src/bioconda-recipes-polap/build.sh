@@ -26,8 +26,10 @@ files=(polap
 	run-polap-function-archive.sh
 	run-polap-function-assemble.sh
 	run-polap-function-bioproject.sh
+	run-polap-function-demo.sh
 	run-polap-function-errors.sh
 	run-polap-function-include.sh
+	run-polap-function-install.sh
 	run-polap-function-log.sh
 	run-polap-function-menus.sh
 	run-polap-function-miscellaneous.sh

@@ -200,9 +200,9 @@ run_lolium_perenne() {
 	cd Lolium_perenne || exit
 	common_operations "SRR13386519" "SRR13386518"
 	if [[ -s "o/0/mt.contig.name-1" ]]; then
-		${_polap_cmd} assemble2 --polap-reads -w 11000
+		${_polap_cmd} assemble2 --polap-reads -w 11000 --max-seeds 50
 	else
-		${_polap_cmd} assemble --polap-reads -w 11000
+		${_polap_cmd} assemble --polap-reads -w 11000 --max-seeds 50
 	fi
 	cd -
 }

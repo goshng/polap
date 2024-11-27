@@ -242,9 +242,39 @@ function _run_polap_annotate { # annotate edge sequences in edges_stats.txt
 Example: $(basename "$0") ${_arg_menu[0]} -i ${_arg_inum}
 Example: $(basename "$0") ${_arg_menu[0]} view table
 Example: $(basename "$0") ${_arg_menu[0]} view seed
+Example: $(basename "$0") ${_arg_menu[0]} view seed -o Spirodela_polyrhiza/o2 --table-format docx --outfile sp.docx
 HEREDOC
 	)
 
+	table_message=$(
+		cat <<HEREDOC
+--------------------------------------------------------------------------------
+Depth: Read depths of a contig.
+Copy: Copy number of the contig.
+MT: Number of mitochondrial genes.
+PT: Number of plastid genes.
+Seed: Denoted as A if the contig is a seed for an organelle-genome assembly and
+  has more MT genes than PT ones annotated. Denoted as G if the contig is a seed
+  but has no gene annotations. Denoted as X if it is not selected as a seed.
+HEREDOC
+	)
+
+	table_docx_message=$(
+		cat <<HEREDOC
+
+Depth: Read depths of a contig.
+
+Copy: Copy number of the contig.
+
+MT: Number of mitochondrial genes.
+
+PT: Number of plastid genes.
+
+Seed: Denoted as A if the contig is a seed for an organelle-genome assembly and
+  has more MT genes than PT ones annotated. Denoted as G if the contig is a seed
+  but has no gene annotations. Denoted as X if it is not selected as a seed.
+HEREDOC
+	)
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
@@ -256,11 +286,27 @@ HEREDOC
 			_polap_log0_column "${_polap_var_ga_annotation_all}"
 			;;
 		seed)
-			if [[ "${_arg_markdown}" == "off" ]]; then
+			if [[ "${_arg_table_format}" == "tsv" ]]; then
 				_polap_log0 "$(basename $0) seeds annotation -i ${_arg_inum} -j ${_arg_jnum}"
 				_polap_log0_column "${_polap_var_ga_annotation_depth_table_seed_target}"
-			else
-				csvtk space2tab "${_polap_var_ga_annotation_depth_table_seed_target}" | csvtk tab2csv | csvtk csv2md -a l,r,r,r,r,r,r >&3
+				_polap_echo0 "${table_message}"
+			elif [[ "${_arg_table_format}" == "markdown" ]]; then
+				csvtk space2tab "${_polap_var_ga_annotation_depth_table_seed_target}" |
+					sed 's/Length/Length (bp)/' |
+					csvtk tab2csv | csvtk csv2md -a l,r,r,r,r,r,r >&3
+				_polap_echo0 "${table_message}"
+			elif [[ "${_arg_table_format}" == "docx" ]]; then
+				_polap_log0 "outfile: ${_arg_outfile}"
+				csvtk space2tab "${_polap_var_ga_annotation_depth_table_seed_target}" |
+					awk -F'\t' 'BEGIN {OFS="\t"} NR==1 {print $0; next} { $2 = sprintf("%'\''d", $2); print }' |
+					sed 's/Length/Length (bp)/' |
+					pandoc -f tsv -t markdown |
+					{
+						cat
+						echo ""
+						echo "${table_docx_message}"
+					} |
+					pandoc -f markdown -t docx -o "${_arg_outfile}"
 			fi
 			;;
 		no-depth)

@@ -291,6 +291,8 @@ HEREDOC
 			_polap_log0 "  single seed contig; read-selection type change: polap-reads -> intra-reads"
 			_arg_menu[1]="intra-reads"
 		fi
+	else
+		_arg_menu[1]="infile"
 	fi
 	_run_polap_select-reads
 	_run_polap_flye2

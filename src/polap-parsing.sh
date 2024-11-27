@@ -72,6 +72,8 @@ _arg_short_read2_is="off"
 _arg_sra=
 _arg_unpolished_fasta="mt.0.fasta"
 _arg_final_assembly="mt.1.fa"
+_arg_table_format="tsv"
+_arg_outfile="o.tsv"
 _arg_min_read_length="3000"
 _arg_threads="$(cat /proc/cpuinfo | grep -c processor)"
 _arg_log="polap.log"
@@ -82,6 +84,7 @@ _arg_flye_asm_coverage="30"
 _arg_single_min="3000"
 _arg_pair_min="3000"
 _arg_bridge_min="0"
+_arg_max_seeds="35" # Lolium perenne: over 30 less than 35
 _arg_inum="0"
 _arg_jnum="1"
 _arg_knum="1"
@@ -538,6 +541,14 @@ parse_commandline() {
 			_arg_single_min="${_key##--rw=}"
 			_arg_bridge_min="0"
 			;;
+		--max-seeds)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_max_seeds="$2"
+			shift
+			;;
+		--max-seeds=*)
+			_arg_max_seeds="${_key##--max-seeds=}"
+			;;
 		-i | --inum)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_inum="$2"
@@ -749,6 +760,22 @@ parse_commandline() {
 			;;
 		--flye-nano-fq)
 			_arg_flye_data_type="--nano-fq"
+			;;
+		--outfile)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_outfile="$2"
+			shift
+			;;
+		--outfile=*)
+			_arg_outfile="${_key##--outfile=}"
+			;;
+		--table-format)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_table_format="$2"
+			shift
+			;;
+		--table-format=*)
+			_arg_table_format="${_key##--table-format=}"
 			;;
 		--log)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

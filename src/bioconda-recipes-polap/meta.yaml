@@ -54,6 +54,7 @@ requirements:
     - icu
     - libxml2
     - perl
+    - pandoc
 
 test:
   commands:

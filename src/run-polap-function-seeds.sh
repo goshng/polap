@@ -515,6 +515,7 @@ function _run_polap_seeds { # select seed contigs
 # View:
 #   <number> for the mt.contig.name-<number>
 Example: $(basename "$0") ${_arg_menu[0]} -i 0 -j 1
+Example: $(basename "$0") ${_arg_menu[0]} -i 0 -j 1 [--max-seeds ${_arg_max_seeds}]
 Example: $(basename "$0") ${_arg_menu[0]} view -i 0 -j 2
 Example: $(basename "$0") ${_arg_menu[0]} annotation
 Example: $(basename "$0") ${_arg_menu[0]} bandage
@@ -570,6 +571,8 @@ HEREDOC
 		_polap_seeds_final-seeds-mtcontig \
 			"${_polap_var_mtcontigname}" \
 			"${_ga_annotation_depth_table_seed_target}"
+
+		_polap_log0 "NEXT: $(basename "$0") assemble2 -o ${_arg_outdir} -i ${_arg_inum} -j ${_arg_jnum}"
 
 		return $RETURN_SUCCESS
 	fi
@@ -629,10 +632,10 @@ HEREDOC
 	filtered_file="${_polap_var_ga_mtcontigs}/filtered_files.tmp"
 	>"$filtered_file" # Ensure the file is empty
 	while IFS=" " read -r hash file; do
-		# Check if file is not empty and line count is less than 30
+		# Check if file is not empty and line count is less than _arg_max_seeds
 		if [[ -f "$file" ]]; then
 			local line_count=$(wc -l <"$file")
-			if ((line_count < 30)); then
+			if ((line_count < _arg_max_seeds)); then
 				echo "$line_count $file" >>"$filtered_file"
 			fi
 		fi

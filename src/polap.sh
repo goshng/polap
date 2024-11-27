@@ -90,6 +90,9 @@ source "$script_dir/run-polap-function-miscellaneous.sh"
 source "$script_dir/run-polap-function-test.sh"
 source "$script_dir/run-polap-function-taxonomy.sh"
 
+source "$script_dir/run-polap-function-install.sh"
+source "$script_dir/run-polap-function-demo.sh"
+
 ################################################################################
 # All of the variables at our disposal
 ################################################################################

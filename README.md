@@ -48,27 +48,15 @@ source ~/miniconda3/bin/activate
 conda config --add channels bioconda
 conda config --add channels conda-forge
 conda config --set channel_priority strict
-conda create -y --name polap bioconda::polap
+conda create -y --name polap polap
 ```
 
-Note: We currently have a problem in the Bioconda package. For the time being, follow this script instead.
-
-```bash
-git clone https://github.com/goshng/polap.git
-polap/src/polap.sh get-revision1
-bash polap-revision1.sh patch
-bash polap-revision1.sh install-fmlrc
-bash polap-revision1.sh test
-conda activate polap
-```
-
-After completing this step, you can move on to the step 3 of [testing the short-read polishing](#3-test-the-short-read-polishing) process.
+Setup `polap-fmlrc` conda environment and run the test data.
 
 ```bash
 wget https://github.com/goshng/polap/archive/refs/tags/0.3.7.3.zip
 unzip 0.3.7.3.zip
-cd polap-0.3.7.3
-conda env create -f src/polap-conda-environment-fmlrc.yaml
+conda env create -f polap-0.3.7.3/src/polap-conda-environment-fmlrc.yaml
 cd test
 conda activate polap
 polap assemble --test
@@ -79,6 +67,8 @@ If you see this output, then you are ready to use the long-read assembly pipelin
 ```bash
 output: the assembly graph: o/1/assembly_graph.gfa
 ```
+
+After completing this step, you can move on to the step 3 of [testing the short-read polishing](#3-test-the-short-read-polishing) process.
 
 #### 3. Test the short-read polishing:
 
@@ -412,6 +402,19 @@ If you're unable to install Polap via the Bioconda package, you can install it d
    ```
 
 Your final mitochondrial genome sequence is `mt.1.fa`.
+
+### Updating the conda Polap package with the github source
+
+Note: We currently have a problem in the Bioconda package. For the time being, follow this script instead.
+
+```bash
+git clone https://github.com/goshng/polap.git
+polap/src/polap.sh get-revision1
+bash polap-revision1.sh patch
+bash polap-revision1.sh install-fmlrc
+bash polap-revision1.sh test
+conda activate polap
+```
 
 ## Usage with main Polap menus
 

@@ -30,9 +30,11 @@ Polap originated as an extension of ptGAUL, with a specific focus on assembling 
 
 ## Quick Start
 
+#### 1. Open a new terminal
+
 Open a new terminal in a Linux computer, such as one with Ubuntu.
 
-#### 1. Install [Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install):
+#### 2. Install [Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install)
 
 Download and install **[Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/)**.
 
@@ -43,7 +45,11 @@ bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
 rm ~/miniconda3/miniconda.sh
 ```
 
-After installing, close and reopen your terminal application. Then, execute the followings to setup the conda channels for `polap`.
+After installing, close and reopen your terminal application.
+
+#### 3. Setup the conda channels
+
+If you did not close and reopen a new terminal, please do so. Then, execute the followings to setup the conda channels for `polap`.
 
 ```bash
 source ~/miniconda3/bin/activate
@@ -52,17 +58,22 @@ conda config --add channels conda-forge
 conda config --set channel_priority strict
 ```
 
-#### 2. Install the Bioconda package, [Polap](https://anaconda.org/bioconda/polap):
+#### 4. Install the Bioconda package, [Polap](https://anaconda.org/bioconda/polap):
 
 Setup `polap` and `polap-fmlrc` conda environments.
 
 ```bash
 conda create -y --name polap polap
+```
+
+#### 5. Activate the polap conda environment and setup polap-fmlrc environment
+
+```bash
 conda activate polap
 base_dir=$(dirname "$(command -v polap)") && conda env create -f $base_dir/polap-conda-environment-fmlrc.yaml
 ```
 
-Run the test data.
+#### 6. Polap run with a test dataset
 
 ```bash
 wget -q https://github.com/goshng/polap/archive/refs/tags/0.3.7.3.zip
@@ -79,7 +90,7 @@ output: the assembly graph: 2-oga.gfa
 
 After completing this step, you can move on to the step 3 of [testing the short-read polishing](#3-test-the-short-read-polishing) process.
 
-#### 3. Test the short-read polishing:
+#### 7. Polish the test dataset
 
 Then, polish the provided sequence file, `mt.0.fasta`, which is a test file for the short-read polishing.
 
@@ -94,7 +105,7 @@ diff mt.0.fa mt.1.fa
 
 If you see no output from the command, `diff mt.0.fa mt.0.fa`, then you are ready to use the polishing procedure as well.
 
-#### 4. Use your data to assemble a plant mtDNA sequence:
+#### 8. Use your data to assemble a plant mtDNA sequence:
 
 Now, if you have your Illumina paired-end short- and Oxford Nanopore long-read data files, put those in a folder and rename them as follows. Assume that you have three fastq files:
 

@@ -280,7 +280,7 @@ HEREDOC
 
 	check_file_existence "${_polap_var_mtcontigname}"
 	check_file_existence "${_polap_var_ga_contigger_edges_fasta}"
-	check_file_existence "${_polap_var_outdir_nk_fq_gz}"
+	check_file_existence "${_polap_var_outdir_lk_fq_gz}"
 
 	_run_polap_map-reads
 	if [[ "${_arg_polap_reads}" == "on" ]]; then

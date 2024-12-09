@@ -1,0 +1,57 @@
+<tool id="polap_annotate" name="Polap annotate" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" python_template_version="3.5" profile="21.05">
+    <description>: annotate a Flye genome assembly with organelle genes</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="biotools" />
+    <expand macro="requirements" />
+    <command detect_errors="exit_code"><![CDATA[
+    mkdir -p o/0/30-contigger &&
+    cp "${gfa1}" o/0/30-contigger/graph_final.gfa &&
+    polap annotate --threads "\${GALAXY_SLOTS:-8}" "${test}" &&
+    csvtk space2tab o/0/contig-annotation-depth-table.txt > o/0/contig-annotation-depth-table.tsv
+    ]]></command>
+    <inputs>
+        <param type="data" name="gfa1" label="Flye's whole-genome assembly graph in GFA format" format="gfa,gfa1,gfa2" />
+        <param name="test" label="Test only" type="boolean" truevalue="--test" falsevalue="" />
+    </inputs>
+    <outputs>
+        <data name="output1" label="annotation" format="txt" from_work_dir="o/0/assembly_info_organelle_annotation_count-all.txt" />
+        <data name="output2" label="summary annotation" format="tabular" from_work_dir="o/0/contig-annotation-depth-table.tsv" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="gfa1" value="graph_final.gfa"/>
+            <output name="output1" file="o/0/assembly_info_organelle_annotation_count-all.txt"/>
+            <output name="output2" file="o/0/contig-annotation-depth-table.tsv"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+Overview
+--------
+
+This tool reduces the long-read data for a Flye genome assembly.
+
+Inputs
+------
+
+-  **Whole-genome assembly graph**: a Flye’s ``gfa`` format data file.
+
+Outputs
+-------
+
+-  **Annotation**: ``assembly_info_organelle_annotation_count-all.txt``
+-  **Summary of Annotation**: ``contig-annotation-depth-table.txt``
+
+Usage
+-----
+
+To use this tool, upload a Flye’s ``gfa`` assembly file you want to
+process.
+
+**Example:**
+
+polap annotate
+    ]]></help>
+    <expand macro="citations" />
+</tool>

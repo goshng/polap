@@ -1,0 +1,50 @@
+<tool id="polap_map-reads" name="Polap map-reads" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" python_template_version="3.5" profile="21.05">
+    <description>: map reads on seed contigs from a Flye genome assembly</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="biotools" />
+    <expand macro="requirements" />
+    <command detect_errors="exit_code"><![CDATA[
+        mkdir -p o/0/30-contigger &&
+        cp "${lk}" o/lk.fq.gz &&
+        cp "${mtcontigname}" o/0/mt.contig.name-1 &&
+        cp "${fasta}" o/0/30-contigger/graph_final.fasta &&
+        polap map-reads
+    ]]></command>
+    <inputs>
+        <param type="data" name="lk" format="fastqsanger.gz" />
+        <param type="data" name="mtcontigname" format="name-1" />
+        <param type="data" name="fasta" format="fasta" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="tab" from_work_dir="o/1/01-contig/contig.tab" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="lk" value="lk.fq.gz"/>
+            <param name="mtcontigname" value="mt.contig.name-1"/>
+            <param name="fasta" value="graph_final.fasta"/>
+            <output name="output1" file="o/1/01-contig/contig.tab"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+        Map long reads on a Flye genome assembly.
+
+Arguments:
+  -i 0: source Flye (usually whole-genome) assembly number (or 0)
+  -j 1: destination Flye organelle assembly number
+  -l l.fq: long-read data default:o/lk.fq.gz
+Inputs:
+  o/0/mt.contig.name-1
+  o/0/30-contigger/graph_final.fasta
+  o/lk.fq.gz or o/nk.fq.gz
+Outputs:
+  o/1/01-contig/contig.fa
+  o/1/01-contig/contig.paf
+  o/1/01-contig/contig.tab
+Example: polap map-reads -i 0 -j 1
+
+    ]]></help>
+    <expand macro="citations" />
+</tool>

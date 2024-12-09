@@ -1,0 +1,14 @@
+planemo tool_init --force \
+	--macros \
+	--id "polap_assemble1" \
+	--name "Polap assemble1" \
+	--description ": Flye whole-genome assembli using a long-read fastq file" \
+	--requirement polap@0.3.7.3 \
+	--example_command "polap assemble1" \
+	--example_input s1.fq \
+	--example_input s2.fq \
+	--example_input l.fq \
+	--example_output o/0/30-contigger/graph_final.gfa \
+	--test_case \
+	--doi 10.1371/journal.pbio.1001241 \
+	--help_from_command "polap assemble1 --help"

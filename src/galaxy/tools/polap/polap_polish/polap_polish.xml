@@ -1,0 +1,65 @@
+<tool id="polap_polish" name="Polap polish" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" python_template_version="3.5" profile="21.05">
+    <description>: polish a draft MT DNA fasta sequence file using short-read FASTQ data files</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="biotools" />
+    <command detect_errors="exit_code"><![CDATA[
+    mkdir -p o &&
+    ln -s "${msbwt}" msbwt.zip &&
+    cd o &&
+    unzip ../msbwt.zip &&
+    cd - &&
+    ln -s "${fasta1}" mt.0.fasta &&
+    fmlrc -p "\${GALAXY_SLOTS:-8}" o/msbwt/comp_msbwt.npy mt.0.fasta mt.1.fa
+    ]]></command>
+    <inputs>
+        <param type="data" name="fasta1" format="fasta" />
+        <param type="data" name="msbwt" format="zip" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="fasta" from_work_dir="mt.1.fa" />
+    </outputs>
+    <requirements>
+        <requirement type="package" version="2.7">python</requirement>
+        <requirement type="package" version="r187">bioconda::ropebwt2</requirement>
+        <requirement type="package" version="1.0.0">bioconda::fmlrc</requirement>
+        <requirement type="package" version="0.2.9">kbchoi::msbwt</requirement>
+    </requirements>
+
+    <tests>
+        <test>
+            <param name="fasta1" value="mt.0.fasta"/>
+            <param name="msbwt" value="msbwt.zip"/>
+            <output name="output1" file="mt.1.fa"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+Overview
+--------
+
+This tool polishes a draft MT DNA sequence FAST file.
+
+Inputs
+------
+
+-  **unpolished fasta**: a ``mt.0.fasta`` data file
+-  **polishing data**: ``msbwt/comp_msbwt.npy``
+
+Outputs
+-------
+
+-  **polished fasta**: ``mt.1.fa``
+
+Usage
+-----
+
+To use this tool, upload ``fasta`` file containing the
+data you want to process.
+
+**Example:**
+
+polap polish -p mt.0.fasta -f mt.0.fa
+    ]]></help>
+    <expand macro="citations" />
+</tool>

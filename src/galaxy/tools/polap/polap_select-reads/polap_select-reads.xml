@@ -1,0 +1,63 @@
+<tool id="polap_select-reads" name="Polap select-reads" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" python_template_version="3.5" profile="21.05">
+    <description>: select reads on seed contigs from a Flye genome assembly</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements" />
+    <command detect_errors="exit_code"><![CDATA[
+        mkdir -p o/0/30-contigger &&
+        cp "${lk}" o/lk.fq.gz &&
+        cp "${mtcontigname}" o/0/mt.contig.name-1 &&
+        cp "${fasta}" o/0/30-contigger/graph_final.fasta &&
+        polap select-reads
+    ]]></command>
+    <inputs>
+        <param type="data" name="lk" format="gz" />
+        <param type="data" name="mtcontigname" format="name-1" />
+        <param type="data" name="gfa" format="gfa1" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="log" from_work_dir="o/1/05-flye/ptgaul-reads/0/flye.log" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="lk" value="o/lk.fq.gz"/>
+            <param name="mtcontigname" value="o/0/mt.contig.name-1"/>
+            <param name="gfa" value="o/0/30-contigger/graph_final.gfa"/>
+            <output name="output1" file="o/1/05-flye/ptgaul-reads/0/flye.log"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+Test organelle-assembly results with a chosen w value multiple times.
+
+Arguments:
+  -i 0: source Flye (usually whole-genome) assembly number
+  -j 1: destination Flye organelle assembly number
+  -w 3000: minimum minimap2 alignment length for a single contig
+Inputs:
+  o/0/mt.contig.name-1
+  o/0/30-contigger/graph_final.fasta
+  o/0/30-contigger/graph_final.gfa if no such file: o/0/30-contigger/graph_final.fasta
+  input long read data to use (priority order): 
+    1. o/lk.fq.gz
+    2. o/nk.fq.gz
+    3. l.fq
+Outputs:
+  o/1/01-contig: map-reads output
+  o/1/02-reads: mapped read names
+  o/1/03-seeds: mapped reads
+  o/1/04-subsample: subsample of the mapped reads
+  o/1/05-flye: assemblies
+  o/1/06-summary: summary
+  o/1/07-plot: plot or table using range in contig folder and summary
+Menus:
+  ptgaul-reads [number of repeats]
+  intra-reads [number of repeats]
+  polap-reads [number of repeats]
+Example: polap select-reads [ptgaul-reads] -w 3000
+Example: polap select-reads intra-reads -w 5000
+Example: polap select-reads polap-reads -w 3000 5
+
+    ]]></help>
+    <expand macro="citations" />
+</tool>

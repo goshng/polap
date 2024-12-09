@@ -1,0 +1,60 @@
+<tool id="polap_seeds" name="Polap seeds" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" python_template_version="3.5" profile="21.05">
+    <description>: select seed contigs for plant mitochondrial DNAs</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="biotools" />
+    <expand macro="requirements" />
+    <command detect_errors="exit_code"><![CDATA[
+    mkdir -p o/0/30-contigger &&
+    cp '$gfa' o/0/30-contigger/graph_final.gfa &&
+    cp '$annotation' o/0/assembly_info_organelle_annotation_count-all.txt &&
+    polap seeds "${use_plastid}"
+    ]]></command>
+    <inputs>
+        <param type="data" name="gfa" format="gfa1,gfa2" />
+        <param type="data" name="annotation" format="txt" />
+        <param name="use_plastid" label="Plastid" type="boolean" truevalue="--plastid" falsevalue="" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="txt" from_work_dir="o/0/mt.contig.name-1" />
+      <!--   <data name="output" label="Multiple Output Files" from_work_dir="o/0"> -->
+      <!-- <discover_datasets pattern="mt.contig.name-*" directory="o/0"/> -->
+      <!--   </data> -->
+    </outputs>
+    <tests>
+        <test>
+            <param name="gfa" value="graph_final.gfa"/>
+            <param name="annotation" value="assembly_info_organelle_annotation_count-all.txt"/>
+            <output name="output1" file="o/0/mt.contig.name-1"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+Overview
+--------
+
+This tool selects seed contigs.
+
+Inputs
+------
+
+-  **Whole-genome assembly graph**: a Flye’s ``gfa`` format data file.
+-  **Annotation**: ``assembly_info_organelle_annotation_count-all.txt``
+
+Outputs
+-------
+
+-  **MT seed edge IDs**: ``mt.contig.name-1``
+
+Usage
+-----
+
+To use this tool, upload a Flye’s ``gfa`` assembly file and the
+annotation.
+
+**Example:**
+
+polap seeds
+    ]]></help>
+    <expand macro="citations" />
+</tool>

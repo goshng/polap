@@ -1,0 +1,12 @@
+planemo tool_init --force \
+	--macros \
+	--id "polap_annotate" \
+	--name "Polap annotate" \
+	--description "annotate a Flye genome assembly with organelle genes" \
+	--requirement polap@0.3.7.3 \
+	--example_command "polap annotate" \
+	--example_input o/0/30-contigger/graph_final.gfa \
+	--example_output o/0/contig-annotation-depth-table.txt \
+	--test_case \
+	--doi 10.1371/journal.pbio.1001241 \
+	--help_from_command "polap annotate --help"

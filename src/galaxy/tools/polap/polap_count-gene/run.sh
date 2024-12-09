@@ -1,0 +1,14 @@
+planemo tool_init --force \
+	--macros \
+	--id "polap_count-gene" \
+	--name "Polap count-gene" \
+	--description ": count genes annotated on a Flye genome assembly." \
+	--requirement polap@0.3.7.3 \
+	--example_command "polap count-gene" \
+	--example_input edges_stats.txt \
+	--example_input mt.gene.count \
+	--example_input pt.gene.count \
+	--example_output o/0/contig-annotation-depth-table.txt \
+	--test_case \
+	--doi 10.1371/journal.pbio.1001241 \
+	--help_from_command "polap count-gene --help"

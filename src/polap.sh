@@ -92,6 +92,7 @@ source "$script_dir/run-polap-function-taxonomy.sh"
 
 source "$script_dir/run-polap-function-install.sh"
 source "$script_dir/run-polap-function-demo.sh"
+source "$script_dir/run-polap-function-ncbixml.sh"
 
 ################################################################################
 # All of the variables at our disposal

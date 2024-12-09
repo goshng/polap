@@ -1,6 +1,13 @@
+*.fq
+*.gfa
+*.fasta
 p3.sh
 *.fa
 *.gb
+test-data
+make-menus
+tool_test_output.html
+tool_test_output.json
 bioproject_id.txt
 bioproject_accession.txt
 genes.txt

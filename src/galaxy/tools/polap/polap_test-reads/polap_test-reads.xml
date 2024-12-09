@@ -1,0 +1,78 @@
+<tool id="polap_test-reads" name="Polap test-reads" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" python_template_version="3.5" profile="21.05">
+    <description>: test organelle assemblies on a range of w values.</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="biotools" />
+    <expand macro="requirements" />
+    <command detect_errors="exit_code"><![CDATA[
+        mkdir -p o/1/01-contig &&
+        cp "${tab}" o/1/01-contig/contig.tab &&
+        mkdir -p o/0/30-contigger &&
+        cp "${lk}" o/lk.fq.gz &&
+        cp "${mtcontigname}" o/0/mt.contig.name-1 &&
+        cp "${fasta}" o/0/30-contigger/graph_final.fasta &&
+        polap test-reads
+    ]]></command>
+    <inputs>
+        <param type="data" name="tab" format="tab" />
+        <param type="data" name="lk" format="fastqsanger.gz" />
+        <param type="data" name="mtcontigname" format="name-1" />
+        <param type="data" name="fasta" format="fasta" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="gfa" from_work_dir="o/1/06-summary/ptgaul-reads/0.gfa" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="tab" value="contig.tab"/>
+            <param name="lk" value="lk.fq.gz"/>
+            <param name="mtcontigname" value="mt.contig.name-1"/>
+            <param name="fasta" value="graph_final.fasta"/>
+            <output name="output1" file="o/1/06-summary/ptgaul-reads/0.gfa"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+Test organelle assemblies on a range of w values.
+
+Arguments:
+  -i 0: source Flye (usually whole-genome) assembly number
+  -j 1: destination Flye organelle assembly number
+  -s, --select-read-range <start,end,count>
+  --start-index <index>: to start at somewhere not start
+Inputs:
+  o/0/mt.contig.name-1
+  o/0/30-contigger/graph_final.fasta
+  input long read data to use (priority order): 
+    1. o/lk.fq.gz
+    2. o/nk.fq.gz
+    3. l.fq
+Outputs:
+  o/1/01-contig: map-reads output
+  o/1/02-reads: mapped read names
+  o/1/03-seeds: mapped reads
+  o/1/04-subsample: subsample of the mapped reads
+  o/1/05-flye: assemblies
+  o/1/06-summary: summary
+  o/1/07-plot: plot or table using range in contig folder and summary
+
+Menus:
+  ptgaul-intra-base-length -> ptgaul --select-read-range 3000,27000,5
+  single-intra-base-length  -> single
+  polap-rw-base-length -> combined
+  bridge-inter-base-length  -> bridge
+View:
+  ptgaul-intra-base-length
+  single-intra-base-length
+  polap-rw-base-length
+Example: polap test-reads [ptgaul-intra-base-length] --select-read-range 3000,27000,5
+Example: polap test-reads single-intra-base-length -i 1 -j 2
+Example: polap test-reads polap-rw-base-length --select-read-range 3000,27000,5
+Example: polap test-reads bridge-inter-base-length
+Example: polap test-reads polap-rw-base-length --select-read-range 3000,27000,5 --start-index 3
+Example: polap test-reads view polap-rw-base-length -i 2 -j 3
+Example: polap test-reads report ptgaul --report-x 3000,5000,7000,9000,11000
+
+    ]]></help>
+    <expand macro="citations" />
+</tool>

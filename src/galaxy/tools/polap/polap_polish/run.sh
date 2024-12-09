@@ -1,0 +1,13 @@
+planemo tool_init --force \
+	--macros \
+	--id "polap_polish" \
+	--name "Polap polish" \
+	--description ": polish a draft MT DNA FASTA sequence file." \
+	--requirement polap@0.3.7.3 \
+	--example_command "polap polish -p mt.0.fasta -f mt.1.fa" \
+	--example_input mt.0.fasta \
+	--example_input o/msbwt/comp_msbwt.npy \
+	--example_output mt.1.fa \
+	--test_case \
+	--doi 10.1371/journal.pbio.1001241 \
+	--help_from_command "polap polish --help"

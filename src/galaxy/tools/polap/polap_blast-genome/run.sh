@@ -1,0 +1,14 @@
+planemo tool_init --force \
+	--macros \
+	--id "polap_blast_genome" \
+	--name "Polap blast-genome" \
+	--description ": NCBI BLAST the genome assembly of a Flye run againt the plant organelle genes." \
+	--requirement polap@0.3.7.3 \
+	--example_command "polap blast-genome" \
+	--example_input graph_final.gfa \
+	--example_input edges_stats.txt \
+	--example_output o/0/50-annotation/mt.gene.count \
+	--example_output o/0/50-annotation/pt.gene.count \
+	--test_case \
+	--doi 10.1371/journal.pbio.1001241 \
+	--help_from_command "polap blast-genome --help"

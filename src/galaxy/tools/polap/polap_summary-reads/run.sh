@@ -1,0 +1,18 @@
+planemo tool_init --force \
+	--macros \
+	--id "polap_summary_reads" \
+	--name "Polap summary_reads" \
+	--description ": Flye whole-genome assembly upto the contigger stage" \
+	--requirement polap@0.3.7.3 \
+	--example_command "polap summary_reads" \
+	--example_input s1.fq \
+	--example_input s2.fq \
+	--example_input o/nk.fq.gz \
+	--example_input o/lk.fq.gz \
+	--example_output o/s1.fq.stats \
+	--example_output o/s2.fq.stats \
+	--example_output o/nk.fq.stats \
+	--example_output o/lk.fq.stats \
+	--test_case \
+	--doi 10.1371/journal.pbio.1001241 \
+	--help_from_command "polap summary-reads --help"

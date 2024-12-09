@@ -1,0 +1,13 @@
+planemo tool_init --force \
+	--macros \
+	--id "polap_prepare-polishing" \
+	--name "Polap prepare-polishing" \
+	--description ": prepare polishing using short-read FASTQ data files" \
+	--requirement polap@0.3.7.3 \
+	--example_command "polap prepare-polishing -a s1.fq -b s2.fq" \
+	--example_input s1.fq \
+	--example_input s2.fq \
+	--example_output o/msbwt/comp_msbwt.npy \
+	--test_case \
+	--doi 10.1371/journal.pbio.1001241 \
+	--help_from_command "polap prepare-polishing --help"

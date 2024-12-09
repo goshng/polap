@@ -1,0 +1,21 @@
+<macros>
+    <xml name="requirements">
+        <requirements>
+        <requirement type="package" version="@TOOL_VERSION@">polap</requirement>
+            <yield/>
+        </requirements>
+    </xml>
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.1371/journal.pbio.1001241</citation>
+            <yield />
+        </citations>
+    </xml>
+    <xml name="biotools">
+        <xrefs>
+            <xref type="bio.tools">plant_mitochondrial_dna_long-read_assembly_pipeline_polap</xref>
+        </xrefs>
+    </xml>
+    <token name="@TOOL_VERSION@">0.3.7.3</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+</macros>

@@ -1,0 +1,47 @@
+<tool id="polap_count-gene" name="Polap count-gene" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" python_template_version="3.5" profile="21.05">
+    <description>: count genes annotated on a Flye genome assembly.</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="biotools" />
+    <expand macro="requirements" />
+    <command detect_errors="exit_code"><![CDATA[
+    mkdir -p o/0/30-contigger &&
+    mkdir -p o/0/50-annotation &&
+    cp '$stats' o/0/30-contigger &&
+    cp '$mtgenecount' o/0/50-annotation &&
+    cp '$ptgenecount' o/0/50-annotation &&
+    polap count-gene
+    ]]></command>
+    <inputs>
+        <param type="data" name="stats" format="txt" />
+        <param type="data" name="mtgenecount" format="count" />
+        <param type="data" name="ptgenecount" format="count" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="txt" from_work_dir="o/0/contig-annotation-depth-table.txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="stats" value="edges_stats.txt"/>
+            <param name="mtgenecount" value="mt.gene.count"/>
+            <param name="ptgenecount" value="pt.gene.count"/>
+            <output name="output1" file="o/0/contig-annotation-depth-table.txt"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+        Count genes annotated on a genome assembly.
+
+Arguments:
+  -i 0: a Flye genome assembly number
+Inputs:
+  o/0/30-contigger/edges_stats.txt
+  o/0/50-annotation/mt.gene.count
+  o/0/50-annotation/pt.gene.count
+Outputs:
+  o/0/assembly_info_organelle_annotation_count-all.txt"
+Example: polap count-gene -i 0
+
+    ]]></help>
+    <expand macro="citations" />
+</tool>

@@ -1,0 +1,61 @@
+<tool id="polap_assemble1" name="Polap assemble1" version="0.1.0+galaxy0" python_template_version="3.5" profile="21.05">
+    <description>: Flye whole-genome assembli using a long-read fastq file</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements" />
+    <command detect_errors="exit_code"><![CDATA[
+        polap assemble1
+    ]]></command>
+    <inputs>
+        <param type="data" name="input1" format="fq" />
+        <param type="data" name="input2" format="fq" />
+        <param type="data" name="input3" format="fq" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="gfa" from_work_dir="o/0/30-contigger/graph_final.gfa" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="s1.fq"/>
+            <param name="input2" value="s2.fq"/>
+            <param name="input3" value="l.fq"/>
+            <output name="output1" file="o/0/30-contigger/graph_final.gfa"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+        # Flye whole-genome assembly using the long-read data.
+#
+# Arguments:
+#   -o o
+#   -l l.fq: a long-read fastq data file
+#   -a s1.fq: a short-read fastq data file
+#   -b s2.fq: another short-read fastq data file
+#   -m 3000: the long-read sequence length threshold
+#   -t 56: the number of CPU cores
+#   -c 50: the coverage option
+#   --no-reduction-reads: no data reduction in a whole-genome assembly
+#   -g <arg>: computed by find-genome-size menu or given by users
+#   --flye-asm-coverage 30: Flye option --asm-coverage
+#   --random-seed <arg>: 5-digit number
+#   --redo: do not use previously generated intermediate results
+# Inputs:
+#   l.fq: a long-read fastq 
+#   s1.fq: a short-read fastq data file
+#   s2.fq: another short-read fastq data file
+# Outputs:
+#   o/s1.fq.stats
+#   o/s2.fq.stats
+#   o/long_total_length.txt
+#   o/short_expected_genome_size.txt
+#   o/nk.fq.gz
+#   o/lk.fq.gz
+#   o/0/30-contigger/graph_final.gfa
+#   o/0/30-contigger/edges_stats.txt
+# View:
+#   Check file: o/0/30-contigger/graph_final.gfa
+Example: polap assemble1 -o o -l l.fq -a s1.fq -b s2.fq
+
+    ]]></help>
+    <expand macro="citations" />
+</tool>

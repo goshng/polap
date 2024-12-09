@@ -1,0 +1,91 @@
+<tool id="polap_reduce-data" name="Polap reduce-data" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" python_template_version="3.5" profile="21.05">
+    <description>: reduce the long-read data for a Flye genome assembly</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="biotools" />
+    <expand macro="requirements" />
+    <command detect_errors="exit_code"><![CDATA[
+    mkdir o &&
+    cp "${genome_size}" o/short_expected_genome_size.txt &&
+    cp "${long_total}" o/long_total_length.txt &&
+    polap reduce-data -l "${fastq1}" --min-read-length "${min_read_length}"
+      --coverage "${coverage}" --random-seed "${random_seed}"
+      "${no_reduction_reads}" "${test}"
+    ]]></command>
+    <inputs>
+        <param type="data" name="genome_size" label="Expected genome size using short-read data" format="txt" />
+        <param type="data" name="long_total" label="Total number of nucleotides in the long-read data" format="txt" />
+        <param type="data" name="fastq1" argument="--long-reads" label="Long-read FASTQ" format="fq,fastq,sangerfastq" />
+        <param name="min_read_length" type="integer" value="3000" argument="--min-read-length" label="Minimum length of long-read sequences" />
+        <param name="coverage" type="integer" value="50" label="Maximum coverage for sampling long-read sequences" />
+        <param name="random_seed" type="integer" value="11" label="Random number generator seed" />
+        <param name="no_reduction_reads" label="No reduction in the long-read data for whole-genome assembly" type="boolean" truevalue="--no-reduction-reads" falsevalue="" />
+        <param name="test" label="Test only" type="boolean" truevalue="--test" falsevalue="" />
+    </inputs>
+    <outputs>
+        <data name="output2" format="fastqsanger.gz" label="Reduced lnog-read data for whole-genome assembly" from_work_dir="o/nk.fq.gz" />
+        <data name="output1" format="fastqsanger.gz" label="Reduced lnog-read data for organelle-genome assembly" from_work_dir="o/lk.fq.gz" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="genome_size" value="short_expected_genome_size.txt"/>
+            <param name="long_total" value="long_total_length.txt"/>
+            <param name="fastq1" value="l.fq"/>
+            <param name="min_read_length" value="3000"/>
+            <param name="coverage" value="50"/>
+            <param name="random_seed" value="11" />
+            <param name="no_reduction_reads" value="false"/>
+            <param name="test" value="true"/>
+            <output name="output1" file="o/lk.fq.gz"/>
+            <output name="output2" file="o/nk.fq.gz"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+Overview
+--------
+
+This tool reduces the long-read data for a Flye genome assembly.
+
+Inputs
+------
+
+-  **Long-read FASTQ**: a long-read ``fastq`` format data file.
+-  **Long-read data size**: ``long_total_length.txt`` (output of polap
+   total-length-long)
+-  **Genome size**: ``short_expected_genome_size.txt`` (output of polap
+   find-genome-size)
+-  **Minimum length of long-read sequences**: the long-read sequence
+   length threshold
+-  **Long-read sampling minimum coverage**: the target coverage for
+   sampling the long-read data
+-  **No long-read sampling**: **Long-read sampling minimum coverage** is
+   ignored.
+-  **Random seed for long-read sampling**: seqkit default seed
+-  **Use test data**: used only with the test dataset
+
+Outputs
+-------
+
+-  **Long-read FASTQ file for organelle-genome assembly**: a compressed
+   FASTQ file named ``lk.fq.gz`` with read equences less than **Minimum
+   length of long-read sequences**
+-  **Long-read FASTQ file for whole-genome assembly**: a compressed
+   FASTQ file named ``nk.fq.gz`` with read equences less than **Minimum
+   length of long-read sequences** and sampled upto the **Long-read
+   sampling minimum coverage** considering **Genome size** and
+   **Long-read data size**
+
+Usage
+-----
+
+To use this tool, set the **Long-read data size** and **Genome size**
+and upload a long-read ``fastq`` file containing the data you want to
+process.
+
+**Example:**
+
+polap reduce-data -l l.fq
+    ]]></help>
+    <expand macro="citations" />
+</tool>

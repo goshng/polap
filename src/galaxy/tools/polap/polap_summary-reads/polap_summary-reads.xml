@@ -1,0 +1,64 @@
+<tool id="polap_summary-reads" name="Polap summary-reads" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" python_template_version="3.5" profile="21.05">
+    <description>: summarize the statistics of the long- and short-read dataset.</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="biotools" />
+    <expand macro="requirements" />
+    <version_command>polap --version</version_command>
+    <command detect_errors="exit_code"><![CDATA[
+        polap summary-reads
+    ]]></command>
+    <inputs>
+        <param type="data" name="s1" label="short-read 1" format="fq,fastq,sangerfastq" />
+        <param type="data" name="s2" label="short-read 2" format="fq,fastq,sangerfastq" />
+        <param type="data" name="nk" label="long-read nk" format="fastqsanger.gz" />
+        <param type="data" name="lk" label="long-read lk" format="fastqsanger.gz" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="fq.stats" from_work_dir="o/s1.fq.stats" />
+        <data name="output2" format="fq.stats" from_work_dir="o/s2.fq.stats" />
+        <data name="output3" format="fq.stats" from_work_dir="o/nk.fq.stats" />
+        <data name="output4" format="fq.stats" from_work_dir="o/lk.fq.stats" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="s1" value="s1.fq"/>
+            <param name="s2" value="s2.fq"/>
+            <param name="nk" value="nk.fq.gz"/>
+            <param name="lk" value="lk.fq.gz"/>
+            <output name="output1" file="o/s1.fq.stats"/>
+            <output name="output2" file="o/s2.fq.stats"/>
+            <output name="output3" file="o/nk.fq.stats"/>
+            <output name="output4" file="o/lk.fq.stats"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+Summarize the statistics of the long- and short-read dataset.
+
+Arguments:
+  -a s1.fq: a short-read fastq data file
+  -b s2.fq: another short-read fastq data file (optional: not tested yet!)
+  or
+  --bioproject use
+  -o o
+Inputs:
+  s1.fq: a short-read fastq data file
+  s2.fq: another short-read fastq data file (optional: not tested yet!)
+  o/nk.fq.gz: POLAP generate nk.fq.gz
+  o/lk.fq.gz: POLAP generate lk.fq.gz
+Outputs:
+  o/s1.fq.stats: short-read data statisics
+  o/s2.fq.stats: short-read data statisics
+  o/nk.fq.stats: POLAP long-read data statisics
+  o/lk.fq.stats: POLAP long-read data statisics
+Precondition:
+  (for BioProjectID case)
+  get-bioproject --bioproject <BioProjectID> -o o
+Example: 
+  polap summary-reads -a <file> [-b <file>]
+  polap summary-reads -o o --bioproject use
+
+    ]]></help>
+    <expand macro="citations" />
+</tool>

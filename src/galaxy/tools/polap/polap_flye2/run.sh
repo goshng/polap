@@ -1,0 +1,14 @@
+planemo tool_init --force \
+	--macros \
+	--id "polap_flye1" \
+	--name "Polap flye1" \
+	--description ": Flye whole-genome assembly upto the contigger stage" \
+	--requirement polap@0.3.7.3 \
+	--example_command "polap flye1" \
+	--example_input o/nk.fq.gz \
+	--example_input o/short_expected_genome_size.txt \
+	--example_output 1-wga.gfa \
+	--example_output 2-oga.gfa \
+	--test_case \
+	--doi 10.1371/journal.pbio.1001241 \
+	--help_from_command "polap flye1 --help"

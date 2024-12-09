@@ -1,0 +1,12 @@
+planemo tool_init --force \
+	--macros \
+	--id "polap_edges_stats" \
+	--name "Polap edges-stats: create an edge version of Flye's contigs_stats.txt" \
+	--description "Description follows: Polap edges-stats: create an edge version of Flye's contigs_stats.txt" \
+	--requirement polap@0.3.7.3 \
+	--example_command "polap edges-stats -i 0" \
+	--example_input graph_final.gfa \
+	--example_output o/0/30-contigger/edges_stats.txt \
+	--test_case \
+	--doi 10.1371/journal.pbio.1001241 \
+	--help_from_command "polap edges-stats --help"

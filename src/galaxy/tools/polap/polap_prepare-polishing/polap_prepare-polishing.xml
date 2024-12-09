@@ -1,0 +1,64 @@
+<tool id="polap_prepare-polishing" name="Polap prepare-polishing" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" python_template_version="3.5" profile="21.05">
+    <description>: prepare polishing using short-read FASTQ data files</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="biotools" />
+    <command detect_errors="exit_code"><![CDATA[
+    mkdir -p o/msbwt &&
+    ln -s "${fastq1}" s1.fq &&
+    ln -s "${fastq2}" s2.fq &&
+    bash '${__tool_directory__}/run-prepare-polishing.sh' s1.fq s2.fq &&
+    cd o &&
+    zip -r msbwt.zip msbwt
+    ]]></command>
+    <inputs>
+        <param type="data" name="fastq1" argument="--short-read1" label="Short-read FASTQ 1" format="fq,fastq,fastqsanger" />
+        <param type="data" name="fastq2" argument="--short-read2" label="Short-read FASTQ 2" format="fq,fastq,fastqsanger" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="zip" from_work_dir="o/msbwt.zip" />
+    </outputs>
+    <requirements>
+        <requirement type="package" version="2.7">python</requirement>
+        <requirement type="package" version="r187">bioconda::ropebwt2</requirement>
+        <requirement type="package" version="1.0.0">bioconda::fmlrc</requirement>
+        <requirement type="package" version="0.2.9">kbchoi::msbwt</requirement>
+    </requirements>
+
+    <tests>
+        <test>
+            <param name="fastq1" value="s1.fq"/>
+            <param name="fastq2" value="s2.fq"/>
+            <output name="output1" file="o/msbwt.zip"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+Overview
+--------
+
+This tool prepares polishing data before actual polishing.
+
+Inputs
+------
+
+-  **short-read fastq 1**: a short-read ``fastq`` data file
+-  **short-read fastq 2**: another short-read ``fastq`` data file
+
+Outputs
+-------
+
+-  **polshing data**: ``msbwt/comp_msbwt.npy``
+
+Usage
+-----
+
+To use this tool, upload two short-read ``fastq`` files containing the
+data you want to process.
+
+**Example:**
+
+polap prepare-polishing -a s1.fq -b s2.fq
+    ]]></help>
+    <expand macro="citations" />
+</tool>

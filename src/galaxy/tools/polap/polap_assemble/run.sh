@@ -1,0 +1,15 @@
+planemo tool_init --force \
+	--macros \
+	--id "polap_polap" \
+	--name "Polap assemble" \
+	--description "plant mitochondrial DNAs" \
+	--requirement polap@0.3.7.3 \
+	--example_command "polap seeds" \
+	--example_input s1.fq \
+	--example_input s2.fq \
+	--example_input l.fq \
+	--example_output 1-wga.gfa \
+	--example_output 2-oga.gfa \
+	--test_case \
+	--doi 10.1371/journal.pbio.1001241 \
+	--help_from_command "polap --help"

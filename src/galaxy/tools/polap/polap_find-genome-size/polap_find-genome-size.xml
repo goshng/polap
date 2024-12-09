@@ -1,0 +1,55 @@
+<tool id="polap_find-genome-size" name="Polap find-genome-size" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" python_template_version="3.5" profile="21.05">
+    <description>: estimate the genome size using a paired-end short-read dataset</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="biotools" />
+    <expand macro="requirements" />
+    <command detect_errors="exit_code"><![CDATA[
+        polap find-genome-size -a '$fastq1' -b '$fastq2'
+    ]]></command>
+    <inputs>
+        <param type="data" name="fastq1" argument="--short-read1" label="Short-read FASTQ 1" format="fq,fastq,fastqsanger" />
+        <param type="data" name="fastq2" argument="--short-read2" label="Short-read FASTQ 2" format="fq,fastq,fastqsanger" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="txt" from_work_dir="o/short_expected_genome_size.txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="fastq1" value="s1.fq"/>
+            <param name="fastq2" value="s2.fq"/>
+            <output name="output1" file="o/short_expected_genome_size.txt"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+Overview
+--------
+
+This tool estimates the genome size by applying a paired-end short-read
+dataset to JellyFish.
+
+Inputs
+------
+
+-  **short-read fastq 1**: a short-read ``fastq`` data file
+-  **short-read fastq 2**: another short-read ``fastq`` data file
+
+Outputs
+-------
+
+-  **Output File**: a text file named ``short_expected_genome_size.txt``
+   with the genome size in base pairs.
+
+Usage
+-----
+
+To use this tool, upload two short-read ``fastq`` files containing the
+data you want to process.
+
+**Example:**
+
+polap find-genome-size -a s1.fq -b s2.fq
+    ]]></help>
+    <expand macro="citations" />
+</tool>

@@ -1,0 +1,13 @@
+planemo tool_init --force \
+	--macros \
+	--id "polap_assemble2" \
+	--name "Polap assemble2" \
+	--description ": select seed contigs for plant mitochondrial DNAs" \
+	--requirement polap@0.3.7.3 \
+	--example_command "polap assemble2" \
+	--example_input o/0/30-contigger/graph_final.gfa \
+	--example_input o/0/mt.contig.name-1 \
+	--example_output 2-oga.gfa \
+	--test_case \
+	--doi 10.1371/journal.pbio.1001241 \
+	--help_from_command "polap assemble2 --help"

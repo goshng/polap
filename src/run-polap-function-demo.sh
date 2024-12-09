@@ -214,6 +214,19 @@ function _run_polap_demo {
 	local _polap_version="0.3.7.3"
 	local _media_dir="/media/h1/run/mtdna"
 
+	local -A _host
+	_host['Spirodela_polyrhiza']="kishino"
+	_host['Taraxacum_mongolicum']="lab01"
+	_host['Trifolium_pratense']="vincent"
+	_host['Salix_dunnii']="marybeth"
+	_host['Anthoceros_agrestis']="kishino"
+	_host['Anthoceros_angustus']="kishino"
+	_host['Brassica_rapa']="lab01"
+	_host['Vigna_radiata']="marybeth"
+	_host['Macadamia_tetraphylla']="vincent"
+	_host['Punica_granatum']="marybeth"
+	_host['Lolium_perenne']="siepel"
+
 	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
@@ -251,6 +264,18 @@ function _run_polap_demo {
 # Outputs:
 #   ${_polap_var_mtcontigname}
 #
+# Menu2 (subcommands):
+#   install-conda
+#   setup-conda
+#   install-polap
+#   install-fmlrc
+#   patch-polap or patch
+#   test-polap or test
+#   mkdir
+#   rm
+#   zip
+#   table1
+#
 # Menu2:
 #   Taraxacum_mongolicum
 #   Trifolium_pratense
@@ -263,6 +288,7 @@ function _run_polap_demo {
 #   Punica_granatum
 #   Lolium_perenne)
 Example: $(basename $0) ${_arg_menu[0]} Spirodela_polyrhiza
+Example: $(basename $0) ${_arg_menu[0]} install-fmlrc
 HEREDOC
 	)
 
@@ -279,41 +305,19 @@ HEREDOC
 	fi
 
 	case "${_m2}" in
-	"Anthoceros_agrestis")
-		run_anthoceros_agrestis
-		;;
-	"Brassica_rapa")
-		run_brassica_rapa
-		;;
-	"Vigna_radiata")
-		run_vigna_radiata
-		;;
-	"Trifolium_pratense")
-		run_trifolium_pratense
-		;;
-	"Taraxacum_mongolicum")
-		run_taraxacum_mongolicum
-		;;
-	"Spirodela_polyrhiza")
-		run_spirodela_polyrhiza
-		;;
-	"Salix_dunnii")
-		run_salix_dunnii
-		;;
-	"Punica_granatum")
-		run_punica_granatum
-		;;
-	"Macadamia_tetraphylla")
-		run_macadamia_tetraphylla
-		;;
-	"Lolium_perenne")
-		run_lolium_perenne
-		;;
-	"Anthoceros_angustus")
-		run_anthoceros_angustus
-		;;
-	"Carex_pseudochinensis")
-		run_carex_pseudochinensis
+	"Spirodela_polyrhiza" | \
+		"Taraxacum_mongolicum" | \
+		"Trifolium_pratense" | \
+		"Salix_dunnii" | \
+		"Anthoceros_agrestis" | \
+		"Anthoceros_angustus" | \
+		"Brassica_rapa" | \
+		"Vigna_radiata" | \
+		"Punica_granatum" | \
+		"Macadamia_tetraphylla" | \
+		"Lolium_perenne" | \
+		"Carex_pseudochinensis")
+		bash ${script_dir}/polap-data-v1.sh "${_m2}"
 		;;
 	"install-conda")
 		mkdir -p $HOME/miniconda3
@@ -327,36 +331,33 @@ HEREDOC
 		conda config --add channels bioconda
 		conda config --add channels conda-forge
 		conda config --set channel_priority strict
+		_polap_log0 Execute: source $HOME/miniconda3/bin/activate
 		;;
-	"install-polap" | "install")
-		conda create --name polap bioconda::polap
+	"install-polap")
+		conda create --name polap polap
 		;;
-	"download-polap")
-		wget https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
-		unzip -o -q ${_polap_version}.zip
-		cd polap-${_polap_version}
+	"install-fmlrc" | "install")
+		conda env create -f ${script_dir}/polap-conda-environment-fmlrc.yaml
+		;;
+	"git-clone")
+		git clone https://github.com/goshng/polap.git
 		;;
 	"clean")
 		rm -f ${_polap_version}.zip
 		rm -rf polap-${_polap_version}
 		;;
-	"install-fmlrc")
-		wget https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
-		unzip -o -q ${_polap_version}.zip
-		cd polap-${_polap_version}
-		conda env create -f src/polap-conda-environment-fmlrc.yaml
-		;;
 	"patch-polap" | "patch")
-		wget https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
-		unzip -o -q ${_polap_version}.zip
-		cd polap-${_polap_version}/src
+		rm -rf polap
+		git clone -q https://github.com/goshng/polap.git
+		cd polap/src
 		bash polap-build.sh >../build.sh
 		cd ..
 		PREFIX="$HOME/miniconda3/envs/polap" bash build.sh
 		;;
 	"test-polap" | "test")
-		cd polap-${_polap_version}
-		cd test
+		rm -rf polap
+		git clone -q https://github.com/goshng/polap.git
+		cd polap/test
 		source $HOME/miniconda3/bin/activate polap
 		polap assemble --test
 		;;
@@ -408,11 +409,11 @@ HEREDOC
 		done
 		;;
 	"plot")
-		pandoc plot.md -o supp-figure-s11-s34.pdf
-		pandoc plot.md -o supp-figure-s11-s34.docx
+		pandoc ${script_dir}/doc/plot.md -o supp-figure-s11-s32.pdf
+		pandoc ${script_dir}/doc/plot.md -o supp-figure-s11-s32.docx
 		;;
-	"table")
-		bash table1.sh >table1.tsv
+	"table1")
+		bash ${script_dir}/polap-report-table1.sh >table1.tsv
 		pandoc table1.tsv -f tsv -t pdf -o table1.pdf -V geometry:landscape
 		pandoc table1.tsv -f tsv -t docx -o table1.docx
 		;;

@@ -1,0 +1,52 @@
+<tool id="polap_total-length-long" name="Polap total-length-long" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" python_template_version="3.5" profile="21.05">
+    <description>: compute the total number of nucleotides of long-read data.</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="biotools" />
+    <expand macro="requirements" />
+    <command detect_errors="exit_code"><![CDATA[
+        polap total-length-long -l '$fastq1'
+    ]]></command>
+    <inputs>
+        <param name="fastq1" type="data" argument="--long-reads" label="Long-read FASTQ" format="fq,fastq,sangerfastq" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="txt" from_work_dir="o/long_total_length.txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="fastq1" value="l.fq"/>
+            <output name="output1" file="o/long_total_length.txt"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+Overview
+--------
+
+This tool calculates the total count of nucleotides present within a
+long-read fastq data file.
+
+Inputs
+------
+
+-  **Input File**: a long-read ``fastq`` format data file.
+
+Outputs
+-------
+
+-  **Output File**: a text file named ``long_total_length.txt`` with the
+   total number of nucleotides in the input ``fastq`` data file.
+
+Usage
+-----
+
+To use this tool, upload a ``fastq`` file containing the data you want
+to process.
+
+**Example:**
+
+polap total-length-long -l l.fq
+    ]]></help>
+    <expand macro="citations" />
+</tool>

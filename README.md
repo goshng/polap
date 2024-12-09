@@ -2,41 +2,71 @@
 
 Polap is a specialized pipeline designed to assemble plant mitochondrial DNA (mtDNA) using the **Flye** long-read assembler, supplemented by organellar gene annotation to guide contig selection. Inspired by **ptGAUL** (a chloroplast assembly pipeline), Polap integrates Flye's capabilities with gene annotation to identify and assemble mtDNA contigs from whole-genome data.
 
-## Description
+<!-- TOC START -->
 
-**Polap** is a specialized meta-assembly pipeline that enhances the functionality of the [Flye](https://github.com/fenderglass/Flye) assembler. Serving as a Flye helper pipeline, Polap incorporates organellar gene annotation, aiding in the educated guess of selection of organelle-origin contigs from Flye's whole-genome assembly. The name "Polap" is inspired by the [ptGAUL](https://github.com/Bean061/ptgaul) chloroplast genome assembly pipeline created by Wenbin Zhou, as Polap similarly focuses on organellar genomes, specifically plant mitochondrial DNA (mtDNA).
+## Table of Contents
 
-The pipeline combines the **Flye** assembler with [FMLRC](https://github.com/holtjma/fmlrc) (a sequence polishing tool by Matt Holt) and applies sequencing depth analysis to identify contigs belonging to the mitochondrial genome. Leveraging both Flye-generated assemblies and organellar gene annotations, Polap helps users identify candidate mtDNA contigs based on sequencing depth and gene presence, enabling targeted selection and assembly of mtDNA.
+- [Quick Start](#quick-start)
+  - [Requirements](#requirements)
+  - [1. Open a new terminal](#1-open-a-new-terminal)
+  - [2. Install Miniconda (5 mins)](#2-install-miniconda-5-mins)
+  - [3. Setup the conda channels](#3-setup-the-conda-channels)
+  - [4. Install the Bioconda Polap package (5 mins)](#4-install-the-bioconda-polap-package-5-mins)
+  - [5. Activate the polap conda environment and setup polap-fmlrc environment (2 min)](#5-activate-the-polap-conda-environment-and-setup-polap-fmlrc-environment-2-min)
+  - [6. Polap run with a test dataset (10 mins)](#6-polap-run-with-a-test-dataset-10-mins)
+  - [7. Polish the test dataset (10 mins)](#7-polish-the-test-dataset-10-mins)
+  - [8. Test BioProject SRA data (2 hours)](#8-test-bioproject-sra-data-2-hours)
+  - [9. Use your data to assemble a plant mtDNA sequence](#9-use-your-data-to-assemble-a-plant-mtdna-sequence)
+- [Description](#description)
+- [Key Features](#key-features)
+- [How It Works](#how-it-works)
+- [Usage with main Polap menus](#usage-with-main-polap-menus)
+  - [Help Message](#help-message)
+  - [Input Data](#input-data)
+  - [Whole-Genome Assembly](#whole-genome-assembly)
+  - [Plant Organelle Annotation](#plant-organelle-annotation)
+  - [Organelle Contig Selection](#organelle-contig-selection)
+  - [Organelle-Genome Assembly](#organelle-genome-assembly)
+  - [Extracting a mitochondrial DNA sequence using Bandage](#extracting-a-mitochondrial-dna-sequence-using-bandage)
+  - [Polishing](#polishing)
+  - [Sample Datasets](#sample-datasets)
+  - [MT Contig Name File](#mt-contig-name-file)
+  - [Genome assembly numbers](#genome-assembly-numbers)
+- [Using BioProject data](#using-bioproject-data)
+- [Detailed instructions of installation](#detailed-instructions-of-installation)
+  - [Using Bioconda packages](#using-bioconda-packages)
+  - [Short-read polishing Requirement: FMLRC](#short-read-polishing-requirement-fmlrc)
+  - [Using github source](#using-github-source)
+  - [Updating the conda Polap package with the github source](#updating-the-conda-polap-package-with-the-github-source)
+- [Uninstalling Polap](#uninstalling-polap)
+  - [Step 1: Uninstall Miniconda](#step-1-uninstall-miniconda)
+  - [Step 2: Remove Environment Variables](#step-2-remove-environment-variables)
+  - [Step 3: Remove Conda Configuration Files](#step-3-remove-conda-configuration-files)
+  - [Step 4: Verify Removal](#step-4-verify-removal)
+- [More](#more)
+  - [Options](#options)
+    - [Menu options](#menu-options)
+    - [General options](#general-options)
+    - [Detailed description of some of the options](#detailed-description-of-some-of-the-options)
+  - [Authors](#authors)
 
-Polap originated as an extension of ptGAUL, with a specific focus on assembling plant mtDNA from long-read sequencing data. The workflow begins by conducting a Flye whole-genome assembly, generating contigs without a reference genome. These contigs are then analyzed with [BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi) to confirm the presence of mtDNA or chloroplast (ptDNA) genes. Using depth and copy number metrics, Polap allows users to identify likely mtDNA contigs, collects them, and performs a final targeted mtDNA assembly. The pipeline concludes with polishing using FMLRC, resulting in an accurate, high-quality mtDNA assembly.
-
-## Key Features
-
-- **Rough organellar gene annotation**: Enables Polap to select contigs from mitochondrial and chloroplast origins, focusing specifically on the target mtDNA.
-- **Organellar seed contig selection**: (Not tested yet!) Polap adds custom logic to filter and identify organelle-specific contigs.
-
-## How It Works
-
-1. **Initial whole-genome assembly**: Flye performs a whole-genome assembly on the input long reads. We need paired-end short-read data to estimate the genome size using **JellyFish**. The current version of Flye does not require a genome size for the genome assembly, but we have not test it yet. Because Polap still needs short-read data for a final polishing using FMLRC, it uses short-read data to estimate the genome size that might help Flye perform a whole-genome assembly with less memory and computing time.
-2. **Organellar seed contig selection**: Using BLAST, Polap identifies mtDNA-related contigs based on the presence of organelle genes. Users need to manually select mitochondrial-origin contigs using organelle gene annotation tables that are made by **Flye** and modified by **Polap**.
-3. **Organelle-gename assembly**: Selected mtDNA seed contigs and the input long-read sequencing data are aligned using **[Minimap2](https://github.com/lh3/minimap2)** and those reads that are well mapped on the input long reads are fed into **Flye** to assembly the organellar genome. We borrow the approach of **ptGAUL** in this long-read selection.
-4. **Final Polishing**: The selected mtDNA contigs undergo polishing with FMLRC for accurate genome assembly. Short-read sequence polishing uses **FMLRC** for high-quality, error-corrected assemblies of the target mitochondrial genome as suggested by **ptGAUL**.
-
-## Requirements
-
-- **Operating System**: Linux (not compatible with macOS or Windows)
-- **Dependencies**: Requires [Bash](https://www.gnu.org/software/bash/) (>= 3.0) and **[Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/)**
-- **Installation**: Can be installed via [Bioconda](https://bioconda.github.io/)'s [Polap conda package](https://anaconda.org/bioconda/polap) or manually from the Github source available at [Polap](https://github.com/goshng/polap)
+<!-- TOC END -->
 
 ## Quick Start
 
+#### Requirements
+
+- **Operating System**: Linux (not compatible with macOS or Windows)
+- **Dependencies**: Requires [Bash](https://www.gnu.org/software/bash/) (>= 5.0) and **[Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/)**
+- **Installation**: Can be installed via [Bioconda](https://bioconda.github.io/)'s [Polap conda package](https://anaconda.org/bioconda/polap) or manually from the Github source available at [Polap](https://github.com/goshng/polap)
+
 #### 1. Open a new terminal
 
-Open a new terminal in a Linux computer, such as one with Ubuntu.
+Open a new terminal in a Linux computer, such as one with Ubuntu. Follow the next steps by copying and pasting the scripts to your favorite terminal.
 
-#### 2. Install [Miniconda](https://docs.anaconda.com/miniconda/#quick-command-line-install)
+#### 2. Install Miniconda (5 mins)
 
-Download and install **[Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/)**.
+Download and install **[Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/)** using the [instructions](https://docs.anaconda.com/miniconda/#quick-command-line-install)
 
 ```bash
 mkdir -p ~/miniconda3
@@ -58,22 +88,22 @@ conda config --add channels conda-forge
 conda config --set channel_priority strict
 ```
 
-#### 4. Install the Bioconda package, [Polap](https://anaconda.org/bioconda/polap):
+#### 4. Install the Bioconda Polap package (5 mins)
 
-Setup `polap` and `polap-fmlrc` conda environments.
+Setup `polap` and `polap-fmlrc` conda environments using [Polap](https://anaconda.org/bioconda/polap) conda package.
 
 ```bash
 conda create -y --name polap polap
 ```
 
-#### 5. Activate the polap conda environment and setup polap-fmlrc environment
+#### 5. Activate the polap conda environment and setup polap-fmlrc environment (2 min)
 
 ```bash
 conda activate polap
 base_dir=$(dirname "$(command -v polap)") && conda env create -f $base_dir/polap-conda-environment-fmlrc.yaml
 ```
 
-#### 6. Polap run with a test dataset
+#### 6. Polap run with a test dataset (10 mins)
 
 ```bash
 wget -q https://github.com/goshng/polap/archive/refs/tags/0.3.7.3.zip
@@ -88,9 +118,9 @@ If you see this output, then you are ready to use the long-read assembly pipelin
 output: the assembly graph: 2-oga.gfa
 ```
 
-After completing this step, you can move on to the step 3 of [testing the short-read polishing](#3-test-the-short-read-polishing) process.
+After completing this step, you can move on to step 7 of [testing the short-read polishing](#7-polish-the-test-dataset) process.
 
-#### 7. Polish the test dataset
+#### 7. Polish the test dataset (10 mins)
 
 Then, polish the provided sequence file, `mt.0.fasta`, which is a test file for the short-read polishing.
 
@@ -105,7 +135,23 @@ diff mt.0.fa mt.1.fa
 
 If you see no output from the command, `diff mt.0.fa mt.0.fa`, then you are ready to use the polishing procedure as well.
 
-#### 8. Use your data to assemble a plant mtDNA sequence:
+#### 8. Test BioProject SRA data (2 hours)
+
+Because you have done the test data run, you do not need this step and proceed to the next step where you could try Polap with your own data set.
+Note that using Polap's `assemble` menu is experimential or not tested yet! You might have a very simple plant mitochondrial DNA genome structure like this case: mtDNA assembly of _Carex pseudochinensis_ at a linux compuer with Intel(R) Xeon(R) CPU E5-2690 v4 @ 2.60GHz and 256 GB memory.
+
+```bash
+mkdir Carex_pseudochinensis
+cd Carex_pseudochinensis
+polap x-ncbi-fetch-sra --sra SRR30757341
+polap x-ncbi-fetch-sra --sra SRR30757340
+cp -s SRR30757341.fastq l.fq
+cp -s SRR30757340_1.fastq s1.fq
+cp -s SRR30757340_2.fastq s2.fq
+polap assemble --polap-reads
+```
+
+#### 9. Use your data to assemble a plant mtDNA sequence
 
 Now, if you have your Illumina paired-end short- and Oxford Nanopore long-read data files, put those in a folder and rename them as follows. Assume that you have three fastq files:
 
@@ -240,203 +286,25 @@ polap polish
 Your final mtDNA genome assembly is in the file named `mt.1.fa`, that you use [GeSeq](https://chlorobox.mpimp-golm.mpg.de/geseq.html) to actually annotate.
 For more detailed installation and usage instructions, please read along with this **README**.
 
-## Using BioProject data
+## Description
 
-Note that using Polap's `assemble` menu is experimential or not tested yet!
-One could try to use BioProject datasets to assemble mtDNA genomes. The following is a template bash script where you could replace `long` with SRA accession for an Oxford Nanopore long-read dataset, and `short` with that of an Illumina short-read dataset.
+**Polap** is a specialized meta-assembly pipeline that enhances the functionality of the [Flye](https://github.com/fenderglass/Flye) assembler. Serving as a Flye helper pipeline, Polap incorporates organellar gene annotation, aiding in the educated guess of selection of organelle-origin contigs from Flye's whole-genome assembly. The name "Polap" is inspired by the [ptGAUL](https://github.com/Bean061/ptgaul) chloroplast genome assembly pipeline created by Wenbin Zhou, as Polap similarly focuses on organellar genomes, specifically plant mitochondrial DNA (mtDNA).
 
-```bash
-polap x-ncbi-fetch-sra --sra long
-polap x-ncbi-fetch-sra --sra short
-cp -s long.fastq l.fq
-cp -s short_1.fastq s1.fq
-cp -s short_2.fastq s2.fq
-polap assemble
-```
+The pipeline combines the **Flye** assembler with [FMLRC](https://github.com/holtjma/fmlrc) (a sequence polishing tool by Matt Holt) and applies sequencing depth analysis to identify contigs belonging to the mitochondrial genome. Leveraging both Flye-generated assemblies and organellar gene annotations, Polap helps users identify candidate mtDNA contigs based on sequencing depth and gene presence, enabling targeted selection and assembly of mtDNA.
 
-The following examples are the cases where one could relativetly easily locate the mitochondrial-origin seed contigs in the Flye whole-genome assembly.
+Polap originated as an extension of ptGAUL, with a specific focus on assembling plant mtDNA from long-read sequencing data. The workflow begins by conducting a Flye whole-genome assembly, generating contigs without a reference genome. These contigs are then analyzed with [BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi) to confirm the presence of mtDNA or chloroplast (ptDNA) genes. Using depth and copy number metrics, Polap allows users to identify likely mtDNA contigs, collects them, and performs a final targeted mtDNA assembly. The pipeline concludes with polishing using FMLRC, resulting in an accurate, high-quality mtDNA assembly.
 
-1. mtDNA assembly of _Spirodela polyrhiza_:
+## Key Features
 
-```bash
-polap x-ncbi-fetch-sra --sra SRR11472010
-polap x-ncbi-fetch-sra --sra SRR11472009
-cp -s SRR11472010.fastq l.fq
-cp -s SRR11472009_1.fastq s1.fq
-cp -s SRR11472009_2.fastq s2.fq
-polap assemble
-```
+- **Rough organellar gene annotation**: Enables Polap to select contigs from mitochondrial and chloroplast origins, focusing specifically on the target mtDNA.
+- **Organellar seed contig selection**: (Not tested yet!) Polap adds custom logic to filter and identify organelle-specific contigs.
 
-2. mtDNA assembly of _Taraxacum mongolicum_:
+## How It Works
 
-```bash
-polap x-ncbi-fetch-sra --sra SRR19182970
-polap x-ncbi-fetch-sra --sra SRR19182971
-cp -s SRR19182970.fastq l.fq
-cp -s SRR19182971_1.fastq s1.fq
-cp -s SRR19182971_2.fastq s2.fq
-polap assemble
-```
-
-3. mtDNA assembly of _Anthoceros agrestis_:
-
-```bash
-polap x-ncbi-fetch-sra --sra SRR10190639
-polap x-ncbi-fetch-sra --sra SRR10250248
-cp -s SRR10190639.fastq l.fq
-cp -s SRR10250248_1.fastq s1.fq
-cp -s SRR10250248_2.fastq s2.fq
-polap assemble
-```
-
-## Detailed instructions of installation
-
-### Using [Bioconda](https://bioconda.github.io/) package
-
-1. Install Miniconda by following the installation procedure:
-
-   ```bash
-   $ curl -OL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-   $ bash Miniconda3-latest-Linux-x86_64.sh
-   ```
-
-2. Log out and log in back to activate a conda environment. The following prompt with base indicates that you are ready to use conda environments:
-   ```bash
-   (base) $
-   ```
-3. Configure Conda so that it would allow to install [Bioconda](https://bioconda.github.io/) packages:
-   ```bash
-   (base) $ conda update -y -n base conda
-   (base) $ conda config --prepend channels bioconda
-   (base) $ conda config --prepend channels conda-forge
-   ```
-4. Check your default channels and the order of the three channels:
-   ```bash
-   (base) $ conda config --show channels
-   channels:
-      - conda-forge
-      - bioconda
-      - defaults
-   ```
-5. Install Polap:
-   ```bash
-   (base) $ conda create --name polap bioconda::polap
-   ```
-6. Test Polap:
-   ```bash
-   (base) $ conda activate polap
-   (polap) $ git clone https://github.com/goshng/polap.git
-   (polap) $ cd polap/test
-   (polap) $ polap assemble --test
-   ```
-7. Check the output:
-   ```bash
-   output: the assembly graph: 2-oga.gfa
-   ```
-
-We need one more step for the installation.
-Although it is not actually a part of Polap, we need a short-read polishing step with **FMLRC**, which required a separate conda environment.
-It may be complicated, but read along with this **README** where I explain why currently we have to do this one more installation step.
-
-### Short-read polishing Requirement: FMLRC
-
-**FMLRC** required a python version 2, which was too old to be installed along with other Bioconda packages for Polap.
-So, we could not create a single Bioconda package for Polap. Instead, users could install one more conda environment for the short-read polishing step.
-Here's how to create a separate Conda environment for **FMLRC** while maintaining compatibility with **Polap's** environment. This setup ensures that FMLRC and Polap can function independently without conflicts. Following the previous setup, you'll need to create a new environment specifically for FMLRC. This will prevent any compatibility issues with Polap's main environment.
-
-1. **Create the FMLRC Environment** (note: we need the specific conda environment name of polap-fmlrc for Polap to use it in the short-read polishing step):
-
-   ```bash
-   (polap) $ conda deactivate
-   (base) $ git clone https://github.com/goshng/polap.git
-   (base) $ cd polap
-   (base) $ conda env create -f src/polap-conda-environment-fmlrc.yaml
-   ```
-
-2. **Activate the FMLRC Environment**:
-
-   ```bash
-   (base) $ conda activate polap-fmlrc
-   ```
-
-3. **Test-run of FMLRC for Sequence Polishing**:
-   Execute the FMLRC polishing commands as needed. Once complete, you can switch back to the Polap environment:
-   ```bash
-   (polap-fmlrc) $ cd test
-   (polap-fmlrc) $ ../src/polap.sh prepare-polishing
-   (polap-fmlrc) $ ../src/polap.sh polish
-   (polap-fmlrc) $ conda deactivate
-   (base) $
-   ```
-
-This way, you can seamlessly transition between the two environments, keeping dependencies separate for both Polap and FMLRC.
-
-### Using github source
-
-If you're unable to install Polap via the Bioconda package, you can install it directly from the GitHub source. Ensure that **Miniconda** is installed beforehand, as Polap relies on tools, including **Flye**, **Minimap2**, **Jellyfish**, and others.
-
-0. Make sure that you have **Miniconda** ready before following next steps.
-
-1. Download the source code of Polap available at [Polap](https://github.com/goshng/polap)'s github website:
-
-   ```bash
-   (base) $ git clone https://github.com/goshng/polap.git
-   (base) $ cd polap
-   ```
-
-2. Setup the conda environments for [Polap](https://github.com/goshng/polap).
-
-   ```bash
-   (base) $ conda env create -f src/polap-conda-environment.yaml
-   ```
-
-3. Setup the conda environment for [FMLRC](https://github.com/holtjma/fmlrc).
-
-   ```bash
-   (base) $ conda env create -f src/polap-conda-environment-fmlrc.yaml
-   ```
-
-4. Activate polap conda environment.
-
-   ```bash
-   (base) $ conda activate polap
-   ```
-
-5. Run Polap with a test dataset.
-
-   ```bash
-   (polap) $ cd test
-   (polap) $ ../src/polap.sh assemble --test
-   ```
-
-6. If you see a screen output ending with the something like this:
-
-   ```bash
-   output: the assembly graph: 2-oga.gfa
-   ```
-
-7. Polishing with a short-read data:
-   ```bash
-   (polap) $ conda deactivate
-   (base) $ conda activate polap-fmlrc
-   (polap-fmlrc) $ ../src/polap.sh prepare-polishing
-   (polap-fmlrc) $ ../src/polap.sh polish
-   ```
-
-Your final mitochondrial genome sequence is `mt.1.fa`.
-
-### Updating the conda Polap package with the github source
-
-Note: We currently have a problem in the Bioconda package. For the time being, follow this script instead.
-
-```bash
-git clone https://github.com/goshng/polap.git
-polap/src/polap.sh get-revision1
-bash polap-revision1.sh patch
-bash polap-revision1.sh install-fmlrc
-bash polap-revision1.sh test
-conda activate polap
-```
+1. **Initial whole-genome assembly**: Flye performs a whole-genome assembly on the input long reads. We need paired-end short-read data to estimate the genome size using **JellyFish**. The current version of Flye does not require a genome size for the genome assembly, but we have not test it yet. Because Polap still needs short-read data for a final polishing using FMLRC, it uses short-read data to estimate the genome size that might help Flye perform a whole-genome assembly with less memory and computing time.
+2. **Organellar seed contig selection**: Using BLAST, Polap identifies mtDNA-related contigs based on the presence of organelle genes. Users need to manually select mitochondrial-origin contigs using organelle gene annotation tables that are made by **Flye** and modified by **Polap**.
+3. **Organelle-gename assembly**: Selected mtDNA seed contigs and the input long-read sequencing data are aligned using **[Minimap2](https://github.com/lh3/minimap2)** and those reads that are well mapped on the input long reads are fed into **Flye** to assembly the organellar genome. We borrow the approach of **ptGAUL** in this long-read selection.
+4. **Final Polishing**: The selected mtDNA contigs undergo polishing with FMLRC for accurate genome assembly. Short-read sequence polishing uses **FMLRC** for high-quality, error-corrected assemblies of the target mitochondrial genome as suggested by **ptGAUL**.
 
 ## Usage with main Polap menus
 
@@ -609,29 +477,6 @@ You could use `-p` option to specify your draft sequence FASTA file.
 
 The final polished mitochondrial genome sequence will be saved as `mt.1.fa`.
 
-## Uninstalling Polap
-
-To completely remove Polap and its associated environments, follow these steps:
-
-1. **Deactivate the Polap environment**:
-
-   ```bash
-   (polap) $ conda deactivate
-   ```
-
-2. **Remove the Polap environment**:
-
-   ```bash
-   (base) $ conda remove -n polap --all
-   ```
-
-3. **Remove the Polap-FMLRC environment**:
-   ```bash
-   (base) $ conda remove -n polap-fmlrc --all
-   ```
-
-## More
-
 ### Sample Datasets
 
 A sample dataset demonstrating Polap's capabilities is available on Figshare: [Polap data analysis of 11 datasets](https://figshare.com/s/07305fd4e18c74080fbc).
@@ -690,6 +535,289 @@ Polap's has a few options that are often used or implicitly assumed when you exe
 - `--inum 1 --jnum 2`: 1 is the whole-genome assembly, and 2 is the organelle-genome assembly. You must have '1/mt.contig.name-2' for the seed file.
 
 The whole-genome assembly number should be less than the organelle-genome assembly although Polap would allow the case of the other way around.
+
+## Using BioProject data
+
+Note that using Polap's `assemble` menu is experimential or not tested yet!
+One could try to use BioProject datasets to assemble mtDNA genomes. The following is a template bash script where you could replace `long` with SRA accession for an Oxford Nanopore long-read dataset, and `short` with that of an Illumina short-read dataset.
+
+```bash
+polap x-ncbi-fetch-sra --sra long
+polap x-ncbi-fetch-sra --sra short
+cp -s long.fastq l.fq
+cp -s short_1.fastq s1.fq
+cp -s short_2.fastq s2.fq
+polap assemble
+```
+
+The following examples are the cases where one could relativetly easily locate the mitochondrial-origin seed contigs in the Flye whole-genome assembly.
+
+1. mtDNA assembly of _Spirodela polyrhiza_:
+
+```bash
+polap x-ncbi-fetch-sra --sra SRR11472010
+polap x-ncbi-fetch-sra --sra SRR11472009
+cp -s SRR11472010.fastq l.fq
+cp -s SRR11472009_1.fastq s1.fq
+cp -s SRR11472009_2.fastq s2.fq
+polap assemble
+```
+
+2. mtDNA assembly of _Taraxacum mongolicum_:
+
+```bash
+polap x-ncbi-fetch-sra --sra SRR19182970
+polap x-ncbi-fetch-sra --sra SRR19182971
+cp -s SRR19182970.fastq l.fq
+cp -s SRR19182971_1.fastq s1.fq
+cp -s SRR19182971_2.fastq s2.fq
+polap assemble
+```
+
+3. mtDNA assembly of _Anthoceros agrestis_:
+
+```bash
+polap x-ncbi-fetch-sra --sra SRR10190639
+polap x-ncbi-fetch-sra --sra SRR10250248
+cp -s SRR10190639.fastq l.fq
+cp -s SRR10250248_1.fastq s1.fq
+cp -s SRR10250248_2.fastq s2.fq
+polap assemble
+```
+
+## Detailed instructions of installation
+
+### Using Bioconda packages
+
+1. Install Miniconda by following the installation procedure:
+
+   ```bash
+   $ curl -OL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+   $ bash Miniconda3-latest-Linux-x86_64.sh
+   ```
+
+2. Log out and log in back to activate a conda environment. The following prompt with base indicates that you are ready to use conda environments:
+   ```bash
+   (base) $
+   ```
+3. Configure Conda so that it would allow to install [Bioconda](https://bioconda.github.io/) packages:
+   ```bash
+   (base) $ conda update -y -n base conda
+   (base) $ conda config --prepend channels bioconda
+   (base) $ conda config --prepend channels conda-forge
+   ```
+4. Check your default channels and the order of the three channels:
+   ```bash
+   (base) $ conda config --show channels
+   channels:
+      - conda-forge
+      - bioconda
+      - defaults
+   ```
+5. Install Polap:
+   ```bash
+   (base) $ conda create --name polap bioconda::polap
+   ```
+6. Test Polap:
+   ```bash
+   (base) $ conda activate polap
+   (polap) $ git clone https://github.com/goshng/polap.git
+   (polap) $ cd polap/test
+   (polap) $ polap assemble --test
+   ```
+7. Check the output:
+   ```bash
+   output: the assembly graph: 2-oga.gfa
+   ```
+
+We need one more step for the installation.
+Although it is not actually a part of Polap, we need a short-read polishing step with **FMLRC**, which required a separate conda environment.
+It may be complicated, but read along with this **README** where I explain why currently we have to do this one more installation step.
+
+### Short-read polishing Requirement: FMLRC
+
+**FMLRC** required a python version 2, which was too old to be installed along with other Bioconda packages for Polap.
+So, we could not create a single Bioconda package for Polap. Instead, users could install one more conda environment for the short-read polishing step.
+Here's how to create a separate Conda environment for **FMLRC** while maintaining compatibility with **Polap's** environment. This setup ensures that FMLRC and Polap can function independently without conflicts. Following the previous setup, you'll need to create a new environment specifically for FMLRC. This will prevent any compatibility issues with Polap's main environment.
+
+1. **Create the FMLRC Environment** (note: we need the specific conda environment name of polap-fmlrc for Polap to use it in the short-read polishing step):
+
+   ```bash
+   (polap) $ conda deactivate
+   (base) $ git clone https://github.com/goshng/polap.git
+   (base) $ cd polap
+   (base) $ conda env create -f src/polap-conda-environment-fmlrc.yaml
+   ```
+
+2. **Activate the FMLRC Environment**:
+
+   ```bash
+   (base) $ conda activate polap-fmlrc
+   ```
+
+3. **Test-run of FMLRC for Sequence Polishing**:
+   Execute the FMLRC polishing commands as needed. Once complete, you can switch back to the Polap environment:
+   ```bash
+   (polap-fmlrc) $ cd test
+   (polap-fmlrc) $ ../src/polap.sh prepare-polishing
+   (polap-fmlrc) $ ../src/polap.sh polish
+   (polap-fmlrc) $ conda deactivate
+   (base) $
+   ```
+
+This way, you can seamlessly transition between the two environments, keeping dependencies separate for both Polap and FMLRC.
+
+### Using github source
+
+If you're unable to install Polap via the Bioconda package, you can install it directly from the GitHub source. Ensure that **Miniconda** is installed beforehand, as Polap relies on tools, including **Flye**, **Minimap2**, **Jellyfish**, and others.
+
+0. Make sure that you have **Miniconda** ready before following next steps.
+
+1. Download the source code of Polap available at [Polap](https://github.com/goshng/polap)'s github website:
+
+   ```bash
+   (base) $ git clone https://github.com/goshng/polap.git
+   (base) $ cd polap
+   ```
+
+2. Setup the conda environments for [Polap](https://github.com/goshng/polap).
+
+   ```bash
+   (base) $ conda env create -f src/polap-conda-environment.yaml
+   ```
+
+3. Setup the conda environment for [FMLRC](https://github.com/holtjma/fmlrc).
+
+   ```bash
+   (base) $ conda env create -f src/polap-conda-environment-fmlrc.yaml
+   ```
+
+4. Activate polap conda environment.
+
+   ```bash
+   (base) $ conda activate polap
+   ```
+
+5. Run Polap with a test dataset.
+
+   ```bash
+   (polap) $ cd test
+   (polap) $ ../src/polap.sh assemble --test
+   ```
+
+6. If you see a screen output ending with the something like this:
+
+   ```bash
+   output: the assembly graph: 2-oga.gfa
+   ```
+
+7. Polishing with a short-read data:
+   ```bash
+   (polap) $ conda deactivate
+   (base) $ conda activate polap-fmlrc
+   (polap-fmlrc) $ ../src/polap.sh prepare-polishing
+   (polap-fmlrc) $ ../src/polap.sh polish
+   ```
+
+Your final mitochondrial genome sequence is `mt.1.fa`.
+
+### Updating the conda Polap package with the github source
+
+Note: We currently have a problem in the Bioconda package. For the time being, follow this script instead.
+
+```bash
+git clone https://github.com/goshng/polap.git
+polap/src/polap.sh get-revision1
+bash polap-revision1.sh patch
+bash polap-revision1.sh install-fmlrc
+bash polap-revision1.sh test
+conda activate polap
+```
+
+## Uninstalling Polap
+
+To completely remove Polap and its associated environments, follow these steps:
+
+1. **Deactivate the Polap environment**:
+
+   ```bash
+   (polap) $ conda deactivate
+   ```
+
+2. **Remove the Polap environment**:
+
+   ```bash
+   (base) $ conda remove -n polap --all
+   ```
+
+3. **Remove the Polap-FMLRC environment**:
+   ```bash
+   (base) $ conda remove -n polap-fmlrc --all
+   ```
+
+To completely remove Miniconda from an Ubuntu system, follow these steps:
+
+### Step 1: Uninstall Miniconda
+
+1. **Open Terminal** and deactivate any active Conda environments:
+
+   ```bash
+   conda deactivate
+   ```
+
+2. **Remove Miniconda Installation Directory**:
+   Locate your Miniconda installation folder. By default, it is usually in your home directory, e.g., `~/miniconda3`.
+
+   To remove it:
+
+   ```bash
+   rm -rf ~/miniconda3
+   ```
+
+### Step 2: Remove Environment Variables
+
+1. **Edit Your Shell Profile File** (`~/.bashrc`, `~/.bash_profile`, `~/.zshrc`, etc.), and remove any lines that reference Miniconda. Typically, you’ll see a line like:
+
+   ```bash
+   export PATH="/home/yourusername/miniconda3/bin:$PATH"
+   ```
+
+   Delete or comment out this line.
+
+2. **Update the Profile File**:
+   After editing, reload your shell profile to apply changes:
+   ```bash
+   source ~/.bashrc
+   ```
+   Or, if using another shell profile, replace `.bashrc` with the appropriate profile name.
+
+### Step 3: Remove Conda Configuration Files
+
+1. **Remove Conda Configuration Files**:
+   Delete the `.conda` and `.condarc` files from your home directory:
+   ```bash
+   rm -rf ~/.conda ~/.condarc
+   ```
+
+### Step 4: Verify Removal
+
+1. **Verify if Conda is Fully Removed**:
+   Ensure there is no Conda left in your system path by running:
+
+   ```bash
+   which conda
+   ```
+
+   It should return nothing.
+
+2. **Check Environment Variables**:
+   Ensure the Conda binary is no longer in your `PATH`:
+   ```bash
+   echo $PATH
+   ```
+   Confirm that the path to Miniconda is no longer present.
+
+## More
 
 ### Options
 

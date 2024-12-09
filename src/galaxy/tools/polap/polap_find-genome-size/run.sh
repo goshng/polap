@@ -1,0 +1,11 @@
+planemo tool_init --force \
+	--macros \
+	--id "polap_find_genome_size" \
+	--name "Estimate the genome size using a paired-end short-read data" \
+	--requirement polap@0.3.7.3 \
+	--example_command "polap find-genome-size -a s1.fq -b s2.fq" \
+	--example_input s1.fq \
+	--example_input s2.fq \
+	--example_output o/short_expected_genome_size.txt \
+	--test_case \
+	--help_from_command "polap find-genome-size --help"

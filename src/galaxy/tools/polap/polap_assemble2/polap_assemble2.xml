@@ -1,0 +1,80 @@
+<tool id="polap_assemble2" name="Polap assemble2" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" python_template_version="3.5" profile="21.05">
+    <description>: select seed contigs for plant mitochondrial DNAs</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="biotools" />
+    <expand macro="requirements" />
+    <command detect_errors="exit_code"><![CDATA[
+    mkdir -p o/0/30-contigger &&
+    cd o && ln -s '$lk' lk.fq.gz && ln -s lk.fq.gz nk.fq.gz && cd - &&
+    cd o/0/30-contigger && ln -s '$gfa' graph_final.gfa && cd - &&
+    cd o/0 && ln -s '$mtcontigname' mt.contig.name-1 && cd - &&
+    polap assemble2 --single-min "${omega}" --min-read-length "${m}" --coverage "${c}" 
+    #if "${no_reduction}" == "true":
+      --no-coverage-check
+    #end if
+    #if "${use_polap_reads}" == "true":
+      --polap-reads
+    #end if
+    ]]></command>
+    <inputs>
+        <param name="lk" type="data" format="fastqsanger.gz" label="Reduced long-read data for organelle-genome assembly" />
+        <param type="data" name="gfa" label="Whole-genome assembly" format="gfa,gfa1,gfa2" />
+        <param type="data" format="txt" name="mtcontigname" label="Seed contigs" />
+        <param name="m" type="integer" value="3000" argument="--min-read-length" label="Minimum length of long-read sequences" />
+        <param name="omega" type="integer" value="3000" argument="--single-min" label="Minimum mapping length for organelle-genome assembly" />
+        <param name="c" type="integer" value="50" argument="--coverage" label="Maximum coverage for sampling long-read sequences" />
+        <param name="no_reduction" label="No reduction in the long-read data for organelle-genome assembly" type="boolean" argument="--no-coverage-check" truevalue="--no-coverage-check" falsevalue="" />
+        <param name="use_polap_reads" label="Use Polap's read selection" type="boolean" argument="--polap-reads" truevalue="--polap-reads" falsevalue="" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="gfa" from_work_dir="2-oga.gfa" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="lk" value="lk.fq.gz"/>
+            <param name="gfa" value="graph_final.gfa"/>
+            <param name="mtcontigname" value="mt.contig.name-1"/>
+            <output name="output1" file="2-oga.gfa"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+Overview
+--------
+
+This tool assembles organelle genomes using seed contig sequences and
+long-read read FASTQ data.
+
+Inputs
+------
+
+-  **Whole-genome assembly graph**: a Flye’s ``gfa`` format data file.
+-  **MT seed edge IDs**: ``mt.contig.name-1``
+-  **Minimum length of long-read sequences**: the long-read sequence
+   length threshold
+-  **Minimum mapping length for read selection**: the sequence length
+   threshold
+-  **Use Polap’s read selection**: default is ptGAUL’s read selection
+-  **Coverage**: maximum coverage of reads for the organelle-genome
+   assembly
+-  **No coverage check**: no data reduction in an organelle-genome
+   assembly
+
+Outputs
+-------
+
+-  **organelle-genome assembly**: a Flye’s ``gfa`` format data file.
+
+Usage
+-----
+
+To use this tool, upload a Flye’s ``gfa`` assembly file and seed
+contigs.
+
+**Example:**
+
+polap assemble2 -w 3000 –polap-reads
+    ]]></help>
+    <expand macro="citations" />
+</tool>

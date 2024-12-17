@@ -124,7 +124,7 @@ _arg_help="off"
 _arg_flye_data_type="--nano-raw"
 
 source "$script_dir/polap-git-hash-version.sh"
-_polap_version=v0.3.7.4-"${_polap_git_hash_version}"
+_polap_version=v0.3.8.1-"${_polap_git_hash_version}"
 _polap_command_string=polap
 
 print_help() {

@@ -91,7 +91,8 @@ _arg_knum="1"
 _arg_start_index=0
 _arg_select_contig="1"
 _arg_select_contig_numbers=(1 2 3 4 5 6)
-_arg_select_read_range="3000,39000,7"
+# _arg_select_read_range="3000,39000,7"
+_arg_select_read_range="3000,3000,1"
 _arg_select_read_range_is="off"
 _arg_report_x="5000,7000,9000,11000,13000,15000,17000"
 _arg_report_x_is="off"
@@ -105,6 +106,7 @@ _arg_subject=
 # Add options of on and off
 _arg_markdown="off"
 _arg_flye="on"
+_arg_directional="off"
 _arg_reduction_reads="on"
 _arg_contigger="on"
 _arg_all_annotate="off"
@@ -122,9 +124,10 @@ _arg_verbose=1
 _arg_help="off"
 # flye options
 _arg_flye_data_type="--nano-raw"
+_arg_minimap2_data_type="map-ont"
 
 source "$script_dir/polap-git-hash-version.sh"
-_polap_version=v0.3.8.1-"${_polap_git_hash_version}"
+_polap_version=v0.4.1.1-"${_polap_git_hash_version}"
 _polap_command_string=polap
 
 print_help() {
@@ -138,7 +141,7 @@ Usage: ${_polap_command_string} [<menu> [<menu2> [<menu3>]]] [-o|--outdir <arg>]
       [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>]
       [-i|--inum <arg>] [-j|--jnum <arg>] [-w|--single-min <arg>]
       [-m|--min-read-length <arg>] [-t|--threads <arg>] [--test] [--log <arg>] 
-      [--random-seed <arg>] [--version] [-h|--help]
+      [--directional] [--random-seed <arg>] [--version] [-h|--help]
 
 Assemble mitochondrial DNA (mtDNA) in a single command (not tested yet):
   ${_polap_command_string} -l <arg> -a <arg> [-b <arg>]
@@ -313,6 +316,13 @@ Options:
     The default read selection is ptGAUL's approach.
     This option allows long reads that are mapped within a seed contig and
     between two contigs.
+
+  --directional: (default: ${_arg_directional})
+    Use only forward strands of seed contigs and reads mapped on the seeds.
+    Seed contigs need to be specific to direction; edge_1+ not just edge_1.
+    Each line of mt.contig.name file could have multiple edge name with plus or
+    minus sign separated by a comma.
+    Example: edge_1+, edge_2-, edge_7+, edge_2+
 
   --bridge-same-strand: (default: ${_arg_bridge_same_strand})
     When linking two inverted repeats, enabling this feature ensures that 
@@ -745,21 +755,27 @@ parse_commandline() {
 			;;
 		--flye-pacbio-raw)
 			_arg_flye_data_type="--pacbio-raw"
+			_arg_minimap2_data_type="map-pb"
 			;;
 		--flye-pacbio-corr)
 			_arg_flye_data_type="--pacbio-corr"
+			_arg_minimap2_data_type="map-pb"
 			;;
 		--flye-pacbio-hifi)
 			_arg_flye_data_type="--pacbio-hifi"
+			_arg_minimap2_data_type="map-hifi"
 			;;
 		--flye-nano-raw)
 			_arg_flye_data_type="--nano-raw"
+			_arg_minimap2_data_type="map-ont"
 			;;
 		--flye-nano-corr)
 			_arg_flye_data_type="--nano-corr"
+			_arg_minimap2_data_type="map-ont"
 			;;
 		--flye-nano-fq)
 			_arg_flye_data_type="--nano-fq"
+			_arg_minimap2_data_type="map-ont"
 			;;
 		--outfile)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -797,6 +813,10 @@ parse_commandline() {
 			if [[ "${_arg_test}" == "on" ]]; then
 				_arg_plastid="on"
 			fi
+			;;
+		--no-directional | --directional)
+			_arg_directional="on"
+			test "${1:0:5}" = "--no-" && _arg_directional="off"
 			;;
 		--version)
 			echo $0 ${_polap_version}

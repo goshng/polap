@@ -478,31 +478,49 @@ function _run_polap_reduce-data { # reduce the long-read data, if too big
 
 	help_message=$(
 		cat <<HEREDOC
-# Reduce the long-read data for a Flye genome assembly.
-#
-# Arguments:
-#   -l ${_arg_long_reads}: a long-read fastq data file
-#   or
-#   --bioproject use
-#   -o ${_arg_outdir}: ${_arg_outdir}/0-bioproject (the least priority)
-#   -m ${_arg_min_read_length}: the long-read sequence length threshold
-#   -c ${_arg_coverage}: the target coverage
-#   --no-reduction-reads
-#   --random-seed 11: for seqkit default seed
-#   --test
-# Inputs:
-#   ${_polap_var_outdir_genome_size}
-#   ${_polap_var_outdir_long_total_length}
-#   ${_arg_long_reads}
-# Outputs:
-#   ${_polap_var_outdir_lk_fq_gz}: reads longer than ${_arg_min_read_length} bp
-#   ${_polap_var_outdir_nk_fq_gz}: subsample of ${_arg_long_reads}
-# Menu:
-#   split <N>: splits ${_polap_var_outdir_lk_fq_gz} into N parts.
-#     for faster read selections
-Example: $(basename "$0") ${_arg_menu[0]} -l ${_arg_long_reads}
-Example: $(basename "$0") ${_arg_menu[0]} -o ${_arg_outdir} --bioproject use
-Example: $(basename "$0") ${_arg_menu[0]} split 10
+This tool reduces long-read data for a Flye genome assembly.
+
+Inputs
+------
+
+- source assembly number: i
+- ${_polap_var_outdir_genome_size}
+- ${_polap_var_outdir_long_total_length}
+- ${_arg_long_reads}
+
+- destination assembly number: j
+- j/01-contig/contig1.fa
+- j/01-contig/contig2.fa
+- ${_polap_var_outdir_lk_fq_gz}
+
+Outputs
+-------
+
+- ${_polap_var_outdir_lk_fq_gz}: reads longer than ${_arg_min_read_length} bp
+- ${_polap_var_outdir_nk_fq_gz}: subsample of ${_arg_long_reads}
+- ${_polap_var_outdir_nk8_fq_gz}: subsample of ${_arg_long_reads}
+
+Arguments
+---------
+-l ${_arg_long_reads}: a long-read fastq data file
+or
+--bioproject use
+-o ${_arg_outdir}: ${_arg_outdir}/0-bioproject (the least priority)
+-m ${_arg_min_read_length}: the long-read sequence length threshold
+-c ${_arg_coverage}: the target coverage
+--no-reduction-reads
+--random-seed 11: for seqkit default seed
+--test
+
+Menu
+----
+split <N>: splits ${_polap_var_outdir_lk_fq_gz} into N parts for faster read selections
+
+Usage
+-----
+$(basename "$0") ${_arg_menu[0]} -l ${_arg_long_reads}
+$(basename "$0") ${_arg_menu[0]} -o ${_arg_outdir} --bioproject use
+$(basename "$0") ${_arg_menu[0]} split 10
 HEREDOC
 	)
 
@@ -569,9 +587,11 @@ HEREDOC
 
 	if [[ -s "${_polap_var_outdir_nk_fq_gz}" ]] &&
 		[[ -s "${_polap_var_outdir_lk_fq_gz}" ]] &&
+		[[ -s "${_polap_var_outdir_nk4_fq_gz}" ]] &&
 		[[ "${_arg_redo}" == "off" ]]; then
 		_polap_log0 "  found: ${_polap_var_outdir_nk_fq_gz}, so skipping the long-read data reduction."
 		_polap_log0 "  found: ${_polap_var_outdir_lk_fq_gz}, so skipping the long-read data reduction."
+		_polap_log0 "  found: ${_polap_var_outdir_nk4_fq_gz}, so skipping the long-read data reduction."
 		return
 	fi
 
@@ -681,6 +701,41 @@ HEREDOC
       >${_polap_var_outdir_nk_fq_stats}"
 		_polap_log1 "    output: ${_polap_var_outdir_nk_fq_stats}"
 		_polap_log2_column "${_polap_var_outdir_nk_fq_stats}"
+	fi
+
+	# nk4, nk8, nk16, nk32
+	_polap_log0 "  reducing ${_polap_var_outdir_lk_fq_gz} -> ${_polap_var_outdir_nk4_fq_gz} ..."
+
+	if [[ -s "${_polap_var_outdir_nk4_fq_gz}" ]] && [[ "${_arg_redo}" == "off" ]]; then
+		_polap_log0 "  found: ${_polap_var_outdir_nk4_fq_gz}, so skipping the long-read data reduction."
+	else
+		local target_file=$(readlink -f "${_polap_var_outdir_lk_fq_gz}")
+		local file_size=$(stat --format="%s" "$target_file")
+		local limit_file_size=$((4 * 1024 * 1024 * 1024))
+		local ratio=$(echo "scale=4; $limit_file_size / $file_size" | bc)
+
+		# if [ "$EXPECTED_LONG_COVERAGE " -lt ${_arg_coverage} ]; then
+		if echo "${file_size} < ${limit_file_size}" | bc -l | grep -q 1; then
+			_polap_log1 "  No reduction of the long-read data because ${_EXPECTED_LONG_COVERAGE} < ${_arg_coverage}"
+			_polap_log3_cmd ln -s $(realpath "${_polap_var_outdir_lk_fq_gz}") "${_polap_var_outdir_nk4_fq_gz}"
+		else
+			local _RATE=$(echo "scale=4; $limit_file_size / $file_size" | bc)
+			# Compare value with 0
+			if echo "${_RATE} > 0" | bc -l | grep -q 1; then
+				local _random_seed=${_arg_random_seed:-$RANDOM}
+				_polap_log1 "  random seed for reducing the whole-genome assembly long-read data: ${_random_seed}"
+				_polap_log3_pipe "seqkit sample \
+            -p ${_RATE} \
+            -s ${_random_seed} \
+            --quiet \
+            ${_polap_var_outdir_lk_fq_gz} \
+		        -o ${_polap_var_outdir_nk4_fq_gz} \
+            2>${_polap_output_dest}"
+				_polap_log3_pipe "echo ${_random_seed} >${_polap_var_outdir_nk4_fq_gz}.random.seed.${_random_seed}"
+			else
+				die "ERROR: long-read sampling rate is not greater than 0."
+			fi
+		fi
 	fi
 
 	_polap_log1 "NEXT (for testing purpose only): $(basename "$0") flye1 -g 150000"

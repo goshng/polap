@@ -1,0 +1,8 @@
+[submodule "libs/dflye"]
+	path = libs/dflye
+	url = https://github.com/goshng/Flye.git
+	branch = flye
+[submodule "libs/cflye"]
+	path = libs/cflye
+	url = https://github.com/goshng/Flye.git
+	branch = coverage

@@ -62,6 +62,7 @@ source "$script_dir/run-polap-function-annotate-contig.sh"
 
 # read selection and organelle-genome assembly
 source "$script_dir/run-polap-function-oga.sh"
+source "$script_dir/run-polap-function-dga.sh"
 source "$script_dir/run-polap-function-polishing.sh"
 
 # Template

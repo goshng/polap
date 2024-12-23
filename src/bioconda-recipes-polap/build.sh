@@ -10,11 +10,14 @@ files=(polap
 	run-polap-ncbitools
 	polap-command-completion.sh
 	polap-constants.sh
+	polap-data-v1.sh
 	polap-function-set-variables.sh
 	polap-git-hash-version.sh
+	polap-github-generate_toc.sh
 	polap-package-common.sh
 	polap-package-mtcontigs.sh
 	polap-parsing.sh
+	polap-report-table1.sh
 	polap-revision1.sh
 	polap-test-variables.sh
 	polap-variables-common.sh
@@ -27,6 +30,7 @@ files=(polap
 	run-polap-function-assemble.sh
 	run-polap-function-bioproject.sh
 	run-polap-function-demo.sh
+	run-polap-function-dga.sh
 	run-polap-function-errors.sh
 	run-polap-function-include.sh
 	run-polap-function-install.sh
@@ -34,6 +38,7 @@ files=(polap
 	run-polap-function-menus.sh
 	run-polap-function-miscellaneous.sh
 	run-polap-function-mtdna.sh
+	run-polap-function-ncbixml.sh
 	run-polap-function-oga.sh
 	run-polap-function-polishing.sh
 	run-polap-function-seeds.sh
@@ -64,6 +69,7 @@ files=(polap
 	run-polap-r-determine-depth-range_5.R
 	run-polap-r-determine-depth-range_6.R
 	run-polap-r-determine-depth-range.R
+	run-polap-r-directional.R
 	run-polap-r-edges-stats.R
 	run-polap-r-final-filter-mtcontig.R
 	run-polap-r-final-mtcontig.R
@@ -83,6 +89,8 @@ files=(polap
 	run-polap-r-prepare-cc.R
 	run-polap-r-preselect-annotation.R
 	run-polap-r-select-mtdna-1-nx-gfa-links.R
+	run-polap-r-select-reads-polap.R
+	run-polap-r-select-reads-ptgaul.R
 	run-polap-r-taxonomy.R
 	run-polap-r-template.R
 	run-polap-r-test-reads-bar-graph.R
@@ -94,3 +102,40 @@ done
 
 chmod +x $PREFIX/bin/polap
 chmod +x $PREFIX/bin/polap.sh
+
+# Flye
+export CFLAGS="${CFLAGS} -O3 -L$PREFIX/lib"
+export INCLUDES="-I$PREFIX/include"
+
+export CXXFLAGS="$CXXFLAGS -O3 -I$PREFIX/include"
+export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
+
+#install_name_tool error fix
+if [[ "$(uname)" == Darwin ]]; then
+	export LDFLAGS="$LDFLAGS -headerpad_max_install_names"
+fi
+
+for xflye in cflye dflye; do
+	cp -pr libs/${xflye}/flye/tests/data libs/${xflye}/${xflye}/tests/data
+	cp -pr libs/${xflye}/flye/config/bin_cfg libs/${xflye}/${xflye}/config/bin_cfg
+
+	#zlib headers for minimap
+	sed -i.bak 's/CFLAGS=/CFLAGS+=/' libs/$xflye/lib/minimap2/Makefile
+	sed -i.bak 's/INCLUDES=/INCLUDES+=/' libs/$xflye/lib/minimap2/Makefile
+	# export
+
+	rm -rf libs/$xflye/lib/minimap2/*.bak
+
+	#zlib headers for flye binaries
+	# export
+
+	#dynamic flag is needed for backtrace printing,
+	#but it seems it fails OSX build
+	sed -i.bak 's/-rdynamic//' libs/$xflye/src/Makefile
+
+	rm -rf libs/$xflye/src/*.bak
+
+	cd libs/$xflye
+	${PYTHON} -m pip install --no-deps --no-build-isolation --no-cache-dir . -vvv
+	cd -
+done

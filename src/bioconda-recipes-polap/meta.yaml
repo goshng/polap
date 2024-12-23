@@ -1,24 +1,34 @@
 {% set name = "polap" %}
-{% set version = "0.3.7.3" %}
-{% set sha256 = "755ff93913c687c01a32bdd434bd5fcfeb73ce94c7ddf19bf2304184f294d8bf" %}
+{% set version = "0.4.1.1" %}
+{% set sha256 = "69d129846fc8b47a607fc894c199430deba0eed9011acc3e0ad3378f954149c0" %}
 
 package:
   name: "{{ name }}"
   version: "{{ version }}"
 
 source:
-  url: https://github.com/goshng/{{ name }}/archive/refs/tags/{{ version }}.tar.gz
+  url: https://github.com/goshng/{{ name }}/releases/download/0.4.1.1/polap-0.4.1.1.tar.gz
   sha256: "{{ sha256 }}"
 
 build:
   noarch: generic
   number: 0
+  entry_points:
+    - cflye = cflye.main:main
   run_exports:
     - {{ pin_subpackage('polap', max_pin="x.x") }}
 
 requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - make
+  host:
+    - python
+    - pip
+    - zlib
   run:
     - python
+    - setuptools  # [osx and arm64]
     - flye >=2.9.2
     - minimap2 >=2.24
     - seqkit
@@ -58,6 +68,9 @@ requirements:
 
 test:
   commands:
+    - python -c "import sys; print(sys.path)"
+    - python -c "import cflye.main; print(cflye.main)"
+    - cflye -h
     - polap
 
 about:

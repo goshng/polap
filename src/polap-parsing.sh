@@ -63,6 +63,7 @@ _arg_menu=("assemble" "infile" "outfile")
 _arg_long_reads="l.fq"
 _arg_long_reads_is="off"
 _arg_outdir="o"
+_arg_anotherdir="o"
 _arg_archive="a"
 _arg_archive_is="off"
 _arg_short_read1="s1.fq"
@@ -89,6 +90,7 @@ _arg_inum="0"
 _arg_jnum="1"
 _arg_knum="1"
 _arg_start_index=0
+_arg_end_index=0
 _arg_select_contig="1"
 _arg_select_contig_numbers=(1 2 3 4 5 6)
 # _arg_select_read_range="3000,39000,7"
@@ -120,14 +122,35 @@ _arg_yes="off"
 _arg_circularize="off"
 _arg_redo="off"
 _arg_test="off"
+_arg_debug="off"
 _arg_verbose=1
 _arg_help="off"
+# for menu disassembly
+_arg_disassemble_a=10000000          # 10 Mb or the smallest long read step size
+_arg_disassemble_b_is="off"          #
+_arg_disassemble_b=1000000000        # 1 Gb or the largest long read step size
+_arg_disassemble_n=100               # the number cycles
+_arg_disassemble_m=500000            # the maximum of draft genome size
+_arg_disassemble_alpha=1.0           # the minimum disjointig coverage
+_arg_disassemble_delta=0.75          # the move size of alpha
+_arg_disassemble_min_memory=16       # the minimum memory in Gb
+_arg_disassemble_compare_to_fasta="" # the minimum memory in Gb
+_arg_disassemble_s=                  # sample size
+# steps
+_arg_steps_is="off"
+_arg_steps_include=""
+_arg_steps_exclude=""
+
+# for menu dissemble or directional read feature
+_arg_dissemble_a=1 #
+_arg_directional_a=1
+
 # flye options
 _arg_flye_data_type="--nano-raw"
 _arg_minimap2_data_type="map-ont"
 
 source "$script_dir/polap-git-hash-version.sh"
-_polap_version=v0.4.1.1-"${_polap_git_hash_version}"
+_polap_version=v0.4.1.3-"${_polap_git_hash_version}"
 _polap_command_string=polap
 
 print_help() {
@@ -403,6 +426,16 @@ parse_commandline() {
 			_arg_outdir="${_key##-o}"
 			_arg_outdir="${_arg_outdir%/}"
 			;;
+		--anotherdir)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_anotherdir="$2"
+			_arg_anotherdir="${_arg_anotherdir%/}"
+			shift
+			;;
+		--anotherdir=*)
+			_arg_anotherdir="${_key##--anotherdir=}"
+			_arg_anotherdir="${_arg_anotherdir%/}"
+			;;
 		-a | --short-read1)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_short_read1="$2"
@@ -600,6 +633,14 @@ parse_commandline() {
 		--start-index=*)
 			_arg_start_index="${_key##--start-index=}"
 			;;
+		--end-index)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_end_index="$2"
+			shift
+			;;
+		--end-index=*)
+			_arg_end_index="${_key##--end-index=}"
+			;;
 		--select-contig)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_select_contig="$2"
@@ -752,6 +793,92 @@ parse_commandline() {
 			if test -n "$_next" -a "$_next" != "$_key"; then
 				{ begins_with_short_option "$_next" && shift && set -- "-u" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
 			fi
+			;;
+		--steps-include)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_steps_include="$2"
+			_arg_steps_is="on"
+			shift
+			;;
+		--steps-exclude)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_steps_exclude="$2"
+			_arg_steps_is="on"
+			shift
+			;;
+		--disassemble-s)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_s="$2"
+			shift
+			;;
+		--disassemble-s=*)
+			_arg_disassemble_s="${_key##--disassemble-s=}"
+			;;
+		--disassemble-a)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_a="$2"
+			shift
+			;;
+		--disassemble-a=*)
+			_arg_disassemble_a="${_key##--disassemble-a=}"
+			;;
+		--disassemble-b)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_b="$2"
+			_arg_disassemble_b_is="on"
+			shift
+			;;
+		--disassemble-b=*)
+			_arg_disassemble_b="${_key##--disassemble-b=}"
+			_arg_disassemble_b_is="on"
+			;;
+		--disassemble-n)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_n="$2"
+			shift
+			;;
+		--disassemble-n=*)
+			_arg_disassemble_n="${_key##--disassemble-n=}"
+			;;
+		--disassemble-m)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_m="$2"
+			shift
+			;;
+		--disassemble-m=*)
+			_arg_disassemble_m="${_key##--disassemble-m=}"
+			;;
+		--disassemble-alpha)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_alpha="$2"
+			shift
+			;;
+		--disassemble-alpha=*)
+			_arg_disassemble_alpha="${_key##--disassemble-alpha=}"
+			;;
+		--disassemble-delta)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_delta="$2"
+			shift
+			;;
+		--disassemble-delta=*)
+			_arg_disassemble_delta="${_key##--disassemble-delta=}"
+			;;
+		--disassemble-min-memory)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_min_memory="$2"
+			shift
+			;;
+		--disassemble-min-memory=*)
+			_arg_disassemble_min_memory="${_key##--disassemble-min-memory=}"
+			;;
+		--disassemble-compare-to-fasta)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_compare_to_fasta="$2"
+			shift
+			;;
+		--disassemble-compare-to-fasta=*)
+			_arg_disassemble_compare_to_fasta="${_key##--disassemble-compare-to-fasta=}"
 			;;
 		--flye-pacbio-raw)
 			_arg_flye_data_type="--pacbio-raw"

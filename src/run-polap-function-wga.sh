@@ -222,22 +222,40 @@ function _run_polap_total-length-long { # total size (bp) of long-read data
 
 	help_message=$(
 		cat <<HEREDOC
-# Compute the total number of nucleotides of long-read data.
-#
+Compute the total number of nucleotides of long-read data.
+
+Inputs
+------
+
+- long-read fastq data file: ${_arg_long_reads}
+
+Outputs
+-------
+
+- ${_polap_var_outdir_long_total_length}
+
+Arguments
+---------
+
+-o ${_arg_outdir}
+-l ${_arg_long_reads}: a long-read fastq data file
+
 # Arguments:
 #   -l ${_arg_long_reads}: a long-read fastq data file (the highest priority)
 #   or
 #   --bioproject use
 #   -o ${_arg_outdir}: ${_arg_outdir}/0-bioproject (the least priority)
-# Inputs:
-#   ${_arg_long_reads}: a long-read fastq data file
-# Outputs:
-#   ${_polap_var_outdir_long_total_length}
-# Precondition:
-#   (for BioProjectID case)
-#   get-bioproject --bioproject <BioProjectID> -o ${_arg_outdir}
-Example: $(basename "$0") ${_arg_menu[0]} -l ${_arg_long_reads}
-Example: $(basename "$0") ${_arg_menu[0]} -o ${_arg_outdir} --bioproject use
+#
+
+Precondition
+------------
+(for BioProjectID case)
+get-bioproject --bioproject <BioProjectID> -o ${_arg_outdir}
+
+Usages
+------
+$(basename "$0") ${_arg_menu[0]} -l ${_arg_long_reads}
+$(basename "$0") ${_arg_menu[0]} -o ${_arg_outdir} --bioproject use
 HEREDOC
 	)
 
@@ -260,17 +278,17 @@ HEREDOC
 		return
 	fi
 
-	_polap_log0 "counting the total number of bases in the long-read dataset of $_arg_long_reads ..."
+	_polap_log1 "  count the total number of bases in the long-read dataset of $_arg_long_reads ..."
 	if [[ ! -d "${_arg_outdir}" ]]; then
 		_polap_log2 "  creating output folder: ${_arg_outdir}"
 		_polap_log3_cmd mkdir -p "${_arg_outdir}"
 	fi
 	check_file_existence "${_arg_long_reads}"
 
-	_polap_log1 "  input: ${_arg_long_reads}"
+	_polap_log2 "  input: ${_arg_long_reads}"
 
 	if [ -s "${_polap_var_outdir_long_total_length}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log1 "  found: ${_polap_var_outdir_long_total_length}, so skipping long-read statisics ..."
+		_polap_log2 "  found: ${_polap_var_outdir_long_total_length}, so skipping long-read statisics ..."
 	else
 		_polap_log3_pipe "seqkit stats -Ta ${_arg_long_reads} |\
 			csvtk cut -t -f sum_len |\
@@ -278,14 +296,106 @@ HEREDOC
 				>${_polap_var_outdir_long_total_length}"
 	fi
 
-	_polap_log1 "  output: ${_polap_var_outdir_long_total_length}"
-	_polap_log2_cat "${_polap_var_outdir_long_total_length}"
+	_polap_log2 "  output: ${_polap_var_outdir_long_total_length}"
+	_polap_log3_cat "${_polap_var_outdir_long_total_length}"
 
 	local LONG_TOTAL_LENGTH=$(<"${_polap_var_outdir_long_total_length}")
 	local _total_long_read=$(_polap_utility_convert_bp ${LONG_TOTAL_LENGTH})
-	_polap_log0 "  total length of the long-read dataset (bases): ${_total_long_read}"
+	_polap_log1 "  total length of the long-read dataset (bases): ${_total_long_read}"
 
-	_polap_log1 NEXT: $(basename "$0") find-genome-size -o "${_arg_outdir}" -a "${_arg_short_read1}" -b "${_arg_short_read2}"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+function _run_polap_total-length-short { # total size (bp) of short-read data
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# CHECK: local function
+	_polap_set-variables-long-read
+	source "$script_dir/polap-variables-common.sh"
+	source "$script_dir/run-polap-function-utilities.sh"
+
+	help_message=$(
+		cat <<HEREDOC
+Compute the total number of nucleotides of short-read data.
+
+Inputs
+------
+
+- short-read fastq data file: ${_arg_short_read1}
+- short-read fastq data file: ${_arg_short_read2}
+
+Outputs
+-------
+
+- ${_polap_var_outdir_short_total_length}
+
+Arguments
+---------
+
+-o ${_arg_outdir}
+-a ${_arg_short_read1}: a short-read fastq data file
+
+Usages
+------
+$(basename "$0") ${_arg_menu[0]} -a ${_arg_short_read1}
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		if [ -s "${_polap_var_outdir_short_total_length}" ]; then
+			_polap_log0_cat "${_polap_var_outdir_short_total_length}"
+		else
+			_polap_log0 "No short-read total length"
+		fi
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
+	fi
+
+	_polap_log0 "counting the total number of bases in the short-read dataset ..."
+	if [[ ! -d "${_arg_outdir}" ]]; then
+		_polap_log2 "  creating output folder: ${_arg_outdir}"
+		_polap_log3_cmd mkdir -p "${_arg_outdir}"
+	fi
+
+	check_file_existence "${_arg_short_read1}"
+
+	_polap_log1 "  input: ${_arg_short_read1}"
+
+	if [ -s "${_polap_var_outdir_short_total_length}" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log1 "  found: ${_polap_var_outdir_short_total_length}, so skipping short-read statisics ..."
+	else
+		_polap_log3_pipe "seqkit stats -Ta ${_arg_short_read1} |\
+			csvtk cut -t -f sum_len |\
+			csvtk del-header \
+				>${_polap_var_outdir_short_total_length}"
+	fi
+
+	_polap_log1 "  output: ${_polap_var_outdir_short_total_length}"
+	_polap_log2_cat "${_polap_var_outdir_short_total_length}"
+
+	local _TOTAL_LENGTH=$(<"${_polap_var_outdir_short_total_length}")
+	local _total_short_read=$(_polap_utility_convert_bp ${_TOTAL_LENGTH})
+	_polap_log0 "  total length of the short-read dataset (bases): ${_total_short_read}"
+
+	_polap_log1 NEXT menu: find-genome-size
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
@@ -325,7 +435,7 @@ function _run_polap_find-genome-size { # estimate the whole genome size
 
 	help_message=$(
 		cat <<HEREDOC
-# Estimate the whole genome size applying the short-read dataset to JellyFish.
+Estimate the whole genome size applying the short-read dataset to JellyFish.
 #
 # Arguments:
 #   -a ${_arg_short_read1}: a short-read fastq data file

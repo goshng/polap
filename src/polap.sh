@@ -84,6 +84,8 @@ source "$script_dir/run-polap-function-archive.sh"
 
 # assemble
 source "$script_dir/run-polap-function-assemble.sh"
+source "$script_dir/run-polap-function-disassemble.sh"
+source "$script_dir/run-polap-function-dissemble.sh"
 
 # miscellaneous
 source "$script_dir/run-polap-function-miscellaneous.sh"
@@ -125,7 +127,7 @@ if declare -f "_run_polap_${_arg_menu[0]}" >/dev/null 2>&1; then
 	# invoke that function, passing arguments through
 	# _run_polap_"$@" # same as "$1" "$2" "$3" ... for full argument list
 	if _run_polap_${_arg_menu[0]}; then
-		_polap_log3 "menu ${_arg_menu[0]} has been finished."
+		_polap_log3 "Menu ${_arg_menu[0]} has been finished."
 	else
 		_polap_error_message $?
 	fi

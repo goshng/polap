@@ -46,34 +46,34 @@ function _polap_set-variables-short-read {
 	# Set paths for bioproject data
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
-	_polap_log1 "determining short-read data files ..."
+	_polap_log1 "  determining short-read data files ..."
 
 	# if --bioproject is used, we use 0-bioproject.
 	# otherwise, -l option is used.
 	if [ "${_arg_short_read1_is}" = "off" ]; then
 		if [ -z "${_arg_bioproject}" ]; then
-			_polap_log1 "  we use the default short-read1 data filename: ${_arg_short_read1}"
+			_polap_log1 "    we use the default short-read1 data filename: ${_arg_short_read1}"
 		else
-			_polap_log1 "  we use the short-reads data 1 info: ${_polap_var_project_sra_short_read}"
+			_polap_log1 "    we use the short-reads data 1 info: ${_polap_var_project_sra_short_read}"
 			check_file_existence "${_polap_var_project_sra_short_read}"
 			local SRA=$(cut -f1 "${_polap_var_project_sra_short_read}")
 			_arg_short_read1="${_arg_outdir}/${SRA}_1.fastq"
 		fi
 	else
-		_polap_log1 "  we use the short-read given by the option -a"
+		_polap_log1 "    we use the short-read given by the option -a"
 	fi
 
 	if [ "${_arg_short_read2_is}" = "off" ]; then
 		if [ -z "${_arg_bioproject}" ]; then
-			_polap_log1 "  we use the default short-read2 data filename: ${_arg_short_read2}"
+			_polap_log1 "    we use the default short-read2 data filename: ${_arg_short_read2}"
 		else
-			_polap_log1 "  we use the short-reads data 2 info: ${_polap_var_project_sra_short_read}"
+			_polap_log1 "    we use the short-reads data 2 info: ${_polap_var_project_sra_short_read}"
 			check_file_existence "${_polap_var_project_sra_short_read}"
 			local SRA=$(cut -f1 "${_polap_var_project_sra_short_read}")
 			_arg_short_read2="${_arg_outdir}/${SRA}_2.fastq"
 		fi
 	else
-		_polap_log1 "  we use the short-read given by the option -b"
+		_polap_log1 "    we use the short-read given by the option -b"
 	fi
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -94,26 +94,25 @@ function _polap_set-variables-long-read {
 	# Set paths for bioproject data
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
-	_polap_log1 "determining long-read data file ..."
+	_polap_log1 "  determining long-read data file ..."
 
 	# if --bioproject is used, we use 0-bioproject.
 	# otherwise, -l option is used.
 	if [ "${_arg_long_reads_is}" = "off" ]; then
 		if [ -z "${_arg_bioproject}" ]; then
-			_polap_log1 "  we use the default long-reads data filename: ${_arg_long_reads}"
+			_polap_log1 "    we use the default long-reads data filename: ${_arg_long_reads}"
 		else
-			_polap_log1 "  we use the long-reads data: ${_polap_var_project_sra_long_read}"
+			_polap_log1 "    we use the long-reads data: ${_polap_var_project_sra_long_read}"
 			check_file_existence "${_polap_var_project_sra_long_read}"
 			local SRA=$(cut -f1 "${_polap_var_project_sra_long_read}")
 			_arg_long_reads="${_arg_outdir}/${SRA}.fastq"
 		fi
 	else
-		_polap_log1 "  we use the long-reads given by the option -l"
+		_polap_log1 "    we use the long-reads given by the option -l"
 	fi
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 	return 0
-	return $RETURN_SUCCESS
 }

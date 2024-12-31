@@ -421,6 +421,10 @@ function _polap_log3_file {
 }
 
 function _polap_log_function {
-	verbose_echo_newline 3 "$@"
-	verbose_echo_newline 4 "$@" >&3
+	verbose_echo_newline 0 "$@"
+	if [[ "${_arg_log_stderr}" = "off" ]]; then
+		verbose_echo_newline 4 "$@" >&3
+	else
+		verbose_echo_newline 4 "$@" >&2
+	fi
 }

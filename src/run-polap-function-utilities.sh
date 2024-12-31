@@ -59,6 +59,39 @@ function _polap_utility_convert_bp {
 }
 
 ################################################################################
+# Function to convert base pairs to the highest appropriate unit
+# Example usage
+# bp=$(convert_unit_to_bp 1gb)
+################################################################################
+function _polap_utility_convert_unit_to_bp {
+	local input="$1"
+	local number unit
+
+	# Separate the numeric part and the unit
+	number=$(echo "$input" | grep -oE '^[0-9]+(\.[0-9]+)?')
+	unit=$(echo "$input" | grep -oE '[a-zA-Z]+$' | tr '[:upper:]' '[:lower:]')
+
+	# Handle the case where no unit is provided
+	if [[ -z "$unit" ]]; then
+		echo "$number"
+		return 0
+	fi
+
+	# Normalize units (handle 'b' and 'bp' equivalently)
+	case "$unit" in
+	tbp | tb) echo "$(bc <<<"$number * 1000000000000")" ;;
+	gbp | gb) echo "$(bc <<<"$number * 1000000000")" ;;
+	mbp | mb) echo "$(bc <<<"$number * 1000000")" ;;
+	kbp | kb) echo "$(bc <<<"$number * 1000")" ;;
+	bp | b) echo "$number" ;;
+	*)
+		echo "Error: Invalid unit '$unit'" >&2
+		return 1
+		;;
+	esac
+}
+
+################################################################################
 # Get contig total length
 ################################################################################
 function _polap_utility_get_contig_length {

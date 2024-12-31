@@ -1,6 +1,6 @@
 {% set name = "polap" %}
 {% set version = "0.4.1.1" %}
-{% set sha256 = "69d129846fc8b47a607fc894c199430deba0eed9011acc3e0ad3378f954149c0" %}
+{% set sha256 = "f1c01b0874a4ec4d61db6d33815f1439a98e4363b0099fca06afcb7c6c738bd6" %}
 
 package:
   name: "{{ name }}"
@@ -22,14 +22,15 @@ requirements:
   build:
     - {{ compiler('cxx') }}
     - make
+    - python >=3.11,<3.12
   host:
-    - python
+    - python >=3.11,<3.12
     - pip
     - zlib
   run:
-    - python
+    - python >=3.11,<3.12
     - setuptools  # [osx and arm64]
-    - flye >=2.9.2
+    - flye >=2.9.5
     - minimap2 >=2.24
     - seqkit
     - bedtools
@@ -68,8 +69,8 @@ requirements:
 
 test:
   commands:
+    - python -V
     - python -c "import sys; print(sys.path)"
-    - python -c "import cflye.main; print(cflye.main)"
     - cflye -h
     - polap
 

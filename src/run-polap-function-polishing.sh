@@ -126,44 +126,44 @@ HEREDOC
 			_arg_short_read2=""
 		fi
 		if [[ -n "${_arg_short_read1}" ]]; then
-			_polap_log0 "    short-read1: ${_arg_short_read1}"
+			_polap_log1 "    short-read1: ${_arg_short_read1}"
 		else
-			_polap_log0 "    short-read1: no such data file"
+			_polap_log1 "    short-read1: no such data file"
 		fi
 		if [[ -n "${_arg_short_read2}" ]]; then
-			_polap_log0 "    short-read2: ${_arg_short_read2}"
+			_polap_log1 "    short-read2: ${_arg_short_read2}"
 		else
-			_polap_log0 "    short-read2: no such data file"
+			_polap_log1 "    short-read2: no such data file"
 		fi
 
 		if [[ ${_arg_short_read1} = *.fastq || ${_arg_short_read1} = *.fq ]]; then
-			_polap_log0 "    short-read1 file: ${_arg_short_read1}"
+			_polap_log1 "    short-read1 file: ${_arg_short_read1}"
 		else
-			_polap_log0 "    short-read1: no fastq or fq file: ${_arg_short_read1}"
+			_polap_log1 "    short-read1: no fastq or fq file: ${_arg_short_read1}"
 		fi
 
 		if [[ ${_arg_short_read2} = *.fastq || ${_arg_short_read2} = *.fq ]]; then
-			_polap_log0 "    short-read2 file: ${_arg_short_read2}"
+			_polap_log1 "    short-read2 file: ${_arg_short_read2}"
 		else
-			_polap_log0 "    short-read2: no fastq or fq file: ${_arg_short_read2}"
+			_polap_log1 "    short-read2: no fastq or fq file: ${_arg_short_read2}"
 		fi
 
 		if [[ ${_arg_short_read1} = *.fastq || ${_arg_short_read1} = *.fq ]]; then
+			_polap_log1 "  creating ${_arg_outdir}/msbwt ..."
 			cat "${_arg_short_read1}" "${_arg_short_read2:-/dev/null}" |
 				awk 'NR % 4 == 2' | sort | tr NT TN |
 				ropebwt2 -LR 2>"${_polap_output_dest}" |
 				tr NT TN |
 				msbwt convert "${_arg_outdir}"/msbwt \
 					>/dev/null 2>&1
-			_polap_log0 "  creating ${_arg_outdir}/msbwt ..."
 		elif [[ ${_arg_short_read1} = *.fq.gz ]] || [[ ${_arg_short_read1} = *.fastq.gz ]]; then
+			_polap_log1 "  creating ${_arg_outdir}/msbwt ..."
 			zcat "${_arg_short_read1}" "${_arg_short_read2}" |
 				awk 'NR % 4 == 2' | sort | tr NT TN |
 				ropebwt2 -LR 2>"${_polap_output_dest}" |
 				tr NT TN |
 				msbwt convert "${_arg_outdir}"/msbwt \
 					>/dev/null 2>&1
-			_polap_log0 "  creating ${_arg_outdir}/msbwt ..."
 		else
 			_polap_log0 "ERROR: short-read1: no fastq or fq file: ${_arg_short_read1}"
 			_polap_log0 "ERROR: short-read2: no fastq or fq file: ${_arg_short_read2}"

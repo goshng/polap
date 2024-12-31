@@ -49,11 +49,11 @@ args1 <- parse_args(parser)
 # for testing
 if (is_null(args1$table)) {
   input_dir0 <- file.path(".")
-  input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
-  input2 <- file.path(input_dir0, "mt.contig.name-1")
-  input3 <- file.path(input_dir0, "contig-annotation-depth-table.txt")
+  input1 <- file.path(input_dir0, "jvalidus/disassemble/8/assembly_info_organelle_annotation_count-all.txt")
+  input2 <- file.path(input_dir0, "jvalidus/disassemble/8/51-mtcontigs/2/7-mt.contig.name.txt")
+  input3 <- file.path(input_dir0, "jvalidus/disassemble/8/contig-annotation-depth-table.txt")
   output1 <- file.path(input_dir0, "8-mtcontig.table.tsv")
-  output2 <- file.path(input_dir0, "contig-annotation-depth-table-seeds.txt")
+  output2 <- file.path(input_dir0, "jvalidus/disassemble/8/51-mtcontigs/2/8-mtcontig-annotation-table-seed.txt")
 
   args1 <- parse_args(parser, args = c(
     "--table", input1,

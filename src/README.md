@@ -1,3 +1,9 @@
+# 2024-12-28
+
+## polap-constants.sh
+
+error code
+
 # 2024-11-16
 
 Need to clean up this README

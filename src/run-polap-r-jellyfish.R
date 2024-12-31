@@ -33,7 +33,7 @@ tryCatch(
     z <- sum(as.numeric(x[a:b, 1] * x[a:b, 2])) / y
 
     # output argments
-    write.table(z, args[2], row.names = FALSE, col.names = FALSE, quote = FALSE)
+    write.table(as.integer(z), args[2], row.names = FALSE, col.names = FALSE, quote = FALSE)
   },
   error = function(e) {
     # cat("Error: ", args[0], ": " e$message, "\n")

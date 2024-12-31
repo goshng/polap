@@ -48,6 +48,7 @@ local _polap_var_outdir_jellyfish_out_histo="${_polap_var_outdir}/jellyfish_out.
 local _polap_var_outdir_l_fq_gz="${_polap_var_outdir}/l.fq.gz"
 local _polap_var_outdir_l_fq_stats="${_polap_var_outdir}/l.fq.stats"
 local _polap_var_outdir_long_total_length="${_polap_var_outdir}/long_total_length.txt"
+local _polap_var_outdir_short_total_length="${_polap_var_outdir}/short_total_length.txt"
 local _polap_var_outdir_msbwt_dir="${_polap_var_outdir}/msbwt"
 local _polap_var_outdir_msbwt="${_polap_var_outdir}/msbwt/comp_msbwt.npy"
 local _polap_var_outdir_msbwt_tar_gz="${_polap_var_outdir}/msbwt.tar.gz"

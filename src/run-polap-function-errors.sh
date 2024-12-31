@@ -51,5 +51,4 @@ _polap_error_message() {
 		echo default
 		;;
 	esac
-
 }

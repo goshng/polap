@@ -79,10 +79,10 @@ function _polap_utility_convert_unit_to_bp {
 
 	# Normalize units (handle 'b' and 'bp' equivalently)
 	case "$unit" in
-	tbp | tb) echo "$(bc <<<"$number * 1000000000000")" ;;
-	gbp | gb) echo "$(bc <<<"$number * 1000000000")" ;;
-	mbp | mb) echo "$(bc <<<"$number * 1000000")" ;;
-	kbp | kb) echo "$(bc <<<"$number * 1000")" ;;
+	tbp | tb | t) echo "$(bc <<<"$number * 1000000000000")" ;;
+	gbp | gb | g) echo "$(bc <<<"$number * 1000000000")" ;;
+	mbp | mb | m) echo "$(bc <<<"$number * 1000000")" ;;
+	kbp | kb | k) echo "$(bc <<<"$number * 1000")" ;;
 	bp | b) echo "$number" ;;
 	*)
 		echo "Error: Invalid unit '$unit'" >&2

@@ -58,7 +58,7 @@ begins_with_short_option() {
 
 # THE DEFAULTS INITIALIZATION - POSITIONALS
 _positionals=()
-_arg_menu=("assemble" "infile" "outfile")
+_arg_menu=("assemble" "infile" "outfile" "4" "5")
 # THE DEFAULTS INITIALIZATION - OPTIONALS
 _arg_long_reads="l.fq"
 _arg_long_reads_is="off"
@@ -131,11 +131,16 @@ _arg_disassemble_b_is="off"          #
 _arg_disassemble_b=1000000000        # 1 Gb or the largest long read step size
 _arg_disassemble_n=100               # the number cycles
 _arg_disassemble_m=500000            # the maximum of draft genome size
+_arg_disassemble_s_max=              # the maximum of draft genome size
 _arg_disassemble_alpha=1.0           # the minimum disjointig coverage
 _arg_disassemble_delta=0.75          # the move size of alpha
 _arg_disassemble_min_memory=16       # the minimum memory in Gb
 _arg_disassemble_compare_to_fasta="" # the minimum memory in Gb
 _arg_disassemble_s=                  # sample size
+# for genome size grid
+_arg_genomesize_a=200000 #
+_arg_genomesize_b=300000 #
+_arg_genomesize_n=3      # number of genome sizes
 # steps
 _arg_steps_is="off"
 _arg_steps_include=""
@@ -150,7 +155,7 @@ _arg_flye_data_type="--nano-raw"
 _arg_minimap2_data_type="map-ont"
 
 source "$script_dir/polap-git-hash-version.sh"
-_polap_version=v0.4.1.3-"${_polap_git_hash_version}"
+_polap_version=v0.4.1.5-"${_polap_git_hash_version}"
 _polap_command_string=polap
 
 print_help() {
@@ -814,6 +819,14 @@ parse_commandline() {
 		--disassemble-s=*)
 			_arg_disassemble_s="${_key##--disassemble-s=}"
 			;;
+		--disassemble-s-max)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_s_max="$2"
+			shift
+			;;
+		--disassemble-s-max=*)
+			_arg_disassemble_s_max="${_key##--disassemble-s-max=}"
+			;;
 		--disassemble-a)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_disassemble_a="$2"
@@ -879,6 +892,30 @@ parse_commandline() {
 			;;
 		--disassemble-compare-to-fasta=*)
 			_arg_disassemble_compare_to_fasta="${_key##--disassemble-compare-to-fasta=}"
+			;;
+		--genomesize-a)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_genomesize_a="$2"
+			shift
+			;;
+		--genomesize-a=*)
+			_arg_genomesize_a="${_key##--genomesize-a=}"
+			;;
+		--genomesize-b)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_genomesize_b="$2"
+			shift
+			;;
+		--genomesize-b=*)
+			_arg_genomesize_b="${_key##--genomesize-b=}"
+			;;
+		--genomesize-n)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_genomesize_n="$2"
+			shift
+			;;
+		--genomesize-n=*)
+			_arg_genomesize_n="${_key##--genomesize-n=}"
 			;;
 		--flye-pacbio-raw)
 			_arg_flye_data_type="--pacbio-raw"
@@ -974,12 +1011,12 @@ parse_commandline() {
 }
 
 handle_passed_args_count() {
-	test "${_positionals_count}" -le 3 || _PRINT_HELP=yes die "FATAL ERROR: There were spurious positional arguments --- we expect between 0 and 3, but got ${_positionals_count} (the last one was: '${_last_positional}')." 1
+	test "${_positionals_count}" -le 5 || _PRINT_HELP=yes die "FATAL ERROR: There were spurious positional arguments --- we expect between 0 and 3, but got ${_positionals_count} (the last one was: '${_last_positional}')." 1
 }
 
 assign_positional_args() {
 	local _positional_name _shift_for=$1
-	_positional_names="_arg_menu[0] _arg_menu[1] _arg_menu[2] "
+	_positional_names="_arg_menu[0] _arg_menu[1] _arg_menu[2] _arg_menu[3] _arg_menu[4] _arg_menu[5]"
 
 	shift "$_shift_for"
 	for _positional_name in ${_positional_names}; do

@@ -34,16 +34,25 @@ def parse_blast_output(blast_output, output_dir, seq2_length):
     df = pd.read_csv(blast_output, sep="\t", names=columns)
 
     # Case 1: Locate the row where qstart == 1 and sstrand == "plus"
-    match_qstart = df[(df["qstart"] == 1) & (df["sstrand"] == "plus")]
-    if not match_qstart.empty:
-        return match_qstart.iloc[0]["sstart"]
+    for i in range(1, 10):
+        match_qstart = df[(df["qstart"] == i) & (df["sstrand"] == "plus")]
+        if not match_qstart.empty:
+            sstart = match_qstart.iloc[0]["sstart"]
+            qstart = match_qstart.iloc[0]["qstart"]
+            if qstart <= sstart:
+                adjusted_value = sstart - (qstart - 1)
+                return adjusted_value
+            # return match_qstart.iloc[0]["sstart"]
 
     # Case 2: Locate the row where sstart == 1 and sstrand == "plus"
-    match_sstart = df[(df["sstart"] == 1) & (df["sstrand"] == "plus")]
-    if not match_sstart.empty:
-        qstart = match_sstart.iloc[0]["qstart"]
-        adjusted_value = seq2_length - (qstart - 1)
-        return adjusted_value
+    for i in range(1, 10):
+        match_qstart = df[(df["sstart"] == i) & (df["sstrand"] == "plus")]
+        if not match_qstart.empty:
+            sstart = match_qstart.iloc[0]["sstart"]
+            qstart = match_qstart.iloc[0]["qstart"]
+            if qstart > sstart:
+                adjusted_value = seq2_length - (qstart - i)
+                return adjusted_value
 
     # Case 3: Neither case found, handle error
     print("Error: No valid match found in BLAST output.")

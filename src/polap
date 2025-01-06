@@ -42,19 +42,21 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 
 # vvv  PLACE YOUR CODE HERE  vvv
 
-_polap_var_function_verbose=4
-
 ################################################################################
 # include bash shell files
 ################################################################################
 
 source "$script_dir/polap-constants.sh"
+source "$script_dir/polap-function-debug.sh"
+source "$script_dir/polap-function-steps.sh"
 source "$script_dir/run-polap-function-errors.sh"
 source "$script_dir/run-polap-function-utilities.sh"
 source "$script_dir/run-polap-function-log.sh"
 source "$script_dir/run-polap-function-menus.sh"
 source "$script_dir/polap-function-set-variables.sh"
 source "$script_dir/run-polap-function-wga.sh"
+
+source "$script_dir/polap-function-disassemble-seeds.sh"
 
 # organelle-genome annotation
 source "$script_dir/run-polap-function-annotate.sh"

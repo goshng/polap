@@ -28,6 +28,42 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+# flatten_array_array_comma_to_lines input.txt output.txt
+# input.txt
+# edge_2, edge_1, edge_18
+# edge_7, edge_8
+# edge_15
+#
+# output.txt
+# edge_2
+# edge_1
+# edge_18
+# edge_7
+# edge_8
+# edge_15
+flatten_array_array_comma_to_lines() {
+	# Check if the correct number of arguments is provided
+	if [[ $# -ne 2 ]]; then
+		echo "Usage: convert_to_lines <input_file> <output_file>"
+		return 1
+	fi
+
+	local input_file="$1"
+	local output_file="$2"
+
+	# Ensure the output file is empty or doesn't exist
+	rm -f "$output_file"
+
+	# Process each line of the input file
+	while IFS= read -r line; do
+		# Replace commas with newlines and append to the output file
+		echo "$line" | tr ',' '\n' >>"$output_file"
+	done <"$input_file"
+
+	# Trim any leading/trailing whitespace from the output file
+	sed -i 's/^ *//;s/ *$//' "$output_file"
+}
+
 # depth_range=()
 # _polap_disassemble_seeds_get-depth-range-of depth-range.txt depth_range
 # ${depth_raneg[0]}
@@ -50,6 +86,35 @@ function _polap_disassemble_seeds_get-depth-range-of {
 		local depth_upper=0
 	fi
 	_r_arr=($depth_lower $depth_upper)
+}
+
+# Get the depth range from a depth-range file.
+# e.g., depth-range file
+# depth_lower_bound depth_upper_bound
+# 100               200
+# input1: depth-range file
+# output: size-2 bash array
+#
+# depths=($(_polap_disassemble_seeds_get-depth-range "depth-range.txt"))
+_polap_disassemble_seeds_get-depth-range() {
+	local _depth_range=$1
+
+	# Check if there is a manual depth range file.
+	if [[ -s "${_depth_range}" ]]; then
+		# Extract numbers from the file
+		local numbers=$(awk 'NR==2 {print $1, $2}' "${_depth_range}")
+		# Store the numbers in variables
+		local depth_lower=$(echo $numbers | cut -d ' ' -f 1)
+		local depth_upper=$(echo $numbers | cut -d ' ' -f 2)
+		# _polap_log3 "  depth-range: $depth_lower ~ $depth_upper"
+		echo "$depth_lower $depth_upper"
+	else
+		# _polap_log3 "  no such file: ${_depth_range}"
+		# _polap_log3 "  depth-range: (0,0)"
+		local depth_lower=0
+		local depth_upper=0
+		echo "0 0"
+	fi
 }
 
 ################################################################################
@@ -150,122 +215,186 @@ _polap_disassemble_seeds_create-automatic-depth-range() {
 	fi
 }
 
-################################################################################
-# Pre-select contigs that have been identified to originate from the
-# mitochondrial genome.
-################################################################################
-_polap_disassemble_seeds_preselect-contigs() {
+# based on: _polap_disassemble_seeds_create-automatic-depth-range() {
+# input1: annotation
+# input2: seed contig depth range selection type: 2
+# output: depth.range.txt
+_polap_disassemble_seeds_determine-depth-range() {
+	local _ga_annotation_all="$1"
+	local _knum="$2"
+	local _mtcontigs_1_custom_depth_range="$3"
 
-	local _mtcontigs_depth_range_preselection="$1"
-	local _ga_annotation_all="$2"
-	local _mtcontigs_preselection="$3"
+	local _ga=$(dirname "${_ga_annotation_all}")
+	local _ga_annotation_cdf_table="${_ga}/contig-annotation-cdf-table.txt"
+	local _mtcontigs=$(dirname "${_mtcontigs_1_custom_depth_range}")
+	local _mtcontigs_2_custom_depth_range="${_mtcontigs}/custom.depth.range-2.txt"
 
-	if [[ -s "${_mtcontigs_depth_range_preselection}" ]]; then
-		# Extract numbers from the file
-		local numbers=$(awk 'NR==2 {print $1, $2}' "${_mtcontigs_depth_range_preselection}")
-		# Store the numbers in variables
-		local depth_lower=$(echo $numbers | cut -d ' ' -f 1)
-		local depth_upper=$(echo $numbers | cut -d ' ' -f 2)
-		_polap_log0 "  depth range for edge contig preselection from ${_mtcontigs_depth_range_preselection}: $depth_lower ~ $depth_upper"
-		_polap_log2_column "${_mtcontigs_depth_range_preselection}"
+	if [[ "${_arg_plastid}" == "on" ]]; then
+		_polap_log1 "  use plastid depth range selection"
+		local _command1="Rscript --vanilla \
+      $script_dir/run-polap-r-plastid-determine-depth-range_${_knum}.R \
+			-t ${_ga_annotation_all} \
+			-c ${_ga_annotation_cdf_table} \
+			-o ${_mtcontigs_1_custom_depth_range} \
+      --plastid \
+			2>$_polap_output_dest"
 	else
-		die "ERROR: no such file: ${_mtcontigs_depth_range_preselection}"
+		_polap_log1 "  use mitochondrial depth range selection"
+		local _command1="Rscript --vanilla \
+      $script_dir/run-polap-r-determine-depth-range_${_knum}.R \
+			-t ${_ga_annotation_all} \
+			-c ${_ga_annotation_cdf_table} \
+			-o ${_mtcontigs_1_custom_depth_range} \
+			2>$_polap_output_dest"
 	fi
-
-	_polap_log2 "    minimum gene density for mtDNA: 10 per 1 Mb"
-	_polap_log2 "    gene count comparison: MT > PT"
-	_polap_log2 "    depth range: $depth_lower ~ $depth_upper"
-	_polap_log2 "    input1: ${_mtcontigs_depth_range_preselection}"
-	_polap_log2 "    input2: ${_ga_annotation_all}"
-	_polap_log2 "    output: ${_mtcontigs_preselection}"
-	local _command1="Rscript $script_dir/run-polap-r-preselect-annotation.R  \
-		--out ${_mtcontigs_preselection} \
-		--table ${_ga_annotation_all} \
-		--depth-range ${depth_lower},${depth_upper} \
-		--compare-mt-pt \
-		--gene-density 10"
-	if [[ "${_arg_plastid}" = "on" ]]; then
-		_polap_log2 "    for plastid not mitochondrial DNA"
-		_command1+=" \
-        --plastid"
-	fi
-	_command1+=" \
-				2>$_polap_output_dest"
 	_polap_log3_pipe "${_command1}"
 
-	if [[ -s "${_mtcontigs_preselection}" ]]; then
-		_polap_log2_column "${_mtcontigs_preselection}"
+	_polap_log3_column "${_ga_annotation_cdf_table}"
+
+	if [[ -s "${_mtcontigs_1_custom_depth_range}" ]]; then
+		_polap_log1 "    we use one depth-range for contig preselection and graph filtering"
+		_polap_log3_pipe "cp ${_mtcontigs_1_custom_depth_range} \
+      ${_mtcontigs_2_custom_depth_range}"
+		_polap_log2 "    Automatically selected depth range!"
+		return 0
 	else
-		_polap_log0 "ERROR: no such file: ${_mtcontigs_preselection}"
+		_polap_log2 "    No automatically selected depth range!"
+		return 1
 	fi
 }
 
 ################################################################################
+# Pre-select contigs that have been identified to originate from the
+# mitochondrial genome based on annotation and depth range.
+# input1: annotation
+# input2: depth range file
+# output: mtcontig
 ################################################################################
-function _polap_disassemble_seeds_depthfilter-gfa {
-	local _polap_output_dest="/dev/null"
-	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+_polap_disassemble_seeds_preselect-contigs() {
+	local _ga_annotation_all="$1"
+	local _mtcontigs_depth_range_preselection="$2"
+	local _mtcontigs_preselection="$3"
 
-	local _contigger=$(dirname "$1")
-	local _mtcontigs=$(dirname "$2")
+	check_file_existence "${_mtcontigs_depth_range_preselection}"
+
+	local depths
+	depths=($(_polap_disassemble_seeds_get-depth-range "${_mtcontigs_depth_range_preselection}"))
+	local depth_lower=${depths[0]}
+	local depth_upper=${depths[1]}
+
+	_polap_log3 "  Rscript run-polap-r-preselect-annotation.R"
+	_polap_log3 "    input1: ${_ga_annotation_all}"
+	_polap_log3 "    input2: depth range: $depth_lower ~ $depth_upper"
+	_polap_log3 "    minimum gene density for mtDNA: 10 per 1 Mb"
+	_polap_log3 "    minimum gene density for ptDNA: 100 per 1 Mb"
+	_polap_log3 "    gene count comparison: MT > PT"
+	_polap_log3 "    output: ${_mtcontigs_preselection}"
+	local _command1="Rscript --vanilla \
+    $script_dir/run-polap-r-preselect-annotation.R  \
+		--table ${_ga_annotation_all} \
+		--depth-range ${depth_lower},${depth_upper} \
+		--compare-mt-pt \
+		--out ${_mtcontigs_preselection}"
+	if [[ "${_arg_plastid}" = "off" ]]; then
+		_polap_log3 "    for mitochondrial DNA"
+		_command1+=" \
+		  --gene-density 10"
+	else
+		_polap_log3 "    for plastid not mitochondrial DNA"
+		_polap_log3 "      10 not 100 or dealt with in the R script"
+		_command1+=" \
+		  --gene-density 10 \
+      --plastid"
+	fi
+	_command1+=" \
+			2>$_polap_output_dest"
+	_polap_log3_pipe "${_command1}"
+
+	if [[ -s "${_mtcontigs_preselection}" ]]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+################################################################################
+# Filter gfa by depth range to have edge_<number> and its depth
+# input1: gfa
+# input2: depth range file
+# output: depth-filtered edge_<number> and its depth
+################################################################################
+_polap_disassemble_seeds_depthfilter-gfa() {
 	local _ga_contigger_edges_gfa="$1"
 	local _mtcontigs_depth_range_graphfilter="$2"
-	local _mtcontigs_gfa_seq_filtered="$3"
+	local _mtcontigs_gfa_depthfiltered_gfa="$3"
+
+	check_file_existence "${_mtcontigs_depth_range_graphfilter}"
+
+	local _contigger=$(dirname "${_ga_contigger_edges_gfa}")
+	local _mtcontigs=$(dirname "${_mtcontigs_depth_range_graphfilter}")
 	local _mtcontigs_gfa_all="${_mtcontigs}/3-gfa.all.gfa"
 	local _mtcontigs_gfa_seq_part="${_mtcontigs}/3-gfa.seq.all.tsv"
 	local _mtcontigs_gfa_seq_filtered="${_mtcontigs}/3-gfa.seq.depthfiltered.txt"
+	local _mtcontigs_gfa_seq_filtered_edge="${_mtcontigs}/4-gfa.seq.depthfiltered.edge.txt"
+
 	local _mtcontigname="${_mtcontigs}/mtcontigname.txt"
 
-	local depth_values=()
-	_polap_disassemble_seeds_get-depth-range-of \
-		"${_mtcontigs_depth_range_graphfilter}" \
-		depth_values
+	local depths
+	depths=($(_polap_disassemble_seeds_get-depth-range "${_mtcontigs_depth_range_graphfilter}"))
 
-	if [[ "${depth_values[0]}" -gt 0 ]]; then
-		local depth_lower="${depth_values[0]}"
-		local depth_upper="${depth_values[1]}"
-		_polap_log2 "  depth range for graph filtering: $depth_lower ~ $depth_upper"
+	if [[ "${depths[0]}" -gt 0 ]]; then
+		local depth_lower=${depths[0]}
+		local depth_upper=${depths[1]}
+		_polap_log3 "  depth range for graph filtering: $depth_lower ~ $depth_upper"
 	else
 		die "ERROR: no depth ranges"
 	fi
 
-	_polap_log1 "    step 3-1: creating GFA without sequence data: ${_mtcontigs_gfa_all}"
-	_polap_log1 "      input1: ${_ga_contigger_edges_gfa}"
+	_polap_log1 "    step 4-1: create GFA without sequence data using gfatools view"
+	_polap_log2 "      input1: ${_ga_contigger_edges_gfa}"
 	_polap_log2 "      output: ${_mtcontigs_gfa_all}"
 	_polap_log3_pipe "gfatools view \
 		-S ${_ga_contigger_edges_gfa} \
 		>${_mtcontigs_gfa_all} \
 		2>$_polap_output_dest"
 
-	_polap_log1 "    step 3-2: extracting sequence part of GFA: ${_mtcontigs_gfa_seq_part}"
+	_polap_log1 "    step 4-2: extracte sequence part of GFA: ${_mtcontigs_gfa_seq_part}"
 	_polap_log2 "      input1: ${_mtcontigs_gfa_all}"
 	_polap_log2 "      output: ${_mtcontigs_gfa_seq_part}"
 	_polap_log3_pipe "grep ^S ${_mtcontigs_gfa_all} >${_mtcontigs_gfa_seq_part}"
 
 	# Filter edges in GFA using depths.
-	_polap_log1 "    step 3-3: filtering GFA sequence part using depth range"
+	_polap_log1 "    step 4-3: filter GFA sequence part using depth range"
 	_polap_log2 "      input1: ${_mtcontigs_gfa_seq_part}"
 	_polap_log2 "      input2: ${_mtcontigs_depth_range_graphfilter}"
 	_polap_log2 "        depth range: $depth_lower ~ $depth_upper"
 	_polap_log2 "      output: ${_mtcontigs_gfa_seq_filtered}"
-	if [[ -s "${_mtcontigs_depth_range_graphfilter}" ]]; then
-		_polap_log3_pipe "Rscript $script_dir/run-polap-r-depthfilter-gfa.R \
-			--gfa ${_mtcontigs_gfa_seq_part} \
-			--depth ${_mtcontigs_depth_range_graphfilter} \
-			--out ${_mtcontigs_gfa_seq_filtered} \
-			2>$_polap_output_dest"
-	else
-		_polap_log0 "    no such file: ${_mtcontigs_depth_range_graphfilter}"
-		_polap_log0 "    ${_mtcontigname} -> empty or no seed contigs"
-		>"${_mtcontigname}"
-		_polap_log2_cat "${_mtcontigname}"
-		_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
-		[ "$DEBUG" -eq 1 ] && set +x
-		return 0
-	fi
+	_polap_log3_pipe "Rscript --vanilla \
+    $script_dir/run-polap-r-depthfilter-gfa.R \
+    --gfa ${_mtcontigs_gfa_seq_part} \
+		--depth ${_mtcontigs_depth_range_graphfilter} \
+		--out ${_mtcontigs_gfa_seq_filtered} \
+		2>$_polap_output_dest"
 
-	if [[ -s "${_mtcontigs_gfa_seq_filtered}" ]]; then
-		_polap_log3_head "${_mtcontigs_gfa_seq_filtered}"
+	_polap_log1 "    step 4-4: subsetting GFA using the depth-filtered GFA sequence part with gfatools view"
+	_polap_log2 "      input1: ${_mtcontigs_gfa_seq_filtered}"
+	_polap_log2 "      output1: ${_mtcontigs_gfa_seq_filtered_edge}"
+	_polap_log2 "      output2: ${_mtcontigs_gfa_depthfiltered_gfa}"
+
+	_polap_log3_pipe "cut -f1 \
+    ${_mtcontigs_gfa_seq_filtered} \
+    >${_mtcontigs_gfa_seq_filtered_edge}"
+
+	_polap_log3_pipe "gfatools view -S \
+		-l @${_mtcontigs_gfa_seq_filtered_edge} \
+		${_ga_contigger_edges_gfa} \
+		2>$_polap_output_dest \
+		>${_mtcontigs_gfa_depthfiltered_gfa}"
+
+	if [[ -s "${_mtcontigs_gfa_depthfiltered_gfa}" ]]; then
+		return 0
+	else
+		return 1
 	fi
 }
 
@@ -531,10 +660,6 @@ polap_disassemble-seeds() {
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
-	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
-	local _polap_output_dest="/dev/null"
-	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
-
 	# Grouped file path declarations
 	# source "$script_dir/polap-variables-common.sh"
 	# source "$script_dir/polap-variables-mtcontigs.sh"
@@ -574,99 +699,80 @@ polap_disassemble-seeds() {
 
 	# Create a temporary file to store hashes and file paths
 	local hash_file="${_ga_mtcontigs}/file_hashes.tmp"
-	>"$hash_file" # Ensure the file is empty
+	rm -rf "$hash_file" # Ensure the file is empty
 	local i="0"
 	for i in "${knum_array[@]}"; do
 		_knum=$i
 		source "$script_dir/polap-variables-mtcontigs.sh"
-		polap_disassemble-seeds-graph \
-			"${_ga_contigger_edges_gfa}" \
-			"${_ga_annotation_all}" \
-			"${_knum}"
-
 		local _mtcontigs="${_ga}/51-mtcontigs/${_knum}"
 		local _mtcontigs_8mtcontigname="${_mtcontigs}/8-mt.contig.name.txt"
+		_run_polap_step-disassemble-seeds-graph \
+			"${_ga_contigger_edges_gfa}" \
+			"${_ga_annotation_all}" \
+			"${_knum}" \
+			"${_mtcontigs_8mtcontigname}"
+
 		if [[ -s "${_mtcontigs_8mtcontigname}" ]]; then
-			md5sum "${_mtcontigs_8mtcontigname}" >>"$hash_file"
+			printf "%s %s\n" "${_knum}" "${_mtcontigs_8mtcontigname}" >>"$hash_file"
+			# md5sum "${_mtcontigs_8mtcontigname}" >>"$hash_file"
 		fi
 	done
 
-	if [[ -s "${hash_file}" ]]; then
-		_polap_log3_cat "${hash_file}"
-	else
-		return "${_POLAP_ERR_NO_SEEDS}"
-	fi
+	# TODO: rewrite the following in python code
+	# mtcontigs_files: index and mtcontig file path per line
+	# use
+	# run-polap-py-unique-mtcontigs.py
+	#
+	# python unique-mtcontig.py -i mtcontigs_files.txt -o tout/mtcontigs-set.txt -p tx/mtcontig
+	#
+	# mtcontigs_files.txt
+	# -------------------
+	# 1 mt.contig.name.1.txt
+	# 2 mt.contig.name.2.txt
+	# 3 mt.contig.name.3.txt
+	#
+	# mt.contig.name.1.txt
+	# --------------------
+	# edge_1
+	# edge_2
+	# edge_3
+	#
+	# mt.contig.name.2.txt
+	# --------------------
+	# edge_2
+	# edge_1
+	# edge_3
+	#
+	# mt.contig.name.3.txt
+	# --------------------
+	# edge_1
+	# edge_3
+	#
+	# mtcontigs-set.txt
+	# -----------------
+	# tx/mtcontig-1.txt 1 2
+	# tx/mtcontig-2.txt 3
+	#
+	# tx/mtcontig-1.txt
+	# -----------------
+	# edge_1
+	# edge_2
+	# edge_3
+	#
+	# tx/mtcontig-2.txt
+	# -----------------
+	# edge_1
+	# edge_3
+	#
 
-	# This will give a list of unique files by content
-	awk '!seen[$1]++' "$hash_file" >"${_ga_mtcontigs}/unique_files_by_content.txt"
+	local filtered_file="${_ga_mtcontigs}/filtered_files.tmp"
+	_polap_log3_pipe "python $script_dir/run-polap-py-unique-mtcontigs.py \
+		--input ${hash_file} \
+		--out ${filtered_file} \
+    --prefix ${_mtcontigname} \
+		2>$_polap_output_dest"
 
-	# Temporary file to store files with fewer than 10 lines
-	filtered_file="${_ga_mtcontigs}/filtered_files.tmp"
-	>"$filtered_file" # Ensure the file is empty
-	while IFS=" " read -r hash file; do
-		# Check if file is not empty and line count is less than _arg_max_seeds
-		if [[ -f "$file" ]]; then
-			local line_count=$(wc -l <"$file")
-			if ((line_count < _arg_max_seeds)); then
-				echo "$line_count $file" >>"$filtered_file"
-			fi
-		fi
-	done <"${_ga_mtcontigs}/unique_files_by_content.txt"
-
-	local n=$(wc -l <"$filtered_file")
-	if ((n == 1)); then
-		IFS=" " read -r line_count file <"$filtered_file"
-		_polap_log0 "we have a single seed: $file ($line_count)"
-		_polap_log3_cmd cp "$file" "${_mtcontigname}"
-	elif ((n == 0)); then
-		_polap_log0 "we have no seeds."
-	else
-		_polap_log0 "we have multiple seeds."
-	fi
-
-	return 0
-
-	# NOTE: we do not use the following because plastid genome assemblies tend to have
-	# a simple seed conformation.
-
-	# Initialize index counter
-	local index=0
-
-	# Loop through each unique file
-	while IFS=" " read -r line_count file; do
-		# Compute the new filename based on _arg_jnum and index
-		local new_filename="${_ga}/mt.contig.name-${index}"
-		local new_filename_table="${_ga}/contig-annotation-table-seed-${index}.txt"
-
-		# Check if file is not empty and line count is less than 10
-		if [[ -f "$file" ]]; then
-			line_count=$(wc -l <"$file")
-			# Copy the unique file to the new filename
-			_polap_log3_cmd cp "$file" "$new_filename"
-			third_field=$(echo "$file" | awk -F '/' '{print $4}')
-			cp "${_ga_mtcontigs}/${third_field}/8-mtcontig-annotation-table-seed.txt" \
-				"${new_filename_table}"
-		fi
-		# Increment the index
-		((index++))
-	done <"${filtered_file}"
-
-	_polap_log0 "seed contig name files:"
-	ls "${_ga}"/mt.contig.name-* >&3
-
-	for _mtcontigname in "${_ga}"/mt.contig.name-*; do
-		# Extract the <number> part using parameter expansion
-
-		local file=$(basename ${_mtcontigname})
-		local number="${file#mt.contig.name-}"
-		local _ga_annotation_depth_table_seed_target="${_ga}/contig-annotation-depth-table-seed-${number}.txt"
-
-		_polap_disassemble_seeds_final-seeds-mtcontig \
-			"${_mtcontigname}" \
-			"${_ga_annotation_depth_table_seed_target}"
-
-		_polap_log0 "NEXT: $(basename "$0") assemble2 -o ${_arg_outdir} -i ${_arg_inum} -j ${number}"
-	done
+	cp "${_mtcontigname}-1.txt" "${_mtcontigname}"
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -690,12 +796,12 @@ polap_disassemble-seeds-graph() {
 	# source "$script_dir/polap-variables-common.sh"
 	# source "$script_dir/polap-variables-mtcontigs.sh"
 
-	local _contigger=$(dirname "$1")
-	local _ga=$(dirname "${_contigger}")
-	local _ann="${_ga}/50-annotation"
 	local _ga_contigger_edges_gfa="$1"
 	local _ga_annotation_all="$2"
 	local _knum="$3"
+	local _contigger=$(dirname "$1")
+	local _ga=$(dirname "${_contigger}")
+	local _ann="${_ga}/50-annotation"
 
 	# from polap-variables-mtcontigs.sh
 	local _mtcontigs="${_ga}/51-mtcontigs/${_knum}"
@@ -729,7 +835,8 @@ polap_disassemble-seeds-graph() {
 	local _mtcontigs_2_depth_range_by_cdf_copy_number="${_mtcontigs}/2-depth.range.by.cdf.copy.number.txt"
 
 	# from polap-variables-common.sh
-	local _mtcontigname="${_ga}/mt.contig.name"
+	local _mtcontigname_prefix="${_ga}/mt.contig.name"
+	local _mtcontigname="${_ga}/mt.contig.name-1.txt"
 	local _ga_annotation_depth_table="${_ga}/contig-annotation-depth-table.txt"
 	local _ga_annotation_cdf_table="${_ga}/contig-annotation-cdf-table.txt"
 	local _ga_pt_annotation_depth_table="${_ga}/pt-contig-annotation-depth-table.txt"
@@ -781,8 +888,8 @@ polap_disassemble-seeds-graph() {
 	_polap_log2 "    input2: ${_ga_annotation_all}"
 	_polap_log2 "    output: ${_mtcontigs_preselection}"
 	_polap_disassemble_seeds_preselect-contigs \
-		"${_mtcontigs_depth_range_preselection}" \
 		"${_ga_annotation_all}" \
+		"${_mtcontigs_depth_range_preselection}" \
 		"${_mtcontigs_preselection}"
 
 	# Continue for the select contig types 3, 4, or 5
@@ -1133,6 +1240,372 @@ HEREDOC
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+# Function to control execution steps
+function _run_polap_test-disassemble-seeds {
+	local include="${_arg_steps_include}"
+	local exclude="${_arg_steps_exclude}" # Optional range or list of steps to exclude
+	local step_array=()
+	local exclude_array=()
+
+	help_message=$(
+		cat <<HEREDOC
+Test execute steps.
+
+Arguments
+---------
+
+--steps-include <STEPS>: e.g., STEPS 1,2 or 3-5
+--steps-exclude <STEPS>: e.g., STEPS 2 or 2-3
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return 0
+	if [[ "${_arg_menu[1]}" == "infile" ]]; then
+		if [[ -z "${_arg_steps_include}" ]]; then
+			_polap_echo0 "${help_message}" && return 0
+		fi
+	fi
+
+	step_array=($(_polap_parse_steps "${include}" "${exclude}"))
+
+	_polap_log0 "Executing steps: ${step_array[*]}"
+
+	# Check for specific steps and execute selectively
+	if _polap_contains_step 1 "${step_array[@]}"; then
+		_polap_log0 "  step 1: Initializing..."
+		# Add commands for step 1
+	fi
+
+	if _polap_contains_step 2 "${step_array[@]}"; then
+		_polap_log0 "  step 2: Processing data..."
+		# Add commands for step 2
+	fi
+
+	if _polap_contains_step 3 "${step_array[@]}"; then
+		_polap_log0 "  step 3: Validating results..."
+		# Add commands for step 3
+	fi
+
+	if _polap_contains_step 4 "${step_array[@]}"; then
+		_polap_log0 "  step 4: Finalizing..."
+		# Add commands for step 4
+	fi
+
+	if _polap_contains_step 5 "${step_array[@]}"; then
+		_polap_log0 "  step 5: Finalizing..."
+		# Add commands for step 4
+	fi
+
+	if _polap_contains_step 6 "${step_array[@]}"; then
+		_polap_log0 "  step 6: Finalizing..."
+		# Add commands for step 4
+	fi
+
+	if _polap_contains_step 7 "${step_array[@]}"; then
+		_polap_log0 "  step 7: Finalizing..."
+		# Add commands for step 4
+	fi
+
+	if _polap_contains_step 8 "${step_array[@]}"; then
+		_polap_log0 "  step 8: Finalizing..."
+		# Add commands for step 4
+	fi
+
+	if _polap_contains_step 9 "${step_array[@]}"; then
+		_polap_log0 "  step 9: Finalizing..."
+		# Add commands for step 4
+	fi
+
+	if _polap_contains_step 10 "${step_array[@]}"; then
+		_polap_log0 "  step 10: Finalizing..."
+		# Add commands for step 4
+	fi
+
+	if _polap_contains_step 11 "${step_array[@]}"; then
+		_polap_log0 "  step 11: Finalizing..."
+		# Add commands for step 4
+	fi
+
+	if _polap_contains_step 12 "${step_array[@]}"; then
+		_polap_log0 "  step 12: Finalizing..."
+		# Add commands for step 4
+	fi
+
+	if _polap_contains_step 13 "${step_array[@]}"; then
+		_polap_log0 "  step 13: Finalizing..."
+		# Add commands for step 4
+	fi
+
+	if _polap_contains_step 14 "${step_array[@]}"; then
+		_polap_log0 "  step 14: Finalizing..."
+		# Add commands for step 4
+	fi
+
+	if _polap_contains_step 15 "${step_array[@]}"; then
+		_polap_log0 "  step 15: Finalizing..."
+		# Add commands for step 4
+	fi
+
+	_polap_log0 "Execution complete."
+}
+
+# Function to control execution steps
+function _run_polap_test-disassemble-seeds-graph {
+	local include="${_arg_steps_include}"
+	local exclude="${_arg_steps_exclude}" # Optional range or list of steps to exclude
+	local step_array=()
+	local exclude_array=()
+
+	help_message=$(
+		cat <<HEREDOC
+Test execute steps.
+
+Arguments
+---------
+
+--steps-include <STEPS>: e.g., STEPS 1,2 or 1-2
+--steps-exclude <STEPS>: e.g., STEPS 2
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return 0
+	if [[ "${_arg_menu[1]}" == "infile" ]]; then
+		if [[ -z "${_arg_steps_include}" ]]; then
+			_polap_echo0 "${help_message}" && return 0
+		fi
+	fi
+
+	local step_array
+	step_array=($(_polap_parse_steps "${include}" "${exclude}"))
+
+	_polap_log0 "Executing steps: ${step_array[*]}"
+
+	# Check for specific steps and execute selectively
+	if _polap_contains_step 1 "${step_array[@]}"; then
+		_polap_log0 "  step 1: Initializing..."
+		# Add commands for step 1
+	fi
+
+	if _polap_contains_step 2 "${step_array[@]}"; then
+		_polap_log0 "  step 2: Processing data..."
+		# Add commands for step 2
+	fi
+
+	_polap_log0 "Execution complete."
+}
+
+# step-by-step of disassemble seeds graph
+function _run_polap_step-disassemble-seeds-graph {
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	local include="${_arg_steps_include}"
+	local exclude="${_arg_steps_exclude}" # Optional range or list of steps to exclude
+	local include="1-5"
+	local exclude=""
+	local step_array=()
+	local exclude_array=()
+
+	help_message=$(
+		cat <<HEREDOC
+Execute polap_disassemble-seeds-graph step-by-step.
+
+Inputs
+------
+
+- gfa file: 30-contigger/graph_final.gfa
+- annotation all: assembly_info_organelle_annotation_count-all.txt
+- depth-range selection type: 2
+
+Outputs
+-------
+
+- mtcontigname: 51-mtcontigs/mt.contig.name.txt
+
+Arguments
+---------
+
+--steps-include <STEPS>: e.g., STEPS 1,2 or 1-2
+--steps-exclude <STEPS>: e.g., STEPS 2
+
+Usages
+------
+src/polap.sh step-disassemble-seeds-graph jvalidus/disassemble/0/30-contigger/graph_final.gfa jvalidus/disassemble/0/assembly_info_organelle_annotation_count-all.txt 2 jvalidus/disassemble/0/51-mtcontigs/2/mt.contig.name.txt
+
+HEREDOC
+	)
+
+	_arg_plastid="on"
+	local _ga_contigger_edges_gfa="${_arg_menu[1]}"
+	local _ga_annotation_all="${_arg_menu[2]}"
+	local _knum="${_arg_menu[3]}"
+	local _mtcontigname="${_arg_menu[4]}"
+	if [[ "${_arg_menu[1]}" == "infile" ]]; then
+		_ga_contigger_edges_gfa="$1"
+		_ga_annotation_all="$2"
+		_knum="$3"
+		_mtcontigname="$4"
+	fi
+
+	local _contigger=$(dirname "${_ga_contigger_edges_gfa}")
+	local _ga=$(dirname "${_contigger}")
+	local _ann="${_ga}/50-annotation"
+
+	# from polap-variables-mtcontigs.sh
+	local _mtcontigs="${_ga}/51-mtcontigs/${_knum}"
+	local _mtcontigs_depth_range_preselection="${_mtcontigs}/depth.range.preselection.txt"
+	local _mtcontigs_depth_range_graphfilter="${_mtcontigs}/depth.range.graphfilter.txt"
+	local _mtcontigs_1_custom_depth_range="${_mtcontigs}/custom.depth.range-1.txt"
+	local _mtcontigs_2_custom_depth_range="${_mtcontigs}/custom.depth.range-2.txt"
+	local _mtcontigs_preselection="${_mtcontigs}/1-preselection.by.gene.density.txt"
+	local _mtcontigs_gfa_all="${_mtcontigs}/3-gfa.all.gfa"
+	local _mtcontigs_gfa_seq_filtered="${_mtcontigs}/3-gfa.seq.depthfiltered.txt"
+	local _mtcontigs_gfa_seq_part="${_mtcontigs}/3-gfa.seq.all.tsv"
+	local _mtcontigs_gfa_seq_filtered_edge="${_mtcontigs}/4-gfa.seq.depthfiltered.edge.txt"
+	local _mtcontigs_gfa_depthfiltered_gfa="${_mtcontigs}/4-gfa.depthfiltered.gfa"
+	local _mtcontigs_gfa_depthfiltered_cc_seed="${_mtcontigs}/5-gfa.depthfiltered.cc.seed.txt"
+	local _mtcontigs_gfa_depthfiltered_cc_edge="${_mtcontigs}/5-gfa.depthfiltered.cc.edge.txt"
+	local _mtcontigs_links="${_mtcontigs}/4-gfa.links"
+	local _mtcontigs_links_tsv="${_mtcontigs}/4-gfa.links.tsv"
+	local _mtcontigs_links_contig_na="${_mtcontigs}/4-gfa.links.contig.na.txt"
+	local _mtcontigs_links_contig="${_mtcontigs}/4-gfa.links.contig.txt"
+	local _mtcontigs_links_number="${_mtcontigs}/4-gfa.links.number.txt"
+	local _mtcontigs_links_order="${_mtcontigs}/4-gfa.links.order.txt"
+	local _mtcontigs_links_seed="${_mtcontigs}/5-gfa.links.seed.txt"
+	local _mtcontigs_links_mtcontig="${_mtcontigs}/6-gfa.links.mtcontig.txt"
+	local _mtcontigs_7mtcontigname="${_mtcontigs}/7-mt.contig.name.txt"
+	local _mtcontigs_8mtcontigname="${_mtcontigs}/8-mt.contig.name.txt"
+	local _mtcontig_table="${_mtcontigs}/8-mtcontig.table.tsv"
+	local _mtcontigs_annotation_table_seed="${_mtcontigs}/8-mtcontig-annotation-table-seed.txt"
+	# delete these later
+	local _mtcontigs_2_depth_range_by_cdf_copy_number="${_mtcontigs}/2-depth.range.by.cdf.copy.number.txt"
+	local _mtcontig_table="${_mtcontigs}/8-mtcontig.table.tsv"
+	# delete these later
+	local _mtcontigs_2_depth_range_by_cdf_copy_number="${_mtcontigs}/2-depth.range.by.cdf.copy.number.txt"
+
+	# from polap-variables-common.sh
+	local _ga_annotation_depth_table="${_ga}/contig-annotation-depth-table.txt"
+	local _ga_annotation_cdf_table="${_ga}/contig-annotation-cdf-table.txt"
+	local _ga_pt_annotation_depth_table="${_ga}/pt-contig-annotation-depth-table.txt"
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return 0
+	if [[ "${_arg_menu[1]}" == "infile" ]]; then
+		if [[ -z "${_arg_steps_include}" ]]; then
+			_polap_echo0 "${help_message}" && return 0
+		fi
+	fi
+
+	# We initiate the process of selecting seed contigs.
+	_polap_log0 "select seed contigs using the assembly graph"
+	_polap_log1 "  input1: gfa: ${_ga_contigger_edges_gfa}"
+	_polap_log1 "  input2: annotation: ${_ga_annotation_all}"
+	_polap_log1 "  input3: selection type: ${_knum}"
+	_polap_log1 "  output: ${_mtcontigname}"
+
+	check_file_existence "${_ga_contigger_edges_gfa}"
+	check_file_existence "${_ga_annotation_all}"
+
+	step_array=($(_polap_parse_steps "${include}" "${exclude}"))
+	if [[ "$?" -ne 0 ]]; then
+		return "${_POLAP_ERR_CMD_OPTION_STEPS}"
+	fi
+
+	_polap_log1 "  executing steps: ${step_array[*]}"
+
+	# Check for specific steps and execute selectively
+	if _polap_contains_step 1 "${step_array[@]}"; then
+		_polap_log1 "  step 1: clean-up the mtcontigs folder: ${_mtcontigs}"
+		_polap_log3_cmd rm -rf "${_mtcontigs}"
+		_polap_log3_cmd mkdir -p "${_mtcontigs}"
+	fi
+
+	if _polap_contains_step 2 "${step_array[@]}"; then
+		_polap_log1 "  step 2: determine the depth range using length CDF"
+		_polap_disassemble_seeds_determine-depth-range \
+			"${_ga_annotation_all}" \
+			"${_knum}" \
+			"${_mtcontigs_1_custom_depth_range}"
+		if [[ "$?" -ne 0 ]]; then
+			_polap_log1 "  no depth range."
+		else
+			_polap_log1 "  depth range"
+			_polap_log2 "  ${_mtcontigs_1_custom_depth_range}"
+			_polap_log3_cat "${_mtcontigs_1_custom_depth_range}"
+		fi
+	fi
+
+	_mtcontigs_depth_range_preselection="${_mtcontigs_1_custom_depth_range}"
+
+	if _polap_contains_step 3 "${step_array[@]}"; then
+		_polap_log1 "  step 3: pre-select contigs based on organelle gene annotation"
+		_polap_log2 "    input1: ${_ga_annotation_all}"
+		_polap_log2 "    input2: ${_mtcontigs_depth_range_preselection}"
+		_polap_log2 "    output: ${_mtcontigs_preselection}"
+		_polap_disassemble_seeds_preselect-contigs \
+			"${_ga_annotation_all}" \
+			"${_mtcontigs_depth_range_preselection}" \
+			"${_mtcontigs_preselection}"
+
+		if [[ "$?" -ne 0 ]]; then
+			_polap_log2 "  no mtcontig preselection."
+		else
+			_polap_log2 "  mtcontig preselection"
+			_polap_log3_column "${_mtcontigs_preselection}"
+		fi
+	fi
+
+	if _polap_contains_step 4 "${step_array[@]}"; then
+		_polap_log1 "  step 4: filter GFA by the depth range"
+		_polap_log2 "    input1: ${_ga_contigger_edges_gfa}"
+		_polap_log2 "    input2: ${_mtcontigs_depth_range_preselection}"
+		_polap_log2 "    output: ${_mtcontigs_gfa_depthfiltered_gfa}"
+		_polap_disassemble_seeds_depthfilter-gfa \
+			"${_ga_contigger_edges_gfa}" \
+			"${_mtcontigs_depth_range_preselection}" \
+			"${_mtcontigs_gfa_depthfiltered_gfa}"
+
+		if [[ "$?" -ne 0 ]]; then
+			_polap_log2 "  no depth-filtered gfa."
+		else
+			_polap_log2 "  depth-filtered gfa."
+			_polap_log3_head "${_mtcontigs_gfa_depthfiltered_gfa}"
+		fi
+	fi
+
+	if _polap_contains_step 5 "${step_array[@]}"; then
+		_polap_log1 "  step 5: find connected components with the preselected contigs"
+		_polap_log2 "    input1: ${_mtcontigs_gfa_depthfiltered_gfa}"
+		_polap_log3_pipe "python $script_dir/run-polap-py-find-cc-with-seeds.py \
+      --gfa ${_mtcontigs_gfa_depthfiltered_gfa} \
+			--nodes ${_mtcontigs_preselection} \
+      --output ${_mtcontigs_gfa_depthfiltered_cc_seed}"
+
+		flatten_array_array_comma_to_lines \
+			"${_mtcontigs_gfa_depthfiltered_cc_seed}" \
+			"${_mtcontigs_gfa_depthfiltered_cc_edge}"
+
+		if [[ -s "${_mtcontigs_gfa_depthfiltered_cc_edge}" ]]; then
+			cp "${_mtcontigs_gfa_depthfiltered_cc_edge}" "${_mtcontigname}"
+			_polap_log3_cat "${_mtcontigname}"
+		else
+			_polap_log0 "  no connected components with the annotation seed contigs"
+			>"${_mtcontigname}"
+		fi
+	else
+		_polap_log0 "  no annotation seed contigs yet"
+		>"${_mtcontigname}"
+	fi
+
+	# Disable debugging if previously enabled
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	[ "$DEBUG" -eq 1 ] && set +x
 	return 0
 }

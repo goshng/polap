@@ -28,9 +28,8 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-# Constants
-EXIT_SUCCESS=0
-EXIT_FAIL=1
-EXIT_ERROR=2
-RETURN_SUCCESS=0
-RETURN_FAIL=1
+_polap_var_function_verbose=4
+
+# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+_polap_output_dest="/dev/null"
+[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"

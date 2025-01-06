@@ -5,11 +5,19 @@ import networkx as nx
 import argparse
 
 
-def parse_gfa_to_graph(gfa_file):
+def parse_gfa_to_graph_with_reverses_and_filter(gfa_file, seed_file):
     """
     Parse a GFA file and construct a directed graph, generating reverse complement edges.
+    Filter the link lines based on a seed file containing edge_<number>.
     """
     G = nx.DiGraph()
+
+    # Load the seed edges
+    seed_edges = set()
+    if seed_file:
+        with open(seed_file, "r") as seed:
+            seed_edges = {line.strip() for line in seed if line.strip()}
+
     with open(gfa_file, "r") as file:
         for line in file:
             if line.startswith("L"):  # Process Link lines
@@ -17,44 +25,39 @@ def parse_gfa_to_graph(gfa_file):
                 if len(fields) >= 5:
                     source, source_orient, target, target_orient = fields[1:5]
 
-                    # Add the original edge
-                    G.add_edge(f"{source}{source_orient}", f"{target}{target_orient}")
+                    # Filter by seed edges
+                    if source in seed_edges or target in seed_edges:
+                        # Add the original edge
+                        G.add_edge(
+                            f"{source}{source_orient}", f"{target}{target_orient}"
+                        )
 
-                    # Generate and add the reverse complement edge
-                    rev_source_orient = "-" if source_orient == "+" else "+"
-                    rev_target_orient = "-" if target_orient == "+" else "+"
-                    G.add_edge(
-                        f"{target}{rev_target_orient}", f"{source}{rev_source_orient}"
-                    )
+                        # Generate and add the reverse complement edge
+                        rev_source_orient = "-" if source_orient == "+" else "+"
+                        rev_target_orient = "-" if target_orient == "+" else "+"
+                        G.add_edge(
+                            f"{target}{rev_target_orient}",
+                            f"{source}{rev_source_orient}",
+                        )
     return G
 
 
 def find_circular_paths(G):
     """
     Find all circular paths, including single-node cycles (self-loops).
+    Exclude paths with more than 4 nodes.
     """
     simple_cycles = list(nx.simple_cycles(G))
-    return simple_cycles
+    circular_components = []
 
+    for cycle in simple_cycles:
+        if len(cycle) <= 4:  # Exclude paths with more than 4 nodes
+            # Extract edge names without orientation (+/-)
+            unique_edges = {edge.rstrip("+-") for edge in cycle}
+            if len(unique_edges) in [1, 3]:  # Keep only paths with 1 or 3 unique edges
+                circular_components.append(cycle)
 
-def filter_circular_paths_by_seed(circular_paths, seed_file):
-    """
-    Filter circular paths to keep only those that contain at least one node from the seed file.
-    """
-    if not seed_file:
-        return circular_paths
-
-    # Load seed nodes into a set
-    with open(seed_file, "r") as f:
-        seed_nodes = {line.strip() for line in f if line.strip()}
-
-    # Filter circular paths
-    filtered_paths = [
-        path
-        for path in circular_paths
-        if any(node.rstrip("+-") in seed_nodes for node in path)
-    ]
-    return filtered_paths
+    return circular_components
 
 
 def run_command(command):
@@ -72,8 +75,10 @@ def extract_edge_sequence(fasta_file, edge, orientation):
     """
     base_edge = edge.split("+")[0].split("-")[0]  # Remove signs to get base edge name
     if orientation == "+":
+        # Extract sequence without reverse complement
         command = f"seqkit grep -p {base_edge} {fasta_file} | seqkit seq -t dna -v"
     elif orientation == "-":
+        # Extract sequence with reverse complement
         command = (
             f"seqkit grep -p {base_edge} {fasta_file} | seqkit seq -t dna -v -r -p"
         )
@@ -102,9 +107,11 @@ def extract_circular_paths_to_fasta(gfa_file, circular_paths, output_dir):
     total_nodes = 0
 
     for idx, path in enumerate(circular_paths, start=1):
+        # Step 2.1: Generate individual FASTA for the path
         output_fasta = os.path.join(output_dir, f"circular_path_{idx}.fa")
         print(f"Extracting circular path {idx}: {path}")
 
+        # Collect sequences for the path
         path_sequences = []
         total_nodes += len(path)
         for edge in path:
@@ -116,13 +123,16 @@ def extract_circular_paths_to_fasta(gfa_file, circular_paths, output_dir):
                 raise ValueError(f"Invalid edge format: {edge}")
             path_sequences.append(sequence.strip())
 
+        # Calculate the total length of the concatenated sequence
         total_length = sum(len(seq) for seq in path_sequences)
         path_lengths.append(total_length)
 
+        # Write the individual FASTA file
         with open(output_fasta, "w") as f:
             for seq in path_sequences:
                 f.write(seq + "\n")
 
+        # Step 2.2: Concatenate the sequences into a single FASTA file
         concatenated_fasta = os.path.join(
             output_dir, f"circular_path_{idx}_concatenated.fa"
         )
@@ -132,13 +142,16 @@ def extract_circular_paths_to_fasta(gfa_file, circular_paths, output_dir):
         )
         print(f"Circular path {idx} saved as concatenated FASTA: {concatenated_fasta}")
 
-    average_nodes = round(total_nodes / len(circular_paths), 3) if circular_paths else 0
+    # Save average number of nodes per circular path to a file
+    average_nodes = total_nodes / len(circular_paths) if circular_paths else 0
     circular_path_nodes_file = os.path.join(output_dir, "circular_path_nodes.txt")
     with open(circular_path_nodes_file, "w") as nodes_file:
         nodes_file.write(f"{average_nodes}\n")
 
 
 def main():
+
+    # Parse command-line arguments
     parser = argparse.ArgumentParser(
         description="Extract sequences for circular paths from a GFA file."
     )
@@ -150,29 +163,33 @@ def main():
 
     args = parser.parse_args()
 
-    G = parse_gfa_to_graph(args.gfa)
-    all_circular_paths = find_circular_paths(G)
-    print(f"Total number of circular paths found: {len(all_circular_paths)}")
+    # Ensure required arguments are provided
+    if not args.gfa or not args.out:
+        parser.error("Both --gfa and --out options are required.")
 
-    filtered_circular_paths = filter_circular_paths_by_seed(
-        all_circular_paths, args.seed
-    )
-    print(f"Number of circular paths after filtering: {len(filtered_circular_paths)}")
+    # Parse the graph with optional filtering by seed file
+    G = parse_gfa_to_graph_with_reverses_and_filter(args.gfa, args.seed)
 
-    # Save filtered circular paths to circular_path.txt
-    circular_path_file = os.path.join(args.out, "circular_path.txt")
-    with open(circular_path_file, "w") as path_file:
-        for path in filtered_circular_paths:
-            path_str = ", ".join(path)
-            path_file.write(f"{path_str}\n")
+    # List all circular paths (including self-loops)
+    circular_paths = find_circular_paths(G)
 
-    # Save the count of filtered circular paths to circular_path_count.txt
+    # Save circular path count and paths to text files
     circular_path_count_file = os.path.join(args.out, "circular_path_count.txt")
+    circular_path_file = os.path.join(args.out, "circular_path.txt")
+
     with open(circular_path_count_file, "w") as count_file:
-        count_file.write(f"{len(filtered_circular_paths)}\n")
+        count_file.write(f"{len(circular_paths)}\n")
+
+    with open(circular_path_file, "w") as path_file:
+        for idx, path in enumerate(circular_paths, start=1):
+            path_str = ", ".join(path)
+            path_file.write(f"Circular Path {idx}: {path_str}\n")
+
+    print(f"Number of circular paths: {len(circular_paths)}")
+    print(f"Circular paths saved to {circular_path_file}")
 
     # Call the extraction function
-    extract_circular_paths_to_fasta(args.gfa, filtered_circular_paths, args.out)
+    extract_circular_paths_to_fasta(args.gfa, circular_paths, args.out)
 
 
 if __name__ == "__main__":

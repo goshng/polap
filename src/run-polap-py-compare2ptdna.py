@@ -80,7 +80,7 @@ def compute_coverage(blast_output, seq1_length, output_dir):
 
     # Extract the first 5 lines and convert to BED format
     run_command(
-        f"head -n 5 {blast_output} | cut -f1-3 | sort -k1,1 -k2,2n > {bed_file}"
+        f"head -n 25 {blast_output} | cut -f1-3 | sort -k1,1 -k2,2n > {bed_file}"
     )
 
     # Merge the BED file and compute total covered length

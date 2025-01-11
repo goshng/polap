@@ -914,16 +914,26 @@ HEREDOC
 	# check_file_existence "${_arg_outdir}/short_expected_genome_size.txt"
 	# check_file_existence "${_polap_var_outdir_nk_fq_gz}"
 
+	if [[ -n "${_arg_genomesize}" ]]; then
+		_arg_genomesize=$(_polap_utility_convert_unit_to_bp "${_arg_genomesize}")
+	fi
+
 	_polap_log0 "flye whole-genome assembly using the reduced long-read data: ${_polap_var_outdir_nk_fq_gz}"
 	_polap_log1 "  input1: ${_polap_var_outdir_genome_size}"
 	_polap_log1 "  input2: ${_polap_var_outdir_nk_fq_gz}"
 
-	if [[ ! -s "${_polap_var_outdir_genome_size}" ]]; then
-		return ${_POLAP_ERR_NO_GENOME_SIZE}
+	if [ -z "$_arg_genomesize" ]; then
+		if [[ ! -s "${_polap_var_outdir_genome_size}" ]]; then
+			return ${_POLAP_ERR_NO_GENOME_SIZE}
+		fi
 	fi
 
-	if [[ ! -s "${_polap_var_outdir_nk_fq_gz}" ]]; then
-		return ${_POLAP_ERR_NO_NK_FQ}
+	if [[ "${_arg_long_reads_is}" == "off" ]]; then
+		if [[ ! -s "${_polap_var_outdir_nk_fq_gz}" ]]; then
+			return ${_POLAP_ERR_NO_NK_FQ}
+		fi
+	else
+		_polap_var_outdir_nk_fq_gz="${_arg_long_reads}"
 	fi
 
 	#   ${_polap_var_wga_contigger_edges_gfa}
@@ -931,12 +941,17 @@ HEREDOC
 		[ "${_arg_redo}" = "off" ]; then
 		_polap_log1 "  found: ${_polap_var_wga_contigger_edges_gfa}, so skipping the whole-genome assembly ..."
 	else
-		local _EXPECTED_GENOME_SIZE=$(<"${_polap_var_outdir_genome_size}")
-		local _EXPECTED_GENOME_SIZE=${_EXPECTED_GENOME_SIZE%.*}
-		local _expected_genome_size_bp=$(_polap_utility_convert_bp ${_EXPECTED_GENOME_SIZE})
-		_polap_log1 "  expected genome size using short-read data (bases): ${_expected_genome_size_bp}"
+
+		if [[ -s "${_polap_var_outdir_genome_size}" ]]; then
+			local _EXPECTED_GENOME_SIZE=$(<"${_polap_var_outdir_genome_size}")
+			local _EXPECTED_GENOME_SIZE=${_EXPECTED_GENOME_SIZE%.*}
+			local _expected_genome_size_bp=$(_polap_utility_convert_bp ${_EXPECTED_GENOME_SIZE})
+			_polap_log1 "  expected genome size using short-read data (bases): ${_expected_genome_size_bp}"
+		fi
 		if [[ ${_arg_test} == "on" ]]; then
 			_arg_genomesize=150000
+			local _expected_genome_size_bp=$(_polap_utility_convert_bp ${_arg_genomesize})
+			_polap_log1 "  test expected genome size (bases): ${_expected_genome_size_bp}"
 		fi
 		if [ ! -z "$_arg_genomesize" ]; then
 			local _EXPECTED_GENOME_SIZE=$_arg_genomesize

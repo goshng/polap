@@ -37,6 +37,27 @@ source "$script_dir/run-polap-function-log.sh"
 
 function try { "$@" || die "cannot $*"; }
 
+# Function to set the start time
+_polap_set_start_time() {
+	_polap_var_start_time=$(date +%s)
+}
+
+# Function to compute elapsed time and return formatted string
+_polap_get_elapsed_time() {
+	local current_time=$(date +%s)
+	local elapsed=$((current_time - _polap_var_start_time))
+
+	if ((elapsed < 60)); then
+		echo "${elapsed}s" # Seconds
+	elif ((elapsed < 3600)); then
+		echo "$((elapsed / 60))m" # Minutes
+	elif ((elapsed < 604800)); then
+		echo "$((elapsed / 3600))h" # Hours
+	else
+		echo "$((elapsed / 86400))d" # Days
+	fi
+}
+
 ################################################################################
 # Function to convert base pairs to the highest appropriate unit
 # Example usage

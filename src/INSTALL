@@ -1,2 +1,4 @@
 # Conda packages
 r-testthat
+conda install conda-forge::r-patchwork
+

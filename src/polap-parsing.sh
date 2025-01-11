@@ -58,7 +58,7 @@ begins_with_short_option() {
 
 # THE DEFAULTS INITIALIZATION - POSITIONALS
 _positionals=()
-_arg_menu=("assemble" "infile" "outfile" "4" "5")
+_arg_menu=("assemble" "infile" "outfile" "thirdfile" "fourthfile")
 # THE DEFAULTS INITIALIZATION - OPTIONALS
 _arg_long_reads="l.fq"
 _arg_long_reads_is="off"
@@ -126,10 +126,11 @@ _arg_debug="off"
 _arg_verbose=1
 _arg_help="off"
 # for menu disassembly
-_arg_disassemble_a=10000000          # 10 Mb or the smallest long read step size
-_arg_disassemble_b_is="off"          #
-_arg_disassemble_b=1000000000        # 1 Gb or the largest long read step size
-_arg_disassemble_n=100               # the number cycles
+_arg_disassemble_a=10000000   # 10 Mb or the smallest long read step size
+_arg_disassemble_b_is="off"   #
+_arg_disassemble_b=1000000000 # 1 Gb or the largest long read step size
+_arg_disassemble_n=100        # the number cycles
+_arg_disassemble_n_is="off"
 _arg_disassemble_m=500000            # the maximum of draft genome size
 _arg_disassemble_s_max=              # the maximum of draft genome size
 _arg_disassemble_alpha=1.0           # the minimum disjointig coverage
@@ -137,6 +138,8 @@ _arg_disassemble_delta=0.75          # the move size of alpha
 _arg_disassemble_min_memory=16       # the minimum memory in Gb
 _arg_disassemble_compare_to_fasta="" # the minimum memory in Gb
 _arg_disassemble_s=                  # sample size
+_arg_disassemble_best="off"
+_arg_disassemble_stop_after=
 # for genome size grid
 _arg_genomesize_a=200000 #
 _arg_genomesize_b=300000 #
@@ -154,8 +157,8 @@ _arg_directional_a=1
 _arg_flye_data_type="--nano-raw"
 _arg_minimap2_data_type="map-ont"
 
-source "$script_dir/polap-git-hash-version.sh"
-_polap_version=v0.4.1.5-"${_polap_git_hash_version}"
+# source "$script_dir/polap-git-hash-version.sh"
+# _polap_version=v0.4.1.7-"${_polap_git_hash_version}"
 _polap_command_string=polap
 
 print_help() {
@@ -845,13 +848,19 @@ parse_commandline() {
 			_arg_disassemble_b="${_key##--disassemble-b=}"
 			_arg_disassemble_b_is="on"
 			;;
+		--no-disassemble-best | --disassemble-best)
+			_arg_disassemble_best="on"
+			test "${1:0:5}" = "--no-" && _arg_disassemble_best="off"
+			;;
 		--disassemble-n)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_disassemble_n="$2"
+			_arg_disassemble_n_is="on"
 			shift
 			;;
 		--disassemble-n=*)
 			_arg_disassemble_n="${_key##--disassemble-n=}"
+			_arg_disassemble_n_is="on"
 			;;
 		--disassemble-m)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -892,6 +901,14 @@ parse_commandline() {
 			;;
 		--disassemble-compare-to-fasta=*)
 			_arg_disassemble_compare_to_fasta="${_key##--disassemble-compare-to-fasta=}"
+			;;
+		--disassemble-stop-after)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_stop_after="$2"
+			shift
+			;;
+		--disassemble-stop-after=*)
+			_arg_disassemble_stop_after="${_key##--disassemble-stop-after=}"
 			;;
 		--genomesize-a)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

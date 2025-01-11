@@ -932,6 +932,9 @@ HEREDOC
 		_polap_log1 "  flye assembly for ${_pread_sel}"
 		_polap_log2 "    input1: ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
 		_polap_log2 "    output: ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
+		# if [[ "${_arg_plastid}" == "on" ]]; then
+		# 	CONTIG_LENGTH=$((CONTIG_LENGTH * 3))
+		# fi
 		local _command1="flye \
       ${_arg_flye_data_type} \
       ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz \
@@ -1200,6 +1203,9 @@ HEREDOC
 	_polap_log1 "    input1: ${_long_reads}"
 	_polap_log1 "    output1: ${_polap_var_oga}/30-contigger/graph_final.gfa"
 	_polap_log1 "    output2: ${_polap_var_oga}/assembly_graph.gfa"
+	# if [[ "${_arg_plastid}" == "on" ]]; then
+	# 	_CONTIG_LENGTH=$((_CONTIG_LENGTH * 3))
+	# fi
 	local _command1="flye \
     ${_arg_flye_data_type} \
     ${_long_reads} \

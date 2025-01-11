@@ -476,6 +476,12 @@ HEREDOC
 			-db nuccore \
 			-query "(chloroplast[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]" |
 			efetch -format fasta >"${_polap_var_project_mtdna_fasta1}"
+		if [[ ! -s "${_polap_var_project_mtdna_fasta1}" ]]; then
+			esearch \
+				-db nuccore \
+				-query "(plastid[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]" |
+				efetch -format fasta >"${_polap_var_project_mtdna_fasta1}"
+		fi
 	fi
 	_polap_log2_file "${_polap_var_project_mtdna_fasta1}"
 
@@ -512,6 +518,49 @@ HEREDOC
 			"${_polap_var_project_mtdna_fasta1}" \
 			"${_polap_var_project_mtdna_fasta2}"
 	fi
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+function _run_polap_get-dna-by-accession {
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	source "$script_dir/polap-variables-common.sh"
+
+	if ! run_check_ncbitools; then
+		error_polap_conda
+		exit $EXIT_ERROR
+	fi
+
+	# Help message
+	local help_message=$(
+		cat <<HEREDOC
+Obtain the DNA sequence by downloading it from NCBI in FASTA format 
+using its corresponding accession ID.
+Example: $(basename "$0") ${_arg_menu[0]} <accession> <output_file>
+Example: $(basename "$0") ${_arg_menu[0]} NC_027276 ptdna-Podococcus_acaulis.fa
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	_polap_log0 "getting the DNA sequence using accesion ${_arg_menu[1]}"
+
+	# Download the mitochondrial genome sequence for the given species
+	esearch \
+		-db nuccore \
+		-query "${_arg_menu[1]}[ACCN]" |
+		efetch -format fasta >"${_arg_menu[2]}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

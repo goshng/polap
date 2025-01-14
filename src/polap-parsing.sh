@@ -126,11 +126,16 @@ _arg_debug="off"
 _arg_verbose=1
 _arg_help="off"
 # for menu disassembly
-_arg_disassemble_a=10000000   # 10 Mb or the smallest long read step size
-_arg_disassemble_b_is="off"   #
-_arg_disassemble_b=1000000000 # 1 Gb or the largest long read step size
-_arg_disassemble_n=100        # the number cycles
+_arg_disassemble_a=10000000    # 10 Mb or the smallest long read step size
+_arg_disassemble_b=1000000000  # 1 Gb or the largest long read step size
+_arg_disassemble_b_is="off"    #
+_arg_disassemble_b_short="off" # use the same short-read sample size
+_arg_disassemble_p=5           # 5% of the sample size
+_arg_disassemble_p_is="off"    #
+_arg_disassemble_i=0           # disassemble stage 1 repeat index
+_arg_disassemble_n=5           # the number cycles
 _arg_disassemble_n_is="off"
+_arg_disassemble_r=10                # the number of replicates
 _arg_disassemble_m=500000            # the maximum of draft genome size
 _arg_disassemble_s_max=              # the maximum of draft genome size
 _arg_disassemble_alpha=1.0           # the minimum disjointig coverage
@@ -141,13 +146,18 @@ _arg_disassemble_s=                  # sample size
 _arg_disassemble_best="off"
 _arg_disassemble_stop_after=
 # for genome size grid
-_arg_genomesize_a=200000 #
-_arg_genomesize_b=300000 #
-_arg_genomesize_n=3      # number of genome sizes
+_arg_genomesize_a=200000   #
+_arg_genomesize_b=300000   #
+_arg_genomesize_b_is="off" #
+_arg_genomesize_n=3        # number of genome sizes
 # steps
 _arg_steps_is="off"
 _arg_steps_include=""
 _arg_steps_exclude=""
+# steps
+_arg_stages_is="off"
+_arg_stages_include=""
+_arg_stages_exclude=""
 
 # for menu dissemble or directional read feature
 _arg_dissemble_a=1 #
@@ -157,8 +167,6 @@ _arg_directional_a=1
 _arg_flye_data_type="--nano-raw"
 _arg_minimap2_data_type="map-ont"
 
-# source "$script_dir/polap-git-hash-version.sh"
-# _polap_version=v0.4.1.7-"${_polap_git_hash_version}"
 _polap_command_string=polap
 
 print_help() {
@@ -814,6 +822,18 @@ parse_commandline() {
 			_arg_steps_is="on"
 			shift
 			;;
+		--stages-include)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_stages_include="$2"
+			_arg_stages_is="on"
+			shift
+			;;
+		--stages-exclude)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_stages_exclude="$2"
+			_arg_stages_is="on"
+			shift
+			;;
 		--disassemble-s)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_disassemble_s="$2"
@@ -848,6 +868,28 @@ parse_commandline() {
 			_arg_disassemble_b="${_key##--disassemble-b=}"
 			_arg_disassemble_b_is="on"
 			;;
+		--disassemble-i)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_i="$2"
+			shift
+			;;
+		--disassemble-i=*)
+			_arg_disassemble_i="${_key##--disassemble-i=}"
+			;;
+		--disassemble-p)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_p="$2"
+			_arg_disassemble_p_is="on"
+			shift
+			;;
+		--disassemble-p=*)
+			_arg_disassemble_p="${_key##--disassemble-p=}"
+			_arg_disassemble_p_is="on"
+			;;
+		--no-disassemble-b-short | --disassemble-b-short)
+			_arg_disassemble_b_short="on"
+			test "${1:0:5}" = "--no-" && _arg_disassemble_b_short="off"
+			;;
 		--no-disassemble-best | --disassemble-best)
 			_arg_disassemble_best="on"
 			test "${1:0:5}" = "--no-" && _arg_disassemble_best="off"
@@ -861,6 +903,14 @@ parse_commandline() {
 		--disassemble-n=*)
 			_arg_disassemble_n="${_key##--disassemble-n=}"
 			_arg_disassemble_n_is="on"
+			;;
+		--disassemble-r)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_r="$2"
+			shift
+			;;
+		--disassemble-r=*)
+			_arg_disassemble_r="${_key##--disassemble-r=}"
 			;;
 		--disassemble-m)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -921,10 +971,12 @@ parse_commandline() {
 		--genomesize-b)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_genomesize_b="$2"
+			_arg_genomesize_b_is="on"
 			shift
 			;;
 		--genomesize-b=*)
 			_arg_genomesize_b="${_key##--genomesize-b=}"
+			_arg_genomesize_b_is="on"
 			;;
 		--genomesize-n)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

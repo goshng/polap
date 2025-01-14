@@ -35,6 +35,7 @@ _POLAP_ERR_CMD_OPTION_STEPS=16
 _POLAP_ERR_CMD_OPTION_GENOMESIZE=17
 _POLAP_ERR_CMD_OPTION_LONGREAD=18
 _POLAP_ERR_CMD_OPTION_SHORTREAD=19
+_POLAP_ERR_TOO_SMALL_SUBSAMPLE_SIZE=20
 _POLAP_ERR_MENU_MAP_READS=51
 
 _polap_error_message() {
@@ -67,6 +68,9 @@ _polap_error_message() {
 		;;
 	${_POLAP_ERR_CMD_OPTION_SHORTREAD})
 		_polap_log0 "ERROR: no short-read fastq file"
+		;;
+	${_POLAP_ERR_SUBSAMPLE_TOO_FEW_CANDIDATES})
+		_polap_log0 "ERROR: subsampling has too small number of candidate assemblies"
 		;;
 	*)
 		echo default

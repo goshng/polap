@@ -58,6 +58,20 @@ _polap_get_elapsed_time() {
 	fi
 }
 
+_polap_get_time_format() {
+	local elapsed=$1
+
+	if ((elapsed < 60)); then
+		echo "${elapsed}s" # Seconds
+	elif ((elapsed < 3600)); then
+		echo "$((elapsed / 60))m" # Minutes
+	elif ((elapsed < 604800)); then
+		echo "$((elapsed / 3600))h" # Hours
+	else
+		echo "$((elapsed / 86400))d" # Days
+	fi
+}
+
 ################################################################################
 # Function to convert base pairs to the highest appropriate unit
 # Example usage
@@ -110,6 +124,22 @@ function _polap_utility_convert_unit_to_bp {
 		return 1
 		;;
 	esac
+}
+
+# Example usage
+# _polap_utility_compute_percentage 25 2000  # Computes 25% of 2000
+_polap_utility_compute_percentage() {
+	local percent="$1"     # Input percentage value or positive number less than 100
+	local input_value="$2" # Input positive integer
+	local result
+
+	# Check if percent is a valid percentage or a positive number less than 100
+	if [[ "$percent" =~ ^[0-9]+$ ]] && ((percent > 0 && percent <= 100)); then
+		result=$(bc <<<"scale=0; $input_value * $percent / 100")
+		echo "$result"
+	else
+		die "Error: percent must be a positive integer less than or equal to 100."
+	fi
 }
 
 ################################################################################

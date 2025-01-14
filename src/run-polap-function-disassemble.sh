@@ -28,8 +28,8 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-# Function to determine the minimum of two values
-# Each of the two files has a single line of numbers.
+# Function to determine the minimum of two values in files.
+# Each of the two files has a single line of a number.
 # Call the function with the provided files
 # short_file="short_total_length.txt"
 # long_file="long_total_length.txt"
@@ -71,6 +71,7 @@ _polap_array_numbers_between_two() {
 	local end="$2"
 	local count="${3:-10}"
 	local array=()
+	local step
 	local i
 
 	if ((start == end)); then
@@ -83,7 +84,7 @@ _polap_array_numbers_between_two() {
 		array=("$start")
 	else
 		# Calculate the step size
-		local step=$(((end - start) / (count - 1)))
+		step=$(((end - start) / (count - 1)))
 
 		# Populate the array with evenly spaced values
 		for ((i = 0; i < count; i++)); do
@@ -265,14 +266,218 @@ _polap_gunzip_file() {
 	fi
 }
 
+# create index.txt (TSV)
+# --disassemble-a
+# --disassemble-b
+# --disassemble-n
+# --genomesize-a
+# --genomesize-b
+# --genomesize-n
+# e.g., index sample-size genome-size
+# 0	10000000	150000
+# 1	14444444	150000
+# 2	18888888	150000
+# 3	23333332	150000
+# 4	27777776	150000
+# 5	32222220	150000
+function _run_polap_step-disassemble-make-index-for-b {
+	local index_table
+	index_table="${1}"
+
+	local index
+	local i
+	local j
+	local datasize_array
+	local datasize_array_length
+	local sampling_datasize
+	local genomesize_array
+	local genomesize_array_length
+	local genomesize
+
+	# Add commands for step 4
+	if [[ "${_arg_short_read1_is}" == "off" ]] &&
+		[[ "${_arg_short_read2_is}" == "off" ]]; then
+		local total_size_data=$(cat "${_polap_var_outdir_long_total_length}")
+		_polap_log2 "  the minimum read data size is just the long-read (bp): $total_size_data"
+	else
+		local total_size_data=$(_polap_minimum_two_values_in_files \
+			"${_polap_var_outdir_long_total_length}" \
+			"${_polap_var_outdir_short_total_length}")
+		_polap_log2 "  the minimum read data size of the long- and short-read (bp): $total_size_data"
+	fi
+
+	if [[ "${_arg_disassemble_b_is}" == "off" ]]; then
+		_polap_log2 "  the largest read data size set to (bp): $total_size_data"
+		_arg_disassemble_b=${total_size_data}
+	else
+		if ((total_size_data < _arg_disassemble_b)); then
+			_polap_log2 "  the largest read data size set to (bp): $total_size_data"
+			_arg_disassemble_b=${total_size_data}
+		fi
+	fi
+	_polap_log1 "    the disassemble A (bp): ${_arg_disassemble_a}"
+	_polap_log1 "    the disassemble B (bp): ${_arg_disassemble_b}"
+	_polap_log1 "    the disassemble N: ${_arg_disassemble_n}"
+	_polap_log1 "    the disassemble M (bp): ${_arg_disassemble_m}"
+	_polap_log1 "    the disassemble alpha: ${_arg_disassemble_alpha}"
+	_polap_log1 "    the disassemble delta: ${_arg_disassemble_delta}"
+	if ((_arg_disassemble_a <= _arg_disassemble_b)); then
+		_polap_log2 "  check: ${_arg_disassemble_a} is less than or equal to ${_arg_disassemble_b}."
+	else
+		die "ERROR: ${_arg_disassemble_a} (A) is greater than ${_arg_disassemble_b} (B)."
+	fi
+
+	datasize_array=($(_polap_array_numbers_between_two \
+		"$_arg_disassemble_a" \
+		"$_arg_disassemble_b" \
+		"$_arg_disassemble_n"))
+	_polap_log2 "  generated step array (${#datasize_array[@]}): ${datasize_array[@]:0:3} ... ${datasize_array[@]: -2}"
+
+	# consider genomesize_array
+	if [[ -n "${_arg_genomesize}" ]]; then
+		_arg_genomesize_a="${_arg_genomesize}"
+		_arg_genomesize_b="${_arg_genomesize}"
+		_arg_genomesize_b_is="on"
+		_arg_genomesize_n=1
+	fi
+
+	if [[ "${_arg_genomesize_b_is}" == "on" ]]; then
+		genomesize_array=($(_polap_array_numbers_between_two \
+			"$_arg_genomesize_a" \
+			"$_arg_genomesize_b" \
+			"$_arg_genomesize_n"))
+		genomesize_array_length=${#genomesize_array[@]}
+		_polap_log1 "  genome sizes (${_arg_genomesize_n}): ${_arg_genomesize_a} ~ ${_arg_genomesize_b}"
+	fi
+
+	datasize_array_length=${#datasize_array[@]}
+
+	_polap_log3_cmd rm -f "${index_table}"
+	index=0
+	for ((i = 0; i < datasize_array_length; i++)); do
+		sampling_datasize="${datasize_array[$i]}"
+		if [[ "${_arg_genomesize_b_is}" == "on" ]]; then
+			for ((j = 0; j < genomesize_array_length; j++)); do
+				genomesize="${genomesize_array[$j]}"
+				printf "%d\t%d\t%d\n" $index $sampling_datasize $genomesize \
+					>>"${index_table}"
+				index=$((index + 1))
+			done
+		else
+			printf "%d\t%d\n" $i $sampling_datasize \
+				>>"${index_table}"
+		fi
+	done
+	return 0
+}
+
+# create index.txt (TSV) using the proportion
+# --disassemble-p
+# --disassemble-n
+# --genomesize-a
+# --genomesize-b
+# --genomesize-n
+# e.g., index sample-size genome-size
+# 0	10000000	150000
+# 1	14444444	150000
+# 2	18888888	150000
+# 3	23333332	150000
+# 4	27777776	150000
+# 5	32222220	150000
+function _run_polap_step-disassemble-make-index-for-p {
+	local index_table
+	index_table="${1}"
+
+	local index
+	local i
+	local j
+	local datasize_array
+	local datasize_array_length
+	local sampling_datasize
+	local genomesize_array
+	local genomesize_array_length
+	local genomesize
+	local disassemble_a
+	local disassemble_b
+	local total_size_data
+
+	total_size_data=$(<"${_polap_var_outdir_long_total_length}")
+	disassemble_b=$(_polap_utility_compute_percentage \
+		"${_arg_disassemble_p}" \
+		"$total_size_data")
+
+	_polap_log1 "    the disassemble P (%): ${_arg_disassemble_p}"
+	_polap_log1 "    the disassemble A (bp): ${_arg_disassemble_a}"
+	_polap_log1 "    the disassemble B (bp): ${disassemble_b}"
+	_polap_log1 "    the disassemble N: ${_arg_disassemble_n}"
+	_polap_log1 "    the disassemble M (bp): ${_arg_disassemble_m}"
+	_polap_log1 "    the disassemble alpha: ${_arg_disassemble_alpha}"
+	_polap_log1 "    the disassemble delta: ${_arg_disassemble_delta}"
+	if ((_arg_disassemble_a <= disassemble_b)); then
+		_polap_log2 "  check: ${_arg_disassemble_a} is less than or equal to ${disassemble_b}."
+	else
+		die "ERROR: ${_arg_disassemble_a} (A) is greater than ${disassemble_b} (B)."
+	fi
+
+	datasize_array=($(_polap_array_numbers_between_two \
+		"$_arg_disassemble_a" \
+		"$disassemble_b" \
+		"$_arg_disassemble_n"))
+	_polap_log2 "  generated step array (${#datasize_array[@]}): ${datasize_array[@]:0:3} ... ${datasize_array[@]: -2}"
+
+	# consider genomesize_array
+	if [[ -n "${_arg_genomesize}" ]]; then
+		_arg_genomesize_a="${_arg_genomesize}"
+		_arg_genomesize_b="${_arg_genomesize}"
+		_arg_genomesize_b_is="on"
+		_arg_genomesize_n=1
+	fi
+
+	if [[ "${_arg_genomesize_b_is}" == "on" ]]; then
+		genomesize_array=($(_polap_array_numbers_between_two \
+			"$_arg_genomesize_a" \
+			"$_arg_genomesize_b" \
+			"$_arg_genomesize_n"))
+		genomesize_array_length=${#genomesize_array[@]}
+		_polap_log1 "  genome sizes (${_arg_genomesize_n}): ${_arg_genomesize_a} ~ ${_arg_genomesize_b}"
+	fi
+
+	datasize_array_length=${#datasize_array[@]}
+
+	_polap_log3_cmd rm -f "${index_table}"
+	index=0
+	for ((i = 0; i < datasize_array_length; i++)); do
+		sampling_datasize="${datasize_array[$i]}"
+		if [[ "${_arg_genomesize_b_is}" == "on" ]]; then
+			for ((j = 0; j < genomesize_array_length; j++)); do
+				genomesize="${genomesize_array[$j]}"
+				printf "%d\t%d\t%d\n" $index $sampling_datasize $genomesize \
+					>>"${index_table}"
+				index=$((index + 1))
+			done
+		else
+			printf "%d\t%d\n" $i $sampling_datasize \
+				>>"${index_table}"
+		fi
+	done
+	return 0
+}
+
 # Estimate the genome size from a short-read dataset
 # input1: a short-read fastq data
-# input2: an output folder
+# input2: an output folder _outdir
 # output: the genome size
+# _outdir_genome_size="${_outdir}/short_expected_genome_size.txt"
 _polap_find-genome-size() {
 	local _short_read1=$1
 	local _outdir=$2
 	local rstatus
+	local _outdir_genome_size
+	local _outdir_jellyfish_out
+	local _outdir_jellyfish_out_histo
+	local unzipped_file
+	local _EXPECTED_GENOME_SIZE
+	local _expected_genome_size_bp
 
 	# Set paths for bioproject data
 	# source "$script_dir/polap-variables-common.sh" # '.' means 'source'
@@ -289,9 +494,9 @@ _polap_find-genome-size() {
 	check_file_existence "${_short_read1}"
 
 	_polap_log2 "  input1: ${_short_read1}"
-	local _outdir_genome_size="${_outdir}/short_expected_genome_size.txt"
-	local _outdir_jellyfish_out="${_outdir}/jellyfish_out"
-	local _outdir_jellyfish_out_histo="${_outdir}/jellyfish_out.histo"
+	_outdir_genome_size="${_outdir}/short_expected_genome_size.txt"
+	_outdir_jellyfish_out="${_outdir}/jellyfish_out"
+	_outdir_jellyfish_out_histo="${_outdir}/jellyfish_out.histo"
 
 	# See https://bioinformatics.uconn.edu/genome-size-estimation-tutorial/
 	if [ -s "${_outdir_genome_size}" ] && [ "${_arg_redo}" = "off" ]; then
@@ -302,7 +507,6 @@ _polap_find-genome-size() {
 			_polap_log2 "  found: ${_outdir_jellyfish_out}, so skipping the JellyFish counting ..."
 			_polap_log3_file "${_outdir_jellyfish_out}"
 		else
-			local unzipped_file
 			unzipped_file=$(_polap_gunzip_file "${_short_read1}")
 			rstatus="$?"
 			if [[ "$rstatus" -eq 0 ]]; then
@@ -395,6 +599,59 @@ HEREDOC
 	return 0
 }
 
+# _run_polap_step-disassemble-cflye <out> <long.fq> <genomesize> <alpha> <resume:on>
+#
+function _run_polap_step-disassemble-cflye {
+	local out="${1}"
+	local long_read="${2}"
+	local expected_genome_size="${3}"
+	local alpha="${4}"
+	local resume="${5:-off}"
+	local _command1
+
+	if [[ "${_POLAP_RELEASE}" -eq 0 ]]; then
+		_command1="/home/goshng/all/polap/Flye/bin/cflye"
+	else
+		_command1="cflye"
+	fi
+
+	_command1+=" \
+          ${_arg_flye_data_type} \
+          ${long_read} \
+			    --out-dir ${out} \
+			    --disjointig-min-coverage ${alpha} \
+			    --threads ${_arg_threads}"
+
+	_command1+=" \
+			  --asm-coverage ${_arg_flye_asm_coverage} \
+			  --genome-size ${expected_genome_size}"
+	if [[ "${_arg_flye_asm_coverage}" -le 0 ]]; then
+		die "ERROR: must be positive --flye-asm-coverage ${_arg_flye_asm_coverage}"
+	fi
+
+	if [[ "${_arg_contigger}" == "on" ]]; then
+		_command1+=" \
+		    --stop-after contigger"
+	fi
+
+	if [[ "${resume}" != "off" ]]; then
+		_command1+=" \
+		    --resume"
+	fi
+
+	if [[ "${_arg_debug}" = "on" ]]; then
+		_command1+=" \
+		      --debug"
+	fi
+
+	_command1+=" \
+		    2>${_polap_output_dest}"
+
+	_polap_log3_pipe "${_command1}"
+
+	return 0
+}
+
 ################################################################################
 # It is not as straightforward as it might seem. The simplest approach is to test plastid genome assembly by subsampling long-read data. A more complex approach involves using a slightly modified version of Flye, called cflye, which provides coverage options for generating disjointigs. Short-read data is still used to get a rough estimate of the overall genome size, but once subsampling is applied, the size of the genome assembled from long reads can change. The sizes of both the long-read and short-read data are defined by their total number of bases. When subsampling, we reduce the amount of short-read data proportionally to match the size of the subsampled long-read data, then use JellyFish (a k-mer counter) to predict the total size of the genome assembled from these long reads.
 #
@@ -480,27 +737,80 @@ function _run_polap_disassemble {
 
 	local i
 	local j
+	local c
+	local n
+	local rstatus
+	local index
+	local rate
+	local size
+	local alpha
+	local genomesize
+	local output
+	local long_read
+	local randomseed
+	local _disassemble_dir
+	local _summary_table
+	local _input_short_reads
+	local _ptdna
+	local _ptdir
+	local _ref_ptdna
+	local summary_j_ordered
+	local _disassemble_i
+	local summary_table
+	local index_table
+	local gfafile
+	local _mtcontigname
+	local include
+	local exclude
+	local stage_array
+	local disassemble_i
+	local disassemble_i_stage
+	local summary1_ordered
+	local assembled_fasta
+	local disassemble_params_file
+
 	source "$script_dir/polap-variables-common.sh"
 	local _disassemble_dir="${_arg_outdir}/disassemble"
 	local _summary_table="${_disassemble_dir}/summary.txt"
 
+	_arg_plastid="on"
+	_arg_disassemble_s=$(_polap_utility_convert_unit_to_bp "${_arg_disassemble_s}")
+	_arg_disassemble_a=$(_polap_utility_convert_unit_to_bp "${_arg_disassemble_a}")
+	_arg_disassemble_b=$(_polap_utility_convert_unit_to_bp "${_arg_disassemble_b}")
+	_arg_disassemble_m=$(_polap_utility_convert_unit_to_bp "${_arg_disassemble_m}")
+	_arg_disassemble_s_max=$(_polap_utility_convert_unit_to_bp "${_arg_disassemble_s_max}")
+	_arg_genomesize_a=$(_polap_utility_convert_unit_to_bp "${_arg_genomesize_a}")
+	_arg_genomesize_b=$(_polap_utility_convert_unit_to_bp "${_arg_genomesize_b}")
+
+	if [[ -n "${_arg_genomesize}" ]]; then
+		_arg_genomesize=$(_polap_utility_convert_unit_to_bp "${_arg_genomesize}")
+	fi
+	local _input_short_reads="${_arg_outdir}/s1.fq"
+
 	help_message=$(
 		cat <<HEREDOC
-Plastid genome assembly by subsampling long-read data without reference
+Plastid genome assembly by subsampling long-read data without references
 
 Inputs
 ------
 
 - long-read data: ${_arg_long_reads} (default: l.fq)
-- short-read data 1 (optional): ${_arg_short_read1} (no default)
+- short-read data 1 : ${_arg_short_read1} (no default)
 - short-read data 2 (optional): ${_arg_short_read2} (no default)
+
+--disassemble-p ${_arg_disassemble_p}: the percentile of the largest long read
+--disassemble-s: the threshold to change alpha
+--disassemble-stop-after: stage1, stage2, stage3
 
 Outputs
 -------
 
-- plastid genome assembly
+- plastid genome assembly: ${_arg_final_assembly}
 - trace plots for the features of plastid genome assemblies
-- ${_arg_outdir}/disassemble/<number>
+  ${_arg_outdir}/disassemble/0/summary1-ordered.pdf
+  ${_arg_outdir}/disassemble/0/summary1-ordered.txt
+  ${_arg_outdir}/disassemble/x/summary1-ordered.pdf
+  ${_arg_outdir}/disassemble/x/summary1-ordered.txt
 
 Arguments
 ---------
@@ -511,9 +821,11 @@ Stage 1:
 -a ${_arg_short_read1}: a short-read fastq data file 1
 -b ${_arg_short_read2} (optional): a short-read fastq data file 2
 --disassemble-min-memory ${_arg_disassemble_min_memory}: the minimum memory in Gb
---disassemble-a ${_arg_disassemble_a}: the smallest long read step size
---disassemble-b ${_arg_disassemble_b}: the largest long read step size
+--disassemble-a ${_arg_disassemble_a}: the smallest long read
+--disassemble-b ${_arg_disassemble_b}: the largest long read
 --disassemble-n ${_arg_disassemble_n}: the number of steps (max 1000)
+--disassemble-i ${_arg_disassemble_i}: the index of the stage 1
+--disassemble-p ${_arg_disassemble_p}: the percentile of the largest long read
 --disassemble-m ${_arg_disassemble_m}: the threshold to change alpha
 --disassemble-alpha ${_arg_disassemble_alpha}: the minimum Flye's disjointig coverage
 --disassemble-delta ${_arg_disassemble_delta}: the move size of alpha (0.1 - 1.0)
@@ -577,13 +889,18 @@ src/polap.sh disassemble -l SRR21976089.fastq -a SRR21976091_1.fastq -b SRR21976
 Stage 1 - long-read only
 $(basename "$0") disassemble -l SRR7153095.fastq --disassemble-compare-to-fasta ptdna-epauciflora.fa --disassemble-min-memory 9
 
-
+Menu examples:
 $(basename "$0") disassemble view
-$(basename "$0") disassemble view best 2
+$(basename "$0") disassemble view 0
+$(basename "$0") disassemble view x
+$(basename "$0") disassemble view best 0
+$(basename "$0") disassemble view best x
 $(basename "$0") disassemble report
+$(basename "$0") disassemble report coverage <- with known ptDNA
 $(basename "$0") disassemble best 0 46
 $(basename "$0") disassemble best x 2
-
+$(basename "$0") disassemble archive
+$(basename "$0") disassemble archive polishing <- backup msbwt as well
 HEREDOC
 	)
 
@@ -595,13 +912,13 @@ HEREDOC
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 		case "${_arg_menu[2]}" in
 		best)
-			_polap_log0_column "${_disassemble_dir}/x/summary-${_arg_menu[3]}-ordered.txt"
+			_polap_log0_column "${_disassemble_dir}/${_arg_menu[3]}/summary1-ordered.txt"
 			;;
 		x)
 			_polap_log0_column "${_disassemble_dir}/${_arg_menu[2]}/summary1.txt"
 			;;
 		'' | *[!0-9]*)
-			_polap_log0_column "${_summary_table}"
+			_polap_log0_column "${_disassemble_dir}/0/summary1.txt"
 			;;
 		*)
 			_polap_log0_column "${_disassemble_dir}/${_arg_menu[2]}/summary1.txt"
@@ -614,33 +931,27 @@ HEREDOC
 		return 0
 	fi
 
+	# menu: report
 	if [[ "${_arg_menu[1]}" == "report" ]]; then
 		# concatenate all summary1.txt to the summary table.
-		i=0
-		awk 'NR == 1' "${_disassemble_dir}/${i}/summary1.txt" \
-			>"${_summary_table}"
-		for ((i = 0; i < 100; i++)); do
-			if [[ -s "${_disassemble_dir}/${i}/summary1.txt" ]]; then
-				awk 'NR > 1' "${_disassemble_dir}/${i}/summary1.txt" \
-					>>"${_summary_table}"
-			fi
-		done
-
-		for i in 0 x; do
-			if [[ -s "${_disassemble_dir}/${i}/summary1.txt" ]]; then
-				if [[ "${_arg_menu[2]}" == "coverage" ]]; then
-					_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+		for i in "${_disassemble_dir}"/*/; do
+			if [ -d "$i" ]; then
+				i=$(basename "${i%/}")
+				if [[ -s "${_disassemble_dir}/${i}/summary1.txt" ]]; then
+					if [[ "${_arg_menu[2]}" == "coverage" ]]; then
+						_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
         --table ${_disassemble_dir}/${i}/summary1.txt \
         --out ${_disassemble_dir}/${i}/summary1-ordered.txt \
         --plot ${_disassemble_dir}/${i}/summary1-ordered.pdf \
 			  --coverage"
-				else
-					_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+					else
+						_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
         --table ${_disassemble_dir}/${i}/summary1.txt \
         --out ${_disassemble_dir}/${i}/summary1-ordered.txt \
         --plot ${_disassemble_dir}/${i}/summary1-ordered.pdf"
+					fi
+					_polap_log0_column ${_disassemble_dir}/${i}/summary1-ordered.txt
 				fi
-				_polap_log0_column ${_disassemble_dir}/${i}/summary1-ordered.txt
 			fi
 		done
 
@@ -650,8 +961,8 @@ HEREDOC
 		return 0
 	fi
 
+	# menu: best
 	if [[ "${_arg_menu[1]}" == "best" ]]; then
-		local _disassemble_i
 		if [[ "${_arg_menu[2]}" == "outfile" ]]; then
 			_disassemble_i="${_disassemble_dir}/x"
 		else
@@ -668,10 +979,9 @@ HEREDOC
 			fi
 		fi
 
-		local _ref_ptdna="${_disassemble_i}/${j}/ptdna.fa"
+		_ref_ptdna="${_disassemble_i}/${j}/ptdna.fa"
 
-		local summary_j_ordered="${_disassemble_i}/summary-${j}-ordered.txt"
-		local c
+		summary_j_ordered="${_disassemble_i}/summary-${j}-ordered.txt"
 		printf "%s\t%s\n" \
 			"index" \
 			"coverage" \
@@ -707,6 +1017,7 @@ HEREDOC
 		return 0
 	fi
 
+	# menu: archive
 	# archive the disassemble analysis
 	if [[ "${_arg_menu[1]}" == "archive" ]]; then
 		_polap_log0 "archive ${_arg_outdir} to ${_arg_archive}"
@@ -737,14 +1048,21 @@ HEREDOC
       ${_summary_table} \
       ${_arg_archive}/${_summary_table#*/}"
 
+		# msbwt
+		if [[ "${_arg_menu[2]}" == "polishing" ]]; then
+			_polap_log3_pipe "cp -pr \
+        ${_polap_var_outdir_msbwt_dir} \
+        ${_arg_archive}/${_polap_var_outdir_msbwt_dir#*/}"
+		fi
+
 		# disassemble/0
 		_polap_log3 "  archive disassemble/0"
 		for i in "${_disassemble_dir}"/*/; do
 			if [ -d "$i" ]; then
 				i=$(basename "${i%/}")
 				_polap_log0 "$i"
-				local summary_table="${_disassemble_dir}/${i}/summary1.txt"
-				local index_table="${_disassemble_dir}/${i}/index.txt"
+				summary_table="${_disassemble_dir}/${i}/summary1.txt"
+				index_table="${_disassemble_dir}/${i}/index.txt"
 
 				if [[ -s "${summary_table}" ]]; then
 					_polap_log3_cmd mkdir -p "${_arg_archive}/${_disassemble_dir#*/}/${i}"
@@ -760,21 +1078,21 @@ HEREDOC
 					while IFS=$'\t' read -r col1 _; do
 						echo "$col1"
 						# Add your commands to process $col1 here
-						local gfafile="${_disassemble_dir}/${i}/${col1}/30-contigger/graph_final.gfa"
+						gfafile="${_disassemble_dir}/${i}/${col1}/30-contigger/graph_final.gfa"
 						if [[ -s "${gfafile}" ]]; then
 							_polap_log3_cmd mkdir -p ${_arg_archive}/$(dirname "${gfafile#*/}")
 							_polap_log3_pipe "cp -p \
                 ${gfafile} \
                 ${_arg_archive}/${gfafile#*/}"
 						fi
-						local gfafile="${_disassemble_dir}/${i}/${col1}/30-contigger/graph_final.fasta"
+						gfafile="${_disassemble_dir}/${i}/${col1}/30-contigger/graph_final.fasta"
 						if [[ -s "${gfafile}" ]]; then
 							_polap_log3_cmd mkdir -p ${_arg_archive}/$(dirname "${gfafile#*/}")
 							_polap_log3_pipe "cp -p \
                 ${gfafile} \
                 ${_arg_archive}/${gfafile#*/}"
 						fi
-						local _mtcontigname="${_disassemble_dir}/${i}/${col1}/mt.contig.name"
+						_mtcontigname="${_disassemble_dir}/${i}/${col1}/mt.contig.name"
 						if [[ -s "${_mtcontigname}" ]]; then
 							_polap_log3_cmd mkdir -p ${_arg_archive}/$(dirname "${_mtcontigname#*/}")
 							_polap_log3_pipe "cp -p \
@@ -786,15 +1104,9 @@ HEREDOC
 			fi
 		done
 
-		# disassemble/x
-		# _polap_log3_cmd mkdir -p "${_arg_archive}/${_disassemble_dir#*/}/x/0"
-		# _polap_log3_pipe "cp -p \
-		#     ${_disassemble_dir}/x/summary* \
-		#     ${_arg_archive}/${_disassemble_dir#*/}/x/"
-
 		# ptdna
-		_polap_log3_pipe "cp ${_disassemble_dir}/x/0/ptdna.fa \
-      ${_arg_archive}/${_disassemble_dir#*/}/x/0/ptdna.fa"
+		_polap_log3_pipe "cp ${_arg_outdir}/pt.1.fa \
+      ${_arg_archive}/pt.1.fa"
 
 		# Disable debugging if previously enabled
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -802,6 +1114,7 @@ HEREDOC
 		return 0
 	fi
 
+	# menu: example
 	if [[ "${_arg_menu[1]}" == "example" ]]; then
 		if [[ "${_arg_menu[2]}" == "1" ]]; then
 			"$0" x-ncbi-fetch-sra --sra SRR7153095
@@ -811,13 +1124,12 @@ HEREDOC
 		fi
 
 		if [[ "${_arg_menu[2]}" == "2" ]]; then
-			"$0" disassemble -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq --disassemble-compare-to-fasta ref.fasta --disassemble-min-memory 9
-			"$0" disassemble view
+			"$0" disassemble -l SRR7153095.fastq \
+				-a SRR7161123_1.fastq -b SRR7161123_2.fastq
 		fi
 
 		if [[ "${_arg_menu[2]}" == "3" ]]; then
-			"$0" disassemble view 2
-			"$0" disassemble -o o2 --anotherdir o --disassemble-s 314mb --disassemble-alpha 3.5 -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq
+			"$0" disassemble -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq --disassemble-compare-to-fasta ref.fasta --disassemble-min-memory 9
 		fi
 
 		if [[ "${_arg_menu[2]}" == "4" ]]; then
@@ -836,21 +1148,19 @@ HEREDOC
 		return 0
 	fi
 
-	local rstatus
-	local i # important in Bash scripting
-	_arg_plastid="on"
-	_arg_disassemble_s=$(_polap_utility_convert_unit_to_bp "${_arg_disassemble_s}")
-	_arg_disassemble_a=$(_polap_utility_convert_unit_to_bp "${_arg_disassemble_a}")
-	_arg_disassemble_b=$(_polap_utility_convert_unit_to_bp "${_arg_disassemble_b}")
-	_arg_disassemble_m=$(_polap_utility_convert_unit_to_bp "${_arg_disassemble_m}")
-	_arg_disassemble_s_max=$(_polap_utility_convert_unit_to_bp "${_arg_disassemble_s_max}")
-
-	if [[ -n "${_arg_genomesize}" ]]; then
-		_arg_genomesize=$(_polap_utility_convert_unit_to_bp "${_arg_genomesize}")
+	# select stages
+	if [[ -z "${_arg_stages_include}" ]]; then
+		_arg_stages_include="1-6"
+		_arg_stages_exclude=""
 	fi
-	local _input_short_reads="${_arg_outdir}/s1.fq"
+	local include="${_arg_stages_include}"
+	local exclude="${_arg_stages_exclude}" # Optional range or list of steps to exclude
+	local stage_array=()
 
-	_polap_log0 "Assemble plastid genomes by subsampling long-read data"
+	stage_array=($(_polap_parse_steps "${include}" "${exclude}"))
+
+	# main
+	_polap_log0 "Assemble plastid genomes by subsampling long-read data (${_arg_disassemble_i})"
 	_polap_log1 "  input1: long-read: ${_arg_long_reads}"
 	[[ -s "${_arg_long_reads}" ]] || return ${_POLAP_ERR_CMD_OPTION_LONGREAD}
 	if [[ "${_arg_short_read1_is}" == "off" ]]; then
@@ -866,150 +1176,113 @@ HEREDOC
 		[[ -s "${_arg_short_read2}" ]] || return ${_POLAP_ERR_CMD_OPTION_SHORTREAD}
 	fi
 
-	# NOTE: the processing of short-read data used to be in step-disassemble.
-	# because the repetition of step-disassemble, we process the short-read data
-	# here in this function caller.
-	#
-	# make a short-read dataset if there are short-read data
-	# Add commands for step 2
-	if [[ "${_arg_short_read1_is}" == "on" ]] ||
-		[[ "${_arg_short_read2_is}" == "on" ]] &&
-		[[ "${_arg_disassemble_best}" == "off" ]]; then
-		(
-			_polap_log1 "  prestep 1: concatenate the short-read data"
-			# create o/s1.fq to deal with a single or two short-read files
-			# overwrite the s1.fq
-			prestep1() {
-				if [ -s "${_input_short_reads}" ] && [ "${_arg_redo}" = "off" ]; then
-					_polap_log2 "  found: ${_input_short_reads}, skipping ..."
-				else
-					if [[ "${_arg_short_read1_is}" == "on" ]] ||
-						[[ "${_arg_short_read2_is}" == "on" ]]; then
-						_polap_concatenate_fastq_to "${_input_short_reads}" "${_arg_short_read1}" "${_arg_short_read2}"
-					elif [[ "${_arg_short_read2_is}" == "on" ]]; then
-						_polap_concatenate_fastq_to "${_input_short_reads}" "${_arg_short_read2}"
+	disassemble_i="${_disassemble_dir}/${_arg_disassemble_i}"
+	_polap_log3_cmd mkdir -p "${disassemble_i}"
+	if _polap_contains_step 1 "${stage_array[@]}"; then
+		disassemble_i_stage="${disassemble_i}/1"
+		disassemble_params_file="${disassemble_i}/params.txt"
+		rm -f "${disassemble_params_file}"
+		printf "%s: %s\n" "I" "${_arg_disassemble_i}" >>"${disassemble_params_file}"
+		printf "%s: %s\n" "P" "${_arg_disassemble_p}" >>"${disassemble_params_file}"
+		printf "%s: %s\n" "N" "${_arg_disassemble_n}" >>"${disassemble_params_file}"
+		printf "%s: %s\n" "R" "${_arg_disassemble_r}" >>"${disassemble_params_file}"
+		printf "%s: %s\n" "A" "${_arg_disassemble_a}" >>"${disassemble_params_file}"
+
+		# stage 1:
+		if [[ -z "${_arg_disassemble_s}" ]]; then
+			_polap_log0 "  stage 1: assemble with a range of sample sizes"
+			_polap_log1 "  no option: --disassemble-s"
+			_polap_log1 "    -> use a range of rates for subsampling long-read sequencing data"
+
+			if [[ "${_arg_short_read1_is}" == "off" ]] &&
+				[[ "${_arg_short_read2_is}" == "off" ]]; then
+				_polap_log1 "  no short-read data, so use a range of genome sizes"
+				if [[ -z "${_arg_steps_include}" ]]; then
+					_arg_steps_include="1-15"
+					_arg_steps_exclude="2,3,6"
+				fi
+			else
+				_polap_log1 "  genome size estimated by the short-read data"
+				if [[ -z "${_arg_steps_include}" ]]; then
+					if [[ "${_arg_disassemble_best}" == "off" ]]; then
+						_arg_steps_include="1-15"
 					else
-						_polap_concatenate_fastq_to "${_input_short_reads}" "${_arg_short_read1}"
+						_arg_steps_include="13,14"
 					fi
 				fi
-			}
-			prestep1
-		)
-
-		_polap_log1 "  prestep 2: count the total number of bases in the short-read data"
-		# Add commands for step 3
-		(
-			prestep2() {
-				# step 3
-				if [ -s "${_polap_var_outdir_short_total_length}" ] && [ "${_arg_redo}" = "off" ]; then
-					_polap_log2 "  found: ${_polap_var_outdir_short_total_length}, skipping total-length-short ..."
-				else
-					_polap_total-length-short \
-						"${_input_short_reads}" \
-						"${_polap_var_outdir_short_total_length}"
-
-					local _total_length=$(<"${_polap_var_outdir_short_total_length}")
-					local _total_short_read=$(_polap_utility_convert_bp ${_total_length})
-					_polap_log1 "  total length of the short-read dataset (bases): ${_total_short_read}"
-				fi
-			}
-			prestep2
-		)
-	fi
-
-	# after preparation of short-read datasets
-	if [[ -z "${_arg_disassemble_s}" ]]; then
-		_polap_log1 "  stage 1: assembling with a range of many parameters"
-		_polap_log1 "  no option: --disassemble-s"
-		_polap_log1 "    -> use a range of rate for subsampling long-read sequencing data"
-		if [[ "${_arg_short_read1_is}" == "off" ]] &&
-			[[ "${_arg_short_read2_is}" == "off" ]]; then
-			_polap_log1 "  no short-read data, so use a range of genome sizes"
-			if [[ -z "${_arg_steps_include}" ]]; then
-				_arg_steps_include="1-15"
-				_arg_steps_exclude="2,3,6"
 			fi
-
-			# NOTE: ptDNA varation over the fixed genome size
-			# genome sizes: if we cannot estimate the genome size, then use a list
-			# of variable genome sizes in the alpha iteration
-			# for each fix genome size, we check the distribution of genome lengths
-			# over the sampling size. Then, we choose one genome size that shows
-			# a better behavior in the ...
-			# we could check the variance of the ptDNA's features depending on the
-			# fixed genome size.
-			if [[ -n "${_arg_genomesize}" ]]; then
-				_arg_genomesize_a="${_arg_genomesize}"
-				_arg_genomesize_b="${_arg_genomesize}"
-				_arg_genomesize_n=1
-			fi
-			local genomesize_array=($(_polap_array_numbers_between_two \
-				"$_arg_genomesize_a" \
-				"$_arg_genomesize_b" \
-				"$_arg_genomesize_n"))
-			local genomesize_array_length=${#genomesize_array[@]}
-			_polap_log1 "  genome sizes (${_arg_genomesize_n}): ${_arg_genomesize_a} ~ ${_arg_genomesize_b}"
-
-			_polap_log3_cmd mkdir -p "${_disassemble_dir}"
-			_polap_log3_cmd rm -f "${_disassemble_dir}/index-genomesize.txt"
-			# local i=0 this does not work. It must be local
-			# at the beginning of the function.
-			for ((i = 0; i < genomesize_array_length; i++)); do
-				local genomesize="${genomesize_array[$i]}"
-				printf "%d\t%d\n" $i $genomesize \
-					>>"${_arg_outdir}/disassemble/index-genomesize.txt"
-			done
-
-			# local i=0 this does not work. It must be local
-			# at the beginning of the function.
-			for ((i = 0; i < genomesize_array_length; i++)); do
-				local genomesize="${genomesize_array[$i]}"
-				_run_polap_step-disassemble "${i}" "${genomesize}"
-				rstatus="$?"
-				_polap_log0 "genomesize: rstatus: $rstatus"
-				_polap_log0 "genomesize: i: $i"
-				echo "genomesize: rstatus: $rstatus" >&2
-				echo "genomesize: i: $i" >&2
-				[[ "$rstatus" -ne 0 ]] && return "$rstatus"
-			done
-
-			# concatenate all summary1.txt to the summary table.
-			i=0
-			awk 'NR == 1' "${_disassemble_dir}/${i}/summary1.txt" \
-				>"${_summary_table}"
-			for ((i = 0; i < genomesize_array_length; i++)); do
-				awk 'NR > 1' "${_disassemble_dir}/${i}/summary1.txt" \
-					>>"${_summary_table}"
-			done
-		else
-			_polap_log1 "  genome size estimated by the short-read data"
-			if [[ -z "${_arg_steps_include}" ]]; then
-				if [[ "${_arg_disassemble_best}" == "off" ]]; then
-					_arg_steps_include="1-15"
-					_arg_steps_exclude="2,3"
-				else
-					_arg_steps_include="13,14"
-					# _arg_steps_include="1-15"
-					# _arg_steps_exclude="2,3,5,6,7,8,9,10,11,12,13"
-				fi
-			fi
-			check_file_existence "${_input_short_reads}"
-			_run_polap_step-disassemble 0
+			_run_polap_step-disassemble 1
 			rstatus="$?"
 			[[ "$rstatus" -ne 0 ]] && return "$rstatus"
 		fi
-	else
-		_polap_log1 "  stage 2: assembling with a single parameter"
-		local assembled_fasta="${_disassemble_dir}/x/0/ptdna.fa"
-		_arg_unpolished_fasta="pt.0.fasta"
-		_arg_final_assembly="pt.1.fa"
-		_arg_contigger="off"
+	fi
+
+	if _polap_contains_step 2 "${stage_array[@]}"; then
+		disassemble_i_stage="${disassemble_i}/1"
+
+		summary1_ordered="${disassemble_i_stage}/summary1-ordered.txt"
+		_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+      --table ${disassemble_i_stage}/summary1.txt \
+      --out ${disassemble_i_stage}/summary1-ordered.txt \
+      --plot ${disassemble_i_stage}/summary1-ordered.pdf \
+      2>&1"
+		# 2>${_polap_output_dest}"
+
+		if [[ -s "${summary1_ordered}" ]]; then
+			# Use awk to extract the desired columns and save the output to a Bash variable
+			output=$(awk -F'\t' 'NR==2 {print $1, $3, $4, $5, $6}' "${summary1_ordered}")
+			n=$(awk 'END {print NR - 1}' "${summary1_ordered}")
+			if ((n < 10)); then
+				_polap_log0 "Warning: the number of potential ptDNA assemblies is too small to select one"
+				_polap_log0 "Suggestion: increase the subsample size --disassemble_p or the step size --disassemble_n"
+				_polap_log0 "Suggestion: increase the subsample size --disassemble_b or the step size --disassemble_n"
+			elif ((n < 2)); then
+				_polap_log0 "ERROR: the number of potential ptDNA assemblies is less than 2"
+				return "${_POLAP_ERR_SUBSAMPLE_TOO_FEW_CANDIDATES}"
+			fi
+			# Use read to split the output into individual variables
+			read -r index rate size alpha genomesize <<<"$output"
+			# Print the extracted variables
+			_polap_log1 "  Best Index: $index"
+			_polap_log1 "  Rate: $rate"
+			_polap_log1 "  Size: $size"
+			_polap_log1 "  Alpha: $alpha"
+			_polap_log1 "  Genome size: $genomesize"
+			_arg_disassemble_s="$size"
+			_arg_disassemble_alpha="$alpha"
+			_arg_disassemble_n_is="on"
+		else
+			_polap_log0 "ERROR: no such file: ${summary1_ordered}"
+			_polap_log0 "ERROR: subsampling does not produce enough assemblies."
+			die "SUGGESTION: increase the sampling size --disassemble-n"
+		fi
+	fi
+
+	_arg_steps_include=""
+	if [[ -n "${_arg_disassemble_stop_after}" ]]; then
+		if [[ "${_arg_disassemble_stop_after}" == "stage1" ]]; then
+			return 0
+		fi
+	fi
+
+	if _polap_contains_step 3 "${stage_array[@]}"; then
+		disassemble_i_stage="${disassemble_i}/2"
+
+		# stage 2:
+		_polap_log0 "  stage 2: assemble with a single set of parameters"
+		if [[ -z "${_arg_disassemble_s}" ]]; then
+			_polap_log0 "ERROR: subsample size must be given either by the stage 1 or option --disassemble-s"
+			die "ERROR: no --disassemble-s"
+		fi
+		if [[ -z "${_arg_disassemble_alpha}" ]]; then
+			_polap_log0 "ERROR: subsampling minimum coverage alpha must be given either by the stage 1 or option --disassemble-s"
+			die "ERROR: no --disassemble-alpha"
+		fi
+		_arg_contigger="on"
 		_arg_disassemble_a="${_arg_disassemble_s}"
 		_arg_disassemble_b="${_arg_disassemble_s}"
 		_arg_disassemble_b_is="on"
-		if [[ "${_arg_disassemble_n_is}" == "off" ]]; then
-			_arg_disassemble_n=2
-		fi
+		_arg_disassemble_n="${_arg_disassemble_r}"
 		_polap_log1 "  input1: --disassemble-s=${_arg_disassemble_s}"
 		if [[ "${_arg_short_read1_is}" == "off" ]] &&
 			[[ "${_arg_short_read2_is}" == "off" ]]; then
@@ -1024,42 +1297,137 @@ HEREDOC
 				_polap_log1 "  input2: genome size: ${_arg_genomesize}"
 			fi
 
-			_run_polap_step-disassemble
+			_run_polap_step-disassemble 2
 			rstatus="$?"
 			[[ "$rstatus" -ne 0 ]] && return "$rstatus"
-
-			# percentile in the length distribution
-			# need --anotherdir
-			_run_polap_disassemble-stats
-			_polap_log3_cmd cp "${assembled_fasta}" "${_arg_final_assembly}"
-		else
-			if [[ -z "${_arg_steps_include}" ]]; then
-				_arg_steps_include="1-15"
-				_arg_steps_exclude="2,3,9"
-			fi
-			_polap_log1 "  genome size estimated by the short-read data"
-			check_file_existence "${_input_short_reads}"
-
-			_run_polap_step-disassemble
-			rstatus="$?"
-			[[ "$rstatus" -ne 0 ]] && return "$rstatus"
-
-			if [[ -n "${_arg_disassemble_stop_after}" ]]; then
-				if [[ "${_arg_disassemble_stop_after}" == "assemble" ]]; then
-					_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-					[ "$DEBUG" -eq 1 ] && set +x
-					return 0
-				fi
-			fi
 
 			# percentile in the length distribution
 			# need --anotherdir
 			# _run_polap_disassemble-stats
-			_run_polap_prepare-polishing
+			# _polap_log3_cmd cp "${assembled_fasta}" "${_arg_final_assembly}"
+			_polap_log0 "Final plastid genome sequence (no short-read polishing): ${_arg_unpolished_fasta}"
+		else
+			if [[ -z "${_arg_steps_include}" ]]; then
+				_arg_steps_include="1-15"
+				_arg_steps_exclude="9"
+			fi
+			_polap_log1 "  genome size estimated by the short-read data"
+			check_file_existence "${_input_short_reads}"
 
-			_polap_log3_cmd cp "${assembled_fasta}" "${_arg_unpolished_fasta}"
-			_run_polap_polish
+			_run_polap_step-disassemble 2
+			rstatus="$?"
+			[[ "$rstatus" -ne 0 ]] && return "$rstatus"
 		fi
+	fi
+
+	if _polap_contains_step 4 "${stage_array[@]}"; then
+		disassemble_i_stage="${disassemble_i}/2"
+		summary1_ordered="${disassemble_i_stage}/summary1-ordered.txt"
+		_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+      --table ${disassemble_i_stage}/summary1.txt \
+      --out ${disassemble_i_stage}/summary1-ordered.txt \
+      --plot ${disassemble_i_stage}/summary1-ordered.pdf \
+      2>&1"
+		# 2>${_polap_output_dest}"
+
+		if [[ -s "${summary1_ordered}" ]]; then
+			# Use awk to extract the desired columns and save the output to a Bash variable
+			output=$(awk -F'\t' 'NR==2 {print $1, $3, $4, $5, $6, $7}' "${summary1_ordered}")
+			n=$(awk 'END {print NR - 1}' "${summary1_ordered}")
+			if ((n < 10)); then
+				_polap_log0 "Warning: the number of potential ptDNA assemblies is too small to select one"
+				_polap_log0 "Suggestion: increase the replicate size --disassemble_r"
+			elif ((n < 2)); then
+				_polap_log0 "ERROR: the number of potential ptDNA assemblies is less than 2"
+				return "${_POLAP_ERR_SUBSAMPLE_TOO_FEW_CANDIDATES}"
+			fi
+			# Use read to split the output into individual variables
+			read -r index rate size alpha genomesize randomseed <<<"$output"
+			# Print the extracted variables
+			_polap_log1 "  Best Index: $index"
+			_polap_log1 "  Rate: $rate"
+			_polap_log1 "  Size: $size"
+			_polap_log1 "  Alpha: $alpha"
+			_polap_log1 "  Genome size: $genomesize"
+			_polap_log1 "  Random seed: $randomseed"
+			_arg_disassemble_s="$size"
+			_arg_disassemble_n_is="on"
+			_arg_random_seed="${randomseed}"
+			_arg_genomesize="${genomesize}"
+			mkdir -p "${disassemble_i}/3/0"
+			cp -pr "${disassemble_i_stage}/${index}/30-contigger" "${disassemble_i}/3/0/"
+			rm -f "${disassemble_i}/3/0/30-contigger/3-gfa.all.gfa"
+			rm -f "${disassemble_i}/3/0/30-contigger/3-gfa.seq.part.tsv"
+			rm -f "${disassemble_i}/3/0/30-contigger/edges_stats.txt"
+			cp -p "${disassemble_i_stage}/${index}/cflye.log" "${disassemble_i}/3/0/"
+			cp -p "${disassemble_i_stage}/${index}/params.json" "${disassemble_i}/3/0/"
+		else
+			die "ERROR: no such file: ${summary1_ordered}"
+		fi
+	fi
+
+	if [[ -n "${_arg_disassemble_stop_after}" ]]; then
+		if [[ "${_arg_disassemble_stop_after}" == "stage2" ]]; then
+			return 0
+		fi
+	fi
+	_arg_steps_include=""
+
+	if _polap_contains_step 5 "${stage_array[@]}"; then
+		disassemble_i_stage="${disassemble_i}/3"
+		# stage 3:
+		_polap_log0 "  stage 3: polishing the assembly"
+		if [[ -z "${_arg_steps_include}" ]]; then
+			_arg_steps_include="1-15"
+			_arg_steps_exclude="2,3,6,7,9"
+		fi
+		_arg_contigger="off"
+		if [[ -z "${_arg_disassemble_s}" ]]; then
+			_polap_log0 "ERROR: subsample size must be given either by the stage 2 or option --disassemble-s"
+			die "ERROR: no --disassemble-s"
+		fi
+		if [[ -z "${_arg_genomesize}" ]]; then
+			_polap_log0 "ERROR: genome size must be given either by the stage 2 or option --genomesize"
+			die "ERROR: no --genomesize"
+		fi
+		if [[ -z "${_arg_random_seed}" ]]; then
+			_polap_log0 "ERROR: random seed must be given either by the stage 2 or option --random-seed"
+			die "ERROR: no --random-seed"
+		fi
+		_arg_disassemble_a="${_arg_disassemble_s}"
+		_arg_disassemble_b="${_arg_disassemble_s}"
+		_arg_disassemble_b_is="on"
+		_arg_disassemble_n="1"
+
+		# _run_polap_step-disassemble-sample-long "${size}" "${long_read}"
+		# # polish the x/index with the long-read data
+		# local out="${_disassemble_dir}/${_arg_disassemble_i}/$index"
+		# _run_polap_step-disassemble-cflye "${out}" "${long_read}" "${alpha}" "resume"
+		# _arg_start_index="${index}"
+		# _arg_end_index=$((_arg_start_index + 1))
+
+		# _arg_random_seed="${randomseed}"
+		# _arg_genomesize="${genomesize}"
+
+		# cp -pr "${_disassemble_dir}/${_arg_disassemble_i}/$index" \
+		# 	"${_disassemble_dir}/${_arg_disassemble_i}/${index}-contigger"
+		_run_polap_step-disassemble 3
+		rstatus="$?"
+		[[ "$rstatus" -ne 0 ]] && return "$rstatus"
+	fi
+
+	if _polap_contains_step 6 "${stage_array[@]}"; then
+		disassemble_i_stage="${disassemble_i}/3"
+
+		assembled_fasta="${disassemble_i_stage}/0/ptdna.fa"
+		_arg_unpolished_fasta="${disassemble_i_stage}/pt.0.fasta"
+		_arg_final_assembly="${disassemble_i}/pt.1.fa"
+
+		# polish the x/index with the short-read data
+		_run_polap_prepare-polishing
+
+		_polap_log3_cmd cp "${assembled_fasta}" "${_arg_unpolished_fasta}"
+		_run_polap_polish
 		_polap_log0 "Final plastid genome sequence: ${_arg_final_assembly}"
 	fi
 
@@ -1074,7 +1442,71 @@ function _run_polap_step-disassemble {
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
+	_arg_plastid="on"
+	local i
+	local j
+	local col1 col2 col3
+	local data
+	local genomesize
+	local _command1
+	local _disassemble_dir
+	local _input_short_reads
+
 	local datasize_array
+	local datasize_array_length
+	local i_last
+
+	local index_table
+	local sampling_datasize
+	local genomesize
+	local _size_index
+	local _alpha
+	local long_total
+	local short_total
+	local rate_sample_long
+	local rate_sample_short
+	local seed_sample_long
+	local preAlpha
+	local _outdir
+	local _sampling_datasize_bp
+	local seed
+	local _total_length
+	local _total_short_read
+	local _short_read1
+	local _long_read
+	local is_stop
+	local summary1_file
+	local resume=""
+	local num_circular_paths
+	local num_circular_nodes
+	local _expected_genome_size
+	local _contigger_edges_gfa
+	local _contigger_edges_fasta
+	local peak_ram_size_gb
+	local peak_ram
+	local _outdir_draft_assembly_size
+	local _draft_assembly_size
+	local _draft_assembly_size_bp
+	local _sampling_datasize_bp
+	local num_segments
+	local num_links
+	local total_segment_length
+	local _ga_annotation_all
+	local _mtcontigname
+	local _ptdna
+	local _ptdir
+	local ptdna_file
+	local nseq
+	local gc
+	local length
+	local coverage
+	local total_iterations
+	local time_per_iteration
+	local remaining_iterations
+	local remaining_time
+	local terminal_width
+	local status
+
 	source "$script_dir/polap-variables-common.sh"
 	source "$script_dir/polap-function-disassemble-seeds.sh"
 
@@ -1237,29 +1669,24 @@ HEREDOC
 		return 0
 	fi
 
-	_arg_plastid="on"
-	local i=0
-	local genomesize
-	local _command1
+	i=0
+	_input_short_reads="${_arg_outdir}/s1.fq"
+	_disassemble_dir="${_arg_outdir}/disassemble/${_arg_disassemble_i}/${1}"
 
-	local _input_short_reads="${_arg_outdir}/s1.fq"
-
-	if [[ $# -gt 0 ]]; then
-		local _disassemble_dir="${_arg_outdir}/disassemble/${1}"
-	else
-		local _disassemble_dir="${_arg_outdir}/disassemble/x"
+	if [[ "${1}" -eq 3 ]]; then
+		resume="resume"
 	fi
 
-	if [[ $# -gt 1 ]]; then
-		genomesize="${2}"
-	else
-		genomesize=""
-		if [[ -n "${_arg_genomesize}" ]]; then
-			genomesize="${_arg_genomesize}"
-		fi
-	fi
+	# if [[ $# -gt 1 ]]; then
+	# 	genomesize="${2}"
+	# else
+	# 	genomesize=""
+	# 	if [[ -n "${_arg_genomesize}" ]]; then
+	# 		genomesize="${_arg_genomesize}"
+	# 	fi
+	# fi
 
-	_polap_log0 "  assemble a plastid genome without reference"
+	_polap_log1 "  assemble a plastid genome without reference"
 	_polap_log1 "  input1: long-read: ${_arg_long_reads}"
 	if [[ "${_arg_short_read1_is}" == "off" ]]; then
 		_polap_log1 "  input2: no short-read1"
@@ -1272,11 +1699,11 @@ HEREDOC
 		_polap_log1 "  input3: short-read2: ${_arg_short_read2}"
 	fi
 	_polap_log1 "  input4: option --plastid: ${_arg_plastid}"
-	if [[ -n "${genomesize}" ]]; then
-		_polap_log1 "  input5: genomesize: ${genomesize}"
-	else
-		_polap_log1 "  input5: no given genomesize"
-	fi
+	# if [[ -n "${genomesize}" ]]; then
+	# 	_polap_log1 "  input5: genomesize: ${genomesize}"
+	# else
+	# 	_polap_log1 "  input5: no given genomesize"
+	# fi
 
 	if [[ -n "${_arg_species}" ]]; then
 		_polap_log1 "  input6: species: ${_arg_species}"
@@ -1285,14 +1712,14 @@ HEREDOC
 	elif [[ -n "${_arg_disassemble_compare_to_fasta}" ]]; then
 		_polap_log1 "  input6: compare to fasta: ${_arg_disassemble_compare_to_fasta}"
 		check_file_existence "${_arg_disassemble_compare_to_fasta}"
-	elif [[ -s "${_polap_var_project_mtdna_fasta2}" ]]; then
-		local n=$(grep ">" "${_polap_var_project_mtdna_fasta2}" | wc -l)
-		if [[ "${n}" == "1" ]]; then
-			_arg_disassemble_compare_to_fasta="${_polap_var_project_mtdna_fasta2}"
-			_polap_log1 "  input6: compare to fasta: ${_arg_disassemble_compare_to_fasta}"
-		else
-			_polap_log1 "  input6: neither species nor fasta file is given"
-		fi
+	# elif [[ -s "${_polap_var_project_mtdna_fasta2}" ]]; then
+	# 	local n=$(grep ">" "${_polap_var_project_mtdna_fasta2}" | wc -l)
+	# 	if [[ "${n}" == "1" ]]; then
+	# 		_arg_disassemble_compare_to_fasta="${_polap_var_project_mtdna_fasta2}"
+	# 		_polap_log1 "  input6: compare to fasta: ${_arg_disassemble_compare_to_fasta}"
+	# 	else
+	# 		_polap_log1 "  input6: neither species nor fasta file is given"
+	# 	fi
 	else
 		_polap_log1 "  input6: neither species nor fasta file is given"
 		_polap_log1 "    one of the sequences of an assembly graph is chosen at random"
@@ -1329,110 +1756,117 @@ HEREDOC
 
 	# NOTE: it must have been done in the function caller
 	if _polap_contains_step 2 "${step_array[@]}"; then
-		_polap_log1 "  no step 2: concatenate the short-read data"
+		_polap_log1 "  step 2: concatenate the short-read data"
+		# make a short-read dataset if there are short-read data
+		# Add commands for step 2
+		if [[ "${_arg_short_read1_is}" == "on" ]] ||
+			[[ "${_arg_short_read2_is}" == "on" ]] &&
+			[[ "${_arg_disassemble_best}" == "off" ]]; then
+			(
+				# create o/s1.fq to deal with a single or two short-read files
+				# overwrite the s1.fq
+				prestep1() {
+					if [ -s "${_input_short_reads}" ] && [ "${_arg_redo}" = "off" ]; then
+						_polap_log2 "  found: ${_input_short_reads}, skipping ..."
+					else
+						if [[ "${_arg_short_read1_is}" == "on" ]] ||
+							[[ "${_arg_short_read2_is}" == "on" ]]; then
+							_polap_concatenate_fastq_to "${_input_short_reads}" "${_arg_short_read1}" "${_arg_short_read2}"
+						elif [[ "${_arg_short_read2_is}" == "on" ]]; then
+							_polap_concatenate_fastq_to "${_input_short_reads}" "${_arg_short_read2}"
+						else
+							_polap_concatenate_fastq_to "${_input_short_reads}" "${_arg_short_read1}"
+						fi
+					fi
+				}
+				prestep1
+			)
+		fi
 		check_file_existence "${_input_short_reads}"
 	fi
 
 	if _polap_contains_step 3 "${step_array[@]}"; then
-		_polap_log1 "  no step 3: count the total number of bases in the short-read data"
+		_polap_log1 "  step 3: count the total number of bases in the short-read data"
 		check_file_existence "${_input_short_reads}"
+		# make a short-read dataset if there are short-read data
+		# Add commands for step 2
+		if [[ "${_arg_short_read1_is}" == "on" ]] ||
+			[[ "${_arg_short_read2_is}" == "on" ]] &&
+			[[ "${_arg_disassemble_best}" == "off" ]]; then
+			# Add commands for step 3
+			(
+				prestep2() {
+					# step 3
+					if [ -s "${_polap_var_outdir_short_total_length}" ] && [ "${_arg_redo}" = "off" ]; then
+						_polap_log2 "  found: ${_polap_var_outdir_short_total_length}, skipping total-length-short ..."
+					else
+						_polap_total-length-short \
+							"${_input_short_reads}" \
+							"${_polap_var_outdir_short_total_length}"
+
+						local _total_length=$(<"${_polap_var_outdir_short_total_length}")
+						local _total_short_read=$(_polap_utility_convert_bp ${_total_length})
+						_polap_log1 "  total length of the short-read dataset (bases): ${_total_short_read}"
+					fi
+				}
+				prestep2
+			)
+		fi
 	fi
 
+	index_table="${_disassemble_dir}/index.txt"
 	if _polap_contains_step 4 "${step_array[@]}"; then
 		_polap_log1 "  step 4: prepare for the loop iteration"
-		# Add commands for step 4
-		if [[ "${_arg_short_read1_is}" == "off" ]] &&
-			[[ "${_arg_short_read2_is}" == "off" ]]; then
-			local total_size_data=$(cat "${_polap_var_outdir_long_total_length}")
-			_polap_log2 "  the minimum read data size is just the long-read (bp): $total_size_data"
-		else
-			local total_size_data=$(_polap_minimum_two_values_in_files \
-				"${_polap_var_outdir_long_total_length}" \
-				"${_polap_var_outdir_short_total_length}")
-			_polap_log2 "  the minimum read data size of the long- and short-read (bp): $total_size_data"
-		fi
-
-		if [[ "${_arg_disassemble_b_is}" == "off" ]]; then
-			_polap_log2 "  the largest read data size set to (bp): $total_size_data"
-			_arg_disassemble_b=${total_size_data}
-		else
-			if ((total_size_data < _arg_disassemble_b)); then
-				_polap_log2 "  the largest read data size set to (bp): $total_size_data"
-				_arg_disassemble_b=${total_size_data}
-			fi
-		fi
-		_polap_log1 "    the disassemble A (bp): ${_arg_disassemble_a}"
-		_polap_log1 "    the disassemble B (bp): ${_arg_disassemble_b}"
-		_polap_log1 "    the disassemble N: ${_arg_disassemble_n}"
-		_polap_log1 "    the disassemble M (bp): ${_arg_disassemble_m}"
-		_polap_log1 "    the disassemble alpha: ${_arg_disassemble_alpha}"
-		_polap_log1 "    the disassemble delta: ${_arg_disassemble_delta}"
-		if ((_arg_disassemble_a <= _arg_disassemble_b)); then
-			_polap_log2 "  check: ${_arg_disassemble_a} is less than or equal to ${_arg_disassemble_b}."
-		else
-			die "ERROR: ${_arg_disassemble_a} (A) is greater than ${_arg_disassemble_b} (B)."
-		fi
-
-		datasize_array=($(_polap_array_numbers_between_two \
-			"$_arg_disassemble_a" \
-			"$_arg_disassemble_b" \
-			"$_arg_disassemble_n"))
-		_polap_log2 "  generated step array (${#datasize_array[@]}): ${datasize_array[@]:0:3} ... ${datasize_array[@]: -2}"
-
 		if [ -d "${_disassemble_dir}" ] && [ "${_arg_redo}" = "on" ]; then
 			_polap_log3_cmd rm -rf "${_disassemble_dir}"
 		fi
 		_polap_log3_cmd mkdir -p "${_disassemble_dir}"
 
-		datasize_array_length=${#datasize_array[@]}
-
-		rm -f "${_disassemble_dir}/index.txt"
-		for ((i = 0; i < datasize_array_length; i++)); do
-			sampling_datasize="${datasize_array[$i]}"
-			printf "%d\t%d\n" $i $sampling_datasize >>"${_disassemble_dir}/index.txt"
-		done
-
-		local _alpha="${_arg_disassemble_alpha}"
-
-		# Iterate using indices of the data size
-		local _size_index="${datasize_array_length}"
-		if ((_arg_end_index > 0)); then
-			_size_index="${_arg_end_index}"
+		if [[ "${_arg_disassemble_b_is}" == "on" ]]; then
+			_run_polap_step-disassemble-make-index-for-b "${index_table}"
+		else
+			_run_polap_step-disassemble-make-index-for-p "${index_table}"
 		fi
+		_alpha="${_arg_disassemble_alpha}"
 	elif [[ "${_arg_disassemble_best}" == "on" ]]; then
-		datasize_array=()
-		while IFS=$'\t' read -r col1 col2; do
-			datasize_array+=("$col2")
-		done <"${_disassemble_dir}/index.txt"
-		datasize_array_length=${#datasize_array[@]}
-		local _size_index="${datasize_array_length}"
-		if ((_arg_end_index > 0)); then
-			_size_index="${_arg_end_index}"
-		fi
-		local _alpha=0
-
+		_alpha=0
+	else
+		_alpha="${_arg_disassemble_alpha}"
+		is_stop="on"
 	fi
 
-	local _short_read1=${_arg_outdir}/s.fq
-	local _long_read=${_arg_outdir}/l.fq.gz
-	local is_stop="off"
-	local summary1_file
-	if [[ "${_arg_disassemble_best}" == "off" ]]; then
+	# Iterate using indices of the data size
+	datasize_array=()
+	while IFS=$'\t' read -r col1 col2 col3; do
+		datasize_array+=("$col1 $col2 $col3") # Append each row as a string
+	done <"${_disassemble_dir}/index.txt"
+	datasize_array_length=${#datasize_array[@]}
+
+	local _size_index="${#datasize_array[@]}"
+	if ((_arg_end_index > 0)); then
+		_size_index="${_arg_end_index}"
+	fi
+
+	_short_read1=${_disassemble_dir}/s.fq
+	_long_read=${_disassemble_dir}/l.fq.gz
+	is_stop="off"
+	if [[ -n "$resume" ]]; then
+		summary1_file="${_disassemble_dir}/summary3.txt"
+	elif [[ "${_arg_disassemble_best}" == "off" ]]; then
 		summary1_file="${_disassemble_dir}/summary1.txt"
 	else
 		summary1_file="${_disassemble_dir}/summary2.txt"
 	fi
-	local num_circular_paths
-	local num_circular_nodes
 
 	# Add header to the output file
-	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
 		"index" \
 		"long" \
 		"rate" \
 		"size" \
 		"alpha" \
 		"genomesize" \
+		"randomseed" \
 		"memory" \
 		"time" \
 		"nsegments" \
@@ -1444,71 +1878,76 @@ HEREDOC
 		"gc" \
 		"coverage" \
 		>"${summary1_file}"
-	# printf "index\trate\tsize\talpha\tmemory\tnsegments\tnlink\ttotalsegmentlength\n" >"${summary1_file}"
-	if _polap_contains_step 5 "${step_array[@]}"; then
-		_polap_log3 "no code"
-	else
-		_polap_log3 "no code"
-		# off because of --disassemble-best
-		# is_stop="on"
-	fi
 
-	local i_last=0
-	for ((i = _arg_start_index; i < _size_index; i++)); do
+	i_last=0
+
+	terminal_width=$(tput cols) # Get terminal width
+
+	total_iterations="${datasize_array_length}"
+	cat "$index_table" | while IFS=$'\t' read -r i sampling_datasize genomesize; do
+		_polap_log1 "  ${i}:S:${sampling_datasize}:G:${genomesize}"
+		if ((i < _arg_start_index)); then
+			continue
+		fi
+
+		if ((i >= _size_index)); then
+			break
+		fi
+
 		if [[ "${is_stop}" == "on" ]]; then
 			break
 		fi
+
 		_polap_set_start_time
 		i_last=$((i_last + 1))
-		local sampling_datasize="${datasize_array[$i]}"
-		local preAlpha="${_alpha}"
-		local _outdir=${_disassemble_dir}/$i
-		local _wga=${_outdir}
+		preAlpha="${_alpha}"
+		_outdir=${_disassemble_dir}/$i
 
-		local _sampling_datasize_bp=$(_polap_utility_convert_bp ${sampling_datasize})
+		_sampling_datasize_bp=$(_polap_utility_convert_bp ${sampling_datasize})
 		_polap_log1 "($i) sample data size: ${_sampling_datasize_bp}"
 		_polap_log1 "  alpha: ${_alpha}"
 		_polap_log3_cmd mkdir -p "${_outdir}"
 
-		local long_total
-		local rate_sample_long
 		if _polap_contains_step 5 "${step_array[@]}"; then
 			_polap_log1 "  step 5: subsample long-read data"
 			# subsample the long-read data
-			long_total=$(cat "${_polap_var_outdir_long_total_length}")
-
+			long_total=$(<"${_polap_var_outdir_long_total_length}")
 			_polap_log2 "  output: ${_long_read}"
-			RATE=$(echo "scale=10; ${sampling_datasize}/${long_total}" | bc)
-			rate_sample_long="${RATE}"
-			local seed=${_arg_random_seed:-$RANDOM}
-			_polap_log2 "    random seed: ${seed}"
+			rate_sample_long=$(echo "scale=10; ${sampling_datasize}/${long_total}" | bc)
+			seed_sample_long=${_arg_random_seed:-$RANDOM}
+			_polap_log2 "    random seed: ${seed_sample_long}"
 			_polap_log3_pipe "seqkit sample \
-		      -p ${RATE} \
-		      -s ${seed} \
+		      -p ${rate_sample_long} \
+		      -s ${seed_sample_long} \
 		      ${_arg_long_reads} \
 		      -o ${_long_read} 2>${_polap_output_dest}"
 		else
 			long_total=0
 			rate_sample_long=0
+			seed_sample_long=0
 		fi
 
 		if _polap_contains_step 6 "${step_array[@]}"; then
-			_polap_log1 "  step 6: subsample the short-read data: ${sampling_datasize} (bp)"
 			check_file_existence "${_input_short_reads}"
 
-			local short_total=$(cat "${_polap_var_outdir_short_total_length}")
+			if [[ "${_arg_disassemble_b_short}" == "on" ]]; then
+				_polap_log1 "  step 6: subsample the short-read data: ${sampling_datasize} (bp)"
+				short_total=$(<"${_polap_var_outdir_short_total_length}")
+				rate_sample_short=$(echo "scale=10; ${sampling_datasize}/${short_total}" | bc)
+			else
+				_polap_log1 "  step 6: subsample the short-read data: ${rate_sample_long} (%)"
+				rate_sample_short="${rate_sample_long}"
+			fi
 
-			RATE=$(echo "scale=10; ${sampling_datasize}/${short_total}" | bc)
 			local seed=${_arg_random_seed:-$RANDOM}
 			_polap_log2 "    random seed: ${seed}"
 			_polap_log3_pipe "seqkit sample \
-        -p ${RATE} \
+        -p ${rate_sample_short} \
         -s ${seed} \
         ${_input_short_reads} \
         -o ${_short_read1} 2>${_polap_output_dest}"
 		fi
 
-		local _expected_genome_size
 		if _polap_contains_step 7 "${step_array[@]}"; then
 			_polap_log1 "  step 7: use a given genome size or estimate one using the subsample of the short-read data"
 
@@ -1527,86 +1966,31 @@ HEREDOC
 			_expected_genome_size=0
 		fi
 
-		local _contigger_edges_gfa="${_outdir}/30-contigger/graph_final.gfa"
-		local _contigger_edges_fasta="${_outdir}/30-contigger/graph_final.fasta"
+		_contigger_edges_gfa="${_outdir}/30-contigger/graph_final.gfa"
+		_contigger_edges_fasta="${_outdir}/30-contigger/graph_final.fasta"
 
 		if _polap_contains_step 8 "${step_array[@]}"; then
 			_polap_log1 "  step 8: cFlye on the subsample of the long-read data"
 			# cflye assemble stage
 			_polap_log1 "  executing the whole-genome assembly using cflye ... be patient!"
-			if [[ "${_POLAP_RELEASE}" -eq 0 ]]; then
-				_command1="/home/goshng/all/polap/Flye/bin/cflye"
+			if [[ -z "${resume}" ]]; then
+				if [[ -d "${_outdir}/00-assembly" ]]; then
+					_polap_log2 "  found: ${_outdir}/00-assembly/draft_assembly.fasta, ..."
+				else
+					_run_polap_step-disassemble-cflye \
+						"${_outdir}" "${_long_read}" "${_expected_genome_size}" \
+						"${_alpha}" "${resume}"
+				fi
 			else
-				_command1="cflye"
+				if [[ -n "${_arg_genomesize}" ]]; then
+					_run_polap_step-disassemble-cflye \
+						"${_outdir}" "${_long_read}" "${_arg_genomesize}" \
+						"${_alpha}" "${resume}"
+				else
+					die "ERROR: resume needs the genome size."
+				fi
 			fi
 
-			_command1+=" \
-          ${_arg_flye_data_type} \
-          ${_long_read} \
-			    --out-dir ${_wga} \
-			    --disjointig-min-coverage ${_alpha} \
-			    --threads ${_arg_threads}"
-
-			_command1+=" \
-			  --asm-coverage ${_arg_flye_asm_coverage} \
-			  --genome-size ${_expected_genome_size}"
-			if [[ "${_arg_flye_asm_coverage}" -le 0 ]]; then
-				die "ERROR: must be positive --flye-asm-coverage ${_arg_flye_asm_coverage}"
-			fi
-
-			if [[ "${_arg_contigger}" == "on" ]]; then
-				_command1+=" \
-		      --stop-after contigger"
-			fi
-
-			if [[ "${_arg_debug}" = "on" ]]; then
-				_command1+=" \
-		      --debug"
-			fi
-
-			_command1+=" \
-		    2>${_polap_output_dest}"
-
-			if [[ -d "${_outdir}/00-assembly" ]]; then
-				_polap_log2 "  found: ${_outdir}/00-assembly/draft_assembly.fasta, ..."
-			else
-				_polap_log3_pipe "${_command1}"
-			fi
-
-			# use all the data in the long-read not just the sampled one
-			# for the polishing stage
-			# NOTE: the required memory becomes larger if we use all of the long-read
-			# data. So, we keep using the sampled long-read data. Then, we would
-			# better execute Flye to the polish stage not the contigger stage.
-			# if [[ "${_arg_contigger}" == "off" ]] &&
-			# 	[[ -d "${_outdir}/30-contigger" ]]; then
-			# 	if [[ "${_POLAP_RELEASE}" -eq 0 ]]; then
-			# 		_command1="/home/goshng/all/polap/Flye/bin/cflye"
-			# 	else
-			# 		_command1="cflye"
-			# 	fi
-			# 	_command1+=" \
-			#        ${_arg_flye_data_type} \
-			#        ${_long_reads} \
-			#     --out-dir ${_wga} \
-			#     --resume \
-			#     --threads ${_arg_threads}"
-			#
-			# 	if [[ "${_arg_debug}" = "on" ]]; then
-			# 		_command1+=" \
-			#        --debug"
-			# 	fi
-			#
-			# 	_command1+=" \
-			#      2>${_polap_output_dest}"
-			#
-			# 	_polap_log3_pipe "${_command1}"
-			# else
-			# 	_polap_log2 "  conttiger is on or not found: ${_outdir}/30-contigger"
-			# fi
-
-			local peak_ram_size_gb
-			local peak_ram
 			if [[ -d "${_outdir}/30-contigger" ]]; then
 				peak_ram_size_gb=$(grep "Peak RAM usage" "${_outdir}/cflye.log" | awk 'NR==2 {print $7}')
 				peak_ram=$(grep "Peak RAM usage" "${_outdir}/cflye.log" | awk 'NR==2 {print $7, $8}')
@@ -1648,6 +2032,9 @@ HEREDOC
 				_polap_log3_cmd cp -p "${_contigger_edges_gfa}" "${_contigger_edges_gfa}.backup"
 				_polap_log2 "  use ${_outdir}/assembly_graph.gfa by copying the contigger graph_final.gfa"
 				_polap_log3_cmd cp -p "${_outdir}/assembly_graph.gfa" "${_contigger_edges_gfa}"
+			else
+				_polap_log0 "ERROR: cFlye did not finish with the polishing step."
+				die "ERROR: no such file: ${_outdir}/assembly_graph.gfa"
 			fi
 		fi
 
@@ -1655,14 +2042,14 @@ HEREDOC
 			_polap_log1 "  step 9: adjust the alpha"
 			# adjust alpha
 			if [[ -s "${_outdir}/00-assembly/draft_assembly.fasta" ]]; then
-				local _outdir_draft_assembly_size="${_outdir}/draft_assembly_size.txt"
+				_outdir_draft_assembly_size="${_outdir}/draft_assembly_size.txt"
 				_polap_log3_pipe "seqkit stats -Ta ${_outdir}/00-assembly/draft_assembly.fasta |\
 		      csvtk cut -t -f sum_len |\
 		      csvtk del-header \
 		      >${_outdir_draft_assembly_size}"
 
-				local _draft_assembly_size=$(cat "${_outdir_draft_assembly_size}")
-				local _draft_assembly_size_bp=$(_polap_utility_convert_bp ${_draft_assembly_size})
+				_draft_assembly_size=$(cat "${_outdir_draft_assembly_size}")
+				_draft_assembly_size_bp=$(_polap_utility_convert_bp ${_draft_assembly_size})
 				_polap_log1 "  assembly for data size: ${_draft_assembly_size_bp}"
 				local _arg_disassemble_m_bp=$(_polap_utility_convert_bp ${_arg_disassemble_m})
 
@@ -1678,7 +2065,7 @@ HEREDOC
 					_polap_log1 "  Alpha decrease (if not negative): ${_alpha}"
 				fi
 			else
-				local _sampling_datasize_bp=$(_polap_utility_convert_bp ${sampling_datasize})
+				_sampling_datasize_bp=$(_polap_utility_convert_bp ${sampling_datasize})
 				_polap_log1 "  no assembly for data size: ${_sampling_datasize_bp}"
 
 				_alpha=$(_polap_adjust_alpha_by_delta "${_alpha}" \
@@ -1694,25 +2081,23 @@ HEREDOC
 			if _polap_contains_step 10 "${step_array[@]}"; then
 				_polap_log1 "  step 10: summary statistics of gfa: ${_contigger_edges_gfa}"
 				gfatools stat -l "${_contigger_edges_gfa}" >"${_outdir}/graph_final.txt" 2>"$_polap_output_dest"
-				local num_segments=$(grep "Number of segments:" "${_outdir}/graph_final.txt" | awk '{print $4}')
-				local num_links=$(grep "Number of links:" "${_outdir}/graph_final.txt" | awk '{print $4}')
-				local total_segment_length=$(grep "Total segment length:" "${_outdir}/graph_final.txt" | awk '{print $4}')
+				num_segments=$(grep "Number of segments:" "${_outdir}/graph_final.txt" | awk '{print $4}')
+				num_links=$(grep "Number of links:" "${_outdir}/graph_final.txt" | awk '{print $4}')
+				total_segment_length=$(grep "Total segment length:" "${_outdir}/graph_final.txt" | awk '{print $4}')
 			else
-				local num_segments=0
-				local num_links=0
-				local total_segment_length=0
+				num_segments=0
+				num_links=0
+				total_segment_length=0
 			fi
 
 			if _polap_contains_step 11 "${step_array[@]}"; then
 				_polap_log1 "  step 11: annotate"
 				# find the contig with more plastid genes than mitochondrial
-				local _ga="${_outdir}"
-				local _ga_annotation_all="${_ga}/assembly_info_organelle_annotation_count-all.txt"
+				_ga_annotation_all="${_outdir}/assembly_info_organelle_annotation_count-all.txt"
 				polap_annotate "${_contigger_edges_gfa}" "${_ga_annotation_all}"
 			fi
 
-			local _ga="${_outdir}"
-			local _mtcontigname="${_ga}/mt.contig.name"
+			_mtcontigname="${_outdir}/mt.contig.name"
 			# create mt.contig.name.txt
 			if _polap_contains_step 12 "${step_array[@]}"; then
 				_polap_log1 "  step 12: seeds"
@@ -1731,7 +2116,6 @@ HEREDOC
 			# TODO: a circular path
 
 			if [[ -s "${_mtcontigname}" ]]; then
-
 				if _polap_contains_step 13 "${step_array[@]}"; then
 					_polap_log1 "  step 13: extract ptDNA sequences from the gfa"
 					# locate the circular paths
@@ -1741,10 +2125,10 @@ HEREDOC
 					_polap_log2 "    output: ${_outdir}"
 					_polap_log3_pipe "python \
           $script_dir/run-polap-py-find-plastid-gfa2fasta.py \
-		      --gfa ${_contigger_edges_gfa} \
-		      --seed ${_mtcontigname} \
-		      --out ${_outdir} \
-		      2>$_polap_output_dest"
+		        --gfa ${_contigger_edges_gfa} \
+		        --seed ${_mtcontigname} \
+		        --out ${_outdir} \
+		        2>$_polap_output_dest"
 					num_circular_paths=$(<"${_outdir}/circular_path_count.txt")
 					num_circular_nodes=$(<"${_outdir}/circular_path_nodes.txt")
 					_polap_log3_cat "${_outdir}/circular_path.txt"
@@ -1753,7 +2137,15 @@ HEREDOC
 					num_circular_nodes=0
 				fi
 
-				local _ptdna="${_outdir}/circular_path_1_concatenated.fa"
+				if [[ -s "${_outdir}/circular_path_count.txt" ]]; then
+					num_circular_paths=$(<"${_outdir}/circular_path_count.txt")
+					num_circular_nodes=$(<"${_outdir}/circular_path_nodes.txt")
+				else
+					num_circular_paths=0
+					num_circular_nodes=0
+				fi
+
+				_ptdna="${_outdir}/circular_path_1_concatenated.fa"
 				if [[ -n "${_arg_disassemble_compare_to_fasta}" ]] &&
 					[[ -s "${_ptdna}" ]] &&
 					_polap_contains_step 14 "${step_array[@]}"; then
@@ -1764,10 +2156,9 @@ HEREDOC
 					#   rearrange it so that we could do a pairwise sequence alignment
 					_polap_log2 "    input1: ${_arg_disassemble_compare_to_fasta}"
 					_polap_log2 "    output: ${_outdir}"
-					local j=0
 					for j in 1 2 3 4; do
-						local _ptdna="${_outdir}/circular_path_${j}_concatenated.fa"
-						local _ptdir="${_outdir}/${j}"
+						_ptdna="${_outdir}/circular_path_${j}_concatenated.fa"
+						_ptdir="${_outdir}/${j}"
 
 						if [[ -s "${_ptdna}" ]]; then
 							_polap_log3_pipe "python $script_dir/run-polap-py-compare2ptdna.py \
@@ -1815,18 +2206,18 @@ HEREDOC
 						cp "${_outdir}/${folder_with_max_coverage}/coverage.txt" "${_outdir}/measure_ptdna-blast-alignment-coverage-rate.txt"
 					else
 						_polap_log2 "  no max coverage."
-						local _ptdna="${_outdir}/circular_path_1_concatenated.fa"
+						_ptdna="${_outdir}/circular_path_1_concatenated.fa"
 						_polap_log1 "  ptDNA selected: ${_ptdna}"
 						_polap_log3_cmd cp "${_ptdna}" "${_outdir}/ptdna.fa"
 						echo 0 >"${_outdir}/measure_ptdna-blast-alignment-coverage-rate.txt"
 					fi
 				else
-					local _ptdna="${_outdir}/circular_path_1_concatenated.fa"
+					_ptdna="${_outdir}/circular_path_1_concatenated.fa"
 					_polap_log1 "  step 14: no species is given by --species option"
 					_polap_log1 "    no species is given by --species option"
 					if [[ -s "${_ptdna}" ]] &&
-						[[ "${num_circular_paths}" -eq 4 ]] &&
-						[[ "${num_circular_paths}" -eq 2 ]]; then
+						([[ "${num_circular_paths}" -eq 4 ]] ||
+							[[ "${num_circular_paths}" -eq 2 ]]); then
 						_polap_log1 "    ptDNA selected: ${_ptdna}"
 						_polap_log3_cmd cp "${_ptdna}" "${_outdir}/ptdna.fa"
 					else
@@ -1839,57 +2230,80 @@ HEREDOC
 				num_circular_nodes=0
 			fi
 
-			local ptdna_file="${_outdir}/ptdna.fa"
+			ptdna_file="${_outdir}/ptdna.fa"
 			if [[ -s "${ptdna_file}" ]]; then
-				local nseq=$(seqkit stats -Ta "${ptdna_file}" |
+				nseq=$(seqkit stats -Ta "${ptdna_file}" |
 					csvtk cut -t -f num_seqs |
 					csvtk del-header |
 					head -n 1)
 				[[ "${nseq}" == 1 ]] || die "ERROR: ${nseq} only one sequence in ${ptdna_file}"
-				local gc=$(seqkit stats -Ta "${ptdna_file}" |
+				gc=$(seqkit stats -Ta "${ptdna_file}" |
 					csvtk cut -t -f "GC(%)" |
 					csvtk del-header |
 					head -n 1)
-				local length=$(seqkit stats -Ta "${ptdna_file}" |
+				length=$(seqkit stats -Ta "${ptdna_file}" |
 					csvtk cut -t -f sum_len |
 					csvtk del-header |
 					head -n 1)
 			else
-				local length=0
-				local gc=0
+				length=0
+				gc=0
 			fi
 
 			if [[ -s "${_outdir}/measure_ptdna-blast-alignment-coverage-rate.txt" ]]; then
-				local coverage=$(cat "${_outdir}/measure_ptdna-blast-alignment-coverage-rate.txt")
+				coverage=$(cat "${_outdir}/measure_ptdna-blast-alignment-coverage-rate.txt")
 			else
-				local coverage=0
+				coverage=0
 			fi
 
 		else
-			local num_segments=0
-			local num_links=0
-			local total_segment_length=0
-			local num_circular_paths=0
-			local num_circular_nodes=0
-			local length=0
-			local gc=0
-			local coverage=0
+			num_segments=0
+			num_links=0
+			total_segment_length=0
+			num_circular_paths=0
+			num_circular_nodes=0
+			length=0
+			gc=0
+			coverage=0
 		fi
 
 		# Append the result to the output file
 		# printf "index\tlong\trate\tsize\talpha\tmemory\tnsegments\tnlink\ttotalsegmentlength\tlength\tgc\tcoverage\n" >"${summary1_file}"
-		printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+		printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
 			"$i" "${long_total}" "${rate_sample_long}" "$sampling_datasize" \
 			"$preAlpha" "${_expected_genome_size}" \
+			"${seed_sample_long}" \
 			"${peak_ram_size_gb}" "$(_polap_get_elapsed_time)" \
 			"$num_segments" "$num_links" "$total_segment_length" \
 			"$num_circular_paths" "$num_circular_nodes" \
 			"$length" "$gc" "$coverage" \
 			>>"$summary1_file"
 
+		# Calculate elapsed time and remaining time
+		time_per_iteration=$(($(date +%s) - _polap_var_start_time))
+		remaining_iterations=$((total_iterations - i - 1))
+		remaining_time=$((remaining_iterations * time_per_iteration))
+		status="  Iteration $((i + 1))/$total_iterations, remaining time: $(_polap_get_time_format ${remaining_time})"
+
+		# Display the progress and remaining time on the same line
+		# _polap_log0_ne "  Iteration $((i + 1))/$total_iterations, Estimated remaining time: $(_polap_get_time_format ${remaining_time})\r"
+		if [[ -z "$resume" ]]; then
+			if [ "${_arg_verbose}" -eq "1" ]; then
+				printf "\r%-${terminal_width}s" " " >&3
+			fi
+			_polap_log0_ne "\r$status"
+		fi
+
 		# determine the sample size and the Flye's alpha
 		_polap_log1 "status: index $i: sample size: $_sampling_datasize_bp alpha: $preAlpha memory: ${peak_ram}"
 	done
+
+	if [[ -z "$resume" ]]; then
+		_polap_log0 ""
+	fi
+
+	rm -f "${_short_read1}"
+	rm -f "${_long_read}"
 
 	return 0
 }

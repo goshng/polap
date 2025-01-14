@@ -45,7 +45,7 @@ parser <- add_option(parser, c("-c", "--coverage"),
 args1 <- parse_args(parser)
 
 if (is_null(args1$table)) {
-  input_dir0 <- file.path("Juncus_roemerianus")
+  input_dir0 <- file.path("Eucalyptus_pauciflora")
   input1 <- file.path(input_dir0, "disassemble/0/summary1.txt")
   output1 <- file.path(input_dir0, "out.txt")
   output2 <- file.path(input_dir0, "out.pdf")

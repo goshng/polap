@@ -676,10 +676,10 @@ polap_disassemble-seeds() {
 	# local _mtcontigname="${_ga}/mt.contig.name"
 
 	# We initiate the process of selecting seed contigs.
-	_polap_log0 "select seed contigs using the assembly graph with multiple selection methods"
-	_polap_log1 "  input1: ${_ga_contigger_edges_gfa}"
-	_polap_log1 "  input2: ${_ga_annotation_all}"
-	_polap_log1 "  output: ${_mtcontigname}"
+	_polap_log1 "  select seed contigs using the assembly graph with multiple selection methods"
+	_polap_log2 "    input1: ${_ga_contigger_edges_gfa}"
+	_polap_log2 "    input2: ${_ga_annotation_all}"
+	_polap_log2 "    output: ${_mtcontigname}"
 
 	rm -f "${_ga}"/mt.contig.name-*
 
@@ -772,7 +772,9 @@ polap_disassemble-seeds() {
     --prefix ${_mtcontigname} \
 		2>$_polap_output_dest"
 
-	cp "${_mtcontigname}-1.txt" "${_mtcontigname}"
+	if [[ -s "${_mtcontigname}-1.txt" ]]; then
+		cp "${_mtcontigname}-1.txt" "${_mtcontigname}"
+	fi
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -884,11 +886,11 @@ HEREDOC
 	fi
 
 	# We initiate the process of selecting seed contigs.
-	_polap_log0 "select seed contigs using the assembly graph"
-	_polap_log1 "  input1: gfa: ${_ga_contigger_edges_gfa}"
-	_polap_log1 "  input2: annotation: ${_ga_annotation_all}"
-	_polap_log1 "  input3: selection type: ${_knum}"
-	_polap_log1 "  output: ${_mtcontigname}"
+	_polap_log1 "  select seed contigs using the assembly graph"
+	_polap_log2 "    input1: gfa: ${_ga_contigger_edges_gfa}"
+	_polap_log2 "    input2: annotation: ${_ga_annotation_all}"
+	_polap_log2 "    input3: selection type: ${_knum}"
+	_polap_log2 "    output: ${_mtcontigname}"
 
 	check_file_existence "${_ga_contigger_edges_gfa}"
 	check_file_existence "${_ga_annotation_all}"
@@ -970,13 +972,19 @@ HEREDOC
 			--nodes ${_mtcontigs_preselection} \
       --output ${_mtcontigs_gfa_depthfiltered_cc_seed}"
 
-		flatten_array_array_comma_to_lines \
-			"${_mtcontigs_gfa_depthfiltered_cc_seed}" \
-			"${_mtcontigs_gfa_depthfiltered_cc_edge}"
+		if [[ -s "${_mtcontigs_gfa_depthfiltered_cc_seed}" ]]; then
 
-		if [[ -s "${_mtcontigs_gfa_depthfiltered_cc_edge}" ]]; then
-			cp "${_mtcontigs_gfa_depthfiltered_cc_edge}" "${_mtcontigname}"
-			_polap_log3_cat "${_mtcontigname}"
+			flatten_array_array_comma_to_lines \
+				"${_mtcontigs_gfa_depthfiltered_cc_seed}" \
+				"${_mtcontigs_gfa_depthfiltered_cc_edge}"
+
+			if [[ -s "${_mtcontigs_gfa_depthfiltered_cc_edge}" ]]; then
+				cp "${_mtcontigs_gfa_depthfiltered_cc_edge}" "${_mtcontigname}"
+				_polap_log3_cat "${_mtcontigname}"
+			else
+				_polap_log0 "  no connected components with the annotation dege contigs"
+				>"${_mtcontigname}"
+			fi
 		else
 			_polap_log0 "  no connected components with the annotation seed contigs"
 			>"${_mtcontigname}"

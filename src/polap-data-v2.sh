@@ -115,31 +115,53 @@ copy_data() {
 }
 
 # Function for each species
+# kishino
 run_Juncus_effusus() {
 	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
 	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
 	local long_sra="SRR14298760"
 	local short_sra="SRR14298746"
-	copy_data
+	# copy_data
 
 	# Elapsed (wall clock) time (h:mm:ss or m:ss): 7:45:19
 	# Maximum resident set size (kbytes): 40857748
 	# rm -rf ${output_dir}/disassemble/0
 	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
 	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-p 5 \
+	# 	--disassemble-n 100
+
+	# ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--stages-include 4-6 \
+	# 	--disassemble-i 1
+
+	local i=0
+	local n
+	local p
+	for n in 10 30 100; do
+		for p in 1 5 10; do
+			i=$((i + 1))
+			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+				echo "exists: $i, $p, $n"
+			else
+				command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+					--disassemble-i $i \
+					--disassemble-p $p \
+					--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+			fi
+		done
+	done
+
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir}-a \
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir}-a \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
 	# 	--disassemble-a 100m \
 	# 	--disassemble-b 1g \
 	# 	--disassemble-n 100 \
-	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa -v
-
-	# command time -v ${_polap_cmd} disassemble -o ${output_dir}-a \
-	command time -v ${_polap_cmd} disassemble -o ${output_dir}-a \
-		-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-		--disassemble-a 100m \
-		--disassemble-b 1g \
-		--disassemble-n 100 \
-		--disassemble-best \
-		--disassemble-compare-to-fasta ptdna-${output_dir}-best.fa -v
+	# 	--disassemble-best \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}-best.fa -v
 
 	# Elapsed (wall clock) time (h:mm:ss or m:ss): 5:27:43
 	# Maximum resident set size (kbytes): 32578112
@@ -152,6 +174,7 @@ run_Juncus_effusus() {
 	# 	--disassemble-stop-after assemble -v
 }
 
+# vincent
 run_Juncus_inflexus() {
 	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
 	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
@@ -159,18 +182,34 @@ run_Juncus_inflexus() {
 	local long_sra="SRR14298751"
 	local short_sra="SRR14298745"
 
-	copy_data
-	cp -s ptdna-Juncus_effusus.fa ptdna-${output_dir}.fa
+	# copy_data
+	# cp -s ptdna-Juncus_effusus.fa ptdna-${output_dir}.fa
 
 	# Elapsed (wall clock) time (h:mm:ss or m:ss): 20:45:16
 	# Maximum resident set size (kbytes): 41721844
-	rm -rf ${output_dir}/disassemble/0
-	command time -v ${_polap_cmd} disassemble -o ${output_dir} \
-		-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-		--disassemble-a 10m \
-		--disassemble-b 1g \
-		--disassemble-n 100 \
-		--disassemble-compare-to-fasta ptdna-${output_dir}.fa -v
+	# rm -rf ${output_dir}/disassemble/0
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-p 5 \
+	# 	--disassemble-n 100
+
+	local i=0
+	local n
+	local p
+	for n in 10 30 100; do
+		for p in 1 5 10; do
+			i=$((i + 1))
+			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+				echo "exists: $i, $p, $n"
+			else
+				command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+					--disassemble-i $i \
+					--disassemble-p $p \
+					--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+			fi
+		done
+	done
 
 	# rm -rf ${output_dir}/disassemble/x
 	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
@@ -181,6 +220,7 @@ run_Juncus_inflexus() {
 	# 	--disassemble-stop-after assemble -v
 }
 
+# siepel
 run_Juncus_roemerianus() {
 	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
 	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
@@ -188,13 +228,36 @@ run_Juncus_roemerianus() {
 	local short_sra="SRR21976092"
 	copy_data
 
-	rm -rf ${output_dir}/disassemble/0
-	command time -v ${_polap_cmd} disassemble -o ${output_dir} \
-		-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-		--disassemble-a 10m \
-		--disassemble-b 500m \
-		--disassemble-n 100 \
-		--disassemble-compare-to-fasta ptdna-${output_dir}.fa -v
+	# Elapsed (wall clock) time (h:mm:ss or m:ss): 9:20:00
+	# Maximum resident set size (kbytes): 27453508
+	# rm -rf ${output_dir}/disassemble/0
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-p 5 \
+	# 	--disassemble-n 100
+
+	# ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-i 1 \
+	# 	--stages-include 6
+
+	local i=0
+	local n
+	local p
+	for n in 10 30 100; do
+		for p in 1 5 10; do
+			i=$((i + 1))
+			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+				echo "exists: $i, $p, $n"
+			else
+				command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+					--disassemble-i $i \
+					--disassemble-p $p \
+					--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+			fi
+		done
+	done
 
 	# rm -rf ${output_dir}/disassemble/x
 	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
@@ -206,30 +269,57 @@ run_Juncus_roemerianus() {
 	# 	-v
 }
 
+# marybeth
 run_Juncus_validus() {
 	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
 	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
 	local long_sra="SRR21976089"
 	local short_sra="SRR21976091"
-	copy_data
+	# copy_data
 
+	# Elapsed (wall clock) time (h:mm:ss or m:ss): 20:37:27
+	# Maximum resident set size (kbytes): 21494240
 	# rm -rf ${output_dir}/disassemble/0
 	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
 	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-	# 	--disassemble-a 50m \
-	# 	--disassemble-n 10 \
-	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa -v
+	# 	--disassemble-p 5 \
+	# 	--disassemble-n 100
 
-	rm -rf ${output_dir}/disassemble/x
-	command time -v ${_polap_cmd} disassemble -o ${output_dir} \
-		-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-		--disassemble-compare-to-fasta ptdna-${output_dir}.fa \
-		--disassemble-s 200m --disassemble-alpha 2 \
-		--disassemble-n 2 \
-		--disassemble-stop-after assemble \
-		-v
+	# rm -rf ${output_dir}/disassemble/1/3
+	# ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--stages-include 6 \
+	# 	--disassemble-i 1
+
+	local i=0
+	local n
+	local p
+	for n in 10 30 100; do
+		for p in 1 5 10; do
+			i=$((i + 1))
+			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+				echo "exists: $i, $p, $n"
+			else
+				command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+					--disassemble-i $i \
+					--disassemble-p $p \
+					--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+			fi
+		done
+	done
+
+	# rm -rf ${output_dir}/disassemble/x
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa \
+	# 	--disassemble-s 200m --disassemble-alpha 2 \
+	# 	--disassemble-n 2 \
+	# 	--disassemble-stop-after assemble \
+	# 	-v
 }
 
+# lab01
 run_Eucalyptus_pauciflora() {
 	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
 	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
@@ -237,22 +327,133 @@ run_Eucalyptus_pauciflora() {
 	local short_sra="SRR7161123"
 	copy_data
 
-	# rm -rf ${output_dir}/disassemble/0
 	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# rm -rf ${output_dir}/disassemble/0
+	# Elapsed (wall clock) time (h:mm:ss or m:ss): 10:33:34
+	# Maximum resident set size (kbytes): 21504672
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-p 5 \
+	# 	--disassemble-n 100
+
+	# ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--stages-include 4-6 \
+	# 	--disassemble-i 1
+
+	# 2
+	# Elapsed (wall clock) time (h:mm:ss or m:ss): 1:08:49
+	# Maximum resident set size (kbytes): 21504364
+
+	local i=0
+	local n
+	local p
+	for n in 10 30 100; do
+		for p in 1 5 10; do
+			i=$((i + 1))
+			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+				echo "exists: $i, $p, $n"
+			else
+				command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+					--disassemble-i $i \
+					--disassemble-p $p \
+					--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+			fi
+		done
+	done
+
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-i 2 \
+	# 	--disassemble-p 5 \
+	# 	--disassemble-n 10
+
+	# Stage 1: v0.4.1.7
+	# ${_polap_cmd} disassemble -o ${output_dir} \
 	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
 	# 	--disassemble-a 50m \
 	# 	--disassemble-b 1g \
 	# 	--disassemble-n 30 \
 	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa -v
 
-	rm -rf ${output_dir}/disassemble/x
-	command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# rm -rf ${output_dir}/disassemble/x
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa \
+	# 	--disassemble-s 82m --disassemble-alpha 0.25 \
+	# 	--disassemble-n 10 \
+	# 	--disassemble-stop-after assemble \
+	# 	-v
+}
+run_test() {
+	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
+	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
+	local long_sra="SRR7153095"
+	local short_sra="SRR7161123"
+	local long_sra="test"
+	local short_sra="test"
+
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# rm -rf ${output_dir}/disassemble/0
+	# i:0
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-r 3
+	# i:1
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+
+	# rm -rf ${output_dir}/disassemble/1
+	# rm -rf ${output_dir}/disassemble/1/2
+	${_polap_cmd} disassemble -o ${output_dir} \
 		-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-		--disassemble-compare-to-fasta ptdna-${output_dir}.fa \
-		--disassemble-s 82m --disassemble-alpha 0.25 \
-		--disassemble-n 10 \
-		--disassemble-stop-after assemble \
-		-v
+		--disassemble-i 3 \
+		--disassemble-p 90 \
+		--disassemble-n 5 \
+		--disassemble-r 3
+
+	# rm -rf ${output_dir}/disassemble/1/1
+	# ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--stages-include 1 \
+	# 	--disassemble-i 1 \
+	# 	--disassemble-p 50 \
+	# 	--disassemble-n 5 \
+	# 	--disassemble-r 2
+
+	# rm -rf ${output_dir}/disassemble/1/2
+	# ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--stages-include 2 \
+	# 	--disassemble-i 1 \
+	# 	--disassemble-s 60m \
+	# 	--disassemble-alpha 0.25 \
+	# 	--disassemble-r 2
+
+	# ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--stages-include 3 \
+	# 	--disassemble-i 1 \
+	# 	--disassemble-s 60m \
+	# 	--genomesize 520115 \
+	# 	--random-seed 27046 -v -v -v
+
+	# Stage 1: v0.4.1.7
+	# ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-a 50m \
+	# 	--disassemble-b 1g \
+	# 	--disassemble-n 30 \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa -v
+
+	# rm -rf ${output_dir}/disassemble/x
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa \
+	# 	--disassemble-s 82m --disassemble-alpha 0.25 \
+	# 	--disassemble-n 10 \
+	# 	--disassemble-stop-after assemble \
+	# 	-v
 }
 
 run_Arctostaphylos_glauca() {
@@ -462,6 +663,7 @@ case "$species_folder" in
 	"Podococcus_acaulis" | \
 	"Raphia_textilis" | \
 	"Phytelephas_aequatorialis" | \
+	"test" | \
 	"Picea_glauca")
 	run_${species_folder}
 	;;

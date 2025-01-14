@@ -207,6 +207,8 @@ HEREDOC
 #
 # input1: a gfa file
 # output: edges_stats.txt
+#
+# FIXME: the skipping makes trouble in resuming
 polap_edges-stats() {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
@@ -234,36 +236,24 @@ polap_edges-stats() {
 	local _gfa_all="${_contigger}/3-gfa.all.gfa"
 	local _gfa_seq_part="${_contigger}/3-gfa.seq.part.tsv"
 
-	if [ -s "${_gfa_all}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log2 "    found: ${_gfa_all}, so skipping ..."
-	else
-		_polap_log3_pipe "gfatools view \
+	_polap_log3_pipe "gfatools view \
 		  -S ${_contigger_edges_gfa} \
 		  >${_gfa_all} \
 		  2>$_polap_output_dest"
-	fi
 
 	_polap_log2 "  extracting sequence part of GFA: ${_gfa_seq_part}"
 	_polap_log2 "    input: ${_gfa_all}"
 	_polap_log2 "    output: ${_gfa_seq_part}"
-	if [ -s "${_gfa_seq_part}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log2 "    found: ${_gfa_seq_part}, so skipping ..."
-	else
-		_polap_log3_pipe "grep ^S ${_gfa_all} >${_gfa_seq_part}"
-	fi
+	_polap_log3_pipe "grep ^S ${_gfa_all} >${_gfa_seq_part}"
 
 	# Filter edges in GFA using depths.
 	_polap_log2 "  filtering GFA sequence part using depth range"
 	_polap_log2 "    input1: ${_gfa_seq_part}"
 	_polap_log2 "    output1: ${_contigger_edges_stats}"
-	if [ -s "${_contigger_edges_stats}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log2 "    found: ${_contigger_edges_stats}, so skipping ..."
-	else
-		_polap_log3_pipe "Rscript $script_dir/run-polap-r-edges-stats.R \
+	_polap_log3_pipe "Rscript $script_dir/run-polap-r-edges-stats.R \
 		--gfa ${_gfa_seq_part} \
 		--out ${_contigger_edges_stats} \
 		2>$_polap_output_dest"
-	fi
 
 	if [[ -s "${_contigger_edges_stats}" ]]; then
 		_polap_log3_column "${_contigger_edges_stats}"
@@ -296,7 +286,7 @@ polap_annotate() {
 	local _contigger_edges_gfa="$1"
 	local _annotation_all="$2"
 
-	_polap_log0 "annotate edge sequence contigs with mitochondrial and plastid genes ..."
+	_polap_log1 "  annotate edge sequence contigs with mitochondrial and plastid genes ..."
 
 	if [ -s "${_annotation_all}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log1 "  found: ${_annotation_all}, so skipping the annotation ..."
@@ -785,12 +775,16 @@ polap_blast-genome() { # BLAST edge sequences on MT and PT genes
 		${_ann_MTAABLASTBED} \
 		>${_polap_output_dest} 2>&1"
 
-	_polap_log2 "  sorting BED format BLAST result"
-	_polap_log2 "    input1: ${_ann_MTAABLASTBED}"
-	_polap_log2 "    output1: ${_ann_MTAABLAST}.sorted.bed"
-	_polap_log3_pipe "sort -k1,1 -k2,2n \
+	if [[ -s "${_ann_MTAABLASTBED}" ]]; then
+		_polap_log2 "  sorting BED format BLAST result"
+		_polap_log2 "    input1: ${_ann_MTAABLASTBED}"
+		_polap_log2 "    output1: ${_ann_MTAABLAST}.sorted.bed"
+		_polap_log3_pipe "sort -k1,1 -k2,2n \
 		${_ann_MTAABLASTBED} \
 		>${_ann_MTAABLAST}.sorted.bed"
+	else
+		>"${_ann_MTAABLAST}.sorted.bed"
+	fi
 
 	_polap_log2 "  creating folder: ${_ann_MTAABED}"
 	_polap_log3_cmd mkdir "${_ann_MTAABED}"
@@ -841,12 +835,16 @@ polap_blast-genome() { # BLAST edge sequences on MT and PT genes
 		${_ann_PTAABLASTBED} \
 		>${_polap_output_dest} 2>&1"
 
-	_polap_log2 "  sorting BED format BLAST result"
-	_polap_log2 "    input1: ${_ann_PTAABLASTBED}"
-	_polap_log2 "    output1: ${_ann_PTAABLAST}.sorted.bed"
-	_polap_log3_pipe "sort -k1,1 -k2,2n \
+	if [[ -s "${_ann_PTAABLASTBED}" ]]; then
+		_polap_log2 "  sorting BED format BLAST result"
+		_polap_log2 "    input1: ${_ann_PTAABLASTBED}"
+		_polap_log2 "    output1: ${_ann_PTAABLAST}.sorted.bed"
+		_polap_log3_pipe "sort -k1,1 -k2,2n \
 		${_ann_PTAABLASTBED} \
 		>${_ann_PTAABLAST}.sorted.bed"
+	else
+		>"${_ann_PTAABLAST}.sorted.bed"
+	fi
 
 	_polap_log2 "  creating folder: ${_ann_PTAABED}"
 	_polap_log3_cmd mkdir "${_ann_PTAABED}"

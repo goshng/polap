@@ -73,6 +73,19 @@ function verbose_echo_no_newline {
 	fi
 }
 
+# Function to handle verbose output
+function verbose_echo_no_newline_ne {
+	local msg_level=$1 # The verbosity level of this message
+	shift              # Shift arguments to access the actual message
+	local message="$@"
+
+	# Only print if the current verbosity level is greater than or equal to the message level
+	if [ "${_arg_verbose}" -eq "$msg_level" ]; then
+		# echo "${_arg_verbose} > ${msg_level}: $message"
+		echo -ne "$message"
+	fi
+}
+
 function verbose_echo_newline {
 	local msg_level=$1 # The verbosity level of this message
 	shift              # Shift arguments to access the actual message
@@ -218,6 +231,11 @@ function _polap_log3 {
 function _polap_log0_n {
 	verbose_echo_no_newline 0 "$@"
 	verbose_echo_no_newline 1 "$@" >&3
+}
+
+function _polap_log0_ne {
+	# verbose_echo_no_newline_ne 0 "$@"
+	verbose_echo_no_newline_ne 1 "$@" >&3
 }
 
 function _polap_log0_cmd {

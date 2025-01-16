@@ -2,6 +2,12 @@
 
 Polap is a specialized pipeline designed to assemble plant mitochondrial DNA (mtDNA) using the **Flye** long-read assembler, supplemented by organellar gene annotation to guide contig selection. Inspired by **ptGAUL** (a chloroplast assembly pipeline), Polap integrates Flye's capabilities with gene annotation to identify and assemble mtDNA contigs from whole-genome data.
 
+NOTE: use the version 0.3.7.3 from the conda package.
+
+```bash
+conda create -y --name polap polap=0.3.7.3
+```
+
 <!-- TOC START -->
 
 ## Table of Contents
@@ -93,7 +99,7 @@ conda config --set channel_priority strict
 Setup `polap` and `polap-fmlrc` conda environments using [Polap](https://anaconda.org/bioconda/polap) conda package.
 
 ```bash
-conda create -y --name polap polap
+conda create -y --name polap polap=0.3.7.3
 ```
 
 #### 5. Activate the polap conda environment and setup polap-fmlrc environment (2 min)

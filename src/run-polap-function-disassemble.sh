@@ -652,6 +652,18 @@ function _run_polap_step-disassemble-cflye {
 	return 0
 }
 
+function _run_polap_step-disassemble-archive-cfile {
+	local cfile="${1}"
+
+	if [[ -s "${cfile}" ]]; then
+		_polap_log3_cmd mkdir -p ${_arg_archive}/$(dirname "${cfile#*/}")
+		_polap_log3_pipe "cp -p \
+      ${cfile} \
+      ${_arg_archive}/${cfile#*/}"
+	fi
+	return 0
+}
+
 ################################################################################
 # It is not as straightforward as it might seem. The simplest approach is to test plastid genome assembly by subsampling long-read data. A more complex approach involves using a slightly modified version of Flye, called cflye, which provides coverage options for generating disjointigs. Short-read data is still used to get a rough estimate of the overall genome size, but once subsampling is applied, the size of the genome assembled from long reads can change. The sizes of both the long-read and short-read data are defined by their total number of bases. When subsampling, we reduce the amount of short-read data proportionally to match the size of the subsampled long-read data, then use JellyFish (a k-mer counter) to predict the total size of the genome assembled from these long reads.
 #
@@ -737,8 +749,13 @@ function _run_polap_disassemble {
 
 	local i
 	local j
+	local k
 	local c
 	local n
+	local s
+	local d
+	local col1
+	local cfile
 	local rstatus
 	local index
 	local rate
@@ -768,6 +785,7 @@ function _run_polap_disassemble {
 	local summary1_ordered
 	local assembled_fasta
 	local disassemble_params_file
+	local summary3
 
 	source "$script_dir/polap-variables-common.sh"
 	local _disassemble_dir="${_arg_outdir}/disassemble"
@@ -933,27 +951,54 @@ HEREDOC
 
 	# menu: report
 	if [[ "${_arg_menu[1]}" == "report" ]]; then
-		# concatenate all summary1.txt to the summary table.
-		for i in "${_disassemble_dir}"/*/; do
-			if [ -d "$i" ]; then
-				i=$(basename "${i%/}")
-				if [[ -s "${_disassemble_dir}/${i}/summary1.txt" ]]; then
-					if [[ "${_arg_menu[2]}" == "coverage" ]]; then
-						_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+
+		# report 1 --disassemble-i 3
+		if [[ "${_arg_menu[2]}" == "1" ]]; then
+			s=${_disassemble_dir}/${_arg_disassemble_i}/1/summary1.txt
+			d=${_disassemble_dir}/${_arg_disassemble_i}/1/summary1.md
+			csvtk -t cut -f rate,alpha,genomesize,memory,time,nsegments,totalsegment,length \
+				"${s}" |
+				pandoc -f tsv -t markdown_mmd - \
+					>"${d}"
+			_polap_log0_head "${d}"
+		fi
+
+		# report 2 --disassemble-i 3
+		if [[ "${_arg_menu[2]}" == "2" ]]; then
+			# concatenate all summary1.txt to the summary table.
+			s0="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2.txt"
+			d1="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2-ordered.txt"
+			d2="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2-ordered.pdf"
+			_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+        --table ${s0} \
+        --out ${d1} \
+        --plot ${d2} \
+			  --coverage"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "9" ]]; then
+			# concatenate all summary1.txt to the summary table.
+			for i in "${_disassemble_dir}"/*/; do
+				if [ -d "$i" ]; then
+					i=$(basename "${i%/}")
+					if [[ -s "${_disassemble_dir}/${i}/summary1.txt" ]]; then
+						if [[ "${_arg_menu[2]}" == "coverage" ]]; then
+							_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
         --table ${_disassemble_dir}/${i}/summary1.txt \
         --out ${_disassemble_dir}/${i}/summary1-ordered.txt \
         --plot ${_disassemble_dir}/${i}/summary1-ordered.pdf \
 			  --coverage"
-					else
-						_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+						else
+							_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
         --table ${_disassemble_dir}/${i}/summary1.txt \
         --out ${_disassemble_dir}/${i}/summary1-ordered.txt \
         --plot ${_disassemble_dir}/${i}/summary1-ordered.pdf"
+						fi
+						_polap_log0_column ${_disassemble_dir}/${i}/summary1-ordered.txt
 					fi
-					_polap_log0_column ${_disassemble_dir}/${i}/summary1-ordered.txt
 				fi
-			fi
-		done
+			done
+		fi
 
 		# Disable debugging if previously enabled
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -1026,27 +1071,23 @@ HEREDOC
 		_polap_log3_cmd mkdir -p ${_arg_archive}
 		_polap_log3_cmd cp -p ${_arg_outdir}/${_arg_log} ${_arg_archive}/${_arg_log}
 
-		_polap_log3_pipe "cp -p \
-      ${_polap_var_outdir_long_total_length} \
-      ${_arg_archive}/${_polap_var_outdir_long_total_length#*/}"
-		_polap_log3_pipe "cp -p \
-      ${_polap_var_outdir_short_total_length} \
-      ${_arg_archive}/${_polap_var_outdir_short_total_length#*/}"
+		s="${_polap_var_outdir_long_total_length}"
+		d="${_arg_archive}/${_polap_var_outdir_long_total_length#*/}"
+		_polap_log3_cmd cp -p "${s}" "${d}"
+
+		s="${_polap_var_outdir_short_total_length}"
+		d="${_arg_archive}/${_polap_var_outdir_short_total_length#*/}"
+		_polap_log3_cmd cp -p "${s}" "${d}"
 
 		# 00-bioproject
 		_polap_log3_cmd mkdir -p ${_arg_archive}/${_polap_var_project#*/}
-		_polap_log3_pipe "cp -p \
-      ${_polap_var_project_mtdna_fasta1_stats} \
-      ${_arg_archive}/${_polap_var_project_mtdna_fasta1_stats#*/}"
-		_polap_log3_pipe "cp -p \
-      ${_polap_var_project_mtdna_fasta2_accession} \
-      ${_arg_archive}/${_polap_var_project_mtdna_fasta2_accession#*/}"
+		s="${_polap_var_project_mtdna_fasta1_stats}"
+		d="${_arg_archive}/${_polap_var_project_mtdna_fasta1_stats#*/}"
+		_polap_log3_cmd cp -p "${s}" "${d}"
 
-		# disassemble
-		_polap_log3_cmd mkdir -p ${_arg_archive}/${_disassemble_dir#*/}
-		_polap_log3_pipe "cp -p \
-      ${_summary_table} \
-      ${_arg_archive}/${_summary_table#*/}"
+		s="${_polap_var_project_mtdna_fasta2_accession}"
+		d="${_arg_archive}/${_polap_var_project_mtdna_fasta2_accession#*/}"
+		_polap_log3_cmd cp -p "${s}" "${d}"
 
 		# msbwt
 		if [[ "${_arg_menu[2]}" == "polishing" ]]; then
@@ -1055,58 +1096,134 @@ HEREDOC
         ${_arg_archive}/${_polap_var_outdir_msbwt_dir#*/}"
 		fi
 
+		# disassemble
+		_polap_log3_cmd mkdir -p ${_arg_archive}/${_disassemble_dir#*/}
+
 		# disassemble/0
-		_polap_log3 "  archive disassemble/0"
 		for i in "${_disassemble_dir}"/*/; do
 			if [ -d "$i" ]; then
 				i=$(basename "${i%/}")
-				_polap_log0 "$i"
-				summary_table="${_disassemble_dir}/${i}/summary1.txt"
-				index_table="${_disassemble_dir}/${i}/index.txt"
+				cp -p "${_arg_outdir}/timing-${i}.txt" "${_arg_archive}/"
+				disassemble_i="${_arg_outdir}/disassemble/${i}"
 
-				if [[ -s "${summary_table}" ]]; then
-					_polap_log3_cmd mkdir -p "${_arg_archive}/${_disassemble_dir#*/}/${i}"
-					_polap_log3_pipe "cp -p \
-          ${_disassemble_dir}/${i}/summary* \
-          ${_arg_archive}/${_disassemble_dir#*/}/${i}/"
-					_polap_log3_pipe "cp -p \
-          ${_disassemble_dir}/${i}/index.txt \
-          ${_arg_archive}/${_disassemble_dir#*/}/${i}/"
+				_polap_log3_cmd mkdir -p ${disassemble_i}
+				mkdir -p "${_arg_archive}/disassemble/${i}"
+
+				s="${disassemble_i}/pt.1.fa"
+				d="${_arg_archive}/${s#*/}"
+				_polap_log3_cmd cp -p "${s}" "${d}"
+
+				s="${disassemble_i}/params.txt"
+				d="${_arg_archive}/${s#*/}"
+				_polap_log3_cmd cp -p "${s}" "${d}"
+
+				for j in 1 2 3; do
+					k="${_disassemble_dir}/${i}/${j}"
+					mkdir -p "${_arg_archive}/disassemble/${i}/${j}"
+
+					summary_table="${k}/summary1.txt"
+					index_table="${k}/index.txt"
+
+					s="${k}"
+					d="${_arg_archive}/${k#*/}"
+					_polap_log3_cmd cp -p "${s}/summary"* "${d}/"
+					_polap_log3_cmd cp -p "${s}/index.txt" "${d}/"
 
 					# index.txt
 					# Read the first column and iterate over it
 					while IFS=$'\t' read -r col1 _; do
-						echo "$col1"
 						# Add your commands to process $col1 here
-						gfafile="${_disassemble_dir}/${i}/${col1}/30-contigger/graph_final.gfa"
-						if [[ -s "${gfafile}" ]]; then
-							_polap_log3_cmd mkdir -p ${_arg_archive}/$(dirname "${gfafile#*/}")
-							_polap_log3_pipe "cp -p \
-                ${gfafile} \
-                ${_arg_archive}/${gfafile#*/}"
-						fi
-						gfafile="${_disassemble_dir}/${i}/${col1}/30-contigger/graph_final.fasta"
-						if [[ -s "${gfafile}" ]]; then
-							_polap_log3_cmd mkdir -p ${_arg_archive}/$(dirname "${gfafile#*/}")
-							_polap_log3_pipe "cp -p \
-                ${gfafile} \
-                ${_arg_archive}/${gfafile#*/}"
-						fi
-						_mtcontigname="${_disassemble_dir}/${i}/${col1}/mt.contig.name"
-						if [[ -s "${_mtcontigname}" ]]; then
-							_polap_log3_cmd mkdir -p ${_arg_archive}/$(dirname "${_mtcontigname#*/}")
-							_polap_log3_pipe "cp -p \
-                ${_mtcontigname} \
-                ${_arg_archive}/${_mtcontigname#*/}"
-						fi
+						cfile="${k}/${col1}/30-contigger/graph_final.gfa"
+						_run_polap_step-disassemble-archive-cfile "${cfile}"
+						cfile="${k}/${col1}/30-contigger/graph_final.fasta"
+						_run_polap_step-disassemble-archive-cfile "${cfile}"
+						cfile="${k}/${col1}/mt.contig.name"
+						_run_polap_step-disassemble-archive-cfile "${cfile}"
+						cfile="${k}/${col1}/assembly_graph.gfa"
+						_run_polap_step-disassemble-archive-cfile "${cfile}"
+						cfile="${k}/${col1}/cflye.log"
+						_run_polap_step-disassemble-archive-cfile "${cfile}"
+						cfile="${k}/${col1}/params.json"
+						_run_polap_step-disassemble-archive-cfile "${cfile}"
 					done <"$index_table"
-				fi
+				done
+
 			fi
 		done
 
 		# ptdna
-		_polap_log3_pipe "cp ${_arg_outdir}/pt.1.fa \
-      ${_arg_archive}/pt.1.fa"
+		# _polap_log3_pipe "cp ${_arg_outdir}/pt.1.fa \
+		#     ${_arg_archive}/pt.1.fa"
+
+		# Disable debugging if previously enabled
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
+	fi
+
+	# menu: ptgaul
+	if [[ "${_arg_menu[1]}" == "ptgaul" ]]; then
+
+		_contigger_edges_gfa="${_arg_outdir}/result_3000/flye_cpONT/assembly_graph.gfa"
+		_outdir="${_arg_outdir}/result_3000/flye_cpONT/ptdna"
+		_mtcontigname="${_outdir}/mt.contig.name"
+		_arg_unpolished_fasta="${_outdir}/circular_path_1_concatenated.fa"
+		_arg_final_assembly="${_outdir}/pt.1.fa"
+
+		if [[ "${_arg_menu[2]}" == "outfile" ]]; then
+			mkdir -p "${_outdir}"
+			gfatools stat -l "${_contigger_edges_gfa}" >"${_outdir}/graph_final.txt" 2>"$_polap_output_dest"
+			num_segments=$(grep "Number of segments:" "${_outdir}/graph_final.txt" | awk '{print $4}')
+
+			if [[ "${num_segments}" -eq 3 ]]; then
+				_polap_log0 "ptGAUL assembly's segments: ${num_segments}"
+				_polap_log0 "you may use ptgaul menu:"
+				_polap_log0 "  ptgaul 1"
+				_polap_log0 "  ptgaul 2"
+				_polap_log0 "  ptgaul 3"
+			elif [[ "${num_segments}" -eq 1 ]]; then
+				_polap_log0 "ptGAUL assembly's segments: ${num_segments}"
+				_arg_unpolished_fasta="${_arg_outdir}/result_3000/ptGAUL_final_assembly/final_assembly.fasta"
+				_polap_log0 "ptGAUL assembly: ${_arg_unpolished_fasta}"
+				_polap_log0 "polishing ptDNA: ${_arg_unpolished_fasta}"
+				_run_polap_polish
+				_polap_log0 "ptGAUL polished assembly: ${_arg_final_assembly}"
+			else
+				_polap_log0 "ptGAUL assembly's segment counts: ${num_segments}"
+				_polap_log0 "you may not use ptgaul menu at the moment."
+			fi
+		fi
+
+		# _mtcontigname
+		if [[ "${_arg_menu[2]}" == "1" ]]; then
+			if [[ "${_arg_menu[3]}" == "1" ]]; then
+				_polap_log0 "create file: ${_mtcontigname}"
+				local string="edge_1"
+				echo "$string" | tr ',' '\n' >"${_mtcontigname}"
+			elif [[ "${_arg_menu[3]}" == "3" ]]; then
+				_polap_log0 "create file: ${_mtcontigname}"
+				local string="edge_1,edge_2,edge_3"
+				echo "$string" | tr ',' '\n' >"${_mtcontigname}"
+			fi
+		fi
+
+		# extract
+		if [[ "${_arg_menu[2]}" == "2" ]]; then
+			_polap_log0 "extract ptDNA: ${_arg_unpolished_fasta}"
+			_polap_log3_pipe "python \
+          $script_dir/run-polap-py-find-plastid-gfa2fasta.py \
+		        --gfa ${_contigger_edges_gfa} \
+		        --seed ${_mtcontigname} \
+		        --out ${_outdir} \
+		        2>$_polap_output_dest"
+		fi
+
+		# polishing
+		if [[ "${_arg_menu[2]}" == "3" ]]; then
+			_polap_log0 "polishing ptDNA: ${_arg_unpolished_fasta}"
+			_run_polap_polish
+			_polap_log0 "ptGAUL polished assembly: ${_arg_final_assembly}"
+		fi
 
 		# Disable debugging if previously enabled
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -1207,7 +1324,8 @@ HEREDOC
 					if [[ "${_arg_disassemble_best}" == "off" ]]; then
 						_arg_steps_include="1-15"
 					else
-						_arg_steps_include="13,14"
+						# _arg_steps_include="13,14"
+						_arg_steps_include="11,12,13,14"
 					fi
 				fi
 			fi
@@ -1221,12 +1339,14 @@ HEREDOC
 		disassemble_i_stage="${disassemble_i}/1"
 
 		summary1_ordered="${disassemble_i_stage}/summary1-ordered.txt"
-		_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+		if [[ "${_arg_disassemble_best}" == "off" ]]; then
+			_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
       --table ${disassemble_i_stage}/summary1.txt \
       --out ${disassemble_i_stage}/summary1-ordered.txt \
       --plot ${disassemble_i_stage}/summary1-ordered.pdf \
       2>&1"
-		# 2>${_polap_output_dest}"
+			# 2>${_polap_output_dest}"
+		fi
 
 		if [[ -s "${summary1_ordered}" ]]; then
 			# Use awk to extract the desired columns and save the output to a Bash variable
@@ -1270,20 +1390,23 @@ HEREDOC
 
 		# stage 2:
 		_polap_log0 "  stage 2: assemble with a single set of parameters"
-		if [[ -z "${_arg_disassemble_s}" ]]; then
-			_polap_log0 "ERROR: subsample size must be given either by the stage 1 or option --disassemble-s"
-			die "ERROR: no --disassemble-s"
+		if [[ "${_arg_disassemble_best}" == "off" ]]; then
+			if [[ -z "${_arg_disassemble_s}" ]]; then
+				_polap_log0 "ERROR: subsample size must be given either by the stage 1 or option --disassemble-s"
+				die "ERROR: no --disassemble-s"
+			fi
+			if [[ -z "${_arg_disassemble_alpha}" ]]; then
+				_polap_log0 "ERROR: subsampling minimum coverage alpha must be given either by the stage 1 or option --disassemble-s"
+				die "ERROR: no --disassemble-alpha"
+			fi
+			_arg_contigger="on"
+			_arg_disassemble_a="${_arg_disassemble_s}"
+			_arg_disassemble_b="${_arg_disassemble_s}"
+			_arg_disassemble_b_is="on"
+			_arg_disassemble_n="${_arg_disassemble_r}"
+			_polap_log1 "  input1: --disassemble-s=${_arg_disassemble_s}"
 		fi
-		if [[ -z "${_arg_disassemble_alpha}" ]]; then
-			_polap_log0 "ERROR: subsampling minimum coverage alpha must be given either by the stage 1 or option --disassemble-s"
-			die "ERROR: no --disassemble-alpha"
-		fi
-		_arg_contigger="on"
-		_arg_disassemble_a="${_arg_disassemble_s}"
-		_arg_disassemble_b="${_arg_disassemble_s}"
-		_arg_disassemble_b_is="on"
-		_arg_disassemble_n="${_arg_disassemble_r}"
-		_polap_log1 "  input1: --disassemble-s=${_arg_disassemble_s}"
+
 		if [[ "${_arg_short_read1_is}" == "off" ]] &&
 			[[ "${_arg_short_read2_is}" == "off" ]]; then
 			if [[ -z "${_arg_steps_include}" ]]; then
@@ -1307,12 +1430,16 @@ HEREDOC
 			# _polap_log3_cmd cp "${assembled_fasta}" "${_arg_final_assembly}"
 			_polap_log0 "Final plastid genome sequence (no short-read polishing): ${_arg_unpolished_fasta}"
 		else
-			if [[ -z "${_arg_steps_include}" ]]; then
-				_arg_steps_include="1-15"
-				_arg_steps_exclude="9"
-			fi
 			_polap_log1 "  genome size estimated by the short-read data"
-			check_file_existence "${_input_short_reads}"
+			if [[ -z "${_arg_steps_include}" ]]; then
+				if [[ "${_arg_disassemble_best}" == "off" ]]; then
+					_arg_steps_include="1-15"
+					_arg_steps_exclude="9"
+					check_file_existence "${_input_short_reads}"
+				else
+					_arg_steps_include="11,12,13,14"
+				fi
+			fi
 
 			_run_polap_step-disassemble 2
 			rstatus="$?"
@@ -1323,12 +1450,15 @@ HEREDOC
 	if _polap_contains_step 4 "${stage_array[@]}"; then
 		disassemble_i_stage="${disassemble_i}/2"
 		summary1_ordered="${disassemble_i_stage}/summary1-ordered.txt"
-		_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+
+		if [[ "${_arg_disassemble_best}" == "off" ]]; then
+			_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
       --table ${disassemble_i_stage}/summary1.txt \
       --out ${disassemble_i_stage}/summary1-ordered.txt \
       --plot ${disassemble_i_stage}/summary1-ordered.pdf \
       2>&1"
-		# 2>${_polap_output_dest}"
+			# 2>${_polap_output_dest}"
+		fi
 
 		if [[ -s "${summary1_ordered}" ]]; then
 			# Use awk to extract the desired columns and save the output to a Bash variable
@@ -1378,9 +1508,25 @@ HEREDOC
 		# stage 3:
 		_polap_log0 "  stage 3: polishing the assembly"
 		if [[ -z "${_arg_steps_include}" ]]; then
-			_arg_steps_include="1-15"
-			_arg_steps_exclude="2,3,6,7,9"
+			if [[ "${_arg_disassemble_best}" == "off" ]]; then
+				_arg_steps_include="1-15"
+				_arg_steps_exclude="2,3,6,7,9"
+			else
+				# _arg_steps_include="13,14"
+				_arg_steps_include="11,12,13,14"
+			fi
 		fi
+		# summary3="${disassemble_i_stage}/summary3.txt"
+		# output=$(awk -F'\t' 'NR==2 {print $1, $3, $4, $5, $6, $7}' "${summary3}")
+		# read -r index rate size alpha genomesize randomseed <<<"$output"
+		# _arg_disassemble_s="$size"
+		# _arg_disassemble_n_is="on"
+		# _arg_random_seed="${randomseed}"
+		# _arg_genomesize="${genomesize}"
+		# rm -f "${disassemble_i}/3/0/30-contigger/3-gfa.all.gfa"
+		# rm -f "${disassemble_i}/3/0/30-contigger/3-gfa.seq.part.tsv"
+		# rm -f "${disassemble_i}/3/0/30-contigger/edges_stats.txt"
+
 		_arg_contigger="off"
 		if [[ -z "${_arg_disassemble_s}" ]]; then
 			_polap_log0 "ERROR: subsample size must be given either by the stage 2 or option --disassemble-s"
@@ -1399,23 +1545,12 @@ HEREDOC
 		_arg_disassemble_b_is="on"
 		_arg_disassemble_n="1"
 
-		# _run_polap_step-disassemble-sample-long "${size}" "${long_read}"
-		# # polish the x/index with the long-read data
-		# local out="${_disassemble_dir}/${_arg_disassemble_i}/$index"
-		# _run_polap_step-disassemble-cflye "${out}" "${long_read}" "${alpha}" "resume"
-		# _arg_start_index="${index}"
-		# _arg_end_index=$((_arg_start_index + 1))
-
-		# _arg_random_seed="${randomseed}"
-		# _arg_genomesize="${genomesize}"
-
-		# cp -pr "${_disassemble_dir}/${_arg_disassemble_i}/$index" \
-		# 	"${_disassemble_dir}/${_arg_disassemble_i}/${index}-contigger"
 		_run_polap_step-disassemble 3
 		rstatus="$?"
 		[[ "$rstatus" -ne 0 ]] && return "$rstatus"
 	fi
 
+	# TODO: either end of a circular path needs to be joined before polishing
 	if _polap_contains_step 6 "${stage_array[@]}"; then
 		disassemble_i_stage="${disassemble_i}/3"
 
@@ -1425,10 +1560,17 @@ HEREDOC
 
 		# polish the x/index with the short-read data
 		_run_polap_prepare-polishing
-
 		_polap_log3_cmd cp "${assembled_fasta}" "${_arg_unpolished_fasta}"
 		_run_polap_polish
-		_polap_log0 "Final plastid genome sequence: ${_arg_final_assembly}"
+		if [[ "${_arg_disassemble_best}" == "on" ]]; then
+			_polap_log0 "Final plastid genome sequence: ${_arg_final_assembly}"
+			_polap_log3_pipe "python $script_dir/run-polap-py-compare2ptdna.py \
+    		--seq1 ${_arg_disassemble_compare_to_fasta} \
+	    	--seq2 ${_arg_final_assembly} \
+		    --out ${disassemble_i}/c \
+		    2>$_polap_output_dest"
+		fi
+
 	fi
 
 	# Disable debugging if previously enabled

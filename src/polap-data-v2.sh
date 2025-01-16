@@ -174,6 +174,39 @@ run_Juncus_effusus() {
 	# 	--disassemble-stop-after assemble -v
 }
 
+run_Juncus_effusus-a() {
+	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
+	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
+	local long_sra="SRR14298760"
+	local short_sra="SRR14298746"
+
+	local i=0
+	local n
+	local p
+	# for n in 10 30 100; do
+	# 	for p in 1 5 10; do
+	# --stages-include 1-6 \
+	# --disassemble-compare-to-fasta ptdna-${output_dir}-ptgaul.fa \
+	for n in 10 30; do
+		for p in 1 5 10; do
+			i=$((i + 1))
+			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+				${_polap_cmd} disassemble -o ${output_dir} \
+					--stages-include 1-6 \
+					--disassemble-best \
+					--disassemble-compare-to-fasta ptdna-Juncus_effusus-ptgaul.fa \
+					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+					--disassemble-i $i \
+					--disassemble-p $p \
+					--disassemble-n $n
+			else
+				echo "exists: $i, $p, $n"
+			fi
+		done
+	done
+
+}
+
 # vincent
 run_Juncus_inflexus() {
 	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
@@ -244,17 +277,113 @@ run_Juncus_roemerianus() {
 	local i=0
 	local n
 	local p
+	# step 1
+	# for n in 10 30 100; do
+	# 	for p in 1 5 10; do
+	# 		i=$((i + 1))
+	# 		if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+	# 			echo "exists: $i, $p, $n"
+	# 		else
+	# 			command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 				-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 				--disassemble-i $i \
+	# 				--disassemble-p $p \
+	# 				--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+	# 		fi
+	# 	done
+	# done
+
+	# step 2
+	bash ptgaul/ptGAUL.sh -o ${output_dir}-ptgaul -r ptdna-${output_dir}.fa -g 200000 -l ${long_sra}.fastq -t 24
+	cp -pr "${output_dir}-ptgaul/result_3000" "${output_dir}"
+
+	# step 3
+	# for n in 10 30 100; do
+	# 	for p in 1 5 10; do
+	# 		i=$((i + 1))
+	# 		if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+	# 			${_polap_cmd} disassemble -o ${output_dir} \
+	# 				--stages-include 1-6 \
+	# 				--disassemble-best \
+	# 				--disassemble-compare-to-fasta ptdna-${output_dir}-ptgaul.fa \
+	# 				-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 				--disassemble-i $i \
+	# 				--disassemble-p $p \
+	# 				--disassemble-n $n
+	# 		else
+	# 			echo "exists: $i, $p, $n"
+	# 		fi
+	# 	done
+	# done
+
+	# rm -rf ${output_dir}/disassemble/x
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa \
+	# 	--disassemble-s 600m --disassemble-alpha 3.25 \
+	# 	--disassemble-n 30 \
+	# 	--disassemble-stop-after assemble \
+	# 	-v
+}
+
+run_Juncus_roemerianus-a() {
+	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
+	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
+	local long_sra="SRR21976090"
+	local short_sra="SRR21976092"
+	copy_data
+
+	# Elapsed (wall clock) time (h:mm:ss or m:ss): 9:20:00
+	# Maximum resident set size (kbytes): 27453508
+	# rm -rf ${output_dir}/disassemble/0
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-p 5 \
+	# 	--disassemble-n 100
+
+	# ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-i 1 \
+	# 	--stages-include 6
+
+	local i=0
+	local n
+	local p
+	# step 1
+	# for n in 10 30 100; do
+	# 	for p in 1 5 10; do
+	# 		i=$((i + 1))
+	# 		if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+	# 			echo "exists: $i, $p, $n"
+	# 		else
+	# 			command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 				-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 				--disassemble-i $i \
+	# 				--disassemble-p $p \
+	# 				--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+	# 		fi
+	# 	done
+	# done
+
+	# step 2
+	# bash ptgaul/ptGAUL.sh -o ${output_dir}-ptgaul -r ptdna-${output_dir}.fa -g 200000 -l ${long_sra}.fastq -t 24
+	# cp -pr "${output_dir}-ptgaul/result_3000" "${output_dir}"
+
+	# step 3
 	for n in 10 30 100; do
 		for p in 1 5 10; do
 			i=$((i + 1))
 			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
-				echo "exists: $i, $p, $n"
-			else
-				command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+				${_polap_cmd} disassemble -o ${output_dir} \
+					--stages-include 1-6 \
+					--disassemble-best \
+					--disassemble-compare-to-fasta ptdna-${output_dir}-ptgaul.fa \
 					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
 					--disassemble-i $i \
 					--disassemble-p $p \
-					--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+					--disassemble-n $n
+			else
+				echo "exists: $i, $p, $n"
 			fi
 		done
 	done
@@ -294,17 +423,114 @@ run_Juncus_validus() {
 	local i=0
 	local n
 	local p
+	# step 1
+	# for n in 10 30 100; do
+	# 	for p in 1 5 10; do
+	# 		i=$((i + 1))
+	# 		if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+	# 			echo "exists: $i, $p, $n"
+	# 		else
+	# 			command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 				-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 				--disassemble-i $i \
+	# 				--disassemble-p $p \
+	# 				--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+	# 		fi
+	# 	done
+	# done
+
+	# step 2
+	# bash ptgaul/ptGAUL.sh -o ${output_dir}-ptgaul -r ptdna-${output_dir}.fa -l ${long_sra}.fastq -t 24
+	# cp -pr "${output_dir}-ptgaul/result_3000" "${output_dir}"
+
+	# step 3
 	for n in 10 30 100; do
 		for p in 1 5 10; do
 			i=$((i + 1))
 			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
-				echo "exists: $i, $p, $n"
-			else
-				command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+				${_polap_cmd} disassemble -o ${output_dir} \
+					--stages-include 1-6 \
+					--disassemble-best \
+					--disassemble-compare-to-fasta ptdna-${output_dir}-ptgaul.fa \
 					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
 					--disassemble-i $i \
 					--disassemble-p $p \
-					--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+					--disassemble-n $n
+			else
+				echo "exists: $i, $p, $n"
+			fi
+		done
+	done
+
+	# rm -rf ${output_dir}/disassemble/x
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa \
+	# 	--disassemble-s 200m --disassemble-alpha 2 \
+	# 	--disassemble-n 2 \
+	# 	--disassemble-stop-after assemble \
+	# 	-v
+}
+
+run_Juncus_validus-a() {
+	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
+	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
+	local long_sra="SRR21976089"
+	local short_sra="SRR21976091"
+	# copy_data
+
+	# Elapsed (wall clock) time (h:mm:ss or m:ss): 20:37:27
+	# Maximum resident set size (kbytes): 21494240
+	# rm -rf ${output_dir}/disassemble/0
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-p 5 \
+	# 	--disassemble-n 100
+
+	# rm -rf ${output_dir}/disassemble/1/3
+	# ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--stages-include 6 \
+	# 	--disassemble-i 1
+
+	local i=0
+	local n
+	local p
+	# step 1
+	# for n in 10 30 100; do
+	# 	for p in 1 5 10; do
+	# 		i=$((i + 1))
+	# 		if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+	# 			echo "exists: $i, $p, $n"
+	# 		else
+	# 			command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 				-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 				--disassemble-i $i \
+	# 				--disassemble-p $p \
+	# 				--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+	# 		fi
+	# 	done
+	# done
+
+	# step 2
+	# bash ptgaul/ptGAUL.sh -o ${output_dir}-ptgaul -r ptdna-${output_dir}.fa -l ${long_sra}.fastq -t 24
+	# cp -pr "${output_dir}-ptgaul/result_3000" "${output_dir}"
+
+	# step 3
+	for n in 10 30 100; do
+		for p in 1 5 10; do
+			i=$((i + 1))
+			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+				${_polap_cmd} disassemble -o ${output_dir} \
+					--stages-include 1-6 \
+					--disassemble-best \
+					--disassemble-compare-to-fasta ptdna-${output_dir}-ptgaul.fa \
+					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+					--disassemble-i $i \
+					--disassemble-p $p \
+					--disassemble-n $n
+			else
+				echo "exists: $i, $p, $n"
 			fi
 		done
 	done
@@ -348,17 +574,112 @@ run_Eucalyptus_pauciflora() {
 	local i=0
 	local n
 	local p
+	# step 1
+	# for n in 10 30 100; do
+	# 	for p in 1 5 10; do
+	# 		i=$((i + 1))
+	# 		if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+	# 			echo "exists: $i, $p, $n"
+	# 		else
+	# 			command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 				-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 				--disassemble-i $i \
+	# 				--disassemble-p $p \
+	# 				--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+	# 		fi
+	# 	done
+	# done
+
+	# step 2
+	# bash ptgaul/ptGAUL.sh -o ${output_dir}-ptgaul -r ptdna-${output_dir}.fa -l ${long_sra}.fastq -t 24
+	# cp -pr "${output_dir}-ptgaul/result_3000" "${output_dir}"
+
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-i 2 \
+	# 	--disassemble-p 5 \
+	# 	--disassemble-n 10
+
+	# Stage 1: v0.4.1.7
+	# ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-a 50m \
+	# 	--disassemble-b 1g \
+	# 	--disassemble-n 30 \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa -v
+
+	# rm -rf ${output_dir}/disassemble/x
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa \
+	# 	--disassemble-s 82m --disassemble-alpha 0.25 \
+	# 	--disassemble-n 10 \
+	# 	--disassemble-stop-after assemble \
+	# 	-v
+}
+
+run_Eucalyptus_pauciflora-a() {
+	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
+	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
+	local long_sra="SRR7153095"
+	local short_sra="SRR7161123"
+	copy_data
+
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# rm -rf ${output_dir}/disassemble/0
+	# Elapsed (wall clock) time (h:mm:ss or m:ss): 10:33:34
+	# Maximum resident set size (kbytes): 21504672
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-p 5 \
+	# 	--disassemble-n 100
+
+	# ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--stages-include 4-6 \
+	# 	--disassemble-i 1
+
+	# 2
+	# Elapsed (wall clock) time (h:mm:ss or m:ss): 1:08:49
+	# Maximum resident set size (kbytes): 21504364
+
+	local i=0
+	local n
+	local p
+	# step 1
+	# for n in 10 30 100; do
+	# 	for p in 1 5 10; do
+	# 		i=$((i + 1))
+	# 		if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+	# 			echo "exists: $i, $p, $n"
+	# 		else
+	# 			command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 				-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 				--disassemble-i $i \
+	# 				--disassemble-p $p \
+	# 				--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+	# 		fi
+	# 	done
+	# done
+
+	# step 2
+	# bash ptgaul/ptGAUL.sh -o ${output_dir}-ptgaul -r ptdna-${output_dir}.fa -l ${long_sra}.fastq -t 24
+	# cp -pr "${output_dir}-ptgaul/result_3000" "${output_dir}"
+
 	for n in 10 30 100; do
 		for p in 1 5 10; do
 			i=$((i + 1))
 			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
-				echo "exists: $i, $p, $n"
-			else
-				command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+				${_polap_cmd} disassemble -o ${output_dir} \
+					--stages-include 1-6 \
+					--disassemble-best \
+					--disassemble-compare-to-fasta ptdna-${output_dir}-ptgaul.fa \
 					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
 					--disassemble-i $i \
 					--disassemble-p $p \
-					--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+					--disassemble-n $n
+			else
+				echo "exists: $i, $p, $n"
 			fi
 		done
 	done
@@ -386,6 +707,7 @@ run_Eucalyptus_pauciflora() {
 	# 	--disassemble-stop-after assemble \
 	# 	-v
 }
+
 run_test() {
 	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
 	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
@@ -645,10 +967,14 @@ run_Picea_glauca() {
 # Main case statement
 case "$species_folder" in
 "Juncus_effusus" | \
+	"Juncus_effusus-a" | \
 	"Juncus_inflexus" | \
 	"Juncus_roemerianus" | \
+	"Juncus_roemerianus-a" | \
 	"Juncus_validus" | \
+	"Juncus_validus-a" | \
 	"Eucalyptus_pauciflora" | \
+	"Eucalyptus_pauciflora-a" | \
 	"Arctostaphylos_glauca" | \
 	"Lepidium_sativum" | \
 	"Chaetoceros_muellerii" | \

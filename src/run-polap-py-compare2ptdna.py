@@ -30,6 +30,11 @@ def parse_blast_output(blast_output, output_dir, seq2_length):
         "sstrand",
         "pident",
         "length",
+        "qlen",
+        "slen",
+        "nident",
+        "mismatch",
+        "gaps",
     ]
     df = pd.read_csv(blast_output, sep="\t", names=columns)
 
@@ -103,6 +108,64 @@ def compute_coverage(blast_output, seq1_length, output_dir):
     return coverage
 
 
+def get_pident(blast_output, output_dir):
+    """
+    Read the BLAST output and check the first line for specific conditions.
+    Write the pident value to a file in the output directory. If conditions are not met, write 0.
+    """
+    # Define column names for the BLAST output
+    columns = [
+        "qseqid",
+        "qstart",
+        "qend",
+        "sseqid",
+        "sstart",
+        "send",
+        "sstrand",
+        "pident",
+        "length",
+        "qlen",
+        "slen",
+        "nident",
+        "mismatch",
+        "gaps",
+    ]
+
+    # Output file path
+    pident_file = os.path.join(output_dir, "pident.txt")
+
+    # Read the BLAST output into a DataFrame
+    try:
+        df = pd.read_csv(blast_output, sep="\t", names=columns)
+    except Exception as e:
+        raise ValueError(f"Error reading the BLAST file: {e}")
+
+    # Ensure the file has data
+    if df.empty:
+        with open(pident_file, "w") as f:
+            f.write("0\n")
+        return 0
+
+    # Check the conditions on the first line
+    first_row = df.iloc[0]
+    if (
+        first_row["qstart"] == 1
+        and first_row["qend"] == first_row["qlen"]
+        and first_row["sstart"] == 1
+        and first_row["send"] == first_row["slen"]
+    ):
+        pident = first_row["pident"]
+    else:
+        pident = 0
+
+    # Write the pident value to the output file
+    os.makedirs(output_dir, exist_ok=True)
+    with open(pident_file, "w") as f:
+        f.write(f"{pident}\n")
+
+    return pident
+
+
 def main(seq1, seq2, output_dir):
     """Main workflow to determine alignment of two sequences by restart."""
     os.makedirs(output_dir, exist_ok=True)
@@ -120,7 +183,7 @@ def main(seq1, seq2, output_dir):
         seq1,
         seq2,
         blast_output_1,
-        "6 qseqid qstart qend sseqid sstart send sstrand pident length",
+        "6 qseqid qstart qend sseqid sstart send sstrand pident length qlen slen nident mismatch gaps",
     )
 
     # Parse the BLAST output to find the relevant position
@@ -141,7 +204,7 @@ def main(seq1, seq2, output_dir):
         seq1,
         seq2_restarted,
         blast_output_2,
-        "6 qseqid qstart qend sseqid sstart send sstrand pident length",
+        "6 qseqid qstart qend sseqid sstart send sstrand pident length qlen slen nident mismatch gaps",
         task="dc-megablast",
         strand="plus",
     )
@@ -151,6 +214,12 @@ def main(seq1, seq2, output_dir):
     print(f"Alignment coverage: {coverage}")
 
     print(f"Second BLAST results saved to {blast_output_2}")
+
+    try:
+        pident = get_pident(blast_output_2, output_dir)
+        print(f"The pident value is saved to {output_dir}/pident.txt and is: {pident}")
+    except ValueError as e:
+        print(e)
 
 
 if __name__ == "__main__":

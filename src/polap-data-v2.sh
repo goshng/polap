@@ -10,8 +10,8 @@ if [[ -d "src" ]]; then
 else
 	_polap_cmd="polap"
 fi
-_polap_version="0.4.1.7"
-_media_dir="/media/h1/run/ptgaul16"
+_polap_version="0.4.1.9"
+_media_dir="/media/h1/run/ptgaul20"
 
 help_message=$(
 	cat <<HEREDOC
@@ -123,19 +123,6 @@ run_Juncus_effusus() {
 	local short_sra="SRR14298746"
 	# copy_data
 
-	# Elapsed (wall clock) time (h:mm:ss or m:ss): 7:45:19
-	# Maximum resident set size (kbytes): 40857748
-	# rm -rf ${output_dir}/disassemble/0
-	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
-	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-	# 	--disassemble-p 5 \
-	# 	--disassemble-n 100
-
-	# ${_polap_cmd} disassemble -o ${output_dir} \
-	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-	# 	--stages-include 4-6 \
-	# 	--disassemble-i 1
-
 	local i=0
 	local n
 	local p
@@ -154,7 +141,6 @@ run_Juncus_effusus() {
 		done
 	done
 
-	# command time -v ${_polap_cmd} disassemble -o ${output_dir}-a \
 	# command time -v ${_polap_cmd} disassemble -o ${output_dir}-a \
 	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
 	# 	--disassemble-a 100m \
@@ -187,14 +173,15 @@ run_Juncus_effusus-a() {
 	# 	for p in 1 5 10; do
 	# --stages-include 1-6 \
 	# --disassemble-compare-to-fasta ptdna-${output_dir}-ptgaul.fa \
-	for n in 10 30; do
-		for p in 1 5 10; do
+	for n in 10; do
+		for p in 1; do
 			i=$((i + 1))
 			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
 				${_polap_cmd} disassemble -o ${output_dir} \
-					--stages-include 1-6 \
-					--disassemble-best \
 					--disassemble-compare-to-fasta ptdna-Juncus_effusus-ptgaul.fa \
+					--stages-include 1 \
+					--disassemble-best \
+					--disassemble-polish \
 					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
 					--disassemble-i $i \
 					--disassemble-p $p \
@@ -226,23 +213,54 @@ run_Juncus_inflexus() {
 	# 	--disassemble-p 5 \
 	# 	--disassemble-n 100
 
-	local i=0
-	local n
-	local p
-	for n in 10 30 100; do
-		for p in 1 5 10; do
-			i=$((i + 1))
-			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
-				echo "exists: $i, $p, $n"
-			else
-				command time -v ${_polap_cmd} disassemble -o ${output_dir} \
-					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-					--disassemble-i $i \
-					--disassemble-p $p \
-					--disassemble-n $n 2>${output_dir}/timing-${i}.txt
-			fi
-		done
-	done
+	# step 2
+	bash ptgaul/ptGAUL.sh -o ${output_dir}-ptgaul -r ptdna-${output_dir}.fa -g 180000 -l ${long_sra}.fastq -t 24
+	cp -pr "${output_dir}-ptgaul/result_3000" "${output_dir}"
+
+	# local i=0
+	# local n
+	# local p
+	# for n in 10 30 100; do
+	# 	for p in 1 5 10; do
+	# 		i=$((i + 1))
+	# 		if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+	# 			echo "exists: $i, $p, $n"
+	# 		else
+	# 			command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 				-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 				--disassemble-i $i \
+	# 				--disassemble-p $p \
+	# 				--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+	# 		fi
+	# 	done
+	# done
+
+	# rm -rf ${output_dir}/disassemble/x
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa \
+	# 	--disassemble-s 181m --disassemble-alpha 3.25 \
+	# 	--disassemble-n 30 \
+	# 	--disassemble-stop-after assemble -v
+}
+
+run_Juncus_inflexus-a() {
+	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
+	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
+	species_name="Juncus effusus"
+	local long_sra="SRR14298751"
+	local short_sra="SRR14298745"
+
+	# copy_data
+	# cp -s ptdna-Juncus_effusus.fa ptdna-${output_dir}.fa
+
+	# Elapsed (wall clock) time (h:mm:ss or m:ss): 20:45:16
+	# Maximum resident set size (kbytes): 41721844
+	# rm -rf ${output_dir}/disassemble/0
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-p 5 \
+	# 	--disassemble-n 100
 
 	# rm -rf ${output_dir}/disassemble/x
 	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
@@ -969,6 +987,7 @@ case "$species_folder" in
 "Juncus_effusus" | \
 	"Juncus_effusus-a" | \
 	"Juncus_inflexus" | \
+	"Juncus_inflexus-a" | \
 	"Juncus_roemerianus" | \
 	"Juncus_roemerianus-a" | \
 	"Juncus_validus" | \
@@ -1096,7 +1115,7 @@ case "$species_folder" in
 	pandoc plot.md -o supp-figure-s11-s34.docx
 	;;
 "table")
-	bash table1.sh >table1.tsv
+	bash src/polap-v0.4-report-table1.sh >table1.tsv
 	pandoc table1.tsv -f tsv -t pdf -o table1.pdf -V geometry:landscape
 	pandoc table1.tsv -f tsv -t docx -o table1.docx
 	;;

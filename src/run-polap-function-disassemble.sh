@@ -890,10 +890,19 @@ Examples
 $(basename "$0") x-ncbi-fetch-sra --sra SRR7153095
 $(basename "$0") x-ncbi-fetch-sra --sra SRR7161123
 $(basename "$0") get-mtdna --plastid --species "Eucalyptus pauciflora"
-cp o/00-bioproject/2-mtdna.fasta ptdna-epauciflora.fa
+cp o/00-bioproject/2-mtdna.fasta ptdna-Eucalyptus_pauciflora-known.fa
+
+bash ptgaul/ptGAUL.sh -o o-ptgaul -r ptdna-Eucalyptus_pauciflora-known.fa -g 180000 -l long.fastq
+cp -pr o-ptgaul/result_3000 o
+
 2:
 Stage 1 - long-read and short-read data
-$(basename "$0") disassemble -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq --disassemble-compare-to-fasta ptdna-epauciflora.fa --disassemble-min-memory 9
+$(basename "$0") disassemble -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq --disassemble-i 1 --disassemble-p 1 --disassemble-n 10
+
+$(basename "$0") disassemble archive
+
+$(basename "$0") disassemble -o o-a --disassemble-best --disassemble-compare-to-fasta ptdna-epauciflora.fa --disassemble-i 1 -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq 
+
 $(basename "$0") disassemble view
 3:
 $(basename "$0") disassemble view 2
@@ -964,6 +973,19 @@ HEREDOC
 		fi
 
 		# report 2 --disassemble-i 3
+		if [[ "${_arg_menu[2]}" == "2" ]]; then
+			# concatenate all summary1.txt to the summary table.
+			s0="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2.txt"
+			d1="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2-ordered.txt"
+			d2="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2-ordered.pdf"
+			_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+        --table ${s0} \
+        --out ${d1} \
+        --plot ${d2} \
+			  --coverage"
+		fi
+
+		# report 3 --disassemble-i 3
 		if [[ "${_arg_menu[2]}" == "2" ]]; then
 			# concatenate all summary1.txt to the summary table.
 			s0="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2.txt"
@@ -1324,7 +1346,6 @@ HEREDOC
 					if [[ "${_arg_disassemble_best}" == "off" ]]; then
 						_arg_steps_include="1-15"
 					else
-						# _arg_steps_include="13,14"
 						_arg_steps_include="11,12,13,14"
 					fi
 				fi

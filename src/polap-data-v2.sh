@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
-S=('Juncus_effusus' 'Juncus_inflexus' 'Juncus_roemerianus' 'Juncus_validus' 'Eucalyptus_pauciflora' 'Arctostaphylos_glauca' 'Lepidium_sativum' 'Chaetoceros_muellerii' 'Potentilla_micrantha' 'Durio_zibethinus' 'Beta_vulgaris' 'Eleocharis_dulcis' 'Leucanthemum_vulgare' 'Oryza_glaberrima' 'Cenchrus_americanus' 'Digitaria_exilis' 'Podococcus_acaulis' 'Raphia_textilis' 'Phytelephas_aequatorialis' 'Picea_glauca')
+# S=('Juncus_effusus' 'Juncus_inflexus' 'Juncus_roemerianus' 'Juncus_validus' 'Eucalyptus_pauciflora' 'Arctostaphylos_glauca' 'Lepidium_sativum' 'Chaetoceros_muellerii' 'Potentilla_micrantha' 'Durio_zibethinus' 'Beta_vulgaris' 'Eleocharis_dulcis' 'Leucanthemum_vulgare' 'Oryza_glaberrima' 'Cenchrus_americanus' 'Digitaria_exilis' 'Podococcus_acaulis' 'Raphia_textilis' 'Phytelephas_aequatorialis' 'Picea_glauca')
+S=('Juncus_effusus' 'Juncus_inflexus' 'Juncus_roemerianus' 'Juncus_validus' 'Eucalyptus_pauciflora')
 
 # Input parameter
 species_folder="${1%/}"
@@ -10,7 +11,7 @@ if [[ -d "src" ]]; then
 else
 	_polap_cmd="polap"
 fi
-_polap_version="0.4.1.9"
+_polap_version="0.4.3.1"
 _media_dir="/media/h1/run/ptgaul20"
 
 help_message=$(
@@ -23,8 +24,8 @@ help_message=$(
 #
 # Argument:
 mkdir: create the 16 species folders.
-
 <species_folder>: run polap on the species_folder
+
 install-conda: install Miniconda3
 setup-conda: setup Miniconda3 for Bioconda
 install-polap or install: install Polap

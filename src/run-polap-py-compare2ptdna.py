@@ -78,10 +78,10 @@ def get_sequence_length(fasta_file):
     return int(result.stdout.split()[4])  # Extract length from seqkit output
 
 
-def compute_coverage(blast_output, seq1_length, output_dir):
+def compute_coverage1(blast_output, seq1_length, output_dir):
     """Compute the alignment coverage based on the merged bed."""
     bed_file = os.path.join(output_dir, "blast_results_2.bed")
-    merged_bed_file = os.path.join(output_dir, "merged.bed")
+    merged_bed_file = os.path.join(output_dir, "merged1.bed")
 
     # Extract the first 5 lines and convert to BED format
     run_command(
@@ -95,17 +95,53 @@ def compute_coverage(blast_output, seq1_length, output_dir):
         capture_output=True,
         text=True,
     )
-    covered_length = int(coverage_output.stdout.strip())
+    if coverage_output.stdout.strip():
+        covered_length = int(coverage_output.stdout.strip())
+    else:
+        covered_length = 0
 
     # Compute coverage
-    coverage = covered_length / seq1_length
+    coverage1 = covered_length / seq1_length
 
     # Save coverage to file
-    coverage_file = os.path.join(output_dir, "coverage.txt")
+    coverage_file = os.path.join(output_dir, "coverage1.txt")
     with open(coverage_file, "w") as f:
-        f.write(f"{coverage}\n")
+        f.write(f"{coverage1}\n")
 
-    return coverage
+    return coverage1
+
+
+def compute_coverage2(blast_output, seq2_length, output_dir):
+    """Compute the alignment coverage based on the merged bed."""
+    bed_file = os.path.join(output_dir, "blast_results_2.bed")
+    merged_bed_file = os.path.join(output_dir, "merged2.bed")
+
+    # Extract the first 5 lines and convert to BED format
+    run_command(
+        f"head -n 25 {blast_output} | cut -f4-6 | sort -k1,1 -k2,2n > {bed_file}"
+    )
+
+    # Merge the BED file and compute total covered length
+    coverage_output = subprocess.run(
+        f"bedtools merge -i {bed_file} | awk -F'\t' 'BEGIN{{SUM=0}}{{ SUM+=$3-$2 }}END{{print SUM}}'",
+        shell=True,
+        capture_output=True,
+        text=True,
+    )
+    if coverage_output.stdout.strip():
+        covered_length = int(coverage_output.stdout.strip())
+    else:
+        covered_length = 0
+
+    # Compute coverage
+    coverage2 = covered_length / seq2_length
+
+    # Save coverage to file
+    coverage_file = os.path.join(output_dir, "coverage2.txt")
+    with open(coverage_file, "w") as f:
+        f.write(f"{coverage2}\n")
+
+    return coverage2
 
 
 def get_pident(blast_output, output_dir):
@@ -149,10 +185,10 @@ def get_pident(blast_output, output_dir):
     # Check the conditions on the first line
     first_row = df.iloc[0]
     if (
-        first_row["qstart"] == 1
-        and first_row["qend"] == first_row["qlen"]
-        and first_row["sstart"] == 1
-        and first_row["send"] == first_row["slen"]
+        first_row["qstart"] < first_row["qlen"] * 0.01
+        and first_row["qend"] > first_row["qlen"] * 0.99
+        and first_row["sstart"] < first_row["slen"] * 0.01
+        and first_row["send"] > first_row["slen"] * 0.99
     ):
         pident = first_row["pident"]
     else:
@@ -210,8 +246,10 @@ def main(seq1, seq2, output_dir):
     )
 
     # Compute the alignment coverage
-    coverage = compute_coverage(blast_output_2, seq1_length, output_dir)
-    print(f"Alignment coverage: {coverage}")
+    coverage1 = compute_coverage1(blast_output_2, seq1_length, output_dir)
+    coverage2 = compute_coverage2(blast_output_2, seq2_length, output_dir)
+    print(f"Alignment coverage (seq1-based): {coverage1}")
+    print(f"Alignment coverage (seq2-based): {coverage2}")
 
     print(f"Second BLAST results saved to {blast_output_2}")
 

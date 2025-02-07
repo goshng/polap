@@ -6,6 +6,34 @@ S=('Juncus_effusus' 'Juncus_inflexus' 'Juncus_roemerianus' 'Juncus_validus' 'Euc
 # Input parameter
 species_folder="${1%/}"
 
+_polap_subcmd=(
+	'test'
+	'scopy'
+	'mkdir'
+	'get-ptdna-from-ncbi'
+	'copy-ptdna-of-ncbi-as-reference'
+	'ptgaul'
+	'msbwt'
+	'extract-ptdna-of-ptgaul'
+	'copy-ptdna-of-ptgaul'
+	'compare'
+	'infer'
+)
+
+# Check if species_folder is an integer (0 or positive)
+if [[ "$species_folder" =~ ^[0-9]+$ ]]; then
+	# Convert to an index and replace with the corresponding _polap_subcmd value
+	index=$species_folder
+	if [[ $index -ge 0 && $index -lt ${#_polap_subcmd[@]} ]]; then
+		species_folder="${_polap_subcmd[$index]}"
+	else
+		echo "Error: Index $index is out of range (0-${#_polap_subcmd[@]})"
+		exit 1
+	fi
+fi
+
+# echo "species_folder is now: $species_folder"
+
 if [[ -d "src" ]]; then
 	_polap_cmd="src/polap.sh"
 else
@@ -23,8 +51,16 @@ help_message=$(
 # _media_dir=${_media_dir}
 #
 # Argument:
-mkdir: create the 16 species folders.
-<species_folder>: run polap on the species_folder
+0. test <species_folder>
+1. scopy <species_folder>: scp data files to the remote 
+2. mkdir <species_folder>
+3. get-ptdna-from-ncbi <species_folder>
+4. copy-ptdna-of-ncbi-as-reference <species_folder>: copy the NCBI's ptDNA to a reference
+5. ptgaul <species_folder>: ptGAUL analysis on the data
+6. msbwt <species_folder>: prepare short-read polishing
+7. copy-ptdna-of-ptgaul <species_folder>: ptGAUL's result
+8. compare <species_folder>: compare ptDNAs with the ptGAUL ptDNA
+9. infer <species_folder>: assemble the ptDNA without a reference ptDNA
 
 install-conda: install Miniconda3
 setup-conda: setup Miniconda3 for Bioconda
@@ -51,26 +87,236 @@ HEREDOC
 
 # Check if the species folder is provided
 if [[ -z "$species_folder" ]]; then
-	echo "Usage: $0 <species_folder>"
-	echo "       $0 <arg1> <arg2>"
+	echo "Usage: $0 <subcommand> <species_folder>"
 	echo "${help_message}"
 	exit 1
 fi
 
 value="${2:-1}"
+value="${value%/}"
 
 declare -A _host
-_host['Spirodela_polyrhiza']="kishino"
-_host['Taraxacum_mongolicum']="lab01"
-_host['Trifolium_pratense']="vincent"
-_host['Salix_dunnii']="marybeth"
-_host['Anthoceros_agrestis']="kishino"
-_host['Anthoceros_angustus']="kishino"
-_host['Brassica_rapa']="lab01"
-_host['Vigna_radiata']="marybeth"
-_host['Macadamia_tetraphylla']="vincent"
-_host['Punica_granatum']="marybeth"
-_host['Lolium_perenne']="siepel"
+_host['Juncus_effusus']="kishino"
+_host['Eucalyptus_pauciflora']="lab01"
+_host['Juncus_inflexus']="vincent"
+_host['Juncus_roemerianus']="siepel"
+_host['Juncus_validus']="marybeth"
+declare -A _long
+_long['Juncus_effusus']="SRR14298760"
+_long['Juncus_inflexus']="SRR14298751"
+_long['Juncus_roemerianus']="SRR21976090"
+_long['Juncus_validus']="SRR21976089"
+_long['Eucalyptus_pauciflora']="SRR7153095"
+declare -A _short
+_short['Juncus_effusus']="SRR14298746"
+_short['Juncus_inflexus']="SRR14298745"
+_short['Juncus_roemerianus']="SRR21976092"
+_short['Juncus_validus']="SRR21976091"
+_short['Eucalyptus_pauciflora']="SRR7161123"
+declare -A _ptgaul_genomesize
+_ptgaul_genomesize['Juncus_effusus']="180000"
+_ptgaul_genomesize['Juncus_inflexus']="180000"
+_ptgaul_genomesize['Juncus_roemerianus']="200000"
+_ptgaul_genomesize['Juncus_validus']="160000"
+_ptgaul_genomesize['Eucalyptus_pauciflora']="160000"
+declare -A _compare_n
+_compare_n['Juncus_effusus']="30,50"
+_compare_n['Juncus_inflexus']="30,50"
+# _compare_n['Juncus_roemerianus']="5"
+_compare_n['Juncus_roemerianus']="30,50"
+_compare_n['Juncus_validus']="30,50"
+_compare_n['Eucalyptus_pauciflora']="30,50"
+declare -A _compare_p
+_compare_p['Juncus_effusus']="1,5"
+_compare_p['Juncus_inflexus']="1,5"
+# _compare_p['Juncus_roemerianus']="5"
+_compare_p['Juncus_roemerianus']="5,10"
+_compare_p['Juncus_validus']="5,10"
+_compare_p['Eucalyptus_pauciflora']="5,10"
+
+################################################################################
+# Part of genus_species
+#
+test_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	echo output: $output_dir
+	echo species: $species_name
+	echo long: $long_sra
+	echo short: $short_sra
+}
+
+send-data-to_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+
+	if [[ -s "${long_sra}.fastq" ]]; then
+		scp "${_media_dir}/${long_sra}.fastq" ${_host["${output_dir}"]}:$PWD/
+	fi
+	if [[ -s "${short_sra}_1.fastq" ]]; then
+		scp "${_media_dir}/${short_sra}_1.fastq" ${_host["${output_dir}"]}:$PWD/
+	fi
+	if [[ -s "${short_sra}_2.fastq" ]]; then
+		scp "${_media_dir}/${short_sra}_2.fastq" ${_host["${output_dir}"]}:$PWD/
+	fi
+}
+
+mkdir_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+
+	echo "create $output_dir ..."
+	mkdir -p $output_dir
+}
+
+get-ptdna-from-ncbi_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+
+	if [[ "${output_dir}" == "Juncus_inflexus" ]]; then
+		species_name="Juncus effusus"
+		echo "No ptDNA for ${output_dir}, so we use ${species_name}"
+	fi
+	${_polap_cmd} get-mtdna \
+		--plastid \
+		--species "${species_name}" \
+		-o ${output_dir}
+}
+
+copy-ptdna-of-ncbi-as-reference_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+
+	echo "copy ${output_dir}/ptdna-reference.fa"
+	cp -p "${output_dir}/00-bioproject/2-mtdna.fasta" \
+		"${output_dir}/ptdna-reference.fa"
+}
+
+ptgaul_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+
+	bash src/ptGAUL1.sh \
+		-o ${output_dir}-ptgaul \
+		-r ${output_dir}/ptdna-reference.fa \
+		-g "${_ptgaul_genomesize["$1"]}" \
+		-l ${long_sra}.fastq \
+		-t 24
+
+	mv ${output_dir}-ptgaul/result_3000 ${output_dir}/
+}
+
+msbwt_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+
+	${_polap_cmd} prepare-polishing \
+		-a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+		-o ${output_dir}
+}
+
+extract-ptdna-of-ptgaul_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+
+	# extract ptGAUL result
+	echo "extract ptDNA from the ptGAUL result"
+	${_polap_cmd} disassemble ptgaul \
+		-o ${output_dir} \
+		-v -v -v
+}
+
+copy-ptdna-of-ptgaul_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+
+	# copy ptGAUL result
+	echo "copy ${output_dir}/ptdna-ptgaul.fa"
+	_outdir="${output_dir}/result_3000/flye_cpONT/ptdna"
+	_arg_final_assembly="${_outdir}/pt.1.fa"
+	cp -p ${_arg_final_assembly} ${output_dir}/ptdna-ptgaul.fa
+}
+
+compare_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	# copy_data
+
+	local i=0
+	local n
+	local p
+	IFS=',' read -r -a extracted_array_n <<<"${_compare_n["$1"]}"
+	IFS=',' read -r -a extracted_array_p <<<"${_compare_p["$1"]}"
+	for n in "${extracted_array_n[@]}"; do
+		for p in "${extracted_array_p[@]}"; do
+			i=$((i + 1))
+			echo "($i) n=$n, p=$p"
+
+			${_polap_cmd} disassemble \
+				-o ${output_dir} \
+				-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+				--disassemble-c ${output_dir}/ptdna-ptgaul.fa \
+				--disassemble-i $i \
+				--disassemble-n $n \
+				--disassemble-p $p \
+				--disassemble-alpha 1.0
+
+			# if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+			# 	echo "exists: $i, $p, $n"
+			# else
+			# 	command time -v ${_polap_cmd} disassemble \
+			# 		-o ${output_dir} \
+			# 		-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+			# 		--disassemble-compare-to-fasta ptdna-${output_dir}-reference.fa \
+			# 		--stages-include 1 \
+			# 		--disassemble-best \
+			# 		--disassemble-polish \
+			# 		--no-contigger \
+			# 		--disassemble-i $i \
+			# 		--disassemble-p $p \
+			# 		--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+			# fi
+		done
+	done
+
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir}-a \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-a 100m \
+	# 	--disassemble-b 1g \
+	# 	--disassemble-n 100 \
+	# 	--disassemble-best \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}-best.fa -v
+
+	# Elapsed (wall clock) time (h:mm:ss or m:ss): 5:27:43
+	# Maximum resident set size (kbytes): 32578112
+	# rm -rf ${output_dir}/disassemble/x
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa \
+	# 	--disassemble-s 181m --disassemble-alpha 3.25 \
+	# 	--disassemble-n 30 \
+	# 	--disassemble-stop-after assemble -v
+}
 
 # Common operations function
 common_operations() {
@@ -98,6 +344,19 @@ common_operations() {
 	fi
 }
 
+scopy_data_to_remote() {
+	mkdir -p "${output_dir}"
+	if [[ -s "${long_sra}.fastq" ]]; then
+		scp "${_media_dir}/${long_sra}.fastq" ${_host["${output_dir}"]}:$PWD/
+	fi
+	if [[ -s "${short_sra}_1.fastq" ]]; then
+		scp "${_media_dir}/${short_sra}_1.fastq" ${_host["${output_dir}"]}:$PWD/
+	fi
+	if [[ -s "${short_sra}_2.fastq" ]]; then
+		scp "${_media_dir}/${short_sra}_2.fastq" ${_host["${output_dir}"]}:$PWD/
+	fi
+}
+
 copy_data() {
 	mkdir -p "${output_dir}"
 	if [[ ! -s "${long_sra}.fastq" ]]; then
@@ -115,8 +374,82 @@ copy_data() {
 	fi
 }
 
+################################################################################
+# Part of Juncus_effusus
+#
 # Function for each species
 # kishino
+scopy_Juncus_effusus() {
+	local output_dir="$(echo $FUNCNAME | sed s/scopy_//)"
+	local species_name="$(echo $FUNCNAME | sed 's/scopy_//' | sed 's/_/ /')"
+	local long_sra="SRR14298760"
+	local short_sra="SRR14298746"
+	scopy_data_to_remote
+}
+
+ptgaul_Juncus_effusus() {
+	local output_dir="$(echo $FUNCNAME | sed s/ptgaul_//)"
+	local species_name="$(echo $FUNCNAME | sed 's/ptgaul_//' | sed 's/_/ /')"
+	local long_sra="SRR14298760"
+	local short_sra="SRR14298746"
+	bash src/ptGAUL1.sh \
+		-o ${output_dir}-ptgaul \
+		-r ptdna-${output_dir}.fa \
+		-g 180000 \
+		-l ${long_sra}.fastq \
+		-t 24
+}
+
+compare_Juncus_effusus() {
+	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
+	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
+	local long_sra="SRR14298760"
+	local short_sra="SRR14298746"
+	# copy_data
+
+	local i=0
+	local n
+	local p
+	for n in 30 50; do
+		for p in 1 5; do
+			i=$((i + 1))
+			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
+				echo "exists: $i, $p, $n"
+			else
+				command time -v ${_polap_cmd} disassemble \
+					-o ${output_dir} \
+					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+					--disassemble-compare-to-fasta ptdna-Juncus_effusus-ptgaul.fa \
+					--stages-include 1 \
+					--disassemble-best \
+					--disassemble-polish \
+					--no-contigger \
+					--disassemble-i $i \
+					--disassemble-p $p \
+					--disassemble-n $n 2>{output_dir}/timing-${i}.txt
+			fi
+		done
+	done
+
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir}-a \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-a 100m \
+	# 	--disassemble-b 1g \
+	# 	--disassemble-n 100 \
+	# 	--disassemble-best \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}-best.fa -v
+
+	# Elapsed (wall clock) time (h:mm:ss or m:ss): 5:27:43
+	# Maximum resident set size (kbytes): 32578112
+	# rm -rf ${output_dir}/disassemble/x
+	# command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+	# 	--disassemble-compare-to-fasta ptdna-${output_dir}.fa \
+	# 	--disassemble-s 181m --disassemble-alpha 3.25 \
+	# 	--disassemble-n 30 \
+	# 	--disassemble-stop-after assemble -v
+}
+
 run_Juncus_effusus() {
 	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
 	local species_name="$(echo $FUNCNAME | sed 's/run_//' | sed 's/_/ /')"
@@ -127,17 +460,23 @@ run_Juncus_effusus() {
 	local i=0
 	local n
 	local p
-	for n in 10 30 100; do
-		for p in 1 5 10; do
+	for n in 30 50; do
+		for p in 1 5; do
 			i=$((i + 1))
 			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
 				echo "exists: $i, $p, $n"
 			else
-				command time -v ${_polap_cmd} disassemble -o ${output_dir} \
+				command time -v ${_polap_cmd} disassemble \
+					-o ${output_dir} \
 					-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
+					--disassemble-compare-to-fasta ptdna-Juncus_effusus-ptgaul.fa \
+					--stages-include 1 \
+					--disassemble-best \
+					--disassemble-polish \
+					--no-contigger \
 					--disassemble-i $i \
 					--disassemble-p $p \
-					--disassemble-n $n 2>${output_dir}/timing-${i}.txt
+					--disassemble-n $n 2>{output_dir}/timing-${i}.txt
 			fi
 		done
 	done
@@ -178,7 +517,8 @@ run_Juncus_effusus-a() {
 		for p in 1; do
 			i=$((i + 1))
 			if [[ -d "${output_dir}/disassemble/${i}" ]]; then
-				${_polap_cmd} disassemble -o ${output_dir} \
+				${_polap_cmd} disassemble \
+					-o ${output_dir} \
 					--disassemble-compare-to-fasta ptdna-Juncus_effusus-ptgaul.fa \
 					--stages-include 1 \
 					--disassemble-best \
@@ -195,6 +535,8 @@ run_Juncus_effusus-a() {
 
 }
 
+################################################################################
+# Part of Juncus_inflexus
 # vincent
 run_Juncus_inflexus() {
 	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
@@ -272,6 +614,9 @@ run_Juncus_inflexus-a() {
 	# 	--disassemble-stop-after assemble -v
 }
 
+################################################################################
+# Part of Juncus_roemerianus
+#
 # siepel
 run_Juncus_roemerianus() {
 	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
@@ -417,6 +762,9 @@ run_Juncus_roemerianus-a() {
 	# 	-v
 }
 
+################################################################################
+# Part of Juncus_validus
+#
 # marybeth
 run_Juncus_validus() {
 	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
@@ -564,6 +912,8 @@ run_Juncus_validus-a() {
 	# 	-v
 }
 
+################################################################################
+# Part of Eucalyptus_pauciflora
 # lab01
 run_Eucalyptus_pauciflora() {
 	local output_dir="$(echo $FUNCNAME | sed s/run_//)"
@@ -1009,9 +1359,41 @@ case "$species_folder" in
 	"Podococcus_acaulis" | \
 	"Raphia_textilis" | \
 	"Phytelephas_aequatorialis" | \
-	"test" | \
 	"Picea_glauca")
 	run_${species_folder}
+	;;
+"test")
+	test_genus_species ${value}
+	;;
+"mkdir")
+	mkdir_genus_species ${value}
+	;;
+"get-ptdna-from-ncbi")
+	get-ptdna-from-ncbi_genus_species ${value}
+	;;
+"copy-ptdna-of-ncbi-as-reference")
+	copy-ptdna-of-ncbi-as-reference_genus_species ${value}
+	;;
+"ptgaul")
+	ptgaul_genus_species ${value}
+	;;
+"msbwt")
+	msbwt_genus_species ${value}
+	;;
+"copy-ptdna-of-ptgaul")
+	${species_folder}_genus_species ${value}
+	;;
+"extract-ptdna-of-ptgaul")
+	${species_folder}_genus_species ${value}
+	;;
+"compare")
+	${species_folder}_genus_species ${value}
+	;;
+"infer")
+	${species_folder}_genus_species ${value}
+	;;
+"scopy")
+	scopy_${value}
 	;;
 "install-conda")
 	mkdir -p ~/miniconda3
@@ -1052,7 +1434,7 @@ case "$species_folder" in
 	cd ..
 	PREFIX="$HOME/miniconda3/envs/polap" bash build.sh
 	;;
-"test-polap" | "test")
+"test-polap")
 	cd polap-${_polap_version}
 	cd test
 	source ~/miniconda3/bin/activate polap
@@ -1072,7 +1454,7 @@ case "$species_folder" in
 		tar zcf ${i}.tar.gz ${i}
 	done
 	;;
-"mkdir")
+"mkdir-all")
 	for i in "${S[@]}"; do
 		echo "creating folder $i ..."
 		mkdir ${i}

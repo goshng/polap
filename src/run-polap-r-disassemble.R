@@ -46,7 +46,8 @@ args1 <- parse_args(parser)
 
 if (is_null(args1$table)) {
   input_dir0 <- file.path("Eucalyptus_pauciflora")
-  input1 <- file.path(input_dir0, "disassemble/0/summary1.txt")
+  input_dir0 <- file.path("Juncus_roemerianus")
+  input1 <- file.path(input_dir0, "disassemble/1/1/summary1.txt")
   output1 <- file.path(input_dir0, "out.txt")
   output2 <- file.path(input_dir0, "out.pdf")
   
@@ -62,7 +63,9 @@ if (is_null(args1$table)) {
 df <- read_tsv(args1$table, show_col_types = FALSE)
 
 # Remove rows with length equal to zero
-df <- df %>% filter(length > 0)
+df <- df %>% 
+  filter(length > 0) %>%
+  mutate(coverage = (coverage_ref + coverage_target) / 2)
 
 # Define a function to remove outliers based on IQR (Interquartile Range)
 remove_outliers <- function(x) {

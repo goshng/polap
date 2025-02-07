@@ -111,6 +111,7 @@ _arg_flye="on"
 _arg_directional="off"
 _arg_reduction_reads="on"
 _arg_contigger="on"
+_arg_polish="off"
 _arg_all_annotate="off"
 _arg_polap_reads="off"
 _arg_bridge_same_strand="off"
@@ -135,13 +136,15 @@ _arg_disassemble_p_is="off"    #
 _arg_disassemble_i=0           # disassemble stage 1 repeat index
 _arg_disassemble_n=5           # the number cycles
 _arg_disassemble_n_is="off"
-_arg_disassemble_r=10                # the number of replicates
+_arg_disassemble_r=5                 # the number of replicates
 _arg_disassemble_m=500000            # the maximum of draft genome size
 _arg_disassemble_s_max=              # the maximum of draft genome size
 _arg_disassemble_alpha=1.0           # the minimum disjointig coverage
 _arg_disassemble_delta=0.75          # the move size of alpha
 _arg_disassemble_min_memory=16       # the minimum memory in Gb
 _arg_disassemble_compare_to_fasta="" # the minimum memory in Gb
+_arg_disassemble_c=""                # sequence in fasta format
+_arg_disassemble_c_is="off"          # sequence in fasta format
 _arg_disassemble_s=                  # sample size
 _arg_disassemble_best="off"
 _arg_disassemble_stop_after=
@@ -763,6 +766,10 @@ parse_commandline() {
 			_arg_contigger="on"
 			test "${1:0:5}" = "--no-" && _arg_contigger="off"
 			;;
+		--no-polish | --polish)
+			_arg_polish="on"
+			test "${1:0:5}" = "--no-" && _arg_polish="off"
+			;;
 		--no-all-annotate | --all-annotate)
 			_arg_all_annotate="on"
 			test "${1:0:5}" = "--no-" && _arg_all_annotate="off"
@@ -867,6 +874,16 @@ parse_commandline() {
 		--disassemble-b=*)
 			_arg_disassemble_b="${_key##--disassemble-b=}"
 			_arg_disassemble_b_is="on"
+			;;
+		--disassemble-c)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_c="$2"
+			_arg_disassemble_c_is="on"
+			shift
+			;;
+		--disassemble-c=*)
+			_arg_disassemble_c="${_key##--disassemble-c=}"
+			_arg_disassemble_c_is="on"
 			;;
 		--disassemble-i)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

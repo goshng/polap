@@ -4,6 +4,8 @@
 p3.sh
 *.fa
 *.gb
+*.sh-backup
+*.backup
 test-data
 make-menus
 tool_test_output.html

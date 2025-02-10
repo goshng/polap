@@ -984,8 +984,11 @@ HEREDOC
 		if [[ "${_arg_menu[2]}" == "1" ]]; then
 			s=${_disassemble_dir}/${_arg_disassemble_i}/1/summary1.txt
 			d=${_disassemble_dir}/${_arg_disassemble_i}/1/summary1.md
-			csvtk -t cut -f rate,alpha,genomesize,memory,time,nsegments,totalsegment,length \
+			csvtk -t cut -f index,long_rate_sample,alpha,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length \
 				"${s}" |
+				csvtk -t round -n 5 -f long_rate_sample,coverage_ref,coverage_target |
+				csvtk rename -t -f index,long_rate_sample,alpha,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length \
+					-n ID,Rate,Alpha,'Genome Size',Time,Segments,'Segments Length','Circular Paths','Coverage Ref','Coverage Target',Length |
 				pandoc -f tsv -t markdown_mmd - \
 					>"${d}"
 			_polap_log0_head "${d}"
@@ -994,18 +997,20 @@ HEREDOC
 		# report 2 --disassemble-i 3
 		if [[ "${_arg_menu[2]}" == "2" ]]; then
 			# concatenate all summary1.txt to the summary table.
-			s0="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2.txt"
-			d1="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2-ordered.txt"
-			d2="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2-ordered.pdf"
-			_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
-        --table ${s0} \
-        --out ${d1} \
-        --plot ${d2} \
-			  --coverage"
+			s=${_disassemble_dir}/${_arg_disassemble_i}/2/summary1.txt
+			d=${_disassemble_dir}/${_arg_disassemble_i}/2/summary1.md
+			csvtk -t cut -f index,long_rate_sample,alpha,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length,pident \
+				"${s}" |
+				csvtk -t round -n 5 -f long_rate_sample,coverage_ref,coverage_target |
+				csvtk rename -t -f index,long_rate_sample,alpha,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length,pident \
+					-n ID,Rate,Alpha,'Genome Size',Time,Segments,'Segments Length','Circular Paths','Coverage Ref','Coverage Target',Length,Identity |
+				pandoc -f tsv -t markdown_mmd - \
+					>"${d}"
+			_polap_log0_head "${d}"
 		fi
 
 		# report 3 --disassemble-i 3
-		if [[ "${_arg_menu[2]}" == "2" ]]; then
+		if [[ "${_arg_menu[2]}" == "3" ]]; then
 			# concatenate all summary1.txt to the summary table.
 			s0="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2.txt"
 			d1="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2-ordered.txt"

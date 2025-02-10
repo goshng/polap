@@ -2,13 +2,14 @@
 
 # S=('Juncus_effusus' 'Juncus_inflexus' 'Juncus_roemerianus' 'Juncus_validus' 'Eucalyptus_pauciflora' 'Arctostaphylos_glauca' 'Lepidium_sativum' 'Chaetoceros_muellerii' 'Potentilla_micrantha' 'Durio_zibethinus' 'Beta_vulgaris' 'Eleocharis_dulcis' 'Leucanthemum_vulgare' 'Oryza_glaberrima' 'Cenchrus_americanus' 'Digitaria_exilis' 'Podococcus_acaulis' 'Raphia_textilis' 'Phytelephas_aequatorialis' 'Picea_glauca')
 S=('Juncus_effusus' 'Juncus_inflexus' 'Juncus_roemerianus' 'Juncus_validus' 'Eucalyptus_pauciflora')
+_local_host="thorne"
 
 # Input parameter
-species_folder="${1%/}"
+subcmd1="${1:-0}"
 
 _polap_subcmd=(
 	'test'
-	'scopy'
+	'send-data-to'
 	'mkdir'
 	'get-ptdna-from-ncbi'
 	'copy-ptdna-of-ncbi-as-reference'
@@ -18,21 +19,26 @@ _polap_subcmd=(
 	'copy-ptdna-of-ptgaul'
 	'compare'
 	'infer'
+	'backup'
+	'archive'
+	'get'
+	'report'
 )
 
-# Check if species_folder is an integer (0 or positive)
-if [[ "$species_folder" =~ ^[0-9]+$ ]]; then
+# Check if subcmd1 is an integer (0 or positive)
+if [[ "$subcmd1" =~ ^[0-9]+$ ]]; then
 	# Convert to an index and replace with the corresponding _polap_subcmd value
-	index=$species_folder
+	index=$subcmd1
 	if [[ $index -ge 0 && $index -lt ${#_polap_subcmd[@]} ]]; then
-		species_folder="${_polap_subcmd[$index]}"
+		subcmd1="${_polap_subcmd[$index]}"
 	else
 		echo "Error: Index $index is out of range (0-${#_polap_subcmd[@]})"
 		exit 1
 	fi
+
 fi
 
-# echo "species_folder is now: $species_folder"
+# echo "subcmd1 is now: $subcmd1"
 
 if [[ -d "src" ]]; then
 	_polap_cmd="src/polap.sh"
@@ -49,51 +55,28 @@ help_message=$(
 # Edit two variables:
 # _polap_cmd=${_polap_cmd}
 # _media_dir=${_media_dir}
+# _local_host=${_local_host}
+# host=$(hostname)
 #
-# Argument:
+# subcommand can be replaced with the leading number
 0. test <species_folder>
-1. scopy <species_folder>: scp data files to the remote 
+1. send-data-to <species_folder>: scp data files to the remote 
 2. mkdir <species_folder>
 3. get-ptdna-from-ncbi <species_folder>
 4. copy-ptdna-of-ncbi-as-reference <species_folder>: copy the NCBI's ptDNA to a reference
 5. ptgaul <species_folder>: ptGAUL analysis on the data
 6. msbwt <species_folder>: prepare short-read polishing
-7. copy-ptdna-of-ptgaul <species_folder>: ptGAUL's result
-8. compare <species_folder>: compare ptDNAs with the ptGAUL ptDNA
-9. infer <species_folder>: assemble the ptDNA without a reference ptDNA
+7. extract-ptdna-of-ptgaul <species_folder>: extract ptDNA from ptGAUL's result
+8. copy-ptdna-of-ptgaul <species_folder>: ptGAUL's result
+9. compare <species_folder>: compare ptDNAs with the ptGAUL ptDNA
+10. infer <species_folder>: assemble the ptDNA without a reference ptDNA
+11. backup <species_folder>: backup the results
+12. archive <species_folder>: report the results
+13. get <species_folder>: fetch the archive from the remote
+14. report <species_folder>: report the results
 
-install-conda: install Miniconda3
-setup-conda: setup Miniconda3 for Bioconda
-install-polap or install: install Polap
-install-fmlrc: install ptGAUL's FMLRC short-read polishing tools
-patch-polap: update the miniconda3/envs/polap/bin/polap with the github version
-Carex_pseudochinensis: test with mtDNA of Carex pseudochinensis
-test-polap: test Polap run with a test dataset
-download-polap: download Polap
-clean: delete analyses
-uninstall: uninstall Polap
-rm: delete the 11 species folders.
-link-fastq: create links to the input data at ${_media_dir} for the 11 folders.
-delete-links: delete all links in the current folder and its subfolders.
-copy-fastq: copy the input data at ${_media_dir} to the 11 folders.
-scopy-fastq <ssh-hostname>: transfer the input data at ${_media_dir} to the remote computers.
-zip: compress the 11 species folders.
-plot: create the supplementary figures for the -w option tests.
-table: create a table for the 11 test data.
-sync 0: copy the whole-genome assembly results from other computers to the local.
-sync 1: copy the organelle-genome assembly results from other computers to the local.
 HEREDOC
 )
-
-# Check if the species folder is provided
-if [[ -z "$species_folder" ]]; then
-	echo "Usage: $0 <subcommand> <species_folder>"
-	echo "${help_message}"
-	exit 1
-fi
-
-value="${2:-1}"
-value="${value%/}"
 
 declare -A _host
 _host['Juncus_effusus']="kishino"
@@ -101,6 +84,27 @@ _host['Eucalyptus_pauciflora']="lab01"
 _host['Juncus_inflexus']="vincent"
 _host['Juncus_roemerianus']="siepel"
 _host['Juncus_validus']="marybeth"
+_host['Eucalyptus_pauciflora']="user1-X99-PR8-H"
+
+# Loop through the associative array
+default_output_dir() {
+	local _output_dir=""
+
+	for key in "${!_host[@]}"; do
+		if [[ "${_host[$key]}" == "$(hostname)" ]]; then
+			_output_dir="$key"
+			break # Exit loop after finding the first match
+		fi
+	done
+	echo "${_output_dir}"
+}
+
+if [[ -z "$2" ]]; then
+	_arg2=$(default_output_dir)
+else
+	_arg2="${2%/}"
+fi
+
 declare -A _long
 _long['Juncus_effusus']="SRR14298760"
 _long['Juncus_inflexus']="SRR14298751"
@@ -120,19 +124,24 @@ _ptgaul_genomesize['Juncus_roemerianus']="200000"
 _ptgaul_genomesize['Juncus_validus']="160000"
 _ptgaul_genomesize['Eucalyptus_pauciflora']="160000"
 declare -A _compare_n
-_compare_n['Juncus_effusus']="30,50"
-_compare_n['Juncus_inflexus']="30,50"
-# _compare_n['Juncus_roemerianus']="5"
-_compare_n['Juncus_roemerianus']="30,50"
-_compare_n['Juncus_validus']="30,50"
-_compare_n['Eucalyptus_pauciflora']="30,50"
+_compare_n['Juncus_effusus']="50"
+_compare_n['Juncus_inflexus']="50"
+_compare_n['Juncus_roemerianus']="50"
+_compare_n['Juncus_validus']="50"
+_compare_n['Eucalyptus_pauciflora']="50"
 declare -A _compare_p
-_compare_p['Juncus_effusus']="1,5"
-_compare_p['Juncus_inflexus']="1,5"
-# _compare_p['Juncus_roemerianus']="5"
-_compare_p['Juncus_roemerianus']="5,10"
-_compare_p['Juncus_validus']="5,10"
-_compare_p['Eucalyptus_pauciflora']="5,10"
+_compare_p['Juncus_effusus']="1,5,10"
+_compare_p['Juncus_inflexus']="1,5,10"
+_compare_p['Juncus_roemerianus']="5,10,20"
+_compare_p['Juncus_validus']="5,10,20"
+_compare_p['Eucalyptus_pauciflora']="5,10,20"
+
+# Check if the species folder is provided
+if [[ -z "$1" ]]; then
+	echo "Usage: $0 <subcommand> [species_folder]"
+	echo "${help_message}"
+	exit 1
+fi
 
 ################################################################################
 # Part of genus_species
@@ -142,10 +151,22 @@ test_genus_species() {
 	local species_name="$(echo $1 | sed 's/_/ /')"
 	local long_sra="${_long["$1"]}"
 	local short_sra="${_short["$1"]}"
+	echo host: $(hostname)
 	echo output: $output_dir
 	echo species: $species_name
-	echo long: $long_sra
-	echo short: $short_sra
+	if [[ -s "${long_sra}.fastq" ]]; then
+		echo long: $long_sra
+	else
+		echo long: no such fastq file
+		echo run $0 send-data-to at ${_local_host}
+	fi
+	if [[ -s "${short_sra}_1.fastq" ]] &&
+		[[ -s "${short_sra}_2.fastq" ]]; then
+		echo short: $short_sra
+	else
+		echo short: no such fastq file
+		echo run $0 send-data-to at ${_local_host}
+	fi
 }
 
 send-data-to_genus_species() {
@@ -154,14 +175,18 @@ send-data-to_genus_species() {
 	local long_sra="${_long["$1"]}"
 	local short_sra="${_short["$1"]}"
 
-	if [[ -s "${long_sra}.fastq" ]]; then
-		scp "${_media_dir}/${long_sra}.fastq" ${_host["${output_dir}"]}:$PWD/
-	fi
-	if [[ -s "${short_sra}_1.fastq" ]]; then
-		scp "${_media_dir}/${short_sra}_1.fastq" ${_host["${output_dir}"]}:$PWD/
-	fi
-	if [[ -s "${short_sra}_2.fastq" ]]; then
-		scp "${_media_dir}/${short_sra}_2.fastq" ${_host["${output_dir}"]}:$PWD/
+	if [[ "${_local_host}" == "$(hostname)" ]]; then
+		if [[ -s "${long_sra}.fastq" ]]; then
+			scp "${_media_dir}/${long_sra}.fastq" ${_host["${output_dir}"]}:$PWD/
+		fi
+		if [[ -s "${short_sra}_1.fastq" ]]; then
+			scp "${_media_dir}/${short_sra}_1.fastq" ${_host["${output_dir}"]}:$PWD/
+		fi
+		if [[ -s "${short_sra}_2.fastq" ]]; then
+			scp "${_media_dir}/${short_sra}_2.fastq" ${_host["${output_dir}"]}:$PWD/
+		fi
+	else
+		echo "ERROR: run at the local host."
 	fi
 }
 
@@ -208,14 +233,16 @@ ptgaul_genus_species() {
 	local long_sra="${_long["$1"]}"
 	local short_sra="${_short["$1"]}"
 
-	bash src/ptGAUL1.sh \
+	command time -v bash src/ptGAUL1.sh \
 		-o ${output_dir}-ptgaul \
 		-r ${output_dir}/ptdna-reference.fa \
 		-g "${_ptgaul_genomesize["$1"]}" \
 		-l ${long_sra}.fastq \
-		-t 24
+		-t 24 \
+		2>${output_dir}/timing-ptgaul.txt
 
 	mv ${output_dir}-ptgaul/result_3000 ${output_dir}/
+	rm -rf "${output_dir}-ptgaul"
 }
 
 msbwt_genus_species() {
@@ -272,40 +299,17 @@ compare_genus_species() {
 			i=$((i + 1))
 			echo "($i) n=$n, p=$p"
 
-			${_polap_cmd} disassemble \
+			command time -v ${_polap_cmd} disassemble \
 				-o ${output_dir} \
 				-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
 				--disassemble-c ${output_dir}/ptdna-ptgaul.fa \
 				--disassemble-i $i \
 				--disassemble-n $n \
 				--disassemble-p $p \
-				--disassemble-alpha 1.0
-
-			# if [[ -d "${output_dir}/disassemble/${i}" ]]; then
-			# 	echo "exists: $i, $p, $n"
-			# else
-			# 	command time -v ${_polap_cmd} disassemble \
-			# 		-o ${output_dir} \
-			# 		-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-			# 		--disassemble-compare-to-fasta ptdna-${output_dir}-reference.fa \
-			# 		--stages-include 1 \
-			# 		--disassemble-best \
-			# 		--disassemble-polish \
-			# 		--no-contigger \
-			# 		--disassemble-i $i \
-			# 		--disassemble-p $p \
-			# 		--disassemble-n $n 2>${output_dir}/timing-${i}.txt
-			# fi
+				--disassemble-alpha 1.0 \
+				2>${output_dir}/timing-${i}.txt
 		done
 	done
-
-	# command time -v ${_polap_cmd} disassemble -o ${output_dir}-a \
-	# 	-l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-	# 	--disassemble-a 100m \
-	# 	--disassemble-b 1g \
-	# 	--disassemble-n 100 \
-	# 	--disassemble-best \
-	# 	--disassemble-compare-to-fasta ptdna-${output_dir}-best.fa -v
 
 	# Elapsed (wall clock) time (h:mm:ss or m:ss): 5:27:43
 	# Maximum resident set size (kbytes): 32578112
@@ -316,6 +320,64 @@ compare_genus_species() {
 	# 	--disassemble-s 181m --disassemble-alpha 3.25 \
 	# 	--disassemble-n 30 \
 	# 	--disassemble-stop-after assemble -v
+}
+
+backup_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+
+	tar zcf ${output_dir}.tar.gz ${output_dir}
+}
+
+archive_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	# copy_data
+
+	rm -rf ${output_dir}-a
+	${_polap_cmd} disassemble archive \
+		-o ${output_dir}
+	tar zcf ${output_dir}-a.tar.gz ${output_dir}-a
+}
+
+get_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+
+	scp ${_host["${output_dir}"]}:$PWD/${output_dir}-a.tar.gz .
+	tar zxf ${output_dir}-a.tar.gz
+	mv ${output_dir}-a ${output_dir}
+}
+
+report_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	# copy_data
+
+	local i=0
+	local n
+	local p
+	IFS=',' read -r -a extracted_array_n <<<"${_compare_n["$1"]}"
+	IFS=',' read -r -a extracted_array_p <<<"${_compare_p["$1"]}"
+	for n in "${extracted_array_n[@]}"; do
+		for p in "${extracted_array_p[@]}"; do
+			i=$((i + 1))
+			${_polap_cmd} disassemble report 1 \
+				-o ${output_dir} \
+				--disassemble-i $i
+			${_polap_cmd} disassemble report 2 \
+				-o ${output_dir} \
+				--disassemble-i $i
+		done
+	done
 }
 
 # Common operations function
@@ -1334,7 +1396,7 @@ run_Picea_glauca() {
 }
 
 # Main case statement
-case "$species_folder" in
+case "$subcmd1" in
 "Juncus_effusus" | \
 	"Juncus_effusus-a" | \
 	"Juncus_inflexus" | \
@@ -1360,40 +1422,45 @@ case "$species_folder" in
 	"Raphia_textilis" | \
 	"Phytelephas_aequatorialis" | \
 	"Picea_glauca")
-	run_${species_folder}
+	run_${subcmd1}
 	;;
-"test")
-	test_genus_species ${value}
+"test" | \
+	"send-data-to" | \
+	"get" | \
+	"report" | \
+	"backup" | \
+	"archive")
+	${subcmd1}_genus_species ${_arg2}
 	;;
 "mkdir")
-	mkdir_genus_species ${value}
+	mkdir_genus_species ${_arg2}
 	;;
 "get-ptdna-from-ncbi")
-	get-ptdna-from-ncbi_genus_species ${value}
+	get-ptdna-from-ncbi_genus_species ${_arg2}
 	;;
 "copy-ptdna-of-ncbi-as-reference")
-	copy-ptdna-of-ncbi-as-reference_genus_species ${value}
+	copy-ptdna-of-ncbi-as-reference_genus_species ${_arg2}
 	;;
 "ptgaul")
-	ptgaul_genus_species ${value}
+	ptgaul_genus_species ${_arg2}
 	;;
 "msbwt")
-	msbwt_genus_species ${value}
+	msbwt_genus_species ${_arg2}
 	;;
 "copy-ptdna-of-ptgaul")
-	${species_folder}_genus_species ${value}
+	${subcmd1}_genus_species ${_arg2}
 	;;
 "extract-ptdna-of-ptgaul")
-	${species_folder}_genus_species ${value}
+	${subcmd1}_genus_species ${_arg2}
 	;;
 "compare")
-	${species_folder}_genus_species ${value}
+	${subcmd1}_genus_species ${_arg2}
 	;;
 "infer")
-	${species_folder}_genus_species ${value}
+	${subcmd1}_genus_species ${_arg2}
 	;;
 "scopy")
-	scopy_${value}
+	scopy_${_arg2}
 	;;
 "install-conda")
 	mkdir -p ~/miniconda3
@@ -1507,18 +1574,18 @@ case "$species_folder" in
 		V1="${i}"
 		cd $V1
 		if [[ -v _host["${V1}"] ]]; then
-			mkdir -p o/${value}/01-contig o/${value}/06-summary o/${value}/07-plot
-			rsync -aPh ${_host["${V1}"]}:$PWD/o/${value}/01-contig/ o/${value}/01-contig/
-			rsync -aPh ${_host["${V1}"]}:$PWD/o/${value}/06-summary/ o/${value}/06-summary/
-			rsync -aPh ${_host["${V1}"]}:$PWD/o/${value}/07-plot/ o/${value}/07-plot/
-			rsync -aPh ${_host["${V1}"]}:$PWD/o/${value}/30-contigger o/${value}/
-			rsync -aPh ${_host["${V1}"]}:$PWD/o/${value}/*annotation* o/${value}/
-			rsync -aPh ${_host["${V1}"]}:$PWD/o/${value}/assembly.fasta o/${value}/
-			rsync -aPh ${_host["${V1}"]}:$PWD/o/${value}/assembly_graph.gfa o/${value}/
+			mkdir -p o/${_arg2}/01-contig o/${_arg2}/06-summary o/${_arg2}/07-plot
+			rsync -aPh ${_host["${V1}"]}:$PWD/o/${_arg2}/01-contig/ o/${_arg2}/01-contig/
+			rsync -aPh ${_host["${V1}"]}:$PWD/o/${_arg2}/06-summary/ o/${_arg2}/06-summary/
+			rsync -aPh ${_host["${V1}"]}:$PWD/o/${_arg2}/07-plot/ o/${_arg2}/07-plot/
+			rsync -aPh ${_host["${V1}"]}:$PWD/o/${_arg2}/30-contigger o/${_arg2}/
+			rsync -aPh ${_host["${V1}"]}:$PWD/o/${_arg2}/*annotation* o/${_arg2}/
+			rsync -aPh ${_host["${V1}"]}:$PWD/o/${_arg2}/assembly.fasta o/${_arg2}/
+			rsync -aPh ${_host["${V1}"]}:$PWD/o/${_arg2}/assembly_graph.gfa o/${_arg2}/
 			rsync -aPh ${_host["${V1}"]}:$PWD/o/00-bioproject o/
-			# rsync -aPh o/${value}/mt.0.fasta ${_host["${V1}"]}:$PWD/o/${value}/
+			# rsync -aPh o/${_arg2}/mt.0.fasta ${_host["${V1}"]}:$PWD/o/${_arg2}/
 			rsync -aPh ${_host["${V1}"]}:$PWD/o/polap.log o/
-			# cat o/${value}/07-plot/*.md >>../plot.md
+			# cat o/${_arg2}/07-plot/*.md >>../plot.md
 		else
 			echo "No such host for $V1"
 		fi
@@ -1544,7 +1611,7 @@ case "$species_folder" in
 	done
 	;;
 *)
-	echo "Species '$species_folder' is not recognized."
+	echo "Species '$subcmd1' is not recognized."
 	exit 1
 	;;
 esac

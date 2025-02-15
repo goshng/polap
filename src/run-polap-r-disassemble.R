@@ -42,6 +42,10 @@ parser <- add_option(parser, c("-c", "--coverage"),
                      action = "store_true",
                      default = FALSE, help = "use alignment coverage"
 )
+parser <- add_option(parser, c("-s", "--scatter"),
+                     action = "store_true",
+                     default = FALSE, help = "use alignment coverage"
+)
 args1 <- parse_args(parser)
 
 if (is_null(args1$table)) {
@@ -58,6 +62,10 @@ if (is_null(args1$table)) {
                                        "--out", output1,
                                        "--plot", output2,
                                        "--coverage"))
+  args1 <- parse_args(parser, args = c("--table", input1, 
+                                       "--out", output1,
+                                       "--plot", output2,
+                                       "--scatter"))
 }
 
 df <- read_tsv(args1$table, show_col_types = FALSE)
@@ -88,8 +96,11 @@ mode_length <- density_length$x[which.max(density_length$y)]
 selected_row_nearest_mode <- df_no_outliers %>%
   slice_min(abs(length - mode_length), n = 1)
 
+sd_length <- sd(df_no_outliers$length)
+
 # Print the mode length
-print(paste("Length at the highest point in the density curve (mode):", mode_length))
+print(paste("Length at the highest point in the density curve (mode):", round(mode_length)))
+print(paste("Length standard deviation:", round(sd_length)))
 print(paste("Row with the length nearest the highest point in the density curve (mode):", selected_row_nearest_mode$index))
 
 # Print the selected row
@@ -108,7 +119,14 @@ print(df_sorted)
 # Save the sorted data to a new TSV file
 write_tsv(df_sorted, args1$out)
 
-if (args1$coverage) {
+message <- paste("#mode:", round(mode_length))
+cat(message, file = args1$out, append = TRUE, sep = "\n")
+message <- paste("#sd:", round(sd_length))
+cat(message, file = args1$out, append = TRUE, sep = "\n")
+message <- paste("#index:", selected_row_nearest_mode$index)
+cat(message, file = args1$out, append = TRUE, sep = "\n")
+
+if (args1$coverage || args1$scatter) {
   # Plot: Scatter plot of length vs. coverage
   p1 <- ggplot(df_no_outliers, aes(x = length, y = coverage)) +
     geom_point(alpha = 0.6) +
@@ -122,7 +140,7 @@ p2 <- ggplot(df_no_outliers, aes(x = index, y = length)) +
   geom_line() +
   geom_point() +
   geom_hline(yintercept = selected_row_nearest_mode$length, color = "red", linetype = "dashed", size = 1) +
-  labs(title = "Trace Plot: Index vs. Length (Mode indicated)",
+  labs(title = paste0("Trace Plot: Index vs. Length (Mode: ", round(mode_length), ")"),
        x = "Index",
        y = "Length") +
   theme_minimal()
@@ -131,7 +149,7 @@ p2 <- ggplot(df_no_outliers, aes(x = index, y = length)) +
 p3 <- ggplot(df_no_outliers, aes(x = length)) +
   geom_histogram(bins = 30, fill = "skyblue", color = "black", alpha = 0.7) +
   geom_vline(xintercept = selected_row_nearest_mode$length, color = "red", linetype = "dashed", size = 1) +
-  labs(title = "Histogram of Length (Mode indicated)",
+  labs(title = paste0("Histogram of Length (SD: ", round(sd_length), ")"),
        x = "Length",
        y = "Frequency") +
   theme_minimal()
@@ -151,10 +169,11 @@ p4 <- ggplot(df_no_outliers, aes(x = length)) +
 if (args1$coverage) {
   # Combine the four plots into a single plot
   combined_plot <- (p1 | p2) / (p3 | p4)
-
   
   # Save the combined plot as a PDF
   ggsave(args1$plot, combined_plot, width = 12, height = 10)
+} else if (args1$scatter) {
+  ggsave(args1$plot, p1, width = 12, height = 10)
 } else {
   # Combine the four plots into a single plot
   combined_plot <- (p2) / (p3)

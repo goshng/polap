@@ -984,14 +984,21 @@ HEREDOC
 		if [[ "${_arg_menu[2]}" == "1" ]]; then
 			s=${_disassemble_dir}/${_arg_disassemble_i}/1/summary1.txt
 			d=${_disassemble_dir}/${_arg_disassemble_i}/1/summary1.md
-			csvtk -t cut -f index,long_rate_sample,alpha,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length \
+			csvtk -t cut -f index,long_rate_sample,alpha,peak_ram_size_gb,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length \
 				"${s}" |
-				csvtk -t round -n 5 -f long_rate_sample,coverage_ref,coverage_target |
-				csvtk rename -t -f index,long_rate_sample,alpha,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length \
-					-n ID,Rate,Alpha,'Genome Size',Time,Segments,'Segments Length','Circular Paths','Coverage Ref','Coverage Target',Length |
-				pandoc -f tsv -t markdown_mmd - \
+				csvtk -t round -n 4 -f long_rate_sample,coverage_ref,coverage_target |
+				csvtk -t round -n 2 -f alpha |
+				csvtk rename -t -f index,long_rate_sample,alpha,peak_ram_size_gb,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length \
+					-n I,Rate,Alpha,'Pmem','G',Time,'N','L','C','C ref','C target',Length |
+				csvtk -t csv2md -a right - \
 					>"${d}"
 			_polap_log0_head "${d}"
+			d1="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-ordered.txt"
+			d2="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-ordered.pdf"
+			_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+        --table ${s} \
+        --out ${d1} \
+        --plot ${d2}"
 		fi
 
 		# report 2 --disassemble-i 3
@@ -999,27 +1006,34 @@ HEREDOC
 			# concatenate all summary1.txt to the summary table.
 			s=${_disassemble_dir}/${_arg_disassemble_i}/2/summary1.txt
 			d=${_disassemble_dir}/${_arg_disassemble_i}/2/summary1.md
-			csvtk -t cut -f index,long_rate_sample,alpha,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length,pident \
+			csvtk -t cut -f index,long_rate_sample,alpha,peak_ram_size_gb,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length,pident \
 				"${s}" |
-				csvtk -t round -n 5 -f long_rate_sample,coverage_ref,coverage_target |
-				csvtk rename -t -f index,long_rate_sample,alpha,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length,pident \
-					-n ID,Rate,Alpha,'Genome Size',Time,Segments,'Segments Length','Circular Paths','Coverage Ref','Coverage Target',Length,Identity |
-				pandoc -f tsv -t markdown_mmd - \
+				csvtk -t round -n 4 -f long_rate_sample,coverage_ref,coverage_target |
+				csvtk -t round -n 2 -f alpha |
+				csvtk rename -t -f index,long_rate_sample,alpha,peak_ram_size_gb,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length,pident \
+					-n I,Rate,Alpha,'Pmem','G',Time,'N','L','C','C ref','C target',Length,'Identity' |
+				csvtk -t csv2md -a right - \
 					>"${d}"
 			_polap_log0_head "${d}"
+			d1="${_disassemble_dir}/${_arg_disassemble_i}/2/summary1-ordered.txt"
+			d2="${_disassemble_dir}/${_arg_disassemble_i}/2/summary1-ordered.pdf"
+			_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+        --table ${s} \
+        --out ${d1} \
+        --plot ${d2}"
 		fi
 
 		# report 3 --disassemble-i 3
 		if [[ "${_arg_menu[2]}" == "3" ]]; then
 			# concatenate all summary1.txt to the summary table.
-			s0="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2.txt"
-			d1="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2-ordered.txt"
-			d2="${_disassemble_dir}/${_arg_disassemble_i}/1/summary2-ordered.pdf"
+			s0="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1.txt"
+			d1="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-scatter.txt"
+			d2="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-scatter.pdf"
 			_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
         --table ${s0} \
         --out ${d1} \
         --plot ${d2} \
-			  --coverage"
+			  --scatter"
 		fi
 
 		if [[ "${_arg_menu[2]}" == "9" ]]; then
@@ -1144,6 +1158,9 @@ HEREDOC
 
 		# disassemble
 		_polap_log3_cmd mkdir -p ${_arg_archive}/${_disassemble_dir#*/}
+		cp -p "${_arg_outdir}/timing-ptgaul.txt" "${_arg_archive}/"
+		cp -p "${_arg_outdir}/ptdna-ptgaul.fa" "${_arg_archive}/"
+		cp -p "${_arg_outdir}/ptdna-reference.fa" "${_arg_archive}/"
 
 		# disassemble/0
 		for i in "${_disassemble_dir}"/*/; do
@@ -1163,7 +1180,7 @@ HEREDOC
 				d="${_arg_archive}/${s#*/}"
 				_polap_log3_cmd cp -p "${s}" "${d}"
 
-				for j in 1 2 3; do
+				for j in 1 2; do
 					k="${_disassemble_dir}/${i}/${j}"
 					mkdir -p "${_arg_archive}/disassemble/${i}/${j}"
 

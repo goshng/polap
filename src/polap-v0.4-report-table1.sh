@@ -1,6 +1,7 @@
 #!/bin/bash
 S=('Juncus_effusus' 'Juncus_inflexus' 'Juncus_roemerianus' 'Juncus_validus' 'Eucalyptus_pauciflora')
 S=('Juncus_effusus' 'Juncus_roemerianus' 'Juncus_validus' 'Eucalyptus_pauciflora')
+S=('Juncus_effusus' 'Eucalyptus_pauciflora')
 
 # Example usage
 # echo "Hours: $(convert_to_hours '4:05:17')"  # h:mm:ss

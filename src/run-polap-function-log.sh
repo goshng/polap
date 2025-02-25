@@ -238,6 +238,10 @@ function _polap_log0_ne {
 	verbose_echo_no_newline_ne 1 "$@" >&3
 }
 
+function _polap_log1_ne {
+	# verbose_echo_no_newline_ne 0 "$@"
+	verbose_echo_no_newline_ne 2 "$@" >&3
+}
 function _polap_log0_cmd {
 	verbose_echo_trim 0 "$@"
 	verbose_echo_trim 1 "$@" >&3

@@ -20,9 +20,9 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
-fi 
+	set -u
+	return 0
+fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
 #
@@ -294,6 +294,10 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
+	if [[ -d "${_polap_var_project}" ]]; then
+		return ${_POLAP_ERR_ALREADY_EXIST_OUT}
+	fi
+
 	# Check if --bioproject option is provided.
 	if [ -z "${_arg_bioproject}" ]; then
 		_polap_log0 "ERROR: --bioproject option is required to download BioProject runinfo."
@@ -398,7 +402,7 @@ function _run_polap_bioproject-prepare { # bioproject data preparation
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Set variables for file paths
-	source "$script_dir/polap-variables-common.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# Set the output directory for the current job number
@@ -606,7 +610,7 @@ function _run_polap_x-assemble-draft { # called after bioproject-prepare
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
-	source "$script_dir/polap-variables-common.sh"  # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	help_message=$(
 		cat <<HEREDOC
@@ -740,7 +744,7 @@ function _run_polap_bioproject-postprocess { # postprocess the bioproject assemb
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Set variables for file paths
-	source "$script_dir/polap-variables-common.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# Set the output directory for the current job number
@@ -906,7 +910,7 @@ function _run_polap_assemble-bioproject { # main function for this bioproject mo
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Set variables for file paths
-	source "$script_dir/polap-variables-common.sh"       # '.' means 'source'
+	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
 	# Set the output directory for the current job number

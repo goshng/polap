@@ -98,6 +98,7 @@ _arg_select_read_range="3000,3000,1"
 _arg_select_read_range_is="off"
 _arg_report_x="5000,7000,9000,11000,13000,15000,17000"
 _arg_report_x_is="off"
+_arg_stopafter="off"
 _arg_random_seed=
 _arg_genomesize=
 _arg_bioproject=
@@ -120,6 +121,7 @@ _arg_resume="off"
 _arg_plastid="off"
 _arg_clock="off"
 _arg_yes="off"
+_arg_timing="off"
 _arg_circularize="off"
 _arg_redo="off"
 _arg_test="off"
@@ -133,10 +135,12 @@ _arg_disassemble_b_is="off"    #
 _arg_disassemble_b_short="off" # use the same short-read sample size
 _arg_disassemble_p=5           # 5% of the sample size
 _arg_disassemble_p_is="off"    #
-_arg_disassemble_i=0           # disassemble stage 1 repeat index
-_arg_disassemble_n=5           # the number cycles
+_arg_disassemble_i=1           # disassemble stage 1 repeat index
+_arg_disassemble_n=10          # the number cycles
 _arg_disassemble_n_is="off"
-_arg_disassemble_r=5                 # the number of replicates
+_arg_disassemble_r=10                # the number of replicates
+_arg_disassemble_q=5                 # 5% of the max short-read sample size for polishing steps
+_arg_disassemble_l=10                # the number of polishing cycles
 _arg_disassemble_m=500000            # the maximum of draft genome size
 _arg_disassemble_s_max=              # the maximum of draft genome size
 _arg_disassemble_alpha=1.0           # the minimum disjointig coverage
@@ -161,6 +165,22 @@ _arg_steps_exclude=""
 _arg_stages_is="off"
 _arg_stages_include=""
 _arg_stages_exclude=""
+
+# for menu taxonomy
+_arg_taxonomy_genes="atp1"
+_arg_taxonomy_references=""
+
+_arg_taxonomy_rank_ingroup="family"
+_arg_taxonomy_rank_ingroup_sample="genus"
+_arg_taxonomy_ingroup_size="10"
+
+_arg_taxonomy_rank_outgroup_sample="family" # used
+_arg_taxonomy_outgroup_size="1"             # used
+_arg_taxonomy_rank_allgroup="order"         # used
+# _arg_taxonomy_rank_outgroup="order" -> not used
+
+_arg_taxonomy_sample_size_per_rank="1"
+_arg_taxonomy_min_aa="20"
 
 # for menu dissemble or directional read feature
 _arg_dissemble_a=1 #
@@ -749,6 +769,11 @@ parse_commandline() {
 			_arg_report_x_is="on"
 			shift
 			;;
+		--stopafter)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_stopafter="$2"
+			shift
+			;;
 		--no-reduction-reads | --reduction-reads)
 			_arg_reduction_reads="on"
 			test "${1:0:5}" = "--no-" && _arg_reduction_reads="off"
@@ -793,6 +818,10 @@ parse_commandline() {
 		--no-clock | --clock)
 			_arg_clock="on"
 			test "${1:0:5}" = "--no-" && _arg_clock="off"
+			;;
+		--no-timing | --timing)
+			_arg_timing="on"
+			test "${1:0:5}" = "--no-" && _arg_timing="off"
 			;;
 		--no-plastid | --plastid)
 			_arg_plastid="on"
@@ -1002,6 +1031,87 @@ parse_commandline() {
 			;;
 		--genomesize-n=*)
 			_arg_genomesize_n="${_key##--genomesize-n=}"
+			;;
+		--taxonomy-genes)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_taxonomy_genes="$2"
+			shift
+			;;
+		--taxonomy-genes=*)
+			_arg_taxonomy_genes="${_key##--taxonomy-genes=}"
+			;;
+		--taxonomy-references)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_taxonomy_references="$2"
+			shift
+			;;
+		--taxonomy-references=*)
+			_arg_taxonomy_references="${_key##--taxonomy-references=}"
+			;;
+		--taxonomy-rank-ingroup)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_taxonomy_rank_ingroup="$2"
+			shift
+			;;
+		--taxonomy-rank-ingroup=*)
+			_arg_taxonomy_rank_ingroup="${_key##--taxonomy-rank-ingroup=}"
+			;;
+		--taxonomy-rank-ingroup-sample)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_taxonomy_rank_ingroup_sample="$2"
+			shift
+			;;
+		--taxonomy-rank-ingroup-sample=*)
+			_arg_taxonomy_rank_ingroup_sample="${_key##--taxonomy-rank-ingroup-sample=}"
+			;;
+		--taxonomy-ingroup-size)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_taxonomy_ingroup_size="$2"
+			shift
+			;;
+		--taxonomy-ingroup-size=*)
+			_arg_taxonomy_ingroup_size="${_key##--taxonomy-ingroup-size=}"
+			;;
+		--taxonomy-rank-outgroup-sample)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_taxonomy_rank_outgroup_sample="$2"
+			shift
+			;;
+		--taxonomy-rank-outgroup-sample=*)
+			_arg_taxonomy_rank_outgroup_sample="${_key##--taxonomy-rank-outgroup-sample=}"
+			;;
+		--taxonomy-outgroup-size)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_taxonomy_outgroup_size="$2"
+			shift
+			;;
+		--taxonomy-outgroup-size=*)
+			_arg_taxonomy_outgroup_size="${_key##--taxonomy-outgroup-size=}"
+			;;
+		--taxonomy-rank-allgroup)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_taxonomy_rank_allgroup="$2"
+			shift
+			;;
+		--taxonomy-rank-allgroup=*)
+			_arg_taxonomy_rank_allgroup="${_key##--taxonomy-rank-allgroup=}"
+			;;
+
+		--taxonomy-sample-size-per-rank)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_taxonomy_sample_size_per_rank="$2"
+			shift
+			;;
+		--taxonomy-sample-size-per-rank=*)
+			_arg_taxonomy_sample_size_per_rank="${_key##--taxonomy-sample-size-per-rank=}"
+			;;
+		--taxonomy-min-aa)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_taxonomy_min_aa="$2"
+			shift
+			;;
+		--taxonomy-min-aa=*)
+			_arg_taxonomy_min_aa="${_key##--taxonomy-min-aa=}"
 			;;
 		--flye-pacbio-raw)
 			_arg_flye_data_type="--pacbio-raw"

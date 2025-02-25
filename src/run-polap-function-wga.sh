@@ -960,7 +960,12 @@ HEREDOC
 		fi
 
 		_polap_log1 "  executing the whole-genome assembly using flye ... be patient!"
-		local _command1="flye \
+		if [[ "${_arg_timing}" == "off" ]]; then
+			local _command1="flye"
+		else
+			local _command1="command time -v flye"
+		fi
+		_command1+=" \
       ${_arg_flye_data_type} \
       ${_polap_var_outdir_nk_fq_gz} \
 			--out-dir ${_polap_var_wga} \
@@ -970,15 +975,23 @@ HEREDOC
 			--asm-coverage ${_arg_flye_asm_coverage} \
 			--genome-size ${_EXPECTED_GENOME_SIZE}"
 		fi
-		if [[ "${_arg_menu[2]}" == "polishing" ]]; then
+		if [[ "${_arg_menu[1]}" == "polishing" ]]; then
+			_command1+=" \
+		  --stop-after polishing"
+		elif [[ "${_arg_menu[1]}" == "resume" ]]; then
 			_command1+=" \
 		  --resume"
 		else
 			_command1+=" \
 		  --stop-after contigger"
 		fi
-		_command1+=" \
+		if [[ "${_arg_timing}" == "off" ]]; then
+			_command1+=" \
 		  2>${_polap_output_dest}"
+		else
+			_command1+=" \
+		  2>${_arg_outdir}/timing-flye1.txt"
+		fi
 		_polap_log3_pipe "${_command1}"
 
 	fi

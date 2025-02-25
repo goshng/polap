@@ -180,6 +180,10 @@ HEREDOC
 		_run_polap_summary-reads
 	fi
 
+	if [[ "${_arg_stopafter}" == "data" ]]; then
+		return 0
+	fi
+
 	if [ -s "${_polap_var_wga_contigger_edges_gfa}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log2 "  skipping flye1 ..."
 	else

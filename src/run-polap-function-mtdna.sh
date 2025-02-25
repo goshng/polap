@@ -420,7 +420,11 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	_polap_log0 "getting the organelle-genome sequence of a plant species ..."
+	if [[ "${_arg_plastid}" == "off" ]]; then
+		_polap_log0 "getting the mitochondrial organelle-genome sequence of a plant species ..."
+	else
+		_polap_log0 "getting the plastid organelle-genome sequence of a plant species ..."
+	fi
 
 	# Determine species name
 	_polap_log1 "  step 1: determine the species name"

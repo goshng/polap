@@ -70,10 +70,12 @@ if (is_null(args1$table)) {
 
 df <- read_tsv(args1$table, show_col_types = FALSE)
 
-# Remove rows with length equal to zero
-df <- df %>% 
-  filter(length > 0) %>%
-  mutate(coverage = (coverage_ref + coverage_target) / 2)
+if (args1$coverage) {
+  # Remove rows with length equal to zero
+  df <- df %>% 
+    filter(length > 0) %>%
+    mutate(coverage = (coverage_ref + coverage_target) / 2)
+}
 
 # Define a function to remove outliers based on IQR (Interquartile Range)
 remove_outliers <- function(x) {
@@ -140,7 +142,7 @@ p2 <- ggplot(df_no_outliers, aes(x = index, y = length)) +
   geom_line() +
   geom_point() +
   geom_hline(yintercept = selected_row_nearest_mode$length, color = "red", linetype = "dashed", size = 1) +
-  labs(title = paste0("Trace Plot: Index vs. Length (Mode: ", round(mode_length), ")"),
+  labs(title = paste0("(A) Trace Plot: Index vs. Length (Mode: ", round(mode_length), ")"),
        x = "Index",
        y = "Length") +
   theme_minimal()
@@ -149,7 +151,7 @@ p2 <- ggplot(df_no_outliers, aes(x = index, y = length)) +
 p3 <- ggplot(df_no_outliers, aes(x = length)) +
   geom_histogram(bins = 30, fill = "skyblue", color = "black", alpha = 0.7) +
   geom_vline(xintercept = selected_row_nearest_mode$length, color = "red", linetype = "dashed", size = 1) +
-  labs(title = paste0("Histogram of Length (SD: ", round(sd_length), ")"),
+  labs(title = paste0("(B) Histogram of Length (SD: ", round(sd_length), ")"),
        x = "Length",
        y = "Frequency") +
   theme_minimal()

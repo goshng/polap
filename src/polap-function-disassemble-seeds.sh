@@ -829,7 +829,18 @@ HEREDOC
 	local _ga_annotation_all="${_arg_menu[2]}"
 	local _knum="${_arg_menu[3]}"
 	local _mtcontigname="${_arg_menu[4]}"
-	if [[ "${_arg_menu[1]}" == "infile" ]]; then
+	# BUG: this checks if this function is executed as a menu of the polap command
+	# or it is executed as a bash function called by other funciton:
+	# or polap_disassemble-seeds function.
+	# If we change the menu or the subcommand argument not to infile such as
+	# default in the command-line, then these are all set to those
+	# command-line default options: default, outfile, thirdfile, and fourthfile.
+	# Then, this function stops working.
+	# Solution: So, we check all of the 4 menu options not just the first one.
+	if [[ "${_arg_menu[1]}" == "infile" ||
+		"${_arg_menu[2]}" == "outfile" ||
+		"${_arg_menu[3]}" == "thirdfile" ||
+		"${_arg_menu[4]}" == "fourthfile" ]]; then
 		_ga_contigger_edges_gfa="$1"
 		_ga_annotation_all="$2"
 		_knum="$3"

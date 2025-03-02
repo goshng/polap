@@ -23,8 +23,20 @@ _polap_subcmd=(
 	'test'
 	'send-data-to'
 	'mkdir'
-	'taxon-ref1'
-	'ptgaul'
+	'taxon-known'
+	'taxon-reference'
+	'ptgaul-known'
+	'ptgaul-reference'
+	'bandage-ptgaul-known'
+	'bandage-ptgaul-reference'
+	'subsample'
+	'chain-subsample'
+	'assemble1-subsample'
+	'bandage1-subsample'
+	'seeds-subsample'
+	'assemble2-subsample'
+	'bandage2-subsample'
+	'polish-subsample'
 	'run'
 	'archive'
 	'get'
@@ -73,12 +85,24 @@ help_message=$(
 # _media_dir=${_media_dir}
 #
 # Argument:
-0. test
-1. send-data-to
-2. mkdir
-3. taxon-ref1
-4. ptgaul
-5. run
+0. test <SPECIES>
+1. send-data-to <SPECIES>
+2. mkdir <SPECIES>
+3. taxon-reference <SPECIES> : ptgaul-reference.fa with mtDNA related with the species
+3. taxon-known <SPECIES> : ptgaul-mtdna.fa with mtDNA of the species
+4. ptgaul-reference <SPECIES>
+4. ptgaul-known <SPECIES>
+5. bandage-ptgaul-known <SPECIES>
+5. bandage-ptgaul-reference <SPECIES>
+. subsample <SPECIES>
+. assemble1-subsample <SPECIES> <COVERAGE>
+. bandage1-subsample <SPECIES> <COVERAGE>
+. seeds-subsample <SPECIES> <COVERAGE>
+. assemble2-subsample <SPECIES> <COVERAGE> [TARGET_ASSEMBLY_ID]
+. bandage2-subsample <SPECIES> <COVERAGE> [TARGET_ASSEMBLY_ID]
+. run <SPECIES>
+write-config polap-data-v1.config
+
 install-conda: install Miniconda3
 setup-conda: setup Miniconda3 for Bioconda
 install-polap or install: install Polap
@@ -100,6 +124,9 @@ plot: create the supplementary figures for the -w option tests.
 table: create a table for the 11 test data.
 sync 0: copy the whole-genome assembly results from other computers to the local.
 sync 1: copy the organelle-genome assembly results from other computers to the local.
+---
+BUG: FIX QT5 problem:
+export QT_QPA_PLATFORM=offscreen
 HEREDOC
 )
 
@@ -124,9 +151,11 @@ _host['Vigna_radiata']="marybeth"
 _host['Macadamia_tetraphylla']="vincent"
 _host['Punica_granatum']="marybeth"
 _host['Lolium_perenne']="siepel"
+_host['Carex_pseudochinensis']="vincent"
 
 declare -A _long
 declare -A _short
+declare -A _random_seed
 _long['Anthoceros_agrestis']="SRR10190639"
 _short['Anthoceros_agrestis']="SRR10250248"
 _long['Brassica_rapa']="ERR6210792"
@@ -165,6 +194,7 @@ _inref['Macadamia_tetraphylla']="genus"
 _inref['Lolium_perenne']="family"
 _inref['Anthoceros_angustus']="genus"
 _inref['Carex_pseudochinensis']="genus"
+
 declare -A _ingroup
 _ingroup['Spirodela_polyrhiza']="class"
 _ingroup['Taraxacum_mongolicum']="genus"
@@ -174,6 +204,32 @@ _outgroup['Taraxacum_mongolicum']="family"
 declare -A _allgroup
 _allgroup['Spirodela_polyrhiza']="phylum"
 _allgroup['Taraxacum_mongolicum']="family"
+
+declare -A _genomesize
+_genomesize['Anthoceros_agrestis']="196250750"
+_genomesize['Taraxacum_mongolicum']="161066089"
+
+# Read the config files
+read-a-tsv-file-into-associative-arrays() {
+	# Define input TSV file
+	csv_file="src/polap-data-v1.csv"
+
+	# Read the TSV file (skip header)
+	while IFS=$',' read -r species long short host inref random_seed; do
+		# Skip header line
+		[[ "$species" == "species" ]] && continue
+
+		# Store in associative arrays
+		_long["$species"]="$long"
+		_short["$species"]="$short"
+		_host["$species"]="$host"
+		_inref["$species"]="$inref"
+		_random_seed["$species"]="$random_seed"
+	done <"$csv_file"
+
+}
+
+read-a-tsv-file-into-associative-arrays
 
 # Loop through the associative array
 default_output_dir() {
@@ -194,11 +250,14 @@ else
 	_arg2="${2%/}"
 fi
 
-# Check if the species folder is provided
-if [[ -z "$1" ]]; then
-	echo "Usage: $0 <subcommand> [species_folder]"
-	echo "${help_message}"
-	exit 1
+if [[ ! -z "$3" ]]; then
+	_arg3="${3%/}"
+fi
+
+if [[ -z "$4" ]]; then
+	_arg4=1
+else
+	_arg4="${4%/}"
 fi
 
 # Common operations function
@@ -237,6 +296,372 @@ run_genus_species() {
 
 	cd "${output_dir}" || exit
 	common_operations "${long_sra}" "${short_sra}"
+	if [[ -s "o/0/mt.contig.name-1" ]]; then
+		${_polap_cmd} assemble2
+	else
+		${_polap_cmd} assemble
+	fi
+	cd -
+}
+
+subsample_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	local random_seed="${_random_seed["$1"]}"
+	local genomesize="${_genomesize["$1"]}"
+
+	# subsampling
+	local _c
+	for _c in 5 10 30; do
+		rm -f "${output_dir}/l${_c}x.fq.gz"
+		rm -f "${output_dir}/s${_c}x_1.fq.gz"
+		rm -f "${output_dir}/s${_c}x_2.fq.gz"
+
+		if [[ "${species_name}" == "Anthoceros agrestis" ||
+			"${species_name}" == "Taraxacum mongolicum" ]]; then
+
+			${_polap_cmd} fastq subsample \
+				"${output_dir}/${long_sra}.fastq" \
+				"${output_dir}/l${_c}x.fq.gz" \
+				-c "${_c}" \
+				-o "${output_dir}" \
+				--random-seed "${random_seed}" \
+				--genomesize "${genomesize}" -v \
+				>"${output_dir}/l${_c}x.txt"
+
+			${_polap_cmd} fastq subsample2 \
+				"${output_dir}/${short_sra}_1.fastq" \
+				"${output_dir}/${short_sra}_2.fastq" \
+				"${output_dir}/s${_c}x_1.fq" \
+				"${output_dir}/s${_c}x_2.fq" \
+				-c "${_c}" \
+				-o "${output_dir}" \
+				--random-seed "${random_seed}" \
+				--genomesize "${genomesize}" -v \
+				>"${output_dir}/s${_c}x.txt"
+		else
+			${_polap_cmd} fastq subsample \
+				"${output_dir}/${long_sra}.fastq" \
+				"${output_dir}/l${_c}x.fq.gz" \
+				-c "${_c}" \
+				-o "${output_dir}" \
+				--random-seed "${random_seed}" \
+				--species "${species_name}" -v \
+				>"${output_dir}/l${_c}x.txt"
+
+			${_polap_cmd} fastq subsample2 \
+				"${output_dir}/${short_sra}_1.fastq" \
+				"${output_dir}/${short_sra}_2.fastq" \
+				"${output_dir}/s${_c}x_1.fq" \
+				"${output_dir}/s${_c}x_2.fq" \
+				-c "${_c}" \
+				-o "${output_dir}" \
+				--random-seed "${random_seed}" \
+				--species "${species_name}" -v \
+				>"${output_dir}/s${_c}x.txt"
+		fi
+	done
+
+	# Brassica_rapa
+	# genome size: 364511000
+	# long_total_length.txt
+}
+
+assemble1-subsample_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+
+	# subsampling
+	local _c
+	for _c in 5 10 30; do
+		assemble1-subsample_genus_species_for \
+			"${output_dir}" \
+			"${_c}"
+	done
+}
+
+bandage1-subsample_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+
+	# subsampling
+	local _c
+	for _c in 5 10 30; do
+		bandage1-subsample_genus_species_for \
+			"${output_dir}" \
+			"${_c}"
+	done
+}
+
+seeds-subsample_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+
+	# subsampling
+	local _c
+	for _c in 5 10 30; do
+		seeds-subsample_genus_species_for \
+			"${output_dir}" \
+			"${_c}"
+	done
+}
+
+assemble2-subsample_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+
+	# subsampling
+	local _c
+	local _i
+	for _c in 5 10 30; do
+		for _i in {1..3}; do
+			local _mtcontigname="${output_dir}/subsample/${_c}x/o1/0/mt.contig.name-${_i}"
+			if [[ -s "${_mtcontigname}" ]]; then
+				assemble2-subsample_genus_species_for \
+					"${output_dir}" \
+					"${_c}" "${_i}"
+			fi
+		done
+	done
+}
+
+bandage2-subsample_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+
+	# subsampling
+	local _c
+	local _i
+	for _c in 5 10 30; do
+		for _i in {1..3}; do
+			local _mtcontigname="${output_dir}/subsample/${_c}x/o1/0/mt.contig.name-${_i}"
+			if [[ -s "${_mtcontigname}" ]]; then
+				bandage2-subsample_genus_species_for \
+					"${output_dir}" \
+					"${_c}" "${_i}"
+			fi
+		done
+	done
+}
+
+assemble1-subsample_genus_species_for() {
+	local output_dir="$1"
+	local coverage="$2"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	local subsample_dir="subsample/${coverage}x"
+	local subsample1_dir="${subsample_dir}/o1"
+	local subsample2_dir="${subsample_dir}/o2"
+	local long_fastq="l${coverage}x.fq"
+	local short1_fastq="s${coverage}x_1.fq"
+	local short2_fastq="s${coverage}x_2.fq"
+
+	cd "${output_dir}" || exit
+	mkdir -p "${subsample1_dir}"
+	# To gunzip a .gz file to a specific folder
+	# while keeping the original .gz file, use:
+	gzip -dc "${long_fastq}.gz" >"${subsample_dir}/${long_fastq}"
+	gzip -dc "${short1_fastq}.gz" >"${subsample_dir}/${short1_fastq}"
+	gzip -dc "${short2_fastq}.gz" >"${subsample_dir}/${short2_fastq}"
+	command time -v polap assemble1 \
+		-o "${subsample1_dir}" \
+		-l "${subsample_dir}/${long_fastq}" \
+		-a "${subsample_dir}/${short1_fastq}" \
+		-b "${subsample_dir}/${short2_fastq}" \
+		2>timing-polap-assemble1-subsample-${coverage}x.txt
+
+	echo "Execute for the annotation table: polap annotate view -o ${output_dir}/${subsample1_dir}"
+	echo "Execute to try to automatically create seeds: polap seeds -o ${output_dir}/${subsample1_dir}"
+	echo "Make sure that you have seed contigs in file: ${output_dir}/${subsample1_dir}/0/mt.contig.name-1"
+	echo "Use Bandage to view ${output_dir}/${subsample1_dir}/0/30-contigger/graph_final.gfa"
+	echo "  to locate edge_<number> at the top of the annotation table."
+
+	cd -
+}
+
+seeds-subsample_genus_species_for() {
+	local output_dir="$1"
+	local coverage="$2"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	local subsample_dir="subsample/${coverage}x"
+	local subsample1_dir="${subsample_dir}/o1"
+	local subsample2_dir="${subsample_dir}/o2"
+	local long_fastq="l${coverage}x.fq"
+	local short1_fastq="s${coverage}x_1.fq"
+	local short2_fastq="s${coverage}x_2.fq"
+
+	cd "${output_dir}" || exit
+
+	polap seeds \
+		-o "${subsample1_dir}"
+
+	echo "Execute for the annotation table with seeds: polap seeds view -o ${output_dir}/${subsample1_dir} -j <target_assembly>"
+	echo "Execute for organelle-genome assembly: polap assemble2 -o ${output_dir}/${subsample1_dir} -j <target_assembly>"
+
+	cd -
+}
+
+assemble2-subsample_genus_species_for() {
+	local output_dir="$1"
+	local coverage="$2"
+	local target_assembly="${3:-1}"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	local subsample_dir="subsample/${coverage}x"
+	local subsample1_dir="${subsample_dir}/o1"
+	local subsample2_dir="${subsample_dir}/o2"
+	local long_fastq="l${coverage}x.fq"
+	local short1_fastq="s${coverage}x_1.fq"
+	local short2_fastq="s${coverage}x_2.fq"
+
+	cd "${output_dir}" || exit
+
+	command time -v polap assemble2 \
+		-j "${target_assembly}" \
+		-o "${subsample1_dir}" \
+		2>timing-polap-assemble2-subsample-${coverage}x.txt
+
+	echo "Use Bandage to view ${subsample1_dir}/1/assembly_graph.gfa"
+	echo "  to locate and extract mtDNA sequences."
+
+	cd -
+}
+
+bandage1-subsample_genus_species_for() {
+	local output_dir="$1"
+	local coverage="$2"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	local subsample_dir="subsample/${coverage}x"
+	local subsample1_dir="${subsample_dir}/o1"
+	local subsample2_dir="${subsample_dir}/o2"
+	local long_fastq="l${coverage}x.fq"
+	local short1_fastq="s${coverage}x_1.fq"
+	local short2_fastq="s${coverage}x_2.fq"
+
+	local _gfa="${output_dir}/${subsample1_dir}/0/30-contigger/graph_final.gfa"
+	if [[ -s "${_gfa}" ]]; then
+		${_polap_cmd} bandage png \
+			${_gfa} \
+			${output_dir}/subsample/whole-genome-assembly-${coverage}x.png
+		echo "file:	${output_dir}/subsample/whole-genome-assembly-${coverage}x.png"
+	else
+		echo "Warning: no such file: ${_gfa}"
+		echo "FIX QT5 problem:"
+		echo "export QT_QPA_PLATFORM=offscreen"
+	fi
+}
+
+bandage2-subsample_genus_species_for() {
+	local output_dir="$1"
+	local coverage="$2"
+	local target_assembly="${3:-1}"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	local subsample_dir="subsample/${coverage}x"
+	local subsample1_dir="${subsample_dir}/o1"
+	local subsample2_dir="${subsample_dir}/o2"
+	local long_fastq="l${coverage}x.fq"
+	local short1_fastq="s${coverage}x_1.fq"
+	local short2_fastq="s${coverage}x_2.fq"
+
+	local _gfa="${output_dir}/${subsample1_dir}/${target_assembly}/assembly_graph.gfa"
+	if [[ -s "${_gfa}" ]]; then
+		${_polap_cmd} bandage png \
+			${_gfa} \
+			${output_dir}/subsample/organelle-genome-assembly-${coverage}x.png
+		echo "file: ${output_dir}/subsample/organelle-genome-assembly-${coverage}x.png"
+	else
+		echo "Warning: no such file: ${_gfa}"
+	fi
+}
+
+polish-subsample_genus_species() {
+	local output_dir="$1"
+	local coverage="$2"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	local subsample_dir="subsample/${coverage}x"
+	local subsample1_dir="${subsample_dir}/o1"
+	local subsample2_dir="${subsample_dir}/o2"
+	local long_fastq="l${coverage}x.fq"
+	local short1_fastq="s${coverage}x_1.fq"
+	local short2_fastq="s${coverage}x_2.fq"
+
+	cd "${output_dir}" || exit
+	mkdir -p "${subsample1_dir}"
+	# To gunzip a .gz file to a specific folder
+	# while keeping the original .gz file, use:
+
+	polap polish \
+		-o "${subsample1_dir}"
+
+	echo "Execute: polap annotate view -o ${subsample1_dir}"
+
+	cd -
+}
+
+write-config_genus_species() {
+	local csv_file="$1"
+
+	# Write the output to CSV
+	{
+		# Print the header
+		echo "species,_long,_short,_host,_inref"
+
+		# Loop through species and print their values
+		for key in "${!_long[@]}"; do
+			echo "$key,${_long[$key]},${_short[$key]},${_host[$key]},${_inref[$key]}"
+		done
+	} >"$csv_file"
+}
+
+# Common operations function
+common_operations_subsample2() {
+	local long_sra="$1"
+	local short_sra="$2"
+
+	source ~/miniconda3/bin/activate polap
+	if [[ -s "o1/0/mt.contig.name-1" ]]; then
+		mkdir -p o/0
+		cp -p o2/*.txt o
+		cp -p o1/0/mt.contig.name-1 o/0/
+		cp -pr o1/0/30-contigger o/0/
+	fi
+	if [[ ! -s "${long_sra}.fastq" ]]; then
+		${_polap_cmd} x-ncbi-fetch-sra --sra "$long_sra"
+		${_polap_cmd} x-ncbi-fetch-sra --sra "$short_sra"
+		${_polap_cmd} x-ncbi-fetch-sra-runinfo --sra "$long_sra"
+		${_polap_cmd} x-ncbi-fetch-sra-runinfo --sra "$short_sra"
+	fi
+	cp -s "${long_sra}.fastq" l.fq
+	cp -s "${short_sra}_1.fastq" s1.fq
+	cp -s "${short_sra}_2.fastq" s2.fq
+	if [[ -s "o/0/mt.contig.name-1" ]]; then
+		${_polap_cmd} reduce-data
+	fi
+}
+
+run-subsample3_genus_species() {
+	local output_dir="$1"
+	local coverage="$2"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+
+	cd "${output_dir}" || exit
+	local long_fastq=l${coverage}x.fq
+	gunzip "${long_fastq}.gz"
+	common_operations_subsample "${long_fastq}" "${short_sra}"
 	if [[ -s "o/0/mt.contig.name-1" ]]; then
 		${_polap_cmd} assemble2
 	else
@@ -413,6 +838,38 @@ send-data-to_genus_species() {
 	local long_sra="${_long["$1"]}"
 	local short_sra="${_short["$1"]}"
 
+	local _media_dir="${_media_dir}/${output_dir}"
+
+	if [[ "${_local_host}" == "$(hostname)" ]]; then
+		local f="${_media_dir}/${long_sra}.fastq"
+		if [[ -s "${f}" ]]; then
+			scp "${f}" ${_host["${output_dir}"]}:"$PWD"/
+		else
+			echo "ERROR: no such file: ${f}"
+		fi
+		local f="${_media_dir}/${short_sra}_1.fastq"
+		if [[ -s "${f}" ]]; then
+			scp "${f}" ${_host["${output_dir}"]}:"$PWD"/
+		else
+			echo "ERROR: no such file: ${f}"
+		fi
+		local f="${_media_dir}/${short_sra}_2.fastq"
+		if [[ -s "${f}" ]]; then
+			scp "${f}" ${_host["${output_dir}"]}:"$PWD"/
+		else
+			echo "ERROR: no such file: ${f}"
+		fi
+	else
+		echo "ERROR: run at the local host."
+	fi
+}
+
+send-data-to-single_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+
 	if [[ "${_local_host}" == "$(hostname)" ]]; then
 		local f="${_media_dir}/${long_sra}.fastq"
 		if [[ -s "${f}" ]]; then
@@ -447,7 +904,7 @@ mkdir_genus_species() {
 	mkdir -p $output_dir
 }
 
-taxon-ref1_genus_species() {
+taxon-reference_genus_species() {
 	local output_dir="$1"
 	local species_name="$(echo $1 | sed 's/_/ /')"
 	local inref="${_inref["$1"]}"
@@ -460,6 +917,24 @@ taxon-ref1_genus_species() {
 		-o "${output_dir}" \
 		--taxonomy-rank-ingroup "${inref}" \
 		--species "${species_name}"
+}
+
+taxon-known_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local inref="${_inref["$1"]}"
+	# copy_data
+
+	# --taxonomy-rank-ingroup "${inref}" \
+	${_polap_cmd} taxonomy reference \
+		--redo \
+		--yes \
+		--steps-include 1-9 \
+		-o "${output_dir}"/known-mtdna \
+		--taxonomy-rank-ingroup "${inref}" \
+		--species "${species_name}"
+	cp -p "${output_dir}/known-mtdna/ptgaul-reference.fa" \
+		"${output_dir}/ptgaul-known.fa"
 }
 
 get-ptdna-from-ncbi_genus_species() {
@@ -491,24 +966,81 @@ copy-ptdna-of-ncbi-as-reference_genus_species() {
 
 ptgaul_genus_species() {
 	local output_dir="$1"
+	local _type="${2}"
+
 	local species_name="$(echo $1 | sed 's/_/ /')"
 	local long_sra="${_long["$1"]}"
 	local short_sra="${_short["$1"]}"
 
-	local average_length=$(seqkit stats -Ta ${output_dir}/ptgaul-reference.fa | awk 'NR==2 {print $7}')
+	local average_length=$(seqkit stats -Ta ${output_dir}/ptgaul-"${_type}".fa | awk 'NR==2 {print $7}')
 	local genome_size=${average_length%.*}
 
-	command time -v bash src/ptGAUL1.sh \
-		-o ${output_dir}-ptgaul \
-		-r ${output_dir}/ptgaul-reference.fa \
-		-g "${genome_size}" \
-		-l "${output_dir}/${long_sra}.fastq" \
-		-t 24 \
-		2>${output_dir}/timing-ptgaul.txt
+	local _ptgaul_dir="${output_dir}/ptgaul-${_type}"
+	mkdir -p ${_ptgaul_dir}
 
-	rm -rf ${output_dir}/result_3000
-	mv ${output_dir}-ptgaul/result_3000 ${output_dir}/
-	rm -rf "${output_dir}-ptgaul"
+	local m
+	local f=3000
+	for m in 1000 3000 6000 9000 12000; do
+		command time -v bash src/ptGAUL1.sh \
+			-o ${output_dir}-ptgaul \
+			-r ${output_dir}/ptgaul-${_type}.fa \
+			-g "${genome_size}" \
+			-l "${output_dir}/${long_sra}.fastq" \
+			-m "${m}" \
+			-t 8 \
+			2>${output_dir}/timing-ptgaul-${_type}-${m}.txt
+
+		rm -rf "${_ptgaul_dir}/m${m}"
+		mv "${output_dir}-ptgaul/result_${f}" "${_ptgaul_dir}/m${m}"
+		rm -rf "${output_dir}-ptgaul"
+	done
+}
+
+ptgaul-reference_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	ptgaul_genus_species "${output_dir}" "reference"
+}
+
+ptgaul-known_genus_species() {
+	local output_dir="$1"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	ptgaul_genus_species "${output_dir}" "known"
+}
+
+bandage-ptgaul_genus_species() {
+	local output_dir="$1"
+	local _type="${2}"
+
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+
+	local _ptgaul_dir="${output_dir}/ptgaul-${_type}"
+
+	local m
+	local f=3000
+	for m in 1000 3000 6000 9000 12000; do
+		local _gfa="${_ptgaul_dir}/m${m}/flye_cpONT/assembly_graph.gfa"
+		if [[ -s "${_gfa}" ]]; then
+			${_polap_cmd} bandage png \
+				${_gfa} \
+				${_ptgaul_dir}/assembly_graph-${m}.png
+		else
+			echo "Warning: no such file: ${_gfa}"
+		fi
+	done
+	echo "check ${_ptgaul_dir} for png files."
+}
+
+bandage-ptgaul-known_genus_species() {
+	local output_dir="$1"
+	bandage-ptgaul_genus_species "${output_dir}" "known"
+}
+
+bandage-ptgaul-reference_genus_species() {
+	local output_dir="$1"
+	bandage-ptgaul_genus_species "${output_dir}" "reference"
 }
 
 msbwt_genus_species() {
@@ -690,8 +1222,14 @@ report_genus_species_for() {
 case "$subcmd1" in
 'send-data-to' | \
 	'mkdir' | \
-	'taxon-ref1' | \
-	'ptgaul' | \
+	'taxon-known' | \
+	'taxon-reference' | \
+	'ptgaul-known' | \
+	'ptgaul-reference' | \
+	'bandage-ptgaul-known' | \
+	'bandage-ptgaul-reference' | \
+	'subsample' | \
+	'write-config' | \
 	'run' | \
 	'taxon-sample1' | \
 	'taxon-sample2' | \
@@ -703,7 +1241,6 @@ case "$subcmd1" in
 	'geseq' | \
 	'get-ptdna-from-ncbi' | \
 	'copy-ptdna-of-ncbi-as-reference' | \
-	'ptgaul' | \
 	'msbwt' | \  | \
 	'extract-ptdna-of-ptgaul' | \
 	'extract-ptdna-of-ptgaul2' | \
@@ -717,7 +1254,32 @@ case "$subcmd1" in
 	'suptable1' | \
 	'supfigure1' | \
 	'test')
-	${subcmd1}_genus_species ${_arg2}
+	${subcmd1}_genus_species "${_arg2}"
+	;;
+'assemble1-subsample-for' | \
+	'bandage1-subsample-for' | \
+	'seeds-subsample-for' | \
+	'assemble2-subsample-for' | \
+	'bandage2-subsample-for' | \
+	'polish-subsample' | \
+	'test2')
+	${subcmd1}_genus_species_for "${_arg2}" "${_arg3}" "${_arg4}"
+	;;
+'assemble1-subsample' | \
+	'bandage1-subsample' | \
+	'seeds-subsample' | \
+	'assemble2-subsample' | \
+	'bandage2-subsample' | \
+	'polish-subsample' | \
+	'test2')
+	${subcmd1}_genus_species "${_arg2}"
+	;;
+'chain-subsample')
+	assemble1-subsample_genus_species "${_arg2}"
+	seeds-subsample_genus_species "${_arg2}"
+	bandage1-subsample_genus_species "${_arg2}"
+	assemble2-subsample_genus_species "${_arg2}"
+	bandage2-subsample_genus_species "${_arg2}"
 	;;
 "Anthoceros_agrestis")
 	run_anthoceros_agrestis

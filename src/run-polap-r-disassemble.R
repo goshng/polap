@@ -49,15 +49,12 @@ parser <- add_option(parser, c("-s", "--scatter"),
 args1 <- parse_args(parser)
 
 if (is_null(args1$table)) {
-  input_dir0 <- file.path("Eucalyptus_pauciflora")
   input_dir0 <- file.path("Juncus_roemerianus")
-  input1 <- file.path(input_dir0, "disassemble/1/1/summary1.txt")
+  input_dir0 <- file.path("Eucalyptus_pauciflora")
+  input1 <- file.path(input_dir0, "disassemble/infer-1/1/summary1.txt")
   output1 <- file.path(input_dir0, "out.txt")
   output2 <- file.path(input_dir0, "out.pdf")
   
-  args1 <- parse_args(parser, args = c("--table", input1, 
-                                       "--out", output1,
-                                       "--plot", output2))
   args1 <- parse_args(parser, args = c("--table", input1, 
                                        "--out", output1,
                                        "--plot", output2,
@@ -66,6 +63,9 @@ if (is_null(args1$table)) {
                                        "--out", output1,
                                        "--plot", output2,
                                        "--scatter"))
+  args1 <- parse_args(parser, args = c("--table", input1, 
+                                       "--out", output1,
+                                       "--plot", output2))
 }
 
 df <- read_tsv(args1$table, show_col_types = FALSE)
@@ -75,7 +75,26 @@ if (args1$coverage) {
   df <- df %>% 
     filter(length > 0) %>%
     mutate(coverage = (coverage_ref + coverage_target) / 2)
+} else {
+  df <- df %>% 
+    filter(length > 0)
 }
+
+if (nrow(df) == 0) {
+  quit(save = "no")
+} else if (nrow(df) == 1) {
+  write_tsv(df, args1$out)
+
+  message <- paste("#mode: NA")
+  cat(message, file = args1$out, append = TRUE, sep = "\n")
+  message <- paste("#sd: NA")
+  cat(message, file = args1$out, append = TRUE, sep = "\n")
+  message <- paste("#index: 0")
+  cat(message, file = args1$out, append = TRUE, sep = "\n")
+  quit(save = "no")
+}
+
+
 
 # Define a function to remove outliers based on IQR (Interquartile Range)
 remove_outliers <- function(x) {

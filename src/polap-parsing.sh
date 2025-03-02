@@ -129,28 +129,34 @@ _arg_debug="off"
 _arg_verbose=1
 _arg_help="off"
 # for menu disassembly
-_arg_disassemble_a=10000000    # 10 Mb or the smallest long read step size
-_arg_disassemble_b=1000000000  # 1 Gb or the largest long read step size
-_arg_disassemble_b_is="off"    #
-_arg_disassemble_b_short="off" # use the same short-read sample size
-_arg_disassemble_p=5           # 5% of the sample size
-_arg_disassemble_p_is="off"    #
-_arg_disassemble_i=1           # disassemble stage 1 repeat index
-_arg_disassemble_n=10          # the number cycles
+_arg_disassemble_a=10000000   # 10 Mb or the smallest long read step size
+_arg_disassemble_b=1000000000 # 1 Gb or the largest long read step size
+_arg_disassemble_b_is="off"   #
+# _arg_disassemble_b_short="off" # deprecate: not using it; use the same short-read sample size
+# we use the same rate not the actual sampling size for the short-read data
+# just as we use the long-read sampling rate.
+_arg_disassemble_p=5        # 5% of the sample size
+_arg_disassemble_p_is="off" #
+# disassemble/i/j
+_arg_disassemble_i=1  # disassemble replicate index
+_arg_disassemble_j=1  # disassemble stage 1 repeat index
+_arg_disassemble_n=10 # the number cycles
 _arg_disassemble_n_is="off"
-_arg_disassemble_r=10                # the number of replicates
-_arg_disassemble_q=5                 # 5% of the max short-read sample size for polishing steps
-_arg_disassemble_l=10                # the number of polishing cycles
-_arg_disassemble_m=500000            # the maximum of draft genome size
-_arg_disassemble_s_max=              # the maximum of draft genome size
-_arg_disassemble_alpha=1.0           # the minimum disjointig coverage
-_arg_disassemble_delta=0.75          # the move size of alpha
-_arg_disassemble_min_memory=16       # the minimum memory in Gb
-_arg_disassemble_compare_to_fasta="" # the minimum memory in Gb
-_arg_disassemble_c=""                # sequence in fasta format
-_arg_disassemble_c_is="off"          # sequence in fasta format
-_arg_disassemble_s=                  # sample size
-_arg_disassemble_best="off"
+_arg_disassemble_r=10                   # the number of replicates
+_arg_disassemble_q=5                    # 5% of the max short-read sample size for polishing steps
+_arg_disassemble_l=10                   # the number of polishing cycles
+_arg_disassemble_m=500000               # the maximum of draft genome size
+_arg_disassemble_s_max=                 # the maximum of draft genome size
+_arg_disassemble_alpha=1.0              # the minimum disjointig coverage
+_arg_disassemble_delta=0.75             # the move size of alpha
+_arg_disassemble_min_memory=16          # the minimum memory in Gb
+_arg_disassemble_compare_to_fasta=""    # the minimum memory in Gb
+_arg_disassemble_c=""                   # sequence in fasta format
+_arg_disassemble_c_is="off"             # sequence in fasta format
+_arg_disassemble_s=                     # sample size
+_arg_disassemble_best="off"             # delete it
+_arg_disassemble_align_reference="off"  # applied to stage 2 only or check part
+_arg_disassemble_simple_polishing="off" # default is subsampling polish
 _arg_disassemble_stop_after=
 # for genome size grid
 _arg_genomesize_a=200000   #
@@ -181,6 +187,10 @@ _arg_taxonomy_rank_allgroup="order"         # used
 
 _arg_taxonomy_sample_size_per_rank="1"
 _arg_taxonomy_min_aa="20"
+
+# archive
+_arg_template="src/polap-template-cflye-archive-files.txt"
+_arg_max_filesize="1M"
 
 # for menu dissemble or directional read feature
 _arg_dissemble_a=1 #
@@ -728,10 +738,14 @@ parse_commandline() {
 		--species)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_species="$2"
+			_arg_species="${_arg_species//_/ }"
+			_arg_species="${_arg_species//\//}"
 			shift
 			;;
 		--species=*)
 			_arg_species="${_key##--species=}"
+			_arg_species="${_arg_species//_/ }"
+			_arg_species="${_arg_species//\//}"
 			;;
 		--accession)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -922,6 +936,14 @@ parse_commandline() {
 		--disassemble-i=*)
 			_arg_disassemble_i="${_key##--disassemble-i=}"
 			;;
+		--disassemble-j)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_j="$2"
+			shift
+			;;
+		--disassemble-j=*)
+			_arg_disassemble_j="${_key##--disassemble-j=}"
+			;;
 		--disassemble-p)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_disassemble_p="$2"
@@ -932,13 +954,13 @@ parse_commandline() {
 			_arg_disassemble_p="${_key##--disassemble-p=}"
 			_arg_disassemble_p_is="on"
 			;;
-		--no-disassemble-b-short | --disassemble-b-short)
-			_arg_disassemble_b_short="on"
-			test "${1:0:5}" = "--no-" && _arg_disassemble_b_short="off"
+		--no-disassemble-align-reference | --disassemble-align-reference)
+			_arg_disassemble_align_reference="on"
+			test "${1:0:5}" = "--no-" && _arg_disassemble_align_reference="off"
 			;;
-		--no-disassemble-best | --disassemble-best)
-			_arg_disassemble_best="on"
-			test "${1:0:5}" = "--no-" && _arg_disassemble_best="off"
+		--no-disassemble-simple-polishing | --disassemble-simple-polishing)
+			_arg_disassemble_simple_polishing="on"
+			test "${1:0:5}" = "--no-" && _arg_disassemble_simple_polishing="off"
 			;;
 		--disassemble-n)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -1031,6 +1053,14 @@ parse_commandline() {
 			;;
 		--genomesize-n=*)
 			_arg_genomesize_n="${_key##--genomesize-n=}"
+			;;
+		--max-filesize)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_max_filesize="$2"
+			shift
+			;;
+		--max-filesize=*)
+			_arg_max_filesize="${_key##--max-filesize=}"
 			;;
 		--taxonomy-genes)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -1163,6 +1193,14 @@ parse_commandline() {
 			_arg_log="${_key##--log=}"
 			_arg_log_is="on"
 			;;
+		--template)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_template="$2"
+			shift
+			;;
+		--template=*)
+			_arg_template="${_key##--template=}"
+			;;
 		--no-redo | --redo)
 			_arg_redo="on"
 			test "${1:0:5}" = "--no-" && _arg_redo="off"
@@ -1207,7 +1245,7 @@ parse_commandline() {
 }
 
 handle_passed_args_count() {
-	test "${_positionals_count}" -le 5 || _PRINT_HELP=yes die "FATAL ERROR: There were spurious positional arguments --- we expect between 0 and 3, but got ${_positionals_count} (the last one was: '${_last_positional}')." 1
+	test "${_positionals_count}" -le 6 || _PRINT_HELP=yes die "FATAL ERROR: There were spurious positional arguments --- we expect between 0 and 5, but got ${_positionals_count} (the last one was: '${_last_positional}')." 1
 }
 
 assign_positional_args() {

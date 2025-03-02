@@ -580,9 +580,15 @@ function _run_polap_taxonomy-reference {
 
 		read first second <<<"${_arg_species}"
 
-		seqkit grep -vnr -p "${second}" \
-			"${_ingroup_fasta}" \
-			-o "${_inref_fasta}"
+		if [[ "${_arg_yes}" == "off" ]]; then
+			seqkit grep -vnr -p "${second}" \
+				"${_ingroup_fasta}" \
+				-o "${_inref_fasta}"
+		else
+			seqkit grep -nr -p "${second}" \
+				"${_ingroup_fasta}" \
+				-o "${_inref_fasta}"
+		fi
 		seqkit rmdup -s "${_inref_fasta}" -o "${_inref2_fasta}"
 
 		_polap_log0 "-----------------------------------------------"
@@ -638,6 +644,7 @@ function _run_polap_taxonomy-reference {
 
 		_polap_log0 "-----------------------------------------------"
 		_polap_log0 "List of reference sequences for ${_arg_species}"
+		_polap_log0 "  see ${output_fasta}"
 		_polap_log0 "-----------------------------------------------"
 		seqkit seq -n "${output_fasta}" >&3
 	fi

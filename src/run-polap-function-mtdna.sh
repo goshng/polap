@@ -42,7 +42,6 @@ function _run_polap_mauve-mtdna {
 
 	# Set paths for bioproject data
 	source "$script_dir/polap-variables-common.sh"
-	source "$script_dir/polap-variables-common.sh"
 
 	# Help message
 	local help_message=$(
@@ -87,6 +86,48 @@ HEREDOC
 	_polap_log0 "mauve_lcb_length_coverage: ${_percent_identity}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+function _run_polap_compare2ptdna {
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Set paths for bioproject data
+	source "$script_dir/polap-variables-common.sh"
+
+	# Help message
+	local help_message=$(
+		cat <<HEREDOC
+# Compare the plastid DNA (ptDNA) sequence with the newly assembled 
+# one for verification purposes.
+#
+# Inputs:
+#   a.fasta: known mtDNA in fasta format
+#   b.fasta: another DNA sequence in fasta format
+# Outputs:
+#   the ratio of LCB total length divided by the known mtDNA sequence
+Example: $(basename "$0") ${_arg_menu[0]} -a o/00-bioproject/2-mtdna.fasta -b o/1/assembly.fasta
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	local _ptdir="${_arg_outdir}"
+	_polap_log3_pipe "python $script_dir/run-polap-py-compare2ptdna.py \
+    --seq1 ${_arg_short_read1} \
+    --seq2 ${_arg_short_read2} \
+		--out ${_ptdir} \
+		2>${_polap_output_dest}"
+
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 	return 0

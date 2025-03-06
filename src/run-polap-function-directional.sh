@@ -20,8 +20,8 @@ source "$script_dir/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-	set -u
-	return 0
+  set -u
+  return 0
 fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
@@ -43,20 +43,26 @@ declare "$_POLAP_INCLUDE_=1"
 #
 # As a proof of concept, we tested our method on a plant mitochondrial genome that was otherwise difficult to interpret, and found that it produced a somewhat simpler assembly graph. Going forward, it seems promising to apply this method to bacterial genome assembly as well.
 ################################################################################
-function _run_polap_dissemble {
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
-	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+function _run_polap_directional {
+  # Enable debugging if DEBUG is set
+  [ "$DEBUG" -eq 1 ] && set -x
+  _polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
-	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
-	local _polap_output_dest="/dev/null"
-	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+  # Set verbosity level: stderr if verbose >= 2, otherwise discard output
+  local _polap_output_dest="/dev/null"
+  [ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
+  source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
-	help_message=$(
-		cat <<HEREDOC
-Plastid genome assembly using long-read data without reference
+  help_message=$(
+    cat <<HEREDOC
+Plant mitochondrial genome assembly using directional long-read data
+
+1. Reference generating or whole-genome assembly or subsampling and WGA
+2. Select directional seed contigs: e.g., edge_1+,edge_2- not just edge_1,edge_2
+3. Map reads with only one directional
+4. Assemble the directional reads using dflye.
+5. Test the data
 
 Inputs
 ------
@@ -67,12 +73,13 @@ Inputs
 Outputs
 -------
 
-- plastid genome assembly
-- trace plots
+whole-genome assembly or subsampled whole-genome assembly
+let's first select reads
 
 Arguments
 ---------
 -o ${_arg_outdir}
+--directional-i <name>: name the directional
 -l ${_arg_long_reads}: a long-read fastq data file
 -a ${_arg_short_read1}: a short-read fastq data file
 
@@ -88,128 +95,117 @@ Usages
 ------
 $(basename "$0") ${_arg_menu[0]} -l ${_arg_long_reads} -a ${_arg_short_read1}
 HEREDOC
-	)
+  )
 
-	# Display help message
-	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
-	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
+  # Display help message
+  [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+  [[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
-	# Display the content of output files
-	if [[ "${_arg_menu[1]}" == "view" ]]; then
-		if [[ -s "${_polap_var_wga_contigger_edges_gfa}" ]]; then
-			_polap_log0_file "${_polap_var_wga_contigger_edges_gfa}"
-		else
-			_polap_log0 "No such file: ${_polap_var_wga_contigger_edges_gfa}"
-		fi
-		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
-		return 0
-		exit $EXIT_SUCCESS
-	fi
+  # Display the content of output files
+  if [[ "${_arg_menu[1]}" == "view" ]]; then
 
-	_polap_log0 "starting the whole-genome assembly on ${_arg_outdir} ..."
-	_polap_log1 "  output1: ${_polap_var_outdir_s1_fq_stats}"
-	_polap_log1 "  output1: ${_polap_var_outdir_s2_fq_stats}"
-	_polap_log1 "  output2: ${_polap_var_outdir_long_total_length}"
-	_polap_log1 "  output3: ${_polap_var_outdir_genome_size}"
-	_polap_log1 "  output4: ${_polap_var_outdir_lk_fq_gz}"
-	_polap_log1 "  output5: ${_polap_var_outdir_nk_fq_gz}"
-	_polap_log1 "  output6: ${_polap_var_wga_contigger_edges_gfa}"
-	_polap_log1 "  output7: ${_polap_var_wga_contigger_edges_stats}"
+    return 0
+  fi
 
-	# Skip flye1 if you want
-	if [[ "${_arg_flye}" == "on" ]]; then
-		if [[ -d "${_polap_var_wga}" ]]; then
-			if [[ "${_arg_redo}" = "on" ]]; then
-				_polap_log3_cmd rm -rf "${_polap_var_wga}"
-				_polap_log3_cmd mkdir -p "${_polap_var_wga}"
-			else
-				if confirm "Do you want to do the whole-genome assembly, which will delete ${_polap_var_wga}?"; then
-					_polap_log0 "  deleting and creating ${_polap_var_wga} ..."
-					_polap_log3_cmd rm -rf "${_polap_var_wga}"
-					_polap_log3_cmd mkdir -p "${_polap_var_wga}"
-				else
-					_polap_log0 "You have cancelled the whole-genome assembly."
-					return
-				fi
-			fi
-		else
-			_polap_log0 "  creating ${_polap_var_wga} ..."
-			_polap_log3_cmd mkdir -p "${_polap_var_wga}"
-		fi
-	fi
+  _polap_log0 "starting the directional genome assembly on ${_arg_outdir} ..."
 
-	if [ -s "${_polap_var_outdir_long_total_length}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log2 "  skipping total-length-long ..."
-	else
-		_run_polap_total-length-long
-	fi
+  #
 
-	if [ -s "${_polap_var_outdir_genome_size}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log2 "  skipping find-genome-size ..."
-	else
-		_run_polap_find-genome-size
-	fi
+  # funcition: like assemble2
+  #
+  # seeds: prepare seeds
+  # map: map reads
+  # reads: select reads and test reads
+  # flye3 or dflye
 
-	# prepare-polishing early on to delete short-read data files
-	if [ -s "${_polap_var_outdir_msbwt}" ]; then
-		_polap_log1 "  skipping the preparation of short-read polishing ..."
-	else
-		if [ -s "${_polap_var_outdir_msbwt_tar_gz}" ]; then
-			_polap_log1 "  decompressing ${_polap_var_outdir_msbwt_tar_gz} ... later when we polish it with the short-read data."
-			# tar zxf "${_polap_var_outdir_msbwt_tar_gz}"
-		else
-			_polap_log0 "  Do the preparation of short-read polishing ... early"
-			check_file_existence "${_arg_short_read1}"
-			_run_polap_prepare-polishing
-		fi
-	fi
+  # _run_polap_directional-prepare-seeds
+  # _run_polap_directional-map-reads
+  # _run_polap_directional-select-reads
 
-	if [ -s "${_polap_var_outdir_nk_fq_gz}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log2 "  skipping reduce-data ..."
-	else
-		_run_polap_reduce-data
-	fi
+  # INFO:
+  # _polap_directional-dflye -> call this dga
+  # disassemble combined wga/oga and assemble modules
+  # the v0.2 separtes wga/oga and assemble modules
+  # _run_polap_directional -> like _run_polap_assemble2
+  # so, we could exectue dflye in _run_polap_dflye in dga module
+  # run_polap_dflye -> like run_polap_flye2
 
-	if [ -s "${_polap_var_outdir_lk_fq_stats}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log2 "  skipping summary-reads ..."
-	else
-		_run_polap_summary-reads
-	fi
+  # _run_polap_dflye
 
-	if [ -s "${_polap_var_wga_contigger_edges_gfa}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log2 "  skipping flye1 ..."
-	else
-		if [[ "${_arg_flye}" == "on" ]]; then
-			_run_polap_flye1
-		else
-			_polap_log2 "  skipping flye1 ..."
-		fi
-	fi
+  # local out="${1}"
+  # local long_read="${2}"
+  # local expected_genome_size="${3}"
 
-	if [ -s "${_polap_var_ga_contigger_edges_stats}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log2 "  skipping edges-stats ..."
-	else
-		_run_polap_edges-stats
-		if [ $? -eq $RETURN_FAIL ]; then
-			_polap_log0 "ERROR: edges-stats step failed."
-			return $RETURN_FAIL
-		fi
-	fi
+  local step_array
 
-	if [ -s "${_polap_var_ga_annotation_all}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log2 "  skipping annotation ..."
-	else
-		_run_polap_annotate
-		if [ $? -eq $RETURN_FAIL ]; then
-			_polap_log0 "ERROR: annotation step failed."
-			return $RETURN_FAIL
-		fi
-	fi
+  # select steps
+  if [[ -z "${_arg_steps_include}" ]]; then
+    _arg_steps_include="1-6"
+    _arg_steps_exclude=""
+  fi
 
-	_polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
-	return 0
+  local _include="${_arg_steps_include}"
+  local _exclude="${_arg_steps_exclude}" # Optional range or list of steps to exclude
+  _step_array=()
+
+  _step_array=($(_polap_parse_steps "${_include}" "${_exclude}"))
+  _rstatus="$?"
+  if [[ "${_rstatus}" -ne 0 ]]; then
+    _polap_log0 "ERROR: Error parsing steps."
+    return "${_POLAP_ERR_CMD_OPTION_STEPS}"
+  fi
+
+  _polap_log2 "  executing steps: ${_step_array[*]}"
+  local _directional_dir="${_arg_outdir}/${_arg_jnum}/directional/${_arg_directional_i}"
+
+  _polap_log3_cmd mkdir -p "${_directional_dir}"
+
+  if _polap_contains_step 1 "${_step_array[@]}"; then
+    _polap_directional-prepare-seeds
+  fi
+
+  if _polap_contains_step 2 "${_step_array[@]}"; then
+    _polap_directional-map-reads
+  fi
+
+  # create index
+  if _polap_contains_step 3 "${_step_array[@]}"; then
+    _polap_directional-prepare-loop-iteration
+  fi
+
+  local _index_table="${_directional_dir}/index.txt"
+  local i
+  local omega
+  while IFS=$'\t' read -r i omega; do
+    _polap_log0 "index: ${i} - ${omega}"
+
+    local _directional_dir_i="${_directional_dir}/${i}"
+    _polap_log3_cmd mkdir -p "${_directional_dir_i}"
+
+    if _polap_contains_step 4 "${_step_array[@]}"; then
+      _polap_directional-reads "${i}" "${omega}"
+    fi
+
+    if _polap_contains_step 5 "${_step_array[@]}"; then
+      _polap_directional-subsample "${i}" "${omega}"
+    fi
+
+    if _polap_contains_step 6 "${_step_array[@]}"; then
+      _polap_directional-flye "${i}" "${omega}"
+    fi
+
+    if _polap_contains_step 7 "${_step_array[@]}"; then
+      _polap_log0 "step 7: dflye summary"
+    fi
+
+    if _polap_contains_step 8 "${_step_array[@]}"; then
+      _polap_log0 "step 8: dflye plot"
+    fi
+
+  done <"${_index_table}"
+
+  _polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+  # Disable debugging if previously enabled
+  [ "$DEBUG" -eq 1 ] && set +x
+  return 0
 }

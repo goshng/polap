@@ -62,10 +62,12 @@ source "${LIB_DIR}/polap-lib-table.sh"
 source "${LIB_DIR}/polap-lib-timing.sh"
 source "${LIB_DIR}/polap-lib-number.sh"
 source "${LIB_DIR}/polap-lib-ncbi.sh"
+source "${LIB_DIR}/polap-lib-random.sh"
 source "$script_dir/run-polap-function-menus.sh"
 source "$script_dir/polap-function-set-variables.sh"
 source "$script_dir/run-polap-function-fastq.sh"
 source "$script_dir/run-polap-function-fasta.sh"
+source "$script_dir/run-polap-function-random.sh"
 source "$script_dir/run-polap-function-bandage.sh"
 source "$script_dir/run-polap-function-wga.sh"
 
@@ -100,7 +102,7 @@ source "$script_dir/run-polap-function-archive.sh"
 # assemble
 source "$script_dir/run-polap-function-assemble.sh"
 source "$script_dir/run-polap-function-disassemble.sh"
-source "$script_dir/run-polap-function-dissemble.sh"
+source "$script_dir/run-polap-function-directional.sh"
 
 # miscellaneous
 source "$script_dir/run-polap-function-miscellaneous.sh"

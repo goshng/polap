@@ -62,6 +62,7 @@ function usage() {
 	echo "-g, --genomesize      <expected genome size of plastome (bp), default:160000>"
 	echo "-c, --coverage        <a rough coverage of data used for plastome assembly, default:50>"
 	echo "-f, --filtered        <the raw long reads will be filtered if the lengths are less than this number (bp); default: 3000>"
+	echo "-m, --min-read        <the mapped long reads will be filtered if the lengths are less than this number (bp); default: 3000>"
 	echo "-o, --outputdir       <output directory of results, defult is current directory>"
 	echo ""
 	echo ""
@@ -81,6 +82,7 @@ function usage() {
 
 NUM_THREADS=1
 FRL=3000
+MINMAP=1000
 GEM=160000
 COV=50
 OPD=./
@@ -107,6 +109,10 @@ while [[ $# > 0 ]]; do
 		;;
 	-f | --filtered)
 		FRL="$2"
+		shift
+		;;
+	-m | --minmap)
+		MINMAP="$2"
 		shift
 		;;
 	-c | --coverage)
@@ -178,7 +184,8 @@ if [ ! -s $OPD/result_$FRL/filter_name ]; then
 	# more filters
 	minimap2 -cx map-ont $REF $LR >$OPD/result_$FRL/filter.paf 2>>error.txt
 	awk '{print $1, $10, $11, $10/$11}' $OPD/result_$FRL/filter.paf >$OPD/result_$FRL/filter_1.paf
-	awk '{if (($4>=0.7) && ($3 >=1000)) {print}}' $OPD/result_$FRL/filter_1.paf >$OPD/result_$FRL/filter_2.paf
+	# awk '{if (($4>=0.7) && ($3 >=1000)) {print}}' $OPD/result_$FRL/filter_1.paf >$OPD/result_$FRL/filter_2.paf
+	awk -v minmap="$MINMAP" '{if (($4>=0.7) && ($3 >= minmap)) {print}}' $OPD/result_$FRL/filter_1.paf >$OPD/result_$FRL/filter_2.paf
 	awk '{print $1}' $OPD/result_$FRL/filter_2.paf >$OPD/result_$FRL/filter_name
 
 fi

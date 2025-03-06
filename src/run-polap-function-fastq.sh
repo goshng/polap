@@ -79,7 +79,8 @@ HEREDOC
 		local _infile="${_arg_menu[2]}"
 		local _outfile="${_arg_menu[3]}"
 		local _rate="${_arg_menu[4]}"
-		local _seed=${_arg_random_seed:-$RANDOM}
+		_polap_lib_random-get
+		local _seed=${_polap_var_random_number}
 
 		seqkit sample \
 			-p "${_rate}" \
@@ -99,7 +100,7 @@ HEREDOC
 		local _infile="${_arg_menu[2]}"
 		local _outfile="${_arg_menu[3]}"
 		local _rate
-		local _seed=${_arg_random_seed:-$RANDOM}
+		local _seed
 
 		_polap_log0 "subsample the long-read data using a given target coverage: ${_arg_coverage}x"
 		if [[ ! -s "${_arg_outdir}/l.fq.txt" ]]; then
@@ -122,22 +123,35 @@ HEREDOC
 		local _coverage_long=$(echo "scale=5; ${_l} / ${_v}" | bc)
 		local _rate=$(echo "scale=5; ${_arg_coverage} / ${_coverage_long}" | bc)
 
-		_polap_log1 "  arg1: ${_arg_species}"
-		_polap_log1 "  input1: ${_infile}"
-		_polap_log1 "  output1: ${_outfile}"
-		_polap_log1 "  random seed: ${_seed}"
-		_polap_log1 "  long-read: ${_l} (bp)"
-		_polap_log1 "  genome size: ${_v} (bp)"
-		_polap_log1 "  long-read coverage: ${_coverage_long}x"
-		_polap_log1 "  target coverage: ${_arg_coverage}x"
-		_polap_log1 "  sampling rate: ${_rate}"
+		local result=$(echo "$_rate < 1" | bc)
 
-		seqkit sample \
-			-p "${_rate}" \
-			-s "${_seed}" \
-			"${_infile}" \
-			-o ${_outfile} 2>${_polap_output_dest}
+		if [ "$result" -eq 1 ]; then
+			# echo "The rate value is less than 1"
+			_polap_lib_random-get
+			_seed=${_polap_var_random_number}
 
+			_polap_log1 "  arg1: ${_arg_species}"
+			_polap_log1 "  input1: ${_infile}"
+			_polap_log1 "  output1: ${_outfile}"
+			_polap_log1 "  random seed: ${_seed}"
+			_polap_log1 "  long-read: ${_l} (bp)"
+			_polap_log1 "  genome size: ${_v} (bp)"
+			_polap_log1 "  long-read coverage: ${_coverage_long}x"
+			_polap_log1 "  target coverage: ${_arg_coverage}x"
+			_polap_log1 "  sampling rate: ${_rate}"
+
+			seqkit sample \
+				-p "${_rate}" \
+				-s "${_seed}" \
+				"${_infile}" \
+				-o ${_outfile} 2>${_polap_output_dest}
+
+		else
+			# echo "The value is not less than 1"
+			_polap_log1 "  sampling rate is not less than 1: ${_rate}"
+			_polap_log1 "  no subsampling of input: ${_infile}"
+			_polap_log0 "  no subsampling result: ${_outfile}"
+		fi
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
 		[ "$DEBUG" -eq 1 ] && set +x
@@ -152,7 +166,7 @@ HEREDOC
 		local _outfile1="${_arg_menu[4]}"
 		local _outfile2="${_arg_menu[5]}"
 		local _rate
-		local _seed=${_arg_random_seed:-$RANDOM}
+		local _seed
 
 		_polap_log0 "subsample the paired-read data using a given target coverage: ${_arg_coverage}x"
 		if [[ ! -s "${_arg_outdir}/s1.fq.txt" ]]; then
@@ -188,38 +202,52 @@ HEREDOC
 		local _coverage_short=$(echo "scale=5; ${_s} / ${_v}" | bc)
 		local _rate=$(echo "scale=5; ${_arg_coverage} / ${_coverage_short}" | bc)
 
-		_polap_log1 "  arg1: ${_arg_species}"
-		_polap_log1 "  input1: ${_infile1}"
-		_polap_log1 "  input2: ${_infile2}"
-		_polap_log1 "  output1: ${_outfile1}"
-		_polap_log1 "  output2: ${_outfile2}"
-		_polap_log1 "  random seed: ${_seed}"
-		_polap_log1 "  short-read1: ${_s1} (bp)"
-		_polap_log1 "  short-read2: ${_s2} (bp)"
-		_polap_log1 "  short-read: ${_s} (bp)"
-		_polap_log1 "  short-read coverage: ${_coverage_short}x"
-		_polap_log1 "  genome size: ${_v} (bp)"
-		_polap_log1 "  target coverage: ${_arg_coverage}x"
-		_polap_log1 "  sampling rate: ${_rate}"
+		local result=$(echo "$_rate < 1" | bc)
 
-		# Example:
-		# seqtk sample -s100 read1.fq 0.1 >sub1.fq
-		# seqtk sample -s100 read2.fq 0.1 >sub2.fq
+		if [ "$result" -eq 1 ]; then
+			# echo "The rate value is less than 1"
+			_polap_lib_random-get
+			_seed=${_polap_var_random_number}
 
-		seqtk sample \
-			-s"${_seed}" \
-			"${_infile1}" \
-			"${_rate}" \
-			>"${_outfile1}"
+			_polap_log1 "  arg1: ${_arg_species}"
+			_polap_log1 "  input1: ${_infile1}"
+			_polap_log1 "  input2: ${_infile2}"
+			_polap_log1 "  output1: ${_outfile1}"
+			_polap_log1 "  output2: ${_outfile2}"
+			_polap_log1 "  random seed: ${_seed}"
+			_polap_log1 "  short-read1: ${_s1} (bp)"
+			_polap_log1 "  short-read2: ${_s2} (bp)"
+			_polap_log1 "  short-read: ${_s} (bp)"
+			_polap_log1 "  short-read coverage: ${_coverage_short}x"
+			_polap_log1 "  genome size: ${_v} (bp)"
+			_polap_log1 "  target coverage: ${_arg_coverage}x"
+			_polap_log1 "  sampling rate: ${_rate}"
 
-		seqtk sample \
-			-s"${_seed}" \
-			"${_infile2}" \
-			"${_rate}" \
-			>"${_outfile2}"
+			# Example:
+			# seqtk sample -s100 read1.fq 0.1 >sub1.fq
+			# seqtk sample -s100 read2.fq 0.1 >sub2.fq
 
-		gzip "${_outfile1}"
-		gzip "${_outfile2}"
+			seqtk sample \
+				-s"${_seed}" \
+				"${_infile1}" \
+				"${_rate}" \
+				>"${_outfile1}"
+
+			seqtk sample \
+				-s"${_seed}" \
+				"${_infile2}" \
+				"${_rate}" \
+				>"${_outfile2}"
+
+			gzip "${_outfile1}"
+			gzip "${_outfile2}"
+		else
+			# echo "The value is not less than 1"
+			_polap_log1 "  sampling rate is not less than 1: ${_rate}"
+			_polap_log1 "  no subsampling of input: ${_infile}"
+			_polap_log0 "  no subsampling result: ${_outfile1}"
+			_polap_log0 "  no subsampling result: ${_outfile2}"
+		fi
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled

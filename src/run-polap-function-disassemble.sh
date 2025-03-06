@@ -597,7 +597,11 @@ function _disassemble-step3 {
 
 		local _total_length_short=$(<"${_polap_var_outdir_short_total_length}")
 		local _total_length_short_bp=$(_polap_utility_convert_bp ${_total_length_short})
-		_polap_log3 "    the size of the short-read dataset: ${_total_length_short_bp}"
+		if [[ -n "${_total_length_short_bp}" ]]; then
+			_polap_log3 "    the size of the short-read dataset: ${_total_length_short_bp}"
+		else
+			die "ERROR: short-read data size is not computed."
+		fi
 	fi
 }
 
@@ -640,10 +644,10 @@ function _disassemble-step8 {
 			die "ERROR: cflye failed to run."
 		fi
 
-		if ((_summary_peak_ram_size_gb < _arg_disassemble_min_memory)); then
-			_polap_log2 "  cFlye: used memory is less than ${_arg_disassemble_min_memory} Gb ($i): $_summary_peak_ram_size_gb"
+		if ((_summary_peak_ram_size_gb < _arg_disassemble_memory)); then
+			_polap_log2 "  cFlye: used memory is less than ${_arg_disassemble_memory} Gb ($i): $_summary_peak_ram_size_gb"
 		else
-			_polap_log2 "  cFlye: used memory is not less than ${_arg_disassemble_min_memory} Gb ($i): $_summary_peak_ram_size_gb"
+			_polap_log2 "  cFlye: used memory is not less than ${_arg_disassemble_memory} Gb ($i): $_summary_peak_ram_size_gb"
 			_polap_log2 "  exit the disassemble menu."
 			_is_stop="on"
 		fi
@@ -1120,8 +1124,11 @@ function _disassemble-stage2 {
 			n=$(awk 'END {print NR - 1}' "${_summary1_ordered}")
 			if ((n < 5)); then
 				_polap_log0 "  warning: the number of potential ptDNA assemblies is too small to select one"
-				_polap_log0 "  suggestion: increase the subsample size --disassemble_p or the step size --disassemble_n"
-				_polap_log0 "  suggestion: increase the subsample size --disassemble_b or the step size --disassemble_n"
+				_polap_log0 "  suggestion: decrease the max subsample size rate --disassemble-p"
+				_polap_log0 "  suggestion: increase the step size --disassemble-n"
+				_polap_log0 "  suggestion: decrease the subsample size --disassemble-b"
+				_polap_log0 "  suggestion: decrease the maximum draft genome size for update alpha --disassemble-m"
+				_polap_log0 "  suggestion: increase the maximum memory requirement --disassemble-memory"
 			elif ((n < 2)); then
 				_polap_log0 "ERROR: the number of potential ptDNA assemblies is less than 2"
 				return "${_POLAP_ERR_SUBSAMPLE_TOO_FEW_CANDIDATES}"
@@ -1412,7 +1419,7 @@ function _disassemble-stage3 {
 			n=$(awk 'END {print NR - 1}' "${_summary1_ordered}")
 			if ((n < 5)); then
 				_polap_log0 "  warning: the number of potential ptDNA assemblies is too small to select one"
-				_polap_log0 "  suggestion: increase the replicate size --disassemble_r"
+				_polap_log0 "  suggestion: increase the replicate size --disassemble-r"
 			elif ((n < 2)); then
 				_polap_log0 "ERROR: the number of potential ptDNA assemblies is less than 2"
 				return "${_POLAP_ERR_SUBSAMPLE_TOO_FEW_CANDIDATES}"
@@ -1460,6 +1467,8 @@ _disassemble_make_params_txt() {
 	printf "%s: %s\n" "N" "${_arg_disassemble_n}" >>"${_disassemble_params_file}"
 	printf "%s: %s\n" "R" "${_arg_disassemble_r}" >>"${_disassemble_params_file}"
 	printf "%s: %s\n" "A" "${_arg_disassemble_a}" >>"${_disassemble_params_file}"
+	printf "%s: %s\n" "M" "${_arg_disassemble_m}" >>"${_disassemble_params_file}"
+	printf "%s: %s\n" "memory" "${_arg_disassemble_memory}" >>"${_disassemble_params_file}"
 }
 
 _disassemble_make_params_stage1() {
@@ -1683,7 +1692,7 @@ Stage 1:
 -l ${_arg_long_reads}: a long-read fastq data file
 -a ${_arg_short_read1}: a short-read fastq data file 1
 -b ${_arg_short_read2} (optional): a short-read fastq data file 2
---disassemble-min-memory ${_arg_disassemble_min_memory}: the minimum memory in Gb
+--disassemble-memory ${_arg_disassemble_memory}: the maximum memory in Gb
 --disassemble-a ${_arg_disassemble_a}: the smallest long read
 --disassemble-b ${_arg_disassemble_b}: the largest long read
 --disassemble-n ${_arg_disassemble_n}: the number of steps (max 1000)
@@ -2067,8 +2076,8 @@ HEREDOC
 	# ptgaul
 	if [[ "${_arg_menu[1]}" == "ptgaul" ]]; then
 
-		_contigger_edges_gfa="${_arg_outdir}/result_3000/flye_cpONT/assembly_graph.gfa"
-		_outdir="${_arg_outdir}/result_3000/flye_cpONT/ptdna"
+		_contigger_edges_gfa="${_arg_outdir}/ptgaul/flye_cpONT/assembly_graph.gfa"
+		_outdir="${_arg_outdir}/ptgaul/flye_cpONT/ptdna"
 
 		_mtcontigname="${_outdir}/mt.contig.name"
 		_arg_unpolished_fasta="${_outdir}/circular_path_1_concatenated.fa"
@@ -2107,18 +2116,47 @@ HEREDOC
 
 			elif [[ "${_summary_gfa_number_segments}" -eq 1 ]]; then
 				_polap_log0 "ptGAUL assembly's segments: ${_summary_gfa_number_segments}"
-				_arg_unpolished_fasta="${_arg_outdir}/result_3000/ptGAUL_final_assembly/final_assembly.fasta"
+				_arg_unpolished_fasta="${_arg_outdir}/ptgaul/ptGAUL_final_assembly/final_assembly.fasta"
 				_polap_log0 "ptGAUL assembly: ${_arg_unpolished_fasta}"
 				_polap_log0 "polishing ptDNA: ${_arg_unpolished_fasta}"
 				_run_polap_polish
 				_polap_log0 "ptGAUL polished assembly: ${_arg_final_assembly}"
 			else
-				_polap_log0 "ptGAUL assembly's segment counts: ${_summary_gfa_number_segments}"
-				_polap_log0 "you may not use ptgaul menu at the moment."
-				_polap_log0 "check: ${_contigger_edges_gfa}"
-				_polap_log0 "create: ${_mtcontigname} with e.g., edge_1 that is originated from the ptDNA."
-				_polap_log0 "then run disassemble ptgaul 2"
-				_polap_log0 "then run disassemble ptgaul 3"
+				# extract three unique edges from the gfa for a ptDNA candidate
+				#
+				# L	edge_3	+	edge_4	+	0M	RC:i:41
+				# L	edge_3	+	edge_4	-	0M	RC:i:40
+				# L	edge_3	-	edge_5	-	0M	RC:i:42
+				# L	edge_3	-	edge_5	+	0M	RC:i:41
+				# P	contig_5	edge_4-,edge_3-,edge_5+,edge_3+,edge_4+,edge_3-	*
+				# P	contig_1	edge_1+	*
+				# P	contig_2	edge_2+	*
+				#
+				$script_dir/run-polap-sh-extract-three-edges-of-ptdna.sh \
+					"${_contigger_edges_gfa}" \
+					"${_mtcontigname}"
+				if [[ -s "${_mtcontigname}" ]]; then
+					# extract ptDNA from ptGAUL's result
+					_polap_log3_pipe "python \
+          $script_dir/run-polap-py-find-plastid-gfa2fasta.py \
+		        --gfa ${_contigger_edges_gfa} \
+		        --seed ${_mtcontigname} \
+		        --out ${_outdir} \
+		        2>$_polap_output_dest"
+					# polish one of the ptDNA sequences
+					_polap_log0 "polishing ptDNA: ${_arg_unpolished_fasta}"
+					_run_polap_polish
+					_polap_log0 "ptGAUL polished assembly: ${_arg_final_assembly}"
+
+				else
+					_polap_log0 "ptGAUL assembly's segment counts: ${_summary_gfa_number_segments}"
+					_polap_log0 "you may not use ptgaul menu at the moment."
+					_polap_log0 "check: ${_contigger_edges_gfa}"
+					_polap_log0 "create: ${_mtcontigname} with e.g., edge_1 that is originated from the ptDNA."
+					_polap_log0 "then execute:disassemble ptgaul 2"
+					_polap_log0 "polap disassemble ptgaul 2 -o ${_arg_outdir}"
+					_polap_log0 "polap disassemble ptgaul 3 -o ${_arg_outdir}"
+				fi
 			fi
 		fi
 
@@ -2705,7 +2743,8 @@ HEREDOC
 			_polap_log2 "    output: ${_long_read}"
 			_summary_long_total=$(<"${_polap_var_outdir_long_total_length}")
 			_summary_long_rate_sample=$(echo "scale=10; ${sampling_datasize}/${_summary_long_total}" | bc)
-			_summary_long_sample_seed=${_arg_random_seed:-$RANDOM}
+			_polap_lib_random-get
+			_summary_long_sample_seed=${_polap_var_random_number}
 			_polap_log3 "    input2: sampling rate: ${_summary_long_rate_sample}"
 			_polap_log3 "    input3: random seed: ${_summary_long_sample_seed}"
 			_polap_log3_pipe "seqkit sample \
@@ -2738,7 +2777,8 @@ HEREDOC
 			check_file_existence "${_input_short_reads}"
 			_summary_short_total=$(<"${_polap_var_outdir_short_total_length}")
 			_summary_short_rate_sample="${_summary_long_rate_sample}"
-			_summary_short_sample_seed=${_arg_random_seed:-$RANDOM}
+			_polap_lib_random-get
+			_summary_short_sample_seed=${_polap_var_random_number}
 			_polap_log3 "    input1: sampling rate: ${_summary_short_rate_sample}"
 			_polap_log3 "    input2: random seed: ${_summary_short_sample_seed}"
 			_polap_log3_pipe "seqkit sample \
@@ -3078,7 +3118,8 @@ HEREDOC
 			_summary_short_total=$(<"${_polap_var_outdir_short_total_length}")
 			_polap_log1 "    use sample size: ${sampling_datasize} bp"
 			_summary_short_rate_sample=$(echo "scale=10; ${sampling_datasize}/${_summary_short_total}" | bc)
-			_summary_short_sample_seed=${_arg_random_seed:-$RANDOM}
+			_polap_lib_random-get
+			_summary_short_sample_seed=${_polap_var_random_number}
 			_polap_log2 "    input1: sampling rate: ${_summary_short_rate_sample}"
 			_polap_log2 "    input2: random seed: ${_summary_short_sample_seed}"
 			_polap_log2 "    input3: short read data: ${_input_short_reads}"

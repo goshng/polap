@@ -758,7 +758,8 @@ HEREDOC
 				if echo "${_RATE} > 0" | bc -l | grep -q 1; then
 					_polap_log1 "  sampling long-read data by ${_RATE} ..."
 					_polap_log1 "    ${_RATE} <= target long-read genome coverage[${_arg_coverage}]/expected long-read genome coverage[${_EXPECTED_LONG_COVERAGE}] ..."
-					local _random_seed=${_arg_random_seed:-$RANDOM}
+					_polap_lib_random-get
+					local _random_seed=${_polap_var_random_number}
 					_polap_log1 "  random seed for reducing the whole-genome assembly long-read data: ${_random_seed}"
 					# _polap_log3 "seqkit sample -p ${_RATE} ${_arg_long_reads} -o ${nfq_file}"
 					# seqkit sample -p "${_RATE}" "${_arg_long_reads}" -o "${nfq_file}" >${_polap_output_dest} 2>&1
@@ -832,7 +833,8 @@ HEREDOC
 			local _RATE=$(echo "scale=4; $limit_file_size / $file_size" | bc)
 			# Compare value with 0
 			if echo "${_RATE} > 0" | bc -l | grep -q 1; then
-				local _random_seed=${_arg_random_seed:-$RANDOM}
+				_polap_lib_random-get
+				local _random_seed=${_polap_var_random_number}
 				_polap_log1 "  random seed for reducing the whole-genome assembly long-read data: ${_random_seed}"
 				_polap_log3_pipe "seqkit sample \
             -p ${_RATE} \

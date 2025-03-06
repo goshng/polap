@@ -910,15 +910,16 @@ HEREDOC
 				local _rate=$(echo "scale=5; ${_arg_coverage}/$_expected_organelle_coverage" | bc)
 				_polap_log0 "  long-read data reduction by rate of ${_rate} <= COV[${_arg_coverage}] / long-read organelle coverage[$_expected_organelle_coverage]"
 				_polap_log1 "    sampling long-read data by ${_rate} ... wait ..."
-				local _random_seed=${_arg_random_seed:-$RANDOM}
+				_polap_lib_random-get
+				local _random_seed=${_polap_var_random_number}
 				# local _random_seed=11
 				_polap_log1 "    random seed for reducing long reads mapped on potential seed contigs: ${_random_seed}"
 				_polap_log3_pipe "seqkit sample \
-        -p ${_rate} \
-        -s ${_random_seed} \
-			  ${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz \
-        -o ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz \
-        2>${_polap_output_dest}"
+          -p ${_rate} \
+          -s ${_random_seed} \
+			    ${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz \
+          -o ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz \
+          2>${_polap_output_dest}"
 				_polap_log3_pipe "echo ${_random_seed} >${_polap_var_oga_subsample}/${_pread_sel}/${i}.random.seed.${_random_seed}"
 			else
 				_polap_log0 "    no reduction of the long-read data because of the option --no-coverage-check: expected coverage: ${_expected_organelle_coverage}"
@@ -1902,7 +1903,8 @@ HEREDOC
 			_polap_log0 "  long-read data reduction by rate of $RATE <= COV[${_arg_coverage}] / long-read organelle coverage[$EXPECTED_ORGANELLE_COVERAGE]"
 			_polap_log1 "    sampling long-read data by $RATE ... wait ..."
 			# seqkit sample -p "$RATE" "${MTSEEDSDIR}/1.fq.gz" -o "${MTSEEDSDIR}/2.fq.gz" >/dev/null 2>&1
-			local seed=${_arg_random_seed:-$RANDOM}
+			_polap_lib_random-get
+			local seed=${_polap_var_random_number}
 			_polap_log1 "    random seed for reducing the single-mapped long-read data: ${seed}"
 			_polap_log3_pipe "seqkit sample \
         -p ${RATE} \

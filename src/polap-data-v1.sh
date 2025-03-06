@@ -463,21 +463,28 @@ assemble1-subsample_genus_species_for() {
 	mkdir -p "${subsample1_dir}"
 	# To gunzip a .gz file to a specific folder
 	# while keeping the original .gz file, use:
-	gzip -dc "${long_fastq}.gz" >"${subsample_dir}/${long_fastq}"
-	gzip -dc "${short1_fastq}.gz" >"${subsample_dir}/${short1_fastq}"
-	gzip -dc "${short2_fastq}.gz" >"${subsample_dir}/${short2_fastq}"
-	command time -v polap assemble1 \
-		-o "${subsample1_dir}" \
-		-l "${subsample_dir}/${long_fastq}" \
-		-a "${subsample_dir}/${short1_fastq}" \
-		-b "${subsample_dir}/${short2_fastq}" \
-		2>timing-polap-assemble1-subsample-${coverage}x.txt
+	if [[ -s "${long_fastq}.gz" ]]; then
 
-	echo "Execute for the annotation table: polap annotate view -o ${output_dir}/${subsample1_dir}"
-	echo "Execute to try to automatically create seeds: polap seeds -o ${output_dir}/${subsample1_dir}"
-	echo "Make sure that you have seed contigs in file: ${output_dir}/${subsample1_dir}/0/mt.contig.name-1"
-	echo "Use Bandage to view ${output_dir}/${subsample1_dir}/0/30-contigger/graph_final.gfa"
-	echo "  to locate edge_<number> at the top of the annotation table."
+		gzip -dc "${long_fastq}.gz" >"${subsample_dir}/${long_fastq}"
+		gzip -dc "${short1_fastq}.gz" >"${subsample_dir}/${short1_fastq}"
+		gzip -dc "${short2_fastq}.gz" >"${subsample_dir}/${short2_fastq}"
+		command time -v polap assemble1 \
+			-o "${subsample1_dir}" \
+			-l "${subsample_dir}/${long_fastq}" \
+			-a "${subsample_dir}/${short1_fastq}" \
+			-b "${subsample_dir}/${short2_fastq}" \
+			2>timing-polap-assemble1-subsample-${coverage}x.txt
+
+		echo "Execute for the annotation table: polap annotate view -o ${output_dir}/${subsample1_dir}"
+		echo "Execute to try to automatically create seeds: polap seeds -o ${output_dir}/${subsample1_dir}"
+		echo "Make sure that you have seed contigs in file: ${output_dir}/${subsample1_dir}/0/mt.contig.name-1"
+		echo "Use Bandage to view ${output_dir}/${subsample1_dir}/0/30-contigger/graph_final.gfa"
+		echo "  to locate edge_<number> at the top of the annotation table."
+	else
+		echo "WARNING: no long-read data: ${long_fastq}.gz"
+		echo "  deleting ${subsample_dir}"
+		rm -rf "${subsample_dir}"
+	fi
 
 	cd -
 }
@@ -497,8 +504,12 @@ seeds-subsample_genus_species_for() {
 
 	cd "${output_dir}" || exit
 
-	polap seeds \
-		-o "${subsample1_dir}"
+	if [[ -d "${subsample_dir}" ]]; then
+		polap seeds \
+			-o "${subsample1_dir}"
+	else
+		echo "WARNING: no such folder: ${subsample_dir}"
+	fi
 
 	echo "Execute for the annotation table with seeds: polap seeds view -o ${output_dir}/${subsample1_dir} -j <target_assembly>"
 	echo "Execute for organelle-genome assembly: polap assemble2 -o ${output_dir}/${subsample1_dir} -j <target_assembly>"
@@ -522,13 +533,17 @@ assemble2-subsample_genus_species_for() {
 
 	cd "${output_dir}" || exit
 
-	command time -v polap assemble2 \
-		-j "${target_assembly}" \
-		-o "${subsample1_dir}" \
-		2>timing-polap-assemble2-subsample-${coverage}x.txt
+	if [[ -d "${subsample_dir}" ]]; then
+		command time -v polap assemble2 \
+			-j "${target_assembly}" \
+			-o "${subsample1_dir}" \
+			2>timing-polap-assemble2-subsample-${coverage}x.txt
 
-	echo "Use Bandage to view ${subsample1_dir}/1/assembly_graph.gfa"
-	echo "  to locate and extract mtDNA sequences."
+		echo "Use Bandage to view ${subsample1_dir}/1/assembly_graph.gfa"
+		echo "  to locate and extract mtDNA sequences."
+	else
+		echo "WARNING: no such folder: ${subsample_dir}"
+	fi
 
 	cd -
 }

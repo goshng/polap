@@ -17,7 +17,7 @@ read-a-tsv-file-into-associative-arrays() {
   csv_file="src/polap-data-v4.csv"
 
   # Read the CSV file (skip header)
-  while IFS=$',' read -r species long short host inref range random_seed; do
+  while IFS=$',' read -r species long short host inref min_read range random_seed; do
     # Skip header line
     [[ "$species" == "species" ]] && continue
 
@@ -25,6 +25,7 @@ read-a-tsv-file-into-associative-arrays() {
     _long["$species"]="$long"
     _short["$species"]="$short"
     _host["$species"]="$host"
+    _min_read["$species"]="$min_read"
     _range["$species"]="$range"
     _random_seed["$species"]="$random_seed"
   done <"$csv_file"
@@ -309,13 +310,14 @@ directional_genus_species() {
 
   IFS=':' read -r -a extracted_array_n <<<"${_range["$1"]}"
   local extracted_range="${_range["$1"]//:/,}"
+  local extracted_min_read="${_min_read["$1"]}"
 
   ${_polap_cmd} directional \
     -v -v \
     --select-read-range "${extracted_range}" \
     -o ${output_dir}/o \
     --directional-i 1 \
-    --min-read-length 10000 \
+    --min-read-length "${extracted_min_read}" \
     -i 1 -j 3
 }
 

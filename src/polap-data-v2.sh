@@ -75,18 +75,19 @@ Stable2=(
 )
 
 Stable3=(
+	'Eucalyptus_pauciflora'
+	'Juncus_validus'
 	'Dioscorea_japonica'
 	'Cucumis_sativus_var_hardwickii'
-	# 'Eucalyptus_pauciflora'
 	'Euonymus_alatus'
 	# 'Brassica_carinata'
 	'Oryza_rufipogon'
-	# 'Populus_x_sibirica'
+	'Populus_x_sibirica'
 	'Musa_acuminata_subsp_malaccensis'
 	'Vaccinium_vitis-idaea'
 	'Macadamia_jansenii'
 	'Arabidopsis_thaliana'
-	# 'Prunus_mandshurica'
+	'Prunus_mandshurica'
 	'Leiosporoceros_dussii'
 	'Anthoceros_agrestis'
 	'Vitis_vinifera'
@@ -154,7 +155,7 @@ _polap_subcmd=(
 	'ptgaul'
 	'msbwt'
 	'extract-ptdna-of-ptgaul'
-	'copy-ptdna-of-ptgaul'
+	'downsample'
 	'infer'
 	'check'
 	'compare'
@@ -406,6 +407,11 @@ if [[ "${_arg3}" != "default_value" ]]; then
 	_arg3="${3%/}"
 fi
 
+_arg4=${4:-"default_value"}
+if [[ "${_arg4}" != "default_value" ]]; then
+	_arg4="${4%/}"
+fi
+
 _arg1=${1:-"default_value"}
 # Check if the species folder is provided
 if [[ "${_arg1}" == "default_value" ]]; then
@@ -466,12 +472,6 @@ batch_genus_species() {
 					_log_echo "Fail: sequencing data"
 					return 1
 				fi
-			fi
-
-			if find "${output_dir}/getorganelle" -maxdepth 1 -type f -name 'embplant_pt.*.gfa' -size +0c | grep -q .; then
-				echo "Non-zero size files exist in $directory."
-			else
-				echo "No non-zero size files found in $directory."
 			fi
 
 			if find "${output_dir}/getorganelle" -maxdepth 1 -type f -name 'embplant_pt.*.gfa' -size +0c | grep -q .; then
@@ -960,6 +960,125 @@ copy-ptdna-of-ptgaul_genus_species() {
 	cp -p ${_arg_final_assembly} ${output_dir}/ptdna-ptgaul.fa
 }
 
+# downsample <folder> <coverage> [--dry]
+downsample_genus_species() {
+	local output_dir="$1"
+	local _c="${2:-10}"
+	local _dry="${3:-'--dry'}"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	local random_seed="${_random_seed["$1"]}"
+	# copy_data
+
+	if [[ "${_c}" == "default_value" ]]; then
+		_c=10
+	fi
+	if [[ "${_dry}" == "default_value" ]]; then
+		_dry=""
+	fi
+
+	local _d_i
+	_d_i="downsample"
+
+	mkdir -p "${output_dir}"
+
+	local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
+	local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
+
+	if [[ "${_local_host}" == "$(hostname)" ]]; then
+		if [[ -s "${long_data}" ]]; then
+			tar -zxf ${long_data}
+			tar -zxf ${short_data}
+		else
+			ln -s "${_media1_dir}/${long_sra}.fastq"
+			ln -s "${_media1_dir}/${short_sra}_1.fastq"
+			ln -s "${_media1_dir}/${short_sra}_2.fastq"
+		fi
+	else
+		echo "You can send the data from the central host: ${_local_host}"
+		return 1
+	fi
+
+	if [[ -s "$output_dir/short_expected_genome_size.txt" ]]; then
+		echo "Found: $output_dir/short_expected_genome_size.txt"
+	else
+		${_polap_cmd} find-genome-size \
+			-a ${short_sra}_1.fastq \
+			-b ${short_sra}_2.fastq \
+			-o "${output_dir}"
+	fi
+	local _genome_size=$(<"$output_dir/short_expected_genome_size.txt")
+	echo "Genome size estimate: ${_genome_size}"
+
+	${_polap_cmd} fastq subsample -v ${_dry} \
+		"${long_sra}.fastq" \
+		"${output_dir}/l${_c}x.fq" \
+		-c "${_c}" \
+		-o "${output_dir}" \
+		--random-seed "${random_seed}" \
+		--genomesize "${_genome_size}" -v \
+		>"${output_dir}/l${_c}x.txt"
+
+	${_polap_cmd} fastq subsample2 -v ${_dry} \
+		"${short_sra}_1.fastq" \
+		"${short_sra}_2.fastq" \
+		"${output_dir}/s${_c}x_1.fq" \
+		"${output_dir}/s${_c}x_2.fq" \
+		-c "${_c}" \
+		-o "${output_dir}" \
+		--random-seed "${random_seed}" \
+		--genomesize "${_genome_size}" -v \
+		>"${output_dir}/s${_c}x.txt"
+
+}
+
+# use-downsample <folder> <coverage>
+use-downsample_genus_species() {
+	local output_dir="$1"
+	local _c="${2:-10}"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	local random_seed="${_random_seed["$1"]}"
+	# copy_data
+
+	if [[ "${_c}" == "default_value" ]]; then
+		_c=10
+	fi
+	mv "${long_sra}.fastq" "${output_dir}/l.fq"
+	gunzip -f "${output_dir}/l${_c}x.fq.gz"
+	mv "${output_dir}/l${_c}x.fq" "${long_sra}.fastq"
+
+	mv "${short_sra}_1.fastq" "${output_dir}/s_1.fq"
+	gunzip -f "${output_dir}/s${_c}x_1.fq"
+	mv "${output_dir}/s${_c}x_1.fq" "${short_sra}_1.fastq"
+
+	mv "${short_sra}_2.fastq" "${output_dir}/s_2.fq"
+	gunzip -f "${output_dir}/s${_c}x_2.fq"
+	mv "${output_dir}/s${_c}x_2.fq" "${short_sra}_2.fastq"
+}
+
+# revert-downsample <folder> <coverage>
+revert-downsample_genus_species() {
+	local output_dir="$1"
+	local _c="${2:-10}"
+	local species_name="$(echo $1 | sed 's/_/ /')"
+	local long_sra="${_long["$1"]}"
+	local short_sra="${_short["$1"]}"
+	local random_seed="${_random_seed["$1"]}"
+	# copy_data
+
+	if [[ "${_c}" == "default_value" ]]; then
+		_c=10
+	fi
+	mv "${output_dir}/l.fq" "${long_sra}.fastq"
+
+	mv "${output_dir}/s_1.fq" "${short_sra}_1.fastq"
+
+	mv "${output_dir}/s_2.fq" "${short_sra}_2.fastq"
+}
+
 # Case of the compare menu
 # --disassemble-c
 # --no-disassemble-align-reference
@@ -1028,7 +1147,7 @@ check_genus_species() {
 	for n in "${extracted_array_n[@]}"; do
 		for p in "${extracted_array_p[@]}"; do
 			i=$((i + 1))
-			echo "($i) n=$n, p=$p, memory=${extracted_memory}G"
+			echo "($i) n=$n, p=$p, r=${extracted_r} memory=${extracted_memory}G"
 
 			local _d_i="infer-$i"
 			local _x_i="check-$i"
@@ -2413,6 +2532,7 @@ function _run_polap_menu { # Interactive menu interface
 		echo "10. Check with POLAP (needs step 5,7)"
 		echo "11. (only for 5 datasets) Compare with POLAP (needs step 5,7)"
 		echo "L. List the folder: ${_species_folder}"
+		echo "S. Estimate the coverage ${_species_folder}"
 		echo "A. Archive the ${_species_folder}"
 		echo "G. Get the result from the remote"
 		echo "C. Clean up the ${_species_folder}"
@@ -2540,6 +2660,11 @@ function _run_polap_menu { # Interactive menu interface
 						archive_genus_species \
 							"${keys_array[$species_key]}"
 						;;
+					s)
+						downsample_genus_species \
+							"${keys_array[$species_key]}" \
+							5 --dry
+						;;
 					c)
 						clean_genus_species \
 							"${keys_array[$species_key]}"
@@ -2629,6 +2754,13 @@ case "$subcmd1" in
 	'check')
 	${subcmd1}_genus_species "${_arg2}"
 	${subcmd1}_genus_species "${_arg2}" --disassemble-simple-polishing
+	;;
+'downsample')
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
+	;;
+'revert-downsample' | \
+	'use-downsample')
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
 	;;
 "menu")
 	_run_polap_menu

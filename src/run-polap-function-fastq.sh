@@ -123,28 +123,31 @@ HEREDOC
 		local _coverage_long=$(echo "scale=5; ${_l} / ${_v}" | bc)
 		local _rate=$(echo "scale=5; ${_arg_coverage} / ${_coverage_long}" | bc)
 
+		_polap_lib_random-get
+		_seed=${_polap_var_random_number}
+
+		_polap_log1 "  arg1: ${_arg_species}"
+		_polap_log1 "  input1: ${_infile}"
+		_polap_log1 "  output1: ${_outfile}"
+		_polap_log1 "  random seed: ${_seed}"
+		_polap_log1 "  long-read: ${_l} (bp)"
+		_polap_log1 "  genome size: ${_v} (bp)"
+		_polap_log1 "  long-read coverage: ${_coverage_long}x"
+		_polap_log1 "  target coverage: ${_arg_coverage}x"
+		_polap_log1 "  sampling rate: ${_rate}"
+
 		local result=$(echo "$_rate < 1" | bc)
 
 		if [ "$result" -eq 1 ]; then
 			# echo "The rate value is less than 1"
-			_polap_lib_random-get
-			_seed=${_polap_var_random_number}
-
-			_polap_log1 "  arg1: ${_arg_species}"
-			_polap_log1 "  input1: ${_infile}"
-			_polap_log1 "  output1: ${_outfile}"
-			_polap_log1 "  random seed: ${_seed}"
-			_polap_log1 "  long-read: ${_l} (bp)"
-			_polap_log1 "  genome size: ${_v} (bp)"
-			_polap_log1 "  long-read coverage: ${_coverage_long}x"
-			_polap_log1 "  target coverage: ${_arg_coverage}x"
-			_polap_log1 "  sampling rate: ${_rate}"
-
-			seqkit sample \
-				-p "${_rate}" \
-				-s "${_seed}" \
-				"${_infile}" \
-				-o ${_outfile} 2>${_polap_output_dest}
+			if [[ "${_arg_dry}" == "off" ]]; then
+				seqkit sample \
+					-p "${_rate}" \
+					-s "${_seed}" \
+					"${_infile}" \
+					-o ${_outfile} 2>${_polap_output_dest}
+				gzip "${_outfile}"
+			fi
 
 		else
 			# echo "The value is not less than 1"
@@ -202,6 +205,23 @@ HEREDOC
 		local _coverage_short=$(echo "scale=5; ${_s} / ${_v}" | bc)
 		local _rate=$(echo "scale=5; ${_arg_coverage} / ${_coverage_short}" | bc)
 
+		_polap_lib_random-get
+		_seed=${_polap_var_random_number}
+
+		_polap_log1 "  arg1: ${_arg_species}"
+		_polap_log1 "  input1: ${_infile1}"
+		_polap_log1 "  input2: ${_infile2}"
+		_polap_log1 "  output1: ${_outfile1}"
+		_polap_log1 "  output2: ${_outfile2}"
+		_polap_log1 "  random seed: ${_seed}"
+		_polap_log1 "  short-read1: ${_s1} (bp)"
+		_polap_log1 "  short-read2: ${_s2} (bp)"
+		_polap_log1 "  short-read: ${_s} (bp)"
+		_polap_log1 "  short-read coverage: ${_coverage_short}x"
+		_polap_log1 "  genome size: ${_v} (bp)"
+		_polap_log1 "  target coverage: ${_arg_coverage}x"
+		_polap_log1 "  sampling rate: ${_rate}"
+
 		local result=$(echo "$_rate < 1" | bc)
 
 		if [ "$result" -eq 1 ]; then
@@ -209,42 +229,31 @@ HEREDOC
 			_polap_lib_random-get
 			_seed=${_polap_var_random_number}
 
-			_polap_log1 "  arg1: ${_arg_species}"
-			_polap_log1 "  input1: ${_infile1}"
-			_polap_log1 "  input2: ${_infile2}"
-			_polap_log1 "  output1: ${_outfile1}"
-			_polap_log1 "  output2: ${_outfile2}"
-			_polap_log1 "  random seed: ${_seed}"
-			_polap_log1 "  short-read1: ${_s1} (bp)"
-			_polap_log1 "  short-read2: ${_s2} (bp)"
-			_polap_log1 "  short-read: ${_s} (bp)"
-			_polap_log1 "  short-read coverage: ${_coverage_short}x"
-			_polap_log1 "  genome size: ${_v} (bp)"
-			_polap_log1 "  target coverage: ${_arg_coverage}x"
-			_polap_log1 "  sampling rate: ${_rate}"
-
 			# Example:
 			# seqtk sample -s100 read1.fq 0.1 >sub1.fq
 			# seqtk sample -s100 read2.fq 0.1 >sub2.fq
 
-			seqtk sample \
-				-s"${_seed}" \
-				"${_infile1}" \
-				"${_rate}" \
-				>"${_outfile1}"
+			if [[ "${_arg_dry}" == "off" ]]; then
+				seqtk sample \
+					-s"${_seed}" \
+					"${_infile1}" \
+					"${_rate}" \
+					>"${_outfile1}"
 
-			seqtk sample \
-				-s"${_seed}" \
-				"${_infile2}" \
-				"${_rate}" \
-				>"${_outfile2}"
+				seqtk sample \
+					-s"${_seed}" \
+					"${_infile2}" \
+					"${_rate}" \
+					>"${_outfile2}"
 
-			gzip "${_outfile1}"
-			gzip "${_outfile2}"
+				gzip "${_outfile1}"
+				gzip "${_outfile2}"
+			fi
 		else
 			# echo "The value is not less than 1"
 			_polap_log1 "  sampling rate is not less than 1: ${_rate}"
-			_polap_log1 "  no subsampling of input: ${_infile}"
+			_polap_log1 "  no subsampling of input: ${_infile1}"
+			_polap_log1 "  no subsampling of input: ${_infile2}"
 			_polap_log0 "  no subsampling result: ${_outfile1}"
 			_polap_log0 "  no subsampling result: ${_outfile2}"
 		fi

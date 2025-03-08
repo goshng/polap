@@ -544,13 +544,21 @@ HEREDOC
 	_polap_log0 "  expected genome size using short-read data (bases): ${_expected_genome_size_bp}"
 
 	_polap_log0 "  summary statisics of the short-read data ..."
-	_polap_summary-generated-reads \
-		"${_arg_short_read1}" \
-		"${_polap_var_outdir_s1_fq_stats}"
+	if [[ -s "${_polap_var_outdir_s1_fq_stats}" ]]; then
+		_polap_log1 "  found: ${_polap_var_outdir_s1_fq_stats}"
+	else
+		_polap_summary-generated-reads \
+			"${_arg_short_read1}" \
+			"${_polap_var_outdir_s1_fq_stats}"
+	fi
 
-	_polap_summary-generated-reads \
-		"${_arg_short_read2}" \
-		"${_polap_var_outdir_s2_fq_stats}"
+	if [[ -s "${_polap_var_outdir_s2_fq_stats}" ]]; then
+		_polap_log1 "  found: ${_polap_var_outdir_s2_fq_stats}"
+	else
+		_polap_summary-generated-reads \
+			"${_arg_short_read2}" \
+			"${_polap_var_outdir_s2_fq_stats}"
+	fi
 
 	_polap_log1 NEXT: $(basename "$0") reduce-data -o "${_arg_outdir}" -l "${_arg_long_reads}" [-m "${_arg_min_read_length}"]
 

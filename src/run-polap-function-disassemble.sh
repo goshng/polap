@@ -196,6 +196,7 @@ _polap_find-genome-size() {
 		# Check the exit status
 		if [ $? -ne 0 ]; then
 			# Take action if needed, e.g., logging, sending a notification, etc.
+			_polap_log0 "ERROR: disk space might be full"
 			die "ERROR: not being to estimate the genome size using short-read data: short-read may be too small."
 		fi
 	fi
@@ -1596,6 +1597,7 @@ function _run_polap_disassemble {
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_/Menu_/)"
 
+	local exit_code
 	local i
 	local j
 	local k
@@ -2072,6 +2074,33 @@ HEREDOC
 		return 0
 	fi
 
+	if [[ "${_arg_menu[1]}" == "downsample" ]]; then
+		_polap_log0 "archive ${_arg_outdir} to ${_arg_archive}"
+
+		# estimate the genome size using the short-read
+		_short_read1="${_arg_outdir}/s1.fq"
+		_polap_log0 "    output: ${_arg_outdir}/short_expected_genome_size.txt"
+		_polap_find-genome-size \
+			"${_short_read1}" \
+			"${_arg_outdir}"
+		local _summary_genome_size=$(<"$_arg_outdir}/short_expected_genome_size.txt")
+		_polap_log0 "    output: estimated genome size: ${_summary_genome_size} bp"
+
+		# ${_polap_cmd} fastq subsample \
+		# 	"${output_dir}/${long_sra}.fastq" \
+		# 	"${output_dir}/l${_c}x.fq.gz" \
+		# 	-c "${_c}" \
+		# 	-o "${output_dir}" \
+		# 	--random-seed "${random_seed}" \
+		# 	--genomesize "${genomesize}" -v \
+		# 	>"${output_dir}/l${_c}x.txt"
+
+		# Disable debugging if previously enabled
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
+	fi
+
 	# menu: ptgaul
 	# ptgaul
 	if [[ "${_arg_menu[1]}" == "ptgaul" ]]; then
@@ -2110,17 +2139,36 @@ HEREDOC
 		        --out ${_outdir} \
 		        2>$_polap_output_dest"
 				# polish one of the ptDNA sequences
-				_polap_log0 "polishing ptDNA: ${_arg_unpolished_fasta}"
+				_polap_log1 "  polishing ptDNA: ${_arg_unpolished_fasta}"
 				_run_polap_polish
-				_polap_log0 "ptGAUL polished assembly: ${_arg_final_assembly}"
-
+				exit_code=$?
+				# If a function or command is killed due to an out-of-memory (OOM) event,
+				# it usually exits with signal 137 (SIGKILL).
+				if [ $exit_code -eq 137 ]; then
+					die "polishing was killed due to OOM: an out-of-memory event"
+				fi
+				if [[ -s "${_arg_final_assembly}" ]]; then
+					_polap_log1 "  ptGAUL polished assembly: ${_arg_final_assembly}"
+				else
+					die "ERROR: no such ptGAUL polished assembly: ${_arg_final_assembly}"
+				fi
 			elif [[ "${_summary_gfa_number_segments}" -eq 1 ]]; then
-				_polap_log0 "ptGAUL assembly's segments: ${_summary_gfa_number_segments}"
+				_polap_log1 "  ptGAUL assembly's segments: ${_summary_gfa_number_segments}"
 				_arg_unpolished_fasta="${_arg_outdir}/ptgaul/ptGAUL_final_assembly/final_assembly.fasta"
-				_polap_log0 "ptGAUL assembly: ${_arg_unpolished_fasta}"
-				_polap_log0 "polishing ptDNA: ${_arg_unpolished_fasta}"
+				_polap_log1 "  ptGAUL assembly: ${_arg_unpolished_fasta}"
+				_polap_log1 "  polishing ptDNA: ${_arg_unpolished_fasta}"
 				_run_polap_polish
-				_polap_log0 "ptGAUL polished assembly: ${_arg_final_assembly}"
+				exit_code=$?
+				# If a function or command is killed due to an out-of-memory (OOM) event,
+				# it usually exits with signal 137 (SIGKILL).
+				if [ $exit_code -eq 137 ]; then
+					die "polishing was killed due to OOM: an out-of-memory event"
+				fi
+				if [[ -s "${_arg_final_assembly}" ]]; then
+					_polap_log1 "  ptGAUL polished assembly: ${_arg_final_assembly}"
+				else
+					die "ERROR: no such ptGAUL polished assembly: ${_arg_final_assembly}"
+				fi
 			else
 				# extract three unique edges from the gfa for a ptDNA candidate
 				#
@@ -2146,8 +2194,17 @@ HEREDOC
 					# polish one of the ptDNA sequences
 					_polap_log0 "polishing ptDNA: ${_arg_unpolished_fasta}"
 					_run_polap_polish
-					_polap_log0 "ptGAUL polished assembly: ${_arg_final_assembly}"
-
+					exit_code=$?
+					# If a function or command is killed due to an out-of-memory (OOM) event,
+					# it usually exits with signal 137 (SIGKILL).
+					if [ $exit_code -eq 137 ]; then
+						die "polishing was killed due to OOM: an out-of-memory event"
+					fi
+					if [[ -s "${_arg_final_assembly}" ]]; then
+						_polap_log1 "  ptGAUL polished assembly: ${_arg_final_assembly}"
+					else
+						die "ERROR: no such ptGAUL polished assembly: ${_arg_final_assembly}"
+					fi
 				else
 					_polap_log0 "ptGAUL assembly's segment counts: ${_summary_gfa_number_segments}"
 					_polap_log0 "you may not use ptgaul menu at the moment."
@@ -3045,7 +3102,7 @@ HEREDOC
 	local _disassemble_b
 	local total_size_data
 	if _polap_contains_step 4 "${_step_array[@]}"; then
-		_polap_log1 "  step 4: prepare for the loop iteration"
+		_polap_log1 "  step 4: prepare for the loop iteration for subsample polishing"
 		_polap_log3_cmd mkdir -p "${_disassemble_dir}"
 
 		total_size_data=$(<"${_polap_var_outdir_short_total_length}")
@@ -3055,7 +3112,7 @@ HEREDOC
 
 		_polap_lib_array-make-index \
 			"${_index_table}" \
-			"${_arg_disassemble_n}" \
+			"${_arg_disassemble_r}" \
 			"${_arg_disassemble_a}" \
 			"${_arg_disassemble_b}"
 
@@ -3180,6 +3237,24 @@ HEREDOC
 			_polap_log2 "    length: ${_summary_assembly_length}"
 		fi
 
+		# stop if the _summary_memory_gb_msbwt is greater than the max memory
+		# stop if the _summary_memory_gb_fmlrc is greater than the max memory
+		if (($(echo "$_summary_memory_gb_msbwt  < $_arg_disassemble_memory" | bc -l))); then
+			_polap_log2 "  cFlye: msbwt used memory is less than ${_arg_disassemble_memory} Gb ($i): ${_summary_memory_gb_msbwt}"
+		else
+			_polap_log2 "  cFlye: msbwt used memory is not less than ${_arg_disassemble_memory} Gb ($i): ${_summary_memory_gb_msbwt}"
+			_polap_log2 "  exit the polish disassemble menu."
+			_is_stop="on"
+		fi
+
+		if (($(echo "$_summary_memory_gb_fmlrc  < $_arg_disassemble_memory" | bc -l))); then
+			_polap_log2 "  cFlye: fmlrc used memory is less than ${_arg_disassemble_memory} Gb ($i): ${_summary_memory_gb_fmlrc}"
+		else
+			_polap_log2 "  cFlye: fmlrc used memory is not less than ${_arg_disassemble_memory} Gb ($i): ${_summary_memory_gb_fmlrc}"
+			_polap_log2 "  exit the polish disassemble menu."
+			_is_stop="on"
+		fi
+
 		rm -rf "${_msbwt_dir}"
 
 		_polap_lib_table-cflye-polish-summary-content "${_summary1_file}"
@@ -3189,7 +3264,7 @@ HEREDOC
 		# Progress
 		# Calculate elapsed time and remaining time
 		#
-		status=$(_polap_lib_timing-step "${i}" "${_arg_disassemble_n}")
+		status=$(_polap_lib_timing-step "${i}" "${_arg_disassemble_r}")
 
 		# Display the progress and remaining time on the same line
 		if [ "${_arg_verbose}" -eq "1" ]; then

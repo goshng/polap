@@ -1561,8 +1561,8 @@ HEREDOC
   _polap_log2 "    input1: ${_directional_dir}/01-contig-contig2.fa"
   _polap_log2 "    input2: ${_source_long_reads_fq}"
   _polap_log2 "    output: ${_directional_dir}/01-contig-contig2.paf"
-  if [[ -s "${_polap_var_oga_contig}"/contig2.paf ]] && [[ "${_arg_redo}" = "off" ]]; then
-    _polap_log1 "  found: ${_polap_var_oga_reads}/contig2.paf, skipping the minimap2 mapping step ..."
+  if [[ -s "${_directional_dir}/01-contig-contig2.paf" ]] && [[ "${_arg_redo}" = "off" ]]; then
+    _polap_log1 "  found: ${_directional_dir}/01-contig-contig2.paf, skipping the minimap2 mapping step ..."
   else
     _polap_log3_pipe "minimap2 -cx \
       ${_arg_minimap2_data_type} \

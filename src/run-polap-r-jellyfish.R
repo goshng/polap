@@ -19,7 +19,8 @@ args <- commandArgs(trailingOnly = TRUE)
 
 # Test if the number of arguments is exactly 2
 if (length(args) != 2) {
-  stop("Error: Exactly two command line arguments are required.")
+  # stop("Error: Exactly two command line arguments are required.")
+  # args <- c("Pisum_sativum/jellyfish_out.histo", "Pisum_sativum/short_expected_genome_size.txt")
 }
 
 tryCatch(
@@ -33,10 +34,14 @@ tryCatch(
     z <- sum(as.numeric(x[a:b, 1] * x[a:b, 2])) / y
 
     # output argments
-    write.table(as.integer(z), args[2], row.names = FALSE, col.names = FALSE, quote = FALSE)
+    # The maximum integer (.Machine$integer.max) is 2,147,483,647.
+    # more than 2Gb genome size would print an error.
+    # write.table(as.integer(z), args[2], row.names = FALSE, col.names = FALSE, quote = FALSE)
+    # So, we use the following:
+    write(format(trunc(z), scientific = FALSE, trim = TRUE), file = args[2])
   },
   error = function(e) {
-    # cat("Error: ", args[0], ": " e$message, "\n")
+    # cat("Error: ", args[0], ": ", e$message, "\n")
     quit(status = 1) # Exit with status 1 (indicating an error)
   }
 )

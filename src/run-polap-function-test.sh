@@ -103,6 +103,14 @@ HEREDOC
 		_polap_log0 "short-read2: ${_arg_short_read2}"
 	fi
 
+	if [[ "${_arg_menu[1]}" == "log" ]]; then
+		_polap_log0 "Name: B0"
+		_polap_log2 "Name: B2"
+		_polap_log0 "Name: A0" >test.log
+		_polap_log2 "Name: A2" >>test.log
+		_polap_log0 "Name: A0" >>test.log
+	fi
+
 	if [[ "${_arg_menu[1]}" == "config" ]]; then
 		_polap_create_config config.cfg
 		# Set some configuration values.

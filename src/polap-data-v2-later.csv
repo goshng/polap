@@ -1,0 +1,3 @@
+species,_folder,_long,_short,_host,_ptgaul_genomesize,_compare_n,_compare_p,_compare_r,_polish_n,_polish_p,_random_seed,_ssh,_memory,_downsample,_inum,_table1,_dummy,_status
+Brassica_carinata,Brassica_carinata,ERR10115635,ERR10114828,vincent,160000,20,10,10,5,5,159,vincent,16,30,0,F,dummy,redownload-short-read
+Delphinium_montanum,Delphinium_montanum,ERR6447760,ERR6447361,vincent,160000,20,10,10,5,5,133,vincent,16,30,0,F,dummy,no-short-read-data

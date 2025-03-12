@@ -91,6 +91,8 @@ if (nrow(df) == 0) {
   cat(message, file = args1$out, append = TRUE, sep = "\n")
   message <- paste("#index: 0")
   cat(message, file = args1$out, append = TRUE, sep = "\n")
+  message <- paste("#n: 0")
+  cat(message, file = args1$out, append = TRUE, sep = "\n")
   quit(save = "no")
 }
 
@@ -118,6 +120,7 @@ selected_row_nearest_mode <- df_no_outliers %>%
   slice_min(abs(length - mode_length), n = 1)
 
 sd_length <- sd(df_no_outliers$length)
+n_length <- length(df_no_outliers$length)
 
 # Print the mode length
 print(paste("Length at the highest point in the density curve (mode):", round(mode_length)))
@@ -145,6 +148,8 @@ cat(message, file = args1$out, append = TRUE, sep = "\n")
 message <- paste("#sd:", round(sd_length))
 cat(message, file = args1$out, append = TRUE, sep = "\n")
 message <- paste("#index:", selected_row_nearest_mode$index)
+cat(message, file = args1$out, append = TRUE, sep = "\n")
+message <- paste("#n:", n_length)
 cat(message, file = args1$out, append = TRUE, sep = "\n")
 
 if (args1$coverage || args1$scatter) {

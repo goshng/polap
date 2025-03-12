@@ -146,7 +146,7 @@ HEREDOC
 					-s "${_seed}" \
 					"${_infile}" \
 					-o ${_outfile} 2>${_polap_output_dest}
-				gzip "${_outfile}"
+				# gzip "${_outfile}"
 			fi
 
 		else
@@ -206,7 +206,7 @@ HEREDOC
 		local _rate=$(echo "scale=5; ${_arg_coverage} / ${_coverage_short}" | bc)
 
 		_polap_lib_random-get
-		_seed=${_polap_var_random_number}
+		local _seed=${_polap_var_random_number}
 
 		_polap_log1 "  arg1: ${_arg_species}"
 		_polap_log1 "  input1: ${_infile1}"
@@ -226,8 +226,6 @@ HEREDOC
 
 		if [ "$result" -eq 1 ]; then
 			# echo "The rate value is less than 1"
-			_polap_lib_random-get
-			_seed=${_polap_var_random_number}
 
 			# Example:
 			# seqtk sample -s100 read1.fq 0.1 >sub1.fq
@@ -246,8 +244,8 @@ HEREDOC
 					"${_rate}" \
 					>"${_outfile2}"
 
-				gzip "${_outfile1}"
-				gzip "${_outfile2}"
+				# gzip "${_outfile1}"
+				# gzip "${_outfile2}"
 			fi
 		else
 			# echo "The value is not less than 1"

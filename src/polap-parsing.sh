@@ -159,7 +159,7 @@ _arg_disassemble_best="off"             # delete it
 _arg_disassemble_align_reference="off"  # applied to stage 2 only or check part
 _arg_disassemble_simple_polishing="off" # default is subsampling polish
 _arg_disassemble_stop_after=
-_arg_downsample=""
+_arg_downsample="10"
 # for genome size grid
 _arg_genomesize_a=200000   #
 _arg_genomesize_b=300000   #
@@ -192,7 +192,7 @@ _arg_taxonomy_min_aa="20"
 
 # archive
 _arg_template="src/polap-template-cflye-archive-files.txt"
-_arg_max_filesize="1M"
+_arg_max_filesize="5M"
 
 # for menu dissemble or directional read feature
 _arg_dissemble_a=1 #

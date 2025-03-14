@@ -225,7 +225,7 @@ function _polap_disassemble-cflye {
 	local _command1
 
 	if [[ "${_POLAP_RELEASE}" -eq 0 ]]; then
-		_command1="command time -v /home/goshng/all/polap/Flye/bin/cflye"
+		_command1="command time -v $HOME/all/polap/Flye/bin/cflye"
 	else
 		_command1="command time -v cflye"
 	fi

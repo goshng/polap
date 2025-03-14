@@ -29,6 +29,71 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 ################################################################################
+# mafft alignment
+################################################################################
+function _run_polap_mafft-mtdna {
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Set paths for bioproject data
+	source "$script_dir/polap-variables-common.sh"
+
+	# Help message
+	local help_message=$(
+		cat <<HEREDOC
+# Compare the known mitochondrial DNA (mtDNA) sequence with the newly assembled 
+# one for verification purposes using mafft.
+#
+# We utilize progressiveMauve to align two sequences and 
+# calculate the total length of the LCB, which is then divided by the length 
+# of a known mtDNA sequence. This approach provides a basic method for 
+# comparing two sequences, albeit not highly sophisticated.
+#
+# Arguments:
+#   -i ${_arg_inum}
+# Inputs:
+#   a.fasta: known mtDNA in fasta format
+#   b.fasta: another DNA sequence in fasta format
+# Outputs:
+#   the ratio of LCB total length divided by the known mtDNA sequence
+Example: $(basename "$0") ${_arg_menu[0]} -a o/00-bioproject/2-mtdna.fasta -b o/1/assembly.fasta
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	_mafft_dir="${_arg_outdir}"
+	mkdir -p "${_mafft_dir}"
+	cat "${_arg_short_read1}" >"${_mafft_dir}/in.fa"
+	cat "${_arg_short_read2}" >>"${_mafft_dir}/in.fa"
+
+	_polap_log3_pipe "mafft \
+    --auto \
+    ${_mafft_dir}/in.fa \
+    >${_mafft_dir}/out.mafft"
+
+	_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-mafft.R \
+    --input ${_mafft_dir}/out.mafft \
+    --out ${_mafft_dir}/out.txt"
+
+	pident_mafft=$(grep -oP '(?<=Percent Identity: )\S+' "${_mafft_dir}/out.txt")
+	pident_mafft=${pident_mafft%\%}
+
+	echo "$pident_mafft" >"${_mafft_dir}/pident.txt"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+################################################################################
 # mauve alignment
 ################################################################################
 function _run_polap_mauve-mtdna {

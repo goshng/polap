@@ -13,11 +13,6 @@ _log_echo() {
 	echo "$1"
 }
 
-Sall1=(
-	Anthoceros_agrestis
-)
-
-# S=('Juncus_effusus' 'Juncus_inflexus' 'Juncus_roemerianus' 'Juncus_validus' 'Eucalyptus_pauciflora' 'Arctostaphylos_glauca' 'Lepidium_sativum' 'Chaetoceros_muellerii' 'Potentilla_micrantha' 'Durio_zibethinus' 'Beta_vulgaris' 'Eleocharis_dulcis' 'Leucanthemum_vulgare' 'Oryza_glaberrima' 'Cenchrus_americanus' 'Digitaria_exilis' 'Podococcus_acaulis' 'Raphia_textilis' 'Phytelephas_aequatorialis' 'Picea_glauca')
 Sall=(
 	Anthoceros_agrestis
 	Arabidopsis_thaliana
@@ -53,7 +48,7 @@ Sall=(
 	Vitis_vinifera
 )
 
-S5=(
+Stable5=(
 	'Juncus_effusus'
 	'Juncus_inflexus'
 	'Juncus_roemerianus'
@@ -61,127 +56,44 @@ S5=(
 	'Eucalyptus_pauciflora'
 )
 
-S2=(
-	'Anthoceros_agrestis'
-	'Spirodela_polyrhiza'
-)
-
-Stable1=(
-	'Arabidopsis_thaliana'
-	'Anthoceros_agrestis'
-	'Ophrys_lutea'
-	'Canavalia_ensiformis'
-)
-
-Stable2=(
-	'Eucalyptus_pauciflora'
-)
-
-Stable3=(
-	'Eucalyptus_pauciflora'
-	'Juncus_validus'
-	'Juncus_effusus'
-	'Ophrys_lutea'
-	'Codonopsis_lanceolata'
-	'Dioscorea_japonica'
-	'Cucumis_sativus_var_hardwickii'
-	'Euonymus_alatus'
-	# 'Brassica_carinata'
-	'Oryza_rufipogon'
-	'Populus_x_sibirica'
-	'Musa_acuminata_subsp_malaccensis'
-	'Vaccinium_vitis-idaea'
-	'Macadamia_jansenii'
-	'Arabidopsis_thaliana'
-	'Prunus_mandshurica'
-	'Leiosporoceros_dussii'
-	'Anthoceros_agrestis'
-	'Vitis_vinifera'
-	'Spirodela_polyrhiza'
-	'Canavalia_ensiformis'
-	'Gossypium_herbaceum'
-	'Cinchona_pubescens'
-	'Solanum_lycopersicum'
-	'Pterocarpus_santalinus'
-)
-
-# no ptDNA
-Stable4=(
-	'Phaeomegaceros_chiloensis'
-	'Dunaliella_tertiolecta'
-	'Notothylas_orbicularis'
-)
-
-# species
-# Vitis_vinifera
-# Populus_x_sibirica
-# Phaeomegaceros_chiloensis
-# Oryza_rufipogon
-# Musa_acuminata_subsp_malaccensis
-# Notothylas_orbicularis
-# Juncus_validus
-# Gossypium_herbaceum
-# Codonopsis_lanceolata
-# Pterocarpus_santalinus
-# Dioscorea_japonica
-# Juncus_inflexus
-# Juncus_effusus
-# Canavalia_ensiformis
-# Vaccinium_vitis-idaea
-# Arabidopsis_thaliana
-# Delphinium_montanum
-# Cucumis_sativus_var_hardwickii
-# Euonymus_alatus
-# Dunaliella_tertiolecta
-# Solanum_lycopersicum
-# Spirodela_polyrhiza
-# Macadamia_jansenii
-# Ophrys_lutea
-# Prunus_mandshurica
-# Cinchona_pubescens
-# Pisum_sativum
-# Eucalyptus_pauciflora
-# Anthoceros_agrestis
-# Brassica_carinata
-# Juncus_roemerianus
-# Leiosporoceros_dussii
-
 _local_host="thorne"
 
 # Input parameter
-subcmd1="${1:-0}"
-subarg1="${2:-0}"
+subcmd1="${1}"
 
 _polap_subcmd=(
 	'batch'
-	'send-data'
+	'send'
+	'recover'
 	'mkdir'
-	'get-ptdna-from-ncbi'
 	'getorganelle'
 	'ptgaul'
 	'msbwt'
 	'extract-ptdna-of-ptgaul'
-	'downsample'
+	'coverage'
 	'infer'
 	'check'
 	'compare'
+	'best'
+	'bandage1'
+	'bandage2'
+	'copy-figure'
+	'downsample'
+	'use-downsample'
+	'mauve'
+	'restart'
+	'write-config'
+	'wga'
 	'archive'
 	'get'
 	'report'
 	'table1'
 	'table2'
-	'table3'
 	'suptable1'
 	'supfigure1'
-	'wga'
-	'simple-polish'
-	'subsample-polish'
-	'mauve'
+	'supfigure2'
 	'clean'
-	'infer12'
-	'infer1'
-	'infer2'
-	'infer3'
+	'menu'
 )
 
 # Check if subcmd1 is an integer (0 or positive)
@@ -197,17 +109,14 @@ if [[ "$subcmd1" =~ ^[0-9]+$ ]]; then
 
 fi
 
-# echo "subcmd1 is now: $subcmd1"
-
 if [[ -d "src" ]]; then
 	_polap_cmd="src/polap.sh"
 else
 	_polap_cmd="polap"
 fi
 _polap_version="0.4.3.7"
-_media_dir="/media/h1/run/ptgaul20"
-_media_dir="/media/h2/goshng/bioprojects"
 _media1_dir="/media/h1/sra"
+_media2_dir="/media/h2/sra"
 _media_dir="/media/h2/sra"
 
 help_message=$(
@@ -221,8 +130,8 @@ help_message=$(
 # host=$(hostname)
 #
 # subcommand can be replaced with the leading number
-0. batch <species_folder>: To execute all subcommands.
-1. send-data-to <species_folder>: scp data files to the remote 
+0. batch <species_folder> [number]: To execute all subcommands.
+1. send <species_folder>: scp data files to the remote 
 2. mkdir <species_folder>
 3. get-ptdna-from-ncbi <species_folder>
 4. getorganelle <species_folder>
@@ -250,10 +159,12 @@ help_message=$(
 write-config src/polap-data-v2.csv: write config
 #
 # call the following menu to create tables and figures
-bandage1 <folder>
-bandage2 <folder>
-copy-figure
+#
+bandage1 <species_folder>
+bandage2 <species_folder>
+copy-figure: copy all figures to the target directory
 table1
+table2
 suptable1
 supfigure2 no
 supfigure2 yes
@@ -263,6 +174,7 @@ supfigure1 yes
 # files
 table1-1.md
 table1-2.md
+table2.md
 suptable1.md
 supfigure2.md
 supfigure1.md
@@ -274,6 +186,7 @@ declare -A _folder
 declare -A _memory
 declare -A _inum
 declare -A _table1
+declare -A _table2
 declare -A _dummy
 declare -A _downsample
 declare -A _status
@@ -289,8 +202,6 @@ declare -A _ssh
 declare -A _polish_n
 declare -A _polish_p
 
-declare -A _myArray # Declare as global
-
 set +u
 
 # Read the config files
@@ -299,8 +210,7 @@ read-a-tsv-file-into-associative-arrays() {
 	csv_file="src/polap-data-v2.csv"
 
 	# Read the TSV file (skip header)
-	# tail -n +2 "$csv_file" |
-	while IFS=$',' read -r species folder long short host ptgaul_genomesize compare_n compare_p compare_r polish_n polish_p random_seed ssh memory downsample inum table1 dummy status; do
+	while IFS=$',' read -r species folder long short host ptgaul_genomesize compare_n compare_p compare_r polish_n polish_p random_seed ssh memory downsample inum table1 table2 dummy status; do
 		# Skip header line
 		[[ "$species" == "species" ]] && continue
 
@@ -321,47 +231,23 @@ read-a-tsv-file-into-associative-arrays() {
 		_downsample["$species"]="$downsample"
 		_inum["$species"]="$inum"
 		_table1["$species"]="$table1"
+		_table2["$species"]="$table2"
 		_dummy["$species"]="$dummy"
 		_status["$species"]="$status"
-		# echo "$species: $random_seed: ${_myArray[$species]}"
 	done <"$csv_file"
 }
 
 read-a-tsv-file-into-associative-arrays
 
-# keys_array=("${!_long[@]}")
 keys_array=($(for key in "${!_long[@]}"; do echo "$key"; done | sort))
 
-# Loop through the associative array
-default_output_dir() {
-	local _output_dir=""
-
-	for key in "${!_host[@]}"; do
-		if [[ "${_host[$key]}" == "$(hostname)" ]]; then
-			_output_dir="$key"
-			break # Exit loop after finding the first match
-		fi
-	done
-	echo "${_output_dir}"
-}
-
 _arg2=${2:-"default_value"}
-if [[ "${_arg2}" == "default_value" ]]; then
-	_arg2=$(default_output_dir)
-else
+if [[ "${_arg2}" != "default_value" ]]; then
 	_arg2="${2%/}"
 fi
 
-# _arg3=${3:-"default_value"}
-_arg3=${3:-"0"}
-if [[ "${_arg3}" != "default_value" ]]; then
-	_arg3="${3%/}"
-fi
-
-_arg4=${4:-"default_value"}
-if [[ "${_arg4}" != "default_value" ]]; then
-	_arg4="${4%/}"
-fi
+_arg3=${3:-0}
+_arg4=${4:-0}
 
 _arg1=${1:-"default_value"}
 # Check if the species folder is provided
@@ -548,7 +434,7 @@ batch_genus_species() {
 					fi
 				fi
 
-				if printf '%s\n' "${S5[@]}" | grep -qx "${output_dir}"; then
+				if printf '%s\n' "${Stable5[@]}" | grep -qx "${output_dir}"; then
 					if [[ -s "${output_dir_i}/disassemble/compare-1/pt.simple-polishing.1.fa" ]]; then
 						_log_echo "Found: compare case"
 					else
@@ -632,14 +518,15 @@ send-data_genus_species() {
 	fi
 }
 
+# send the input data to the remote
 send_genus_species() {
 	local output_dir="$1"
 	local inum="${2:-0}"
+	local target_index="${output_dir}-${inum}"
 
 	if [[ "${_local_host}" == "$(hostname)" ]]; then
 		archive_genus_species "${output_dir}"
-		# tar -zcf "${output_dir}.tar.gz" "${output_dir}"
-		scp "${output_dir}-a.tar.gz" ${_ssh["${output_dir}-${inum}"]}:$PWD/
+		scp "${output_dir}-a.tar.gz" ${_ssh["${target_index}"]}:$PWD/
 	else
 		echo "ERROR: run at the local host."
 	fi
@@ -647,6 +534,16 @@ send_genus_species() {
 	send-data_genus_species "${output_dir}" "${inum}"
 }
 
+# extract the archive at the remote
+recover_genus_species() {
+	local output_dir="$1"
+
+	rm -rf "${output_dir}"
+	tar -zxf "${output_dir}-a.tar.gz"
+	mv "${output_dir}-a" "${output_dir}"
+}
+
+# create input files
 mkdir_genus_species() {
 	local output_dir="$1"
 	local isuffix="${2:-0}"
@@ -675,6 +572,28 @@ mkdir_genus_species() {
 	fi
 
 	get-ptdna-from-ncbi_genus_species "${output_dir}" "${isuffix}"
+}
+
+sra_genus_species() {
+	local output_dir="$1"
+	local isuffix="${2:-0}"
+	local target_index="${output_dir}-${isuffix}"
+
+	local species_name="$(echo ${output_dir} | sed 's/_/ /')"
+	local long_sra="${_long["$target_index"]}"
+	local short_sra="${_short["$target_index"]}"
+	local random_seed="${_random_seed["$target_index"]}"
+	local ssh_remote="${_ssh["$target_index"]}"
+	local extracted_inum="${_inum["$target_index"]}"
+	local output_dir_i="${output_dir}/${extracted_inum}"
+
+	local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
+	local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
+
+	echo "create ${output_dir} ..."
+	mkdir -p "${output_dir}/timing"
+	run-polap-ncbitools fetch sra "$long_sra"
+	run-polap-ncbitools fetch sra "$short_sra"
 }
 
 get-ptdna-from-ncbi_genus_species() {
@@ -1233,9 +1152,12 @@ check_genus_species() {
 
 			local mauve_dir="${output_dir_i}/mauve/${i}"
 			local blast_dir="${output_dir_i}/blast/${i}"
+			local mafft_dir="${output_dir_i}/mafft/${i}"
 			mkdir -p "${mauve_dir}"
 			mkdir -p "${blast_dir}"
+			mkdir -p "${mafft_dir}"
 			if [[ -s "${output_dir_i}/disassemble/${_d_i}/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
+
 				${_polap_cmd} mauve-mtdna -a "${output_dir}/ptdna-ptgaul.fa" \
 					-b "${output_dir_i}/disassemble/${_d_i}/pt.subsample-polishing.reference.aligned.1.fa" \
 					-o "${mauve_dir}" \
@@ -1248,6 +1170,13 @@ check_genus_species() {
 					-o "${blast_dir}"
 				echo "see ${blast_dir}/pident.txt"
 				cat "${blast_dir}/pident.txt"
+
+				${_polap_cmd} mafft-mtdna -a "${output_dir}/ptdna-ptgaul.fa" \
+					-b "${output_dir_i}/disassemble/${_d_i}/pt.subsample-polishing.reference.aligned.1.fa" \
+					-o "${mafft_dir}" \
+					>"${mafft_dir}/log.txt"
+				echo "see ${mafft_dir}/pident.txt"
+				cat "${mafft_dir}/pident.txt"
 			else
 				echo "ERROR: no such file: ${output_dir_i}/disassemble/${_d_i}/pt.subsample-polishing.reference.aligned.1.fa"
 			fi
@@ -1431,71 +1360,6 @@ EOF
 	done
 }
 
-copy-figure_genus_species() {
-	rsync -av --include='*/' --include='*.png' --exclude='*' ./ ../../manuscript/polap-v0.4/figures/
-	rsync -av --include='*/' --include='*.pdf' --exclude='*' ./ ../../manuscript/polap-v0.4/figures/
-}
-
-# at all/polap
-# rsync -av --include='*/' --include='*.png' --exclude='*' cflye1/ ../manuscript/polap-v0.4/figures/
-#
-figure1_genus_species() {
-	local output_dir="$1"
-	local isuffix="${2:-0}"
-	local simple_polishing="${3:-default}"
-	local target_index="${output_dir}-${isuffix}"
-
-	local species_name="$(echo ${output_dir} | sed 's/_/ /')"
-	local long_sra="${_long["$target_index"]}"
-	local short_sra="${_short["$target_index"]}"
-	local random_seed="${_random_seed["$target_index"]}"
-	local ssh_remote="${_ssh["$target_index"]}"
-	local extracted_inum="${_inum["$target_index"]}"
-	local output_dir_i="${output_dir}/${extracted_inum}"
-	local width=25
-
-	# ${_polap_cmd} disassemble bandage \
-	# 	-i ${extracted_inum} \
-	# 	-o ${output_dir} \
-	# 	--disassemble-i infer-1
-
-	local _figure1_md="figure1.md"
-
-	local _gfa_polap="${output_dir}/${isuffix}/disassemble/infer-1/pt.1.gfa"
-	local _png_polap="${output_dir}/${isuffix}/disassemble/infer-1/pt.1.png"
-
-	printf "![polap](figures/%s){ width=%s%% }\n" "${_png_polap}" "${width}" >>"${_figure1_md}"
-
-	local _gfa_ptgaul="${output_dir}/ptgaul/flye_cpONT/assembly_graph.gfa"
-	local _png_ptgaul="${output_dir}/ptgaul.png"
-	# ${_polap_cmd} bandage png \
-	# 	${_gfa_ptgaul} \
-	# 	${_png_ptgaul}
-	#
-	# echo "ptGAUL ptDNA gfa: ${_gfa_ptgaul}"
-	# echo "ptGAUL ptDNA png: ${_png_ptgaul}"
-
-	printf "![polap](figures/%s){ width=%s%% }\n" "${_png_ptgaul}" "${width}" >>"${_figure1_md}"
-
-	local _gfa_getorganelle=$(find "${output_dir}/getorganelle" -type f -name 'embplant_pt*.gfa' | head -n 1)
-	local _png_getorganelle="${output_dir}/getorganelle.png"
-	# ${_polap_cmd} bandage png \
-	# 	${_gfa_getorganelle} \
-	# 	${_png_getorganelle}
-	#
-	# echo "GetOrganelle ptDNA gfa: ${_gfa_getorganelle}"
-	# echo "GetOrganelle ptDNA png: ${_png_getorganelle}"
-
-	printf "![polap](figures/%s){ width=%s%% }\n" "${_png_getorganelle}" "${width}" >>"${_figure1_md}"
-
-	printf "Figure. Genome assembly (A) Polap (B) ptGAUL (C) GetOrganelle %s\n" "${species_name}" >>"${_figure1_md}"
-
-	# echo "Warning: no such file: ${_gfa}"
-	# echo "FIX QT5 problem:"
-	# problem solved
-	# echo "export QT_QPA_PLATFORM=offscreen"
-}
-
 # figure1's all bandage assembly_graph
 # figure2.md
 bandage2_genus_species() {
@@ -1600,6 +1464,11 @@ EOF
 
 }
 
+copy-figure_genus_species() {
+	rsync -av --include='*/' --include='*.png' --exclude='*' ./ ../../manuscript/polap-v0.4/figures/
+	rsync -av --include='*/' --include='*.pdf' --exclude='*' ./ ../../manuscript/polap-v0.4/figures/
+}
+
 # downsample <folder> <isuffix> [--dry]
 # e.g., downsample Pisum_sativum 0 --dry
 downsample_genus_species() {
@@ -1677,14 +1546,6 @@ downsample_genus_species() {
 
 }
 
-recover_genus_species() {
-	local output_dir="$1"
-
-	rm -rf "${output_dir}"
-	tar -zxf "${output_dir}-a.tar.gz"
-	mv "${output_dir}-a" "${output_dir}"
-}
-
 # use-downsample <folder> [inum]
 # replace the input data with the downsampled data
 use-downsample_genus_species() {
@@ -1719,42 +1580,61 @@ use-downsample_genus_species() {
 	mv "${output_dir}/s${_c}x_2.fq" "${short_sra}_2.fastq"
 }
 
-# revert-downsample <folder> <coverage>
-revert-downsample_genus_species() {
-	local output_dir="$1"
-	local _c="${2:-10}"
-	local species_name="$(echo $1 | sed 's/_/ /')"
-	local long_sra="${_long["$1"]}"
-	local short_sra="${_short["$1"]}"
-	local random_seed="${_random_seed["$1"]}"
-	# copy_data
+mauve_genus_species() {
+	local output_dir="${1:-default}"
+	local isuffix="${2:-0}"
+	local target_index="${output_dir}-${isuffix}"
 
-	if [[ "${_c}" == "default_value" ]]; then
-		_c=10
+	local species_name="$(echo ${output_dir} | sed 's/_/ /')"
+	local long_sra="${_long["$target_index"]}"
+	local short_sra="${_short["$target_index"]}"
+	local random_seed="${_random_seed["$target_index"]}"
+	local ssh_remote="${_ssh["$target_index"]}"
+	local extracted_inum="${_inum["$target_index"]}"
+	local output_dir_i="${output_dir}/${extracted_inum}"
+
+	if [[ "${output_dir}" == "default" ]]; then
+
+		# Extract and sort keys
+		sorted_keys=($(for key in "${!_table1[@]}"; do echo "$key"; done | sort))
+
+		# Iterate over sorted keys and check if value is "T"
+		for key in "${sorted_keys[@]}"; do
+			if [[ "${_table1[$key]}" == "F" ]]; then
+				continue
+			fi
+			local _v1=${_folder[$key]}
+
+			mauve_genus_species_for "${_v1}" "${isuffix}"
+		done
+	else
+		mauve_genus_species_for "${output_dir}" "${isuffix}"
 	fi
-	mv "${output_dir}/l.fq" "${long_sra}.fastq"
-
-	mv "${output_dir}/s_1.fq" "${short_sra}_1.fastq"
-
-	mv "${output_dir}/s_2.fq" "${short_sra}_2.fastq"
 }
 
-mauve_genus_species() {
+mauve_genus_species_for() {
 	local output_dir="$1"
-	local simple_polishing="${2:-default}"
-	local species_name="$(echo $1 | sed 's/_/ /')"
-	local long_sra="${_long["$1"]}"
-	local short_sra="${_short["$1"]}"
-	local random_seed="${_random_seed["$1"]}"
-	# copy_data
+	local isuffix="${2:-0}"
+	local target_index="${output_dir}-${isuffix}"
+
+	local species_name="$(echo ${output_dir} | sed 's/_/ /')"
+	local long_sra="${_long["$target_index"]}"
+	local short_sra="${_short["$target_index"]}"
+	local random_seed="${_random_seed["$target_index"]}"
+	local ssh_remote="${_ssh["$target_index"]}"
+	local extracted_inum="${_inum["$target_index"]}"
+	local output_dir_i="${output_dir}/${extracted_inum}"
+	local extracted_downsample="${_downsample["$target_index"]}"
 
 	local i=0
 	local n
 	local p
-	IFS=':' read -r -a extracted_array_n <<<"${_compare_n["$1"]}"
-	IFS=':' read -r -a extracted_array_p <<<"${_compare_p["$1"]}"
-	local extracted_r="${_compare_r["$1"]}"
-	local extracted_inum="${_inum["$1"]}"
+	IFS=':' read -r -a extracted_array_n <<<"${_compare_n["$target_index"]}"
+	IFS=':' read -r -a extracted_array_p <<<"${_compare_p["$target_index"]}"
+	local extracted_r="${_compare_r["$target_index"]}"
+	local extracted_memory="${_memory["$target_index"]}"
+	local extracted_downsample="${_downsample["$target_index"]}"
+	local extracted_inum="${_inum["$target_index"]}"
 	local output_dir_i="${output_dir}/${extracted_inum}"
 
 	mkdir -p "${output_dir_i}"
@@ -1765,22 +1645,31 @@ mauve_genus_species() {
 			echo "($i) n=$n, p=$p"
 
 			local mauve_dir="${output_dir_i}/mauve/${i}"
+			local mafft_dir="${output_dir_i}/mafft/${i}"
 			local blast_dir="${output_dir_i}/blast/${i}"
 			mkdir -p "${mauve_dir}"
+			mkdir -p "${mafft_dir}"
 			mkdir -p "${blast_dir}"
 			if [[ -s "${output_dir_i}/disassemble/infer-${i}/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
-				${_polap_cmd} mauve-mtdna -a "${output_dir}/ptdna-ptgaul.fa" \
+				${_polap_cmd} mafft-mtdna -a "${output_dir}/ptdna-ptgaul.fa" \
 					-b "${output_dir_i}/disassemble/infer-${i}/pt.subsample-polishing.reference.aligned.1.fa" \
-					-o "${mauve_dir}" \
-					>"${mauve_dir}/log.txt"
-				echo "see ${mauve_dir}/log.txt"
-				cat "${mauve_dir}/log.txt"
+					-o "${mafft_dir}" \
+					>"${mafft_dir}/log.txt"
+				echo "see ${mafft_dir}/pident.txt"
+				cat "${mafft_dir}/pident.txt"
 
-				${_polap_cmd} compare2ptdna -a "${output_dir}/ptdna-ptgaul.fa" \
-					-b "${output_dir_i}/disassemble/infer-${i}/pt.subsample-polishing.reference.aligned.1.fa" \
-					-o "${blast_dir}"
-				echo "see ${blast_dir}/pident.txt"
-				cat "${blast_dir}/pident.txt"
+				# ${_polap_cmd} mauve-mtdna -a "${output_dir}/ptdna-ptgaul.fa" \
+				# 	-b "${output_dir_i}/disassemble/infer-${i}/pt.subsample-polishing.reference.aligned.1.fa" \
+				# 	-o "${mauve_dir}" \
+				# 	>"${mauve_dir}/log.txt"
+				# echo "see ${mauve_dir}/log.txt"
+				# cat "${mauve_dir}/log.txt"
+				#
+				# ${_polap_cmd} compare2ptdna -a "${output_dir}/ptdna-ptgaul.fa" \
+				# 	-b "${output_dir_i}/disassemble/infer-${i}/pt.subsample-polishing.reference.aligned.1.fa" \
+				# 	-o "${blast_dir}"
+				# echo "see ${blast_dir}/pident.txt"
+				# cat "${blast_dir}/pident.txt"
 			else
 				echo "ERROR: no such file: ${output_dir_i}/disassemble/infer-${i}/pt.subsample-polishing.reference.aligned.1.fa"
 			fi
@@ -1788,20 +1677,6 @@ mauve_genus_species() {
 		done
 	done
 
-}
-
-clean-infer_genus_species() {
-	local output_dir="$1"
-	local inum="${2:-0}"
-	local simple_polishing="${3:-default}"
-	local species_name="$(echo $1 | sed 's/_/ /')"
-	local long_sra="${_long["$1"]}"
-	local short_sra="${_short["$1"]}"
-	local random_seed="${_random_seed["$1"]}"
-	# copy_data
-
-	rm -rf "${output_dir}/${inum}"
-	rm "${output_dir}/s.fq"
 }
 
 restart_genus_species() {
@@ -1826,27 +1701,6 @@ restart_genus_species() {
 	mv "${target_dir}" "${output_dir}"
 }
 
-moveto1_genus_species() {
-	local output_dir="$1"
-
-	# local target_dir="${output_dir}-t"
-	# mkdir "${target_dir}"
-	# mv ${output_dir} ${target_dir}/1
-	# for i in 00-bioproject getorganelle ptgaul msbwt; do
-	# 	mv "${target_dir}/1/$i" "${target_dir}/"
-	# done
-	# cp "${target_dir}/1/polap.log" "${target_dir}/"
-	# mv "${target_dir}" "${output_dir}"
-
-	local target_dir="${output_dir}"
-	for i in ptdna-ptgaul.fa ptdna-reference.fa long_total_length.txt short_expected_genome_size.txt short_total_length.txt; do
-		mv "${target_dir}/1/$i" "${target_dir}/"
-	done
-
-	mkdir -p "${target_dir}/timing"
-	cp -p "${target_dir}/1/timing"-*.txt "${target_dir}/timing"
-}
-
 write-config_genus_species() {
 	local csv_file="$1"
 
@@ -1868,73 +1722,6 @@ write-config_genus_species() {
 			seed=$((seed + 2))
 		done
 	} >"$csv_file"
-}
-
-# a simple polishing
-#
-# no need of a known ptDNA; use the first or the selected ptdna.0.fa
-# 1. copy the selected j's ptdna.0.fa
-# disassemble/4/2/j/52-mtdna/ptdna.0.fa -> disassemble/4/pt.0.fa
-# 2. polish the pt.0.fa -> pt.1.fa
-simple-polish_genus_species() {
-	local output_dir="$1"
-	local species_name="$(echo $1 | sed 's/_/ /')"
-	local long_sra="${_long["$1"]}"
-	local short_sra="${_short["$1"]}"
-	# copy_data
-
-	local i=3
-	local n
-	local p
-	IFS=':' read -r -a extracted_array_n <<<"${_compare_n["$1"]}"
-	IFS=':' read -r -a extracted_array_p <<<"${_compare_p["$1"]}"
-	for n in "${extracted_array_n[@]}"; do
-		for p in "${extracted_array_p[@]}"; do
-			i=$((i + 1))
-			echo "($i) n=$n, p=$p"
-
-			command time -v ${_polap_cmd} disassemble polishing \
-				-o ${output_dir} \
-				--disassemble-i $i \
-				2>${output_dir}/timing-polishing-${i}.txt
-		done
-	done
-}
-
-# polish with incremental subsampling
-#
-# just the subsampling polish step
-# it is step 5 of disassemble
-subsample-polish_genus_species() {
-	local output_dir="$1"
-	local species_name="$(echo $1 | sed 's/_/ /')"
-	local long_sra="${_long["$1"]}"
-	local short_sra="${_short["$1"]}"
-	# copy_data
-
-	local i=3
-	local n
-	local p
-	IFS=':' read -r -a extracted_array_n <<<"${_polish_n["$1"]}"
-	IFS=':' read -r -a extracted_array_p <<<"${_polish_p["$1"]}"
-	for n in "${extracted_array_n[@]}"; do
-		for p in "${extracted_array_p[@]}"; do
-			i=$((i + 1))
-			echo "($i) n=$n, p=$p"
-
-			${_polap_cmd} disassemble polish \
-				-v -v \
-				--steps-include 4,6,7,8 \
-				-o ${output_dir} \
-				-l ${long_sra}.fastq \
-				-a ${short_sra}_1.fastq \
-				-b ${short_sra}_2.fastq \
-				--disassemble-i $i \
-				--disassemble-n $n \
-				--disassemble-p $p
-			# 2>${output_dir}/timing-polish-${i}.txt
-		done
-	done
 }
 
 wga_genus_species() {
@@ -2044,6 +1831,7 @@ get_genus_species_for() {
 	fi
 }
 
+# TODO
 report_genus_species() {
 	local output_dir="${1:-default}"
 
@@ -2056,6 +1844,7 @@ report_genus_species() {
 	fi
 }
 
+# TODO
 report_genus_species_for() {
 	local output_dir="$1"
 	local species_name="$(echo $1 | sed 's/_/ /')"
@@ -2082,6 +1871,11 @@ report_genus_species_for() {
 		done
 	done
 }
+
+################################################################################
+# create tables and figures
+# some helper functions first and then the main table and figure functions
+#
 
 # Example usage
 # echo "Hours: $(convert_to_hours '4:05:17')"  # h:mm:ss
@@ -2240,10 +2034,11 @@ get_target_read_coverage() {
 	fi
 }
 
-# Usage example:
-# get_coverage_int /mnt/data/sx.txt
-
-# previously table3
+# output:
+# table1.md
+# table1.tsv
+# table1-1.md
+# table1-2.md
 table1_genus_species() {
 	local _table="table1"
 	local _table_file="${_table}.tsv"
@@ -2309,7 +2104,244 @@ table1_genus_species() {
 
 		# done
 
-		# for _v1 in $(printf "%s\n" "${Stable1[@]}" | sort); do
+		_logfile=${_v1}/polap.log
+		_readmefile=${_v1}/README
+		_species="${_v1/_/ }"
+
+		_l_sra=$(awk '/long-read/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_logfile" | sort -u | grep -v '^$')
+		if [[ -s "${_v1}/long_total_length.txt" ]]; then
+			_l_sra_size=$(<"${_v1}/long_total_length.txt")
+		else
+			_l_sra_size=$(<"${_v1}/l.fq.txt")
+		fi
+		_l_sra_size_gb=$(_polap_utility_convert_bp "${_l_sra_size}")
+
+		_s_sra=$(awk '/short-read1/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_logfile" | sort -u | grep -v '^$')
+		if [[ -s "${_v1}/short_total_length.txt" ]]; then
+			_s_sra_size=$(<"${_v1}/short_total_length.txt")
+		else
+			_s_sra_size1=$(<"${_v1}/s1.fq.txt")
+			_s_sra_size2=$(<"${_v1}/s2.fq.txt")
+			_s_sra_size=$((_s_sra_size1 + _s_sra_size2))
+		fi
+		_s_sra_size_gb=$(_polap_utility_convert_bp "${_s_sra_size}")
+		_known_mtdna=$(grep 'NCBI accession:' ${_logfile} | cut -d: -f4 | tail -n 1)
+
+		# if [[ -v _host["${_v1}"] ]]; then
+		# 	echo species:"${_v1}"
+		# else
+		# 	echo "No such host for $_v1"
+		# fi
+
+		local _ptdna_ptgaul=${_v1}/ptdna-ptgaul.fa
+		local _ptdna_reference=${_v1}/ptdna-reference.fa
+		seq_length1=$(grep -v "^>" "$_ptdna_ptgaul" | tr -d '\n' | wc -c)
+
+		# read -r _memory_gb_flye1 _total_hours_flye1 < <(parse_timing "${_v1}" "infer12-4")
+
+		local j=1
+		for _i in {0..0}; do
+			local _v1_inum="${_v1}/${_i}"
+			local _disassemble_index="infer-${j}"
+			local _summary1_ordered_txt=${_v1_inum}/disassemble/${_disassemble_index}/1/summary1-ordered.txt
+			local fasta_file=${_v1_inum}/disassemble/${_disassemble_index}/pt.subsample-polishing.1.fa
+
+			local target_index="${_v1}-${_i}"
+			local extracted_memory="${_memory["$target_index"]}"
+
+			if [[ -s "${fasta_file}" ]]; then
+				# Count the number of sequences (lines starting with '>')
+				seq_count=$(grep -c "^>" "$fasta_file")
+
+				# Ensure there is exactly one sequence
+				if [[ "$seq_count" -ne 1 ]]; then
+					echo "Error: FASTA file does not contain exactly one sequence."
+					exit 1
+				fi
+
+				# Compute the sequence length (excluding header lines)
+				seq_length2=$(grep -v "^>" "$fasta_file" | tr -d '\n' | wc -c)
+			else
+				seq_length2=0
+			fi
+
+			# Extract mode value
+			# Extract SD value
+			# Extract the first index value
+			local _mode=$(grep "^#mode:" "$_summary1_ordered_txt" | awk '{print $2}')
+			local _sd=$(grep "^#sd:" "$_summary1_ordered_txt" | awk '{print $2}')
+			local _first_index=$(grep "^#index:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
+			local _n1=$(grep "^#n:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
+
+			local _params_txt=${_v1_inum}/disassemble/${_disassemble_index}/params.txt
+			_ipn=$(parse_params "${_params_txt}")
+			read -r _I _P _N <<<"$_ipn"
+
+			local _summary2_ordered_txt=${_v1_inum}/disassemble/${_disassemble_index}/2/summary1-ordered.txt
+			local _n2=$(grep "^#n:" "$_summary2_ordered_txt" | awk 'NR==1 {print $2}')
+			local output=$(awk -F'\t' 'NR==2 {print $1, $2, $4, $11}' "${_summary2_ordered_txt}")
+			local _summary2_index
+			local _summary2_size
+			local _summary2_size_gb
+			local _summary2_rate_rounded
+			local _summary2_alpha
+			local _summary2_alpha_formatted
+			read -r _summary2_index _summary2_size _summary2_rate _summary2_alpha <<<"$output"
+			_summary2_size_gb=$(_polap_utility_convert_bp "${_summary2_size}")
+			local _summary2_rate_decimal=$(printf "%.10f" "$_summary2_rate")
+			_summary2_rate_rounded=$(echo "scale=4; $_summary2_rate_decimal / 1" | bc)
+			_summary2_alpha_formatted=$(echo "scale=2; $_summary2_alpha / 1" | bc | awk '{printf "%.2f\n", $1}')
+			# _summary2_alpha_formatted=$(echo "$_summary2_alpha_formatted" | awk '{printf "%.10g\n", $1}')
+
+			read -r _memory_gb _total_hours < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-infer-${j}-subsample-polish.txt")
+			read -r _memory_gb_polishing _total_hours_polishing < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-check-${j}-subsample-polish.txt")
+			read -r _memory_gb_ptgaul _total_hours_ptgaul < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-ptgaul.txt")
+			read -r _memory_gb_getorganelle _total_hours_getorganelle < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-getorganelle.txt")
+
+			local _mafft_pident="NA"
+			if [[ -s "${_v1_inum}/mafft/${j}/pident.txt" ]]; then
+				_mafft_pident="$(<${_v1_inum}/mafft/${j}/pident.txt)"
+			else
+				_mafft_pident=0
+			fi
+
+			local _blast_pident="NA"
+			if [[ -s "${_v1_inum}/blast/${j}/pident.txt" ]]; then
+				_blast_pident="$(<${_v1_inum}/blast/${j}/pident.txt)"
+			else
+				_blast_pident=0
+			fi
+
+			local _mauve_lcb_coverage="NA"
+			if [[ -s "${_v1_inum}/mauve/${j}/log.txt" ]]; then
+				_mauve_lcb_coverage=$(awk '{print $2}' "${_v1_inum}/mauve/${j}/log.txt")
+			else
+				_mauve_lcb_coverage=0
+			fi
+
+			local _pident="${_mafft_pident}"
+			# if (($(echo "$_blast_pident < $_mauve_lcb_coverage" | bc -l))); then
+			# 	_pident="${_mauve_lcb_coverage}"
+			# else
+			# 	_pident="${_blast_pident}"
+			# fi
+
+			local _short_coverage=$(get_short_read_coverage "${_v1_inum}/sx.txt")
+			local _long_coverage=$(get_long_read_coverage "${_v1_inum}/lx.txt")
+			local _target_coverage=$(get_target_read_coverage "${_v1_inum}/lx.txt")
+
+			# read -r _memory_gb _total_hours < <(parse_timing "${_v1}" "infer12-${j}")
+			# read -r _memory_gb_polishing _total_hours_polishing < <(parse_timing "${_v1}" "infer3only-${j}")
+
+			printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+				"_${_species}_" \
+				"${_target_coverage}" \
+				"${_l_sra_size_gb}" \
+				"${_long_coverage}" \
+				"${_s_sra_size_gb}" \
+				"${_short_coverage}" \
+				"${_P}" \
+				"${_summary2_rate_rounded}" \
+				"${_summary2_size_gb}" \
+				"${_summary2_alpha_formatted}" \
+				"${_known_mtdna}" \
+				"${seq_length1}" \
+				"${seq_length2}" \
+				"${_pident}" \
+				"${_n1}" \
+				"${_mode}" \
+				"${_sd}" \
+				"${_n2}" \
+				"${extracted_memory}" \
+				"${_memory_gb_getorganelle}" \
+				"${_memory_gb_ptgaul}" \
+				"${_memory_gb_polishing}" \
+				"${_memory_gb}" \
+				"${_total_hours}" \
+				>>"${_table_file}"
+		done
+
+	done
+
+	# table1 - 1
+	csvtk -t cut -f Species,L_size,L_cov,S_size,S_cov,ptDNA,Length1 \
+		${_table_file} | csvtk -t csv2md -a right -o ${_table}-1.md
+	cp -p ${_table}-1.md ~/all/manuscript/polap-v0.4/
+
+	csvtk -t cut -f Species,C,P,Rate,Size,Alpha,Pident,N1,Mode,SD,N2,M,M_g,M_p,M_c,M_f,T \
+		${_table_file} | csvtk -t csv2md -a right -o ${_table}-2.md
+	cp -p ${_table}-2.md ~/all/manuscript/polap-v0.4/
+
+	csvtk -t csv2md -a right ${_table_file} -o ${_table}.md
+	echo "Check ${_table}.md"
+	cat "${_table}.md"
+}
+
+# previously table3
+
+# table2.md
+# table2.tsv
+table2_genus_species() {
+	local _table="table2"
+	local _table_file="${_table}.tsv"
+	local _v1
+	local _logfile
+	local _readmefile
+	local _species
+	local _l_sra
+	local _s_sra
+	local _l_sra_size
+	local _s_sra_size
+	local _l_sra_size_gb
+	local _s_sra_size_gb
+	local _memory_gb
+	local _total_hours
+	local _memory_gb_ptgaul
+	local _total_hours_ptgaul
+	local _memory_gb_getorganelle
+	local _total_hours_getorganelle
+	local _memory_gb_flye1
+	local _total_hours_flye1
+	local _I
+	local _P
+	local _N
+	local j
+
+	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+		"Species" \
+		"C" \
+		"L_size" \
+		"L_cov" \
+		"S_size" \
+		"S_cov" \
+		"P" \
+		"Rate" \
+		"Size" \
+		"Alpha" \
+		"Length2" \
+		"N1" \
+		"Mode" \
+		"SD" \
+		"N2" \
+		"M" \
+		"M_g" \
+		"M_f" \
+		"T" \
+		>"${_table_file}"
+
+	# Extract and sort keys
+	sorted_keys=($(for key in "${!_table2[@]}"; do echo "$key"; done | sort))
+
+	# Iterate over sorted keys and check if value is "T"
+	for key in "${sorted_keys[@]}"; do
+		if [[ "${_table2[$key]}" == "F" ]]; then
+			continue
+		fi
+		local _v1=${_folder[$key]}
+		echo "${_v1}"
+
+		# done
+
 		_logfile=${_v1}/polap.log
 		_readmefile=${_v1}/README
 		_species="${_v1/_/ }"
@@ -2432,7 +2464,7 @@ table1_genus_species() {
 			# read -r _memory_gb _total_hours < <(parse_timing "${_v1}" "infer12-${j}")
 			# read -r _memory_gb_polishing _total_hours_polishing < <(parse_timing "${_v1}" "infer3only-${j}")
 
-			printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+			printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
 				"_${_species}_" \
 				"${_target_coverage}" \
 				"${_l_sra_size_gb}" \
@@ -2443,18 +2475,13 @@ table1_genus_species() {
 				"${_summary2_rate_rounded}" \
 				"${_summary2_size_gb}" \
 				"${_summary2_alpha_formatted}" \
-				"${_known_mtdna}" \
-				"${seq_length1}" \
 				"${seq_length2}" \
-				"${_pident}" \
 				"${_n1}" \
 				"${_mode}" \
 				"${_sd}" \
 				"${_n2}" \
 				"${extracted_memory}" \
 				"${_memory_gb_getorganelle}" \
-				"${_memory_gb_ptgaul}" \
-				"${_memory_gb_polishing}" \
 				"${_memory_gb}" \
 				"${_total_hours}" \
 				>>"${_table_file}"
@@ -2462,554 +2489,24 @@ table1_genus_species() {
 
 	done
 
-	# table1 - 1
-	csvtk -t cut -f Species,L_size,L_cov,S_size,S_cov,ptDNA,Length1 \
-		${_table_file} | csvtk -t csv2md -a right -o ${_table}-1.md
-	cp -p ${_table}-1.md ~/all/manuscript/polap-v0.4/
+	# table2 - 1
+	# csvtk -t cut -f Species,L_size,L_cov,S_size,S_cov,ptDNA,Length1 \
+	# 	${_table_file} | csvtk -t csv2md -a right -o ${_table}-1.md
+	# cp -p ${_table}-1.md ~/all/manuscript/polap-v0.4/
 
-	csvtk -t cut -f Species,C,P,Rate,Size,Alpha,Pident,N1,Mode,SD,N2,M,M_g,M_p,M_c,M_f,T \
-		${_table_file} | csvtk -t csv2md -a right -o ${_table}-2.md
-	cp -p ${_table}-2.md ~/all/manuscript/polap-v0.4/
+	# csvtk -t cut -f Species,C,P,Rate,Size,Alpha,Pident,N1,Mode,SD,N2,M,M_g,M_p,M_c,M_f,T \
+	# 	${_table_file} | csvtk -t csv2md -a right -o ${_table}-2.md
+	# cp -p ${_table}-2.md ~/all/manuscript/polap-v0.4/
 
 	csvtk -t csv2md -a right ${_table_file} -o ${_table}.md
+	cp -p ${_table}.md ~/all/manuscript/polap-v0.4/
 	echo "Check ${_table}.md"
 	cat "${_table}.md"
 }
 
-# previously table1
-table11_genus_species() {
-	local _table1_file="table1.tsv"
-	local _v1
-	local _logfile
-	local _readmefile
-	local _species
-	local _l_sra
-	local _s_sra
-	local _l_sra_size
-	local _s_sra_size
-	local _l_sra_size_gb
-	local _s_sra_size_gb
-	local _memory_gb
-	local _total_hours
-	local _memory_gb_ptgaul
-	local _total_hours_ptgaul
-	local _I
-	local _P
-	local _N
-	local j
-
-	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-		"Species" \
-		"P" \
-		"L_SRA" \
-		"L_size" \
-		"S_SRA" \
-		"S_size" \
-		"NCBI ptDNA" \
-		"Mode" \
-		"SD" \
-		"M_g" \
-		"M_r" \
-		"M_f" \
-		"T" \
-		>"${_table1_file}"
-
-	for _v1 in "${Stable1[@]}"; do
-		_logfile=${_v1}/polap.log
-		_readmefile=${_v1}/README
-		_species="${_v1/_/ }"
-		_l_sra=$(awk '/long-read/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_logfile" | sort -u | grep -v '^$')
-		_l_sra_size=$(<${_v1}/long_total_length.txt)
-		_l_sra_size_gb=$(_polap_utility_convert_bp "${_l_sra_size}")
-		_s_sra=$(awk '/short-read1/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_logfile" | sort -u | grep -v '^$')
-		_s_sra_size=$(<${_v1}/short_total_length.txt)
-		_s_sra_size_gb=$(_polap_utility_convert_bp "${_s_sra_size}")
-		_known_mtdna=$(grep 'NCBI accession:' ${_logfile} | cut -d: -f4 | tail -n 1)
-
-		if [[ -v _host["${_v1}"] ]]; then
-			echo species:"${_v1}"
-		else
-			echo "No such host for $_v1"
-		fi
-
-		local _ptdna_ptgaul=${_v1}/ptdna-ptgaul.fa
-		local _ptdna_reference=${_v1}/ptdna-reference.fa
-
-		for j in {1..1}; do
-			local _disassemble_index="compare-${j}"
-			local _summary1_ordered_txt=${_v1}/disassemble/${_disassemble_index}/1/summary1-ordered.txt
-
-			# Extract mode value
-			# Extract SD value
-			# Extract the first index value
-			local _mode=$(grep "^#mode:" "$_summary1_ordered_txt" | awk '{print $2}')
-			local _sd=$(grep "^#sd:" "$_summary1_ordered_txt" | awk '{print $2}')
-			local _first_index=$(grep "^#index:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
-
-			local _params_txt=${_v1}/disassemble/${_disassemble_index}/params.txt
-			_ipn=$(parse_params "${_params_txt}")
-			read -r _I _P _N <<<"$_ipn"
-
-			# read -r _memory_gb _total_hours < <(parse_timing "${_v1}" "${j}")
-			read -r _memory_gb _total_hours < <(_polap_lib_timing-parse-timing "${_v1}/timing-compare-${j}.txt")
-			j="ptgaul"
-			read -r _memory_gb_ptgaul _total_hours_ptgaul < <(_polap_lib_timing-parse-timing "${_v1}/timing-ptgaul.txt")
-			read -r _memory_gb_getorganelle _total_hours_getorganelle < <(_polap_lib_timing-parse-timing "${_v1}/timing-getorganelle.txt")
-
-			printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-				"_${_species}_" \
-				"${_P}" \
-				"${_l_sra}" \
-				"${_l_sra_size_gb}" \
-				"${_s_sra}" \
-				"${_s_sra_size_gb}" \
-				"${_known_mtdna}" \
-				"${_mode}" \
-				"${_sd}" \
-				"${_memory_gb_getorganelle}" \
-				"${_memory_gb_ptgaul}" \
-				"${_memory_gb}" \
-				"${_total_hours}" \
-				>>"${_table1_file}"
-		done
-
-	done
-
-	csvtk -t csv2md -a right ${_table1_file} -o table1.md
-	echo "Check table1.md"
-	# pandoc ${_table1_file} -f tsv -t markdown_mmd -o table1.md
-
-	# pandoc table1.tsv -f tsv -t docx -o table1.docx
-}
-
-table2_genus_species() {
-	local _table_file="table2.tsv"
-	local _v1
-	local _logfile
-	local _readmefile
-	local _species
-	local _l_sra
-	local _s_sra
-	local _l_sra_size
-	local _s_sra_size
-	local _l_sra_size_gb
-	local _s_sra_size_gb
-	local _memory_gb
-	local _total_hours
-	local _memory_gb_ptgaul
-	local _total_hours_ptgaul
-	local _memory_gb_flye1
-	local _total_hours_flye1
-	local _I
-	local _P
-	local _N
-	local j
-
-	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-		"Species" \
-		"P" \
-		"L_size" \
-		"S_size" \
-		"NCBI ptDNA" \
-		"Length1" \
-		"Length2" \
-		"Mode" \
-		"SD" \
-		"M_r" \
-		"M_a" \
-		"M_f" \
-		"T" \
-		>"${_table_file}"
-
-	for _v1 in "${Stable2[@]}"; do
-		_logfile=${_v1}/polap.log
-		_readmefile=${_v1}/README
-		_species="${_v1/_/ }"
-		_l_sra=$(awk '/long-read/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_logfile" | sort -u | grep -v '^$')
-		_l_sra_size=$(<${_v1}/long_total_length.txt)
-		_l_sra_size_gb=$(_polap_utility_convert_bp "${_l_sra_size}")
-		_s_sra=$(awk '/short-read1/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_logfile" | sort -u | grep -v '^$')
-		_s_sra_size=$(<${_v1}/short_total_length.txt)
-		_s_sra_size_gb=$(_polap_utility_convert_bp "${_s_sra_size}")
-		_known_mtdna=$(grep 'NCBI accession:' ${_logfile} | cut -d: -f4 | tail -n 1)
-
-		if [[ -v _host["${_v1}"] ]]; then
-			echo species:"${_v1}"
-		else
-			echo "No such host for $_v1"
-		fi
-
-		local _ptdna_ptgaul=${_v1}/ptdna-ptgaul.fa
-		local _ptdna_reference=${_v1}/ptdna-reference.fa
-		seq_length1=$(grep -v "^>" "$_ptdna_ptgaul" | tr -d '\n' | wc -c)
-
-		read -r _memory_gb_flye1 _total_hours_flye1 < <(_polap_lib_timing-parse-timing "${_v1}/timing-flye1.txt")
-
-		for j in {1..1}; do
-			local _disassemble_index="infer-${j}"
-			local _summary1_ordered_txt=${_v1}/disassemble/${_disassemble_index}/1/summary1-ordered.txt
-			local fasta_file=${_v1}/disassemble/${_disassemble_index}/pt.subsample-polishing.1.fa
-
-			if [[ -s "${fasta_file}" ]]; then
-				# Count the number of sequences (lines starting with '>')
-				seq_count=$(grep -c "^>" "$fasta_file")
-
-				# Ensure there is exactly one sequence
-				if [[ "$seq_count" -ne 1 ]]; then
-					echo "Error: FASTA file does not contain exactly one sequence."
-					exit 1
-				fi
-
-				# Compute the sequence length (excluding header lines)
-				seq_length2=$(grep -v "^>" "$fasta_file" | tr -d '\n' | wc -c)
-			else
-				seq_length2=0
-			fi
-
-			# Extract mode value
-			# Extract SD value
-			# Extract the first index value
-			local _mode=$(grep "^#mode:" "$_summary1_ordered_txt" | awk '{print $2}')
-			local _sd=$(grep "^#sd:" "$_summary1_ordered_txt" | awk '{print $2}')
-			local _first_index=$(grep "^#index:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
-
-			local _params_txt=${_v1}/disassemble/${_disassemble_index}/params.txt
-			_ipn=$(parse_params "${_params_txt}")
-			read -r _I _P _N <<<"$_ipn"
-
-			read -r _memory_gb _total_hours < <(_polap_lib_timing-parse-timing "${_v1}/timing-infer-${j}-subsample-polish.txt")
-			j="ptgaul"
-			read -r _memory_gb_ptgaul _total_hours_ptgaul < <(_polap_lib_timing-parse-timing "${_v1}/timing-ptgaul.txt")
-
-			printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-				"_${_species}_" \
-				"${_P}" \
-				"${_l_sra_size_gb}" \
-				"${_s_sra_size_gb}" \
-				"${_known_mtdna}" \
-				"${seq_length1}" \
-				"${seq_length2}" \
-				"${_mode}" \
-				"${_sd}" \
-				"${_memory_gb_ptgaul}" \
-				"${_memory_gb_flye1}" \
-				"${_memory_gb}" \
-				"${_total_hours}" \
-				>>"${_table_file}"
-		done
-
-	done
-
-	csvtk -t csv2md -a right ${_table_file} -o table2.md
-	echo "Check table2.md"
-	# pandoc ${_table_file} -f tsv -t markdown_mmd -o table1.md
-
-	# pandoc table1.tsv -f tsv -t docx -o table1.docx
-}
-
-table3_genus_species() {
-	local _table_file="table3.tsv"
-	local _v1
-	local _logfile
-	local _readmefile
-	local _species
-	local _l_sra
-	local _s_sra
-	local _l_sra_size
-	local _s_sra_size
-	local _l_sra_size_gb
-	local _s_sra_size_gb
-	local _memory_gb
-	local _total_hours
-	local _memory_gb_ptgaul
-	local _total_hours_ptgaul
-	local _memory_gb_getorganelle
-	local _total_hours_getorganelle
-	local _memory_gb_flye1
-	local _total_hours_flye1
-	local _I
-	local _P
-	local _N
-	local j
-
-	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-		"Species" \
-		"P" \
-		"L_size" \
-		"S_size" \
-		"Rate" \
-		"Size" \
-		"Alpha" \
-		"NCBI ptDNA" \
-		"Length1" \
-		"Length2" \
-		"Pident" \
-		"Mode" \
-		"SD" \
-		"M_g" \
-		"M_r" \
-		"M_p" \
-		"M_f" \
-		"T" \
-		>"${_table_file}"
-
-	for _v1 in "${Stable3[@]}"; do
-		_logfile=${_v1}/polap.log
-		_readmefile=${_v1}/README
-		_species="${_v1/_/ }"
-		_l_sra=$(awk '/long-read/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_logfile" | sort -u | grep -v '^$')
-		_l_sra_size=$(<${_v1}/long_total_length.txt)
-		_l_sra_size_gb=$(_polap_utility_convert_bp "${_l_sra_size}")
-		_s_sra=$(awk '/short-read1/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_logfile" | sort -u | grep -v '^$')
-		_s_sra_size=$(<${_v1}/short_total_length.txt)
-		_s_sra_size_gb=$(_polap_utility_convert_bp "${_s_sra_size}")
-		_known_mtdna=$(grep 'NCBI accession:' ${_logfile} | cut -d: -f4 | tail -n 1)
-
-		if [[ -v _host["${_v1}"] ]]; then
-			echo species:"${_v1}"
-		else
-			echo "No such host for $_v1"
-		fi
-
-		local _ptdna_ptgaul=${_v1}/ptdna-ptgaul.fa
-		local _ptdna_reference=${_v1}/ptdna-reference.fa
-		seq_length1=$(grep -v "^>" "$_ptdna_ptgaul" | tr -d '\n' | wc -c)
-
-		# read -r _memory_gb_flye1 _total_hours_flye1 < <(parse_timing "${_v1}" "infer12-4")
-
-		for j in {1..1}; do
-			local _disassemble_index="infer-${j}"
-			local _summary1_ordered_txt=${_v1}/disassemble/${_disassemble_index}/1/summary1-ordered.txt
-			local fasta_file=${_v1}/disassemble/${_disassemble_index}/pt.subsample-polishing.1.fa
-
-			if [[ -s "${fasta_file}" ]]; then
-				# Count the number of sequences (lines starting with '>')
-				seq_count=$(grep -c "^>" "$fasta_file")
-
-				# Ensure there is exactly one sequence
-				if [[ "$seq_count" -ne 1 ]]; then
-					echo "Error: FASTA file does not contain exactly one sequence."
-					exit 1
-				fi
-
-				# Compute the sequence length (excluding header lines)
-				seq_length2=$(grep -v "^>" "$fasta_file" | tr -d '\n' | wc -c)
-			else
-				seq_length2=0
-			fi
-
-			# Extract mode value
-			# Extract SD value
-			# Extract the first index value
-			local _mode=$(grep "^#mode:" "$_summary1_ordered_txt" | awk '{print $2}')
-			local _sd=$(grep "^#sd:" "$_summary1_ordered_txt" | awk '{print $2}')
-			echo "$_summary1_ordered_txt"
-			echo "$_sd"
-			local _first_index=$(grep "^#index:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
-
-			local _params_txt=${_v1}/disassemble/${_disassemble_index}/params.txt
-			_ipn=$(parse_params "${_params_txt}")
-			read -r _I _P _N <<<"$_ipn"
-
-			local _summary2_ordered_txt=${_v1}/disassemble/${_disassemble_index}/2/summary1-ordered.txt
-			local output=$(awk -F'\t' 'NR==2 {print $1, $2, $4, $11}' "${_summary2_ordered_txt}")
-			local _summary2_index
-			local _summary2_size
-			local _summary2_size_gb
-			local _summary2_rate_rounded
-			local _summary2_alpha
-			local _summary2_alpha_formatted
-			read -r _summary2_index _summary2_size _summary2_rate _summary2_alpha <<<"$output"
-			# echo "${_summary2_rate}"
-			_summary2_size_gb=$(_polap_utility_convert_bp "${_summary2_size}")
-			# echo "A:${_summary2_rate_rounded}"
-			local _summary2_rate_decimal=$(printf "%.10f" "$_summary2_rate")
-			_summary2_rate_rounded=$(echo "scale=4; $_summary2_rate_decimal / 1" | bc)
-			# echo "B:${_summary2_rate_rounded}"
-			_summary2_alpha_formatted=$(echo "scale=2; $_summary2_alpha / 1" | bc | awk '{printf "%.2f\n", $1}')
-			# _summary2_alpha_formatted=$(echo "$_summary2_alpha_formatted" | awk '{printf "%.10g\n", $1}')
-
-			read -r _memory_gb _total_hours < <(_polap_lib_timing-parse-timing "${_v1}/timing-infer-${j}-subsample-polish.txt")
-			read -r _memory_gb_polishing _total_hours_polishing < <(_polap_lib_timing-parse-timing "${_v1}/timing-check-${j}-subsample-polish.txt")
-			read -r _memory_gb_ptgaul _total_hours_ptgaul < <(_polap_lib_timing-parse-timing "${_v1}/timing-ptgaul.txt")
-			read -r _memory_gb_getorganelle _total_hours_getorganelle < <(_polap_lib_timing-parse-timing "${_v1}/timing-getorganelle.txt")
-
-			local _blast_pident="NA"
-			if [[ -s "${_v1}/blast/pident.txt" ]]; then
-				_blast_pident="$(<${_v1}/blast/pident.txt)"
-			else
-				_blast_pident=0
-			fi
-
-			local _mauve_lcb_coverage="NA"
-			if [[ -s "${_v1}/mauve/log.txt" ]]; then
-				_mauve_lcb_coverage=$(awk '{print $2}' "${_v1}/mauve/log.txt")
-			else
-				_mauve_lcb_coverage=0
-			fi
-
-			local _pident
-			if (($(echo "$_blast_pident < $_mauve_lcb_coverage" | bc -l))); then
-				_pident="${_mauve_lcb_coverage}"
-			else
-				_pident="${_blast_pident}"
-			fi
-
-			# read -r _memory_gb _total_hours < <(parse_timing "${_v1}" "infer12-${j}")
-			# read -r _memory_gb_polishing _total_hours_polishing < <(parse_timing "${_v1}" "infer3only-${j}")
-
-			printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-				"_${_species}_" \
-				"${_P}" \
-				"${_l_sra_size_gb}" \
-				"${_s_sra_size_gb}" \
-				"${_summary2_rate_rounded}" \
-				"${_summary2_size_gb}" \
-				"${_summary2_alpha_formatted}" \
-				"${_known_mtdna}" \
-				"${seq_length1}" \
-				"${seq_length2}" \
-				"${_pident}" \
-				"${_mode}" \
-				"${_sd}" \
-				"${_memory_gb_getorganelle}" \
-				"${_memory_gb_ptgaul}" \
-				"${_memory_gb_polishing}" \
-				"${_memory_gb}" \
-				"${_total_hours}" \
-				>>"${_table_file}"
-		done
-
-	done
-
-	csvtk -t csv2md -a right ${_table_file} -o table3.md
-	echo "Check table3.md"
-	cat table3.md
-}
-
-table4_genus_species() {
-	local _table_file="table4.tsv"
-	local _v1
-	local _logfile
-	local _readmefile
-	local _species
-	local _l_sra
-	local _s_sra
-	local _l_sra_size
-	local _s_sra_size
-	local _l_sra_size_gb
-	local _s_sra_size_gb
-	local _memory_gb
-	local _total_hours
-	local _memory_gb_ptgaul
-	local _total_hours_ptgaul
-	local _memory_gb_flye1
-	local _total_hours_flye1
-	local _I
-	local _P
-	local _N
-	local j
-
-	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-		"Species" \
-		"P" \
-		"L_size" \
-		"S_size" \
-		"Length2" \
-		"Mode" \
-		"SD" \
-		"M_p" \
-		"M_f" \
-		"T" \
-		>"${_table_file}"
-
-	for _v1 in "${Stable4[@]}"; do
-		_logfile=${_v1}/polap.log
-		_readmefile=${_v1}/README
-		_species="${_v1/_/ }"
-		_l_sra=$(awk '/long-read/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_logfile" | sort -u | grep -v '^$')
-		_l_sra_size=$(<${_v1}/long_total_length.txt)
-		_l_sra_size_gb=$(_polap_utility_convert_bp "${_l_sra_size}")
-		_s_sra=$(awk '/short-read1/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_logfile" | sort -u | grep -v '^$')
-		_s_sra_size=$(<${_v1}/short_total_length.txt)
-		_s_sra_size_gb=$(_polap_utility_convert_bp "${_s_sra_size}")
-		# _known_mtdna=$(grep 'NCBI accession:' ${_logfile} | cut -d: -f4 | tail -n 1)
-
-		if [[ -v _host["${_v1}"] ]]; then
-			echo species:"${_v1}"
-		else
-			echo "No such host for $_v1"
-		fi
-
-		# local _ptdna_ptgaul=${_v1}/ptdna-ptgaul.fa
-		# local _ptdna_reference=${_v1}/ptdna-reference.fa
-		# seq_length1=$(grep -v "^>" "$_ptdna_ptgaul" | tr -d '\n' | wc -c)
-
-		# read -r _memory_gb_flye1 _total_hours_flye1 < <(parse_timing "${_v1}" "infer12-4")
-
-		for j in {1..1}; do
-			local _disassemble_index="infer-${j}"
-			local _summary1_ordered_txt=${_v1}/disassemble/${_disassemble_index}/1/summary1-ordered.txt
-			local fasta_file=${_v1}/disassemble/${_disassemble_index}/pt.subsample-polishing.1.fa
-
-			if [[ -s "${fasta_file}" ]]; then
-				# Count the number of sequences (lines starting with '>')
-				seq_count=$(grep -c "^>" "$fasta_file")
-
-				# Ensure there is exactly one sequence
-				if [[ "$seq_count" -ne 1 ]]; then
-					echo "Error: FASTA file does not contain exactly one sequence."
-					exit 1
-				fi
-
-				# Compute the sequence length (excluding header lines)
-				seq_length2=$(grep -v "^>" "$fasta_file" | tr -d '\n' | wc -c)
-			else
-				seq_length2=0
-			fi
-
-			# Extract mode value
-			# Extract SD value
-			# Extract the first index value
-			local _mode=$(grep "^#mode:" "$_summary1_ordered_txt" | awk '{print $2}')
-			local _sd=$(grep "^#sd:" "$_summary1_ordered_txt" | awk '{print $2}')
-			local _first_index=$(grep "^#index:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
-
-			local _params_txt=${_v1}/disassemble/${_disassemble_index}/params.txt
-			_ipn=$(parse_params "${_params_txt}")
-			read -r _I _P _N <<<"$_ipn"
-
-			read -r _memory_gb _total_hours < <(_polap_lib_timing-parse-timing "${_v1}/timing-infer-${j}-subsample-polish.txt")
-			read -r _memory_gb_polishing _total_hours_polishing < <(_polap_lib_timing-parse-timing "${_v1}/timing-infer-${j}-subsample-polish.txt")
-			# read -r _memory_gb_ptgaul _total_hours_ptgaul < <(_polap_lib_timing-parse-timing "${_v1}/timing-ptgaul.txt")
-
-			# local _pident="NA"
-			# if [[ -s "${_v1}/blast/pident.txt" ]]; then
-			# 	_pident="$(<${_v1}/blast/pident.txt)"
-			# fi
-
-			printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-				"_${_species}_" \
-				"${_P}" \
-				"${_l_sra_size_gb}" \
-				"${_s_sra_size_gb}" \
-				"${seq_length2}" \
-				"${_mode}" \
-				"${_sd}" \
-				"${_memory_gb_polishing}" \
-				"${_memory_gb}" \
-				"${_total_hours}" \
-				>>"${_table_file}"
-		done
-
-	done
-
-	csvtk -t csv2md -a right ${_table_file} -o table4.md
-	echo "Check table4.md"
-	cat table4.md
-}
-
 # stage 1 table
+#
+# suptable1.md
 suptable1_genus_species() {
 	local _suptable_file="suptable1.md"
 	local _species
@@ -3118,6 +2615,8 @@ suptable1_genus_species() {
 }
 
 # figures of Polap, ptGAUL, and GetOrganelle's assemblies
+#
+# supfigure1.md
 supfigure1_genus_species() {
 	local _draw_bandage="${1:-default_value}"
 	local _supfigure_file="supfigure1.md"
@@ -3258,6 +2757,8 @@ EOF
 }
 
 # figures of Polap, ptGAUL, and GetOrganelle's assemblies
+
+# supfigure2.md
 supfigure2_genus_species() {
 	local _draw_bandage="${1:-default_value}"
 	local _supfigure_file="supfigure2.md"
@@ -3369,267 +2870,6 @@ EOF
 	done
 
 	cp -p ${_supfigure_file} ~/all/manuscript/polap-v0.4/
-}
-
-supfigure1-old-traceplot_genus_species() {
-	local _supfigure_file="supfigure1.md"
-	local _species
-
-	local _v1
-	local _logfile
-	local _readmefile
-	local _l_sra
-	local _s_sra
-	local _memory_gb
-	local _total_hours
-	local _memory_gb_ptgaul
-	local _total_hours_ptgaul
-	local j
-	local _percent_identity
-	local _I
-	local _P
-	local _N
-	local _label
-	local _label_base
-
-	printf "# Supplementary Figures: trace plots\n\n" \
-		>"${_supfigure_file}"
-
-	# Extract and sort keys
-	sorted_keys=($(for key in "${!_table1[@]}"; do echo "$key"; done | sort))
-
-	# Iterate over sorted keys and check if value is "T"
-	for key in "${sorted_keys[@]}"; do
-		if [[ "${_table1[$key]}" == "F" ]]; then
-			continue
-		fi
-		local _v1=${_folder[$key]}
-		_logfile=${_v1}/polap.log
-		_readmefile=${_v1}/README
-		_species="${_v1/_/ }"
-		_label_base="${_v1/_/-}"
-		_label_base=$(echo "$_label_base" | awk '{print tolower($0)}')
-
-		extracted_inum=${_inum[$key]}
-		local _v1_inum="${_v1}/${extracted_inum}"
-
-		local j=1
-		local _params_txt=${_v1_inum}/disassemble/infer-1/params.txt
-		_ipn=$(parse_params "${_params_txt}")
-		read -r _I _P _N <<<"$_ipn"
-		_label=${_label_base}
-
-		# stage 1
-		printf "\\\newpage\n\n" \
-			>>"${_supfigure_file}"
-
-		printf "![Selection of a plastid genome using the length distribution for _${_species}_. (A) Trace plot of plastid genome length and the subsample-size upto ${_P} %%. (B) Length distribution for candidate plastid genome of _${_species}_ ](figures/${_v1_inum}/disassemble/infer-1/1/summary1-ordered.pdf){#fig:supfigure1-${_label}}\n\n" \
-			>>"${_supfigure_file}"
-
-		# cp -p "${_v1_inum}/disassemble/infer-1/1/summary1-ordered.pdf" \
-		# 	figures/${_label}-summary1-ordered.pdf
-
-		printf "\n" \
-			>>"${_supfigure_file}"
-
-	done
-	echo "See ${_supfigure1_file}"
-	echo "Copy PDF files in figures to the manuscript folder."
-	echo "  cp figures/* ~/all/manuscript/polap-v0.4/figures/"
-}
-
-# figures of Polap, ptGAUL, and GetOrganelle's assemblies
-supfigure2-old-bandage-graphs_genus_species() {
-	local _draw_bandage="${1:-default_value}"
-	local _supfigure_file="supfigure2.md"
-
-	printf "# Supplementary Figures: Polap, ptGAUL, and GetOrganelle\n\n" \
-		>"${_supfigure_file}"
-
-	# Extract and sort keys
-	sorted_keys=($(for key in "${!_table1[@]}"; do echo "$key"; done | sort))
-
-	# Iterate over sorted keys and check if value is "T"
-	for key in "${sorted_keys[@]}"; do
-		if [[ "${_table1[$key]}" == "F" ]]; then
-			continue
-		fi
-		local _v1=${_folder[$key]}
-		_species="${_v1/_/ }"
-		_label_base="${_v1/_/-}"
-		_label_base=$(echo "$_label_base" | awk '{print tolower($0)}')
-
-		# bandage graph
-		extracted_inum=${_inum[$key]}
-		output_dir=${_v1}
-		echo inum: ${extracted_inum}
-		echo output_dir: ${output_dir}
-
-		if [[ "${_draw_bandage}" == "default_value" ]]; then
-			${_polap_cmd} disassemble bandage \
-				-i ${extracted_inum} \
-				-o ${output_dir} \
-				--disassemble-i infer-1
-		fi
-		local _gfa_polap="${output_dir}/${extracted_inum}/disassemble/infer-1/pt.1.gfa"
-		local _png_polap="${output_dir}/${extracted_inum}/disassemble/infer-1/pt.1.png"
-
-		local images=()
-		local captions=()
-		images+=(${_png_polap})
-		captions+=("Polap")
-
-		local _gfa_ptgaul="${output_dir}/ptgaul/flye_cpONT/assembly_graph.gfa"
-		local _png_ptgaul="${output_dir}/ptgaul.png"
-		if [[ "${_draw_bandage}" == "default_value" ]]; then
-			${_polap_cmd} bandage png \
-				${_gfa_ptgaul} \
-				${_png_ptgaul}
-		fi
-		images+=(${_png_ptgaul})
-		captions+=("ptGAUL")
-
-		local _gfa_getorganelle=$(find "${output_dir}/getorganelle" -type f -name 'embplant_pt*.gfa' | head -n 1)
-		local _png_getorganelle="${output_dir}/getorganelle.png"
-		if [[ "${_draw_bandage}" == "default_value" ]]; then
-			${_polap_cmd} bandage png \
-				${_gfa_getorganelle} \
-				${_png_getorganelle}
-		fi
-		images+=(${_png_getorganelle})
-		captions+=("GetOrganelle")
-
-		# echo "Warning: no such file: ${_gfa}"
-		# echo "FIX QT5 problem:"
-		# problem solved
-		# echo "export QT_QPA_PLATFORM=offscreen"
-		# Output Markdown file
-		#
-		output="${_supfigure_file}"
-
-		# Start writing to the markdown file
-		cat <<EOF >>"$output"
-
-\newpage
-
-::: {.figure #fig:supfigure2-${_label_base}}
-Bandage graphs of Polap, ptGAUL, and GetOrganelle from subsampling approach (${_species})
-:::
-
-
-| Three Organelle genome assemblies |  |  |
-|-----------------|-----------------|-----------------|
-EOF
-
-		# Generate the image table with subcaptions
-		count=0
-		row="| "
-		caption_row="| "
-
-		for ((i = 0; i < ${#images[@]}; i++)); do
-			row+="![${captions[i]}](figures/${images[i]}){width=100px} | "
-			caption_row+="**${captions[i]}** | "
-			((count++))
-
-			# End row if 3 images are added
-			if ((count % 3 == 0)); then
-				echo "$row" >>"$output"
-				echo "$caption_row" >>"$output"
-				echo "|-----------------|-----------------|-----------------|" >>"$output"
-				# echo "" >>"$output"
-				row="| "
-				caption_row="| "
-			fi
-		done
-
-		#########################################################
-		# all figures
-		local extracted_n="${_compare_n["$key"]}"
-		local i
-		local width=13
-		local images=()
-		local captions=()
-
-		local k=0
-		for ((i = 0; i < extracted_n; i++)); do
-
-			local _gfa_infer="${output_dir}/${extracted_inum}/disassemble/infer-1/1/${i}/30-contigger/graph_final.gfa"
-			local _png_infer="${output_dir}/${extracted_inum}/disassemble/infer-1/1/${i}/30-contigger/graph_final.png"
-			if [[ -s "${_gfa_infer}" ]]; then
-				echo "gfa file: ${_gfa_infer}"
-				if [[ "${_draw_bandage}" == "default_value" ]]; then
-					${_polap_cmd} bandage png \
-						${_gfa_infer} \
-						${_png_infer}
-				fi
-				# printf "| ![polap %s](figures/%s){ width=%s%% } " "${i}" "${_png_infer}" "${width}" >>"${_supfigure_file}"
-				images+=("figures/${_png_infer}")
-				captions+=(${i})
-				((k++))
-			else
-				echo "no such file: ${_gfa_infer}"
-			fi
-		done
-
-		#!/bin/bash
-
-		# Define an array of PNG files and their subcaptions
-		# images=("fig1.png" "fig2.png" "fig3.png" "fig4.png" "fig5.png" "fig6.png" "fig7.png" "fig8.png")
-		# captions=("Subcaption 1" "Subcaption 2" "Subcaption 3" "Subcaption 4" "Subcaption 5" "Subcaption 6" "Subcaption 7" "Subcaption 8")
-
-		# Output Markdown file
-		output="${_supfigure_file}"
-
-		# Start writing to the markdown file
-		cat <<EOF >>"$output"
-
-\newpage
-
-::: {.figure #fig:supfigure3-${_label_base}}
-Bandage graphs from subsampling approach (${_species})
-:::
-
-| Organelle genome assemblies |  |  |
-|-----------------|-----------------|-----------------|
-EOF
-
-		# Generate the image table with subcaptions
-		count=0
-		row="| "
-		caption_row="| "
-
-		for ((i = 0; i < ${#images[@]}; i++)); do
-			row+="![${captions[i]}](${images[i]}){width=100px} | "
-			caption_row+="**${captions[i]}** | "
-			((count++))
-
-			# End row if 3 images are added
-			if ((count % 3 == 0)); then
-				echo "$row" >>"$output"
-				echo "$caption_row" >>"$output"
-				echo "|-----------------|-----------------|-----------------|" >>"$output"
-				# echo "" >>"$output"
-				row="| "
-				caption_row="| "
-			fi
-		done
-
-		# Handle the last incomplete row (if any)
-		remaining=$((3 - count % 3))
-		if ((remaining < 3)); then
-			# Fill empty image columns
-			for ((i = 0; i < remaining; i++)); do
-				row+=" | "
-				caption_row+=" | "
-			done
-			echo "$row" >>"$output"
-			echo "$caption_row" >>"$output"
-			echo "|-----------------|-----------------|-----------------|" >>"$output"
-		fi
-
-		echo "" >>"${output}"
-
-	done
 }
 
 function _run_polap_menu { # Interactive menu interface
@@ -3857,66 +3097,27 @@ function _run_polap_menu { # Interactive menu interface
 
 # Main case statement
 case "$subcmd1" in
-'copy-figure')
+'table1' | \
+	'table2' | \
+	'copy-figure')
 	${subcmd1}_genus_species
 	;;
 'send-data' | \
-	'mkdir' | \
 	'send' | \
+	'recover' | \
+	'mkdir' | \
+	'sra' | \
 	'get-ptdna-from-ncbi' | \
 	'copy-ptdna-of-ncbi-as-reference' | \
 	'getorganelle' | \
 	'ptgaul' | \
 	'msbwt' | \  | \
-	'decompress-short' | \
 	'extract-ptdna-of-ptgaul' | \
 	'extract-ptdna-of-ptgaul2' | \
 	'copy-ptdna-of-ptgaul' | \
-	'compare' | \
 	'archive' | \
 	'get' | \
 	'report' | \
-	'table1' | \
-	'table2' | \
-	'table3' | \
-	'table4' | \
-	'figure1' | \
-	'suptable1' | \
-	'infer12' | \
-	'infer2only' | \
-	'infer3only' | \
-	'polishing' | \
-	'wga' | \
-	'polish' | \
-	'mauve' | \
-	'clean' | \
-	'restart' | \
-	'moveto1' | \
-	'clean-infer' | \
-	'write-config' | \
-	'batch')
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-	;;
-'send-data' | \
-	'mkdir' | \
-	'send' | \
-	'get-ptdna-from-ncbi' | \
-	'copy-ptdna-of-ncbi-as-reference' | \
-	'getorganelle' | \
-	'ptgaul' | \
-	'msbwt' | \  | \
-	'decompress-short' | \
-	'extract-ptdna-of-ptgaul' | \
-	'extract-ptdna-of-ptgaul2' | \
-	'copy-ptdna-of-ptgaul' | \
-	'compare' | \
-	'archive' | \
-	'get' | \
-	'report' | \
-	'table1' | \
-	'table2' | \
-	'table3' | \
-	'table4' | \
 	'suptable1' | \
 	'supfigure1' | \
 	'supfigure2' | \
@@ -3926,27 +3127,27 @@ case "$subcmd1" in
 	'mauve' | \
 	'clean' | \
 	'restart' | \
-	'moveto1' | \
 	'clean-infer' | \
 	'write-config' | \
-	'recover' | \
-	'batch')
+	'single-argument')
 	${subcmd1}_genus_species "${_arg2}"
 	;;
-'infer' | \
+'batch' | \
+	'compare' | \
+	'use-downsample' | \
 	'best' | \
 	bandage* | \
 	'coverage' | \
+	'two-arguments')
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
+	;;
+'infer' | \
 	'check')
 	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
 	# ${subcmd1}_genus_species "${_arg2}" --disassemble-simple-polishing
 	;;
 'downsample')
 	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
-	;;
-'revert-downsample' | \
-	'use-downsample')
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
 	;;
 "menu")
 	_run_polap_menu

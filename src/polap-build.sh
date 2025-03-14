@@ -22,6 +22,7 @@ _tail_message=$(
 for i in "\${files[@]}"; do
 	cp src/\$i \$PREFIX/bin
 done
+cp -pr src/lib \$PREFIX/bin
 
 chmod +x \$PREFIX/bin/polap
 chmod +x \$PREFIX/bin/polap.sh

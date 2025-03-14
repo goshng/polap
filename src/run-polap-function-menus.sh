@@ -83,6 +83,7 @@ HEREDOC
 		grep "^function _run_polap" |
 		grep run_polap |
 		grep -v run_polap_x |
+		grep -v run_polap_test |
 		sed 's/function _run_polap_//' |
 		sed 's/ {//' |
 		awk '{print $1}' |

@@ -29,6 +29,71 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 ################################################################################
+# mafft alignment
+################################################################################
+function _run_polap_mafft-mtdna {
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Set paths for bioproject data
+	source "$script_dir/polap-variables-common.sh"
+
+	# Help message
+	local help_message=$(
+		cat <<HEREDOC
+# Compare the known mitochondrial DNA (mtDNA) sequence with the newly assembled 
+# one for verification purposes using mafft.
+#
+# We utilize progressiveMauve to align two sequences and 
+# calculate the total length of the LCB, which is then divided by the length 
+# of a known mtDNA sequence. This approach provides a basic method for 
+# comparing two sequences, albeit not highly sophisticated.
+#
+# Arguments:
+#   -i ${_arg_inum}
+# Inputs:
+#   a.fasta: known mtDNA in fasta format
+#   b.fasta: another DNA sequence in fasta format
+# Outputs:
+#   the ratio of LCB total length divided by the known mtDNA sequence
+Example: $(basename "$0") ${_arg_menu[0]} -a o/00-bioproject/2-mtdna.fasta -b o/1/assembly.fasta
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	_mafft_dir="${_arg_outdir}"
+	mkdir -p "${_mafft_dir}"
+	cat "${_arg_short_read1}" >"${_mafft_dir}/in.fa"
+	cat "${_arg_short_read2}" >>"${_mafft_dir}/in.fa"
+
+	_polap_log3_pipe "mafft \
+    --auto \
+    ${_mafft_dir}/in.fa \
+    >${_mafft_dir}/out.mafft"
+
+	_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-mafft.R \
+    --input ${_mafft_dir}/out.mafft \
+    --out ${_mafft_dir}/out.txt"
+
+	pident_mafft=$(grep -oP '(?<=Percent Identity: )\S+' "${_mafft_dir}/out.txt")
+	pident_mafft=${pident_mafft%\%}
+
+	echo "$pident_mafft" >"${_mafft_dir}/pident.txt"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+################################################################################
 # mauve alignment
 ################################################################################
 function _run_polap_mauve-mtdna {
@@ -41,7 +106,6 @@ function _run_polap_mauve-mtdna {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Set paths for bioproject data
-	source "$script_dir/polap-variables-common.sh"
 	source "$script_dir/polap-variables-common.sh"
 
 	# Help message
@@ -87,6 +151,48 @@ HEREDOC
 	_polap_log0 "mauve_lcb_length_coverage: ${_percent_identity}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+function _run_polap_compare2ptdna {
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Set paths for bioproject data
+	source "$script_dir/polap-variables-common.sh"
+
+	# Help message
+	local help_message=$(
+		cat <<HEREDOC
+# Compare the plastid DNA (ptDNA) sequence with the newly assembled 
+# one for verification purposes.
+#
+# Inputs:
+#   a.fasta: known mtDNA in fasta format
+#   b.fasta: another DNA sequence in fasta format
+# Outputs:
+#   the ratio of LCB total length divided by the known mtDNA sequence
+Example: $(basename "$0") ${_arg_menu[0]} -a o/00-bioproject/2-mtdna.fasta -b o/1/assembly.fasta
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	local _ptdir="${_arg_outdir}"
+	_polap_log3_pipe "python $script_dir/run-polap-py-compare2ptdna.py \
+    --seq1 ${_arg_short_read1} \
+    --seq2 ${_arg_short_read2} \
+		--out ${_ptdir} \
+		2>${_polap_output_dest}"
+
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x
 	return 0
@@ -420,7 +526,11 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	_polap_log0 "getting the organelle-genome sequence of a plant species ..."
+	if [[ "${_arg_plastid}" == "off" ]]; then
+		_polap_log0 "getting the mitochondrial organelle-genome sequence of a plant species ..."
+	else
+		_polap_log0 "getting the plastid organelle-genome sequence of a plant species ..."
+	fi
 
 	# Determine species name
 	_polap_log1 "  step 1: determine the species name"
@@ -476,6 +586,12 @@ HEREDOC
 			-db nuccore \
 			-query "(chloroplast[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]" |
 			efetch -format fasta >"${_polap_var_project_mtdna_fasta1}"
+		if [[ ! -s "${_polap_var_project_mtdna_fasta1}" ]]; then
+			esearch \
+				-db nuccore \
+				-query "(plastid[Title] AND complete[Title] AND genome[Title]) AND ${SPECIES}[Organism]" |
+				efetch -format fasta >"${_polap_var_project_mtdna_fasta1}"
+		fi
 	fi
 	_polap_log2_file "${_polap_var_project_mtdna_fasta1}"
 
@@ -512,6 +628,49 @@ HEREDOC
 			"${_polap_var_project_mtdna_fasta1}" \
 			"${_polap_var_project_mtdna_fasta2}"
 	fi
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+function _run_polap_get-dna-by-accession {
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	source "$script_dir/polap-variables-common.sh"
+
+	if ! run_check_ncbitools; then
+		error_polap_conda
+		exit $EXIT_ERROR
+	fi
+
+	# Help message
+	local help_message=$(
+		cat <<HEREDOC
+Obtain the DNA sequence by downloading it from NCBI in FASTA format 
+using its corresponding accession ID.
+Example: $(basename "$0") ${_arg_menu[0]} <accession> <output_file>
+Example: $(basename "$0") ${_arg_menu[0]} NC_027276 ptdna-Podococcus_acaulis.fa
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	_polap_log0 "getting the DNA sequence using accesion ${_arg_menu[1]}"
+
+	# Download the mitochondrial genome sequence for the given species
+	esearch \
+		-db nuccore \
+		-query "${_arg_menu[1]}[ACCN]" |
+		efetch -format fasta >"${_arg_menu[2]}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

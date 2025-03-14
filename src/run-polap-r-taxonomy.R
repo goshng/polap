@@ -68,15 +68,21 @@ option_list_report <- list(
 )
 
 option_list_sample <- list(
-  make_option(c("-r", "--richness"),
+  make_option(c("-r", "--rank"),
     type = "character",
-    help = "Species richness file"
+    help = "classification rank"
   ),
   make_option(c("-n", "--number"),
     type = "integer",
     default = 3,
     action = "store",
     help = "Sample size per family or order"
+  ),
+  make_option(c("--size"),
+    type = "integer",
+    default = 3,
+    action = "store",
+    help = "Sample size"
   ),
   make_option(c("-s", "--seed"),
     type = "integer",
@@ -117,13 +123,23 @@ switch(subcommand,
     if (is_null(options$output)) {
       input_dir0 <- file.path(".")
       input1 <- file.path(input_dir0, "sequence.taxon.tsv")
-      input2 <- file.path(input_dir0, "species_richness.csv")
+      input2 <- 'family'
       output1 <- file.path(input_dir0, "sampled_accessions.txt")
+
+      input1 <- file.path(input_dir0, "Megaceros_flagellaris/taxonomy/02-sample/sequence.taxon.tsv")
+      input2 <- 'class'
+      output1 <- file.path(input_dir0, "accesssions_outgroup_sampled.txt")
+
+      input1 <- file.path(input_dir0, "Hylodesmum_podocarpum/taxonomy/02-sample/sequence.ingroup.taxon.tsv")
+      input2 <- 'genus'
+      output1 <- file.path(input_dir0, "accesssions_outgroup_sampled.txt")
+
       options <- parse_args(parser, args = c(
         "-t", input1,
         "-r", input2,
         "-o", output1,
-        "-n", 3,
+        "-n", 1,
+        "--size", 10,
         "-s", 123
       ))
     }
@@ -142,8 +158,11 @@ switch(subcommand,
     taxonomy_ids <- read_tsv(options$taxonomy,
       col_names = c(
         "Accession", "TaxonomyID", "Species",
+        "phylum",
+        "class",
         "order",
-        "family"
+        "family",
+        "genus"
       )
     )
 
@@ -156,16 +175,37 @@ switch(subcommand,
     #   inner_join(species_richness, by = c("order" = "Family"))
 
     # Randomly sample two species per order and one accession per species
-    if (options$family) {
+    if (options$rank == "genus") {
+    sampled_data <- joined_data %>%
+      group_by(genus) %>%
+      sample_n(options$number, replace = TRUE) %>%
+      group_by(TaxonomyID) %>%
+      sample_n(1) %>%
+      ungroup()
+    } else if (options$rank == "family") {
     sampled_data <- joined_data %>%
       group_by(family) %>%
       sample_n(options$number, replace = TRUE) %>%
       group_by(TaxonomyID) %>%
       sample_n(1) %>%
       ungroup()
-    } else {
+    } else if (options$rank == "order") {
     sampled_data <- joined_data %>%
       group_by(order) %>%
+      sample_n(options$number, replace = TRUE) %>%
+      group_by(TaxonomyID) %>%
+      sample_n(1) %>%
+      ungroup()
+    } else if (options$rank == "class") {
+    sampled_data <- joined_data %>%
+      group_by(class) %>%
+      sample_n(options$number, replace = TRUE) %>%
+      group_by(TaxonomyID) %>%
+      sample_n(1) %>%
+      ungroup()
+    } else {
+    sampled_data <- joined_data %>%
+      group_by(phylum) %>%
       sample_n(options$number, replace = TRUE) %>%
       group_by(TaxonomyID) %>%
       sample_n(1) %>%
@@ -173,7 +213,13 @@ switch(subcommand,
     }
 
     # Save sampled data
-    write_csv(sampled_data, options$output)
+    if (nrow(sampled_data) > options$size) {
+      sampled_data |>
+        sample_n(options$size) |>
+        write_csv(options$output)
+    } else {
+      write_csv(sampled_data, options$output)
+    }
   },
   "analyze" = {
     # cat("Running 'analyze' with the following options:\n")

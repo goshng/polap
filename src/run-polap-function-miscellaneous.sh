@@ -215,6 +215,40 @@ HEREDOC
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
+function _run_polap_x-get-sra-info {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	help_message=$(
+		cat <<HEREDOC
+Get SRA info.
+
+esearch -db sra -query <SRA> | efetch -format runinfo | csvtk cut -f Run | csvtk pretty
+
+Arguments:
+--sra SRR10190639
+
+Outputs:
+bases
+
+Example: $(basename $0) ${_arg_menu[0]} --sra <arg>
+HEREDOC
+	)
+
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return 0
+
+	if [ -z "$_arg_sra" ]; then
+		_polap_log0 "ERROR: no --sra option"
+		return 0
+	fi
+
+	esearch -db sra -query "${_arg_sra}" |
+		efetch -format runinfo |
+		csvtk cut -f Run,bases,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName |
+		csvtk pretty >&3
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
+
 function _run_polap_x-check-disk-space {
 	if [ "$DEBUG" -eq 1 ]; then set -x; fi
 
@@ -324,6 +358,37 @@ HEREDOC
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }
 
+function _run_polap_x-ncbi-fetch-cpdna-genbank {
+	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+
+	help_message=$(
+		cat <<HEREDOC
+# Fetches mtDNA genome sequence by species name.
+# Arguments:
+#   --species species-name
+# Inputs:
+#   species-name
+# Outputs:
+#   species-name.mt.gb
+Example: $(basename "$0") ${_arg_menu[0]} --species <arg>
+HEREDOC
+	)
+
+	if [[ ${_arg_menu[1]} == "help" ]]; then
+		echoerr "${help_message}"
+		exit $EXIT_SUCCESS
+	fi
+
+	if [ -z "$_arg_species" ]; then
+		echoerr "ERROR: no --species option is used."
+	else
+		S="${_arg_species// /-}"
+		esearch -db nuccore -query "(chloroplast[Title] AND complete[Title] AND genome[Title]) AND ${_arg_species}[Organism]" |
+			efetch -format gb >"${S}".mt.gb
+	fi
+
+	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+}
 ################################################################################
 # Fetches mtDNA genome sequence by accession.
 # Arguments:

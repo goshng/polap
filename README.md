@@ -1106,4 +1106,11 @@ specified, the default long-read file will be used. It will be the
 
 # Authors
 
-Copyright 2024 Sungshin Women's University. Released under the [GNU General Public License version 3](https://www.gnu.org/licenses/gpl-3.0-standalone.html), this software carries no warranty of any kind.
+Sang Chul Choi
+
+# License
+
+This project includes components licensed under different licenses: See the [LICENSE](https://github.com/goshng/polap/blob/main/LICENSE) file for details.
+It is mainly released under the [GNU General Public License version 3](https://www.gnu.org/licenses/gpl-3.0-standalone.html),
+and include other 3rd-party components released under the [BSD-3-clause](https://opensource.org/license/bsd-3-clause):
+this software carries no warranty of any kind.

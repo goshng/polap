@@ -28,6 +28,60 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+function _run_polap_archive-rsync-template { # archive a POLAP-cflye output folder for later use
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	if [ "${_arg_short_read1_is}" = "on" ]; then
+		_arg_archive="${_arg_short_read1}"
+	fi
+
+	# Grouped file path declarations
+	source "$script_dir/polap-variables-common.sh"
+
+	# Print help message if requested
+	help_message=$(
+		cat <<HEREDOC
+# Archive polap-cflye the ${_arg_outdir} folder to ${_arg_archive}
+#
+# First, use the following rsync command to copy a folder 
+# to another new folder, including only files smaller than 2MB:
+# rsync -aq --max-size=2M source_folder/ destination_folder/
+# Second, use a template path file to copy more files.
+#
+# Arguments:
+#   -o ${_arg_outdir}: the source output folder to archive
+#   -a ${_arg_archive}: the target output folder for the archive
+#   --template polap-archive-template.txt
+#   --max-sizefile: 1M not implemented yet!
+# Inputs:
+#   ${_arg_outdir}
+# Outputs:
+#   ${_arg_archive}
+Example: $(basename "$0") ${_arg_menu[0]} -o <folder1> -a <folder2>
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	_polap_log0_log "archiving ${_arg_outdir} to ${_arg_archive} ... upto ${_arg_max_filesize}"
+
+	# rsync -aq --max-size=2M source_folder/ destination_folder/
+	_polap_lib_file-rsync "${_arg_outdir}" "${_arg_archive}" "${_arg_max_filesize}"
+	_polap_lib_file-archive-folder \
+		"${_arg_outdir}" "${_arg_archive}" "${_arg_template}"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+}
+
 ################################################################################
 # Archive the ${_arg_outdir} folder to ${_arg_archive}
 ################################################################################
@@ -40,8 +94,10 @@ function _run_polap_archive { # archive a POLAP output folder for later use
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	if [ "${_arg_short_read1_is}" = "on" ]; then
+	if [[ "${_arg_short_read1_is}" == "on" ]]; then
 		_arg_archive="${_arg_short_read1}"
+	elif [[ "${_arg_archive_is}" == "off" ]]; then
+		_arg_archive="${_arg_outdir}-a"
 	fi
 
 	# Grouped file path declarations
@@ -70,11 +126,18 @@ HEREDOC
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
-	_polap_log0_log "archiving ${_arg_outdir} to ${_arg_archive} ..."
+	if [[ "${_arg_menu[1]}" == "cflye" ]]; then
+		_arg_template="${script_dir}/polap-template-cflye-archive-files.txt"
+		# _arg_max_filesize="1M"
+		_run_polap_archive-rsync-template
+	else
 
-	_run_polap_package
+		_polap_log0_log "archiving ${_arg_outdir} to ${_arg_archive} ..."
 
-	cp -pr "${_polap_var_outdir_msbwt_dir}" "${_ppack_var_outdir}"
+		_run_polap_package
+
+		cp -pr "${_polap_var_outdir_msbwt_dir}" "${_ppack_var_outdir}"
+	fi
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

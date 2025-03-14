@@ -49,6 +49,7 @@ function _run_polap_prepare-polishing { # prepare the polishing using FMLRC
 	local _polap_output_dest="/dev/null"
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
+	local filesize
 	_polap_set-variables-short-read
 	source "$script_dir/polap-variables-common.sh" # '.' means 'source'
 
@@ -83,6 +84,13 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
+	if [[ -s "${_polap_var_outdir_msbwt}" ]]; then
+		# Get the file size in bytes
+		filesize=$(stat --format=%s "${_polap_var_outdir_msbwt}")
+	else
+		filesize=0
+	fi
+
 	if [ -s "${_polap_var_outdir_msbwt_tar_gz}" ]; then
 		_polap_log1_file "${_polap_var_outdir_msbwt_tar_gz}"
 		if [[ -s "${_polap_var_outdir_msbwt}" ]]; then
@@ -91,12 +99,16 @@ HEREDOC
 		else
 			tar -zxf "${_polap_var_outdir_msbwt_tar_gz}" -C "${_arg_outdir}"
 		fi
-	elif [[ -s "${_polap_var_outdir_msbwt}" ]]; then
+	elif ((filesize > 1024)); then
+		# Check if the file size is greater than 100 KB (100 * 1024 bytes)
 		_polap_log1_file "${_polap_var_outdir_msbwt}"
 		_polap_log1 "  skipping the short-read polishing preparation."
 	else
 
-		source $HOME/miniconda3/bin/activate polap-fmlrc
+		# Initialize Conda
+		source $HOME/miniconda3/etc/profile.d/conda.sh
+		conda activate polap-fmlrc
+		# source $HOME/miniconda3/bin/activate polap-fmlrc
 
 		if ! run_check2; then
 			echoerr "ERROR: change your conda environment to polap-fmlrc."
@@ -126,44 +138,45 @@ HEREDOC
 			_arg_short_read2=""
 		fi
 		if [[ -n "${_arg_short_read1}" ]]; then
-			_polap_log0 "    short-read1: ${_arg_short_read1}"
+			_polap_log1 "    short-read1: ${_arg_short_read1}"
 		else
-			_polap_log0 "    short-read1: no such data file"
+			_polap_log1 "    short-read1: no such data file"
 		fi
 		if [[ -n "${_arg_short_read2}" ]]; then
-			_polap_log0 "    short-read2: ${_arg_short_read2}"
+			_polap_log1 "    short-read2: ${_arg_short_read2}"
 		else
-			_polap_log0 "    short-read2: no such data file"
+			_polap_log1 "    short-read2: no such data file"
 		fi
 
 		if [[ ${_arg_short_read1} = *.fastq || ${_arg_short_read1} = *.fq ]]; then
-			_polap_log0 "    short-read1 file: ${_arg_short_read1}"
+			_polap_log1 "    short-read1 file: ${_arg_short_read1}"
 		else
-			_polap_log0 "    short-read1: no fastq or fq file: ${_arg_short_read1}"
+			_polap_log1 "    short-read1: no fastq or fq file: ${_arg_short_read1}"
 		fi
 
 		if [[ ${_arg_short_read2} = *.fastq || ${_arg_short_read2} = *.fq ]]; then
-			_polap_log0 "    short-read2 file: ${_arg_short_read2}"
+			_polap_log1 "    short-read2 file: ${_arg_short_read2}"
 		else
-			_polap_log0 "    short-read2: no fastq or fq file: ${_arg_short_read2}"
+			_polap_log1 "    short-read2: no fastq or fq file: ${_arg_short_read2}"
 		fi
 
+		rm -rf "${_arg_outdir}/msbwt"
 		if [[ ${_arg_short_read1} = *.fastq || ${_arg_short_read1} = *.fq ]]; then
+			_polap_log1 "  creating ${_arg_outdir}/msbwt ..."
 			cat "${_arg_short_read1}" "${_arg_short_read2:-/dev/null}" |
 				awk 'NR % 4 == 2' | sort | tr NT TN |
 				ropebwt2 -LR 2>"${_polap_output_dest}" |
 				tr NT TN |
 				msbwt convert "${_arg_outdir}"/msbwt \
 					>/dev/null 2>&1
-			_polap_log0 "  creating ${_arg_outdir}/msbwt ..."
 		elif [[ ${_arg_short_read1} = *.fq.gz ]] || [[ ${_arg_short_read1} = *.fastq.gz ]]; then
+			_polap_log1 "  creating ${_arg_outdir}/msbwt ..."
 			zcat "${_arg_short_read1}" "${_arg_short_read2}" |
 				awk 'NR % 4 == 2' | sort | tr NT TN |
 				ropebwt2 -LR 2>"${_polap_output_dest}" |
 				tr NT TN |
 				msbwt convert "${_arg_outdir}"/msbwt \
 					>/dev/null 2>&1
-			_polap_log0 "  creating ${_arg_outdir}/msbwt ..."
 		else
 			_polap_log0 "ERROR: short-read1: no fastq or fq file: ${_arg_short_read1}"
 			_polap_log0 "ERROR: short-read2: no fastq or fq file: ${_arg_short_read2}"
@@ -222,7 +235,10 @@ HEREDOC
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
-	source $HOME/miniconda3/bin/activate polap-fmlrc
+	# Initialize Conda
+	source $HOME/miniconda3/etc/profile.d/conda.sh
+	conda activate polap-fmlrc
+	# source $HOME/miniconda3/bin/activate polap-fmlrc
 
 	if ! run_check2; then
 		_polap_log0 "ERROR: change your conda environment to polap-fmlrc."

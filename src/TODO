@@ -1,3 +1,13 @@
+# 2025-03-14
+
+# qt5
+https://github.com/NVlabs/instant-ngp/discussions/300
+sudo apt-get install qt5-default
+sudo apt-get install qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools
+sudo apt install libxcb-cursor0
+export QT_QPA_PLATFORM=offscreen
+
+
 # 2024-11-22
 
 - create test datasets

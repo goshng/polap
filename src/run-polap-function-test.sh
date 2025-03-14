@@ -103,6 +103,64 @@ HEREDOC
 		_polap_log0 "short-read2: ${_arg_short_read2}"
 	fi
 
+	if [[ "${_arg_menu[1]}" == "log" ]]; then
+		_polap_log0 "Name: B0"
+		_polap_log2 "Name: B2"
+		_polap_log0 "Name: A0" >test.log
+		_polap_log2 "Name: A2" >>test.log
+		_polap_log0 "Name: A0" >>test.log
+	fi
+
+	if [[ "${_arg_menu[1]}" == "config" ]]; then
+		_polap_create_config config.cfg
+		# Set some configuration values.
+		_polap_set_config_value config.cfg "name" "Alice Lee"
+		_polap_set_config_value config.cfg "username" "alice"
+		_polap_set_config_value config.cfg "password" "secret123"
+		_polap_set_config_value config.cfg "port" "8080"
+
+		# Read configuration values.
+		_polap_log0 "Name: $(_polap_get_config_value config.cfg name)"
+		_polap_log0 "Username: $(_polap_get_config_value config.cfg username)"
+		_polap_log0 "Password: $(_polap_get_config_value config.cfg password)"
+		_polap_log0 "Port: $(_polap_get_config_value config.cfg port)"
+	fi
+
+	# src/polap.sh test disassemble-r -v -v -v -o Juncus_roemerianus
+	if [[ "${_arg_menu[1]}" == "disassemble-r" ]]; then
+		local _disassemble_dir="${_arg_outdir}/disassemble"
+		_arg_disassemble_i=1
+		_disassemble_i="${_disassemble_dir}/${_arg_disassemble_i}"
+		_disassemble_i_stage="${_disassemble_i}/1"
+		_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+      --table ${_disassemble_i_stage}/summary1.txt \
+      --out ${_disassemble_i_stage}/summary1-ordered.txt \
+      --plot ${_disassemble_i_stage}/summary1-ordered.pdf \
+      2>${_polap_output_dest}"
+		# 2>&1"
+		_rstatus=$?
+		if [[ "${_rstatus}" -ne 0 ]]; then
+			_polap_log0 "error in Rscript: ${_rstatus}"
+		else
+			_polap_log0 "okay"
+		fi
+	fi
+
+	# src/polap.sh test compare2ptdna -v -v -v
+	if [[ "${_arg_menu[1]}" == "compare2ptdna" ]]; then
+		_arg_disassemble_c="ptdna-Juncus_roemerianus-ptgaul.fa"
+		_ptdna="Juncus_roemerianus/disassemble/1/1/1/52-mtdna/ptdna.1.fa"
+		_ptdir="Juncus_roemerianus/disassemble/1/1/1/52-mtdna/b"
+		_var_mtdna="Juncus_roemerianus/disassemble/1/1/1/52-mtdna"
+		_polap_log3_pipe "python $script_dir/run-polap-py-compare2ptdna.py \
+    		      --seq1 ${_arg_disassemble_c} \
+	    	      --seq2 ${_ptdna} \
+		          --out ${_ptdir} \
+		          2>$_polap_output_dest"
+		pident=$(<"${_var_mtdna}/b/pident.txt")
+		_polap_log0 "pident: ${pident}"
+	fi
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$DEBUG" -eq 1 ] && set +x

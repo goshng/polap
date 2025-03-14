@@ -363,7 +363,8 @@ HEREDOC
 	if [[ -s "${_polap_var_oga_contig}"/contig.paf ]] && [[ "${_arg_redo}" = "off" ]]; then
 		_polap_log1 "  found: ${_polap_var_oga_reads}/contig.paf, skipping the minimap2 mapping step ..."
 	else
-		_polap_log3_pipe "minimap2 -cx map-ont \
+		_polap_log3_pipe "minimap2 -cx \
+      ${_arg_minimap2_data_type} \
       ${_polap_var_oga_contig}/contig.fa \
       ${_source_long_reads_fq} \
       -t ${_arg_threads} \
@@ -398,157 +399,6 @@ HEREDOC
 	fi
 
 	_polap_log1 NEXT: $(basename "$0") flye2 -o "${_arg_outdir}" -j "${_arg_jnum}" -t "${_arg_threads}" -c "${_arg_coverage}"
-
-	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
-	return 0
-}
-
-function _run_polap_directional-reads { # selects reads mapped on a genome assembly
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
-	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
-
-	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
-	local _polap_output_dest="/dev/null"
-	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
-
-	source "$script_dir/polap-variables-common.sh"
-
-	help_message=$(
-		cat <<HEREDOC
-# Map long reads on a Flye genome assembly.
-#
-# Arguments:
-#   -l ${_arg_long_reads}: long-read data default:${_polap_var_outdir_lk_fq_gz}
-#   -p ${_arg_unpolished_fasta}
-#   -f ${_arg_final_assembly}
-# Inputs:
-#   ${_polap_var_ga_contigger_edges_fasta}
-#   ${_polap_var_outdir_lk_fq_gz} or ${_polap_var_outdir_nk_fq_gz}
-# Outputs:
-#   ${_polap_var_oga_contig}/seed.fq
-Example: $(basename "$0") ${_arg_menu[0]} -l ${_arg_long_reads} -p seed.fa -f seed.fq
-
-HEREDOC
-	)
-
-	# Display help message
-	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
-	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
-
-	mkdir -p ${_polap_var_oga_contig}
-	_polap_log3_cmd cp ${_arg_unpolished_fasta} ${_polap_var_oga_contig}/contig.fa
-	local _source_long_reads_fq=""
-	_polap_oga_determine-long-read-file _source_long_reads_fq
-	_polap_log1 "  finding the length of all seed contigs"
-	_polap_utility_get_contig_length \
-		"${_polap_var_oga_contig}/contig.fa" \
-		"${_polap_var_oga_contig}/contig_total_length.txt"
-	local CONTIG_LENGTH=$(<"${_polap_var_oga_contig}/contig_total_length.txt")
-
-	_pread_sel="directional"
-	i="1"
-
-	if [[ "${_arg_menu[1]}" == "1" ]]; then
-
-		_polap_log0 "mapping long-read data on the seed contigs ..."
-
-		_polap_log2_cat "${_polap_var_oga_contig}/contig_total_length.txt"
-		# local CONTIG_LENGTH=$(seqkit stats -Ta "${_polap_var_oga_contig}"/contig.fa | csvtk cut -t -f "sum_len" | csvtk del-header)
-		# echo "$CONTIG_LENGTH" >"${_polap_var_oga_contig}"/contig_total_length.txt
-		local _contig_length_bp=$(_polap_utility_convert_bp ${CONTIG_LENGTH})
-		_polap_log1 "    organelle genome size based on the seed contig selection: ${_contig_length_bp}"
-
-		_polap_log1 "  mapping long-read data on the seed contigs using minimap2 ..."
-		_polap_log2 "    input1: ${_polap_var_oga_contig}/contig.fa"
-		_polap_log2 "    input2: ${_source_long_reads_fq}"
-		_polap_log2 "    output: ${_polap_var_oga_contig}/contig.paf"
-		if [[ -s "${_polap_var_oga_contig}"/contig.paf ]] && [[ "${_arg_redo}" = "off" ]]; then
-			_polap_log1 "  found: ${_polap_var_oga_reads}/contig.paf, skipping the minimap2 mapping step ..."
-		else
-			_polap_log3_pipe "minimap2 -cx map-ont \
-      ${_polap_var_oga_contig}/contig.fa \
-      ${_source_long_reads_fq} \
-      -t ${_arg_threads} \
-      -o ${_polap_var_oga_contig}/contig.paf \
-      >${_polap_output_dest} 2>&1"
-		fi
-
-		_polap_log1 "  converting PAF to TAB ..."
-		_polap_log2 "    input1: ${_polap_var_oga_contig}/contig.paf"
-		_polap_log2 "    output: ${_polap_var_oga_contig}/contig.tab"
-		# cut -f1-11 "${_polap_var_oga}"/contig.paf | awk -v minlength="${_arg_min_read_length}" '{if ($2>=minlength) {print}}' >"${_polap_var_oga}"/contig.tab
-		_polap_log3_cmd bash "$script_dir/run-polap-sh-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_polap_var_oga_contig}/contig.paf" "${_polap_var_oga_contig}/contig.tab"
-
-	fi
-
-	if [[ "${_arg_menu[1]}" == "2" ]]; then
-		mkdir -p ${_polap_var_oga_reads}/${_pread_sel}/${i}
-		mkdir -p ${_polap_var_oga_seeds}/${_pread_sel}/${i}
-		mkdir -p ${_polap_var_oga_subsample}/${_pread_sel}/${i}
-
-		_polap_log3_pipe "Rscript --vanilla ${script_dir}/run-polap-r-directional.R \
-        --use-strand \
-	    -m ${_polap_var_mtcontigname} \
-		  -t ${_polap_var_oga_contig}/contig.tab \
-		  --out ${_polap_var_oga_reads}/${_pread_sel}/${i} \
-      -w ${_arg_single_min} \
-		  -r ${_arg_pair_min} \
-		  -x ${_arg_bridge_min} \
-      --create-ptgaul \
-		  >${_polap_output_dest} 2>&1"
-
-		_polap_log3_pipe "seqtk subseq \
-		    ${_source_long_reads_fq} \
-		    ${_polap_var_oga_reads}/${_pread_sel}/${i}/ptgaul.names |\
-		    gzip >${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz"
-	fi
-
-	if [[ "${_arg_menu[1]}" == "3" ]]; then
-
-		# sample
-		# we need a sample of the seeds so that it meets the coverage.
-		_polap_log1 "  sampling reads ..."
-		_polap_log2 "    input1: ${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz"
-		local _contig_length_bp=$(_polap_utility_convert_bp ${CONTIG_LENGTH})
-		_polap_log2 "    input2 (seed contig size): ${_contig_length_bp}"
-		_polap_utility_get_contig_length \
-			"${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz" \
-			"${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.len"
-		local _seeds_length=$(<"${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.len")
-		_polap_log2_cat "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.len"
-		local _seeds_length_bp=$(_polap_utility_convert_bp ${_seeds_length})
-		_polap_log2 "    result1 (total size of reads mapped contigs): ${_seeds_length_bp}"
-		local _expected_organelle_coverage=$((_seeds_length / CONTIG_LENGTH))
-		_polap_log2 "    result2 (expected organelle coverage): ${_expected_organelle_coverage}x"
-		if [[ "$_expected_organelle_coverage" -gt "${_arg_coverage}" ]]; then
-			if [[ "${_arg_coverage_check}" == "on" ]]; then
-				local _rate=$(echo "scale=5; ${_arg_coverage}/$_expected_organelle_coverage" | bc)
-				_polap_log0 "  long-read data reduction by rate of ${_rate} <= COV[${_arg_coverage}] / long-read organelle coverage[$_expected_organelle_coverage]"
-				_polap_log1 "    sampling long-read data by ${_rate} ... wait ..."
-				local _random_seed=${_arg_random_seed:-$RANDOM}
-				# local _random_seed=11
-				_polap_log1 "    random seed for reducing long reads mapped on potential seed contigs: ${_random_seed}"
-				_polap_log3_pipe "seqkit sample \
-        -p ${_rate} \
-        -s ${_random_seed} \
-			  ${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz \
-        -o ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz \
-        2>${_polap_output_dest}"
-				_polap_log3_pipe "echo ${_random_seed} >${_polap_var_oga_subsample}/${_pread_sel}/${i}.random.seed.${_random_seed}"
-			else
-				_polap_log0 "    no reduction of the long-read data because of the option --no-coverage-check: expected coverage: ${_expected_organelle_coverage}"
-				_polap_log3_cmd ln -s $(realpath "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz") "${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
-			fi
-		else
-			_polap_log0 "    no reduction of the long-read data because $_expected_organelle_coverage < ${_arg_coverage}"
-			_polap_log3_cmd ln -s $(realpath "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz") "${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
-		fi
-	fi
-
-	_polap_log1 "NEXT: $(basename "$0") reads -o ${_arg_outdir} -i ${_arg_inum} -j ${_arg_jnum}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -1060,15 +910,16 @@ HEREDOC
 				local _rate=$(echo "scale=5; ${_arg_coverage}/$_expected_organelle_coverage" | bc)
 				_polap_log0 "  long-read data reduction by rate of ${_rate} <= COV[${_arg_coverage}] / long-read organelle coverage[$_expected_organelle_coverage]"
 				_polap_log1 "    sampling long-read data by ${_rate} ... wait ..."
-				local _random_seed=${_arg_random_seed:-$RANDOM}
+				_polap_lib_random-get
+				local _random_seed=${_polap_var_random_number}
 				# local _random_seed=11
 				_polap_log1 "    random seed for reducing long reads mapped on potential seed contigs: ${_random_seed}"
 				_polap_log3_pipe "seqkit sample \
-        -p ${_rate} \
-        -s ${_random_seed} \
-			  ${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz \
-        -o ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz \
-        2>${_polap_output_dest}"
+          -p ${_rate} \
+          -s ${_random_seed} \
+			    ${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz \
+          -o ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz \
+          2>${_polap_output_dest}"
 				_polap_log3_pipe "echo ${_random_seed} >${_polap_var_oga_subsample}/${_pread_sel}/${i}.random.seed.${_random_seed}"
 			else
 				_polap_log0 "    no reduction of the long-read data because of the option --no-coverage-check: expected coverage: ${_expected_organelle_coverage}"
@@ -1082,6 +933,9 @@ HEREDOC
 		_polap_log1 "  flye assembly for ${_pread_sel}"
 		_polap_log2 "    input1: ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
 		_polap_log2 "    output: ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
+		# if [[ "${_arg_plastid}" == "on" ]]; then
+		# 	CONTIG_LENGTH=$((CONTIG_LENGTH * 3))
+		# fi
 		local _command1="flye \
       ${_arg_flye_data_type} \
       ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz \
@@ -1350,6 +1204,9 @@ HEREDOC
 	_polap_log1 "    input1: ${_long_reads}"
 	_polap_log1 "    output1: ${_polap_var_oga}/30-contigger/graph_final.gfa"
 	_polap_log1 "    output2: ${_polap_var_oga}/assembly_graph.gfa"
+	# if [[ "${_arg_plastid}" == "on" ]]; then
+	# 	_CONTIG_LENGTH=$((_CONTIG_LENGTH * 3))
+	# fi
 	local _command1="flye \
     ${_arg_flye_data_type} \
     ${_long_reads} \
@@ -1968,7 +1825,8 @@ HEREDOC
 	if [[ -s "${MTDIR}"/contig.paf ]] && [[ "${_arg_redo}" = "off" ]]; then
 		_polap_log1 "  found: ${MTDIR}/contig.paf, skipping the minimap2 mapping step ..."
 	else
-		_polap_log3_pipe "minimap2 -cx map-ont \
+		_polap_log3_pipe "minimap2 -cx \
+      ${_arg_minimap2_data_type} \
       ${MTDIR}/contig.fa \
       ${_polap_var_outdir_nk_fq_gz} \
       -t ${_arg_threads} \
@@ -2045,7 +1903,8 @@ HEREDOC
 			_polap_log0 "  long-read data reduction by rate of $RATE <= COV[${_arg_coverage}] / long-read organelle coverage[$EXPECTED_ORGANELLE_COVERAGE]"
 			_polap_log1 "    sampling long-read data by $RATE ... wait ..."
 			# seqkit sample -p "$RATE" "${MTSEEDSDIR}/1.fq.gz" -o "${MTSEEDSDIR}/2.fq.gz" >/dev/null 2>&1
-			local seed=${_arg_random_seed:-$RANDOM}
+			_polap_lib_random-get
+			local seed=${_polap_var_random_number}
 			_polap_log1 "    random seed for reducing the single-mapped long-read data: ${seed}"
 			_polap_log3_pipe "seqkit sample \
         -p ${RATE} \

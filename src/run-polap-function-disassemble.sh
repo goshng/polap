@@ -1315,8 +1315,8 @@ function _disassemble-stage1 {
 	_polap_log2 "    contigger: ${_arg_contigger}"
 	_polap_log2 "    polish: ${_arg_polish}"
 
-	if [[ -z "${_arg_disassemble_s}" ]]; then
-		_polap_log1 "    no option: --disassemble-s"
+	if [[ -z "${_arg_disassemble_s}" ]] && [[ -z "${_arg_disassemble_beta}" ]]; then
+		_polap_log1 "    no option: --disassemble-s or --disassemble-beta"
 		_polap_log2 "      -> use a range of rates for subsampling long-read sequencing data"
 
 		# short-read data
@@ -1338,6 +1338,23 @@ function _disassemble-stage1 {
 	else
 		# --disassemble-s -> only one sample or single s
 		_polap_log1 "    --disassemble-s -> no iteration or no stage 1"
+		_arg_steps_include="1,3"
+		_run_polap_step-disassemble 1
+		local _ga_outdir="${_arg_outdir}/${_arg_inum}"
+		local _ga_long_total_length=$(<"${_ga_outdir}/long_total_length.txt")
+		if [[ -z "${_arg_disassemble_s}" ]]; then
+			if [[ -z "${_arg_disassemble_beta}" ]]; then
+				die "BUG: not possible case"
+			else
+				_arg_disassemble_s=$(echo "scale=0; ${_ga_long_total_length} * ${_arg_disassemble_beta} / 1" | bc)
+			fi
+		else
+			if [[ -z "${_arg_disassemble_beta}" ]]; then
+				_arg_disassemble_beta=$(echo "scale=3; ${_arg_disassemble_s} / ${_ga_long_total_length}" | bc)
+			fi
+		fi
+		_polap_log1 "  subsample size: ${_arg_disassemble_s}"
+		_polap_log1 "  subsample rate: ${_arg_disassemble_beta}"
 	fi
 }
 
@@ -1574,13 +1591,24 @@ function _disassemble-stage3 {
 			j=$(awk -F'\t' '$15 == 4 {print $1; exit}' "${_summary1_ordered}")
 			_j_best_stage2="${j}"
 			if [[ -z "${j}" ]]; then
-				_polap_log0 "ERROR: no such index with 4 paths in file: ${_summary1_ordered}"
+				_polap_log0 "WARNING: no such index with 4 paths in file: ${_summary1_ordered}"
 				_polap_log0 "  suggestion: increase the replicate size --disassemble-r"
-				return 1
+
+				# fall back to 2-fragment cases
+				j=$(awk -F'\t' '$15 == 2 {print $1; exit}' "${_summary1_ordered}")
+				_j_best_stage2="${j}"
+				if [[ -z "${j}" ]]; then
+					_polap_log0 "ERROR: no such index with 2 paths in file: ${_summary1_ordered}"
+					_polap_log0 "  suggestion: no way of comparing it with ptGAUL ptDNA"
+					return 1
+				fi
+
 			else
 				_polap_log1 "    index with 4 paths: ${j}"
 			fi
 		else
+			_polap_log0 "  you have no ptDNA assembly from the stage 2"
+			_polap_log0 "  suggestion: increase the replicate size --disassemble-r"
 			_polap_log0 "ERROR: no such file: ${_summary1_ordered}"
 			return 1
 		fi
@@ -1596,9 +1624,11 @@ function _disassemble-stage3 {
 			_polap_log3_cat "${_var_mtdna}/circular_path.txt"
 			if [[ "${_summary_num_circular_paths}" -eq 4 ]]; then
 				_polap_log2 "    check: circular_path count is 4."
+			elif [[ "${_summary_num_circular_paths}" -eq 2 ]]; then
+				_polap_log2 "    check: circular_path count is 2."
 			else
 				_polap_log0 "INFO: Increase the sample size in stage 2"
-				die "ERROR: circular_path count is not 4: see ${_var_mtdna}"
+				die "ERROR: circular_path count is neither 2 nor 4: see ${_var_mtdna}"
 			fi
 		fi
 
@@ -2075,6 +2105,15 @@ HEREDOC
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 
+		_disassemble_i="${_disassemble_dir}/${_arg_disassemble_i}"
+		if [[ "${_arg_menu[2]}" == "1" ]]; then
+			_polap_log0_cat "${_disassemble_i}/1/summary1.md"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "2" ]]; then
+			_polap_log0_cat "${_disassemble_i}/2/summary1.md"
+		fi
+
 		# Disable debugging if previously enabled
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		[ "$DEBUG" -eq 1 ] && set +x
@@ -2415,6 +2454,16 @@ HEREDOC
 			_polap_log0 "ptGAUL polished assembly: ${_arg_final_assembly}"
 		fi
 
+		if [[ "${_arg_menu[2]}" == "4" ]]; then
+			for ((i = 1; i <= 4; i++)); do
+				_arg_unpolished_fasta="${_outdir}/circular_path_${i}_concatenated.fa"
+				_arg_final_assembly="${_outdir}/pt.${i}.fa"
+				_polap_log0 "polishing ptDNA: ${_arg_unpolished_fasta}"
+				_run_polap_polish
+				_polap_log0 "ptGAUL polished assembly: ${_arg_final_assembly}"
+			done
+		fi
+
 		# Disable debugging if previously enabled
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		[ "$DEBUG" -eq 1 ] && set +x
@@ -2573,10 +2622,6 @@ HEREDOC
 		_polap_log3_cmd mkdir -p "${_disassemble_i}"
 		_polap_log1 "  output: ${_disassemble_i}"
 
-		# output: o/disassemble/i/params.txt
-		_disassemble_params_file="${_disassemble_i}/params.txt"
-		_disassemble_make_params_txt "${_disassemble_params_file}"
-
 		_disassemble-stage0
 	fi
 
@@ -2590,6 +2635,11 @@ HEREDOC
 	# output: o/disassemble/i/1
 	if _polap_contains_step 1 "${_stage_array[@]}"; then
 		_polap_log0 "  stage 1: determine the sample size and the minimum read coverage: run type: ${_run_type}"
+
+		# output: o/disassemble/i/params.txt
+		_disassemble_params_file="${_disassemble_i}/params.txt"
+		_disassemble_make_params_txt "${_disassemble_params_file}"
+
 		_disassemble-stage1
 	fi
 

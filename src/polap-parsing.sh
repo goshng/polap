@@ -154,7 +154,8 @@ _arg_disassemble_memory=16              # the minimum memory in Gb
 _arg_disassemble_compare_to_fasta=""    # the minimum memory in Gb
 _arg_disassemble_c=""                   # sequence in fasta format
 _arg_disassemble_c_is="off"             # sequence in fasta format
-_arg_disassemble_s=                     # sample size
+_arg_disassemble_s=                     # subsample size
+_arg_disassemble_beta=                  # subsample size rate
 _arg_disassemble_best="off"             # delete it
 _arg_disassemble_align_reference="off"  # applied to stage 2 only or check part
 _arg_disassemble_simple_polishing="off" # default is subsampling polish
@@ -906,6 +907,14 @@ parse_commandline() {
 			;;
 		--directional-i=*)
 			_arg_directional_i="${_key##--directional-i=}"
+			;;
+		--disassemble-beta)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_beta="$2"
+			shift
+			;;
+		--disassemble-beta=*)
+			_arg_disassemble_beta="${_key##--disassemble-beta=}"
 			;;
 		--disassemble-s)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

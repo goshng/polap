@@ -76,7 +76,8 @@ HEREDOC
 	_polap_log3_pipe "mafft \
     --auto \
     ${_mafft_dir}/in.fa \
-    >${_mafft_dir}/out.mafft"
+    >${_mafft_dir}/out.mafft \
+    2>${_polap_output_dest}"
 
 	_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-mafft.R \
     --input ${_mafft_dir}/out.mafft \

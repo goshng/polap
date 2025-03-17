@@ -255,7 +255,9 @@ HEREDOC
 
 	_polap_log1 "INFO: executing fmlrc on the draft sequence ${_arg_unpolished_fasta} ... be patient!"
 	if [[ -s "${_arg_unpolished_fasta}" ]]; then
-		fmlrc -p "${_arg_threads}" "${_polap_var_outdir_msbwt}" "${_arg_unpolished_fasta}" "${_arg_final_assembly}" >/dev/null 2>&1
+		# fmlrc -p "${_arg_threads}" "${_polap_var_outdir_msbwt}" "${_arg_unpolished_fasta}" "${_arg_final_assembly}" >/dev/null 2>&1
+		# fmlrc -p "${_arg_threads}" "${_polap_var_outdir_msbwt}" "${_arg_unpolished_fasta}" "${_arg_final_assembly}" >/dev/null 2>&1
+		_polap_log3_pipe "fmlrc -p 1 ${_polap_var_outdir_msbwt} ${_arg_unpolished_fasta} ${_arg_final_assembly} >/dev/null 2>&1"
 	else
 		_polap_log0 "ERROR: no unpolished fasta file: [${_arg_unpolished_fasta}]"
 		exit $EXIT_ERROR

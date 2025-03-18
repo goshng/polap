@@ -42,7 +42,7 @@ Juncus_inflexus-1,Juncus_inflexus,SRR14298751,SRR14298745,vincent,180000,50,1:5:
 Juncus_inflexus-2,Juncus_inflexus,SRR14298751,SRR14298745,lab01,180000,10,5,5,5,5,345,lab01,32,10,2,T,F,dummy,done
 Juncus_roemerianus-0,Juncus_roemerianus,SRR21976090,SRR21976092,user1-X99-PR8-H,200000,50,10,10,5,5,161,lab01,32,20,0,T,F,dummy,low-pident
 Juncus_roemerianus-1,Juncus_roemerianus,SRR21976090,SRR21976092,user1-X99-PR8-H,200000,50,5:10:20,10,5,5,161,lab01,16,300,1,F,F,dummy,not-yet
-Juncus_roemerianus-2,Juncus_roemerianus,SRR21976090,SRR21976092,vincent,200000,10,10,10,5,5,385,vincent,32,20,2,T,F,dummy,low-pident
+Juncus_roemerianus-2,Juncus_roemerianus,SRR21976090,SRR21976092,vincent,200000,10,20,10,5,5,381,vincent,32,10,2,T,F,dummy,low-pident
 Juncus_validus-0,Juncus_validus,SRR21976089,SRR21976091,marybeth,160000,50,10,10,5,5,113,marybeth,16,10,0,T,F,dummy,done
 Juncus_validus-1,Juncus_validus,SRR21976089,SRR21976091,marybeth,160000,50,5:10:20,10,5,5,113,marybeth,16,30,1,F,F,dummy,done
 Juncus_validus-2,Juncus_validus,SRR21976089,SRR21976091,marybeth,160000,10,10,10,5,5,337,marybeth,16,10,2,T,F,dummy,done

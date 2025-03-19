@@ -39,6 +39,7 @@ requirements:
     - samtools
     - orthofinder
     - bioconductor-ggtree
+    - bioconductor-biostrings
     - networkx
     - pandas
     - gfatools

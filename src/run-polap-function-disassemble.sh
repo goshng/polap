@@ -970,12 +970,20 @@ function _disassemble-step14 {
 		_polap_log3_cmd rm -f "${_arg_unpolished_fasta}"
 		_polap_log3_cmd rm -f "${_arg_final_assembly}"
 	fi
+	# Code 1
 	local arr=(
 		"${_sumary_coverage_ref}"
 		"${_sumary_coverage_target}"
 		"${_summary_j_candidate}"
 	)
 	echo "${arr[@]}"
+	#
+	# Code 2
+	# _a=(
+	# 	"${_sumary_coverage_ref}"
+	# 	"${_sumary_coverage_target}"
+	# 	"${_summary_j_candidate}"
+	# )
 }
 
 function _disassemble-step15 {
@@ -1651,10 +1659,23 @@ function _disassemble-stage3 {
 		_polap_log1 "    : choose one of the multiple candidate ptDNA sequences"
 		_polap_log2 "    input1: ${_circular_path_fasta}"
 
-		local _a=($(_disassemble-step14 "${_var_mtdna}"))
+		# FIXME: disassemble example cannot call itself because of this
+		# running in a subshell. Output from _disassemble-step14 gets out to
+		# the three return values.
+		# Use other way to get the 3 return values not using echo at the end of
+		# the function.
+		#
+		# Code 1:
+		# local _a=($(_disassemble-step14 "${_var_mtdna}"))
+		#
+		# Code 2:
+		# local _a # return of function: _disassemble-step14
+		# _disassemble-step14 "${_var_mtdna}"
+		local _a=($(_disassemble-step14 "${_var_mtdna}" | tail -n 1))
 		_sumary_coverage_ref="${_a[0]}"
 		_sumary_coverage_target="${_a[1]}"
 		_summary_j_candidate="${_a[2]}"
+
 		_polap_log2 "    output1: ${_sumary_coverage_ref}"
 		_polap_log2 "    output2: ${_sumary_coverage_target}"
 		_polap_log2 "    output3: one of the 4 candidates: ${_summary_j_candidate}"
@@ -1960,81 +1981,89 @@ function _run_polap_disassemble {
 		cat <<HEREDOC
 Plastid genome assembly by subsampling long-read data without references
 
-1. compare all case (alignment in stages 1 and 2): 
---disassemble-c and --no-align-reference
-2. not compare all or just check case (no alignment in stages 1 and 2):
---disassemble-c and --align-reference with --simple-polishing on or off
-3. inference case: 
---no-align-reference and --simple-polishing on or off
-
 Inputs
 ------
 
 - long-read data: ${_arg_long_reads} (default: l.fq)
-- short-read data 1 : ${_arg_short_read1} (no default)
-- short-read data 2 (optional): ${_arg_short_read2} (no default)
+- short-read data 1: ${_arg_short_read1} (default: s_1.fa)
+- short-read data 2: ${_arg_short_read2} (default: s_2.fa)
 
---disassemble-p ${_arg_disassemble_p}: the percentile of the largest long read
---disassemble-s: the threshold to change alpha
---disassemble-stop-after: stage1, stage2, stage3
+Main arguments
+--------------
+
+-l ${_arg_long_reads}: long-read fastq file
+-a ${_arg_short_read1}: short-read fastq file 1
+-b ${_arg_short_read2}: short-read fastq file 2
+
+--downsample ${_arg_downsample}: maximum genome coverage to downsample
+--disassemble-n ${_arg_disassemble_n}: the number of steps in stage 1
+--disassemble-p ${_arg_disassemble_p}: the maximum percent of long-read data
+--disassemble-r ${_arg_disassemble_r}: the number of replicates in stages 2/3
+
+Three use cases:
+1. case inference: default
+2. case check: compare one selected from stage 2 (no alignment in stages 1 and 2)
+  --disassemble-c and --disassemble-align-reference 
+3. case compare: compare all assemblies with a reference (alignment in stages 1 and 2)
+  --disassemble-c
+
+For the cases inference or check we use use either short-read 
+subsampling-based polishing or short-read no-subsampling (simple) polishing
+  --simple-polishing on or off
 
 Outputs
 -------
 
-- plastid genome assembly: ${_arg_final_assembly}
-- trace plots for the features of plastid genome assemblies
-  ${_ga_outdir}/disassemble/0/summary1-ordered.pdf
-  ${_ga_outdir}/disassemble/0/summary1-ordered.txt
-  ${_ga_outdir}/disassemble/x/summary1-ordered.pdf
-  ${_ga_outdir}/disassemble/x/summary1-ordered.txt
+- plastid genome assembly: ${_arg_outdir}/ptdna.${_arg_inum}.fa
 
 Arguments
 ---------
 
 Stage 1:
--o ${_arg_outdir}
+-o ${_arg_outdir}: output folder
 -l ${_arg_long_reads}: a long-read fastq data file
 -a ${_arg_short_read1}: a short-read fastq data file 1
--b ${_arg_short_read2} (optional): a short-read fastq data file 2
---disassemble-memory ${_arg_disassemble_memory}: the maximum memory in Gb
---disassemble-a ${_arg_disassemble_a}: the smallest long read
---disassemble-b ${_arg_disassemble_b}: the largest long read
---disassemble-n ${_arg_disassemble_n}: the number of steps (max 1000)
+-b ${_arg_short_read2}: a short-read fastq data file 2
+-i ${_arg_inum}: output number creating folder: ${_arg_outdir}/${_arg_inum}
+-t ${_arg_threads}: the number of CPU cores
 --disassemble-i ${_arg_disassemble_i}: the index of the stage 1
+--downsample ${_arg_downsample}: maximum genome coverage to downsample
+--disassemble-a ${_arg_disassemble_a}: the smallest base pairs for a subsampling range
+--disassemble-b ${_arg_disassemble_b}: the largest base pairs for a subsampling range
+--disassemble-n ${_arg_disassemble_n}: the number of steps
 --disassemble-p ${_arg_disassemble_p}: the percentile of the largest long read
---disassemble-m ${_arg_disassemble_m}: the threshold to change alpha
---disassemble-alpha ${_arg_disassemble_alpha}: the minimum Flye's disjointig coverage
+--disassemble-m ${_arg_disassemble_m}: the upper bound for a Flye assembly
+--disassemble-memory ${_arg_disassemble_memory}: the maximum memory in Gb
+--disassemble-alpha ${_arg_disassemble_alpha}: the starting Flye's disjointig coverage
 --disassemble-delta ${_arg_disassemble_delta}: the move size of alpha (0.1 - 1.0)
---disassemble-compare-to-fasta <FASTA>
+--disassemble-s ${_arg_disassemble_s}: subsample size for stage 2, skipping stage 1
+--disassemble-beta ${_arg_disassemble_beta}: subsample rate for stage 2, skipping stage 1
+--disassemble-c <FASTA>: a single reference sequence in FASTA
+--random-seed <arg>: 5-digit number
+--no-contigger for a single final step: use the long-read polished gfa
+
+Stage 2:
+--disassemble-s ${_arg_disassemble_s}: subsample size for stage 2, skipping stage 1
+--disassemble-beta ${_arg_disassemble_beta}: subsample rate for stage 2, skipping stage 1
+--disassemble-r ${_arg_disassemble_r}: the number of replicates
+
+Internals
+---------
 --start-index <INDEX>: from <INDEX>
 --end-index <INDEX>: to <INDEX> - 1
 --steps-include <STPES>: STEPS can be 1,2,3 or 1-15
 --steps-exclude <STPES>: STEPS can be 1,2,3 or 1-15
--t ${_arg_threads}: the number of CPU cores
---random-seed <arg>: 5-digit number
---no-contigger for a single final step: use the long-read polished gfa
-
-
 --stages-include <STAGES> for internal use
---disassemble-stop-after stage1 for external interface
---disassemble-stop-after stage2 for external interface
+--stages-exclude <STAGES> for internal use
+--disassemble-stop-after stage1: stop after stage 1
+--disassemble-stop-after stage2: stop after stage 2
 
+Not implemented yet
+-------------------
 --genomesize <NUMBER>: the number of steps is equal to 1.
 --genomesize-a ${_arg_genomesize_a}: the smallest genome-size step size
 --genomesize-b ${_arg_genomesize_b}: the largest genome-size step size
 --genomesize-n ${_arg_genomesize_n}: the number of steps in the genome-size
-
-
-
-Stage 2:
---disassemble-s: the threshold to change alpha
---disassemble-alpha ${_arg_disassemble_alpha}: the minimum Flye's disjointig coverage
---disassemble-r ${_arg_disassemble_r}: the number of replicates
-
-Test stage: with neither of these two options, one sequence is selected as 
-a final genome.
---species <SPECIES>
---disassemble-compare-to-fasta <FASTA>
 
 Menus
 -----
@@ -2043,6 +2072,8 @@ Menus
 - redo: overwrite previous results
 - view: show some results
 - reset or clean: delete output files 
+- archive: archive output files leaving out too large files
+- ptgaul: extract ptDNA from ${_arg_outdir}/ptgaul
 
 Usages
 ------
@@ -2052,37 +2083,47 @@ $(basename "$0") ${_arg_menu[0]} -l ${_arg_long_reads} -a ${_arg_short_read1} -b
 
 Examples
 --------
-1:
+$(basename "$0") ${_arg_menu[0]} example <NUMBER>
+
+NUMBER=1
+--------
 $(basename "$0") x-ncbi-fetch-sra --sra SRR7153095
 $(basename "$0") x-ncbi-fetch-sra --sra SRR7161123
+
+NUMBER=2
+--------
+$(basename "$0") disassemble -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq
+
+NUMBER=3
+--------
 $(basename "$0") get-mtdna --plastid --species "Eucalyptus pauciflora"
-cp o/00-bioproject/2-mtdna.fasta ptdna-Eucalyptus_pauciflora-known.fa
+cp o/00-bioproject/2-mtdna.fasta o/ptdna-reference.fa
 
+NUMBER=4
+--------
+$(basename "$0") disassemble --disassemble-i 1 --stages-include 3 -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq --disassemble-align-reference --disassemble-c o/ptdna-reference.fa
+
+NUMBER=5
+--------
+mkdir -p o/0/mafft
+$(basename "$0") mafft-mtdna -a o/ptdna-reference.fa -b o/0/disassemble/2/pt.subsample-polishing.reference.aligned.1.fa -o o/0/mafft >o/0/mafft/log.txt
+cat o/0/mafft/pident.txt
+
+NUMBER=6
+--------
+$(basename "$0") disassemble --disassemble-i 2 -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq --disassemble-align-reference --disassemble-c o/ptdna-reference.fa
+
+NUMBER=7
+--------
+$(basename "$0") disassemble --disassemble-i 3 -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq --disassemble-c o/ptdna-reference.fa
+
+NUMBER=8
+--------
 bash ptgaul/ptGAUL.sh -o o-ptgaul -r ptdna-Eucalyptus_pauciflora-known.fa -g 180000 -l long.fastq
-cp -pr o-ptgaul/result_3000 o
+cp -pr o-ptgaul/result_3000 o/ptgaul
 
-2:
-Stage 1 - long-read and short-read data
-$(basename "$0") disassemble -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq --disassemble-i 1 --disassemble-p 1 --disassemble-n 10
-
-$(basename "$0") disassemble archive
-
-$(basename "$0") disassemble -o o-a --disassemble-best --disassemble-compare-to-fasta ptdna-epauciflora.fa --disassemble-i 1 -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq 
-
-$(basename "$0") disassemble view
-3:
-$(basename "$0") disassemble view 2
-$(basename "$0") disassemble -o o2 --anotherdir o --disassemble-s 314588465 --disassemble-alpha 3.5 -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq
-
-For ptDNA of Juncus validus
-$(basename "$0") get-mtdna -o jvalidus --plastid --species "Juncus validus"
-$(basename "$0") disassemble -o jvalidus -l SRR21976089.fastq -a SRR21976091_1.fastq -b SRR21976091_2.fastq --disassemble-min-memory 9 -v --disassemble-a 50mb --disassemble-n 20
-src/polap.sh disassemble -l SRR21976089.fastq -a SRR21976091_1.fastq -b SRR21976091_2.fastq -o jvalidus --disassemble-min-memory 9 -v --disassemble-a 50mb --disassemble-n 20
-
-Stage 1 - long-read only
-$(basename "$0") disassemble -l SRR7153095.fastq --disassemble-compare-to-fasta ptdna-epauciflora.fa --disassemble-min-memory 9
-
-Menu examples:
+More menu examples
+------------------
 $(basename "$0") disassemble view
 $(basename "$0") disassemble view 0
 $(basename "$0") disassemble view x
@@ -2484,29 +2525,97 @@ HEREDOC
 	# menu: example
 	if [[ "${_arg_menu[1]}" == "example" ]]; then
 		if [[ "${_arg_menu[2]}" == "1" ]]; then
+			_polap_log0 "Downloading sequencing data from NCBI SRA database: SRR7153095 and SRR7161123 ... takes time depending on your network speed ... "
+			_polap_log0 "  it takes time depending on your network speed ... be patient!"
+			_polap_log0 "  long-read SRA: SRR7153095 ..."
 			"$0" x-ncbi-fetch-sra --sra SRR7153095
+			_polap_log0 "  short-read SRA: SRR7161123 ..."
 			"$0" x-ncbi-fetch-sra --sra SRR7161123
-			"$0" get-mtdna --plastid --species "Eucalyptus pauciflora"
-			cp o/00-bioproject/2-mtdna.fasta ref.fasta
 		fi
 
 		if [[ "${_arg_menu[2]}" == "2" ]]; then
-			"$0" disassemble -l SRR7153095.fastq \
-				-a SRR7161123_1.fastq -b SRR7161123_2.fastq
+			_polap_log0 "Assembling the plastid genome by subsampling NCBI SRA database: SRR7153095 and SRR7161123 ..."
+			"$0" disassemble \
+				-l SRR7153095.fastq \
+				-a SRR7161123_1.fastq \
+				-b SRR7161123_2.fastq
+			_polap_log0 "  plastid genome assembly: o/ptdna.0.fa"
 		fi
 
 		if [[ "${_arg_menu[2]}" == "3" ]]; then
-			"$0" disassemble -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq --disassemble-compare-to-fasta ref.fasta --disassemble-min-memory 9
+			_polap_log0 "Downloading plastid genome sequences for Eucalyptus pauciflora ... -> o/ptdna-reference.fa"
+			"$0" get-mtdna --plastid --species "Eucalyptus pauciflora"
+			cp o/00-bioproject/2-mtdna.fasta o/ptdna-reference.fa
 		fi
 
 		if [[ "${_arg_menu[2]}" == "4" ]]; then
-			# stage 1: no short-read
-			"$0" disassemble -o epauciflora -l SRR7153095.fastq --disassemble-s-max 100m --disassemble-compare-to-fasta ptdna-epauciflora.fa --disassemble-min-memory 9
+			# subshell problem
+			# local _a=($(_disassemble-step14 "${_var_mtdna}"))
+			_polap_log0 "Assembling the plastid genome and check it with the reference ..."
+			_polap_log0 "  execute the following:"
+			"$0" disassemble \
+				--stages-include 3 \
+				--disassemble-i 2 \
+				-l SRR7153095.fastq \
+				-a SRR7161123_1.fastq \
+				-b SRR7161123_2.fastq \
+				--disassemble-align-reference \
+				--disassemble-c o/ptdna-reference.fa
 		fi
 
 		if [[ "${_arg_menu[2]}" == "5" ]]; then
-			# stage 2: no short-read
-			"$0" disassemble -o epauciflora -l SRR7153095.fastq -g 250k --disassemble-s 200m --disassemble-alpha 1.5 --disassemble-compare-to-fasta ptdna-epauciflora.fa --disassemble-min-memory 9 --contigger
+			_polap_log0_cmd mkdir -p o/0/mafft
+			"$0" mafft-mtdna \
+				-a o/ptdna-reference.fa \
+				-b o/0/disassemble/2/pt.subsample-polishing.reference.aligned.1.fa \
+				-o o/0/mafft \
+				>o/0/mafft/log.txt
+			_polap_log0 "see o/0/mafft/pident.txt"
+			_polap_log0_cat "o/0/mafft/pident.txt"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "6" ]]; then
+			# subshell problem
+			# local _a=($(_disassemble-step14 "${_var_mtdna}"))
+			_polap_log0 "Assembling the plastid genome and check it with the reference ..."
+			_polap_log0 "  execute the following:"
+			"$0" disassemble \
+				--disassemble-i 2 \
+				-l SRR7153095.fastq \
+				-a SRR7161123_1.fastq \
+				-b SRR7161123_2.fastq \
+				--disassemble-align-reference \
+				--disassemble-c o/ptdna-reference.fa
+		fi
+
+		if [[ "${_arg_menu[2]}" == "7" ]]; then
+			_polap_log0 "Assembling the plastid genome and comparing it with the ptGAUL assembly ..."
+			_polap_log0 "  execute the following:"
+			"$0" disassemble \
+				--disassemble-i 3 \
+				-l SRR7153095.fastq \
+				-a SRR7161123_1.fastq \
+				-b SRR7161123_2.fastq \
+				--disassemble-c o/ptdna-reference.fa
+		fi
+
+		if [[ "${_arg_menu[2]}" == "8" ]]; then
+			_polap_log0 "Assembling the plastid genome using ptGAUL ..."
+			bash ${script_dir}/ptGAUL1.sh \
+				-o ptgaul \
+				-r ptdna-reference.fa \
+				-g 160000 \
+				-l SRR7153095.fastq
+			mv ptgaul/result_3000 o/ptgaul
+			rm ptgaul
+
+			_polap_log0 "Preparing the short-read polishing: This polishing preparation takes long ..."
+			$0 prepare-polishing \
+				-a SRR7161123_1.fastq \
+				-b SRR7161123_2.fastq
+
+			_polap_log0 "Polishing the ptGAUL draft sequence ..."
+			"$0" disassemble ptgaul
 		fi
 
 		# Disable debugging if previously enabled
@@ -2669,6 +2778,17 @@ HEREDOC
 			_polap_log0 "  stage 3: assemble with simple-polishing: run type: ${_run_type}"
 		fi
 		_disassemble-stage3
+
+		# link the output
+		if [[ -s "${_disassemble_i}/pt.subsample-polishing.1.fa" ]]; then
+			_polap_log0 "Final plastid genome assembly: ${_arg_outdir}/ptdna.${_arg_inum}.fa"
+			ln -s $(realpath "${_disassemble_i}"/pt.subsample-polishing.1.fa) "${_arg_outdir}/ptdna.${_arg_inum}.fa"
+		fi
+
+		if [[ -s "${_disassemble_i}/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
+			_polap_log0 "Final plastid genome assembly: ${_arg_outdir}/ptdna.ref.${_arg_inum}.fa"
+			ln -s $(realpath "${_disassemble_i}"/pt.subsample-polishing.reference.aligned.1.fa) "${_arg_outdir}/ptdna.ref.${_arg_inum}.fa"
+		fi
 	fi
 
 	# Disable debugging if previously enabled
@@ -3233,6 +3353,9 @@ HEREDOC
 			_polap_log2 "    input1: ${_circular_path_fasta}"
 
 			# put in a bash function
+			# INFO: tail -n 1 is necessary because we need to take the last
+			# return value not something else that might have been printed out
+			# in the function.
 			local _a=($(_disassemble-step14 "${_var_mtdna}" | tail -n 1))
 			_sumary_coverage_ref="${_a[0]}"
 			_sumary_coverage_target="${_a[1]}"

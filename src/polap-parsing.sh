@@ -78,6 +78,7 @@ _arg_table_format="tsv"
 _arg_outfile="o.tsv"
 _arg_min_read_length="3000"
 _arg_threads="$(cat /proc/cpuinfo | grep -c processor)"
+_arg_threads_fmlrc=4 # for some fmlrc
 _arg_log="polap.log"
 _arg_log_is="off"
 _arg_log_stderr="off"
@@ -136,14 +137,15 @@ _arg_disassemble_b_is="off"   #
 # _arg_disassemble_b_short="off" # deprecate: not using it; use the same short-read sample size
 # we use the same rate not the actual sampling size for the short-read data
 # just as we use the long-read sampling rate.
+_arg_downsample="10"        # 10x downsample
+_arg_disassemble_n=10       # the number cycles
 _arg_disassemble_p=5        # 5% of the sample size
+_arg_disassemble_r=5        # the number of replicates
 _arg_disassemble_p_is="off" #
 # disassemble/i/j
-_arg_disassemble_i=1  # disassemble replicate index
-_arg_disassemble_j=1  # disassemble stage 1 repeat index
-_arg_disassemble_n=10 # the number cycles
+_arg_disassemble_i=1 # disassemble replicate index
+_arg_disassemble_j=1 # disassemble stage 1 repeat index
 _arg_disassemble_n_is="off"
-_arg_disassemble_r=10                   # the number of replicates
 _arg_disassemble_q=5                    # 5% of the max short-read sample size for polishing steps
 _arg_disassemble_l=10                   # the number of polishing cycles
 _arg_disassemble_m=500000               # the maximum of draft genome size
@@ -151,7 +153,6 @@ _arg_disassemble_s_max=                 # the maximum of draft genome size
 _arg_disassemble_alpha=1.0              # the minimum disjointig coverage
 _arg_disassemble_delta=0.75             # the move size of alpha
 _arg_disassemble_memory=16              # the minimum memory in Gb
-_arg_disassemble_compare_to_fasta=""    # the minimum memory in Gb
 _arg_disassemble_c=""                   # sequence in fasta format
 _arg_disassemble_c_is="off"             # sequence in fasta format
 _arg_disassemble_s=                     # subsample size
@@ -160,7 +161,6 @@ _arg_disassemble_best="off"             # delete it
 _arg_disassemble_align_reference="off"  # applied to stage 2 only or check part
 _arg_disassemble_simple_polishing="off" # default is subsampling polish
 _arg_disassemble_stop_after=
-_arg_downsample="10"
 # for genome size grid
 _arg_genomesize_a=200000   #
 _arg_genomesize_b=300000   #
@@ -1043,14 +1043,6 @@ parse_commandline() {
 			;;
 		--disassemble-memory=*)
 			_arg_disassemble_memory="${_key##--disassemble-memory=}"
-			;;
-		--disassemble-compare-to-fasta)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_compare_to_fasta="$2"
-			shift
-			;;
-		--disassemble-compare-to-fasta=*)
-			_arg_disassemble_compare_to_fasta="${_key##--disassemble-compare-to-fasta=}"
 			;;
 		--disassemble-stop-after)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

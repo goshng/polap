@@ -21,7 +21,6 @@ Sall=(
 	Cinchona_pubescens
 	Codonopsis_lanceolata
 	Cucumis_sativus_var_hardwickii
-	Delphinium_montanum
 	Dioscorea_japonica
 	Dunaliella_tertiolecta
 	Eucalyptus_pauciflora
@@ -46,6 +45,10 @@ Sall=(
 	Spirodela_polyrhiza
 	Vaccinium_vitis-idaea
 	Vitis_vinifera
+)
+
+Snot=(
+	Delphinium_montanum
 )
 
 Stable5=(
@@ -219,7 +222,7 @@ set +u
 # Read the config files
 read-a-tsv-file-into-associative-arrays() {
 	# Define input TSV file
-	csv_file="src/polap-data-v2.csv"
+	csv_file="${script_dir}/polap-data-v2.csv"
 
 	# Read the TSV file (skip header)
 	while IFS=$',' read -r species folder long short host ptgaul_genomesize compare_n compare_p compare_r polish_n polish_p random_seed ssh memory downsample inum table1 table2 dummy status; do
@@ -566,12 +569,16 @@ send_genus_species() {
 recover_genus_species() {
 	local output_dir="$1"
 
-	echo "Deleting ${output_dir} ..."
-	rm -rf "${output_dir}"
-	tar -zxf "${output_dir}-a.tar.gz"
-	mv "${output_dir}-a" "${output_dir}"
-	echo "  we have recreated ${output_dir}!"
-	echo "Next: $0 mkdir ${output_dir}"
+	if [[ -s "${output_dir}-a.tar.gz" ]]; then
+		echo "Deleting ${output_dir} ..."
+		rm -rf "${output_dir}"
+		tar -zxf "${output_dir}-a.tar.gz"
+		mv "${output_dir}-a" "${output_dir}"
+		echo "  we have recreated ${output_dir}!"
+		echo "Next: $0 mkdir ${output_dir}"
+	else
+		mkdir -p "${output_dir}"
+	fi
 }
 
 # create input files
@@ -885,7 +892,7 @@ ptgaul_genus_species() {
 	local extracted_ptgaul_genomesize="${_ptgaul_genomesize["$target_index"]}"
 
 	mkdir -p "${output_dir}/timing"
-	command time -v bash src/ptGAUL1.sh \
+	command time -v bash ${script_dir}/ptGAUL1.sh \
 		-o ${output_dir}-ptgaul \
 		-r ${output_dir}/ptdna-reference.fa \
 		-g "${extracted_ptgaul_genomesize}" \
@@ -2146,7 +2153,7 @@ table1_genus_species() {
 	local _N
 	local j
 
-	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
 		"Species" \
 		"Order" \
 		"Family" \
@@ -2176,7 +2183,8 @@ table1_genus_species() {
 		"M" \
 		"M_g" \
 		"M_p" \
-		"M_t" \
+		"M_t1" \
+		"M_t2" \
 		"M_s" \
 		"M_f" \
 		"T" \
@@ -2301,12 +2309,12 @@ table1_genus_species() {
 		_summary2_alpha_formatted=$(echo "scale=2; $_summary2_alpha / 1" | bc | awk '{printf "%.2f\n", $1}')
 		# _summary2_alpha_formatted=$(echo "$_summary2_alpha_formatted" | awk '{printf "%.10g\n", $1}')
 
-		read -r _memory_gb _total_hours < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-infer-${j}-subsample-polish.txt")
-		read -r _memory_gb_polishing _total_hours_polishing < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-prepare-polishing.txt")
-		read -r _memory_gb_subsampling_polishing _total_hours_subsampling_polishing < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-infer-${j}-subsample-polish.txt")
-		# read -r _memory_gb_subsampling_polishing _total_hours_subsampling_polishing < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-check-${j}-subsample-polish.txt")
-		read -r _memory_gb_ptgaul _total_hours_ptgaul < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-ptgaul.txt")
 		read -r _memory_gb_getorganelle _total_hours_getorganelle < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-getorganelle.txt")
+		read -r _memory_gb_ptgaul _total_hours_ptgaul < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-ptgaul.txt")
+		read -r _memory_gb_prepare_polishing _total_hours_prepare_polishing < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-prepare-polishing.txt")
+		read -r _memory_gb_ptgaul_polishing _total_hours_ptgaul_polishing < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-ptgaul-polishing.txt")
+		read -r _memory_gb_subsampling_polishing _total_hours_subsampling_polishing < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-check-${j}-subsample-polish.txt")
+		read -r _memory_gb _total_hours < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-infer-${j}-subsample-polish.txt")
 
 		local _mafft_pident="NA"
 		if [[ -s "${_v1_inum}/mafft/${j}/pident.txt" ]]; then
@@ -2343,7 +2351,7 @@ table1_genus_species() {
 		# read -r _memory_gb _total_hours < <(parse_timing "${_v1}" "infer12-${j}")
 		# read -r _memory_gb_polishing _total_hours_polishing < <(parse_timing "${_v1}" "infer3only-${j}")
 
-		printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+		printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
 			"_${_species}_" \
 			"${_order}" \
 			"${_family}" \
@@ -2373,7 +2381,8 @@ table1_genus_species() {
 			"${extracted_memory}" \
 			"${_memory_gb_getorganelle}" \
 			"${_memory_gb_ptgaul}" \
-			"${_memory_gb_polishing}" \
+			"${_memory_gb_prepare_polishing}" \
+			"${_memory_gb_ptgaul_polishing}" \
 			"${_memory_gb_subsampling_polishing}" \
 			"${_memory_gb}" \
 			"${_total_hours}" \
@@ -2381,9 +2390,9 @@ table1_genus_species() {
 	done
 
 	# numfmt --field=7,8 --header=1 --delimiter=\t --grouping >${_table}-1.md
-	csvtk -t cut -f Species,C,N,P,R,Rate,Alpha,Length1,Length2,Pident,N1,Mode,SD,M,M_g,M_p,M_t,M_s,M_f,T \
+	csvtk -t cut -f Species,C,N,P,R,Rate,Alpha,Length1,Length2,Pident,N1,Mode,SD,M,M_g,M_p,M_t1,M_t2,M_s,M_f,T \
 		${_table_file} |
-		csvtk -t rename -f 1-20 -n Species,C,N,P,R,Rate,Alpha,L1,L2,Pident,N1,Mode,SD,M,Mg,Mp,Mt,Ms,Mf,T |
+		csvtk -t rename -f 1-21 -n Species,C,N,P,R,Rate,Alpha,L1,L2,Pident,N1,Mode,SD,M,Mg,Mp,Mt1,Mt2,Ms,Mf,T |
 		csvtk -t csv2md -a right -o ${_table}-analysis-${_arg_inum}.md
 
 	csvtk -t cut -f Species,Order,Family,L_SRA,L_size,L_cov,S_SRA,S_size,S_cov ${_table_file} |

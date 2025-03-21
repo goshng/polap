@@ -39,6 +39,7 @@ ls -1 *.sh |
 	sed 's/^/\t/'
 ls -1 *.py | sed 's/^/\t/'
 ls -1 *.R | sed 's/^/\t/'
+ls -1 *.csv | sed 's/^/\t/'
 
 echo "${_tail_message}"
 

@@ -199,6 +199,21 @@ function run_check_ncbitools {
 	return $(check_commands "${commands[@]}")
 }
 
+function run_check_flye {
+	if [[ "${_POLAP_RELEASE}" -eq 0 ]]; then
+		local commands=(
+			"$HOME/all/polap/Flye/bin/cflye"
+		)
+	else
+		local commands=(
+			"cflye"
+		)
+	fi
+
+	# Pass the array elements to the check_commands function
+	return $(check_commands "${commands[@]}")
+}
+
 ###############################################################################
 # Logs all commands
 ###############################################################################

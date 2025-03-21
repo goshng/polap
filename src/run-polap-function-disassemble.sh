@@ -1962,6 +1962,11 @@ function _run_polap_disassemble {
 	local _disassemble_dir="${_ga_outdir}/disassemble"
 	local _ga_input_short_reads="${_ga_outdir}/s.fq"
 
+	if ! run_check_flye; then
+		_polap_log0 "Suggestion: (polap) $ conda install goshng::cflye"
+		exit $EXIT_ERROR
+	fi
+
 	# plastid genome is assembled; not for mitochondrial genome assembly
 	_arg_plastid="on"
 
@@ -2555,7 +2560,7 @@ HEREDOC
 			_polap_log0 "  execute the following:"
 			"$0" disassemble \
 				--stages-include 3 \
-				--disassemble-i 2 \
+				--disassemble-i 1 \
 				-l SRR7153095.fastq \
 				-a SRR7161123_1.fastq \
 				-b SRR7161123_2.fastq \
@@ -2696,19 +2701,23 @@ HEREDOC
 	# -l -a -b options
 	# default -l -a -b files
 	_polap_log1 "  input1: long-read: ${_arg_long_reads}"
+	_polap_log1 "  input2: short-read1: ${_arg_short_read1}"
+	_polap_log1 "  input3: short-read2: ${_arg_short_read2}"
 	[[ -s "${_arg_long_reads}" ]] || return ${_POLAP_ERR_CMD_OPTION_LONGREAD}
-	if [[ "${_arg_short_read1_is}" == "off" ]]; then
-		_polap_log1 "  input2: no short-read1"
-	else
-		_polap_log1 "  input2: short-read1: ${_arg_short_read1}"
-		[[ -s "${_arg_short_read1}" ]] || return ${_POLAP_ERR_CMD_OPTION_SHORTREAD}
-	fi
-	if [[ "${_arg_short_read2_is}" == "off" ]]; then
-		_polap_log1 "  input3: no short-read2"
-	else
-		_polap_log1 "  input3: short-read2: ${_arg_short_read2}"
-		[[ -s "${_arg_short_read2}" ]] || return ${_POLAP_ERR_CMD_OPTION_SHORTREAD}
-	fi
+	[[ -s "${_arg_short_read1}" ]] || return ${_POLAP_ERR_CMD_OPTION_SHORTREAD}
+	[[ -s "${_arg_short_read2}" ]] || return ${_POLAP_ERR_CMD_OPTION_SHORTREAD}
+	# if [[ "${_arg_short_read1_is}" == "off" ]]; then
+	# 	_polap_log1 "  input2: no short-read1"
+	# else
+	# 	_polap_log1 "  input2: short-read1: ${_arg_short_read1}"
+	# 	[[ -s "${_arg_short_read1}" ]] || return ${_POLAP_ERR_CMD_OPTION_SHORTREAD}
+	# fi
+	# if [[ "${_arg_short_read2_is}" == "off" ]]; then
+	# 	_polap_log1 "  input3: no short-read2"
+	# else
+	# 	_polap_log1 "  input3: short-read2: ${_arg_short_read2}"
+	# 	[[ -s "${_arg_short_read2}" ]] || return ${_POLAP_ERR_CMD_OPTION_SHORTREAD}
+	# fi
 
 	# Iteration over p x n for each i in --disassemble-i
 	#

@@ -219,6 +219,9 @@ Usage: ${_polap_command_string} [<menu> [<menu2> [<menu3>]]] [-o|--outdir <arg>]
       [-m|--min-read-length <arg>] [-t|--threads <arg>] [--test] [--log <arg>] 
       [--directional] [--random-seed <arg>] [--version] [-h|--help]
 
+To assemble plastid DNA (ptDNA), use:
+  ${_polap_command_string} disassemble -l <arg> -a <arg> -b <arg>
+
 Assemble mitochondrial DNA (mtDNA) in a single command (not tested yet):
   ${_polap_command_string} -l <arg> -a <arg> [-b <arg>]
   ${_polap_command_string} assemble -l <arg> -a <arg> [-b <arg>]
@@ -414,7 +417,78 @@ Options:
 
   --markdown: display the table in markdown format (default: ${_arg_markdown})
 
-  Experimental (not tested yet!):
+  disassemble options:
+    Use help menu of the subcommand to see more example commands.
+
+  --downsample : maximum genome coverage to downsample (default: ${_arg_downsample})
+    The coverage for downsampling before assembling the plastid genome.
+    The genome size for the coverage is computed using short-read data.
+    Use option -i for a new downsampled set of data.
+
+  --disassemble-n: the number of steps (default: ${_arg_disassemble_n})
+    The number of iterations in the first stage.
+
+  --disassemble-p: the percentile of the largest long-read (default: ${_arg_disassemble_p})
+    The maximum percentage for the long-read data subsampling. Use this or
+    option --disassemble-b for the maximum subsample size for a range of the
+    subsampling.
+
+  --disassemble-r: the number of replicates (default: ${_arg_disassemble_r})
+    The number of iterations in the second and third stages.
+
+  --disassemble-i: the index used for a separate plastid assemblies (default: ${_arg_disassemble_i})
+    Use the same downsampled data to assemble ptDNA with a different set of
+    options. Use option -i to have different downsampled data.
+
+  --disassemble-a: the smallest base pairs for a subsampling range (default: ${_arg_disassemble_a})
+    The smallest subsample size: default is 10 Mb. This number must be greater
+    than the largest one using option --disassemble-b.
+    The option --disassemble-p should be chosen so that the largest subsample
+    size should be greater than the value of option --disassemble-a.
+
+  --disassemble-b: the largest base pairs for a subsampling range (default: ${_arg_disassemble_b})
+    The largest subsample size in base pairs. 
+
+  --disassemble-m: the upper bound for a Flye assembly (default: ${_arg_disassemble_m})
+    The upper bound for an initital preassembly size. The default is 500 kb.
+    We keep the Flye's preassembly size under this value by adjusting
+    the read-coverage threshold.
+
+  --disassemble-memory: the maximum memory in Gb (default: ${_arg_disassemble_memory})
+    The memory maximum requirement for the plastid genome assembly.
+    Note that this value does not guarantee the overrun of memory. 
+    You can choose to allocate a smaller amount of memory than your computer's 
+    total capacity if you are constrained by limited resources.
+    You should adjust this based on the specifics of your plastid genome 
+    assembly outcome.
+
+  --disassemble-alpha: the starting Flye's disjointig coverage (default: ${_arg_disassemble_alpha})
+    This option should remain unchanged initially.
+    Use it if you really have a long-run analysis that you want to be shortened.
+
+  --disassemble-delta: the move size of alpha (0.1 - 1.0) (default: ${_arg_disassemble_delta})
+    Leave this option as it is, without any changes.
+
+  --disassemble-s: subsample size for stage 2, skipping stage 1 (default: ${_arg_disassemble_s})
+    If you are sure of the subsample size and the read-coverage threshold,
+    set this option to bypass Stage 1.
+
+  --disassemble-beta: subsample rate for stage 2, skipping stage 1 (default: ${_arg_disassemble_beta})
+    Use either this option or --disassemble-s to set the subsample size.
+    Setting both of them does not make sense.
+    If you are sure of the subsample size and the read-coverage threshold,
+    set this option to bypass Stage 1.
+
+  --disassemble-align-reference: (default: ${_arg_disassemble_align_reference})
+    Use this and --disassemble-c so that you can compare a known ptDNA and
+    the subsampling-based assembly.
+
+  --disassemble-c: a single reference sequence in FASTA (no default)
+    If you want to compare a ptDNA sequence with a subsampling-based assembly,
+    set this option to a FASTA file with a single sequence. It will be compared
+    with the assembled ptDNA.
+
+  Experimental (not implemented yet!):
   --flye-nano-raw (default), --flye-nano-corr, --flye-nano-hq:
   --flye-pacbio-raw, --flye-pacbio-corr, --flye-pacbio-hifi:
     The Flye program requires a specific input data type.

@@ -378,11 +378,11 @@ function _disassemble_report3 {
 	s="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1.txt"
 	d="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1.md"
 	if [[ -s "${s}" ]]; then
-		csvtk -t cut -f index,sampling_datasize,short_rate_sample,time_prepare,memory_prepare,time_polishing,memory_polishing,length \
+		csvtk -t cut -f index,sampling_datasize,short_rate_sample,time_prepare,memory_prepare,time_polishing,memory_polishing,length,pident \
 			"${s}" |
 			csvtk -t round -n 4 -f short_rate_sample |
-			csvtk rename -t -f index,sampling_datasize,short_rate_sample,time_prepare,memory_prepare,time_polishing,memory_polishing,length \
-				-n I,Size,Rate,'T_p','M_p','T_s','M_s',Length |
+			csvtk rename -t -f index,sampling_datasize,short_rate_sample,time_prepare,memory_prepare,time_polishing,memory_polishing,length,pident \
+				-n I,Size,Rate,'Tp','Mp','Ts','Ms',Length,Pident |
 			csvtk -t csv2md -a right - \
 				>"${d}"
 		_polap_log0_head "${d}"
@@ -391,7 +391,7 @@ function _disassemble_report3 {
 		_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
         --table ${s} \
         --out ${d1} \
-        --plot ${d2}"
+        --plot ${d2} 2>/dev/null"
 	fi
 	return 0
 }
@@ -532,6 +532,7 @@ function _polap_lib_table-cflye-polish-summary-header {
 		"time_polishing" \
 		"memory_polishing" \
 		"length" \
+		"pident" \
 		>"${_summary_file}"
 }
 
@@ -549,6 +550,7 @@ function _polap_lib_table-cflye-polish-summary-content {
 		"${_summary_total_hours_fmlrc}" \
 		"${_summary_memory_gb_fmlrc}" \
 		"${_summary_assembly_length}" \
+		"${_summary_assembly_pident}" \
 		>>"${_summary_file}"
 }
 
@@ -1982,6 +1984,10 @@ function _run_polap_disassemble {
 		_arg_genomesize=$(_polap_utility_convert_unit_to_bp "${_arg_genomesize}")
 	fi
 
+	if [[ "${_arg_disassemble_q_is}" == "off" ]]; then
+		_arg_disassemble_q=${_arg_disassemble_p}
+	fi
+
 	help_message=$(
 		cat <<HEREDOC
 Plastid genome assembly by subsampling long-read data without references
@@ -2329,23 +2335,7 @@ HEREDOC
 
 	if [[ "${_arg_menu[1]}" == "downsample" ]]; then
 
-		# estimate the genome size using the short-read
-		_short_read1="${_ga_outdir}/s.fq"
-		_polap_log0 "    output: ${_ga_outdir}/short_expected_genome_size.txt"
-		_polap_find-genome-size \
-			"${_short_read1}" \
-			"${_ga_outdir}"
-		local _summary_genome_size=$(<"${_ga_outdir}/short_expected_genome_size.txt")
-		_polap_log0 "    output: estimated genome size: ${_summary_genome_size} bp"
-
-		# ${_polap_cmd} fastq subsample \
-		# 	"${output_dir}/${long_sra}.fastq" \
-		# 	"${output_dir}/l${_c}x.fq.gz" \
-		# 	-c "${_c}" \
-		# 	-o "${output_dir}" \
-		# 	--random-seed "${random_seed}" \
-		# 	--genomesize "${genomesize}" -v \
-		# 	>"${output_dir}/l${_c}x.txt"
+		_disassemble-stage0
 
 		# Disable debugging if previously enabled
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -3438,6 +3428,33 @@ HEREDOC
 	return 0
 }
 
+# input1: 1.fa
+# input2: 2.fa
+# output: output/pident.txt
+function _polap_mafft-compare-two {
+	local _fa1="${_final_assembly}"
+	local _fa2="${_prev_final_assembly}"
+	local _out1="${_outdir}"
+
+	cat "${_fa1}" >"${_out1}/in.fa"
+	cat "${_fa2}" >>"${_out1}/in.fa"
+
+	_polap_log3_pipe "mafft \
+    --auto \
+    ${_out1}/in.fa \
+    >${_out1}/out.mafft \
+    2>${_polap_output_dest}"
+
+	_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-mafft.R \
+    --input ${_out1}/out.mafft \
+    --out ${_out1}/out.txt"
+
+	local pident_mafft=$(grep -oP '(?<=Percent Identity: )\S+' "${_out1}/out.txt")
+	local pident_mafft=${pident_mafft%\%}
+
+	echo "$pident_mafft" >"${_out1}/pident.txt"
+}
+
 function _run_polap_polish-disassemble {
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x
@@ -3517,7 +3534,7 @@ HEREDOC
 
 		# total_size_data=$(<"${_polap_var_outdir_short_total_length}")
 		_disassemble_b=$(_polap_utility_compute_percentage \
-			"${_arg_disassemble_p}" \
+			"${_arg_disassemble_q}" \
 			"${_ga_short_total_length}")
 
 		_polap_lib_array-make-index \
@@ -3666,6 +3683,25 @@ HEREDOC
 		fi
 
 		rm -rf "${_msbwt_dir}"
+
+		# compare one and its previous sequences
+		if ((_summary_i > 0)); then
+			local _prev_summary_i=$((_summary_i - 1))
+			local _prev_outdir=${_disassemble_dir}/${_prev_summary_i}
+			local _prev_final_assembly="${_prev_outdir}/ptdna.1.fa"
+			# _polap_log0 "${_final_assembly}"
+			# _polap_log0 "${_prev_final_assembly}"
+
+			_polap_mafft-compare-two \
+				"${_final_assembly}" \
+				"${_prev_final_assembly}" \
+				"${_outdir}"
+
+			_summary_assembly_pident=$(<"${_outdir}/pident.txt")
+		else
+			_summary_assembly_pident="-1"
+		fi
+		# _polap_log0 "${_summary_assembly_pident}"
 
 		_polap_lib_table-cflye-polish-summary-content "${_summary1_file}"
 

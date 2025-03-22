@@ -146,20 +146,20 @@ _arg_disassemble_p_is="off" #
 _arg_disassemble_i=1 # disassemble replicate index
 _arg_disassemble_j=1 # disassemble stage 1 repeat index
 _arg_disassemble_n_is="off"
-_arg_disassemble_q=5                    # 5% of the max short-read sample size for polishing steps
-_arg_disassemble_l=10                   # the number of polishing cycles
-_arg_disassemble_m=500000               # the maximum of draft genome size
-_arg_disassemble_s_max=                 # the maximum of draft genome size
-_arg_disassemble_alpha=1.0              # the minimum disjointig coverage
-_arg_disassemble_delta=0.75             # the move size of alpha
-_arg_disassemble_memory=16              # the minimum memory in Gb
-_arg_disassemble_c=""                   # sequence in fasta format
-_arg_disassemble_c_is="off"             # sequence in fasta format
-_arg_disassemble_s=                     # subsample size
-_arg_disassemble_beta=                  # subsample size rate
-_arg_disassemble_best="off"             # delete it
-_arg_disassemble_align_reference="off"  # applied to stage 2 only or check part
-_arg_disassemble_simple_polishing="off" # default is subsampling polish
+_arg_disassemble_q=${_arg_disassemble_p} # 5% of the max short-read sample size for polishing steps
+_arg_disassemble_q_is="off"              # 5% of the max short-read sample size for polishing steps
+_arg_disassemble_l=10                    # the number of polishing cycles
+_arg_disassemble_m=500000                # the maximum of draft genome size
+_arg_disassemble_s_max=                  # the maximum of draft genome size
+_arg_disassemble_alpha=1.0               # the minimum disjointig coverage
+_arg_disassemble_delta=0.75              # the move size of alpha
+_arg_disassemble_memory=16               # the minimum memory in Gb
+_arg_disassemble_c=""                    # sequence in fasta format
+_arg_disassemble_c_is="off"              # sequence in fasta format
+_arg_disassemble_s=                      # subsample size
+_arg_disassemble_beta=                   # subsample size rate
+_arg_disassemble_align_reference="off"   # applied to stage 2 only or check part
+_arg_disassemble_simple_polishing="off"  # default is subsampling polish
 _arg_disassemble_stop_after=
 # for genome size grid
 _arg_genomesize_a=200000   #
@@ -435,6 +435,11 @@ Options:
 
   --disassemble-r: the number of replicates (default: ${_arg_disassemble_r})
     The number of iterations in the second and third stages.
+
+  --disassemble-q: the percentile of the largest short-read (default: ${_arg_disassemble_p})
+    The maximum percentage for the short-read data subsampling.
+    If not specified, we use the option value of --disassemble-p as the value
+    for --disassemble-q.
 
   --disassemble-i: the index used for a separate plastid assemblies (default: ${_arg_disassemble_i})
     Use the same downsampled data to assemble ptDNA with a different set of
@@ -1059,6 +1064,16 @@ parse_commandline() {
 		--disassemble-p=*)
 			_arg_disassemble_p="${_key##--disassemble-p=}"
 			_arg_disassemble_p_is="on"
+			;;
+		--disassemble-q)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_disassemble_q="$2"
+			_arg_disassemble_q_is="on"
+			shift
+			;;
+		--disassemble-q=*)
+			_arg_disassemble_q="${_key##--disassemble-q=}"
+			_arg_disassemble_q_is="on"
 			;;
 		--no-disassemble-align-reference | --disassemble-align-reference)
 			_arg_disassemble_align_reference="on"

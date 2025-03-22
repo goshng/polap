@@ -165,6 +165,10 @@ help_message=$(
 24. clean <species_folder>: [DANGER] delete the species folder
 write-config src/polap-data-v2.csv: write config
 #
+#
+downsample2infer <outdir> <inum>
+infer <outdir> <inum> [polish|simple]
+check <outdir> <inmu> [polish|simple]
 # call the following menu to create tables and figures
 #
 bandage1 <species_folder> 2
@@ -174,25 +178,43 @@ table1 2
 table1 0
 table2 2
 table2 0
+
+for i in 0 2; do
+  bash src/polap-data-v2.sh table1 \$i
+  bash src/polap-data-v2.sh table2 \$i
+done
+
+for i in 1 2 3-infer; do
+  for j in 0 2; do
+    for k in on off; do
+      bash src/polap-data-v2.sh suptable1 \$j \$k \$i
+    done
+  done
+done
+
 suptable1 2 off 1
 suptable1 2 off 2
 suptable1 2 off 3-infer
 suptable1 2 on 1
 suptable1 2 on 2
 suptable1 2 on 3-infer
+
+for i in 0 2; do
+  bash src/polap-data-v2.sh supfigure1 \$i no off
+  bash src/polap-data-v2.sh supfigure2 \$i off
+done
+
 supfigure1 2 no off
 supfigure1 2 no on
+
 supfigure2 2 off <- for sup
 supfigure2 2 on
+
 copy-figure: copy all figures to the target directory
 
 # files
-table1-1.md
-table1-2.md
-table2.md
-suptable1.md
-supfigure2.md
-supfigure1.md
+
+
 
 HEREDOC
 )
@@ -565,6 +587,19 @@ send_genus_species() {
 	send-data_genus_species "${output_dir}" "${inum}"
 }
 
+send-archive_genus_species() {
+	local output_dir="$1"
+	local inum="${2:-0}"
+	local target_index="${output_dir}-${inum}"
+
+	if [[ "${_local_host}" == "$(hostname)" ]]; then
+		archive_genus_species "${output_dir}"
+		scp "${output_dir}-a.tar.gz" ${_ssh["${target_index}"]}:$PWD/
+	else
+		echo "ERROR: run at the local host."
+	fi
+}
+
 # extract the archive at the remote
 recover_genus_species() {
 	local output_dir="$1"
@@ -932,6 +967,7 @@ extract-ptdna-of-ptgaul_genus_species() {
 		-o ${output_dir} \
 		2>${output_dir}/timing/timing-ptgaul-polishing.txt
 	echo "use extract-ptdna-of-ptgaul2 <species_folder> if not working"
+	copy-ptdna-of-ptgaul_genus_species
 }
 
 # Extraction of ptDNA from the assembly: another try
@@ -967,7 +1003,7 @@ copy-ptdna-of-ptgaul_genus_species() {
 	echo "copy ${output_dir}/ptdna-ptgaul.fa"
 	_outdir="${output_dir}/ptgaul/flye_cpONT/ptdna"
 	_arg_final_assembly="${_outdir}/pt.1.fa"
-	cp -p ${_arg_final_assembly} ${output_dir}/ptdna-ptgaul.fa
+	cp -pu ${_arg_final_assembly} ${output_dir}/ptdna-ptgaul.fa
 }
 
 # Case of the infer menu
@@ -1039,6 +1075,12 @@ delete-disassemble_genus_species() {
 
 # Case of the infer menu
 # no --disassemble-c
+#
+# infer <outdir> <inum> [default|polishing|simple]
+#
+# default: all stages
+# polish: stage 3 only
+# simple: stage 3 only but simple polishing
 infer_genus_species() {
 	local output_dir="$1"
 	local isuffix="${2:-0}"
@@ -1076,9 +1118,14 @@ infer_genus_species() {
 			local _x_i="infer-$i"
 			local _s_i="subsample-polish"
 			local _stages="--stages-include 0-3"
-			if [[ "${simple_polishing}" != "default" ]]; then
+			if [[ "${simple_polishing}" == "simple" ]]; then
+				simple_polishing="--disassemble-simple-polishing"
 				_stages="--stages-include 3"
 				_s_i="simple-polish"
+			elif [[ "${simple_polishing}" == "polish" ]]; then
+				simple_polishing=""
+				_stages="--stages-include 3"
+				_s_i="subsample-polish-only"
 			fi
 
 			# NOTE: "${_stages}" is a bug.
@@ -1111,6 +1158,63 @@ infer_genus_species() {
 	echo "Next: $0 check ${output_dir} [number] to compare the assembly of the ptDNA genome with ptGAUL's"
 }
 
+downsample2infer_genus_species() {
+	local output_dir="$1"
+	local isuffix="${2:-0}"
+	local simple_polishing="${3:-default}"
+	local target_index="${output_dir}-${isuffix}"
+
+	local species_name="$(echo ${output_dir} | sed 's/_/ /')"
+	local long_sra="${_long["$target_index"]}"
+	local short_sra="${_short["$target_index"]}"
+	local random_seed="${_random_seed["$target_index"]}"
+	local ssh_remote="${_ssh["$target_index"]}"
+	local extracted_inum="${_inum["$target_index"]}"
+	local output_dir_i="${output_dir}/${extracted_inum}"
+
+	local i=0
+	local n
+	local p
+	IFS=':' read -r -a extracted_array_n <<<"${_compare_n["$target_index"]}"
+	IFS=':' read -r -a extracted_array_p <<<"${_compare_p["$target_index"]}"
+	local extracted_r="${_compare_r["$target_index"]}"
+	local extracted_memory="${_memory["$target_index"]}"
+	local extracted_downsample="${_downsample["$target_index"]}"
+	local extracted_inum="${_inum["$target_index"]}"
+	local output_dir_i="${output_dir}/${extracted_inum}"
+
+	mkdir -p "${output_dir_i}"
+
+	for n in "${extracted_array_n[@]}"; do
+		for p in "${extracted_array_p[@]}"; do
+			i=$((i + 1))
+			echo "Analysis (inference): ${output_dir} at ${isuffix}"
+			echo "($i) n=$n, p=$p, r=${extracted_r} memory=${extracted_memory}G, downsample=${extracted_downsample}x"
+
+			local _d_i="infer-$i"
+			local _x_i="infer-$i"
+			local _s_i="downsample"
+
+			# NOTE: "${_stages}" is a bug.
+			# use it without quotations.
+			command time -v ${_polap_cmd} disassemble downsample \
+				--downsample ${extracted_downsample} \
+				--disassemble-i ${_d_i} \
+				-i ${extracted_inum} \
+				-o ${output_dir} \
+				-l ${long_sra}.fastq \
+				-a ${short_sra}_1.fastq \
+				-b ${short_sra}_2.fastq \
+				--random-seed "${random_seed}" \
+				2>"${output_dir_i}/timing-${_x_i}-${_s_i}.txt"
+
+		done
+	done
+	echo "Next: $0 check ${output_dir} [number] to compare the assembly of the ptDNA genome with ptGAUL's"
+}
+
+# what is this? fix the sampling size?
+# fix: alpha and beta
 infer2_genus_species() {
 	local output_dir="$1"
 	local isuffix="${2:-0}"
@@ -1188,11 +1292,14 @@ infer2_genus_species() {
 # --disassemble-c
 # --disassemble-align-reference
 # --disassemble-simple-polishing
+#
+# check <outdir> <inum> [simple|polish]
+#
 check_genus_species() {
 	local output_dir="$1"
 	local isuffix="${2:-0}"
-	local icount="${3:-0}"
 	local simple_polishing="${3:-default}"
+	local icount="${3:-0}" # not used any more
 	local target_index="${output_dir}-${isuffix}"
 
 	local species_name="$(echo ${output_dir} | sed 's/_/ /')"
@@ -1226,8 +1333,11 @@ check_genus_species() {
 			local _x_i="check-$i"
 			local _s_i="subsample-polish"
 			local _stages="--stages-include 3"
-			if [[ "${simple_polishing}" != "default" ]]; then
+			if [[ "${simple_polishing}" == "simple" ]]; then
+				simple_polishing="--disassemble-simple-polishing"
 				_s_i="simple-polish"
+			else
+				simple_polishing=""
 			fi
 
 			# "${_stages}" \
@@ -2408,6 +2518,9 @@ table1_genus_species() {
 	cat "${_table}.md"
 
 	Rscript src/polap-data-v2.R
+
+	echo "ouput: ${_table}-analysis-${_arg_inum}.md"
+	echo "ouput: ${_table}-data.md"
 }
 
 # previously table3
@@ -2741,7 +2854,7 @@ suptable1_genus_species() {
 		local _params_txt=${_v1_inum}/disassemble/infer-1/params.txt
 		_ipn=$(parse_params "${_params_txt}")
 		read -r _I _P _N _R <<<"$_ipn"
-		_label=${_label_base}
+		_label="${_arg_inum}-${_label_base}"
 
 		# stage 1
 		# printf "\\\blandscape\n\n" \
@@ -2862,7 +2975,7 @@ supfigure1_genus_species() {
 		local _params_txt=${_v1_inum}/disassemble/infer-1/params.txt
 		_ipn=$(parse_params "${_params_txt}")
 		read -r _I _P _N _R <<<"$_ipn"
-		_label=${_label_base}
+		_label="${_arg_inum}-${_label_base}"
 
 		# stage 1
 		# printf "![Selection of a plastid genome using the length distribution for _${_species}_. (A) Trace plot of plastid genome length and the subsample-size upto ${_P} %%. (B) Length distribution for candidate plastid genome of _${_species}_ ](figures/${_v1_inum}/disassemble/infer-1/1/summary1-ordered.pdf){#fig:supfigure1-${_label}}\n\n" \
@@ -2914,7 +3027,7 @@ supfigure1_genus_species() {
 
 		cat <<EOF >>"$output"
 
-Table: Plastid genome assembly graphs generated from Stage 1 of the subsampling-based method for the dataset of ${_species}. The graphs were generated with Bandage software. Each number corresponds to the iteration index of Stage 1 ([@tbl:suptable1-${_label_base}]). {#tbl:supfigure3-${_label_base}} 
+Table: Plastid genome assembly graphs generated from Stage 1 of the subsampling-based method for the dataset of ${_species}. The graphs were generated with Bandage software. Each number corresponds to the iteration index of Stage 1 ([@tbl:suptable1-${_label}]). {#tbl:supfigure3-${_label}} 
 
 EOF
 
@@ -3327,6 +3440,7 @@ case "$subcmd1" in
 	;;
 'send-data' | \
 	'send' | \
+	'send-archive' | \
 	'recover' | \
 	'mkdir' | \
 	'sra' | \
@@ -3367,6 +3481,8 @@ case "$subcmd1" in
 	;;
 'infer' | \
 	'infer2' | \
+	'infer3only' | \
+	'downsample2infer' | \
 	'suptable1' | \
 	'supfigure1' | \
 	'check')
@@ -3482,15 +3598,6 @@ case "$subcmd1" in
 		cd -
 	done
 	;;
-"plot")
-	pandoc plot.md -o supp-figure-s11-s34.pdf
-	pandoc plot.md -o supp-figure-s11-s34.docx
-	;;
-"table")
-	bash src/polap-v0.4-report-table1.sh >table1.tsv
-	pandoc table1.tsv -f tsv -t pdf -o table1.pdf -V geometry:landscape
-	pandoc table1.tsv -f tsv -t docx -o table1.docx
-	;;
 "sync")
 	for i in "${S[@]}"; do
 		V1="${i}"
@@ -3533,7 +3640,9 @@ case "$subcmd1" in
 	done
 	;;
 *)
-	echo "Species '$subcmd1' is not recognized."
+	echo "Usage: $0 <subcommand> [species_folder]"
+	echo "${help_message}"
+	echo "subcommand '$subcmd1' is not recognized."
 	exit 1
 	;;
 esac

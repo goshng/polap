@@ -40,6 +40,7 @@ ls -1 *.sh |
 ls -1 *.py | sed 's/^/\t/'
 ls -1 *.R | sed 's/^/\t/'
 ls -1 *.csv | sed 's/^/\t/'
+ls -1 polap-template-*.txt | sed 's/^/\t/'
 
 echo "${_tail_message}"
 

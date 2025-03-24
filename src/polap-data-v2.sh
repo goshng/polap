@@ -52,11 +52,12 @@ Snot=(
 )
 
 Stable5=(
-	'Juncus_effusus'
-	'Juncus_inflexus'
-	'Juncus_roemerianus'
-	'Juncus_validus'
-	'Eucalyptus_pauciflora'
+	x_y
+	# 'Juncus_effusus'
+	# 'Juncus_inflexus'
+	# 'Juncus_roemerianus'
+	# 'Juncus_validus'
+	# 'Eucalyptus_pauciflora'
 )
 
 _local_host="thorne"
@@ -169,6 +170,8 @@ write-config src/polap-data-v2.csv: write config
 downsample2infer <outdir> <inum>
 infer <outdir> <inum> [polish|simple]
 check <outdir> <inmu> [polish|simple]
+#
+
 # call the following menu to create tables and figures
 #
 bandage1 <species_folder> 2
@@ -212,14 +215,21 @@ supfigure2 2 on
 
 copy-figure: copy all figures to the target directory
 
+
+# Main Table 1 and others
+maintable1
+supptable1
+suppfigure1
+suppfigure3
+copy-figures
+
 # files
-
-
 
 HEREDOC
 )
 
 declare -A _folder
+declare -A _taxon
 declare -A _memory
 declare -A _inum
 declare -A _table1
@@ -247,12 +257,13 @@ read-a-tsv-file-into-associative-arrays() {
 	csv_file="${script_dir}/polap-data-v2.csv"
 
 	# Read the TSV file (skip header)
-	while IFS=$',' read -r species folder long short host ptgaul_genomesize compare_n compare_p compare_r polish_n polish_p random_seed ssh memory downsample inum table1 table2 dummy status; do
+	while IFS=$',' read -r species folder taxon long short host ptgaul_genomesize compare_n compare_p compare_r polish_n polish_p random_seed ssh memory downsample inum table1 table2 dummy status; do
 		# Skip header line
 		[[ "$species" == "species" ]] && continue
 
 		# Store in associative arrays
 		_folder["$species"]="$folder"
+		_taxon["$species"]="$taxon"
 		_long["$species"]="$long"
 		_short["$species"]="$short"
 		_host["$species"]="$host"
@@ -278,21 +289,25 @@ read-a-tsv-file-into-associative-arrays
 
 keys_array=($(for key in "${!_long[@]}"; do echo "$key"; done | sort))
 
-_arg2=${2:-"default_value"}
-if [[ "${_arg2}" != "default_value" ]]; then
-	_arg2="${2%/}"
-fi
-
-_arg3=${3:-0}
-_arg4=${4:-0}
-
-_arg1=${1:-"default_value"}
+_arg1=${1:-arg1}
 # Check if the species folder is provided
-if [[ "${_arg1}" == "default_value" ]]; then
-	echo "Usage: $0 <subcommand> [species_folder]"
+if [[ "${_arg1}" == "arg1" ]]; then
+	echo "Usage: $0 <subcommand> [species_folder] ..."
 	echo "${help_message}"
 	exit 1
 fi
+
+_arg2=${2:-arg2}
+if [[ "${_arg2}" != "arg2" ]]; then
+	_arg2="${2%/}"
+fi
+
+_arg3=${3:-arg3}
+_arg4=${4:-arg4}
+_arg5=${5:-arg5}
+_arg6=${6:-arg6}
+_arg7=${7:-arg7}
+_arg8=${8:-arg8}
 
 ################################################################################
 # Part of genus_species
@@ -337,6 +352,8 @@ batch_genus_species() {
 	fi
 
 	if [[ -s "${long_sra}.fastq.tar.gz" ]] ||
+		[[ -s "${long_sra}.fq.tar.gz" ]] ||
+		[[ -s "${long_sra}.fq" ]] ||
 		[[ -s "${long_sra}.fastq" ]]; then
 
 		read -p "Do you want to execute the batch procedure? (y/N): " confirm
@@ -793,6 +810,7 @@ getorganelle_genus_species_for() {
 	else
 		echo "  run at the local host for the decompressing the data"
 	fi
+	echo "${short_sra}_1.fastq"
 
 	if [[ -s "${short_sra}_1.fastq" ]] &&
 		[[ -s "${short_sra}_2.fastq" ]]; then
@@ -826,6 +844,8 @@ getorganelle_genus_species_for() {
 		else
 			echo "  run at the local host for deleting the data"
 		fi
+	else
+		echo "  no run getorganelle"
 	fi
 }
 
@@ -1683,9 +1703,12 @@ EOF
 
 }
 
-copy-figure_genus_species() {
-	rsync -av --include='*/' --include='*.png' --exclude='*' ./ ../../manuscript/polap-v0.4/figures/
-	rsync -av --include='*/' --include='*.pdf' --exclude='*' ./ ../../manuscript/polap-v0.4/figures/
+copy-figures_genus_species() {
+	local _arg_t_dir="${1:-$HOME/all/manuscript/polap-v0.4/figures/}"
+	rsync -av --include='*/' --include='*.png' --exclude='*' ./ "${_arg_t_dir}"
+	rsync -av --include='*/' --include='*.pdf' --exclude='*' ./ "${_arg_t_dir}"
+	# rsync -av --include='*/' --include='*.png' --exclude='*' ./ ../../manuscript/polap-v0.4/figures/
+	# rsync -av --include='*/' --include='*.pdf' --exclude='*' ./ ../../manuscript/polap-v0.4/figures/
 }
 
 # downsample <folder> <isuffix> [--dry]
@@ -2226,6 +2249,914 @@ get_target_read_coverage() {
 		echo "Error: Coverage information not found!"
 		return 1
 	fi
+}
+
+maintable1_genus_species_header() {
+	local _arg_table="${1:-1}"
+
+	local _items=(
+		"Species"
+		"Order"
+		"Family"
+		"I"
+		"C"
+		"L_SRA"
+		"L_size"
+		"L_cov"
+		"S_SRA"
+		"S_size"
+		"S_cov"
+		"G"
+		"N"
+		"P"
+		"R"
+		"Rate"
+		"Size"
+		"Alpha"
+		"ptDNA"
+		"Length1"
+		"Length2"
+		"Pident"
+		"N1"
+		"Mode"
+		"SD"
+		"N2"
+		"M"
+		"M_g"
+		"M_p"
+		"M_t1"
+		"M_t2"
+		"M_s"
+		"M_f"
+		"T"
+	)
+
+	if ((_arg_table == 2)); then
+		_items=(
+			"Species"
+			"Order"
+			"Family"
+			"N"
+			"C"
+			"L_SRA"
+			"L_size"
+			"L_cov"
+			"S_SRA"
+			"S_size"
+			"S_cov"
+			"P"
+			"R"
+			"Rate"
+			"Size"
+			"Alpha"
+			"Length2"
+			"N1"
+			"Mode"
+			"SD"
+			"N2"
+			"M"
+			"M_g"
+			"M_f"
+			"T"
+		)
+	fi
+
+	printf "%s\t" "${_items[@]::${#_items[@]}-1}"
+	printf "%s\n" "${_items[-1]}"
+}
+
+# Table 1's row for a given outdir and inum.
+#
+# arg1: outdir
+# arg2: inum
+# arg3: disassemble-i
+# arg4: 1 or 2
+# arg5: target directory to copy the result
+#
+# outdir-inum is used as the key as well.
+#
+# return:
+#
+maintable1_genus_species_for() {
+	local _arg_outdir="${1:-all}"
+	local _arg_inum="${2:-2}"
+	local _arg_d_index="${3:-infer-1}"
+	local _arg_table="${4:-1}"
+	local _arg_t_dir="${5:-$HOME/all/manuscript/polap-v0.4}"
+	local _key="${_arg_outdir}-${_arg_inum}"
+
+	local _v1="${_arg_outdir}"
+	local _polap_log=${_v1}/polap.log
+
+	# Taxon names: species, genus, family, and order
+	local _species=${_taxon[$_key]}
+	local _species="${_species//_/ }"
+	local _genus=${_species%% *}
+	local _family=$(grep "${_genus}" ${script_dir}/polaplib/taxonomy_output.tsv | cut -f 7 | head -1)
+	local _order=$(grep "${_genus}" ${script_dir}/polaplib/taxonomy_output.tsv | cut -f 6 | head -1)
+
+	# Long SRA
+	local _l_sra=$(awk '/long-read/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_polap_log" | sort -u | grep -v '^$')
+	if [[ -s "${_v1}/long_total_length.txt" ]]; then
+		_l_sra_size=$(<"${_v1}/long_total_length.txt")
+	else
+		_l_sra_size=$(<"${_v1}/l.fq.txt")
+	fi
+	local _l_sra_size_gb=$(_polap_utility_convert_bp "${_l_sra_size}")
+
+	# Short SRA
+	local _s_sra=$(awk '/short-read1/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_polap_log" | sort -u | grep -v '^$')
+	if [[ -s "${_v1}/short_total_length.txt" ]]; then
+		local _s_sra_size=$(<"${_v1}/short_total_length.txt")
+	else
+		local _s_sra_size1=$(<"${_v1}/s1.fq.txt")
+		local _s_sra_size2=$(<"${_v1}/s2.fq.txt")
+		local _s_sra_size=$((_s_sra_size1 + _s_sra_size2))
+	fi
+	local _s_sra_size_gb=$(_polap_utility_convert_bp "${_s_sra_size}")
+
+	# Known ptDNA NCBI accession
+	local _known_mtdna=$(grep 'NCBI accession:' ${_polap_log} | cut -d: -f4 | tail -n 1)
+
+	# Genome size estimates
+	if [[ -s "${_v1}/short_expected_genome_size.txt" ]]; then
+		_genome_size=$(<"${_v1}/short_expected_genome_size.txt")
+	else
+		echo "ERROR: no such file: ${_v1}/short_expected_genome_size.txt"
+		exit 1
+	fi
+
+	if ((_arg_table == 1)); then
+		local _ptdna_ptgaul=${_v1}/ptdna-ptgaul.fa
+		local _ptdna_reference=${_v1}/ptdna-reference.fa
+		local _seq_length_ptgaul=$(bioawk -c fastx 'NR==1 {print length($seq); exit}' "${_ptdna_ptgaul}")
+	fi
+
+	# read -r _memory_gb_flye1 _total_hours_flye1 < <(parse_timing "${_v1}" "infer12-4")
+
+	local j=1
+	local _i="${_arg_inum}"
+	local _v1_inum="${_v1}/${_arg_inum}"
+	local _disassemble_index="${_arg_d_index}"
+	local _extracted_memory="${_memory["$_key"]}"
+	local _summary1_ordered_txt="${_v1_inum}/disassemble/${_disassemble_index}/1/summary1-ordered.txt"
+
+	local _ptdna_subsample="${_v1_inum}/disassemble/${_disassemble_index}/pt.subsample-polishing.1.fa"
+	local _seq_length_subsample=0
+	if [[ -s "${_ptdna_subsample}" ]]; then
+		# Count the number of sequences (lines starting with '>')
+		local _seq_count=$(grep -c "^>" "$_ptdna_subsample")
+
+		# Ensure there is exactly one sequence
+		if ((_seq_count != 1)); then
+			echo "Error: FASTA file does not contain exactly one sequence: ${_ptdna_subsample}"
+			exit 1
+		fi
+
+		# Compute the sequence length
+		_seq_length_subsample=$(bioawk -c fastx 'NR==1 {print length($seq); exit}' "${_ptdna_subsample}")
+	fi
+
+	# Extract mode value
+	# Extract SD value
+	# Extract the first index value
+	local _mode=$(grep "^#mode:" "$_summary1_ordered_txt" | awk '{print $2}')
+	local _sd=$(grep "^#sd:" "$_summary1_ordered_txt" | awk '{print $2}')
+	local _first_index=$(grep "^#index:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
+	local _n1=$(grep "^#n:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
+	local _output=$(awk -F'\t' 'NR==2 {print $1}' "${_summary1_ordered_txt}")
+	read -r _second_line_index <<<"$_output"
+	if ((_first_index != _second_line_index)); then
+		echo "ERROR: #index: ${_first_index} vs. #2nd line index: ${_second_line_index}"
+		exit 1
+	fi
+
+	local _params_txt=${_v1_inum}/disassemble/${_disassemble_index}/params.txt
+	local _ipn=$(parse_params "${_params_txt}")
+	local _I _P _N _R
+	read -r _I _P _N _R <<<"$_ipn"
+
+	# The determined subsampling rate and alpha
+	local _summary2_ordered_txt=${_v1_inum}/disassemble/${_disassemble_index}/2/summary1-ordered.txt
+	local _n2=$(grep "^#n:" "$_summary2_ordered_txt" | awk 'NR==1 {print $2}')
+	local _output=$(awk -F'\t' 'NR==2 {print $1, $2, $4, $11}' "${_summary2_ordered_txt}")
+	local _summary2_index
+	local _summary2_size
+	local _summary2_size_gb
+	local _summary2_rate_rounded
+	local _summary2_alpha
+	local _summary2_alpha_formatted
+	read -r _summary2_index _summary2_size _summary2_rate _summary2_alpha <<<"$_output"
+	_summary2_size_gb=$(_polap_utility_convert_bp "${_summary2_size}")
+	local _summary2_rate_decimal=$(printf "%.10f" "$_summary2_rate")
+	_summary2_rate_rounded=$(echo "scale=4; $_summary2_rate_decimal / 1" | bc)
+	_summary2_alpha_formatted=$(echo "scale=2; $_summary2_alpha / 1" | bc | awk '{printf "%.2f\n", $1}')
+
+	# Timing
+	if ((_arg_table == 1)); then
+		read -r _memory_gb_getorganelle _total_hours_getorganelle < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-getorganelle.txt")
+		read -r _memory_gb_ptgaul _total_hours_ptgaul < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-ptgaul.txt")
+		read -r _memory_gb_prepare_polishing _total_hours_prepare_polishing < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-prepare-polishing.txt")
+		read -r _memory_gb_ptgaul_polishing _total_hours_ptgaul_polishing < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-ptgaul-polishing.txt")
+		read -r _memory_gb_subsampling_polishing _total_hours_subsampling_polishing < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-check-${j}-subsample-polish.txt")
+		read -r _memory_gb _total_hours < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-infer-${j}-subsample-polish.txt")
+	elif ((_arg_table == 2)); then
+		read -r _memory_gb_getorganelle _total_hours_getorganelle < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-getorganelle.txt")
+		read -r _memory_gb_prepare_polishing _total_hours_prepare_polishing < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-prepare-polishing.txt")
+		read -r _memory_gb_subsampling_polishing _total_hours_subsampling_polishing < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-check-${j}-subsample-polish.txt")
+		read -r _memory_gb _total_hours < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-infer-${j}-subsample-polish.txt")
+
+		#   read -r _memory_gb_getorganelle _total_hours_getorganelle < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-getorganelle.txt")
+		# read -r _memory_gb_polishing _total_hours_polishing < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-prepare-polishing.txt")
+		#   read -r _memory_gb_subsampling_polishing _total_hours_subsampling_polishing < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-infer-${j}-subsample-polish.txt")
+		#   read -r _memory_gb _total_hours < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-infer-${j}-subsample-polish.txt")
+	fi
+
+	# Percent identity from pairwise sequence alignment
+	local _mafft_pident="NA"
+	if [[ -s "${_v1_inum}/mafft/${j}/pident.txt" ]]; then
+		_mafft_pident="$(<${_v1_inum}/mafft/${j}/pident.txt)"
+	else
+		_mafft_pident=0
+	fi
+
+	# local _blast_pident="NA"
+	# if [[ -s "${_v1_inum}/blast/${j}/pident.txt" ]]; then
+	# 	_blast_pident="$(<${_v1_inum}/blast/${j}/pident.txt)"
+	# else
+	# 	_blast_pident=0
+	# fi
+
+	# local _mauve_lcb_coverage="NA"
+	# if [[ -s "${_v1_inum}/mauve/${j}/log.txt" ]]; then
+	# 	_mauve_lcb_coverage=$(awk '{print $2}' "${_v1_inum}/mauve/${j}/log.txt")
+	# else
+	# 	_mauve_lcb_coverage=0
+	# fi
+
+	local _pident="${_mafft_pident}"
+
+	# sequencing data coverage
+	local _short_coverage=$(get_short_read_coverage "${_v1_inum}/sx.txt")
+	local _long_coverage=$(get_long_read_coverage "${_v1_inum}/lx.txt")
+	local _target_coverage=$(get_target_read_coverage "${_v1_inum}/lx.txt")
+
+	local _items
+	if ((_arg_table == 1)); then
+		local _items=(
+			"_${_species}_"
+			"${_order}"
+			"${_family}"
+			"${_i}"
+			"${_target_coverage}"
+			"${_l_sra}"
+			"${_l_sra_size_gb}"
+			"${_long_coverage}"
+			"${_s_sra}"
+			"${_s_sra_size_gb}"
+			"${_short_coverage}"
+			"${_genome_size}"
+			"${_N}"
+			"${_P}"
+			"${_R}"
+			"${_summary2_rate_rounded}"
+			"${_summary2_size_gb}"
+			"${_summary2_alpha_formatted}"
+			"${_known_mtdna}"
+			"${_seq_length_ptgaul}"
+			"${_seq_length_subsample}"
+			"${_pident}"
+			"${_n1}"
+			"${_mode}"
+			"${_sd}"
+			"${_n2}"
+			"${_extracted_memory}"
+			"${_memory_gb_getorganelle}"
+			"${_memory_gb_ptgaul}"
+			"${_memory_gb_prepare_polishing}"
+			"${_memory_gb_ptgaul_polishing}"
+			"${_memory_gb_subsampling_polishing}"
+			"${_memory_gb}"
+			"${_total_hours}"
+		)
+	elif ((_arg_table == 2)); then
+		_items=(
+			"_${_species}_"
+			"${_order}"
+			"${_family}"
+			"${_i}"
+			"${_target_coverage}"
+			"${_l_sra}"
+			"${_l_sra_size_gb}"
+			"${_long_coverage}"
+			"${_s_sra}"
+			"${_s_sra_size_gb}"
+			"${_short_coverage}"
+			"${_P}"
+			"${_R}"
+			"${_summary2_rate_rounded}"
+			"${_summary2_size_gb}"
+			"${_summary2_alpha_formatted}"
+			"${_seq_length_subsample}"
+			"${_n1}"
+			"${_mode}"
+			"${_sd}"
+			"${_n2}"
+			"${_extracted_memory}"
+			"${_memory_gb_getorganelle}"
+			"${_memory_gb}"
+			"${_total_hours}"
+		)
+	fi
+
+	printf "%s\t" "${_items[@]::${#_items[@]}-1}" >>"${_table_tsv}"
+	printf "%s\n" "${_items[-1]}" >>"${_table_tsv}"
+}
+
+# Table 1's row for a given outdir and inum.
+#
+# arg1: outdir
+# arg2: inum
+# arg3: disassemble-i
+# arg4: 1 or 2
+# arg5: target directory to copy the result
+#
+maintable1_genus_species() {
+	local _arg_outdir="${1:-all}"
+	local _arg_inum="${2:-2}"
+	local _arg_d_index="${3:-infer-1}"
+	local _arg_table="${4:-1}"
+	local _arg_t_dir="${5:-$HOME/all/manuscript/polap-v0.4}"
+	# local _table_name=$(echo "${FUNCNAME[0]}" | cut -d'_' -f1)
+
+	local _table_name="maintable1"
+	if ((_arg_table == 2)); then
+		_table_name="maintable2"
+	fi
+	local _table_tsv="${_table_name}-${_arg_inum}.tsv"
+
+	maintable1_genus_species_header "${_arg_table}" >"${_table_tsv}"
+
+	if [[ "${_arg_outdir}" == "all" ]]; then
+
+		# Extract and sort keys
+		sorted_keys=($(for key in "${!_table1[@]}"; do echo "$key"; done | sort))
+
+		# Iterate over sorted keys and check if value is "T"
+		for key in "${sorted_keys[@]}"; do
+			if ((_arg_table == 1)); then
+				if [[ "${_table1[$key]}" == "F" ]]; then
+					continue
+				fi
+			elif ((_arg_table == 2)); then
+				if [[ "${_table2[$key]}" == "F" ]]; then
+					continue
+				fi
+			fi
+			local _extracted_inum=${_inum[$key]}
+			if [[ "${_extracted_inum}" != "${_arg_inum}" ]]; then
+				continue
+			fi
+			local _v_folder=${_folder[$key]}
+			local _v_folder_inum="${_v_folder}/${_arg_inum}"
+			if [[ ! -d "${_v_folder_inum}" ]]; then
+				continue
+			fi
+
+			maintable1_genus_species_for "${_v_folder}" \
+				"${_arg_inum}" "${_arg_d_index}" "${_arg_table}" "${_arg_t_dir}" \
+				>>"${_table_tsv}"
+		done
+	else
+		maintable1_genus_species_for "$@" >>"${_table_tsv}"
+	fi
+
+	if ((_arg_table == 1)); then
+		csvtk -t cut -f Species,C,N,P,R,Rate,Alpha,Length1,Length2,Pident,N1,Mode,SD,M,M_g,M_p,M_t1,M_t2,M_s,M_f,T \
+			${_table_tsv} |
+			csvtk -t rename -f 1-21 -n Species,C,N,P,R,Rate,Alpha,L1,L2,Pident,N1,Mode,SD,M,Mg,Mp,Mt1,Mt2,Ms,Mf,T |
+			csvtk -t csv2md -a right -o ${_table_name}-${_arg_inum}-analysis.md
+
+	elif ((_arg_table == 2)); then
+		csvtk -t cut -f Species,C,N,P,R,Rate,Alpha,Length2,N1,Mode,SD,M,M_g,M_f,T \
+			${_table_tsv} |
+			csvtk -t rename -f 1-15 -n Species,C,N,P,R,Rate,Alpha,L2,N1,Mode,SD,M,Mg,Mf,T |
+			csvtk -t csv2md -a right -o ${_table_name}-${_arg_inum}-analysis.md
+
+		# csvtk -t cut -f Species,Order,Family,L_SRA,L_size,L_cov,S_SRA,S_size,S_cov ${_table_tsv} |
+		# 	csvtk -t rename -f 1-9 -n Species,Order,Family,L_SRA,L_size,L_cov,S_SRA,S_size,S_cov |
+		# 	csvtk -t csv2md -a right -o ${_table_name}-${_arg_inum}-data.md
+		#
+		# cp -p ${_table_name}-${_arg_inum}-analysis.md "${_arg_t_dir}"
+		# cp -p ${_table_name}-${_arg_inum}-data.md "${_arg_t_dir}"
+		#
+		# csvtk -t csv2md -a right ${_table_tsv} -o ${_table_name}-${_arg_inum}.md
+		#
+		# cat "${_table_name}-${_arg_inum}.md"
+		# echo "ouput: ${_table_name}-${_arg_inum}-analysis.md"
+		# echo "ouput: ${_table_name}-${_arg_inum}-data.md"
+		# echo "ouput: ${_table_name}-${_arg_inum}.md"
+		# echo "ouput: ${_table_tsv}"
+	fi
+	csvtk -t cut -f Species,Order,Family,L_SRA,L_size,L_cov,S_SRA,S_size,S_cov ${_table_tsv} |
+		csvtk -t rename -f 1-9 -n Species,Order,Family,L_SRA,L_size,L_cov,S_SRA,S_size,S_cov |
+		csvtk -t csv2md -a right -o ${_table_name}-${_arg_inum}-data.md
+
+	cp -p ${_table_name}-${_arg_inum}-analysis.md "${_arg_t_dir}"
+	cp -p ${_table_name}-${_arg_inum}-data.md "${_arg_t_dir}"
+
+	csvtk -t csv2md -a right ${_table_tsv} -o ${_table_name}-${_arg_inum}.md
+
+	# Rscript src/polap-data-v2.R
+
+	cat "${_table_name}-${_arg_inum}.md"
+	echo "ouput: ${_table_name}-${_arg_inum}-analysis.md"
+	echo "ouput: ${_table_name}-${_arg_inum}-data.md"
+	echo "ouput: ${_table_name}-${_arg_inum}.md"
+	echo "ouput: ${_table_tsv}"
+}
+
+supptable1_genus_species_for() {
+	local _arg_outdir="${1}"
+	local _arg_inum="${2:-2}"
+	local _arg_d_index="${3:-infer-1}"
+	local _arg_stage="${4:-1}"
+	local _arg_table="${5:-1}"
+	local _arg_t_dir="${6:-$HOME/all/manuscript/polap-v0.4}"
+	local _arg_one="${7:-0}"
+	local _key="${_arg_outdir}-${_arg_inum}"
+
+	local _table_name="supptable1"
+	if ((_arg_table == 2)); then
+		_table_name="supptable2"
+	fi
+	local _supptable_md="${_table_name}-${_arg_inum}-${_arg_stage}.md"
+	if [[ "${_arg_one}" == "1" ]]; then
+		_supptable_md="${_table_name}-${_arg_inum}-${_arg_stage}-${_arg_outdir}.md"
+	fi
+
+	local _i=${_arg_inum}
+	local j="${_arg_stage}"
+
+	local _species=${_taxon[$_key]}
+	local _species="${_species//_/ }"
+	local _v1=${_folder[$_key]}
+	local _label_base="${_v1/_/-}"
+	_label_base=$(echo "$_label_base" | awk '{print tolower($0)}')
+
+	local _v1_inum="${_v1}/${_arg_inum}"
+	local _params_txt=${_v1_inum}/disassemble/${_arg_d_index}/params.txt
+	_ipn=$(parse_params "${_params_txt}")
+	local _I _P _N _R
+	read -r _I _P _N _R <<<"$_ipn"
+	local _label="${_arg_inum}-${_label_base}"
+	if [[ "${_arg_one}" == "1" ]]; then
+		_label="main-${_arg_inum}-${_label_base}"
+	fi
+
+	case "${_arg_stage}" in
+	1*)
+		printf "Table: Plastid genome assemblies with the increasing subsample size upto the maximum subsampling rate of ${_P}%% from Stage 1 of Polap's subsampling-based analysis for the dataset of _${_species}_. {#tbl:suptable1-${_label}}\n\n" \
+			>>"${_supptable_md}"
+		;;
+	2*)
+		printf "Table: Plastid genome assemblies with a fixed subsample size and subsampling-rate from Stage 2 of Polap's subsampling-based analysis for the dataset of _${_species}_. {#tbl:suptable2-${_label}}\n\n" \
+			>>"${_supptable_md}"
+		;;
+	3*)
+		printf "Table: Plastid genome assemblies with the subsampling-based short-read polishing from Stage 3 of Polap's subsampling-based analysis for the dataset of _${_species}_. {#tbl:suptable3-${_label}}\n\n" \
+			>>"${_supptable_md}"
+		;;
+	*)
+		echo "ERROR: no such stage: ${_arg_stage}"
+		exit 1
+		;;
+	esac
+
+	cat "${_v1_inum}/disassemble/${_arg_d_index}/${_arg_stage}/summary1.md" \
+		>>"${_supptable_md}"
+
+	printf "\n" \
+		>>"${_supptable_md}"
+
+	case "${_arg_stage}" in
+	1*)
+		cat "${script_dir}"/polaplib/polap-data-v2-suptable1_footnote.tex \
+			>>"${_supptable_md}"
+		;;
+	2*)
+		cat "${script_dir}"/polaplib/polap-data-v2-suptable2_footnote.tex \
+			>>"${_supptable_md}"
+		;;
+	3*)
+		cat "${script_dir}"/polaplib/polap-data-v2-suptable3_footnote.tex \
+			>>"${_supptable_md}"
+		;;
+	*)
+		echo "ERROR: no such stage: ${_arg_stage}"
+		exit 1
+		;;
+	esac
+
+	# printf "\\\elandscape\n\n\\\newpage\n\n" \
+	# 	>>"${_supptable_md}"
+
+	printf "\n\n\\\newpage\n\n" \
+		>>"${_supptable_md}"
+
+}
+
+supptable1_genus_species() {
+	local _arg_outdir="${1:-all}"
+	local _arg_inum="${2:-2}"
+	local _arg_d_index="${3:-infer-1}"
+	local _arg_stage="${4:-1}"
+	local _arg_table="${5:-1}"
+	local _arg_t_dir="${6:-$HOME/all/manuscript/polap-v0.4}"
+
+	local _table_name="supptable1"
+	if ((_arg_table == 2)); then
+		_table_name="supptable2"
+	fi
+	local _supptable_md="${_table_name}-${_arg_inum}-${_arg_stage}.md"
+	if [[ "${_arg_outdir}" != "all" ]]; then
+		_supptable_md="${_table_name}-${_arg_inum}-${_arg_stage}-${_arg_outdir}.md"
+	fi
+
+	rm -f "${_supptable_md}"
+
+	# maintable1_genus_species_header "${_arg_table}" >"${_table_tsv}"
+
+	if [[ "${_arg_outdir}" == "all" ]]; then
+
+		# Extract and sort keys
+		sorted_keys=($(for key in "${!_table1[@]}"; do echo "$key"; done | sort))
+
+		# Iterate over sorted keys and check if value is "T"
+		for key in "${sorted_keys[@]}"; do
+			if ((_arg_table == 1)); then
+				if [[ "${_table1[$key]}" == "F" ]]; then
+					continue
+				fi
+			elif ((_arg_table == 2)); then
+				if [[ "${_table2[$key]}" == "F" ]]; then
+					continue
+				fi
+			fi
+			local _extracted_inum=${_inum[$key]}
+			if [[ "${_extracted_inum}" != "${_arg_inum}" ]]; then
+				continue
+			fi
+			local _v_folder=${_folder[$key]}
+			local _v_folder_inum="${_v_folder}/${_arg_inum}"
+			if [[ ! -d "${_v_folder_inum}" ]]; then
+				continue
+			fi
+
+			supptable1_genus_species_for "${_v_folder}" \
+				"${_arg_inum}" "${_arg_d_index}" "${_arg_stage}" \
+				"${_arg_table}" "${_arg_t_dir}" 0
+		done
+	else
+		supptable1_genus_species_for "$@" 1
+	fi
+
+	echo "See ${_supptable_md}"
+	cp -p ${_supptable_md} "${_arg_t_dir}"
+}
+
+suppfigure1_genus_species_for() {
+	local _arg_outdir="${1:-all}"
+	local _arg_inum="${2:-2}"
+	local _arg_d_index="${3:-infer-1}"
+	local _arg_stage="${4:-1}"
+	local _arg_table="${5:-1}"
+	local _arg_bandage="${6:-no}"
+	local _arg_t_dir="${7:-$HOME/all/manuscript/polap-v0.4}"
+	local _arg_one="${8:-0}"
+	local _key="${_arg_outdir}-${_arg_inum}"
+
+	local _table_name="suppfigure1"
+	if ((_arg_table == 2)); then
+		_table_name="suppfigure2"
+	fi
+	local _supptable_md="${_table_name}-${_arg_inum}-${_arg_stage}.md"
+	if [[ "${_arg_one}" == "1" ]]; then
+		_supptable_md="${_table_name}-${_arg_inum}-${_arg_stage}-${_arg_outdir}.md"
+	fi
+
+	local _supptable_md="${_supptable_md}"
+
+	local _species=${_taxon[$_key]}
+	local _species="${_species//_/ }"
+	local _v1=${_folder[$_key]}
+	local _label_base="${_v1/_/-}"
+	_label_base=$(echo "$_label_base" | awk '{print tolower($0)}')
+
+	output_dir=${_v1}
+	echo output_dir: ${output_dir}
+
+	local j=1
+
+	local _v1_inum="${_v1}/${_arg_inum}"
+	local _params_txt=${_v1_inum}/disassemble/${_arg_d_index}/params.txt
+	_ipn=$(parse_params "${_params_txt}")
+	local _I _P _N _R
+	read -r _I _P _N _R <<<"$_ipn"
+	local _label="${_arg_inum}-${_label_base}"
+	if [[ "${_arg_one}" == "1" ]]; then
+		_label="main-${_arg_inum}-${_label_base}"
+	fi
+
+	printf "\\\newpage\n\n" \
+		>>"${_supptable_md}"
+
+	printf "\n\n" \
+		>>"${_supptable_md}"
+
+	#########################################################
+	# all figures
+	local extracted_n="${_compare_n["$_key"]}"
+	local i
+	local width=13
+	local images=()
+	local captions=()
+
+	local k=0
+	for ((i = 0; i < extracted_n; i++)); do
+
+		local _gfa_infer="${_v1_inum}/disassemble/${_arg_d_index}/${_arg_stage}/${i}/30-contigger/graph_final.gfa"
+		local _png_infer="${_v1_inum}/disassemble/${_arg_d_index}/${_arg_stage}/${i}/30-contigger/graph_final.png"
+		if [[ -s "${_gfa_infer}" ]]; then
+			echo "gfa file: ${_gfa_infer}"
+			if [[ "${_arg_bandage}" == "yes" ]]; then
+				${_polap_cmd} bandage png \
+					${_gfa_infer} \
+					${_png_infer}
+			fi
+			# printf "| ![polap %s](figures/%s){ width=%s%% } " "${i}" "${_png_infer}" "${width}" >>"${_supptable_md}"
+			images+=("figures/${_png_infer}")
+			captions+=(${i})
+			((k++))
+		else
+			echo "no such file: ${_gfa_infer}"
+		fi
+	done
+
+	cat <<EOF >>"$_supptable_md"
+
+Table: Plastid genome assembly graphs generated from Stage 1 of the subsampling-based method for the dataset of ${_species}. The graphs were generated with Bandage software. Each number corresponds to the iteration index of Stage 1 ([@tbl:suptable1-${_label}]). {#tbl:supfigure3-${_label}} 
+
+EOF
+
+	# Start writing to the markdown file
+	cat <<EOF >>"$_supptable_md"
+
+| Organelle genome assemblies |  |  |
+|-----------------|-----------------|-----------------|
+EOF
+
+	# Generate the image table with subcaptions
+	count=0
+	row="| "
+	caption_row="| "
+
+	for ((i = 0; i < ${#images[@]}; i++)); do
+		row+="![${captions[i]}](${images[i]}){width=100px} | "
+		caption_row+="**${captions[i]}** | "
+		((count++))
+
+		# End row if 3 images are added
+		if ((count % 3 == 0)); then
+			echo "$row" >>"$_supptable_md"
+			echo "$caption_row" >>"$_supptable_md"
+			echo "|-----------------|-----------------|-----------------|" >>"$_supptable_md"
+			# echo "" >>"$_supptable_md"
+			row="| "
+			caption_row="| "
+		fi
+	done
+
+	# Handle the last incomplete row (if any)
+	remaining=$((3 - count % 3))
+	if ((remaining < 3)); then
+		# Fill empty image columns
+		for ((i = 0; i < remaining; i++)); do
+			row+=" | "
+			caption_row+=" | "
+		done
+		echo "$row" >>"$_supptable_md"
+		echo "$caption_row" >>"$_supptable_md"
+		echo "|-----------------|-----------------|-----------------|" >>"$_supptable_md"
+	fi
+
+	echo "" >>"${_supptable_md}"
+
+}
+
+xxx_suppfigure1_genus_species_for() {
+	local _arg_outdir="${1:-all}"
+	local _arg_inum="${2:-2}"
+	local _arg_d_index="${3:-infer-1}"
+	local _arg_stage="${4:-1}"
+	local _arg_table="${5:-1}"
+	local _arg_bandage="${6:-no}"
+	local _arg_t_dir="${7:-$HOME/all/manuscript/polap-v0.4}"
+	local _arg_one="${8:-0}"
+	local _key="${_arg_outdir}-${_arg_inum}"
+
+	local _table_name="suppfigure1"
+	if ((_arg_table == 2)); then
+		_table_name="suppfigure2"
+	fi
+	local _supptable_md="${_table_name}-${_arg_inum}-${_arg_stage}.md"
+	if [[ "${_arg_one}" == "1" ]]; then
+		_supptable_md="${_table_name}-${_arg_inum}-${_arg_stage}-${_arg_outdir}.md"
+	fi
+
+	local _draw_bandage="${_arg_bandage}"
+	# local _main="${3:-off}"
+	local _supfigure_file="${_supptable_md}"
+
+	local _species=${_taxon[$_key]}
+	local _species="${_species//_/ }"
+	local _v1=${_folder[$_key]}
+	local _label_base="${_v1/_/-}"
+	_label_base=$(echo "$_label_base" | awk '{print tolower($0)}')
+
+	output_dir=${_v1}
+	echo output_dir: ${output_dir}
+
+	local j=1
+
+	local _v1_inum="${_v1}/${_arg_inum}"
+	local _params_txt=${_v1_inum}/disassemble/${_arg_d_index}/params.txt
+	_ipn=$(parse_params "${_params_txt}")
+	local _I _P _N _R
+	read -r _I _P _N _R <<<"$_ipn"
+	local _label="${_arg_inum}-${_label_base}"
+	if [[ "${_arg_one}" == "1" ]]; then
+		_label="main-${_arg_inum}-${_label_base}"
+	fi
+
+	# stage 1
+	# printf "![Selection of a plastid genome using the length distribution for _${_species}_. (A) Trace plot of plastid genome length and the subsample-size upto ${_P} %%. (B) Length distribution for candidate plastid genome of _${_species}_ ](figures/${_v1_inum}/disassemble/infer-1/1/summary1-ordered.pdf){#fig:supfigure1-${_label}}\n\n" \
+	# 	>>"${_supfigure_file}"
+
+	printf "\\\newpage\n\n" \
+		>>"${_supfigure_file}"
+
+	printf "\n\n" \
+		>>"${_supfigure_file}"
+
+	#########################################################
+	# all figures
+	local extracted_n="${_compare_n["$_key"]}"
+	local i
+	local width=13
+	local images=()
+	local captions=()
+
+	local k=0
+	for ((i = 0; i < extracted_n; i++)); do
+
+		local _gfa_infer="${_v1_inum}/disassemble/${_arg_d_index}/${_arg_stage}/${i}/30-contigger/graph_final.gfa"
+		local _png_infer="${_v1_inum}/disassemble/${_arg_d_index}/${_arg_stage}/${i}/30-contigger/graph_final.png"
+		if [[ -s "${_gfa_infer}" ]]; then
+			echo "gfa file: ${_gfa_infer}"
+			if [[ "${_draw_bandage}" == "yes" ]]; then
+				${_polap_cmd} bandage png \
+					${_gfa_infer} \
+					${_png_infer}
+			fi
+			# printf "| ![polap %s](figures/%s){ width=%s%% } " "${i}" "${_png_infer}" "${width}" >>"${_supfigure_file}"
+			images+=("figures/${_png_infer}")
+			captions+=(${i})
+			((k++))
+		else
+			echo "no such file: ${_gfa_infer}"
+		fi
+	done
+
+	#!/bin/bash
+
+	# Define an array of PNG files and their subcaptions
+	# images=("fig1.png" "fig2.png" "fig3.png" "fig4.png" "fig5.png" "fig6.png" "fig7.png" "fig8.png")
+	# captions=("Subcaption 1" "Subcaption 2" "Subcaption 3" "Subcaption 4" "Subcaption 5" "Subcaption 6" "Subcaption 7" "Subcaption 8")
+
+	# Output Markdown file
+	output="${_supfigure_file}"
+
+	cat <<EOF >>"$output"
+
+Table: Plastid genome assembly graphs generated from Stage 1 of the subsampling-based method for the dataset of ${_species}. The graphs were generated with Bandage software. Each number corresponds to the iteration index of Stage 1 ([@tbl:suptable1-${_label}]). {#tbl:supfigure3-${_label}} 
+
+EOF
+
+	# Start writing to the markdown file
+	cat <<EOF >>"$output"
+
+| Organelle genome assemblies |  |  |
+|-----------------|-----------------|-----------------|
+EOF
+
+	# Generate the image table with subcaptions
+	count=0
+	row="| "
+	caption_row="| "
+
+	for ((i = 0; i < ${#images[@]}; i++)); do
+		row+="![${captions[i]}](${images[i]}){width=100px} | "
+		caption_row+="**${captions[i]}** | "
+		((count++))
+
+		# End row if 3 images are added
+		if ((count % 3 == 0)); then
+			echo "$row" >>"$output"
+			echo "$caption_row" >>"$output"
+			echo "|-----------------|-----------------|-----------------|" >>"$output"
+			# echo "" >>"$output"
+			row="| "
+			caption_row="| "
+		fi
+	done
+
+	# Handle the last incomplete row (if any)
+	remaining=$((3 - count % 3))
+	if ((remaining < 3)); then
+		# Fill empty image columns
+		for ((i = 0; i < remaining; i++)); do
+			row+=" | "
+			caption_row+=" | "
+		done
+		echo "$row" >>"$output"
+		echo "$caption_row" >>"$output"
+		echo "|-----------------|-----------------|-----------------|" >>"$output"
+	fi
+
+	echo "" >>"${output}"
+
+}
+
+suppfigure1_genus_species() {
+	local _arg_outdir="${1:-all}"
+	local _arg_inum="${2:-2}"
+	local _arg_d_index="${3:-infer-1}"
+	local _arg_stage="${4:-1}"
+	local _arg_table="${5:-1}"
+	local _arg_bandage="${6:-no}"
+	local _arg_t_dir="${7:-$HOME/all/manuscript/polap-v0.4}"
+
+	local _table_name="suppfigure1"
+	if ((_arg_table == 2)); then
+		_table_name="suppfigure2" # we had figure 2
+	fi
+	local _supptable_md="${_table_name}-${_arg_inum}-${_arg_stage}.md"
+	if [[ "${_arg_outdir}" != "all" ]]; then
+		_supptable_md="${_table_name}-${_arg_inum}-${_arg_stage}-${_arg_outdir}.md"
+	fi
+
+	rm -f "${_supptable_md}"
+
+	# maintable1_genus_species_header "${_arg_table}" >"${_table_tsv}"
+
+	if [[ "${_arg_outdir}" == "all" ]]; then
+
+		# Extract and sort keys
+		sorted_keys=($(for key in "${!_table1[@]}"; do echo "$key"; done | sort))
+
+		# Iterate over sorted keys and check if value is "T"
+		for key in "${sorted_keys[@]}"; do
+			if ((_arg_table == 1)); then
+				if [[ "${_table1[$key]}" == "F" ]]; then
+					continue
+				fi
+			elif ((_arg_table == 2)); then
+				if [[ "${_table2[$key]}" == "F" ]]; then
+					continue
+				fi
+			fi
+			local _extracted_inum=${_inum[$key]}
+			if [[ "${_extracted_inum}" != "${_arg_inum}" ]]; then
+				continue
+			fi
+			local _v_folder=${_folder[$key]}
+			local _v_folder_inum="${_v_folder}/${_arg_inum}"
+			if [[ ! -d "${_v_folder_inum}" ]]; then
+				continue
+			fi
+
+			suppfigure1_genus_species_for "${_v_folder}" \
+				"${_arg_inum}" "${_arg_d_index}" "${_arg_stage}" \
+				"${_arg_table}" "${_arg_bandage}" "${_arg_t_dir}" 0
+		done
+	else
+		suppfigure1_genus_species_for "$@" 1
+	fi
+
+	echo "See ${_supptable_md}"
+	cp -p ${_supptable_md} "${_arg_t_dir}"
+	echo "rsync figures as well"
 }
 
 #
@@ -3092,10 +4023,19 @@ EOF
 # supfigure2.md
 # 2 no
 # 2 yes to extract bandage graph png
-supfigure2_genus_species() {
+suppfigure3_genus_species() {
 	local _arg_inum="${1:-2}"
-	local _draw_bandage="${2:-default_value}"
-	local _supfigure_file="supfigure2.md"
+	local _arg_d_index="${2:-infer-1}"
+	local _arg_bandage="${3:-no}"
+	local _arg_t_dir="${4:-$HOME/all/manuscript/polap-v0.4}"
+
+	# local _table_name="suppfigure1"
+	# if ((_arg_table == 2)); then
+	# 	_table_name="suppfigure2"
+	# fi
+	# local _supptable_md="${_table_name}-${_arg_inum}-${_arg_stage}.md"
+
+	local _supfigure_file="suppfigure3-${_arg_inum}.md"
 
 	# printf "# Supplementary Figures: Polap, ptGAUL, and GetOrganelle\n\n" \
 	# 	>"${_supfigure_file}"
@@ -3132,7 +4072,7 @@ EOF
 		echo output_dir: ${output_dir}
 		echo species: ${_species}
 
-		if [[ "${_draw_bandage}" == "yes" ]]; then
+		if [[ "${_arg_bandage}" == "yes" ]]; then
 			${_polap_cmd} disassemble bandage \
 				-i ${extracted_inum} \
 				-o ${output_dir} \
@@ -3150,7 +4090,7 @@ EOF
 
 		local _gfa_ptgaul="${output_dir}/ptgaul/flye_cpONT/assembly_graph.gfa"
 		local _png_ptgaul="${output_dir}/ptgaul.png"
-		if [[ "${_draw_bandage}" == "yes" ]]; then
+		if [[ "${_arg_bandage}" == "yes" ]]; then
 			${_polap_cmd} bandage png \
 				${_gfa_ptgaul} \
 				${_png_ptgaul}
@@ -3160,7 +4100,7 @@ EOF
 
 		local _gfa_getorganelle=$(find "${output_dir}/getorganelle" -type f -name 'embplant_pt*.gfa' | head -n 1)
 		local _png_getorganelle="${output_dir}/getorganelle.png"
-		if [[ "${_draw_bandage}" == "yes" ]]; then
+		if [[ "${_arg_bandage}" == "yes" ]]; then
 			${_polap_cmd} bandage png \
 				${_gfa_getorganelle} \
 				${_png_getorganelle}
@@ -3203,7 +4143,7 @@ EOF
 
 	done
 
-	cp -p ${_supfigure_file} ~/all/manuscript/polap-v0.4/
+	cp -p ${_supfigure_file} "${_arg_t_dir}"
 	echo ${_supfigure_file}
 }
 
@@ -3432,7 +4372,7 @@ function _run_polap_menu { # Interactive menu interface
 
 # Main case statement
 case "$subcmd1" in
-'copy-figure')
+'copy-figures')
 	${subcmd1}_genus_species
 	;;
 'refs')
@@ -3491,6 +4431,73 @@ case "$subcmd1" in
 	;;
 'downsample')
 	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
+	;;
+'maintable1')
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <outdir> <inum> <disassemble index> <1 or 2> <targe dir>"
+		echo "  polap-data-v2.sh maintable1 all 2 infer-1 1"
+		echo "  polap-data-v2.sh maintable1 all 0 infer-1 1"
+		echo "  polap-data-v2.sh maintable1 all 2 infer-1 2"
+		echo "  polap-data-v2.sh maintable1 Notothylas_orbicularis 2 infer-1 2"
+		exit 0
+	fi
+	[[ "${_arg3}" == arg3 ]] && _arg3=""
+	[[ "${_arg4}" == arg4 ]] && _arg4=""
+	[[ "${_arg5}" == arg5 ]] && _arg5=""
+	[[ "${_arg6}" == arg6 ]] && _arg6=""
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}"
+	;;
+'supptable1')
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <outdir> <inum> <disassemble index> <stage> <1 or 2> <targe dir>"
+		echo "  polap-data-v2.sh supptable1 all 2 infer-1 1"
+		echo "  polap-data-v2.sh supptable1 all 2 infer-1 2"
+		echo "  polap-data-v2.sh supptable1 all 2 infer-1 3-infer"
+		echo "  polap-data-v2.sh supptable1 Eucalyptus_pauciflora 2 infer-1 1"
+		echo "  polap-data-v2.sh supptable1 Eucalyptus_pauciflora 2 infer-1 2"
+		echo "  polap-data-v2.sh supptable1 Eucalyptus_pauciflora 2 infer-1 3-infer"
+		echo "  polap-data-v2.sh supptable1 all 0 infer-1 2 1"
+		echo "  polap-data-v2.sh supptable1 all 2 infer-1 3-infer 2"
+		echo "  polap-data-v2.sh supptable1 Notothylas_orbicularis 2 infer-1 1 2"
+		exit 0
+	fi
+	[[ "${_arg3}" == arg3 ]] && _arg3=""
+	[[ "${_arg4}" == arg4 ]] && _arg4=""
+	[[ "${_arg5}" == arg5 ]] && _arg5=""
+	[[ "${_arg6}" == arg6 ]] && _arg6=""
+	[[ "${_arg7}" == arg7 ]] && _arg7=""
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}" "${_arg7}"
+	;;
+'suppfigure1')
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <outdir> <inum> <disassemble index> <stage> <1 or 2> <yes|no> <targe dir>"
+		echo "  polap-data-v2.sh suppfigure1 all 2 infer-1 1 1 no"
+		echo "  polap-data-v2.sh suppfigure1 all 2 infer-1 2 1 no"
+		echo "  polap-data-v2.sh suppfigure1 all 2 infer-1 3-infer 1 no"
+		echo "  polap-data-v2.sh suppfigure1 Eucalyptus_pauciflora 2 infer-1 1 1 yes"
+		echo "  polap-data-v2.sh suppfigure1 Eucalyptus_pauciflora 2 infer-1 2"
+		echo "  polap-data-v2.sh suppfigure1 Eucalyptus_pauciflora 2 infer-1 3-infer"
+		exit 0
+	fi
+	[[ "${_arg3}" == arg3 ]] && _arg3=""
+	[[ "${_arg4}" == arg4 ]] && _arg4=""
+	[[ "${_arg5}" == arg5 ]] && _arg5=""
+	[[ "${_arg6}" == arg6 ]] && _arg6=""
+	[[ "${_arg7}" == arg7 ]] && _arg7=""
+	[[ "${_arg8}" == arg8 ]] && _arg8=""
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}" "${_arg7}" "${_arg8}"
+	;;
+'suppfigure3')
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <inum> <disassemble index> <yes|no> <targe dir>"
+		echo "  polap-data-v2.sh suppfigure3 2 infer-1 no"
+		echo "  polap-data-v2.sh suppfigure3 2 infer-1 yes"
+		exit 0
+	fi
+	[[ "${_arg3}" == arg3 ]] && _arg3=""
+	[[ "${_arg4}" == arg4 ]] && _arg4=""
+	[[ "${_arg5}" == arg5 ]] && _arg5=""
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
 	;;
 "menu")
 	_run_polap_menu

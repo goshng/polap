@@ -1289,8 +1289,8 @@ function _disassemble-stage0 {
 		_polap_log1 "   concatenate the two downsampled short-read data files"
 		_disassemble-step2 "${_ga_input_short_reads}" "${_outfile1}" "${_outfile2}"
 		check_file_existence "${_ga_input_short_reads}"
-		_polap_log2 "     clean-up the two downsampled short-read data files"
-		_polap_log3_cmd rm -f "${_outfile1}" "${_outfile2}"
+		# _polap_log2 "     clean-up the two downsampled short-read data files"
+		# _polap_log3_cmd rm -f "${_outfile1}" "${_outfile2}"
 	fi
 
 	# delete the s.fq

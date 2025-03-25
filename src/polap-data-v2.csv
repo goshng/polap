@@ -26,8 +26,9 @@ Dioscorea_japonica-2,Dioscorea_japonica,Dioscorea_japonica,SRR16108312,SRR161083
 Dunaliella_tertiolecta-0,Dunaliella_tertiolecta,Dunaliella_tertiolecta,SRR22857204,SRR22857205,marybeth,160000,20,10,10,5,5,139,marybeth,16,10,0,T,F,dummy,done
 Dunaliella_tertiolecta-1,Dunaliella_tertiolecta,Dunaliella_tertiolecta,SRR22857204,SRR22857205,marybeth,160000,20,10,10,5,5,139,marybeth,16,30,1,F,F,dummy,done
 Dunaliella_tertiolecta-2,Dunaliella_tertiolecta,Dunaliella_tertiolecta,SRR22857204,SRR22857205,marybeth,160000,10,5,5,5,5,315,marybeth,16,10,2,T,F,dummy,done
+Eucalyptus_pauciflora-0t,Eucalyptus_pauciflora,Eucalyptus_pauciflora,l,s,siepel,160000,5,80,5,5,5,155,siepel,16,10,0,F,F,dummy,test
 Eucalyptus_pauciflora-0,Eucalyptus_pauciflora,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,160000,20,10,10,5,5,143,siepel,16,10,0,T,F,dummy,done
-Eucalyptus_pauciflora-1,Eucalyptus_pauciflora,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,160000,50,10,10,5,5,155,lab01,16,0,1,F,F,dummy,done
+Eucalyptus_pauciflora-1,Eucalyptus_pauciflora,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,160000,50,10,10,5,5,155,siepel,16,0,1,F,F,dummy,done
 Eucalyptus_pauciflora-2,Eucalyptus_pauciflora,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,160000,10,5,5,5,5,317,siepel,16,10,2,T,F,dummy,done
 Eucalyptus_pauciflora-3,Eucalyptus_pauciflora,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,160000,50,10,10,5,5,155,siepel,16,10,3,T,F,dummy,done
 Eucalyptus_pauciflora-test,Eucalyptus_pauciflora,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,160000,5,10,3,5,5,155,siepel,16,1,test1,F,F,dummy,test
@@ -46,6 +47,7 @@ Juncus_effusus-3,Juncus_effusus,Juncus_effusus,SRR14298760,SRR14298746,kishino,1
 Juncus_inflexus-0,Juncus_inflexus,Juncus_inflexus,SRR14298751,SRR14298745,lab01,180000,50,10,10,5,5,123,lab01,32,10,0,T,F,dummy,done
 Juncus_inflexus-1,Juncus_inflexus,Juncus_inflexus,SRR14298751,SRR14298745,vincent,180000,50,1:5:10,10,5,5,123,vincent,32,30,1,F,F,dummy,not-yet
 Juncus_inflexus-2,Juncus_inflexus,Juncus_inflexus,SRR14298751,SRR14298745,lab01,180000,10,5,5,5,5,345,lab01,32,10,2,T,F,dummy,done
+Juncus_inflexus-3,Juncus_inflexus,Juncus_inflexus,SRR14298751,SRR14298745,vincent,180000,50,10,10,5,5,127,vincent,32,10,3,F,F,dummy,not-yet
 Juncus_roemerianus-0,Juncus_roemerianus,Juncus_roemerianus,SRR21976090,SRR21976092,user1-X99-PR8-H,200000,20,10,10,5,5,367,lab01,32,10,0,T,F,dummy,low-pident
 Juncus_roemerianus-1,Juncus_roemerianus,Juncus_roemerianus,SRR21976090,SRR21976092,user1-X99-PR8-H,200000,50,5:10:20,10,5,5,161,lab01,16,300,1,F,F,dummy,not-yet
 Juncus_roemerianus-2,Juncus_roemerianus,Juncus_roemerianus,SRR21976090,SRR21976092,vincent,200000,10,20,10,5,5,381,vincent,32,10,2,T,F,dummy,low-pident

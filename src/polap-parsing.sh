@@ -192,7 +192,7 @@ _arg_taxonomy_sample_size_per_rank="1"
 _arg_taxonomy_min_aa="20"
 
 # archive
-_arg_template="src/polap-template-cflye-archive-files.txt"
+_arg_template="$script_dir/polaplib/polap-template-cflye-archive-files.txt"
 _arg_max_filesize="5M"
 
 # for menu dissemble or directional read feature

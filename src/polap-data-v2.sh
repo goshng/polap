@@ -4,7 +4,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 	echo "Couldn't determine the script's running directory, which probably matters, bailing out" >&2
 	exit 2
 }
-LIB_DIR="${script_dir}/lib"
+LIB_DIR="${script_dir}/polaplib"
 
 source "${LIB_DIR}/polap-lib-timing.sh"
 
@@ -315,7 +315,9 @@ _arg8=${8:-arg8}
 batch_genus_species() {
 	local output_dir="$1"
 	local isuffix="${2:-0}"
-	local do_simple_polishing="${3:-off}"
+	local _brg_yes="${3:-off}"
+	local _brg_redo="${4:-off}"
+	local do_simple_polishing="on"
 	local target_index="${output_dir}-${isuffix}"
 
 	local species_name="$(echo ${output_dir} | sed 's/_/ /')"
@@ -339,186 +341,37 @@ batch_genus_species() {
 	local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
 	local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
 
-	if [[ "${_local_host}" == "$(hostname)" ]]; then
-		if [[ -s "${long_data}" ]]; then
-			echo long: $(du -h ${long_data})
-			echo short: $(du -h ${short_data})
-		else
-			echo long: $(du -h "${_media1_dir}/${long_sra}.fastq")
-			echo short1: $(du -h "${_media1_dir}/${short_sra}_1.fastq")
-			echo short2: $(du -h "${_media1_dir}/${short_sra}_2.fastq")
-		fi
-		return 0
-	fi
+	# if [[ "${_local_host}" == "$(hostname)" ]]; then
+	# 	if [[ "${_brg_remote}" == "off" ]]; then
+	# 		if [[ -s "${long_data}" ]]; then
+	# 			echo long: $(du -h ${long_data})
+	# 			echo short: $(du -h ${short_data})
+	# 		else
+	# 			echo long: $(du -h "${_media1_dir}/${long_sra}.fastq")
+	# 			echo short1: $(du -h "${_media1_dir}/${short_sra}_1.fastq")
+	# 			echo short2: $(du -h "${_media1_dir}/${short_sra}_2.fastq")
+	# 		fi
+	# 		return 0
+	# 	else
+	# 		echo "remote run"
+	# 	fi
+	# fi
 
 	if [[ -s "${long_sra}.fastq.tar.gz" ]] ||
 		[[ -s "${long_sra}.fq.tar.gz" ]] ||
 		[[ -s "${long_sra}.fq" ]] ||
 		[[ -s "${long_sra}.fastq" ]]; then
+		echo "found: long-read data file"
+	else
+		echo "ERROR: No long-read data file"
+		return 1
+	fi
 
+	if [[ "${_brg_yes}" == "off" ]]; then
 		read -p "Do you want to execute the batch procedure? (y/N): " confirm
 		case "$confirm" in
 		[yY] | [yY][eE][sS])
-
-			if [[ -s "${output_dir}/polap.log" ]]; then
-				echo "Folder ${output_dir} is not empty"
-			else
-				echo "Folder ${output_dir} is empty"
-				recover_genus_species "${output_dir}" "${isuffix}"
-			fi
-
-			mkdir -p "${output_dir_i}"
-
-			if [[ -s "${long_sra}.fastq" ]] &&
-				[[ -s "${short_sra}_1.fastq" ]] &&
-				[[ -s "${short_sra}_2.fastq" ]]; then
-				_log_echo "Found: sequencing data"
-			else
-				mkdir_genus_species "${output_dir}" "${isuffix}"
-				if [[ -s "${long_sra}.fastq" ]] &&
-					[[ -s "${short_sra}_1.fastq" ]] &&
-					[[ -s "${short_sra}_2.fastq" ]]; then
-					_log_echo "Success: sequencing data"
-				else
-					_log_echo "Fail: sequencing data"
-					return 1
-				fi
-			fi
-
-			if [[ -d "${output_dir}/getorganelle" ]] &&
-				find "${output_dir}/getorganelle" -maxdepth 1 -type f -name 'embplant_pt.*.gfa' -size +0c | grep -q .; then
-				_log_echo "Found: GetOrganelle assembled ptDNA"
-			else
-				getorganelle_genus_species "${output_dir}"
-				if find "${output_dir}/getorganelle" -maxdepth 1 -type f -name 'embplant_pt.*.gfa' -size +0c | grep -q .; then
-					_log_echo "Success: GetOrganelle assembled ptDNA"
-				else
-					_log_echo "Fail: GetOrganelle assembled ptDNA"
-					return 1
-				fi
-			fi
-
-			if [[ -s "${output_dir}/ptdna-reference.fa" ]]; then
-				_log_echo "Found: reference ptDNA"
-			else
-				get-ptdna-from-ncbi_genus_species "${output_dir}"
-				if [[ -s "${output_dir}/ptdna-reference.fa" ]]; then
-					_log_echo "Success: reference ptDNA"
-				else
-					_log_echo "Fail: reference ptDNA"
-					return 1
-				fi
-			fi
-
-			if [[ -s "${output_dir}/ptgaul/flye_cpONT/assembly_graph.gfa" ]]; then
-				_log_echo "Found: ptGAUL assembly"
-			else
-				ptgaul_genus_species "${output_dir}"
-				if [[ -s "${output_dir}/ptgaul/flye_cpONT/assembly_graph.gfa" ]]; then
-					_log_echo "Success: ptGAUL assembly"
-				else
-					_log_echo "Fail: ptGAUL assembly"
-					return 1
-				fi
-			fi
-
-			if [[ -s "${output_dir}/msbwt/comp_msbwt.npy" ]]; then
-				_log_echo "Found: FMLRC msbwt"
-			else
-				msbwt_genus_species "${output_dir}"
-				if [[ -s "${output_dir}/msbwt/comp_msbwt.npy" ]]; then
-					_log_echo "Success: FMLRC msbwt"
-				else
-					_log_echo "Fail: FMLRC msbwt"
-					return 1
-				fi
-			fi
-
-			if [[ -s "${output_dir}/ptdna-ptgaul.fa" ]]; then
-				_log_echo "Found: ptGAUL polished genome"
-			else
-				extract-ptdna-of-ptgaul_genus_species "${output_dir}"
-				copy-ptdna-of-ptgaul_genus_species "${output_dir}"
-				if [[ -s "${output_dir}/ptdna-ptgaul.fa" ]]; then
-					_log_echo "Success: ptGAUL polished genome"
-				else
-					_log_echo "Fail: ptGAUL polished genome"
-					return 1
-				fi
-			fi
-
-			if [[ -s "${output_dir_i}/disassemble/infer-1/pt.subsample-polishing.1.fa" ]]; then
-				_log_echo "Found: infer case"
-			else
-				infer_genus_species "${output_dir}" "${isuffix}"
-				if [[ -s "${output_dir_i}/disassemble/infer-1/pt.subsample-polishing.1.fa" ]]; then
-					_log_echo "Success: infer case"
-				else
-					_log_echo "Fail: infer case"
-					return 1
-				fi
-			fi
-
-			if [[ "${do_simple_polishing}" == "on" ]]; then
-
-				if [[ -s "${output_dir_i}/disassemble/infer-1/pt.simple-polishing.1.fa" ]]; then
-					_log_echo "Found: infer case - simple polishing"
-				else
-					infer_genus_species "${output_dir}" "${isuffix}" --disassemble-simple-polishing
-					if [[ -s "${output_dir_i}/disassemble/infer-1/pt.simple-polishing.1.fa" ]]; then
-						_log_echo "Success: infer case - simple polishing"
-					else
-						_log_echo "Fail: infer case - simple polishing"
-						_log_echo "  potenial error: fmlrc not enough memory"
-						return 1
-					fi
-				fi
-			fi
-
-			if [[ -s "${output_dir}/ptgaul/flye_cpONT/assembly_graph.gfa" ]]; then
-
-				if [[ -s "${output_dir_i}/disassemble/infer-1/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
-					_log_echo "Found: check case"
-				else
-					check_genus_species "${output_dir}" "${isuffix}"
-					if [[ -s "${output_dir_i}/disassemble/infer-1/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
-						_log_echo "Success: check case"
-					else
-						_log_echo "Fail: check case"
-						return 1
-					fi
-				fi
-
-				if [[ "${do_simple_polishing}" == "on" ]]; then
-					if [[ -s "${output_dir_i}/disassemble/infer-1/pt.simple-polishing.reference.aligned.1.fa" ]]; then
-						_log_echo "Found: check case - simple polishing"
-					else
-						check_genus_species "${output_dir}" "${isuffix}" --disassemble-simple-polishing
-						if [[ -s "${output_dir_i}/disassemble/infer-1/pt.simple-polishing.reference.aligned.1.fa" ]]; then
-							_log_echo "Success: check case - simple polishing"
-						else
-							_log_echo "Fail: check case - simple polishing"
-							_log_echo "  potenial error: fmlrc not enough memory"
-							return 1
-						fi
-					fi
-				fi
-
-				if printf '%s\n' "${Stable5[@]}" | grep -qx "${output_dir}"; then
-					if [[ -s "${output_dir_i}/disassemble/compare-1/pt.simple-polishing.1.fa" ]]; then
-						_log_echo "Found: compare case"
-					else
-						compare_genus_species "${output_dir}" "${isuffix}"
-						if [[ -s "${output_dir_i}/disassemble/compare-1/pt.simple-polishing.1.fa" ]]; then
-							_log_echo "Success: compare case"
-						else
-							_log_echo "Fail: compare case"
-							return 1
-						fi
-					fi
-				fi
-			fi
-
+			_brg_yes="on"
 			;;
 		*)
 			echo "Batch procedure is canceled."
@@ -526,6 +379,345 @@ batch_genus_species() {
 		esac
 	fi
 
+	if [[ "${_brg_yes}" == "off" ]]; then
+		return 0
+	fi
+
+	# main
+	if [[ -s "${output_dir}/polap.log" ]]; then
+		echo "Folder ${output_dir} is not empty"
+	else
+		echo "Folder ${output_dir} is empty"
+		recover_genus_species "${output_dir}" "${isuffix}"
+	fi
+
+	mkdir -p "${output_dir_i}"
+
+	if [[ -s "${long_sra}.fastq" ]] &&
+		[[ -s "${short_sra}_1.fastq" ]] &&
+		[[ -s "${short_sra}_2.fastq" ]]; then
+		_log_echo "Found: sequencing data"
+	else
+		mkdir_genus_species "${output_dir}" "${isuffix}"
+		if [[ -s "${long_sra}.fastq" ]] &&
+			[[ -s "${short_sra}_1.fastq" ]] &&
+			[[ -s "${short_sra}_2.fastq" ]]; then
+			_log_echo "Success: sequencing data"
+		else
+			_log_echo "Fail: sequencing data"
+			return 1
+		fi
+	fi
+
+	if [[ -d "${output_dir}/getorganelle" ]] &&
+		find "${output_dir}/getorganelle" -maxdepth 1 -type f -name 'embplant_pt.*.gfa' -size +0c | grep -q .; then
+		_log_echo "Found: GetOrganelle assembled ptDNA"
+	else
+		getorganelle_genus_species "${output_dir}"
+		if find "${output_dir}/getorganelle" -maxdepth 1 -type f -name 'embplant_pt.*.gfa' -size +0c | grep -q .; then
+			_log_echo "Success: GetOrganelle assembled ptDNA"
+		else
+			_log_echo "Fail: GetOrganelle assembled ptDNA"
+			return 1
+		fi
+	fi
+
+	if [[ -s "${output_dir}/ptdna-reference.fa" ]]; then
+		_log_echo "Found: reference ptDNA"
+	else
+		get-ptdna-from-ncbi_genus_species "${output_dir}"
+		if [[ -s "${output_dir}/ptdna-reference.fa" ]]; then
+			_log_echo "Success: reference ptDNA"
+		else
+			_log_echo "Fail: reference ptDNA"
+			return 1
+		fi
+	fi
+
+	if [[ -s "${output_dir}/ptgaul/flye_cpONT/assembly_graph.gfa" ]]; then
+		_log_echo "Found: ptGAUL assembly"
+	else
+		ptgaul_genus_species "${output_dir}"
+		if [[ -s "${output_dir}/ptgaul/flye_cpONT/assembly_graph.gfa" ]]; then
+			_log_echo "Success: ptGAUL assembly"
+		else
+			_log_echo "Fail: ptGAUL assembly"
+			return 1
+		fi
+	fi
+
+	if [[ -s "${output_dir}/msbwt/comp_msbwt.npy" ]]; then
+		_log_echo "Found: FMLRC msbwt"
+	else
+		msbwt_genus_species "${output_dir}"
+		if [[ -s "${output_dir}/msbwt/comp_msbwt.npy" ]]; then
+			_log_echo "Success: FMLRC msbwt"
+		else
+			_log_echo "Fail: FMLRC msbwt"
+			return 1
+		fi
+	fi
+
+	if [[ -s "${output_dir}/ptdna-ptgaul.fa" ]]; then
+		_log_echo "Found: ptGAUL polished genome"
+	else
+		extract-ptdna-of-ptgaul_genus_species "${output_dir}"
+		copy-ptdna-of-ptgaul_genus_species "${output_dir}"
+		if [[ -s "${output_dir}/ptdna-ptgaul.fa" ]]; then
+			_log_echo "Success: ptGAUL polished genome"
+		else
+			_log_echo "Fail: ptGAUL polished genome"
+			return 1
+		fi
+	fi
+
+	# delete if you want to redo the analysis
+	if [[ "${_brg_redo}" == "on" ]]; then
+		_log_echo "INFO: delete ${output_dir_i} to reanalyze the subsampling part."
+		rm -rf "${output_dir_i}"
+	fi
+
+	if [[ -s "${output_dir_i}/disassemble/infer-1/pt.subsample-polishing.1.fa" ]]; then
+		_log_echo "Found: infer case"
+	else
+		infer_genus_species "${output_dir}" "${isuffix}"
+		if [[ -s "${output_dir_i}/disassemble/infer-1/pt.subsample-polishing.1.fa" ]]; then
+			_log_echo "Success: infer case"
+		else
+			_log_echo "Fail: infer case"
+			return 1
+		fi
+	fi
+
+	if [[ "${do_simple_polishing}" == "on" ]]; then
+
+		if [[ -s "${output_dir_i}/disassemble/infer-1/pt.simple-polishing.1.fa" ]]; then
+			_log_echo "Found: infer case - simple polishing"
+		else
+			infer_genus_species "${output_dir}" "${isuffix}" simple
+			if [[ -s "${output_dir_i}/disassemble/infer-1/pt.simple-polishing.1.fa" ]]; then
+				_log_echo "Success: infer case - simple polishing"
+			else
+				_log_echo "Fail: infer case - simple polishing"
+				_log_echo "  potenial error: fmlrc not enough memory"
+				return 1
+			fi
+		fi
+	fi
+
+	if [[ -s "${output_dir}/ptgaul/flye_cpONT/assembly_graph.gfa" ]]; then
+
+		if [[ -s "${output_dir_i}/disassemble/infer-1/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
+			_log_echo "Found: check case"
+		else
+			check_genus_species "${output_dir}" "${isuffix}"
+			if [[ -s "${output_dir_i}/disassemble/infer-1/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
+				_log_echo "Success: check case"
+			else
+				_log_echo "Fail: check case"
+				return 1
+			fi
+		fi
+
+		if [[ "${do_simple_polishing}" == "on" ]]; then
+			if [[ -s "${output_dir_i}/disassemble/infer-1/pt.simple-polishing.reference.aligned.1.fa" ]]; then
+				_log_echo "Found: check case - simple polishing"
+			else
+				check_genus_species "${output_dir}" "${isuffix}" simple
+				if [[ -s "${output_dir_i}/disassemble/infer-1/pt.simple-polishing.reference.aligned.1.fa" ]]; then
+					_log_echo "Success: check case - simple polishing"
+				else
+					_log_echo "Fail: check case - simple polishing"
+					_log_echo "  potenial error: fmlrc not enough memory"
+					return 1
+				fi
+			fi
+		fi
+
+		if printf '%s\n' "${Stable5[@]}" | grep -qx "${output_dir}"; then
+			if [[ -s "${output_dir_i}/disassemble/compare-1/pt.simple-polishing.1.fa" ]]; then
+				_log_echo "Found: compare case"
+			else
+				compare_genus_species "${output_dir}" "${isuffix}"
+				if [[ -s "${output_dir_i}/disassemble/compare-1/pt.simple-polishing.1.fa" ]]; then
+					_log_echo "Success: compare case"
+				else
+					_log_echo "Fail: compare case"
+					return 1
+				fi
+			fi
+		fi
+	fi
+
+}
+
+# Gets the short- and long-read data and the archive
+# Batch run on them
+# Send the result back
+# Clean up the data
+remote-batch_genus_species_for() {
+	local output_dir="$1"
+	local _brg_inum="${2:-0}"
+
+	# Gets the datasets
+	local target_index="${output_dir}-${_brg_inum}"
+
+	local species_name="$(echo ${output_dir} | sed 's/_/ /')"
+
+	if [[ ! -v _long["$target_index"] ]]; then
+		echo "INFO: no element for key $target_index"
+		return 1
+	fi
+
+	local long_sra="${_long["$target_index"]}"
+	local short_sra="${_short["$target_index"]}"
+	local random_seed="${_random_seed["$target_index"]}"
+	local ssh_remote="${_ssh["$target_index"]}"
+	local extracted_inum="${_inum["$target_index"]}"
+	local output_dir_i="${output_dir}/${extracted_inum}"
+
+	# Copy the processed dataset if not local
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		scp -p thorne:$PWD/${output_dir}-a.tar.gz .
+	fi
+
+	local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
+	local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
+
+	if [[ ! -s "${long_sra}.fastq" ]]; then
+		if ssh thorne "test -f ${long_data}"; then
+			scp thorne:${long_data} .
+		else
+			scp thorne:"${_media1_dir}/${long_sra}.fastq" .
+		fi
+	fi
+
+	if [[ ! -s "${short_sra}_1.fastq" ]]; then
+		if ssh thorne "test -f ${short_data}"; then
+			scp thorne:${short_data} .
+		else
+			scp thorne:"${_media1_dir}/${short_sra}_1.fastq" .
+			scp thorne:"${_media1_dir}/${short_sra}_2.fastq" .
+		fi
+	fi
+
+	batch_genus_species ${output_dir} ${_brg_inum} on on
+	archive_genus_species ${output_dir}
+
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		scp -p ${output_dir}-a.tar.gz thorne:$PWD/${output_dir}-a-${_brg_inum}.tar.gz
+	fi
+
+	clean_genus_species "${output_dir}" on
+
+	return
+}
+
+remote-batch_genus_species() {
+	local output_dir="${1:-all}"
+	local _brg_inum="${2:-0}"
+	local _brg_per_host="${3:-off}"
+
+	if [[ "${_local_host}" == "$(hostname)" ]]; then
+		echo host: $(hostname)
+		echo "Run at the remote."
+		return
+	fi
+
+	if [[ "${output_dir}" == "all" ]]; then
+		for _v1 in "${Sall[@]}"; do
+			if [[ "${_brg_per_host}" == "on" ]]; then
+				local _target_index="${_v1}-0"
+				local _host_remote="${_host["$_target_index"]}"
+				if [[ "${_host_remote}" == "$(hostname)" ]]; then
+					remote-batch_genus_species_for "${_v1}" "${_brg_inum}"
+				fi
+			else
+				remote-batch_genus_species_for "${_v1}" "${_brg_inum}"
+			fi
+		done
+	else
+		remote-batch_genus_species_for "${output_dir}" "${_brg_inum}"
+	fi
+}
+
+local-batch_genus_species_for() {
+	local output_dir="$1"
+	local _brg_inum="${2:-0}"
+
+	# Gets the datasets
+	local target_index="${output_dir}-0"
+
+	local species_name="$(echo ${output_dir} | sed 's/_/ /')"
+	local long_sra="${_long["$target_index"]}"
+	local short_sra="${_short["$target_index"]}"
+	local random_seed="${_random_seed["$target_index"]}"
+	local ssh_remote="${_ssh["$target_index"]}"
+	local extracted_inum="${_inum["$target_index"]}"
+	local output_dir_i="${output_dir}/${extracted_inum}"
+
+	# Copy the processed dataset if not local
+	mkdir -p backup
+	timestamp=$(date +"%Y%m%d%H%M%S") # Get the current date and time
+	archive_genus_species ${output_dir}
+	cp -p ${output_dir}-a.tar.gz backup/${output_dir}-a-${timestamp}.tar.gz
+
+	local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
+	local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
+
+	if [[ ! -s "${long_sra}.fastq" ]]; then
+		if [[ -s "${long_data}" ]]; then
+			cp "${long_data}" .
+		elif [[ -s "${_media1_dir}/${long_sra}.fastq" ]]; then
+			cp "${_media1_dir}/${long_sra}.fastq" .
+		else
+			echo "fetching ${long_sra} from NCBI ... it takes time ... be patient!"
+			${_polap_cmd} x-ncbi-fetch-sra --sra ${long_sra}
+		fi
+	fi
+
+	if [[ ! -s "${short_sra}.fastq" ]]; then
+		if [[ -s "${short_data}" ]]; then
+			cp "${short_data}" .
+		elif [[ -s "${_media1_dir}/${short_sra}_1.fastq" ]]; then
+			cp "${_media1_dir}/${short_sra}_1.fastq" .
+			cp "${_media1_dir}/${short_sra}_2.fastq" .
+		else
+			echo "fetching ${short_sra} from NCBI ... it takes time ... be patient!"
+			${_polap_cmd} x-ncbi-fetch-sra --sra ${short_sra}
+		fi
+	fi
+
+	if [[ -d "${long_sra}" ]]; then
+		rm -rf "${long_sra}"
+	fi
+	if [[ -d "${short_sra}" ]]; then
+		rm -rf "${short_sra}"
+	fi
+
+	batch_genus_species ${output_dir} 2 on on
+	batch_genus_species ${output_dir} 0 on on
+
+	return
+}
+
+local-batch_genus_species() {
+	local output_dir="${1:-all}"
+	local _brg_inum="${2:-0}"
+
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		echo host: $(hostname)
+		echo "Run at the local."
+		return
+	fi
+
+	if [[ "${output_dir}" == "all" ]]; then
+		for _v1 in "${Sall[@]}"; do
+			local-batch_genus_species_for "${_v1}" "${_brg_inum}"
+		done
+	else
+		local-batch_genus_species_for "${output_dir}" "${_brg_inum}"
+	fi
 }
 
 send-data_genus_species() {
@@ -657,7 +849,7 @@ mkdir_genus_species() {
 	else
 		if tar -zxf "$(basename ${long_data})"; then
 			rm "$(basename ${long_data})"
-			echo "Extraction successful: ${long_sra}. Archive deleted."
+			echo "Extraction: ${long_sra} deleted."
 		fi
 	fi
 	if [[ -s "${short_sra}_1.fastq" ]] && [[ -s "${short_sra}_2.fastq" ]]; then
@@ -666,7 +858,7 @@ mkdir_genus_species() {
 	else
 		if tar -zxf "$(basename ${short_data})"; then
 			rm "$(basename ${short_data})"
-			echo "Extraction successful: ${short_sra} Archive deleted."
+			echo "Extraction: ${short_sra} deleted."
 		fi
 	fi
 
@@ -752,8 +944,8 @@ copy-ptdna-of-ncbi-as-reference_genus_species() {
 
 clean_genus_species() {
 	local output_dir="$1"
-	local isuffix="${2:-0}"
-	local target_index="${output_dir}-${isuffix}"
+	local _brg_yes="${2:-off}"
+	local target_index="${output_dir}-0"
 
 	local species_name="$(echo ${output_dir} | sed 's/_/ /')"
 	local long_sra="${_long["$target_index"]}"
@@ -766,28 +958,40 @@ clean_genus_species() {
 	local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
 	local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
 
+	if [[ "${_brg_yes}" == "off" ]]; then
+		read -p "Do you want to delete it? (y/N): " confirm
+		case "$confirm" in
+		[yY] | [yY][eE][sS])
+			_brg_yes="on"
+			;;
+		*)
+			echo "Batch procedure is canceled."
+			;;
+		esac
+	fi
+
+	if [[ "${_brg_yes}" == "off" ]]; then
+		return 0
+	fi
+
 	# Check if the directory exists
 	if [[ -d "$output_dir" ]]; then
 		echo "Directory '$output_dir' exists."
 
-		# Ask for user confirmation before deleting
-		read -p "Do you want to delete it? (y/N): " confirm
-		case "$confirm" in
-		[yY] | [yY][eE][sS])
+		echo "cleaning ${output_dir} ..."
+		rm -rf "${output_dir}"
+		rm -rf "${output_dir}-a"
+		rm -f "${output_dir}"-a*.tar.gz
+		rm -f "${long_sra}.fastq"
+		rm -f "${short_sra}"_?.fastq
+		rm -f "${long_sra}.fastq.tar.gz"
+		rm -f "${short_sra}.fastq.tar.gz"
 
-			echo "cleaning ${output_dir} ..."
-			rm -rf "${output_dir}"
-			rm -rf "${output_dir}-a"
-			rm -f "${output_dir}-a.tar.gz"
-			rm -f "${long_sra}.fastq"
-			rm -f "${short_sra}"_?.fastq
-			;;
-		*)
-			echo "Deletion canceled."
-			;;
-		esac
 	else
 		echo "Directory '$output_dir' does not exist."
+		echo "  but, deleting its fastq.tar.gz files ... if any"
+		rm -f "${long_sra}.fastq.tar.gz"
+		rm -f "${short_sra}.fastq.tar.gz"
 	fi
 
 }
@@ -1356,6 +1560,10 @@ check_genus_species() {
 			if [[ "${simple_polishing}" == "simple" ]]; then
 				simple_polishing="--disassemble-simple-polishing"
 				_s_i="simple-polish"
+			elif [[ "${simple_polishing}" == "polish" ]]; then
+				simple_polishing=""
+				_stages="--stages-include 3"
+				_s_i="subsample-polish-only"
 			else
 				simple_polishing=""
 			fi
@@ -1962,7 +2170,7 @@ wga_genus_species() {
 		2>${output_dir}/timing-flye1.txt
 }
 
-archive_genus_species() {
+archive_genus_species_for() {
 	local output_dir="$1"
 	# copy_data
 
@@ -1974,32 +2182,38 @@ archive_genus_species() {
 	# tar zcf "${output_dir}-a.tar.gz" "${output_dir}-a"
 }
 
-get_genus_species() {
-	local output_dir="${1:-default}"
-	local isuffix="${2:-0}"
-	local target_index="${output_dir}-${isuffix}"
+archive_genus_species() {
+	local output_dir="${1:-all}"
 
-	local species_name="$(echo ${output_dir} | sed 's/_/ /')"
-	local long_sra="${_long["$target_index"]}"
-	local short_sra="${_short["$target_index"]}"
-	local random_seed="${_random_seed["$target_index"]}"
-	local ssh_remote="${_ssh["$target_index"]}"
-	local extracted_inum="${_inum["$target_index"]}"
-	local output_dir_i="${output_dir}/${extracted_inum}"
-
-	if [[ "${output_dir}" == "default" ]]; then
-		for _v1 in "${S[@]}"; do
-			get_genus_species_for "${_v1}" "${isuffix}"
+	if [[ "${output_dir}" == "all" ]]; then
+		for _v1 in "${Sall[@]}"; do
+			archive_genus_species_for "${_v1}"
 		done
 	else
-		get_genus_species_for "${output_dir}" "${isuffix}"
+		archive_genus_species_for "${output_dir}"
+	fi
+}
+
+get_genus_species() {
+	local output_dir="${1:-all}"
+	local _brg_inum="${2:--1}"
+	local _brg_download="${3:-on}"
+	local target_index="${output_dir}-0"
+
+	if [[ "${output_dir}" == "all" ]]; then
+		for _v1 in "${Sall[@]}"; do
+			get_genus_species_for "${_v1}" "${_brg_inum}" "${_brg_download}"
+		done
+	else
+		get_genus_species_for "${output_dir}" "${_brg_inum}" "${_brg_download}"
 	fi
 }
 
 get_genus_species_for() {
 	local output_dir="${1:-default}"
-	local isuffix="${2:-0}"
-	local target_index="${output_dir}-${isuffix}"
+	local _brg_inum="${2:--1}"
+	local _brg_download="${3:-on}"
+	local target_index="${output_dir}-0"
 
 	local species_name="$(echo ${output_dir} | sed 's/_/ /')"
 	local long_sra="${_long["$target_index"]}"
@@ -2009,42 +2223,75 @@ get_genus_species_for() {
 	local extracted_inum="${_inum["$target_index"]}"
 	local output_dir_i="${output_dir}/${extracted_inum}"
 
-	if [[ "${_local_host}" == "$(hostname)" ]]; then
+	# if [[ "${_local_host}" == "$(hostname)" ]]; then
 
-		# Define the directory name (can be passed as an argument)
-		dir_to_check="${output_dir}"
+	# Define the directory name (can be passed as an argument)
+	dir_to_check="${output_dir}"
 
-		# Check if the directory exists
-		if [[ -d "$dir_to_check" ]]; then
-			echo "Directory '$dir_to_check' exists."
-			# Ask for user confirmation before deleting
-			read -p "Do you want to delete it? (y/N): " confirm
-		else
-			echo "Directory '$dir_to_check' does not exist."
-			confirm="yes"
+	# Check if the directory exists
+	if [[ -d "$dir_to_check" ]]; then
+		echo "Directory '$dir_to_check' exists."
+		# Ask for user confirmation before deleting
+		read -p "Do you want to delete or add ${_brg_inum} to it? (a/N/y): " confirm
+	else
+		echo "Directory '$dir_to_check' does not exist."
+		confirm="yes"
+	fi
+
+	case "$confirm" in
+	[yY] | [yY][eE][sS])
+
+		local _atargz="${output_dir}-a.tar.gz"
+		if [[ "${_brg_inum}" != "-1" ]]; then
+			_atargz="${output_dir}-a-${_brg_inum}.tar.gz"
 		fi
 
-		case "$confirm" in
-		[yY] | [yY][eE][sS])
+		if [[ "${_brg_download}" == "on" ]]; then
+			rm -f "${_atargz}"
+			scp -p "${ssh_remote}:$PWD/${_atargz}" .
+		fi
 
-			rm -f "${output_dir}-a.tar.gz"
-			scp -p ${ssh_remote}:$PWD/${output_dir}-a.tar.gz .
-
-			tar zxf ${output_dir}-a.tar.gz
+		if [[ -s "${_atargz}" ]]; then
+			tar zxf "${_atargz}"
 			mv "$dir_to_check/0-bioproject" "${output_dir}-a/"
 			mv "$dir_to_check/bioproject.txt" "${output_dir}-a/"
 			rm -rf "$dir_to_check"
 			echo "Directory '$dir_to_check' deleted."
 			mv ${output_dir}-a ${output_dir}
-			echo "${output_dir} is downloaded."
-			;;
-		*)
-			echo "Deletion canceled."
-			;;
-		esac
-	else
-		echo "ERROR: run at the local host."
-	fi
+			echo "${output_dir} is replaced by ${output_dir}-a."
+		else
+			echo "ERROR: no such file: ${_atargz}"
+		fi
+		;;
+	[aA] | [aA][dD][dD])
+		if [[ "${_brg_inum}" == "-1" ]]; then
+			echo "inum must be zeor or positive."
+		else
+			local _atargz="${output_dir}-a-${_brg_inum}.tar.gz"
+			if [[ "${_brg_download}" == "on" ]]; then
+				rm -f "${_atargz}"
+				scp -p "${ssh_remote}:$PWD/${_atargz}" .
+			fi
+
+			if [[ -s "${_atargz}" ]]; then
+				tar zxf "${_atargz}"
+				rm -rf "${output_dir}/${_brg_inum}"
+				mv ${output_dir}-a/${_brg_inum} ${output_dir}
+				echo "${output_dir}/${_brg_inum} is replaced by ${output_dir}-a/${_brg_inum}"
+				rm -rf "${output_dir}-a"
+			else
+				echo "ERROR: no such file: ${_atargz}"
+			fi
+		fi
+
+		;;
+	*)
+		echo "Deletion canceled."
+		;;
+	esac
+	# else
+	# 	echo "ERROR: run at the local host."
+	# fi
 }
 
 # TODO
@@ -4380,6 +4627,7 @@ case "$subcmd1" in
 	;;
 'send-data' | \
 	'send' | \
+	'local-batch' | \
 	'send-archive' | \
 	'recover' | \
 	'mkdir' | \
@@ -4393,12 +4641,10 @@ case "$subcmd1" in
 	'extract-ptdna-of-ptgaul2' | \
 	'copy-ptdna-of-ptgaul' | \
 	'archive' | \
-	'get' | \
 	'report' | \
 	'polishing' | \
 	'wga' | \
 	'polish' | \
-	'clean' | \
 	'restart' | \
 	'clean-infer' | \
 	'write-config' | \
@@ -4407,8 +4653,7 @@ case "$subcmd1" in
 	'single-argument')
 	${subcmd1}_genus_species "${_arg2}"
 	;;
-'batch' | \
-	'supfigure2' | \
+'supfigure2' | \
 	'compare' | \
 	'use-downsample' | \
 	'best' | \
@@ -4430,6 +4675,54 @@ case "$subcmd1" in
 	# ${subcmd1}_genus_species "${_arg2}" --disassemble-simple-polishing
 	;;
 'downsample')
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
+	;;
+'clean')
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <outdir> [yes for confirm]"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana on"
+		exit 0
+	fi
+	[[ "${_arg3}" == arg3 ]] && _arg3=""
+	[[ "${_arg4}" == arg4 ]] && _arg4=""
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
+	;;
+'batch')
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <outdir> <inum> [yes for confirm] [redo subsampling analysis]"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 off off"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 on off"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 on on"
+		exit 0
+	fi
+	[[ "${_arg3}" == arg3 ]] && _arg3=""
+	[[ "${_arg4}" == arg4 ]] && _arg4=""
+	[[ "${_arg5}" == arg5 ]] && _arg5=""
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
+	;;
+'remote-batch')
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <outdir> <inum> <per host>"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 0 off"
+		echo "  polap-data-v2.sh ${subcmd1} all 0"
+		echo "  polap-data-v2.sh ${subcmd1} all 2 on"
+		exit 0
+	fi
+	[[ "${_arg3}" == arg3 ]] && _arg3=""
+	[[ "${_arg4}" == arg4 ]] && _arg4=""
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
+	;;
+'get')
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <outdir> <inum> <download>"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana -1 off"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 0 off"
+		echo "  polap-data-v2.sh ${subcmd1} all 2 off"
+		exit 0
+	fi
+	[[ "${_arg3}" == arg3 ]] && _arg3=""
+	[[ "${_arg4}" == arg4 ]] && _arg4=""
 	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
 	;;
 'maintable1')
@@ -4470,7 +4763,7 @@ case "$subcmd1" in
 	;;
 'suppfigure1')
 	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir> <inum> <disassemble index> <stage> <1 or 2> <yes|no> <targe dir>"
+		echo "Help: ${subcmd1} <outdir> <inum> <disassemble index> <stage> <1 or 2> <create bandage figure yes|no> <targe dir>"
 		echo "  polap-data-v2.sh suppfigure1 all 2 infer-1 1 1 no"
 		echo "  polap-data-v2.sh suppfigure1 all 2 infer-1 2 1 no"
 		echo "  polap-data-v2.sh suppfigure1 all 2 infer-1 3-infer 1 no"
@@ -4489,7 +4782,7 @@ case "$subcmd1" in
 	;;
 'suppfigure3')
 	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <inum> <disassemble index> <yes|no> <targe dir>"
+		echo "Help: ${subcmd1} <inum> <disassemble index> <create bandage figure yes|no> <targe dir>"
 		echo "  polap-data-v2.sh suppfigure3 2 infer-1 no"
 		echo "  polap-data-v2.sh suppfigure3 2 infer-1 yes"
 		exit 0
@@ -4579,10 +4872,18 @@ case "$subcmd1" in
 	done
 	;;
 "rm")
-	for i in "${S[@]}"; do
-		echo "deleting folder $i ..."
-		rm -rf ${i}
-	done
+	read -p "Do you want to delete all? (y/N): " confirm
+	case "$confirm" in
+	[yY] | [yY][eE][sS])
+		for i in "${Sall[@]}"; do
+			echo "deleting folder $i ..."
+			rm -rf ${i}
+		done
+		;;
+	*)
+		echo "Deleting all is canceled."
+		;;
+	esac
 	;;
 "scopy-fastq")
 	for i in "${S[@]}"; do

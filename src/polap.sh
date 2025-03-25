@@ -35,7 +35,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 	echo "Couldn't determine the script's running directory, which probably matters, bailing out" >&2
 	exit 2
 }
-LIB_DIR="${script_dir}/lib"
+POLAPLIB_DIR="${script_dir}/polaplib"
 source "$script_dir/polap-git-hash-version.sh"
 _polap_version=v0.4.3.7-"${_polap_git_hash_version}"
 . "$script_dir/polap-parsing.sh" # '.' means 'source'
@@ -49,20 +49,24 @@ _polap_version=v0.4.3.7-"${_polap_git_hash_version}"
 # include bash shell files
 ################################################################################
 
+# for var in $(compgen -v _arg_); do
+# 	echo "$var=${!var}"
+# done
+
 source "$script_dir/polap-constants.sh"
 source "$script_dir/polap-function-debug.sh"
 source "$script_dir/polap-function-steps.sh"
 source "$script_dir/run-polap-function-errors.sh"
 source "$script_dir/run-polap-function-utilities.sh"
 source "$script_dir/run-polap-function-log.sh"
-source "${LIB_DIR}/polap-lib-file.sh"
-source "${LIB_DIR}/polap-lib-fastq.sh"
-source "${LIB_DIR}/polap-lib-array.sh"
-source "${LIB_DIR}/polap-lib-table.sh"
-source "${LIB_DIR}/polap-lib-timing.sh"
-source "${LIB_DIR}/polap-lib-number.sh"
-source "${LIB_DIR}/polap-lib-ncbi.sh"
-source "${LIB_DIR}/polap-lib-random.sh"
+source "${POLAPLIB_DIR}/polap-lib-file.sh"
+source "${POLAPLIB_DIR}/polap-lib-fastq.sh"
+source "${POLAPLIB_DIR}/polap-lib-array.sh"
+source "${POLAPLIB_DIR}/polap-lib-table.sh"
+source "${POLAPLIB_DIR}/polap-lib-timing.sh"
+source "${POLAPLIB_DIR}/polap-lib-number.sh"
+source "${POLAPLIB_DIR}/polap-lib-ncbi.sh"
+source "${POLAPLIB_DIR}/polap-lib-random.sh"
 source "$script_dir/run-polap-function-menus.sh"
 source "$script_dir/polap-function-set-variables.sh"
 source "$script_dir/run-polap-function-fastq.sh"
@@ -139,6 +143,10 @@ exec 3>&1 1>> >(logit)
 CMD="$0 $*"
 echo "POLAP: ${_polap_version}"
 echo "CMD: $CMD"
+
+for var in $(compgen -v _arg_); do
+	echo "$var=${!var}"
+done
 
 # subcommand function call
 if declare -f "_run_polap_${_arg_menu[0]}" >/dev/null 2>&1; then

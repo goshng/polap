@@ -1,6 +1,6 @@
 {% set name = "polap" %}
-{% set version = "0.4.3.7.2" %}
-{% set sha256 = "ad2e1813bc00f1e3874b34978088df9188bfbdef25e29ff775846dc5190505a1" %}
+{% set version = "0.4.3.7.3" %}
+{% set sha256 = "a54b6caab6d27eeb8fafe7dc017b10c0ca83381d99373f1bd00bdb667e4a2b02" %}
 
 package:
   name: "{{ name }}"
@@ -37,6 +37,7 @@ requirements:
     - pandas
     - gfatools
     - mafft
+    - getorganelle
     - r-optparse
     - r-dplyr
     - r-readr

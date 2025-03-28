@@ -1,3 +1,11 @@
+# 2025-03-28
+
+run-polap-py-find-plastid-gfa2fasta.py and its relatives -filtering-edges.py
+It uses too much memory for finding too many circular paths: about 20 GB.
+I wonder if this could be the 20 GB memory for our procedure.
+I added hard-code like this in python and bash as well to avoid too much memory.
+_fixed_upper_bound_number_segments = 30
+
 # 2025-03-15
 
 put most of scripts to lib folder.

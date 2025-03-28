@@ -75,9 +75,9 @@ Ophrys_lutea-2,Ophrys_lutea,Ophrys_lutea,ERR5167480,ERR5303530,siepel,160000,10,
 Oryza_rufipogon-0,Oryza_rufipogon,Oryza_rufipogon,SRR12104676,SRR12102351,siepel,160000,20,10,10,5,5,107,siepel,16,10,0,T,F,F,dummy,done
 Oryza_rufipogon-1,Oryza_rufipogon,Oryza_rufipogon,SRR12104676,SRR12102351,user1-X99-PR8-H,160000,20,10,10,5,5,107,lab01,16,30,1,F,F,F,dummy,done
 Oryza_rufipogon-2,Oryza_rufipogon,Oryza_rufipogon,SRR12104676,SRR12102351,siepel,160000,10,5,5,5,5,355,siepel,16,10,2,T,F,F,dummy,done
-Phaeomegaceros_chiloensis-0,Phaeomegaceros_chiloensis,Phaeomegaceros_chiloensis,SRR25430413,SRR25430414,kishino,160000,20,10,10,5,5,105,kishino,16,10,0,T,F,F,dummy,unknown-pt
+Phaeomegaceros_chiloensis-0,Phaeomegaceros_chiloensis,Phaeomegaceros_chiloensis,SRR25430413,SRR25430414,kishino,160000,20,10,10,5,5,105,kishino,16,10,0,T,T,F,dummy,unknown-pt
 Phaeomegaceros_chiloensis-1,Phaeomegaceros_chiloensis,Phaeomegaceros_chiloensis,SRR25430413,SRR25430414,kishino,160000,20,10,10,5,5,105,kishino,16,30,1,F,F,F,dummy,not-yet-unknown-pt
-Phaeomegaceros_chiloensis-2,Phaeomegaceros_chiloensis,Phaeomegaceros_chiloensis,SRR25430413,SRR25430414,kishino,160000,10,5,5,5,5,365,kishino,16,10,2,T,F,F,dummy,not-yet-unknown-pt
+Phaeomegaceros_chiloensis-2,Phaeomegaceros_chiloensis,Phaeomegaceros_chiloensis,SRR25430413,SRR25430414,kishino,160000,10,5,5,5,5,365,kishino,16,10,2,T,T,F,dummy,not-yet-unknown-pt
 Phaeomegaceros_chiloensis-3,Phaeomegaceros_chiloensis,Phaeomegaceros_chiloensis,SRR25430413,SRR25430414,kishino,160000,10,5,5,5,5,361,kishino,16,30,3,F,T,F,dummy,not-yet-unknown-pt
 Pisum_sativum-0,Pisum_sativum,Pisum_sativum,DRR244482,DRR244484,vincent,160000,20,10,10,5,5,153,vincent,32,10,0,F,F,F,dummy,done
 Pisum_sativum-1,Pisum_sativum,Pisum_sativum,DRR244482,DRR244484,vincent,160000,20,1,10,5,5,153,vincent,16,30,1,F,F,F,dummy,inprogress
@@ -91,9 +91,9 @@ Prunus_mandshurica-2,Prunus_mandshurica,Prunus_mandshurica,ERR4656977,ERR4656978
 Pterocarpus_santalinus-0,Pterocarpus_santalinus,Pterocarpus_santalinus,SRR22806276,SRR22806277,vincent,160000,20,10,10,5,5,119,vincent,16,10,0,F,F,F,dummy,done
 Pterocarpus_santalinus-1,Pterocarpus_santalinus,Pterocarpus_santalinus,SRR22806276,SRR22806277,vincent,160000,20,10,10,5,5,119,vincent,16,30,1,F,F,F,dummy,done
 Pterocarpus_santalinus-2,Pterocarpus_santalinus,Pterocarpus_santalinus,SRR22806276,SRR22806277,vincent,160000,10,5,5,5,5,365,vincent,16,10,2,F,F,F,dummy,done
-Solanum_lycopersicum-0,Solanum_lycopersicum,Solanum_lycopersicum,SRR11073833,SRR11205474,marybeth,160000,20,10,10,5,5,141,marybeth,16,10,0,T,F,F,dummy,done
-Solanum_lycopersicum-1,Solanum_lycopersicum,Solanum_lycopersicum,SRR11073833,SRR11205474,marybeth,160000,20,10,10,5,5,141,marybeth,16,30,1,F,F,F,dummy,done
-Solanum_lycopersicum-2,Solanum_lycopersicum,Solanum_lycopersicum,SRR11073833,SRR11205474,marybeth,160000,10,5,5,5,5,367,marybeth,16,10,2,T,F,F,dummy,done
+Solanum_lycopersicum-0,Solanum_lycopersicum,Solanum_lycopersicum,SRR11073833,SRR11205474,marybeth,160000,20,10,10,5,5,141,marybeth,32,10,0,T,F,F,dummy,done
+Solanum_lycopersicum-1,Solanum_lycopersicum,Solanum_lycopersicum,SRR11073833,SRR11205474,marybeth,160000,20,10,10,5,5,141,marybeth,32,30,1,F,F,F,dummy,done
+Solanum_lycopersicum-2,Solanum_lycopersicum,Solanum_lycopersicum,SRR11073833,SRR11205474,marybeth,160000,10,5,5,5,5,367,marybeth,32,10,2,T,F,F,dummy,done
 Spirodela_polyrhiza-0,Spirodela_polyrhiza,Spirodela_polyrhiza,SRR11472010,SRR11472009,kishino,160000,20,10,10,5,5,143,kishino,16,10,0,T,F,F,dummy,done
 Spirodela_polyrhiza-1,Spirodela_polyrhiza,Spirodela_polyrhiza,SRR11472010,SRR11472009,kishino,160000,20,10,10,5,5,143,kishino,16,30,1,F,F,F,dummy,done-check-pident
 Spirodela_polyrhiza-2,Spirodela_polyrhiza,Spirodela_polyrhiza,SRR11472010,SRR11472009,kishino,160000,10,5,5,5,5,369,kishino,16,10,2,T,F,F,dummy,done

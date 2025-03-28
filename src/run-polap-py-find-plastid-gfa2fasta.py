@@ -159,17 +159,22 @@ def main():
     )
     print(f"Number of circular paths after filtering: {len(filtered_circular_paths)}")
 
+    # Save the count of filtered circular paths to circular_path_count.txt
+    circular_path_count_file = os.path.join(args.out, "circular_path_count.txt")
+    with open(circular_path_count_file, "w") as count_file:
+        count_file.write(f"{len(filtered_circular_paths)}\n")
+
+    # Exit main if the circular_path_count is too many: i.e., 30
+    _fixed_upper_bound_number_segments = 30
+    if len(filtered_circular_paths) >= _fixed_upper_bound_number_segments:
+        return 1
+
     # Save filtered circular paths to circular_path.txt
     circular_path_file = os.path.join(args.out, "circular_path.txt")
     with open(circular_path_file, "w") as path_file:
         for path in filtered_circular_paths:
             path_str = ", ".join(path)
             path_file.write(f"{path_str}\n")
-
-    # Save the count of filtered circular paths to circular_path_count.txt
-    circular_path_count_file = os.path.join(args.out, "circular_path_count.txt")
-    with open(circular_path_count_file, "w") as count_file:
-        count_file.write(f"{len(filtered_circular_paths)}\n")
 
     # Call the extraction function
     extract_circular_paths_to_fasta(args.gfa, filtered_circular_paths, args.out)

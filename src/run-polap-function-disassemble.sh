@@ -396,6 +396,30 @@ function _disassemble_report3 {
 	return 0
 }
 
+# rewrite the stage 3 results
+function _disassemble_report3x {
+	local _brg_stage="${1:-3}"
+	s="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1.txt"
+	d="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1x.md"
+	if [[ -s "${s}" ]]; then
+		csvtk -t cut -f index,short_rate_sample,sampling_datasize,short_sample_seed,time_prepare,memory_prepare,time_polishing,memory_polishing,pident,length \
+			"${s}" |
+			csvtk -t round -n 4 -f short_rate_sample |
+			csvtk rename -t -f index,short_rate_sample,sampling_datasize,short_sample_seed,time_prepare,memory_prepare,time_polishing,memory_polishing,pident,length \
+				-n I,Rate,Size,Seed,Tp,Mp,Ts,Ms,Pident,Length |
+			csvtk -t csv2md -a right - \
+				>"${d}"
+		_polap_log0_head "${d}"
+		d1="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1x-ordered.txt"
+		d2="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1x-ordered.pdf"
+		_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
+		      --table ${s} \
+		      --out ${d1} \
+		      --plot ${d2} 2>/dev/null"
+	fi
+	return 0
+}
+
 _disassemble_find_folder_with_max_coverage() {
 	local _var_mtdna="${1}"
 	local max_value=-1
@@ -817,27 +841,48 @@ function _disassemble-step12 {
 	fi
 }
 
+# _summary_num_circular_paths
+# -1 if no gfa
+# -2 if too many segments
+# some numbers if properly
 function _disassemble-step13 {
 	local _outdir="${1}"
 	local _summary_num_circular_paths=-1
 	local _summary_num_circular_nodes=-1
+	local _fixed_upper_bound_number_segments=30 # the fixed number
 
 	local _contigger_edges_gfa="${_outdir}/30-contigger/graph_final.gfa"
 	local _contigger_edges_fasta="${_outdir}/30-contigger/graph_final.fasta"
 	local _mtcontigname="${_outdir}/mt.contig.name"
 	local _var_mtdna="${_outdir}/52-mtdna"
 
-	if [[ -s "${_contigger_edges_gfa}" ]] &&
+	local _summary_gfa_number_segments=${_fixed_upper_bound_number_segments}
+	if [[ -s "${_contigger_edges_gfa}" ]]; then
+		gfatools stat -l "${_contigger_edges_gfa}" \
+			>"${_outdir}/30-contigger/graph_final.txt" \
+			2>"$_polap_output_dest"
+		_summary_gfa_number_segments=$(grep "Number of segments:" "${_outdir}/30-contigger/graph_final.txt" | awk '{print $4}')
+		if ((_summary_gfa_number_segments > _fixed_upper_bound_number_segments)); then
+			_summary_num_circular_paths=-2
+			_summary_num_circular_nodes=-2
+		fi
+	fi
+
+	if ((_summary_gfa_number_segments <= _fixed_upper_bound_number_segments)) &&
+		[[ -s "${_contigger_edges_gfa}" ]] &&
 		[[ -s "${_contigger_edges_fasta}" ]] &&
 		[[ -s "${_mtcontigname}" ]]; then
 		_polap_log3_cmd rm -rf "${_var_mtdna}"
 		_polap_log3_cmd mkdir -p "${_var_mtdna}"
-		_polap_log3_pipe "python \
+
+		#
+
+		_polap_log3_pipe "command time -v python \
           $script_dir/run-polap-py-find-plastid-gfa2fasta.py \
 		        --gfa ${_contigger_edges_gfa} \
 		        --seed ${_mtcontigname} \
 		        --out ${_var_mtdna} \
-		        2>${_polap_output_dest}"
+		        2>${_outdir}/timing-find-plastid.txt"
 		if [[ -s "${_var_mtdna}/circular_path_count.txt" ]]; then
 			_summary_num_circular_paths=$(<"${_var_mtdna}/circular_path_count.txt")
 			_summary_num_circular_nodes=$(<"${_var_mtdna}/circular_path_nodes.txt")
@@ -2234,6 +2279,10 @@ HEREDOC
 
 		if [[ "${_arg_menu[2]}" == "3" ]]; then
 			_disassemble_report3
+		fi
+
+		if [[ "${_arg_menu[2]}" == "3x" ]]; then
+			_disassemble_report3x "${_arg_menu[3]}"
 		fi
 
 		# report 3 --disassemble-i 3

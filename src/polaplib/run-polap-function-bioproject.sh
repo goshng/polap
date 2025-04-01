@@ -499,7 +499,7 @@ HEREDOC
 			_polap_log2_file "${LR}.gz is being extracted ..."
 			gunzip "${LR}.gz"
 		else
-			"${_POLAPLIB_DIR}"/run-polap-ncbitools fetch sra "$SRA"
+			"${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$SRA"
 			mv "$SRA.fastq" "${_arg_outdir}/"
 		fi
 		_long_read_data="${LR}"
@@ -542,7 +542,7 @@ HEREDOC
 
 		if [ ! -s "${SR1}" ] || [ ! -s "${SR2}" ]; then
 			_polap_log1 "  downloading the paired-end short-read data: $SRA"
-			"${_POLAPLIB_DIR}"/run-polap-ncbitools fetch sra "$SRA"
+			"${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$SRA"
 			mv "${SRA}_1.fastq" "${_arg_outdir}/"
 			mv "${SRA}_2.fastq" "${_arg_outdir}/"
 		fi

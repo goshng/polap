@@ -159,7 +159,7 @@ HEREDOC
 
 	SRA=$_arg_sra
 	_polap_log0 fetching "$SRA".fastq from NCBI SRA database ... please wait ...
-	"${_POLAPLIB_DIR}"/run-polap-ncbitools fetch sra "$SRA"
+	"${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$SRA"
 
 	_polap_log1 You have a file called "$SRA".fastq and a folder named "$SRA"
 	_polap_log1 if your download try is successful. Then, you would want to delete

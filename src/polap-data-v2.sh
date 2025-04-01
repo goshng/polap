@@ -1272,8 +1272,8 @@ sra_genus_species() {
 
 	echo "create ${_brg_outdir} ..."
 	mkdir -p "${_brg_outdir}/timing"
-	run-polap-ncbitools fetch sra "$long_sra"
-	run-polap-ncbitools fetch sra "$short_sra"
+	"${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$long_sra"
+	"${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$short_sra"
 
 	echo "Next: $0 refs ${_brg_outdir} [number] to download reference ptDNAs from NCBI"
 	echo "Next: $0 coverage ${_brg_outdir} [number] to overview your data"

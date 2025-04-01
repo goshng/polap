@@ -7,7 +7,7 @@ files=(polap
 	polap-conda-environment.yaml
 	polap-mt.1.c70.3.faa
 	polap-pt.2.c70.3.faa
-	run-polap-ncbitools
+	polap-ncbitools
 	polap-batch-v2.sh
 	polap-build-msbwt.sh
 	polap-command-completion.sh

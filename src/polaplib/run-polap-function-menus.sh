@@ -722,7 +722,7 @@ HEREDOC
 					if confirm "Do you want to download SRA: ${SRA_L}"; then
 						_polap_log0 "downloading the long-read ..."
 						directory_name=$(dirname "$0")
-						${directory_name}/run-polap-ncbitools fetch sra ${SRA_L}
+						${_polap_script_bin_dir}/polap-ncbitools fetch sra ${SRA_L}
 						_polap_log3_cmd mv ${SRA_L}.fastq ${_arg_outdir}/
 						_polap_log0 "moving ${SRA_L}.fastq to ${_arg_outdir}"
 					else
@@ -737,7 +737,7 @@ HEREDOC
 					if confirm "Do you want to download SRA: ${SRA_S}"; then
 						_polap_log0 "downloading the short-read ..."
 						directory_name=$(dirname "$0")
-						${directory_name}/run-polap-ncbitools fetch sra ${SRA_S}
+						${_polap_script_bin_dir}/polap-ncbitools fetch sra ${SRA_S}
 						_polap_log3_cmd mv ${SRA_L}_?.fastq ${_arg_outdir}/
 						_polap_log0 "moving " ${SRA_S}_?.fastq "to ${_arg_outdir}"
 					else

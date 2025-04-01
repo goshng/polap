@@ -15,6 +15,12 @@
 ################################################################################
 
 ################################################################################
+# Tip!
+# How to extract commands that were expected:
+# src/polap.sh reduce-data --redo -v -v -v 2>&1 | grep -E "^rm|^seqkit|^ln"
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
@@ -28,17 +34,44 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-# 1. Using esearch and esummary to Query Genome Size
-# You can fetch genome size information from NCBI's Assembly database:
-_polap_lib_ncbi-query-genome-size() {
-	local _species="${1}"
+source "${_POLAPLIB_DIR}/run-polap-function-utilities.sh"
 
-	echo $(esearch -db assembly -query "${_species}[Organism]" |
-		esummary |
-		grep 'total_length' |
-		awk -F'[<>]' '{print $3}' |
-		awk '{sum+=$1; count+=1} END {if (count > 0) print sum/count}' |
-		awk '{print int($1)}')
+function print_version_history {
+	local _message=$(
+		cat <<HEREDOC
+POLAP - Plant organelle DNA long-read assembly pipeline.
+version ${_polap_version}
 
-	# xtract -pattern DocumentSummary -element species,assembly_name,total_length
+------
+v0.3.8
+------
+- Target: Revision 1
+
+------
+v0.3.7
+------
+- Add proper column names in annotation tables
+
+------
+v0.3.6
+------
+- Add a semi-automatic seed contig selection
+
+------
+v0.2.6
+------
+- Bioconda package is available.
+
+POLAP - Plant organelle DNA long-read assembly pipeline.
+version ${_polap_version}
+printing out packages employed by POLAP to the log: ${LOG_FILE} ...
+HEREDOC
+	)
+
+	_polap_log0 "${_message}"
+}
+
+function _run_polap_version { # display version of all
+	print_version_history
+	_log_command_versions
 }

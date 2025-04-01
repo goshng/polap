@@ -996,7 +996,7 @@ ptgaul_genus_species() {
 	local m
 	local f=3000
 	for m in 1000 3000 6000 9000 12000; do
-		command time -v bash src/ptGAUL1.sh \
+		command time -v bash src/polap-ptGAUL1.sh \
 			-o ${output_dir}-ptgaul \
 			-r ${output_dir}/ptgaul-${_type}.fa \
 			-g "${genome_size}" \

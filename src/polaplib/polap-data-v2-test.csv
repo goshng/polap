@@ -1,0 +1,16 @@
+species,_taxon,_folder,_long,_short,_host,_ptgaul_genomesize,_compare_n,_compare_p,_compare_r,_polish_n,_polish_p,_random_seed,_ssh,_memory,_downsample,_inum,_table1,_table2,_mainfigure,dummy,_status
+Anthoceros_agrestis-0,Anthoceros_agrestis,Anthoceros_agrestis,SRR10190639,SRR10250248,siepel,160000,20,10,10,5,5,157,siepel,16,10,0,T,F,F,dummy,done
+Anthoceros_agrestis-1,Anthoceros_agrestis,Anthoceros_agrestis,SRR10190639,SRR10250248,siepel,160000,20,10,10,5,5,157,siepel,16,0,1,F,F,F,dummy,done
+Anthoceros_agrestis-2,Anthoceros_agrestis,Anthoceros_agrestis,SRR10190639,SRR10250248,siepel,160000,10,5,5,5,5,301,siepel,16,10,2,T,F,F,dummy,done
+Arabidopsis_thaliana-0,Arabidopsis_thaliana,Arabidopsis_thaliana,ERR2173373,ERR2173372,kishino,160000,20,10,10,5,5,131,kishino,32,10,0,T,F,F,dummy,done
+Arabidopsis_thaliana-1,Arabidopsis_thaliana,Arabidopsis_thaliana,ERR2173373,ERR2173372,kishino,160000,20,10,10,5,5,131,kishino,16,300,1,F,F,F,dummy,done
+Arabidopsis_thaliana-2,Arabidopsis_thaliana,Arabidopsis_thaliana,ERR2173373,ERR2173372,kishino,160000,10,5,10,5,5,303,kishino,32,10,2,T,F,T,dummy,done
+Canavalia_ensiformis-0,Canavalia_ensiformis,Canavalia_ensiformis,SRR18714551,SRR18714547,marybeth,160000,20,10,10,5,5,127,marybeth,16,10,0,T,F,F,dummy,done
+Canavalia_ensiformis-1,Canavalia_ensiformis,Canavalia_ensiformis,SRR18714551,SRR18714547,marybeth,160000,20,10,10,5,5,127,marybeth,16,300,1,F,F,F,dummy,done
+Canavalia_ensiformis-2,Canavalia_ensiformis,Canavalia_ensiformis,SRR18714551,SRR18714547,marybeth,160000,10,5,5,5,5,305,marybeth,16,10,2,T,F,F,dummy,done
+Cinchona_pubescens-0,Cinchona_pubescens,Cinchona_pubescens,SRR20784020,SRR20784021,vincent,160000,20,10,10,5,5,151,vincent,32,10,0,T,F,F,dummy,done
+Cinchona_pubescens-1,Cinchona_pubescens,Cinchona_pubescens,SRR20784020,SRR20784021,vincent,160000,20,1,10,5,5,151,vincent,16,300,1,F,F,F,dummy,done
+Cinchona_pubescens-2,Cinchona_pubescens,Cinchona_pubescens,SRR20784020,SRR20784021,vincent,160000,10,5,5,5,5,307,vincent,32,10,2,T,F,F,dummy,done
+Codonopsis_lanceolata-0,Codonopsis_lanceolata,Codonopsis_lanceolata,SRR11585869,SRR11585868,marybeth,160000,20,10,10,5,5,117,marybeth,32,10,0,T,F,F,dummy,done
+Codonopsis_lanceolata-1,Codonopsis_lanceolata,Codonopsis_lanceolata,SRR11585869,SRR11585868,marybeth,160000,20,10,10,5,5,117,marybeth,16,30,1,F,F,F,dummy,done-down
+Codonopsis_lanceolata-2,Codonopsis_lanceolata,Codonopsis_lanceolata,SRR11585869,SRR11585868,marybeth,160000,10,5,5,5,5,309,marybeth,32,10,2,T,F,F,dummy,done

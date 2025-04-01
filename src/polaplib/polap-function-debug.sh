@@ -28,17 +28,8 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-# 1. Using esearch and esummary to Query Genome Size
-# You can fetch genome size information from NCBI's Assembly database:
-_polap_lib_ncbi-query-genome-size() {
-	local _species="${1}"
+_polap_var_function_verbose=4
 
-	echo $(esearch -db assembly -query "${_species}[Organism]" |
-		esummary |
-		grep 'total_length' |
-		awk -F'[<>]' '{print $3}' |
-		awk '{sum+=$1; count+=1} END {if (count > 0) print sum/count}' |
-		awk '{print int($1)}')
-
-	# xtract -pattern DocumentSummary -element species,assembly_name,total_length
-}
+# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+_polap_output_dest="/dev/null"
+[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"

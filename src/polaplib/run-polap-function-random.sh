@@ -28,17 +28,22 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
-# 1. Using esearch and esummary to Query Genome Size
-# You can fetch genome size information from NCBI's Assembly database:
-_polap_lib_ncbi-query-genome-size() {
-	local _species="${1}"
+function _run_polap_rng {
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
-	echo $(esearch -db assembly -query "${_species}[Organism]" |
-		esummary |
-		grep 'total_length' |
-		awk -F'[<>]' '{print $3}' |
-		awk '{sum+=$1; count+=1} END {if (count > 0) print sum/count}' |
-		awk '{print int($1)}')
+	# Grouped file path declarations
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
 
-	# xtract -pattern DocumentSummary -element species,assembly_name,total_length
+	_polap_lib_random-init ${_arg_random_seed}
+	for i in {1..10}; do
+		_polap_lib_random-get
+		_polap_log0 "Random number $i: $_polap_var_random_number"
+	done
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
 }

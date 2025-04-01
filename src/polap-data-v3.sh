@@ -269,7 +269,7 @@ ptgaul_genus_species() {
 	local long_sra="${_long["$1"]}"
 	local short_sra="${_short["$1"]}"
 
-	command time -v bash src/ptGAUL1.sh \
+	command time -v bash src/polap-ptGAUL1.sh \
 		-o ${output_dir}-ptgaul \
 		-r ${output_dir}/ptdna-reference.fa \
 		-g "${_ptgaul_genomesize["$1"]}" \

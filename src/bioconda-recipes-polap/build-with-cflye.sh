@@ -33,7 +33,7 @@ files=(polap
 	polap-variables-main.sh
 	polap-variables-mtcontigs.sh
 	polap-version.sh
-	ptGAUL1.sh
+	polap-ptGAUL1.sh
 	run-polap-function-annotate-contig.sh
 	run-polap-function-annotate.sh
 	run-polap-function-archive.sh

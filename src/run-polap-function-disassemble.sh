@@ -172,12 +172,12 @@ _polap_find-genome-size() {
 			fi
 
 			if [[ -s "${_short_read1}" ]]; then
-				_polap_log3_pipe "jellyfish count \
+				_polap_log3_pipe "command time -v jellyfish count \
 					-t ${_arg_threads} -C -m 19 \
-					-s 5G \
+					-s ${_arg_jellyfish_s} \
 					-o ${_outdir_jellyfish_out} \
 					--min-qual-char=? \
-					${_short_read1}"
+          ${_short_read1} 2>${_outdir}/timing-jellyfish.txt"
 			else
 				die "ASSERT: we must have at least one short-read fastq file."
 			fi
@@ -187,7 +187,7 @@ _polap_find-genome-size() {
 		check_file_existence "${_outdir_jellyfish_out}"
 		_polap_log3_pipe "jellyfish histo \
 			-o ${_outdir_jellyfish_out_histo} \
-			${_outdir_jellyfish_out}"
+      ${_outdir_jellyfish_out} 2>${_outdir}/timing-jellyfish-histo.txt"
 		_polap_log3_file "${_outdir_jellyfish_out_histo}"
 
 		_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-jellyfish.R \
@@ -301,7 +301,7 @@ function _disassemble_report1 {
 			>"${s2}"
 	# csvtk -t cut I,Rate,Alpha,'Pmem','G',Time,'N','L','C','C_ref','C_target',Length \
 
-	_polap_log0 "report1: case: ${_case_infer}"
+	# _polap_log0 "report1: case: ${_case_infer}"
 
 	if [[ "${_case_infer}" == "0" ]]; then
 		csvtk -t cut -f I,Rate,Alpha,'Pmem','G',Time,'N','L','C','C_ref','C_target',Length \
@@ -314,7 +314,7 @@ function _disassemble_report1 {
 			csvtk -t csv2md -a right - \
 				>"${d}"
 	fi
-	_polap_log0_head "${d}"
+	_polap_log1_head "${d}"
 	d1="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-ordered.txt"
 	d2="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-ordered.pdf"
 	_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
@@ -347,7 +347,7 @@ function _disassemble_report2 {
 			-n I,Rate,Alpha,'Pmem','G',Time,'N','L','C','C_ref','C_target',Length,'Identity' \
 			>"${s2}"
 
-	_polap_log0 "report2: case: ${_case_infer}"
+	# _polap_log0 "report2: case: ${_case_infer}"
 
 	if [[ "${_case_infer}" == "0" ]]; then
 
@@ -361,7 +361,7 @@ function _disassemble_report2 {
 			csvtk -t csv2md -a right - \
 				>"${d}"
 	fi
-	_polap_log0_head "${d}"
+	_polap_log1_head "${d}"
 	d1="${_disassemble_dir}/${_arg_disassemble_i}/2/summary1-ordered.txt"
 	d2="${_disassemble_dir}/${_arg_disassemble_i}/2/summary1-ordered.pdf"
 	_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
@@ -374,9 +374,9 @@ function _disassemble_report2 {
 	fi
 }
 
-function _disassemble_report3 {
+function _disassemble_report3y {
 	s="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1.txt"
-	d="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1.md"
+	d="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1y.md"
 	if [[ -s "${s}" ]]; then
 		csvtk -t cut -f index,sampling_datasize,short_rate_sample,time_prepare,memory_prepare,time_polishing,memory_polishing,length,pident \
 			"${s}" |
@@ -385,9 +385,9 @@ function _disassemble_report3 {
 				-n I,Size,Rate,'Tp','Mp','Ts','Ms',Length,Pident |
 			csvtk -t csv2md -a right - \
 				>"${d}"
-		_polap_log0_head "${d}"
-		d1="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1-ordered.txt"
-		d2="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1-ordered.pdf"
+		_polap_log1_head "${d}"
+		d1="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1y-ordered.txt"
+		d2="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1y-ordered.pdf"
 		_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
         --table ${s} \
         --out ${d1} \
@@ -397,10 +397,10 @@ function _disassemble_report3 {
 }
 
 # rewrite the stage 3 results
-function _disassemble_report3x {
+function _disassemble_report3 {
 	local _brg_stage="${1:-3}"
 	s="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1.txt"
-	d="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1x.md"
+	d="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1.md"
 	if [[ -s "${s}" ]]; then
 		csvtk -t cut -f index,short_rate_sample,sampling_datasize,short_sample_seed,time_prepare,memory_prepare,time_polishing,memory_polishing,pident,length \
 			"${s}" |
@@ -409,9 +409,9 @@ function _disassemble_report3x {
 				-n I,Rate,Size,Seed,Tp,Mp,Ts,Ms,Pident,Length |
 			csvtk -t csv2md -a right - \
 				>"${d}"
-		_polap_log0_head "${d}"
-		d1="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1x-ordered.txt"
-		d2="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1x-ordered.pdf"
+		_polap_log1_head "${d}"
+		d1="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1-ordered.txt"
+		d2="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1-ordered.pdf"
 		_polap_log3_pipe "Rscript --vanilla $script_dir/run-polap-r-disassemble.R \
 		      --table ${s} \
 		      --out ${d1} \
@@ -1375,14 +1375,14 @@ function _disassemble-stage1 {
 		_polap_log2 "      -> use a range of rates for subsampling long-read sequencing data"
 
 		# short-read data
-		if [[ "${_arg_short_read1_is}" == "on" ]] ||
-			[[ "${_arg_short_read2_is}" == "on" ]]; then
+		if [[ -s "${_arg_short_read1}" ]] ||
+			[[ -s "${_arg_short_read2}" ]]; then
 			_polap_log1 "    use short-read data for genome size estimates"
 			if [[ -z "${_arg_steps_include}" ]]; then
 				_arg_steps_include="1-16"
 			fi
 		else
-			_polap_log1 "    no short-read data, so use a range of genome sizes"
+			_polap_log0 "    no short-read data specified, so use a range of genome sizes"
 			die "ERROR: not implemented yet!"
 		fi
 		_polap_log3_cmd mkdir -p "${_disassemble_i}/1"
@@ -1533,8 +1533,8 @@ function _disassemble-stage2 {
 	_arg_disassemble_n_is="on"
 	_polap_log1 "  input1: --disassemble-s=${_arg_disassemble_s}"
 
-	if [[ "${_arg_short_read1_is}" == "on" ]] ||
-		[[ "${_arg_short_read2_is}" == "on" ]]; then
+	if [[ -s "${_arg_short_read1}" ]] ||
+		[[ -s "${_arg_short_read2}" ]]; then
 		_polap_log2 "  genome size estimated by the short-read data"
 		if [[ -z "${_arg_steps_include}" ]]; then
 			_arg_steps_include="1-16"
@@ -2004,6 +2004,9 @@ function _run_polap_disassemble {
 	local _disassemble_params_file
 	local _run_type
 
+	if [[ "${_arg_jellyfish_s_is}" == "off" ]]; then
+		_arg_jellyfish_s="2G"
+	fi
 	source "$script_dir/polap-variables-common.sh"
 	local _ga_outdir="${_arg_outdir}/${_arg_inum}"
 	local _disassemble_dir="${_ga_outdir}/disassemble"
@@ -2371,7 +2374,7 @@ HEREDOC
 	# menu: archive
 	# archive the disassemble analysis
 	if [[ "${_arg_menu[1]}" == "archive" ]]; then
-		_polap_log0 "archive ${_arg_outdir} to ${_arg_archive}"
+		_polap_log0 "archiving ${_arg_outdir} to ${_arg_archive}"
 
 		_arg_menu[1]="cflye"
 		_run_polap_archive
@@ -2745,6 +2748,19 @@ HEREDOC
 	[[ -s "${_arg_long_reads}" ]] || return ${_POLAP_ERR_CMD_OPTION_LONGREAD}
 	[[ -s "${_arg_short_read1}" ]] || return ${_POLAP_ERR_CMD_OPTION_SHORTREAD}
 	[[ -s "${_arg_short_read2}" ]] || return ${_POLAP_ERR_CMD_OPTION_SHORTREAD}
+	if [[ "${_arg_long_reads_is}" == "off" ]]; then
+		_polap_log0 "WARNING: we use the default long-read: ${_arg_long_reads}"
+		_polap_log0 "  you do not use -l option for a long-read FASTQ file"
+	fi
+	if [[ "${_arg_short_read1_is}" == "off" ]]; then
+		_polap_log0 "WARNING: we use the default short-read1: ${_arg_short_read1}"
+		_polap_log0 "  you do not use -a option for a short-read FASTQ file"
+	fi
+	if [[ "${_arg_short_read2_is}" == "off" ]]; then
+		_polap_log0 "WARNING: we use the default short-read2: ${_arg_short_read2}"
+		_polap_log0 "  you do not use -b option for a short-read FASTQ file"
+	fi
+
 	# if [[ "${_arg_short_read1_is}" == "off" ]]; then
 	# 	_polap_log1 "  input2: no short-read1"
 	# else

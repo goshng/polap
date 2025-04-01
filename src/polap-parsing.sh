@@ -195,6 +195,10 @@ _arg_taxonomy_min_aa="20"
 _arg_template="$script_dir/polaplib/polap-template-cflye-archive-files.txt"
 _arg_max_filesize="5M"
 
+# jellyfish
+_arg_jellyfish_s="5G"     # JellyFish -s option: 5G
+_arg_jellyfish_s_is="off" #
+
 # for menu dissemble or directional read feature
 _arg_dissemble_a=1 #
 _arg_directional_a=1
@@ -493,6 +497,12 @@ Options:
     set this option to a FASTA file with a single sequence. It will be compared
     with the assembled ptDNA.
 
+  --jellyfish-s: JellyFish's -s option (default: ${_arg_jellyfish_s})
+    For disassemble subcommand, it is set to 2G if not set here.
+    The -s 2G of JellyFish option claims memory of about 6 GB.
+    If it is slow in assembly size estimate, increase this value to
+    e.g., 5g or 10g. It would requires more memory.
+
   Experimental (not implemented yet!):
   --flye-nano-raw (default), --flye-nano-corr, --flye-nano-hq:
   --flye-pacbio-raw, --flye-pacbio-corr, --flye-pacbio-hifi:
@@ -522,6 +532,34 @@ HEREDOC
 
 	# Display help message
 	echo "${help_message}"
+}
+
+# Example usage
+# converted=$(_polap_jellyfish_convert_suffix "123m")
+# echo "$converted"
+# 123m -> 123M
+# 5g -> 5G
+# 10K -> 10k
+# 5x -> 0
+function _polap_jellyfish_convert_suffix() {
+	local var="$1"
+
+	if [[ $var =~ ^[0-9]+[gGmMkK]$ ]]; then
+		local suffix="${var: -1}"
+		local number="${var:0:-1}"
+
+		case "$suffix" in
+		g | G) suffix="G" ;;
+		m | M) suffix="M" ;;
+		k | K) suffix="k" ;;
+		esac
+
+		var="${number}${suffix}"
+	else
+		var="0"
+	fi
+
+	echo "$var"
 }
 
 parse_commandline() {
@@ -986,6 +1024,24 @@ parse_commandline() {
 			;;
 		--directional-i=*)
 			_arg_directional_i="${_key##--directional-i=}"
+			;;
+		--jellyfish-s)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_jellyfish_s="$2"
+			_arg_jellyfish_s_is="on"
+			_arg_jellyfish_s=$(_polap_jellyfish_convert_suffix "${_arg_jellyfish_s}")
+			if ((_arg_jellyfish_s == 0)); then
+				die "-s option argument must be like 5g, 5m, 5k"
+			fi
+			shift
+			;;
+		--jellyfish-s=*)
+			_arg_jellyfish_s="${_key##--jellyfish-s=}"
+			_arg_jellyfish_s_is="on"
+			_arg_jellyfish_s=$(_polap_jellyfish_convert_suffix "${_arg_jellyfish_s}")
+			if ((_arg_jellyfish_s == 0)); then
+				die "-s option argument must be like 5g, 5m, 5k"
+			fi
 			;;
 		--disassemble-beta)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

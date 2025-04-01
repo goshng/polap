@@ -1,6 +1,0 @@
-input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all_Spirodela_polyrhiza.txt")
-input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all_Taraxacum_mongolicum.txt")
-input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all_Anthoceros_agrestis.txt")
-input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all_Trifolium_pratense.txt")
-input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all_Trifolium_pratense.txt")
-input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all_test.txt")

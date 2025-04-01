@@ -158,11 +158,12 @@ HEREDOC
 	fi
 
 	SRA=$_arg_sra
+	_polap_log0 fetching "$SRA".fastq from NCBI SRA database ... please wait ...
 	"$script_dir"/run-polap-ncbitools fetch sra "$SRA"
 
-	echoerr You have a file called "$SRA".fastq and a folder named "$SRA"
-	echoerr if your download try is successful. Then, you would want to delete
-	echoerr the folder because we need only the fastq file.
+	_polap_log1 You have a file called "$SRA".fastq and a folder named "$SRA"
+	_polap_log1 if your download try is successful. Then, you would want to delete
+	_polap_log1 the folder because we need only the fastq file.
 
 	if [ "$DEBUG" -eq 1 ]; then set +x; fi
 }

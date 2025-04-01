@@ -70,7 +70,7 @@ HEREDOC
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
-	_polap_log0_log "archiving ${_arg_outdir} to ${_arg_archive} ... upto ${_arg_max_filesize}"
+	_polap_log1_log "archiving ${_arg_outdir} to ${_arg_archive} ... upto ${_arg_max_filesize}"
 
 	# rsync -aq --max-size=2M source_folder/ destination_folder/
 	_polap_lib_file-rsync "${_arg_outdir}" "${_arg_archive}" "${_arg_max_filesize}"

@@ -4711,7 +4711,7 @@ patch-polap)
 			wget -q https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
 			unzip -o -q ${_polap_version}.zip
 			cd polap-${_polap_version}/src
-			bash polap-build.sh >../build.sh
+			bash polaplib/polap-build.sh >../build.sh
 			cd -
 			PREFIX="$(conda info --base)/envs/polap" bash build.sh
 		else
@@ -4725,7 +4725,7 @@ bleeding-edge-polap)
 		if conda env list | awk '{print $1}' | grep -qx "polap"; then
 			git clone --quiet https://github.com/goshng/polap.git
 			cd polap/src
-			bash polap-build.sh >../build.sh
+			bash polaplib/polap-build.sh >../build.sh
 			cd -
 			PREFIX="$(conda info --base)/envs/polap" bash build.sh
 		else

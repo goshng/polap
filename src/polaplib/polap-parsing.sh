@@ -384,6 +384,7 @@ Options:
   --random-seed: 5-digit number (default automatically assigned)
     To ensure reproducibility, you can supply a random number seed 
     to facilitate sampling of reads.
+    0 or negative for automatically assigned
     seqkit sample random seed; 11 used in seqkit sample.
 
   --flye-asm-coverage: Flye --asm-coverage (default: ${_arg_flye_asm_coverage})
@@ -830,10 +831,16 @@ parse_commandline() {
 		--random-seed)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_random_seed="$2"
+			if ((_arg_random_seed} <= 0)); then
+				_arg_random_seed=$RANDOM
+			fi
 			shift
 			;;
 		--random-seed=*)
 			_arg_random_seed="${_key##--random-seed=}"
+			if ((_arg_random_seed} <= 0)); then
+				_arg_random_seed=$RANDOM
+			fi
 			;;
 		-g | --genomesize)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

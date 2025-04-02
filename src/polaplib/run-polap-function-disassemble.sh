@@ -1639,15 +1639,15 @@ function _disassemble-stage3 {
 		# do not place the pt.1.fa and pt.0.fa as the final yet
 		# we just determine the candidate in 52-mtdna folder.
 
-		_polap_log0 "  we use the ordered table to select one with 4 candidates"
-		_polap_log0 "  stage check: use the reference to select one of the four ptDNA candidates"
+		_polap_log1 "  we use the ordered table to select one with 4 candidates"
+		_polap_log1 "  stage check: use the reference to select one of the four ptDNA candidates"
 		rm -f "${_index_file}"
 		if [[ -s "${_summary1_ordered}" ]]; then
 			j=$(awk -F'\t' '$15 == 4 {print $1; exit}' "${_summary1_ordered}")
 			_j_best_stage2="${j}"
 			if [[ -z "${j}" ]]; then
-				_polap_log0 "WARNING: no such index with 4 paths in file: ${_summary1_ordered}"
-				_polap_log0 "  suggestion: increase the replicate size --disassemble-r"
+				_polap_log1 "WARNING: no such index with 4 paths in file: ${_summary1_ordered}"
+				_polap_log1 "  suggestion: increase the replicate size --disassemble-r"
 
 				# fall back to 2-fragment cases
 				j=$(awk -F'\t' '$15 == 2 {print $1; exit}' "${_summary1_ordered}")
@@ -2414,15 +2414,15 @@ HEREDOC
 			_summary_gfa_number_segments=$(grep "Number of segments:" "${_outdir}/graph_final.txt" | awk '{print $4}')
 
 			if [[ "${_summary_gfa_number_segments}" -eq 3 ]]; then
-				_polap_log0 "ptGAUL assembly's segments: ${_summary_gfa_number_segments}"
-				_polap_log0 "you may use ptgaul menu:"
-				_polap_log0 "  ptgaul 1"
-				_polap_log0 "  ptgaul 1 1"
-				_polap_log0 "  ptgaul 1 3"
-				_polap_log0 "  ptgaul 2"
-				_polap_log0 "  ptgaul 3"
+				_polap_log1 "ptGAUL assembly's segments: ${_summary_gfa_number_segments}"
+				_polap_log1 "you may use ptgaul menu:"
+				_polap_log1 "  ptgaul 1"
+				_polap_log1 "  ptgaul 1 1"
+				_polap_log1 "  ptgaul 1 3"
+				_polap_log1 "  ptgaul 2"
+				_polap_log1 "  ptgaul 3"
 				# mt.contig.name
-				_polap_log0 "create file: ${_mtcontigname}"
+				_polap_log1 "create file: ${_mtcontigname}"
 				local string="edge_1,edge_2,edge_3"
 				echo "$string" | tr ',' '\n' >"${_mtcontigname}"
 				# extract ptDNA from ptGAUL's result
@@ -2807,7 +2807,7 @@ HEREDOC
 	# Stage 1
 	# output: o/disassemble/i/1
 	if _polap_contains_step 1 "${_stage_array[@]}"; then
-		_polap_log0 "  stage 1: determine the sample size and the minimum read coverage: run type: ${_run_type}"
+		_polap_log1 "  stage 1: determine the sample size and the minimum read coverage: run type: ${_run_type}"
 
 		# output: o/disassemble/i/params.txt
 		_disassemble_params_file="${_disassemble_i}/params.txt"
@@ -2825,7 +2825,7 @@ HEREDOC
 	# use summary1 to select one
 	#
 	if _polap_contains_step 2 "${_stage_array[@]}"; then
-		_polap_log0 "  stage 2: assemble with subsample-replicate: run type: ${_run_type}"
+		_polap_log1 "  stage 2: assemble with subsample-replicate: run type: ${_run_type}"
 		_disassemble-stage2
 	fi
 
@@ -2837,20 +2837,20 @@ HEREDOC
 
 	if _polap_contains_step 3 "${_stage_array[@]}"; then
 		if [[ "${_arg_disassemble_simple_polishing}" == "off" ]]; then
-			_polap_log0 "  stage 3: assemble with subsample-polishing: run type: ${_run_type}"
+			_polap_log1 "  stage 3: assemble with subsample-polishing: run type: ${_run_type}"
 		else
-			_polap_log0 "  stage 3: assemble with simple-polishing: run type: ${_run_type}"
+			_polap_log1 "  stage 3: assemble with simple-polishing: run type: ${_run_type}"
 		fi
 		_disassemble-stage3
 
 		# link the output
 		if [[ -s "${_disassemble_i}/pt.subsample-polishing.1.fa" ]]; then
-			_polap_log0 "Final plastid genome assembly: ${_arg_outdir}/ptdna.${_arg_inum}.fa"
+			_polap_log1 "Final plastid genome assembly: ${_arg_outdir}/ptdna.${_arg_inum}.fa"
 			ln -s $(realpath "${_disassemble_i}"/pt.subsample-polishing.1.fa) "${_arg_outdir}/ptdna.${_arg_inum}.fa"
 		fi
 
 		if [[ -s "${_disassemble_i}/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
-			_polap_log0 "Final plastid genome assembly: ${_arg_outdir}/ptdna.ref.${_arg_inum}.fa"
+			_polap_log1 "Final plastid genome assembly: ${_arg_outdir}/ptdna.ref.${_arg_inum}.fa"
 			ln -s $(realpath "${_disassemble_i}"/pt.subsample-polishing.reference.aligned.1.fa) "${_arg_outdir}/ptdna.ref.${_arg_inum}.fa"
 		fi
 	fi

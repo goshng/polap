@@ -80,7 +80,7 @@ _polap_lib_file-archive-folder() {
 	# Create a tar.gz archive of the destination directory
 	tar -czf "${dest_dir}.tar.gz" -C "$(dirname "$dest_dir")" "$(basename "$dest_dir")"
 
-	_polap_log0 "Archive created: ${dest_dir}.tar.gz"
+	_polap_log1 "Archive created: ${dest_dir}.tar.gz"
 
 	# Delete the destination directory after archiving
 	# rm -rf "$dest_dir"

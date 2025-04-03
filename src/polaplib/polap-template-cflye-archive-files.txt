@@ -4,7 +4,7 @@ ptdna-ptgaul.fa
 ptdna-reference.fa
 short_expected_genome_size.txt
 short_total_length.txt
-msbwt/comp_msbwt.npy
+# msbwt/comp_msbwt.npy
 timing/timing-check-1-simple-polish.txt
 timing/timing-check-1-subsample-polish.txt
 timing/timing-compare-1.txt

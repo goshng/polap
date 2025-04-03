@@ -200,7 +200,7 @@ else
 	fi
 fi
 # _polap_version="$(${_polap_cmd} --version | awk '{print $2}')"
-_polap_version="0.4.3.7.3"
+_polap_version="0.4.3.7.4"
 _media1_dir="/media/h1/sra"
 _media2_dir="/media/h2/sra"
 _media_dir="/media/h2/sra"
@@ -3449,9 +3449,9 @@ maintable1_genus_species() {
 	fi
 
 	if ((_brg_table == 1)); then
-		csvtk -t cut -f Species,P,R,Rate,Alpha,Length1,Length2,Pident,N1,Mode,SD,M,M_g,M_p,M_t1,M_t2,M_s,M_f,T \
+		csvtk -t cut -f Species,P,R,Rate,Alpha,Length1,Length2,Pident,N1,Mode,SD,M,M_g,M_p,M_t2,M_s,M_f,T \
 			${_table_tsv} |
-			csvtk -t rename -f 1-19 -n Species,P,R,Rate,Alpha,L1,L2,Pident,N1,Mode,SD,M,Mg,Mp,Mt1,Mt2,Ms,Mf,T |
+			csvtk -t rename -f 1-18 -n Species,P,R,Rate,Alpha,L1,L2,Pident,N1,Mode,SD,M,Mg,Mp,Mt,Ms,Mf,T |
 			csvtk -t csv2md -a right -o ${_table_name}-${_brg_inum}-analysis.md
 
 	elif ((_brg_table == 2)); then
@@ -3470,11 +3470,13 @@ maintable1_genus_species() {
 
 	csvtk -t csv2md -a right ${_table_tsv} -o ${_table_name}-${_brg_inum}.md
 
-	# Rscript src/polap-data-v2.R
+	Rscript "${_POLAPLIB_DIR}"/polap-data-v2.R --inum ${_brg_inum} \
+		>${_table_name}-${_brg_inum}.txt
 
 	cat "${_table_name}-${_brg_inum}.md"
 	echo "ouput: ${_table_name}-${_brg_inum}-analysis.md"
 	echo "ouput: ${_table_name}-${_brg_inum}-data.md"
+	echo "ouput: ${_table_name}-${_brg_inum}.txt"
 	echo "ouput: ${_table_name}-${_brg_inum}.md"
 	echo "ouput: ${_table_tsv}"
 }
@@ -3730,7 +3732,7 @@ suppfigure1_genus_species_for() {
 	_label_base=$(echo "$_label_base" | awk '{print tolower($0)}')
 
 	_brg_outdir=${_v1}
-	echo _brg_outdir: ${_brg_outdir}
+	_log_echo outdir: ${_brg_outdir}
 
 	local j=1
 
@@ -3828,7 +3830,7 @@ EOF
 
 	cat <<EOF >>"$_supptable_md"
 
-![Plastid genome assembly graphs generated from Stage 1 of the subsampling-based method for the dataset of _${_species}_. Each number corresponds to the iteration index of Stage 1 of @tbl:supptable1-${_label}. The number with a following x and the gigabytes value are the read-coverage threshold and the peak memory used by *Flye* assembler. The graphs were generated with Bandage software.](empty.png){#fig:suppfigure1-${_label}} 
+  ![Plastid genome assembly graphs generated from Stage 1 of the subsampling-based method for the dataset of _${_species}_. Each number corresponds to the iteration index of Stage 1 of @tbl:supptable1-${_label}. The number with a following x and the gigabytes value are the read-coverage threshold and the peak memory used by *Flye* assembler. All graphs were drawn using Bandage software (Wick et al. 2015).](empty.png){#fig:suppfigure1-${_label}} 
 
 EOF
 

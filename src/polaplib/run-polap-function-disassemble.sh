@@ -1235,7 +1235,7 @@ function _disassemble-stage0 {
 			# echo "The value is not less than 1"
 			_polap_log2 "    sampling rate is not less than 1: ${_rate}"
 			_polap_log2 "    no subsampling of input: ${_infile}"
-			_polap_log1 "    no subsampling result: ${_outfile}"
+			_polap_log1 "    no subsampling: ${_outfile}"
 			ln -s "$PWD/${_infile}" "${_outfile}"
 		fi
 	fi
@@ -1323,11 +1323,11 @@ function _disassemble-stage0 {
 			fi
 		else
 			# echo "The value is not less than 1"
-			_polap_log1 "  sampling rate is not less than 1: ${_rate}"
-			_polap_log1 "  no subsampling of input: ${_infile1}"
-			_polap_log1 "  no subsampling of input: ${_infile2}"
-			_polap_log0 "  no subsampling result: ${_outfile1}"
-			_polap_log0 "  no subsampling result: ${_outfile2}"
+			_polap_log2 "  sampling rate is not less than 1: ${_rate}"
+			_polap_log2 "  no subsampling of input: ${_infile1}"
+			_polap_log2 "  no subsampling of input: ${_infile2}"
+			_polap_log1 "  no subsampling: ${_outfile1}"
+			_polap_log1 "  no subsampling: ${_outfile2}"
 			ln -s "$PWD/${_infile1}" "${_outfile1}"
 			ln -s "$PWD/${_infile2}" "${_outfile2}"
 		fi
@@ -1460,12 +1460,12 @@ function _disassemble-stage2 {
 				return "${_POLAP_ERR_SUBSAMPLE_TOO_FEW_CANDIDATES}"
 			elif ((n < 5)); then
 				_polap_log0 "  the effective sample size: ${n}: ${_summary1_ordered}"
-				_polap_log0 "  warning: the number of potential ptDNA assemblies is too small to select one"
-				_polap_log0 "  suggestion: decrease the max subsample size rate --disassemble-p"
+				_polap_log0 "  warning: the number of potential ptDNA assemblies is too small to select one: $n < 5"
 				_polap_log0 "  suggestion: increase the step size --disassemble-n"
-				_polap_log0 "  suggestion: decrease the subsample size --disassemble-b"
-				_polap_log0 "  suggestion: decrease the maximum draft genome size for update alpha --disassemble-m"
 				_polap_log0 "  suggestion: increase the maximum memory requirement --disassemble-memory"
+				#     _polap_log0 "  suggestion: decrease the max subsample size rate --disassemble-p"
+				# _polap_log0 "  suggestion: decrease the subsample size --disassemble-b"
+				# _polap_log0 "  suggestion: decrease the maximum draft genome size for update alpha --disassemble-m"
 			fi
 			# Use read to split the output into individual variables
 			read -r index size rate randomseed genomesize alpha <<<"$output"
@@ -1822,9 +1822,9 @@ function _disassemble-stage3 {
 		else
 			_arg_final_assembly="${_disassemble_dir}/${_arg_disassemble_i}/pt.simple-polishing.reference.aligned.1.fa"
 		fi
-		_polap_log0 "polishing ptDNA: ${_arg_unpolished_fasta}"
+		_polap_log1 "polishing ptDNA: ${_arg_unpolished_fasta}"
 		_run_polap_polish
-		_polap_log0 "ptGAUL polished assembly: ${_arg_final_assembly}"
+		_polap_log1 "full short-read data polished assembly: ${_arg_final_assembly}"
 	fi
 }
 
@@ -2672,7 +2672,6 @@ HEREDOC
 	fi
 
 	# main
-	_polap_log0 "Assemble plastid genomes by subsampling long-read data (disassemble index: ${_arg_disassemble_i})"
 
 	# save the user provided options
 	local _b_disassemble_a="${_arg_disassemble_a}"
@@ -2718,6 +2717,8 @@ HEREDOC
 			_polap_log2 "case: check"
 		fi
 	fi
+
+	_polap_log0 "Assemble plastid genomes by subsampling long-read data (disassemble index: ${_arg_disassemble_i}, run type: ${_run_type}, full short-read polishing: ${_arg_disassemble_simple_polishing})"
 
 	# if [[ "${_arg_menu[1]}" == "stage1" ]]; then
 	# 	_arg_stages_include="0-1"
@@ -2786,7 +2787,7 @@ HEREDOC
 	# output2: tmp/s50x_1.fq
 	# output3: tmp/s50x_2.fq
 	if _polap_contains_step 0 "${_stage_array[@]}"; then
-		_polap_log0 "  stage 0: downsample the input data, if possible, to ${_arg_downsample}x"
+		_polap_log1 "  stage 0: downsample the input data, if possible, to ${_arg_downsample}x"
 
 		if [[ -d "${_disassemble_i}" ]]; then
 			_polap_log1 "  delete the previous disassemble: ${_disassemble_i}"
@@ -2844,14 +2845,32 @@ HEREDOC
 		_disassemble-stage3
 
 		# link the output
-		if [[ -s "${_disassemble_i}/pt.subsample-polishing.1.fa" ]]; then
-			_polap_log1 "Final plastid genome assembly: ${_arg_outdir}/ptdna.${_arg_inum}.fa"
-			ln -s $(realpath "${_disassemble_i}"/pt.subsample-polishing.1.fa) "${_arg_outdir}/ptdna.${_arg_inum}.fa"
+		local _s="${_disassemble_i}/pt.subsample-polishing.1.fa"
+		local _d="${_arg_outdir}/ptdna.${_arg_inum}.fa"
+		if [[ -s "${_s}" ]]; then
+			ln -sfn $(realpath "${_s}") "${_d}"
+			_polap_log0 "Final plastid genome assembly (subsampling-based): ${_d}"
 		fi
 
-		if [[ -s "${_disassemble_i}/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
-			_polap_log1 "Final plastid genome assembly: ${_arg_outdir}/ptdna.ref.${_arg_inum}.fa"
-			ln -s $(realpath "${_disassemble_i}"/pt.subsample-polishing.reference.aligned.1.fa) "${_arg_outdir}/ptdna.ref.${_arg_inum}.fa"
+		local _s="${_disassemble_i}/pt.subsample-polishing.reference.aligned.1.fa"
+		local _d="${_arg_outdir}/ptdna.ref.${_arg_inum}.fa"
+		if [[ -s "${_s}" ]]; then
+			ln -sfn $(realpath "${_s}") "${_d}"
+			_polap_log0 "Final plastid genome assembly (subsampling-based and reference-aligned): ${_d}"
+		fi
+
+		local _s="${_disassemble_i}/pt.simple-polishing.1.fa"
+		local _d="${_arg_outdir}/ptdna.simple.${_arg_inum}.fa"
+		if [[ -s "${_s}" ]]; then
+			ln -sfn $(realpath "${_s}") "${_d}"
+			_polap_log0 "Final plastid genome assembly (full short-read polishing and reference-aligned): ${_d}"
+		fi
+
+		local _s="${_disassemble_i}/pt.simple-polishing.reference.aligned.1.fa"
+		local _d=${_arg_outdir}/ptdna.simple.ref.${_arg_inum}.fa
+		if [[ -s "${_s}" ]]; then
+			ln -sfn $(realpath "${_s}") "${_d}"
+			_polap_log0 "Final plastid genome assembly (full short-read polishing and reference-aligned): ${_d}"
 		fi
 	fi
 
@@ -2867,6 +2886,7 @@ function _run_polap_step-disassemble {
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	_arg_plastid="on"
+	local _msg_level=2
 	local i
 	local j
 	local col1 col2 col3
@@ -3471,7 +3491,7 @@ HEREDOC
 		#
 		# stage 1: weighting the total iterations
 		# stage 2: not weight on the total iterations
-		status=$(_polap_lib_timing-step "${i}" "${_arg_disassemble_n}" "${_arg1}")
+		local status=$(_polap_lib_timing-step "${i}" "${_arg_disassemble_n}" "${_arg1}" "stage $_arg1")
 
 		# Display the progress and remaining time on the same line if no verbose
 		if [ "${_arg_verbose}" -eq "1" ]; then
@@ -3775,13 +3795,13 @@ HEREDOC
 		# Progress
 		# Calculate elapsed time and remaining time
 		#
-		status=$(_polap_lib_timing-step "${i}" "${_arg_disassemble_r}")
+		local status=$(_polap_lib_timing-step "${i}" "${_arg_disassemble_r}" 2 "stage 3")
 
 		# Display the progress and remaining time on the same line
 		if [ "${_arg_verbose}" -eq "1" ]; then
 			printf "\r%-${_terminal_width}s" " " >&3
+			_polap_log0_ne "\r$status"
 		fi
-		_polap_log0_ne "\r$status"
 
 		# determine the sample size and the Flye's alpha
 		_polap_log1 "  end: index $i: sample size: $_sampling_datasize_bp memory:"

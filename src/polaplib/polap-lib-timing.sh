@@ -141,6 +141,7 @@ function _polap_lib_timing-step {
 	local i="${1}"
 	local _total_iterations="${2}"
 	local _weight="${3:-2}"
+	local _stage="${4:-0}"
 	local _actual_total_iterations
 	local time_per_iteration
 	local remaining_iterations
@@ -156,6 +157,6 @@ function _polap_lib_timing-step {
 	fi
 	remaining_iterations=$((_actual_total_iterations - 1))
 	remaining_time=$((remaining_iterations * time_per_iteration))
-	status="    iteration $((i + 1))/${_total_iterations}, remaining time: $(_polap_get_time_format ${remaining_time})"
+	status="  ${_stage} iteration $((i + 1))/${_total_iterations}, remaining time: $(_polap_get_time_format ${remaining_time})"
 	echo "$status"
 }

@@ -153,7 +153,7 @@ HEREDOC
 			# echo "The value is not less than 1"
 			_polap_log1 "  sampling rate is not less than 1: ${_rate}"
 			_polap_log1 "  no subsampling of input: ${_infile}"
-			_polap_log0 "  no subsampling result: ${_outfile}"
+			_polap_log0 "  no subsampling: ${_outfile}"
 		fi
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
@@ -252,8 +252,8 @@ HEREDOC
 			_polap_log1 "  sampling rate is not less than 1: ${_rate}"
 			_polap_log1 "  no subsampling of input: ${_infile1}"
 			_polap_log1 "  no subsampling of input: ${_infile2}"
-			_polap_log0 "  no subsampling result: ${_outfile1}"
-			_polap_log0 "  no subsampling result: ${_outfile2}"
+			_polap_log0 "  no subsampling: ${_outfile1}"
+			_polap_log0 "  no subsampling: ${_outfile2}"
 		fi
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"

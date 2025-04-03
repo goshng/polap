@@ -65,6 +65,9 @@ _polap_lib_file-archive-folder() {
 	mkdir -p "$dest_dir"
 
 	while IFS= read -r file; do
+		if [[ "$file" == *"#"* ]]; then
+			continue
+		fi
 		src_path="$src_dir/$file"
 		dest_path="$dest_dir/$file"
 		dest_folder="$(dirname "$dest_path")"

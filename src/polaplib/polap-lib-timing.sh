@@ -97,8 +97,9 @@ _polap_set_start_time() {
 
 # Function to compute elapsed time and return formatted string
 _polap_get_elapsed_time() {
+	local _brg_start_time="${1:-${_polap_var_start_time}}"
 	local current_time=$(date +%s)
-	local elapsed=$((current_time - _polap_var_start_time))
+	local elapsed=$((current_time - _brg_start_time))
 
 	if ((elapsed < 60)); then
 		echo "${elapsed}s" # Seconds
@@ -134,6 +135,10 @@ function _polap_lib_timing-set {
 	_polap_set_start_time
 }
 
+function _polap_lib_timing-step-reset {
+	_polap_var_total_time=0
+}
+
 # put it at the end of an iteration
 # arg1: the index of a current step, e.g., 0
 # arg2: total number of the steps
@@ -150,6 +155,8 @@ function _polap_lib_timing-step {
 	# Progress
 	# Calculate elapsed time and remaining time
 	time_per_iteration=$(($(date +%s) - _polap_var_start_time))
+	# not working in a subshell
+	# _polap_var_total_time=$((_polap_var_total_time + time_per_iteration))
 	if [[ "${_weight}" == "1" ]]; then
 		_actual_total_iterations=$(((_total_iterations - i) * (_total_iterations - i + 1) / 2))
 	else

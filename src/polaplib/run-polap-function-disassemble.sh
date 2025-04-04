@@ -292,24 +292,25 @@ function _disassemble_report1 {
 	s=${_disassemble_dir}/${_arg_disassemble_i}/1/summary1.txt
 	s2=${_disassemble_dir}/${_arg_disassemble_i}/1/summary2.txt
 	d=${_disassemble_dir}/${_arg_disassemble_i}/1/summary1.md
-	csvtk -t cut -f index,long_rate_sample,alpha,peak_ram_size_gb,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length \
+	# csvtk -t cut -f index,long_rate_sample,alpha,peak_ram_size_gb,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length \
+	csvtk -t cut -f index,long_rate_sample,alpha,peak_ram_size_gb,draft_assembly_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length \
 		"${s}" |
 		csvtk -t round -n 4 -f long_rate_sample,coverage_ref,coverage_target |
 		csvtk -t round -n 2 -f alpha |
-		csvtk rename -t -f index,long_rate_sample,alpha,peak_ram_size_gb,expected_genome_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length \
-			-n I,Rate,Alpha,'Pmem','G',Time,'N','L','C','C_ref','C_target',Length \
+		csvtk rename -t -f index,long_rate_sample,alpha,peak_ram_size_gb,draft_assembly_size,time,gfa_number_segments,gfa_total_segment_length,num_circular_paths,coverage_ref,coverage_target,length \
+			-n I,Rate,Alpha,'Pmem','D',Time,'N','L','C','C_ref','C_target',Length \
 			>"${s2}"
 	# csvtk -t cut I,Rate,Alpha,'Pmem','G',Time,'N','L','C','C_ref','C_target',Length \
 
 	# _polap_log0 "report1: case: ${_case_infer}"
 
 	if [[ "${_case_infer}" == "0" ]]; then
-		csvtk -t cut -f I,Rate,Alpha,'Pmem','G',Time,'N','L','C','C_ref','C_target',Length \
+		csvtk -t cut -f I,Rate,Alpha,'Pmem','D',Time,'N','L','C','C_ref','C_target',Length \
 			"${s2}" |
 			csvtk -t csv2md -a right - \
 				>"${d}"
 	else
-		csvtk -t cut -f I,Rate,Alpha,'Pmem','G',Time,'N','L','C',Length \
+		csvtk -t cut -f I,Rate,Alpha,'Pmem','D',Time,'N','L','C',Length \
 			"${s2}" |
 			csvtk -t csv2md -a right - \
 				>"${d}"
@@ -488,7 +489,7 @@ function _polap_lib_table-cflye-main-summary-header {
 	# gc
 
 	# Add header to the output file
-	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
 		"index" \
 		"sampling_datasize" \
 		"long_total" "long_rate_sample" "long_sample_seed" \
@@ -505,6 +506,7 @@ function _polap_lib_table-cflye-main-summary-header {
 		"length" \
 		"gc" \
 		"j_candidate" \
+		"draft_assembly_size" \
 		>"${_summary_file}"
 }
 
@@ -513,7 +515,7 @@ function _polap_lib_table-cflye-main-summary-content {
 
 	# Append the result to the output file
 	# printf "index\tlong\trate\tsize\talpha\tmemory\tnsegments\tnlink\ttotalsegmentlength\tlength\tgc\tcoverage\n" >"${_summary1_file}"
-	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
 		"${_summary_i}" \
 		"${_summary_sampling_datasize}" \
 		"${_summary_long_total}" \
@@ -531,12 +533,13 @@ function _polap_lib_table-cflye-main-summary-content {
 		"${_summary_num_circular_paths}" \
 		"${_summary_num_circular_nodes}" \
 		"${_summary_elapsed_time}" \
-		"${_sumary_coverage_ref}" \
-		"${_sumary_coverage_target}" \
+		"${_summary_coverage_ref}" \
+		"${_summary_coverage_target}" \
 		"${_summary_pident}" \
 		"${_summary_length}" \
 		"${_summary_gc}" \
 		"${_summary_j_candidate}" \
+		"${_summary_draft_assembly_size}" \
 		>>"${_summary_file}"
 }
 
@@ -750,7 +753,11 @@ function _disassemble-step9 {
 			"decrease")
 		_polap_log2 "      alpha decrease (if not negative): ${_alpha}"
 	fi
-	echo "${_alpha}"
+	local arr=(
+		"${_alpha}"
+		"${_draft_assembly_size}"
+	)
+	echo "${arr[@]}"
 }
 
 function _disassemble-step10 {
@@ -916,15 +923,15 @@ function _disassemble-step14 {
 	local _circular_path_fasta="${_var_mtdna}/circular_path_1_concatenated.fa"
 	local _arg_unpolished_fasta="${_var_mtdna}/ptdna.0.fa"
 	local _arg_final_assembly="${_var_mtdna}/ptdna.1.fa"
-	local _sumary_coverage_ref=-1
-	local _sumary_coverage_target=-1
+	local _summary_coverage_ref=-1
+	local _summary_coverage_target=-1
 	local _summary_j_candidate=-1
 	local num_circular_paths_file_count
 	local _ptdir
 	local j
 	local _folder_with_max_coverage
-	local _sumary_coverage_ref
-	local _sumary_coverage_target
+	local _summary_coverage_ref
+	local _summary_coverage_target
 	local diff
 	local _restarted_fasta
 
@@ -958,9 +965,9 @@ function _disassemble-step14 {
 			_folder_with_max_coverage=$(_disassemble_find_folder_with_max_coverage "${_var_mtdna}")
 			if [[ $? -eq 0 ]]; then
 				# Calculate absolute difference using bc
-				_sumary_coverage_ref=$(<"${_var_mtdna}/${_folder_with_max_coverage}/coverage1.txt")
-				_sumary_coverage_target=$(<"${_var_mtdna}/${_folder_with_max_coverage}/coverage2.txt")
-				local diff=$(echo "scale=5; a=(${_sumary_coverage_ref} - ${_sumary_coverage_target}); if (a < 0) a=-a; a" | bc)
+				_summary_coverage_ref=$(<"${_var_mtdna}/${_folder_with_max_coverage}/coverage1.txt")
+				_summary_coverage_target=$(<"${_var_mtdna}/${_folder_with_max_coverage}/coverage2.txt")
+				local diff=$(echo "scale=5; a=(${_summary_coverage_ref} - ${_summary_coverage_target}); if (a < 0) a=-a; a" | bc)
 
 				# Check if difference is less than 0.05
 				if (($(echo "$diff < 0.05" | bc -l))); then
@@ -1019,16 +1026,16 @@ function _disassemble-step14 {
 	fi
 	# Code 1
 	local arr=(
-		"${_sumary_coverage_ref}"
-		"${_sumary_coverage_target}"
+		"${_summary_coverage_ref}"
+		"${_summary_coverage_target}"
 		"${_summary_j_candidate}"
 	)
 	echo "${arr[@]}"
 	#
 	# Code 2
 	# _a=(
-	# 	"${_sumary_coverage_ref}"
-	# 	"${_sumary_coverage_target}"
+	# 	"${_summary_coverage_ref}"
+	# 	"${_summary_coverage_target}"
 	# 	"${_summary_j_candidate}"
 	# )
 }
@@ -1697,8 +1704,8 @@ function _disassemble-stage3 {
 		# for each ptDNA of the potential ptDNA sequences,
 		#   select one candidate ptDNA
 		#   rearrange it so that we could do a pairwise sequence alignment
-		_sumary_coverage_ref=-1
-		_sumary_coverage_target=-1
+		_summary_coverage_ref=-1
+		_summary_coverage_target=-1
 		_summary_j_candidate=-1
 
 		# if _polap_contains_step 14 "${_step_array[@]}"; then
@@ -1719,12 +1726,12 @@ function _disassemble-stage3 {
 		# local _a # return of function: _disassemble-step14
 		# _disassemble-step14 "${_var_mtdna}"
 		local _a=($(_disassemble-step14 "${_var_mtdna}" | tail -n 1))
-		_sumary_coverage_ref="${_a[0]}"
-		_sumary_coverage_target="${_a[1]}"
+		_summary_coverage_ref="${_a[0]}"
+		_summary_coverage_target="${_a[1]}"
 		_summary_j_candidate="${_a[2]}"
 
-		_polap_log2 "    output1: ${_sumary_coverage_ref}"
-		_polap_log2 "    output2: ${_sumary_coverage_target}"
+		_polap_log2 "    output1: ${_summary_coverage_ref}"
+		_polap_log2 "    output2: ${_summary_coverage_target}"
 		_polap_log2 "    output3: one of the 4 candidates: ${_summary_j_candidate}"
 
 		if [[ -s "${_arg_unpolished_fasta}" ]]; then
@@ -2044,8 +2051,8 @@ Inputs
 ------
 
 - long-read data: ${_arg_long_reads} (default: l.fq)
-- short-read data 1: ${_arg_short_read1} (default: s_1.fa)
-- short-read data 2: ${_arg_short_read2} (default: s_2.fa)
+- short-read data 1: ${_arg_short_read1} (default: s1.fa)
+- short-read data 2: ${_arg_short_read2} (default: s2.fa)
 
 Main arguments
 --------------
@@ -2059,12 +2066,10 @@ Main arguments
 --disassemble-p ${_arg_disassemble_p}: the maximum percent of long-read data
 --disassemble-r ${_arg_disassemble_r}: the number of replicates in stages 2/3
 
-Three use cases:
+Two use cases:
 1. case inference: default
 2. case check: compare one selected from stage 2 (no alignment in stages 1 and 2)
-  --disassemble-c and --disassemble-align-reference 
-3. case compare: compare all assemblies with a reference (alignment in stages 1 and 2)
-  --disassemble-c
+  --disassemble-c and --disassemble-align-reference
 
 For the cases inference or check we use use either short-read 
 subsampling-based polishing or short-read no-subsampling (simple) polishing
@@ -2078,14 +2083,13 @@ Outputs
 Arguments
 ---------
 
-Stage 1:
 -o ${_arg_outdir}: output folder
 -l ${_arg_long_reads}: a long-read fastq data file
 -a ${_arg_short_read1}: a short-read fastq data file 1
 -b ${_arg_short_read2}: a short-read fastq data file 2
 -i ${_arg_inum}: output number creating folder: ${_arg_outdir}/${_arg_inum}
 -t ${_arg_threads}: the number of CPU cores
---disassemble-i ${_arg_disassemble_i}: the index of the stage 1
+--disassemble-i ${_arg_disassemble_i}: the index in disassemble any string
 --downsample ${_arg_downsample}: maximum genome coverage to downsample
 --disassemble-a ${_arg_disassemble_a}: the smallest base pairs for a subsampling range
 --disassemble-b ${_arg_disassemble_b}: the largest base pairs for a subsampling range
@@ -2095,42 +2099,16 @@ Stage 1:
 --disassemble-memory ${_arg_disassemble_memory}: the maximum memory in Gb
 --disassemble-alpha ${_arg_disassemble_alpha}: the starting Flye's disjointig coverage
 --disassemble-delta ${_arg_disassemble_delta}: the move size of alpha (0.1 - 1.0)
---disassemble-s ${_arg_disassemble_s}: subsample size for stage 2, skipping stage 1
---disassemble-beta ${_arg_disassemble_beta}: subsample rate for stage 2, skipping stage 1
 --disassemble-c <FASTA>: a single reference sequence in FASTA
---random-seed <arg>: 5-digit number
---no-contigger for a single final step: use the long-read polished gfa
-
-Stage 2:
---disassemble-s ${_arg_disassemble_s}: subsample size for stage 2, skipping stage 1
---disassemble-beta ${_arg_disassemble_beta}: subsample rate for stage 2, skipping stage 1
+--random-seed <arg>: 5-digit number or 0 for random seed
 --disassemble-r ${_arg_disassemble_r}: the number of replicates
-
-Internals
----------
---start-index <INDEX>: from <INDEX>
---end-index <INDEX>: to <INDEX> - 1
---steps-include <STPES>: STEPS can be 1,2,3 or 1-15
---steps-exclude <STPES>: STEPS can be 1,2,3 or 1-15
---stages-include <STAGES> for internal use
---stages-exclude <STAGES> for internal use
---disassemble-stop-after stage1: stop after stage 1
---disassemble-stop-after stage2: stop after stage 2
-
-Not implemented yet
--------------------
---genomesize <NUMBER>: the number of steps is equal to 1.
---genomesize-a ${_arg_genomesize_a}: the smallest genome-size step size
---genomesize-b ${_arg_genomesize_b}: the largest genome-size step size
---genomesize-n ${_arg_genomesize_n}: the number of steps in the genome-size
 
 Menus
 -----
 
 - help: display this help message
-- redo: overwrite previous results
 - view: show some results
-- reset or clean: delete output files 
+- downsample: delete output files 
 - archive: archive output files leaving out too large files
 - ptgaul: extract ptDNA from ${_arg_outdir}/ptgaul
 
@@ -2151,7 +2129,10 @@ $(basename "$0") x-ncbi-fetch-sra --sra SRR7161123
 
 NUMBER=2
 --------
-$(basename "$0") disassemble -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq
+cp -s SRR7153095.fastq l.fq
+cp -s SRR7161123_1.fastq s1.fq
+cp -s SRR7161123_2.fastq s2.fq
+$(basename "$0") disassemble
 
 NUMBER=3
 --------
@@ -2160,21 +2141,51 @@ cp o/00-bioproject/2-mtdna.fasta o/ptdna-reference.fa
 
 NUMBER=4
 --------
-$(basename "$0") disassemble --disassemble-i 1 --stages-include 3 -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq --disassemble-align-reference --disassemble-c o/ptdna-reference.fa
+$(basename "$0") disassemble --disassemble-i 1 --stages-include 3 \
+  -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq \
+  --disassemble-align-reference --disassemble-c o/ptdna-reference.fa
 
 NUMBER=5
 --------
 mkdir -p o/0/mafft
-$(basename "$0") mafft-mtdna -a o/ptdna-reference.fa -b o/0/disassemble/2/pt.subsample-polishing.reference.aligned.1.fa -o o/0/mafft >o/0/mafft/log.txt
+$(basename "$0") mafft-mtdna -a o/ptdna-reference.fa \
+  -b o/0/disassemble/2/pt.subsample-polishing.reference.aligned.1.fa \
+  -o o/0/mafft >o/0/mafft/log.txt
 cat o/0/mafft/pident.txt
 
 NUMBER=6
 --------
-$(basename "$0") disassemble --disassemble-i 2 -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq --disassemble-align-reference --disassemble-c o/ptdna-reference.fa
+$(basename "$0") disassemble --disassemble-i 2 \
+  -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq \
+  --disassemble-align-reference --disassemble-c o/ptdna-reference.fa
 
 NUMBER=7
 --------
-$(basename "$0") disassemble --disassemble-i 3 -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq --disassemble-c o/ptdna-reference.fa
+$(basename "$0") disassemble --disassemble-i 3 \
+  -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq \
+  --disassemble-c o/ptdna-reference.fa
+
+HEREDOC
+	)
+
+	dev_message=$(
+		cat <<HEREDOC
+Plastid genome assembly by subsampling long-read data without references
+
+Internals for development version
+---------------------------------
+--start-index <INDEX>: from <INDEX>
+--end-index <INDEX>: to <INDEX> - 1
+--steps-include <STPES>: STEPS can be 1,2,3 or 1-15
+--steps-exclude <STPES>: STEPS can be 1,2,3 or 1-15
+--stages-include <STAGES> for internal use
+--stages-exclude <STAGES> for internal use
+--disassemble-stop-after stage1: stop after stage 1
+--disassemble-stop-after stage2: stop after stage 2
+
+Examples
+--------
+$(basename "$0") ${_arg_menu[0]} example <NUMBER>
 
 NUMBER=8
 --------
@@ -2200,6 +2211,7 @@ HEREDOC
 
 	# Display help message
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return 0
+	[[ ${_arg_menu[1]} == "dev" ]] && _polap_echo0 "${dev_message}" && return 0
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Display the content of output files
@@ -2582,6 +2594,9 @@ HEREDOC
 
 		if [[ "${_arg_menu[2]}" == "2" ]]; then
 			_polap_log0 "Assembling the plastid genome by subsampling NCBI SRA database: SRR7153095 and SRR7161123 ..."
+			cp -s SRR7153095.fastq l.fq
+			cp -s SRR7161123_1.fastq s1.fq
+			cp -s SRR7161123_2.fastq s2.fq
 			"$0" disassemble \
 				-l SRR7153095.fastq \
 				-a SRR7161123_1.fastq \
@@ -2849,28 +2864,28 @@ HEREDOC
 		local _d="${_arg_outdir}/ptdna.${_arg_inum}.fa"
 		if [[ -s "${_s}" ]]; then
 			ln -sfn $(realpath "${_s}") "${_d}"
-			_polap_log0 "Final plastid genome assembly (subsampling-based): ${_d}"
+			_polap_log0 "  Final plastid genome assembly (subsampling-based): ${_d}"
 		fi
 
 		local _s="${_disassemble_i}/pt.subsample-polishing.reference.aligned.1.fa"
 		local _d="${_arg_outdir}/ptdna.ref.${_arg_inum}.fa"
 		if [[ -s "${_s}" ]]; then
 			ln -sfn $(realpath "${_s}") "${_d}"
-			_polap_log0 "Final plastid genome assembly (subsampling-based and reference-aligned): ${_d}"
+			_polap_log0 "  Final plastid genome assembly (subsampling-based and reference-aligned): ${_d}"
 		fi
 
 		local _s="${_disassemble_i}/pt.simple-polishing.1.fa"
 		local _d="${_arg_outdir}/ptdna.simple.${_arg_inum}.fa"
 		if [[ -s "${_s}" ]]; then
 			ln -sfn $(realpath "${_s}") "${_d}"
-			_polap_log0 "Final plastid genome assembly (full short-read polishing and reference-aligned): ${_d}"
+			_polap_log0 "  Final plastid genome assembly (full short-read polishing and reference-aligned): ${_d}"
 		fi
 
 		local _s="${_disassemble_i}/pt.simple-polishing.reference.aligned.1.fa"
 		local _d=${_arg_outdir}/ptdna.simple.ref.${_arg_inum}.fa
 		if [[ -s "${_s}" ]]; then
 			ln -sfn $(realpath "${_s}") "${_d}"
-			_polap_log0 "Final plastid genome assembly (full short-read polishing and reference-aligned): ${_d}"
+			_polap_log0 "  Final plastid genome assembly (full short-read polishing and reference-aligned): ${_d}"
 		fi
 	fi
 
@@ -2933,12 +2948,13 @@ function _run_polap_step-disassemble {
 	local _summary_gfa_number_segments
 	local _summary_gfa_number_links
 	local _summary_gfa_total_segment_length
-	local _sumary_coverage_ref
-	local _sumary_coverage_target
+	local _summary_coverage_ref
+	local _summary_coverage_target
 	local _summary_pident
 	local _summary_gc
 	local _summary_length
 	local _summary_j_candidate
+	local _summary_draft_assembly_size=-1
 	local coverage
 	local _ga_annotation_all
 	local _mtcontigname
@@ -3027,6 +3043,9 @@ HEREDOC
 		[ "$DEBUG" -eq 1 ] && set +x
 		return 0
 	fi
+
+	local _start_time=$(date +%s)
+	# _polap_lib_timing-step-reset
 
 	i=0
 	_summary_gfa_number_segments=0
@@ -3362,8 +3381,13 @@ HEREDOC
 		if _polap_contains_step 9 "${_step_array[@]}"; then
 			_polap_log1 "  step 9: adjust the alpha"
 			_polap_log2 "    input1: ${_outdir}/00-assembly/draft_assembly.fasta"
-			_alpha=$(_disassemble-step9 "${_outdir}" "${_alpha}" | tail -n 1)
+			local _a=($(_disassemble-step9 "${_outdir}" "${_alpha}" | tail -n 1))
+			_alpha="${_a[0]}"
+			_summary_draft_assembly_size="${_a[1]}"
 			_polap_log2 "    output1: ${_summary_pre_alpha} -> ${_alpha}"
+			_polap_log2 "    output2: draft_assembly_size (disjointigs): ${_summary_draft_assembly_size}"
+		else
+			_summary_draft_assembly_size="-1"
 		fi
 
 		# 10. Summary of assembly
@@ -3426,8 +3450,8 @@ HEREDOC
 		# for each ptDNA of the potential ptDNA sequences,
 		#   select one candidate ptDNA
 		#   rearrange it so that we could do a pairwise sequence alignment
-		_sumary_coverage_ref=-1
-		_sumary_coverage_target=-1
+		_summary_coverage_ref=-1
+		_summary_coverage_target=-1
 		_summary_j_candidate=-1
 		_circular_path_fasta="${_var_mtdna}/circular_path_1_concatenated.fa"
 		_arg_unpolished_fasta="${_var_mtdna}/ptdna.0.fa"
@@ -3441,11 +3465,11 @@ HEREDOC
 			# return value not something else that might have been printed out
 			# in the function.
 			local _a=($(_disassemble-step14 "${_var_mtdna}" | tail -n 1))
-			_sumary_coverage_ref="${_a[0]}"
-			_sumary_coverage_target="${_a[1]}"
+			_summary_coverage_ref="${_a[0]}"
+			_summary_coverage_target="${_a[1]}"
 			_summary_j_candidate="${_a[2]}"
-			_polap_log2 "    output1: ${_sumary_coverage_ref}"
-			_polap_log2 "    output2: ${_sumary_coverage_target}"
+			_polap_log2 "    output1: ${_summary_coverage_ref}"
+			_polap_log2 "    output2: ${_summary_coverage_target}"
 			_polap_log2 "    output3: ${_summary_j_candidate}"
 			_polap_log2 "    output4: ${_arg_unpolished_fasta}"
 			_polap_log2 "    output5: ${_arg_final_assembly}"
@@ -3496,7 +3520,7 @@ HEREDOC
 		# Display the progress and remaining time on the same line if no verbose
 		if [ "${_arg_verbose}" -eq "1" ]; then
 			printf "\r%-${_terminal_width}s" " " >&3
-			_polap_log0_ne "\r$status"
+			_polap_log0_ne "\r$status, elapsed time: $(_polap_get_elapsed_time ${_start_time})"
 		fi
 
 		# determine the sample size and the Flye's alpha
@@ -3561,6 +3585,8 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return 0
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
+	local _start_time=$(date +%s)
+	# _polap_lib_timing-step-reset
 	local i=0
 	local _summary_gfa_number_segments=0
 	local _summary_gfa_number_links=0
@@ -3800,7 +3826,7 @@ HEREDOC
 		# Display the progress and remaining time on the same line
 		if [ "${_arg_verbose}" -eq "1" ]; then
 			printf "\r%-${_terminal_width}s" " " >&3
-			_polap_log0_ne "\r$status"
+			_polap_log0_ne "\r$status, elapsed time: $(_polap_get_elapsed_time ${_start_time})"
 		fi
 
 		# determine the sample size and the Flye's alpha

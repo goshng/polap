@@ -48,7 +48,9 @@ _POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
 source "${_POLAPLIB_DIR}/polap-lib-timing.sh"
 
 _log_echo() {
-	echo "$(date '+%Y-%m-%d %H:%M:%S') [$subcmd1] - $1" >>"${_brg_outdir}/polap-data-v2.txt"
+	if [[ -s "${_brg_outdir}/polap-data-v2.txt" ]]; then
+		echo "$(date '+%Y-%m-%d %H:%M:%S') [$subcmd1] - $1" >>"${_brg_outdir}/polap-data-v2.txt"
+	fi
 	# echo "$1"
 }
 
@@ -200,7 +202,7 @@ else
 	fi
 fi
 # _polap_version="$(${_polap_cmd} --version | awk '{print $2}')"
-_polap_version="0.4.3.7.4"
+_polap_version="0.4.3.7.5"
 _media1_dir="/media/h1/sra"
 _media2_dir="/media/h2/sra"
 _media_dir="/media/h2/sra"
@@ -469,6 +471,26 @@ help_message_test=$(
 HEREDOC
 )
 
+help_message_infer=$(
+	cat <<HEREDOC
+
+  Build a plastid genome via subsampling ONT long-read data.
+
+  simple-polish: default for subsampling-based short-read polishing
+  random: off to use CSV's random seed, otherwise on
+HEREDOC
+)
+
+help_message_check=$(
+	cat <<HEREDOC
+
+  Build a plastid genome and check the accuracy via subsampling ONT long-read data.
+
+  simple-polish: default for subsampling-based short-read polishing
+  random: off to use CSV's random seed, otherwise on
+HEREDOC
+)
+
 help_message_refs=$(
 	cat <<HEREDOC
 
@@ -538,6 +560,7 @@ help_message_local_batch=$(
   inum: output i number or o/<inum> folder
   ref: 0 uses table2's T/F, off for not use, on for use
   getorganelle: off for not executing of getorganelle, on for getorganelle run
+  random: off to use CSV's random seed, otherwise on
 HEREDOC
 )
 
@@ -553,6 +576,7 @@ help_message_remote_batch=$(
   inum: output i number or o/<inum> folder
   ref: 0 uses table2's T/F, off for not use, on for use
   getorganelle: off for not executing of getorganelle, on for getorganelle run
+  random: off to use CSV's random seed, otherwise on
   jobs: the number jobs to execute simultaneously (1 if outdir is not all)
 HEREDOC
 )
@@ -670,6 +694,7 @@ _arg5=${5:-arg5}
 _arg6=${6:-arg6}
 _arg7=${7:-arg7}
 _arg8=${8:-arg8}
+_arg9=${9:-arg9}
 
 ################################################################################
 # Part of genus_species
@@ -792,6 +817,7 @@ batch_genus_species() {
 	local _brg_confirm="${4:-off}"
 	local _brg_redo="${5:-off}"
 	local _brg_getorganelle="${6:-off}"
+	local _brg_random="${7:-off|on}"
 
 	# local do_simple_polishing="on"
 	local target_index="${_brg_outdir}-${_brg_inum}"
@@ -960,7 +986,7 @@ batch_genus_species() {
 	if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.subsample-polishing.1.fa" ]]; then
 		_log_echo "Found: infer case"
 	else
-		infer_genus_species "${_brg_outdir}" "${_brg_inum}"
+		infer_genus_species "${_brg_outdir}" "${_brg_inum}" default "${_brg_random}"
 		if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.subsample-polishing.1.fa" ]]; then
 			_log_echo "Success: infer case"
 		else
@@ -974,7 +1000,7 @@ batch_genus_species() {
 		if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.simple-polishing.1.fa" ]]; then
 			_log_echo "Found: infer case - simple polishing"
 		else
-			infer_genus_species "${_brg_outdir}" "${_brg_inum}" simple
+			infer_genus_species "${_brg_outdir}" "${_brg_inum}" simple "${_brg_random}"
 			if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.simple-polishing.1.fa" ]]; then
 				_log_echo "Success: infer case - simple polishing"
 			else
@@ -990,7 +1016,7 @@ batch_genus_species() {
 		if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
 			_log_echo "Found: check case"
 		else
-			check_genus_species "${_brg_outdir}" "${_brg_inum}"
+			check_genus_species "${_brg_outdir}" "${_brg_inum}" default "${_brg_random}"
 			if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
 				_log_echo "Success: check case"
 			else
@@ -1003,7 +1029,7 @@ batch_genus_species() {
 			if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.simple-polishing.reference.aligned.1.fa" ]]; then
 				_log_echo "Found: check case - simple polishing"
 			else
-				check_genus_species "${_brg_outdir}" "${_brg_inum}" simple
+				check_genus_species "${_brg_outdir}" "${_brg_inum}" simple "${_brg_random}"
 				if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.simple-polishing.reference.aligned.1.fa" ]]; then
 					_log_echo "Success: check case - simple polishing"
 				else
@@ -1043,6 +1069,7 @@ remote-batch_genus_species_for() {
 	local _brg_inum="${2:-0}"
 	local _brg_ref="${3:-0}"
 	local _brg_getorganelle="${4:-off}"
+	local _brg_random="${5:-off}"
 
 	# Gets the datasets
 	local target_index="${_brg_outdir}-${_brg_inum}"
@@ -1095,7 +1122,7 @@ remote-batch_genus_species_for() {
 		fi
 	fi
 
-	batch_genus_species ${_brg_outdir} ${_brg_inum} "${_switch_ref}" on on "${_brg_getorganelle}"
+	batch_genus_species ${_brg_outdir} ${_brg_inum} "${_switch_ref}" on on "${_brg_getorganelle}" "${_brg_random}"
 	archive_genus_species ${_brg_outdir}
 
 	if [[ "${_local_host}" != "$(hostname)" ]]; then
@@ -1112,7 +1139,8 @@ remote-batch_genus_species() {
 	local _brg_inum="${2:-0}"
 	local _brg_ref="${3:-0}"
 	local _brg_getorganelle="${4:-off}"
-	local _brg_pnum="${5:-1}"
+	local _brg_random="${5:-off}"
+	local _brg_pnum="${6:-1}"
 	# local _brg_per_host="${4:-off}"
 
 	if [[ "${_local_host}" == "$(hostname)" ]]; then
@@ -1122,7 +1150,7 @@ remote-batch_genus_species() {
 	fi
 
 	if [[ "${_brg_outdir}" == "all" ]]; then
-		printf "%s\n" "${Sall[@]}" | parallel -j ${_brg_pnum} bash src/polap-data-v2.sh remote-batch {} "${_brg_inum}" "${_brg_ref}" "${_brg_getorganelle}"
+		printf "%s\n" "${Sall[@]}" | parallel -j ${_brg_pnum} bash ${_polap_script_bin_dir}/polap-data-v2.sh remote-batch {} "${_brg_inum}" "${_brg_ref}" "${_brg_getorganelle}" "${_brg_random}"
 
 		# for _v1 in "${Sall[@]}"; do
 		# 	if [[ "${_brg_per_host}" == "on" ]]; then
@@ -1145,6 +1173,7 @@ local-batch_genus_species_for() {
 	local _brg_inum="${2:-0}"
 	local _brg_ref="${3:-0}"
 	local _brg_getorganelle="${4:-off}"
+	local _brg_random="${5:-off}"
 
 	# Gets the datasets
 	local target_index="${_brg_outdir}-0"
@@ -1208,7 +1237,7 @@ local-batch_genus_species_for() {
 	rm -rf "${long_sra}"
 	rm -rf "${short_sra}"
 
-	batch_genus_species ${_brg_outdir} ${_brg_inum} "${_switch_ref}" on on "${_brg_getorganelle}"
+	batch_genus_species ${_brg_outdir} ${_brg_inum} "${_switch_ref}" on on "${_brg_getorganelle}" "${_brg_random}"
 
 	return
 }
@@ -1218,10 +1247,11 @@ local-batch_genus_species() {
 	local _brg_inum="${2:-0}"
 	local _brg_ref="${3:-0}"
 	local _brg_getorganelle="${4:-off}"
+	local _brg_random="${5:-off}"
 
 	if [[ "${_brg_outdir}" == "all" ]]; then
 		for _v1 in "${Sall[@]}"; do
-			local-batch_genus_species_for "${_v1}" "${_brg_inum}" "${_brg_ref}" "${_brg_getorganelle}"
+			local-batch_genus_species_for "${_v1}" "${_brg_inum}" "${_brg_ref}" "${_brg_getorganelle}" "${_brg_random}"
 		done
 	else
 		local-batch_genus_species_for "$@"
@@ -1829,6 +1859,7 @@ infer_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_inum="${2:-0}"
 	local simple_polishing="${3:-default}"
+	local _brg_random="${4:-off}"
 	local target_index="${_brg_outdir}-${_brg_inum}"
 
 	local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
@@ -1838,6 +1869,10 @@ infer_genus_species() {
 	local ssh_remote="${_ssh["$target_index"]}"
 	local extracted_inum="${_inum["$target_index"]}"
 	local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
+
+	if [[ "${_brg_random}" == "on" ]]; then
+		random_seed=0
+	fi
 
 	local i=0
 	local n
@@ -2043,6 +2078,8 @@ check_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_inum="${2:-0}"
 	local simple_polishing="${3:-default}"
+	local _brg_random="${4:-off}"
+
 	local icount="${3:-0}" # not used any more
 	local target_index="${_brg_outdir}-${_brg_inum}"
 
@@ -2053,6 +2090,10 @@ check_genus_species() {
 	local ssh_remote="${_ssh["$target_index"]}"
 	local extracted_inum="${_inum["$target_index"]}"
 	local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
+
+	if [[ "${_brg_random}" == "on" ]]; then
+		random_seed=0
+	fi
 
 	local i="${icount}"
 	local n
@@ -3533,7 +3574,7 @@ supptable1_genus_species_for() {
 			>>"${_supptable_md}"
 		;;
 	x)
-		printf "Table: Three stages for subsampling-based plastid genome assemblies with the increasing subsample size upto the maximum subsampling rate of ${_P}%% from Stage 1 of the subsampling-based analysis for the dataset of _${_species}_. {#tbl:supptable1-${_label}}\n\n" \
+		printf "Table: Three stages of subsampling-based plastid genome assembly with increasing subsample size up to a maximum subsampling rate of ${_P}%% in Stage 1 of the analysis for the _${_species}_ dataset. {#tbl:supptable1-${_label}}\n\n" \
 			>>"${_supptable_md}"
 		;;
 	*)
@@ -3562,7 +3603,7 @@ supptable1_genus_species_for() {
 		output="${_supptable_md}"
 
 		# Print the header for Stage 1
-		echo "| Stage 1 |   I |   Rate | Alpha | Pmem |       G | Time |   N |      L |   C | Length |" >>$output
+		echo "| Stage 1 |   I |   Rate | Alpha | Pmem |       D | Time |   N |      L |   C | Length |" >>$output
 		echo "| -----: | --: | -----: | ----: | ---: | ------: | ---: | --: | -----: | --: | -----: |" >>$output
 
 		# Append the content of 1.md with Stage 1 formatting
@@ -3829,8 +3870,8 @@ EOF
 	fi
 
 	cat <<EOF >>"$_supptable_md"
-
-  ![Plastid genome assembly graphs generated from Stage 1 of the subsampling-based method for the dataset of _${_species}_. Each number corresponds to the iteration index of Stage 1 of @tbl:supptable1-${_label}. The number with a following x and the gigabytes value are the read-coverage threshold and the peak memory used by *Flye* assembler. All graphs were drawn using Bandage software (Wick et al. 2015).](empty.png){#fig:suppfigure1-${_label}} 
+  
+![Plastid genome assembly graphs generated from Stage 1 of the subsampling-based method for the _${_species}_ dataset. Each number corresponds to the iteration index in Stage 1 as shown in @tbl:supptable1-${_label}. The value followed by "x" indicates the read-coverage threshold, and the accompanying gigabyte value represents the peak memory used by the *Flye* assembler. All graphs were drawn using Bandage software (Wick et al. 2015).](empty.png){#fig:suppfigure1-${_label}} 
 
 EOF
 
@@ -4318,8 +4359,7 @@ case "$subcmd1" in
 	'two-arguments')
 	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
 	;;
-'infer' | \
-	'infer2' | \
+'infer2' | \
 	'infer3only' | \
 	'downsample2infer' | \
 	'check')
@@ -4429,11 +4469,27 @@ archive)
 	;;
 batch)
 	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir> <inum:N> <ref:off|on> <confirm-skip:off|on> <redo:off|on> <getorganelle:off|on>"
-		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 on off off off"
-		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 on on off off"
-		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 off on on on"
+		echo "Help: ${subcmd1} <outdir> <inum:0|N> <ref:off|on> <confirm-skip:off|on> <redo:off|on> <getorganelle:off|on> [random:off|on]"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 on off off off off"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 on on off off off"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 off on on on off"
 		echo "${help_message_batch}"
+		exit 0
+	fi
+	[[ "${_arg3}" == arg3 ]] && _arg3=""
+	[[ "${_arg4}" == arg4 ]] && _arg4=""
+	[[ "${_arg5}" == arg5 ]] && _arg5=""
+	[[ "${_arg6}" == arg6 ]] && _arg6=""
+	[[ "${_arg7}" == arg7 ]] && _arg7=""
+	[[ "${_arg8}" == arg8 ]] && _arg8=""
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}" "${_arg7}" "${_arg8}"
+	;;
+remote-batch)
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <outdir|all> <inum:0|N> <ref:0|off|on> <getorganelle:off|on> [random:off|on] <jobs:1|N>"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 0 0 off off 1"
+		echo "  polap-data-v2.sh ${subcmd1} all 2 0 off off 3"
+		echo "${help_message_remote_batch}"
 		exit 0
 	fi
 	[[ "${_arg3}" == arg3 ]] && _arg3=""
@@ -4443,23 +4499,9 @@ batch)
 	[[ "${_arg7}" == arg7 ]] && _arg7=""
 	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}" "${_arg7}"
 	;;
-remote-batch)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir|all> <inum:0|N> <ref:0|off|on> <getorganelle:off|on> <jobs:1|N>"
-		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 0 0 off 1"
-		echo "  polap-data-v2.sh ${subcmd1} all 2 0 off 3"
-		echo "${help_message_remote_batch}"
-		exit 0
-	fi
-	[[ "${_arg3}" == arg3 ]] && _arg3=""
-	[[ "${_arg4}" == arg4 ]] && _arg4=""
-	[[ "${_arg5}" == arg5 ]] && _arg5=""
-	[[ "${_arg6}" == arg6 ]] && _arg6=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}"
-	;;
 local-batch)
 	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir|all> <inum:0|N> <ref:0|off|on> <getorganelle:off|on>"
+		echo "Help: ${subcmd1} <outdir|all> <inum:0|N> <ref:0|off|on> <getorganelle:off|on> [random:off|on]"
 		echo "  polap-data-v2.sh ${subcmd1} Spirodela_polyrhiza 0"
 		echo "  polap-data-v2.sh ${subcmd1} all 0"
 		echo "${help_message_local_batch}"
@@ -4468,7 +4510,8 @@ local-batch)
 	[[ "${_arg3}" == arg3 ]] && _arg3=""
 	[[ "${_arg4}" == arg4 ]] && _arg4=""
 	[[ "${_arg5}" == arg5 ]] && _arg5=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
+	[[ "${_arg6}" == arg6 ]] && _arg6=""
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}"
 	;;
 get)
 	if [[ "${_arg2}" == arg2 ]]; then
@@ -4495,6 +4538,30 @@ report)
 	[[ "${_arg3}" == arg3 ]] && _arg3=""
 	[[ "${_arg4}" == arg4 ]] && _arg4=""
 	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
+	;;
+infer)
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <outdir> [inum:0|N] [simple-polish:default|simple] [random:off|on]"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 default on"
+		echo "${help_message_infer}"
+		exit 0
+	fi
+	[[ "${_arg3}" == arg3 ]] && _arg3=""
+	[[ "${_arg4}" == arg4 ]] && _arg4=""
+	[[ "${_arg5}" == arg5 ]] && _arg5=""
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
+	;;
+check)
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <outdir> [inum:0|N] [simple-polish:default|simple] [random:off|on]"
+		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 default on"
+		echo "${help_message_infer}"
+		exit 0
+	fi
+	[[ "${_arg3}" == arg3 ]] && _arg3=""
+	[[ "${_arg4}" == arg4 ]] && _arg4=""
+	[[ "${_arg5}" == arg5 ]] && _arg5=""
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
 	;;
 maintable1)
 	if [[ "${_arg2}" == arg2 ]]; then

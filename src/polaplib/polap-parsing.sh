@@ -831,14 +831,14 @@ parse_commandline() {
 		--random-seed)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_random_seed="$2"
-			if ((_arg_random_seed} <= 0)); then
+			if ((_arg_random_seed <= 0)); then
 				_arg_random_seed=$RANDOM
 			fi
 			shift
 			;;
 		--random-seed=*)
 			_arg_random_seed="${_key##--random-seed=}"
-			if ((_arg_random_seed} <= 0)); then
+			if ((_arg_random_seed <= 0)); then
 				_arg_random_seed=$RANDOM
 			fi
 			;;

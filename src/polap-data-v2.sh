@@ -4933,7 +4933,7 @@ delete-polap-github)
 	echo "  polap"
 	read -p "Do you want to delete all the downloaded polap source? (y/N): " confirm
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
-		rm -f ${_polap_version}.zip.*
+		rm -f ${_polap_version}.zip*
 		rm -rf polap-${_polap_version}
 		rm -rf polap
 		echo "polap download polap-${_polap_version} and its zipped file have been deleted."
@@ -4964,6 +4964,7 @@ install-fmlrc)
 					conda env create -f src/polaplib/polap-conda-environment-fmlrc.yaml
 				else
 					echo "Error: no such file: ${_polap_version}.zip - no such polap version"
+					echo "Suggestion: _polap_version=0.4.3.7.4 $0 $subcmd1"
 				fi
 			fi
 		else

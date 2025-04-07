@@ -230,8 +230,7 @@ How to set a custom CSV:
 csv_file=a.csv $0
 
 More help for subcommands:
-  $0 help <subcommand>
-  $0 <subcommand>
+$(basename $0) help <subcommand>
 HEREDOC
 )
 
@@ -482,6 +481,31 @@ help_message_patch_polap=$(
 
   Patch polap with a specific version.
   _polap_version=<VERSION> $0 $subcmd1
+HEREDOC
+)
+
+help_message_install_getorganelle=$(
+	cat <<HEREDOC
+
+  Install conda environments: getorganelle
+  conda create -y --name getorganelle bioconda::getorganelle
+  conda activate getorganelle
+  get_organelle_config.py --add embplant_pt,embplant_mt
+HEREDOC
+)
+
+help_message_install_cflye=$(
+	cat <<HEREDOC
+
+  Install cflye to polap conda environment
+  conda install -y goshng::cflye
+HEREDOC
+)
+
+help_message_install_fmlrc=$(
+	cat <<HEREDOC
+
+  Install conda environments: polap-fmlrc
 HEREDOC
 )
 
@@ -4902,13 +4926,18 @@ download-polap-github)
 	fi
 	;;
 delete-polap-github)
-	read -p "Do you want to delete the downloaded polap source? (y/N): " confirm
+	echo "Deleting the following:"
+	echo "  ${_polap_version}.zip and duplicates"
+	echo "  polap-${_polap_version}"
+	echo "  polap"
+	read -p "Do you want to delete all the downloaded polap source? (y/N): " confirm
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
-		rm -f ${_polap_version}.zip
+		rm -f ${_polap_version}.zip.*
 		rm -rf polap-${_polap_version}
+		rm -rf polap
 		echo "polap download polap-${_polap_version} and its zipped file have been deleted."
 	else
-		echo "polap download from github is canceled."
+		echo "Deleting the polap download from github is canceled."
 	fi
 	;;
 install-fmlrc)
@@ -4927,10 +4956,10 @@ install-fmlrc)
 			if conda env list | awk '{print $1}' | grep -qx "polap-fmlrc"; then
 				echo "ERROR: Conda environment 'polap-fmlrc' already exists."
 			else
-				wget https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
+				wget -q https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
 				unzip -o -q ${_polap_version}.zip
 				cd polap-${_polap_version}
-				conda env create -f src/polap-conda-environment-fmlrc.yaml
+				conda env create -f src/polaplib/polap-conda-environment-fmlrc.yaml
 			fi
 		else
 			echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
@@ -4944,11 +4973,12 @@ patch-polap)
 	read -p "Do you want to replace conda env polap with the version ${_polap_version}? (y/N): " confirm
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		if conda env list | awk '{print $1}' | grep -qx "polap"; then
+			echo "Updating the Polap Conda environment to version ${_polap_version}."
 			wget -q https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
 			unzip -o -q ${_polap_version}.zip
 			cd polap-${_polap_version}/src
 			bash polaplib/polap-build.sh >../build.sh
-			cd -
+			cd ..
 			PREFIX="$(conda info --base)/envs/polap" bash build.sh
 		else
 			echo "Error: You do not have polap environment . Please activate polap before running this script."
@@ -4962,7 +4992,7 @@ bleeding-edge-polap)
 	read -p "Do you want to update conda env polap with the latest polap github? (y/N): " confirm
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		if conda env list | awk '{print $1}' | grep -qx "polap"; then
-			echo "Upgrading the Polap Conda environment to its most current state on GitHub ensures access to the latest features and updates."
+			echo "Updating the Polap Conda environment to its most current state on GitHub ensures access to the latest features and updates."
 			if [[ -d "polap" ]]; then
 				rm -rf polap
 			fi
@@ -5006,6 +5036,7 @@ test-polap)
 	fi
 	;;
 uninstall)
+	echo "Removing the following conda environments: polap, polap-fmlrc, getorganelle"
 	read -p "Do you want to uninstall all conda environments for polap? (y/N): " confirm
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		source "$(conda info --base)/etc/profile.d/conda.sh"
@@ -5018,6 +5049,7 @@ uninstall)
 			conda remove -y -n polap --all
 			conda remove -y -n polap-fmlrc --all
 			conda remove -y -n getorganelle --all
+			echo "conda deactivate if necessary"
 		fi
 	else
 		echo "Uninstallation is canceled."
@@ -5025,43 +5057,55 @@ uninstall)
 	fi
 	;;
 install-getorganelle)
-	# Check current conda environment
-	# Initialize Conda for non-interactive shells
-	source "$(conda info --base)/etc/profile.d/conda.sh"
-	if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
-		echo "You're not in the base environment. Chaniging 'base'..."
-		conda activate base
-	fi
+	read -p "Do you want to install getorganelle? (y/N): " confirm
+	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+		# Check current conda environment
+		# Initialize Conda for non-interactive shells
+		source "$(conda info --base)/etc/profile.d/conda.sh"
+		if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+			echo "You're not in the base environment. Chaniging 'base'..."
+			conda activate base
+		fi
 
-	if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
-		echo "You're in the base environment. Creating 'getorganelle'..."
-		if conda env list | awk '{print $1}' | grep -qx "getorganelle"; then
-			echo "ERROR: Conda environment 'getorganelle' already exists."
+		if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+			echo "You're in the base environment. Creating 'getorganelle'..."
+			if conda env list | awk '{print $1}' | grep -qx "getorganelle"; then
+				echo "ERROR: Conda environment 'getorganelle' already exists."
+			else
+				conda create -y --name getorganelle bioconda::getorganelle
+				conda activate getorganelle
+				get_organelle_config.py --add embplant_pt,embplant_mt
+			fi
 		else
-			conda create -y --name getorganelle bioconda::getorganelle
-			conda activate getorganelle
-			get_organelle_config.py --add embplant_pt,embplant_mt
+			echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
+			exit 1
 		fi
 	else
-		echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
-		exit 1
+		echo "getorganelle installation is canceled."
+		echo "${help_message_install_getorganelle}"
 	fi
 	;;
 install-cflye)
-	# Check current conda environment
-	# Initialize Conda for non-interactive shells
-	source "$(conda info --base)/etc/profile.d/conda.sh"
-	if [[ "$CONDA_DEFAULT_ENV" != "polap" ]]; then
-		echo "You're not in the polap environment. Chaniging 'polap'..."
-		conda activate polap
-	fi
+	read -p "Do you want to install cflye? (y/N): " confirm
+	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+		# Check current conda environment
+		# Initialize Conda for non-interactive shells
+		source "$(conda info --base)/etc/profile.d/conda.sh"
+		if [[ "$CONDA_DEFAULT_ENV" != "polap" ]]; then
+			echo "You're not in the polap environment. Chaniging 'polap'..."
+			conda activate polap
+		fi
 
-	if [[ "$CONDA_DEFAULT_ENV" == "polap" ]]; then
-		echo "You're in the polap environment. Installing 'cflye'..."
-		conda install -y goshng::cflye
+		if [[ "$CONDA_DEFAULT_ENV" == "polap" ]]; then
+			echo "You're in the polap environment. Installing 'cflye'..."
+			conda install -y goshng::cflye
+		else
+			echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate polap before running this script."
+			exit 1
+		fi
 	else
-		echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate polap before running this script."
-		exit 1
+		echo "cflye or read-coverage filtering version Flye installation is canceled."
+		echo "${help_message_install_cflye}"
 	fi
 	;;
 mkdir-all)

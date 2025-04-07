@@ -485,7 +485,24 @@ The final polished mitochondrial genome sequence will be saved as `mt.1.fa`.
 
 ### Sample Datasets
 
-A sample dataset demonstrating Polap's capabilities is available on Figshare: [Polap data analysis of 11 datasets](https://figshare.com/s/07305fd4e18c74080fbc).
+#### mtDNA reference-generating method
+
+A sample dataset demonstrating Polap's mtDNA assembly is available on Figshare: [Polap data analysis of 11 datasets](https://figshare.com/s/07305fd4e18c74080fbc).
+
+#### ptDNA subsampling-based method
+
+A sample dataset demonstrating Polap's ptDNA assembly is available on Figshare: [Polap data analysis of 28 datasets](https://figshare.com/s/ec1cb394870c7727a2d4).
+
+```bash
+git clone https://github.com/goshng/polap.git
+bash polap/polap-data-v2.sh install-polap
+bash polap/polap-data-v2.sh install-fmlrc
+bash polap/polap-data-v2.sh install-cflye
+conda activate polap
+polap-data-v2.sh sample-csv
+polap-data-v2.sh download-test-data
+polap-data-v2.sh local-batch Eucalyptus_pauciflora t off
+```
 
 ### MT Contig Name File
 

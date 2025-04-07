@@ -1,5 +1,10 @@
 #!/bin/bash
 
+_polap_script_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
+	echo "Couldn't determine the script's running directory, which probably matters, bailing out" >&2
+	exit 2
+}
+
 # Data28
 S4=(
 	Anthoceros_agrestis
@@ -12,34 +17,30 @@ if [[ -d "src" ]]; then
 	_polap_data_cmd="bash src/polap-data-v2.sh"
 	_brg_default_target_dir="$HOME/all/manuscript/polap-v0.4/"
 else
-	_polap_data_cmd="polap-data-v2.sh"
+	_polap_data_cmd="${_polap_script_bin_dir}/polap-data-v2.sh"
 	if [[ -d "man" ]]; then
 		_brg_default_target_dir="man/"
 	fi
 fi
+
+for i in 0 1 2 3; do
+	# ${_polap_data_cmd} local-batch all $i 0 on
+
+	# ${_polap_data_cmd} get all $i add off
+
+	# ${_polap_data_cmd} report all $i infer-1
+
+	${_polap_data_cmd} maintable1 all $i infer-1
+	${_polap_data_cmd} supptable1 Eucalyptus_pauciflora $i infer-1 x
+done
 
 for i in "${S4[@]}"; do
 	${_polap_data_cmd} supptable1 $i 2 infer-1 x
 	${_polap_data_cmd} suppfigure1 $i 2 infer-1 1 1 yes
 done
 
-${_polap_data_cmd} copy-figures
-
-exit
-
-for i in 2 3; do
-	# ${_polap_data_cmd} local-batch all $i 0 on
-	${_polap_data_cmd} get all $i add off
-	# ${_polap_data_cmd} report all $i infer-1
-	${_polap_data_cmd} maintable1 all $i infer-1
-	${_polap_data_cmd} supptable1 Eucalyptus_pauciflora $i infer-1 x
-done
-
-${_polap_data_cmd} supptable1 Anthoceros_agrestis 2 infer-1 x
-
 ${_polap_data_cmd} supptable1 all 2 infer-1 x
 ${_polap_data_cmd} suppfigure1 all 2 infer-1 1 1 yes
-${_polap_data_cmd} suppfigure1 Eucalyptus_pauciflora 2 infer-1 1 1 yes
 ${_polap_data_cmd} suppfigure3 2 infer-1 on yes
 ${_polap_data_cmd} suppfigure3 2 infer-1 off yes
 ${_polap_data_cmd} copy-figures

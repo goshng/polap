@@ -1096,11 +1096,19 @@ parse_commandline() {
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_disassemble_c="$2"
 			_arg_disassemble_c_is="on"
+			# check if the fasta file exists.
+			if [[ ! -s "${_arg_disassemble_c}" ]]; then
+				die "ERROR: no such file: ${_arg_disassemble_c}"
+			fi
 			shift
 			;;
 		--disassemble-c=*)
 			_arg_disassemble_c="${_key##--disassemble-c=}"
 			_arg_disassemble_c_is="on"
+			# check if the fasta file exists.
+			if [[ ! -s "${_arg_disassemble_c}" ]]; then
+				die "ERROR: no such file: ${_arg_disassemble_c}"
+			fi
 			;;
 		--disassemble-i)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

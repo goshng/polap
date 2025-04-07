@@ -23,14 +23,13 @@ Dioscorea_japonica-2,Dioscorea_japonica,Dioscorea_japonica,SRR16108312,SRR161083
 Dunaliella_tertiolecta-0,Dunaliella_tertiolecta,Dunaliella_tertiolecta,SRR22857204,SRR22857205,marybeth,160000,10,10,5,1.0,0.75,139,marybeth,32,10,0,T,F,F,dummy,done
 Dunaliella_tertiolecta-1,Dunaliella_tertiolecta,Dunaliella_tertiolecta,SRR22857204,SRR22857205,marybeth,160000,10,5,5,1.0,0.75,315,marybeth,32,10,1,T,F,F,dummy,done
 Dunaliella_tertiolecta-2,Dunaliella_tertiolecta,Dunaliella_tertiolecta,SRR22857204,SRR22857205,marybeth,160000,10,5,5,1.0,0.75,315,marybeth,32,10,2,T,F,F,dummy,done
-Eucalyptus_pauciflora-0t,Eucalyptus_pauciflora,Eucalyptus_pauciflora,l,s,siepel,160000,5,80,5,5,5,155,siepel,16,10,0,F,F,F,dummy,test
 Eucalyptus_pauciflora-0,Eucalyptus_pauciflora,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,160000,10,10,5,1.0,0.75,143,siepel,16,10,0,T,F,F,dummy,done
 Eucalyptus_pauciflora-1,Eucalyptus_pauciflora,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,160000,10,5,5,1.0,0.75,317,siepel,16,10,1,T,F,T,dummy,done
 Eucalyptus_pauciflora-2,Eucalyptus_pauciflora,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,160000,10,5,5,1.0,0.75,317,siepel,16,10,2,T,F,T,dummy,done
 Eucalyptus_pauciflora-3,Eucalyptus_pauciflora,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,160000,50,10,10,1.0,0.75,155,siepel,16,10,3,T,F,F,dummy,done
 Eucalyptus_pauciflora-test,Eucalyptus_pauciflora,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,160000,5,10,3,1.0,0.75,155,siepel,16,1,test1,F,F,F,dummy,test
 Eucalyptus_pauciflora-all,Eucalyptus_pauciflora,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,160000,5,1,5,5,5,155,siepel,16,0,test2,F,F,F,dummy,test
-Eucalyptus_pauciflora-t,Eucalyptus_pauciflora,Eucalyptus_pauciflora,l,s,siepel,160000,5,80,5,5,5,155,siepel,16,10,t,F,F,F,dummy,test
+Eucalyptus_pauciflora-t,Eucalyptus_pauciflora,Eucalyptus_pauciflora,l,s,siepel,160000,5,100,5,1.0,0.75,155,siepel,16,0,t,F,F,F,dummy,test
 Euonymus_alatus-0,Euonymus_alatus,Euonymus_alatus,SRR16133411,SRR16122871,kishino,160000,10,10,5,1.0,0.75,137,kishino,32,10,0,T,F,F,dummy,done
 Euonymus_alatus-1,Euonymus_alatus,Euonymus_alatus,SRR16133411,SRR16122871,kishino,160000,10,5,5,1.0,0.75,319,kishino,32,10,1,T,F,F,dummy,done
 Euonymus_alatus-2,Euonymus_alatus,Euonymus_alatus,SRR16133411,SRR16122871,kishino,160000,10,5,5,1.0,0.75,319,kishino,32,10,2,T,F,F,dummy,done

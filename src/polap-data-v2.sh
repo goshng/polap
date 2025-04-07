@@ -196,7 +196,7 @@ if [[ -d "src" ]]; then
 	_polap_cmd="src/polap.sh"
 	_brg_default_target_dir="$HOME/all/manuscript/polap-v0.4/"
 else
-	_polap_cmd="polap"
+	_polap_cmd="${_polap_script_bin_dir}/polap.sh"
 	if [[ -d "man" ]]; then
 		_brg_default_target_dir="man/"
 	fi
@@ -220,10 +220,10 @@ Polap data analysis of subsampling-based plastid genome assembly
 List of subcommands:
   install-conda, setup-conda, install-polap, install-fmlrc, install-cflye
   install-getorganelle, download-polap-github, patch-polap, bleeding-edge-polap
-  delete-polap-github, uninstall, test-polap, help, system
-  mkdir-all, rm-empty, rm, example-data, convert-data
+  delete-polap-github, uninstall, test-polap, download-test-data, help, system
+  mkdir-all, rm-empty, rm, example-data, convert-data, sample-csv
   sra, refs, getorganelle, ptgaul, msbwt,
-  sample-csv, local-batch, remote-batch, batch, archive, clean, report, get
+  local-batch, remote-batch, batch, archive, clean, report, get
   maintable1, supptable1, suppfigure1, suppfigure3, suppfigure4
 
 How to set a custom CSV:
@@ -466,6 +466,8 @@ help_message_convert_data=$(
   P: the maximum subsampling rate
   N: the number of replicates in Stage 1
   R: the number of replicates in Stages 2 and 3
+  I: the index
+  Seed: random number seed
 HEREDOC
 )
 
@@ -627,8 +629,8 @@ help_message_local_batch=$(
   all: combined with inum to locate the source
   each: actually all rows in the CSV
   inum: output i number or o/<inum> folder
-  ref: 0 uses table2's T/F, off for not use, on for use
-  getorganelle: off for not executing of getorganelle, on for getorganelle run
+  ref: 0 uses table2's T/F, off for not use of ptGAUL, on for use of ptGAUL
+  getorganelle: off for not executing getorganelle, on for getorganelle
   random: off to use CSV's random seed, otherwise on
 HEREDOC
 )
@@ -768,6 +770,7 @@ _arg6=${6:-arg6}
 _arg7=${7:-arg7}
 _arg8=${8:-arg8}
 _arg9=${9:-arg9}
+_arg10=${10:-arg10}
 
 ################################################################################
 # Part of genus_species
@@ -829,8 +832,10 @@ convert-data_genus_species() {
 	local _brg_hostname="${3:-$(hostname)}"
 	local _brg_setting_C="${4:-10}"
 	local _brg_setting_P="${5:-10}"
-	local _brg_setting_N="${6:-20}"
-	local _brg_setting_R="${7:-20}"
+	local _brg_setting_N="${6:-10}"
+	local _brg_setting_R="${7:-10}"
+	local _brg_setting_I="${8:-0}"
+	local _brg_setting_S="${9:-0}"
 
 	# Input and output file paths
 	# local input_file="polap-data-v2.data"
@@ -844,9 +849,11 @@ convert-data_genus_species() {
 		[[ "$species" == "species" ]] && continue
 
 		local base="${species}"
-		local species="${species}-0"
-		echo "${species},${base},${base},${long},${short},${_brg_hostname},160000,${_brg_setting_N},${_brg_setting_P},${_brg_setting_R},5,5,0,${_brg_hostname},16,${_brg_setting_C},0,T,F,F,dummy,done" >>"${_brg_csv}"
+		local species="${species}-${_brg_setting_I}"
+		echo "${species},${base},${base},${long},${short},${_brg_hostname},160000,${_brg_setting_N},${_brg_setting_P},${_brg_setting_R},1.0,0.75,${_brg_setting_S},${_brg_hostname},16,${_brg_setting_C},${_brg_setting_I},T,F,F,dummy,done" >>"${_brg_csv}"
 	done <"${_brg_data}"
+
+	echo "create ${_brg_csv}"
 }
 
 example-data_genus_species() {
@@ -994,7 +1001,7 @@ batch_genus_species() {
 			find "${_brg_outdir}/getorganelle" -maxdepth 1 -type f -name 'embplant_pt.*.gfa' -size +0c | grep -q .; then
 			_log_echo "Found: GetOrganelle assembled ptDNA"
 		else
-			getorganelle_genus_species "${_brg_outdir}"
+			getorganelle_genus_species "${_brg_outdir}" "${_brg_inum}"
 			if find "${_brg_outdir}/getorganelle" -maxdepth 1 -type f -name 'embplant_pt.*.gfa' -size +0c | grep -q .; then
 				_log_echo "Success: GetOrganelle assembled ptDNA"
 			else
@@ -1010,7 +1017,7 @@ batch_genus_species() {
 		if [[ -s "${_brg_outdir}/msbwt/comp_msbwt.npy" ]]; then
 			_log_echo "Found: FMLRC msbwt"
 		else
-			msbwt_genus_species "${_brg_outdir}"
+			msbwt_genus_species "${_brg_outdir}" "${_brg_inum}"
 			if [[ -s "${_brg_outdir}/msbwt/comp_msbwt.npy" ]]; then
 				_log_echo "Success: FMLRC msbwt"
 			else
@@ -1022,7 +1029,7 @@ batch_genus_species() {
 		if [[ -s "${_brg_outdir}/ptdna-reference.fa" ]]; then
 			_log_echo "Found: reference ptDNA"
 		else
-			get-ptdna-from-ncbi_genus_species "${_brg_outdir}"
+			get-ptdna-from-ncbi_genus_species "${_brg_outdir}" "${_brg_inum}"
 			if [[ -s "${_brg_outdir}/ptdna-reference.fa" ]]; then
 				_log_echo "Success: reference ptDNA"
 			else
@@ -1034,7 +1041,7 @@ batch_genus_species() {
 		if [[ -s "${_brg_outdir}/ptgaul/flye_cpONT/assembly_graph.gfa" ]]; then
 			_log_echo "Found: ptGAUL assembly"
 		else
-			ptgaul_genus_species "${_brg_outdir}"
+			ptgaul_genus_species "${_brg_outdir}" "${_brg_inum}"
 			if [[ -s "${_brg_outdir}/ptgaul/flye_cpONT/assembly_graph.gfa" ]]; then
 				_log_echo "Success: ptGAUL assembly"
 			else
@@ -1091,7 +1098,8 @@ batch_genus_species() {
 		fi
 	fi
 
-	if [[ -s "${_brg_outdir}/ptgaul/flye_cpONT/assembly_graph.gfa" ]]; then
+	# if [[ -s "${_brg_outdir}/ptgaul/flye_cpONT/assembly_graph.gfa" ]]; then
+	if [[ -s "${_brg_outdir}/ptdna-ptgaul.fa" ]]; then
 
 		if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
 			_log_echo "Found: check case"
@@ -1134,8 +1142,8 @@ batch_genus_species() {
 			fi
 		fi
 	else
-		echo "No such file: ${_brg_outdir}/ptgaul/flye_cpONT/assembly_graph.gfa"
-		echo "  so, skip comparing the ptGAUL and the subsampling-based assembly"
+		_log_echo "No such file: ${_brg_outdir}/ptdna-ptgaul.fa"
+		_log_echo "  so, skip comparing the ptGAUL and the subsampling-based assembly"
 	fi
 
 }
@@ -1263,9 +1271,15 @@ local-batch_genus_species_for() {
 	local _brg_random="${5:-off}"
 
 	# Gets the datasets
-	local target_index="${_brg_outdir}-0"
+	local target_index="${_brg_outdir}-${_brg_inum}"
 
-	local long_sra="${_long["$target_index"]}"
+	local long_sra
+	if [[ -v _long["$target_index"] ]]; then
+		local long_sra="${_long["$target_index"]}"
+	else
+		echo "ERROR: no such entry in ${csv_file}: $target_index"
+		return
+	fi
 	local short_sra="${_short["$target_index"]}"
 	local ssh_remote="${_ssh["$target_index"]}"
 	local extracted_inum="${_inum["$target_index"]}"
@@ -1519,19 +1533,35 @@ sra_genus_species() {
 	local _brg_inum="${2:-0}"
 	local target_index="${_brg_outdir}-${_brg_inum}"
 
-	local long_sra="${_long["$target_index"]}"
+	local long_sra
+	if [[ -v _long["$target_index"] ]]; then
+		local long_sra="${_long["$target_index"]}"
+	else
+		echo "ERROR: no such entry in ${csv_file}: $target_index"
+		return
+	fi
 	local short_sra="${_short["$target_index"]}"
 
 	echo "create ${_brg_outdir} ..."
-	mkdir -p "${_brg_outdir}/timing"
-	command time -v "${_polap_script_bin_dir}"/polap-ncbitools \
-		fetch sra "$long_sra" \
-		>${_brg_outdir}/tmp/long-sra.out \
-		2>${_brg_outdir}/timing/timing-long-sra.out
-	command time -v "${_polap_script_bin_dir}"/polap-ncbitools \
-		fetch sra "$short_sra" \
-		>${_brg_outdir}/tmp/short-sra.out \
-		2>${_brg_outdir}/timing/timing-short-sra.out
+	mkdir -p "${_brg_outdir}"/{tmp,timing}
+	if [ -z "${long_sra}" ]; then
+		echo "ERROR: no long-read SRA ID: ${long_sra}"
+	else
+		echo "  downloading long-read SRA ID: ${long_sra} ... be patient!"
+		command time -v "${_polap_script_bin_dir}"/polap-ncbitools \
+			fetch sra "$long_sra" \
+			>${_brg_outdir}/tmp/long-sra.out \
+			2>${_brg_outdir}/timing/timing-long-sra.out
+	fi
+	if [ -z "${short_sra}" ]; then
+		echo "ERROR: no short-read SRA ID: ${short_sra}"
+	else
+		echo "  downloading short-read SRA ID: ${short_sra} ... be patient!"
+		command time -v "${_polap_script_bin_dir}"/polap-ncbitools \
+			fetch sra "$short_sra" \
+			>${_brg_outdir}/tmp/short-sra.out \
+			2>${_brg_outdir}/timing/timing-short-sra.out
+	fi
 
 	echo "Next: $0 refs ${_brg_outdir} [number] to download reference ptDNAs from NCBI"
 	echo "Next: $0 coverage ${_brg_outdir} [number] to overview your data"
@@ -4599,12 +4629,6 @@ refs)
 	get-ptdna-from-ncbi_genus_species "${_arg2}"
 	;;
 sample-csv)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <all>"
-		echo "  polap-data-v2.sh ${subcmd1}"
-		exit 0
-	fi
-
 	if [[ -s "polap-data-v2.csv" ]]; then
 		echo "ERROR: you already have polap-data-v2.csv"
 		echo "  delete it if you want to create a new one."
@@ -4617,8 +4641,8 @@ sample-csv)
 	;;
 sra)
 	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir> <inum:N>"
-		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 0"
+		echo "Help: ${subcmd1} <outdir> <inum:0|N>"
+		echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana 0"
 		echo "${help_message_sra}"
 		exit 0
 	fi
@@ -4628,8 +4652,8 @@ sra)
 clean)
 	if [[ "${_arg2}" == arg2 ]]; then
 		echo "Help: ${subcmd1} <outdir> [confirm:off|on]"
-		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana on"
+		echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana"
+		echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana on"
 		exit 0
 	fi
 	[[ "${_arg3}" == arg3 ]] && _arg3=""
@@ -4816,7 +4840,7 @@ suppfigure4)
 	;;
 convert-data)
 	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} [data:${_polap_data_data}] [csv:${_polap_data_csv}] [host:$(hostname)] [C:10|N] [P:10|N] [N:20|N] [R:10|N] "
+		echo "Help: ${subcmd1} [data:${_polap_data_data}] [csv:${_polap_data_csv}] [host:$(hostname)] [C:10|N] [P:10|N] [N:10|N] [R:10|N] [I:0|N] [Seed:0|N]"
 		echo "  $0 ${subcmd1}"
 		echo "${help_message_convert_data}"
 		exit 0
@@ -4827,12 +4851,16 @@ convert-data)
 	[[ "${_arg6}" == arg6 ]] && _arg6=""
 	[[ "${_arg7}" == arg7 ]] && _arg7=""
 	[[ "${_arg8}" == arg8 ]] && _arg8=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}" "${_arg7}" "${_arg8}"
+	[[ "${_arg9}" == arg9 ]] && _arg9=""
+	[[ "${_arg10}" == arg10 ]] && _arg10=""
+	${subcmd1}_genus_species "${_arg2}" \
+		"${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}" "${_arg7}" "${_arg8}" \
+		"${_arg9}" "${_arg10}"
 	;;
 example-data)
 	if [[ "${_arg2}" == arg2 ]]; then
 		echo "Help: ${subcmd1} <data:${_polap_data_data}>"
-		echo "  $0 ${subcmd1}"
+		echo "  $(basename $0) ${subcmd1} 1.data"
 		exit 0
 	fi
 	${subcmd1}_genus_species "${_arg2}"
@@ -4982,13 +5010,18 @@ patch-polap)
 		if conda env list | awk '{print $1}' | grep -qx "polap"; then
 			echo "Updating the Polap Conda environment to version ${_polap_version}."
 			wget -q https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
-			unzip -o -q ${_polap_version}.zip
-			cd polap-${_polap_version}/src
-			bash polaplib/polap-build.sh >../build.sh
-			cd ..
-			PREFIX="$(conda info --base)/envs/polap" bash build.sh
+			if [[ -s "${_polap_version}.zip" ]]; then
+				unzip -o -q ${_polap_version}.zip
+				cd polap-${_polap_version}/src
+				bash polaplib/polap-build.sh >../build.sh
+				cd ..
+				PREFIX="$(conda info --base)/envs/polap" bash build.sh
+			else
+				echo "Error: no such file: ${_polap_version}.zip - no such polap version"
+				echo "Suggestion: _polap_version=0.4.3.7.4 $0 $subcmd1"
+			fi
 		else
-			echo "Error: You do not have polap environment . Please activate polap before running this script."
+			echo "Error: You do not have polap environment. Please activate polap before running this script."
 		fi
 	else
 		echo "polap patch is canceled."
@@ -5009,11 +5042,36 @@ bleeding-edge-polap)
 			cd ..
 			PREFIX="$(conda info --base)/envs/polap" bash build.sh
 		else
-			echo "Error: You do not have polap environment . Please activate polap before running this script."
+			echo "Error: You do not have polap environment. Please activate polap before running this script."
 		fi
 	else
 		echo "polap bleeding-edge version update is canceled."
 		echo "${help_message_bleeding_edge_polap}"
+	fi
+	;;
+local-edge-polap)
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <polap base path>"
+		echo "  $0 ${subcmd1} polap/github"
+		exit 0
+	fi
+	read -p "Do you want to update conda env polap with the local polap source? (y/N): " confirm
+	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+		if conda env list | awk '{print $1}' | grep -qx "polap"; then
+			echo "Updating the Polap Conda environment to the local source at ${_arg2}."
+			if [[ -d "${_arg2}/src" ]]; then
+				cd "${_arg2}/src"
+				bash polaplib/polap-build.sh >../build.sh
+				cd ..
+				PREFIX="$(conda info --base)/envs/polap" bash build.sh
+			else
+				echo "Error: The polap base path does not have src directory: ${_arg2}"
+			fi
+		else
+			echo "Error: You do not have polap environment. Please activate polap before running this script."
+		fi
+	else
+		echo "polap local version update is canceled."
 	fi
 	;;
 test-polap)
@@ -5040,6 +5098,28 @@ test-polap)
 		fi
 	else
 		echo "polap test is canceled."
+	fi
+	;;
+download-test-data)
+	read -p "Do you want to download test data for polap? (y/N): " confirm
+	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+		_s=polap-disassemble-test-full.tar.gz
+		# local _s=polap-disassemble-test.tar.gz
+		if [[ ! -s "${_s}" ]]; then
+			# full test data
+			curl -L -o "${_s}" "https://figshare.com/ndownloader/files/53457569?private_link=ec1cb394870c7727a2d4"
+			#
+			# test data
+			# curl -L -o "${_s}" "https://figshare.com/ndownloader/files/53457566?private_link=ec1cb394870c7727a2d4"
+		fi
+		if [[ ! -s "l.fastq" ]]; then
+			tar -zxf "${_s}"
+			echo "downloaded: l.fastq, s_1.fastq, s_2.fastq"
+		else
+			echo "You already have: l.fastq"
+		fi
+	else
+		echo "polap test download is canceled."
 	fi
 	;;
 uninstall)

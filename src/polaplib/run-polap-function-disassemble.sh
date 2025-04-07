@@ -1844,8 +1844,11 @@ _disassemble_make_params_txt() {
 	printf "%s: %s\n" "N" "${_arg_disassemble_n}" >>"${_disassemble_params_file}"
 	printf "%s: %s\n" "R" "${_arg_disassemble_r}" >>"${_disassemble_params_file}"
 	printf "%s: %s\n" "A" "${_arg_disassemble_a}" >>"${_disassemble_params_file}"
+	printf "%s: %s\n" "B" "${_arg_disassemble_b}" >>"${_disassemble_params_file}"
 	printf "%s: %s\n" "M" "${_arg_disassemble_m}" >>"${_disassemble_params_file}"
-	printf "%s: %s\n" "memory" "${_arg_disassemble_memory}" >>"${_disassemble_params_file}"
+	printf "%s: %s\n" "D" "${_arg_disassemble_delta}" >>"${_disassemble_params_file}"
+	printf "%s: %s\n" "Alpha" "${_arg_disassemble_alpha}" >>"${_disassemble_params_file}"
+	printf "%s: %s\n" "Memory" "${_arg_disassemble_memory}" >>"${_disassemble_params_file}"
 }
 
 _disassemble_make_params_stage1() {
@@ -1860,6 +1863,10 @@ _disassemble_make_params_stage1() {
 	printf "%s: %s\n" "R" "${_arg_disassemble_r}" >>"${_disassemble_params_file}"
 	printf "%s: %s\n" "A" "${_arg_disassemble_a}" >>"${_disassemble_params_file}"
 	printf "%s: %s\n" "B" "${_arg_disassemble_b}" >>"${_disassemble_params_file}"
+	printf "%s: %s\n" "M" "${_arg_disassemble_m}" >>"${_disassemble_params_file}"
+	printf "%s: %s\n" "D" "${_arg_disassemble_delta}" >>"${_disassemble_params_file}"
+	printf "%s: %s\n" "Alpha" "${_arg_disassemble_alpha}" >>"${_disassemble_params_file}"
+	printf "%s: %s\n" "Memory" "${_arg_disassemble_memory}" >>"${_disassemble_params_file}"
 }
 
 _disassemble_make_params_stage2() {
@@ -2878,7 +2885,7 @@ HEREDOC
 		local _d="${_arg_outdir}/ptdna.simple.${_arg_inum}.fa"
 		if [[ -s "${_s}" ]]; then
 			ln -sfn $(realpath "${_s}") "${_d}"
-			_polap_log0 "  Final plastid genome assembly (full short-read polishing and reference-aligned): ${_d}"
+			_polap_log0 "  Final plastid genome assembly (full short-read polishing): ${_d}"
 		fi
 
 		local _s="${_disassemble_i}/pt.simple-polishing.reference.aligned.1.fa"

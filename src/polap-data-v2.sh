@@ -221,7 +221,10 @@ List of subcommands:
   mkdir-all, rm-empty, rm, example-data, convert-data
   sra, refs, getorganelle, ptgaul, msbwt,
   sample-csv, local-batch, remote-batch, batch, archive, clean, report, get
-  maintable1, supptable1, suppfigure1, suppfigure3
+  maintable1, supptable1, suppfigure1, suppfigure3, suppfigure4
+
+How to set a custom CSV:
+csv_file=a.csv $0
 
 More help for subcommands:
   $0 help <subcommand>
@@ -263,7 +266,7 @@ It looks for a CSV file in the following order:
 
 The CSV file should have its first line serving as a header, followed by
 additional lines containing the options for an analysis. Example:
-species,_taxon,_folder,_long,_short,_host,_ptgaul_genomesize,_compare_n,_compare_p,_compare_r,_polish_n,_polish_p,_random_seed,_ssh,_memory,_downsample,_inum,_table1,_table2,_mainfigure,dummy,_status
+species,_taxon,_folder,_long,_short,_host,_ptgaul_genomesize,_compare_n,_compare_p,_compare_r,_disassemble_alpha,_disassemble_delta,_random_seed,_ssh,_memory,_downsample,_inum,_table1,_table2,_mainfigure,dummy,_status
 Anthoceros_agrestis-0,Anthoceros_agrestis,Anthoceros_agrestis,SRR10190639,SRR10250248,siepel,160000,20,10,10,5,5,157,siepel,16,10,0,T,F,F,dummy,done
 
 The following descriptions outline the column items present in the CSV file.
@@ -279,8 +282,8 @@ The first three columns can be considered redundant, admittedly.
 - _compare_n: the number of steps in the first stage of polap's disassemble
 - _compare_p: the maximum rate in the first stage of polap's disassemble
 - _compare_r: the number of steps in the second and third stages
-- _polish_n: NA or any number
-- _polish_p: NA or any number
+- _disassemble_alpha: NA or any number
+- _disassemble_delta: NA or any number
 - _random_seed: seed for random number generation
 - _ssh: the ssh name to connect to the remote
 - _memory: the maximum memory to use in polap's disassemble
@@ -464,6 +467,24 @@ help_message_convert_data=$(
 HEREDOC
 )
 
+help_message_install_polap=$(
+	cat <<HEREDOC
+
+  Install conda environments: polap
+  conda create -y --name polap bioconda::polap
+HEREDOC
+)
+
+help_message_uninstall=$(
+	cat <<HEREDOC
+
+  Uninstall conda environments: polap, polap-fmlrc, getorganelle
+  conda remove -n polap --all
+  conda remove -n polap-fmlrc --all
+  conda remove -n getorganelle --all
+HEREDOC
+)
+
 help_message_test=$(
 	cat <<HEREDOC
 
@@ -529,6 +550,9 @@ help_message_maintable1=$(
   The main table for the summary of all analyses is created. In the CSV data
   file, only those with table1 column being T and <inum> being given as option
   are included in the table.
+
+  each: actually all rows in the CSV
+  format: output file format (only 3 for alpha0 and delta)
 HEREDOC
 )
 
@@ -557,6 +581,8 @@ help_message_local_batch=$(
   - get the data
   - execute batch
 
+  all: combined with inum to locate the source
+  each: actually all rows in the CSV
   inum: output i number or o/<inum> folder
   ref: 0 uses table2's T/F, off for not use, on for use
   getorganelle: off for not executing of getorganelle, on for getorganelle run
@@ -573,6 +599,8 @@ help_message_remote_batch=$(
   - execute batch
   - send the result back to the local
 
+  all: combined with inum to locate the source
+  each: actually all rows in the CSV
   inum: output i number or o/<inum> folder
   ref: 0 uses table2's T/F, off for not use, on for use
   getorganelle: off for not executing of getorganelle, on for getorganelle run
@@ -623,21 +651,23 @@ declare -A _compare_p
 declare -A _compare_r
 declare -A _random_seed
 declare -A _ssh
-declare -A _polish_n
-declare -A _polish_p
+declare -A _disassemble_alpha
+declare -A _disassemble_delta
 
 set +u
 
 # Read the config files
 read-a-tsv-file-into-associative-arrays() {
 	# Define input TSV file
-	csv_file="${PWD}/polap-data-v2.csv"
+	if [ -z "${csv_file+x}" ]; then
+		csv_file="${PWD}/polap-data-v2.csv"
+	fi
 	if [[ ! -s "${csv_file}" ]]; then
 		csv_file="${_POLAPLIB_DIR}/polap-data-v2.csv"
 	fi
 
 	# Read the TSV file (skip header)
-	while IFS=$',' read -r species taxon folder long short host ptgaul_genomesize compare_n compare_p compare_r polish_n polish_p random_seed ssh memory downsample inum table1 table2 mainfigure dummy status; do
+	while IFS=$',' read -r species taxon folder long short host ptgaul_genomesize compare_n compare_p compare_r disassemble_alpha disassemble_delta random_seed ssh memory downsample inum table1 table2 mainfigure dummy status; do
 		# Skip header line
 		[[ "$species" == "species" ]] && continue
 
@@ -654,8 +684,8 @@ read-a-tsv-file-into-associative-arrays() {
 		_compare_n["$species"]="$compare_n"
 		_compare_p["$species"]="$compare_p"
 		_compare_r["$species"]="$compare_r"
-		_polish_n["$species"]="$polish_n"
-		_polish_p["$species"]="$polish_p"
+		_disassemble_alpha["$species"]="$disassemble_alpha"
+		_disassemble_delta["$species"]="$disassemble_delta"
 		_random_seed["$species"]="$random_seed"
 		_ssh["$species"]="$ssh"
 		_memory["$species"]="$memory"
@@ -726,6 +756,13 @@ test_genus_species() {
 				echo "outdir-inum: ${_v_folder}-${_extracted_inum}"
 			fi
 		done
+	elif [[ "${_brg_outdir}" == "each" ]]; then
+		for key in $(printf "%s\n" "${!_folder[@]}" | sort); do
+			# for key in "${!_folder[@]}"; do
+			_brg_outdir="${_folder[$key]}"
+			_brg_inum="${_inum[$key]}"
+			echo "${_brg_outdir}" "${_brg_inum}"
+		done
 	else
 		echo "outdir: ${_brg_outdir}"
 	fi
@@ -757,7 +794,7 @@ convert-data_genus_species() {
 	# output_file="converted_data.csv"
 
 	# Print header
-	echo "species,_taxon,_folder,_long,_short,_host,_ptgaul_genomesize,_compare_n,_compare_p,_compare_r,_polish_n,_polish_p,_random_seed,_ssh,_memory,_downsample,_inum,_table1,_table2,_mainfigure,dummy,_status" >"${_brg_csv}"
+	echo "species,_taxon,_folder,_long,_short,_host,_ptgaul_genomesize,_compare_n,_compare_p,_compare_r,_disassemble_alpha,_disassemble_delta,_random_seed,_ssh,_memory,_downsample,_inum,_table1,_table2,_mainfigure,dummy,_status" >"${_brg_csv}"
 
 	# Read input file line by line
 	while IFS=',' read -r species long short; do
@@ -1163,6 +1200,13 @@ remote-batch_genus_species() {
 		# 		remote-batch_genus_species_for "${_v1}" "${_brg_inum}"
 		# 	fi
 		# done
+	elif [[ "${_brg_outdir}" == "each" ]]; then
+		for key in $(printf "%s\n" "${!_folder[@]}" | sort); do
+			# for key in "${!_folder[@]}"; do
+			_brg_outdir="${_folder[$key]}"
+			_brg_inum="${_inum[$key]}"
+			remote-batch_genus_species_for "${_brg_outdir}" "${_brg_inum}" "${_brg_ref}" "${_brg_getorganelle}" "${_brg_random}"
+		done
 	else
 		remote-batch_genus_species_for "$@"
 	fi
@@ -1252,6 +1296,13 @@ local-batch_genus_species() {
 	if [[ "${_brg_outdir}" == "all" ]]; then
 		for _v1 in "${Sall[@]}"; do
 			local-batch_genus_species_for "${_v1}" "${_brg_inum}" "${_brg_ref}" "${_brg_getorganelle}" "${_brg_random}"
+		done
+	elif [[ "${_brg_outdir}" == "each" ]]; then
+		for key in $(printf "%s\n" "${!_folder[@]}" | sort); do
+			# for key in "${!_folder[@]}"; do
+			_brg_outdir="${_folder[$key]}"
+			_brg_inum="${_inum[$key]}"
+			local-batch_genus_species_for "${_brg_outdir}" "${_brg_inum}" "${_brg_ref}" "${_brg_getorganelle}" "${_brg_random}"
 		done
 	else
 		local-batch_genus_species_for "$@"
@@ -1883,6 +1934,8 @@ infer_genus_species() {
 	local extracted_memory="${_memory["$target_index"]}"
 	local extracted_downsample="${_downsample["$target_index"]}"
 	local extracted_inum="${_inum["$target_index"]}"
+	local extracted_alpha="${_disassemble_alpha["$target_index"]}"
+	local extracted_delta="${_disassemble_delta["$target_index"]}"
 	local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
 
 	mkdir -p "${_brg_outdir_i}"
@@ -1923,7 +1976,8 @@ infer_genus_species() {
 				--disassemble-p $p \
 				--disassemble-r ${extracted_r} \
 				--disassemble-memory ${extracted_memory} \
-				--disassemble-alpha 1.0 \
+				--disassemble-alpha ${extracted_alpha} \
+				--disassemble-delta ${extracted_delta} \
 				--random-seed "${random_seed}" \
 				2>"${_brg_outdir_i}/timing-${_x_i}-${_s_i}.txt"
 
@@ -2104,6 +2158,8 @@ check_genus_species() {
 	local extracted_memory="${_memory["$target_index"]}"
 	local extracted_downsample="${_downsample["$target_index"]}"
 	local extracted_inum="${_inum["$target_index"]}"
+	local extracted_alpha="${_disassemble_alpha["$target_index"]}"
+	local extracted_delta="${_disassemble_delta["$target_index"]}"
 	local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
 
 	mkdir -p "${_brg_outdir_i}"
@@ -2146,7 +2202,6 @@ check_genus_species() {
 				--disassemble-p $p \
 				--disassemble-r ${extracted_r} \
 				--disassemble-memory ${extracted_memory} \
-				--disassemble-alpha 1.0 \
 				--random-seed "${random_seed}" \
 				2>"${_brg_outdir_i}/timing-${_x_i}-${_s_i}.txt"
 
@@ -2219,6 +2274,8 @@ compare_genus_species() {
 	local extracted_memory="${_memory["$target_index"]}"
 	local extracted_downsample="${_downsample["$target_index"]}"
 	local extracted_inum="${_inum["$target_index"]}"
+	local extracted_alpha="${_disassemble_alpha["$target_index"]}"
+	local extracted_delta="${_disassemble_delta["$target_index"]}"
 	local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
 
 	mkdir -p "${_brg_outdir_i}"
@@ -2247,7 +2304,8 @@ compare_genus_species() {
 				--disassemble-p $p \
 				--disassemble-r ${extracted_r} \
 				--disassemble-memory ${extracted_memory} \
-				--disassemble-alpha 1.0 \
+				--disassemble-alpha ${extracted_alpha} \
+				--disassemble-delta ${extracted_delta} \
 				--random-seed "${random_seed}" \
 				2>${_brg_outdir_i}/timing-${_d_i}.txt
 		done
@@ -2474,8 +2532,8 @@ EOF
 
 copy-figures_genus_species() {
 	local _brg_t_dir="${1:-"${_brg_default_target_dir}"/figures}"
-	rsync -av --include='*/' --include='*.png' --exclude='*' ./ "${_brg_t_dir}/"
-	rsync -av --include='*/' --include='*.pdf' --exclude='*' ./ "${_brg_t_dir}/"
+	rsync -qav --include='*/' --include='*.png' --exclude='*' ./ "${_brg_t_dir}/"
+	rsync -qav --include='*/' --include='*.pdf' --exclude='*' ./ "${_brg_t_dir}/"
 	# rsync -av --include='*/' --include='*.png' --exclude='*' ./ ../../manuscript/polap-v0.4/figures/
 	# rsync -av --include='*/' --include='*.pdf' --exclude='*' ./ ../../manuscript/polap-v0.4/figures/
 }
@@ -2692,7 +2750,7 @@ write-config_genus_species() {
 	# Write the output to CSV
 	{
 		# Print the header
-		echo "species,_long,_short,_host,_ptgaul_genomesize,_compare_n,_compare_p,_compare_r,_polish_n,_polish_p,_random_seed"
+		echo "species,_long,_short,_host,_ptgaul_genomesize,_compare_n,_compare_p,_compare_r,_disassemble_alpha,_disassemble_delta,_random_seed"
 
 		# Loop through species and print their values
 		local seed=101
@@ -2701,9 +2759,9 @@ write-config_genus_species() {
 				_ptgaul_genomesize[$key]=160000
 			fi
 			_random_seed[$key]="${seed}"
-			_polish_n[$key]="5"
-			_polish_p[$key]="5"
-			echo "$key,${_long[$key]},${_short[$key]},${_host[$key]},${_ptgaul_genomesize[$key]},${_compare_n[$key]},${_compare_p[$key]},${_compare_r[$key]},${_polish_n[$key]},${_polish_p[$key]},${_random_seed[$key]}"
+			_disassemble_alpha[$key]="5"
+			_disassemble_delta[$key]="5"
+			echo "$key,${_long[$key]},${_short[$key]},${_host[$key]},${_ptgaul_genomesize[$key]},${_compare_n[$key]},${_compare_p[$key]},${_compare_r[$key]},${_disassemble_alpha[$key]},${_disassemble_delta[$key]},${_random_seed[$key]}"
 			seed=$((seed + 2))
 		done
 	} >"$csv_file"
@@ -2965,11 +3023,25 @@ convert_to_hours() {
 }
 
 # Example usage
+#
 # result=$(parse_params "params.txt")
 # read -r I P N R <<< "$result"
+#
+# local _ipn=$(parse_params "${_params_txt}")
+# local _I _P _N _R _A _B _M _D _Alpha _Memory
+# read -r _I _P _N _R _A _B _M _D _Alpha _Memory <<<"$_ipn"
 parse_params() {
 	local file="$1" # Input file
-	local I P N R   # Declare variables for the parameters
+	local I=-1
+	local P=-1
+	local N=-1
+	local R=-1
+	local A=-1
+	local B=-1
+	local M=-1
+	local D=-1
+	local Alpha=-1
+	local Memory=-1 # Declare variables for the parameters
 
 	# Read the file and extract the values
 	while IFS=": " read -r key value; do
@@ -2978,11 +3050,17 @@ parse_params() {
 		"P") P="$value" ;;
 		"N") N="$value" ;;
 		"R") R="$value" ;;
+		"A") A="$value" ;;
+		"B") B="$value" ;;
+		"M") M="$value" ;;
+		"D") D="$value" ;;
+		"Alpha") Alpha="$value" ;;
+		"Memory") Memory="$value" ;;
 		esac
 	done <"$file"
 
 	# Print the variables (return as output)
-	echo "$I $P $N $R"
+	echo "$I $P $N $R $A $B $M $D $Alpha $Memory"
 }
 
 # read -r memory1 time1 < <(parse_timing Eucalyptus_pauciflora 3)
@@ -3112,6 +3190,8 @@ maintable1_genus_species_header() {
 		"N"
 		"P"
 		"R"
+		"D"
+		"A0"
 		"Rate"
 		"Size"
 		"Alpha"
@@ -3284,8 +3364,8 @@ maintable1_genus_species_for() {
 
 	local _params_txt=${_v1_inum}/disassemble/${_disassemble_index}/params.txt
 	local _ipn=$(parse_params "${_params_txt}")
-	local _I _P _N _R
-	read -r _I _P _N _R <<<"$_ipn"
+	local _I _P _N _R _A _B _M _D _Alpha _Memory
+	read -r _I _P _N _R _A _B _M _D _Alpha _Memory <<<"$_ipn"
 
 	# The determined subsampling rate and alpha
 	local _summary2_ordered_txt=${_v1_inum}/disassemble/${_disassemble_index}/2/summary1-ordered.txt
@@ -3375,6 +3455,8 @@ maintable1_genus_species_for() {
 			"${_N}"
 			"${_P}"
 			"${_R}"
+			"${_D}"
+			"${_Alpha}"
 			"${_summary2_rate_rounded}"
 			"${_summary2_size_gb}"
 			"${_summary2_alpha_formatted}"
@@ -3442,7 +3524,8 @@ maintable1_genus_species() {
 	local _brg_inum="${2:-2}"
 	local _brg_d_index="${3:-infer-1}"
 	local _brg_table="${4:-1}"
-	local _brg_t_dir="${5:-"${_brg_default_target_dir}"}"
+	local _brg_format="${5:-1}"
+	local _brg_t_dir="${6:-"${_brg_default_target_dir}"}"
 	# local _table_name=$(echo "${FUNCNAME[0]}" | cut -d'_' -f1)
 
 	local _table_name="maintable1"
@@ -3485,6 +3568,15 @@ maintable1_genus_species() {
 				"${_brg_inum}" "${_brg_d_index}" "${_brg_table}" "${_brg_t_dir}" \
 				>>"${_table_tsv}"
 		done
+	elif [[ "${_brg_outdir}" == "each" ]]; then
+		for key in $(printf "%s\n" "${!_folder[@]}" | sort); do
+			# for key in "${!_folder[@]}"; do
+			_brg_outdir="${_folder[$key]}"
+			_brg_inum="${_inum[$key]}"
+			maintable1_genus_species_for "${_brg_outdir}" \
+				"${_brg_inum}" "${_brg_d_index}" "${_brg_table}" "${_brg_t_dir}" \
+				>>"${_table_tsv}"
+		done
 	else
 		maintable1_genus_species_for "$@" >>"${_table_tsv}"
 	fi
@@ -3501,6 +3593,14 @@ maintable1_genus_species() {
 			csvtk -t rename -f 1-15 -n Species,C,N,P,R,Rate,Alpha,L2,N1,Mode,SD,M,Mg,Mf,T |
 			csvtk -t csv2md -a right -o ${_table_name}-${_brg_inum}-analysis.md
 	fi
+
+	if ((_brg_format == 3)); then
+		csvtk -t cut -f Species,A0,D,P,R,Rate,Alpha,Length1,Length2,Pident,N1,Mode,SD,M,M_g,M_p,M_t2,M_s,M_f,T \
+			${_table_tsv} |
+			csvtk -t rename -f 1-20 -n Species,A0,D,P,R,Rate,Alpha,L1,L2,Pident,N1,Mode,SD,M,Mg,Mp,Mt,Ms,Mf,T |
+			csvtk -t csv2md -a right -o ${_table_name}-${_brg_inum}-analysis.md
+	fi
+
 	csvtk -t cut -f Species,Order,Family,L_SRA,L_size,L_cov,S_SRA,S_size,S_cov ${_table_tsv} |
 		csvtk -t rename -f 1-9 -n Species,Order,Family,L_SRA,L_size,L_cov,S_SRA,S_size,S_cov |
 		csvtk -t csv2md -a right -o ${_table_name}-${_brg_inum}-data.md
@@ -3552,9 +3652,9 @@ supptable1_genus_species_for() {
 
 	local _v1_inum="${_v1}/${_brg_inum}"
 	local _params_txt=${_v1_inum}/disassemble/${_brg_d_index}/params.txt
-	_ipn=$(parse_params "${_params_txt}")
-	local _I _P _N _R
-	read -r _I _P _N _R <<<"$_ipn"
+	local _ipn=$(parse_params "${_params_txt}")
+	local _I _P _N _R _A _B _M _D _Alpha _Memory
+	read -r _I _P _N _R _A _B _M _D _Alpha _Memory <<<"$_ipn"
 	local _label="${_brg_inum}-${_label_base}"
 	if [[ "${_brg_one}" == "1" ]]; then
 		_label="main-${_brg_inum}-${_label_base}"
@@ -3574,7 +3674,7 @@ supptable1_genus_species_for() {
 			>>"${_supptable_md}"
 		;;
 	x)
-		printf "Table: Three stages of subsampling-based plastid genome assembly with increasing subsample size up to a maximum subsampling rate of ${_P}%% in Stage 1 of the analysis for the _${_species}_ dataset. {#tbl:supptable1-${_label}}\n\n" \
+		printf "Table: Three stages of subsampling-based plastid genome assembly with increasing subsample size up to a maximum subsampling rate of ${_P}%%, a step size of ${_N} in Stage 1, ${_R} replicates in Stages 2 and 3, and a maximum memory limit of ${_Memory} GB of the analysis for the _${_species}_ dataset. {#tbl:supptable1-${_label}}\n\n" \
 			>>"${_supptable_md}"
 		;;
 	*)
@@ -3603,28 +3703,28 @@ supptable1_genus_species_for() {
 		output="${_supptable_md}"
 
 		# Print the header for Stage 1
-		echo "| Stage 1 |   I |   Rate | Alpha | Pmem |       D | Time |   N |      L |   C | Length |" >>$output
+		echo "| Stage 1 |  I |  Rate | Alpha | Pmem |    D | Time |  N |    L |  C | Length |" >>$output
 		echo "| -----: | --: | -----: | ----: | ---: | ------: | ---: | --: | -----: | --: | -----: |" >>$output
 
 		# Append the content of 1.md with Stage 1 formatting
 		awk 'NR>2 {print "|        " $0}' "${_v1_inum}/disassemble/${_brg_d_index}/1/summary1.md" >>$output
 
 		# Print the separation line
-		echo "|        |      |               |          |        |                |          |       |              |       |               |" >>$output
+		echo "|     |    |       |      |      |       |       |     |      |     |             |" >>$output
 
 		# Print the header for Stage 2
 		echo "| Stage 2 |   I |   Rate | Alpha | Pmem |       G | Time |   N |       L |   C | Length |" >>$output
-		echo "|        |      |               |          |        |                |          |       |              |       |               |" >>$output
+		echo "|     |    |       |      |      |       |       |     |      |     |             |" >>$output
 
 		# Append the content of 2.md with Stage 2 formatting
 		awk 'NR>2 {print "|       " $0}' "${_v1_inum}/disassemble/${_brg_d_index}/2/summary1.md" >>$output
 
 		# Print the separation line
-		echo "|        |      |               |          |        |                |          |       |              |       |               |" >>$output
+		echo "|     |    |       |      |      |       |       |     |      |     |             |" >>$output
 
 		# Print the header for Stage 3
 		echo "| Stage 3 |   I |     Rate |   Size  | Seed   |  Tp |  Mp |  Ts |  Ms | Pident |    Length |" >>$output
-		echo "|        |      |               |          |        |                |          |       |              |       |               |" >>$output
+		echo "|     |    |       |      |      |       |       |     |      |     |             |" >>$output
 
 		# Append the content of 3.md with Stage 3 formatting
 		awk 'NR>2 {print "|      " $0}' "${_v1_inum}/disassemble/${_brg_d_index}/3-infer/summary1.md" >>$output
@@ -3779,9 +3879,9 @@ suppfigure1_genus_species_for() {
 
 	local _v1_inum="${_v1}/${_brg_inum}"
 	local _params_txt=${_v1_inum}/disassemble/${_brg_d_index}/params.txt
-	_ipn=$(parse_params "${_params_txt}")
-	local _I _P _N _R
-	read -r _I _P _N _R <<<"$_ipn"
+	local _ipn=$(parse_params "${_params_txt}")
+	local _I _P _N _R _A _B _M _D _Alpha _Memory
+	read -r _I _P _N _R _A _B _M _D _Alpha _Memory <<<"$_ipn"
 	local _label="${_brg_inum}-${_label_base}"
 	if [[ "${_brg_one}" == "1" ]]; then
 		_label="main-${_brg_inum}-${_label_base}"
@@ -4091,6 +4191,44 @@ EOF
 
 	cp -p ${_supfigure_file} "${_brg_t_dir}"
 	echo ${_supfigure_file}
+}
+
+suppfigure4x_genus_species() {
+	local _brg_inum="${1:-2}"
+	local _brg_t_dir="${2:-"${_brg_default_target_dir}"}"
+
+	local _suppfigure_file="alpha0.pdf"
+
+	# for i in {11..18}; do p get Eucalyptus_pauciflora $i add off; done
+
+	rm ??.tsv
+	for i in {11..18}; do
+		csvtk -t cut -f index,alpha Eucalyptus_pauciflora/$i/disassemble/infer-1/1/summary1.txt >$i.tsv
+	done
+
+	Rscript ${_POLAPLIB_DIR}/run-polap-r-data-v2-alpha0.R ??.tsv -o "${_suppfigure_file}"
+
+	cp -p ${_suppfigure_file} "${_brg_t_dir}"
+	echo ${_suppfigure_file}
+}
+
+suppfigure4_genus_species() {
+	local _brg_inum="${1:-2}"
+	local _brg_t_dir="${2:-"${_brg_default_target_dir}"}"
+
+	local _suppfigure_file="delta0.pdf"
+
+	# for i in {21..27}; do p get Eucalyptus_pauciflora $i add off; done
+
+	rm ??.tsv
+	for i in {21..27}; do
+		csvtk -t cut -f index,alpha Eucalyptus_pauciflora/$i/disassemble/infer-1/1/summary1.txt >$i.tsv
+	done
+
+	Rscript ${_POLAPLIB_DIR}/run-polap-r-data-v2-alpha0.R ??.tsv -o "${_suppfigure_file}"
+
+	cp -p ${_suppfigure_file} "${_brg_t_dir}"
+	echo ${_suppfigure_file}
 }
 
 function _run_polap_menu { # Interactive menu interface
@@ -4486,7 +4624,7 @@ batch)
 	;;
 remote-batch)
 	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir|all> <inum:0|N> <ref:0|off|on> <getorganelle:off|on> [random:off|on] <jobs:1|N>"
+		echo "Help: ${subcmd1} <outdir|all|each> <inum:0|N> <ref:0|off|on> <getorganelle:off|on> [random:off|on] <jobs:1|N>"
 		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 0 0 off off 1"
 		echo "  polap-data-v2.sh ${subcmd1} all 2 0 off off 3"
 		echo "${help_message_remote_batch}"
@@ -4501,7 +4639,7 @@ remote-batch)
 	;;
 local-batch)
 	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir|all> <inum:0|N> <ref:0|off|on> <getorganelle:off|on> [random:off|on]"
+		echo "Help: ${subcmd1} <outdir|all|each> <inum:0|N> <ref:0|off|on> <getorganelle:off|on> [random:off|on]"
 		echo "  polap-data-v2.sh ${subcmd1} Spirodela_polyrhiza 0"
 		echo "  polap-data-v2.sh ${subcmd1} all 0"
 		echo "${help_message_local_batch}"
@@ -4565,10 +4703,11 @@ check)
 	;;
 maintable1)
 	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir|all> <inum:N> <disassemble index:infer-1> <table:1|2> <targe dir>"
+		echo "Help: ${subcmd1} <outdir|all|each> <inum:N> <disassemble index:infer-1> <table:1|2> <format:1|3> <targe dir>"
 		echo "  polap-data-v2.sh $subcmd1 all 2 infer-1"
 		echo "  polap-data-v2.sh $subcmd1 all 0 infer-1"
-		echo "  polap-data-v2.sh $subcmd1 Eucalyptus_pauciflora 2 infer-1"
+		echo "  $0 $subcmd1 Eucalyptus_pauciflora 2 infer-1"
+		echo "  csv_file=a.csv $0 $subcmd1 each x infer-1 1 3"
 		echo "${help_message_maintable1}"
 		exit 0
 	fi
@@ -4576,7 +4715,8 @@ maintable1)
 	[[ "${_arg4}" == arg4 ]] && _arg4=""
 	[[ "${_arg5}" == arg5 ]] && _arg5=""
 	[[ "${_arg6}" == arg6 ]] && _arg6=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}"
+	[[ "${_arg7}" == arg7 ]] && _arg7=""
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}" "${_arg7}"
 	;;
 supptable1)
 	if [[ "${_arg2}" == arg2 ]]; then
@@ -4622,6 +4762,14 @@ suppfigure3)
 	[[ "${_arg5}" == arg5 ]] && _arg5=""
 	[[ "${_arg6}" == arg6 ]] && _arg6=""
 	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}"
+	;;
+suppfigure4)
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <targe dir>"
+		echo "  $0 $subcmd1"
+		exit 0
+	fi
+	${subcmd1}_genus_species "${_arg2}"
 	;;
 convert-data)
 	if [[ "${_arg2}" == arg2 ]]; then
@@ -4717,6 +4865,7 @@ install-polap)
 		fi
 	else
 		echo "polap installation is canceled."
+		echo "${help_message_install_polap}"
 	fi
 	;;
 download-polap-github)
@@ -4838,12 +4987,13 @@ uninstall)
 		fi
 
 		if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
-			conda remove -n polap --all
-			conda remove -n polap-fmlrc --all
-			conda remove -n getorganelle --all
+			conda remove -y -n polap --all
+			conda remove -y -n polap-fmlrc --all
+			conda remove -y -n getorganelle --all
 		fi
 	else
 		echo "Uninstallation is canceled."
+		echo "${help_message_uninstall}"
 	fi
 	;;
 install-getorganelle)

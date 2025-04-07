@@ -1,4 +1,4 @@
-#!/usr/bin/base
+#!/usr/bin/bash
 
 # TODO:
 # [ ] A manual for proper understanding and execution of tasks.
@@ -201,8 +201,11 @@ else
 		_brg_default_target_dir="man/"
 	fi
 fi
+
 # _polap_version="$(${_polap_cmd} --version | awk '{print $2}')"
-_polap_version="0.4.3.7.5"
+if [ -z "${_polap_version+x}" ]; then
+	_polap_version="0.4.3.7.5"
+fi
 _media1_dir="/media/h1/sra"
 _media2_dir="/media/h2/sra"
 _media_dir="/media/h2/sra"
@@ -464,6 +467,21 @@ help_message_convert_data=$(
   P: the maximum subsampling rate
   N: the number of replicates in Stage 1
   R: the number of replicates in Stages 2 and 3
+HEREDOC
+)
+
+help_message_bleeding_edge_polap=$(
+	cat <<HEREDOC
+
+  Patch polap with the latest github version.
+HEREDOC
+)
+
+help_message_patch_polap=$(
+	cat <<HEREDOC
+
+  Patch polap with a specific version.
+  _polap_version=<VERSION> $0 $subcmd1
 HEREDOC
 )
 
@@ -4935,20 +4953,29 @@ patch-polap)
 		else
 			echo "Error: You do not have polap environment . Please activate polap before running this script."
 		fi
+	else
+		echo "polap patch is canceled."
+		echo "${help_message_patch_polap}"
 	fi
 	;;
 bleeding-edge-polap)
 	read -p "Do you want to update conda env polap with the latest polap github? (y/N): " confirm
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		if conda env list | awk '{print $1}' | grep -qx "polap"; then
+			if [[ -d "polap" ]]; then
+				rm -rf polap
+			fi
 			git clone --quiet https://github.com/goshng/polap.git
 			cd polap/src
 			bash polaplib/polap-build.sh >../build.sh
-			cd -
+			cd ..
 			PREFIX="$(conda info --base)/envs/polap" bash build.sh
 		else
 			echo "Error: You do not have polap environment . Please activate polap before running this script."
 		fi
+	else
+		echo "polap bleeding-edge version update is canceled."
+		echo "${help_message_bleeding_edge_polap}"
 	fi
 	;;
 test-polap)

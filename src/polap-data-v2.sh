@@ -4962,6 +4962,7 @@ bleeding-edge-polap)
 	read -p "Do you want to update conda env polap with the latest polap github? (y/N): " confirm
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		if conda env list | awk '{print $1}' | grep -qx "polap"; then
+			echo "Upgrading the Polap Conda environment to its most current state on GitHub ensures access to the latest features and updates."
 			if [[ -d "polap" ]]; then
 				rm -rf polap
 			fi

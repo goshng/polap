@@ -506,6 +506,7 @@ help_message_install_fmlrc=$(
 	cat <<HEREDOC
 
   Install conda environments: polap-fmlrc
+  _polap_version=<VERSION> $0 $subcmd1
 HEREDOC
 )
 
@@ -4957,9 +4958,13 @@ install-fmlrc)
 				echo "ERROR: Conda environment 'polap-fmlrc' already exists."
 			else
 				wget -q https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
-				unzip -o -q ${_polap_version}.zip
-				cd polap-${_polap_version}
-				conda env create -f src/polaplib/polap-conda-environment-fmlrc.yaml
+				if [[ -s "${_polap_version}.zip" ]]; then
+					unzip -o -q ${_polap_version}.zip
+					cd polap-${_polap_version}
+					conda env create -f src/polaplib/polap-conda-environment-fmlrc.yaml
+				else
+					echo "Error: no such file: ${_polap_version}.zip - no such polap version"
+				fi
 			fi
 		else
 			echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
@@ -4967,6 +4972,7 @@ install-fmlrc)
 		fi
 	else
 		echo "polap installation is canceled."
+		echo "${help_message_install_fmlrc}"
 	fi
 	;;
 patch-polap)

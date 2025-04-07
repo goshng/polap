@@ -499,6 +499,7 @@ bash polap/polap-data-v2.sh install-polap
 bash polap/polap-data-v2.sh install-fmlrc
 bash polap/polap-data-v2.sh install-cflye
 conda activate polap
+polap-data-v2.sh bleeding-edge-polap
 polap-data-v2.sh sample-csv
 polap-data-v2.sh download-test-data
 polap-data-v2.sh local-batch Eucalyptus_pauciflora t off

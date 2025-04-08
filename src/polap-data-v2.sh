@@ -151,57 +151,50 @@ Stable5=(
 
 _local_host="thorne"
 
+# Default values for options
+opt_c_arg="off"
+opt_y_flag=false
+
+# Parse options
+while [[ "${1-}" == -* ]]; do
+	case "$1" in
+	-c)
+		shift
+		if [[ -z "${1-}" || "${1-}" == -* ]]; then
+			echo "Error: -c requires an argument"
+			exit 1
+		fi
+		opt_c_arg="$1"
+		;;
+	-y)
+		opt_y_flag=true
+		;;
+	--) # End of options
+		shift
+		break
+		;;
+	-*)
+		echo "Unknown option: $1"
+		exit 1
+		;;
+	esac
+	shift || break
+done
+
+if [[ "${opt_c_arg}" != "off" ]]; then
+	csv_file="${opt_c_arg}"
+fi
+
+# Now $1, $2, ... are the remaining command arguments
+# echo "Option -c argument: $opt_c_arg"
+# echo "Option -y present: $opt_y_flag"
+# echo "Remaining arguments:"
+# for arg in "$@"; do
+# 	echo "  $arg"
+# done
+
 # Input parameter
 subcmd1="${1:-help}"
-
-_polap_subcmd=(
-	'batch'
-	'recover'
-	'mkdir'
-	'refs'
-	'getorganelle'
-	'ptgaul'
-	'msbwt'
-	'extract-ptgaul-ptdna'
-	'coverage'
-	'infer'
-	'check'
-	'compare'
-	'best'
-	'bandage1'
-	'bandage2'
-	'copy-figure'
-	'downsample'
-	'use-downsample'
-	'mauve'
-	'restart'
-	'write-config'
-	'wga'
-	'archive'
-	'get'
-	'report'
-	'table1'
-	'table2'
-	'suptable1'
-	'supfigure1'
-	'supfigure2'
-	'clean'
-	'menu'
-	'help'
-)
-
-# Check if subcmd1 is an integer (0 or positive)
-if [[ "$subcmd1" =~ ^[0-9]+$ ]]; then
-	# Convert to an index and replace with the corresponding _polap_subcmd value
-	index=$subcmd1
-	if [[ $index -ge 0 && $index -lt ${#_polap_subcmd[@]} ]]; then
-		subcmd1="${_polap_subcmd[$index]}"
-	else
-		echo "Error: Index $index is out of range (0-${#_polap_subcmd[@]})"
-		exit 1
-	fi
-
-fi
 
 _polap_cmd="${_polap_script_bin_dir}/polap.sh"
 if [[ -d "src" ]]; then
@@ -225,7 +218,7 @@ _media_dir="/media/h2/sra"
 help_message=$(
 	cat <<HEREDOC
 Polap version: ${_polap_version}
-Usage: $0 <subcommand> [species_folder] [[option] ...]
+Usage: $0 [-c file.csv] [-y] <subcommand> [species_folder] [[option] ...]
 
 Polap data analysis of subsampling-based plastid genome assembly
 
@@ -853,7 +846,12 @@ test_genus_species() {
 		echo "Index $index: ${Sall[$index]}"
 	done
 
-	read -p "Do you want to test? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to test? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		echo "Confirm: YES."
 	else
@@ -4993,7 +4991,12 @@ setup-conda)
 	fi
 	;;
 install-polap)
-	read -p "Do you want to install polap? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to install polap? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		# Check current conda environment
 		# Initialize Conda for non-interactive shells
@@ -5020,7 +5023,12 @@ install-polap)
 	fi
 	;;
 download-polap-github)
-	read -p "Do you want to download polap from github? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to download polap from github? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		if [[ -d "polap-${_polap_version}" ]]; then
 			echo "ERROR: you already have polap-${_polap_version}"
@@ -5039,7 +5047,12 @@ delete-polap-github)
 	echo "  ${_polap_version}.zip and duplicates"
 	echo "  polap-${_polap_version}"
 	echo "  polap"
-	read -p "Do you want to delete all the downloaded polap source? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to delete all the downloaded polap source? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		rm -f ${_polap_version}.zip*
 		rm -rf polap-${_polap_version}
@@ -5050,7 +5063,12 @@ delete-polap-github)
 	fi
 	;;
 install-fmlrc)
-	read -p "Do you want to install polap-fmlrc? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to install polap-fmlrc? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		# Check current conda environment
 		# Initialize Conda for non-interactive shells
@@ -5085,7 +5103,12 @@ install-fmlrc)
 	fi
 	;;
 patch-polap)
-	read -p "Do you want to replace conda env polap with the version ${_polap_version}? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to replace conda env polap with the version ${_polap_version}? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		if conda env list | awk '{print $1}' | grep -qx "polap"; then
 			echo "Updating the Polap Conda environment to version ${_polap_version}."
@@ -5109,7 +5132,12 @@ patch-polap)
 	fi
 	;;
 bleeding-edge-polap)
-	read -p "Do you want to update conda env polap with the latest polap github? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to update conda env polap with the latest polap github? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		if conda env list | awk '{print $1}' | grep -qx "polap"; then
 			echo "Updating the Polap Conda environment to its most current state on GitHub ensures access to the latest features and updates."
@@ -5135,7 +5163,12 @@ local-edge-polap)
 		echo "  $0 ${subcmd1} polap/github"
 		exit 0
 	fi
-	read -p "Do you want to update conda env polap with the local polap source? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to update conda env polap with the local polap source? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		if conda env list | awk '{print $1}' | grep -qx "polap"; then
 			echo "Updating the Polap Conda environment to the local source at ${_arg2}."
@@ -5155,7 +5188,12 @@ local-edge-polap)
 	fi
 	;;
 test-polap)
-	read -p "Do you want to test polap? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to test polap? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		if [[ ! -d "polap-${_polap_version}" ]]; then
 			echo "ERROR: no such folder: polap-${_polap_version}"
@@ -5181,7 +5219,12 @@ test-polap)
 	fi
 	;;
 download-test-data)
-	read -p "Do you want to download test data for polap? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to download test data for polap? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		_s=polap-disassemble-test-full.tar.gz
 		# local _s=polap-disassemble-test.tar.gz
@@ -5204,7 +5247,12 @@ download-test-data)
 	;;
 uninstall)
 	echo "Removing the following conda environments: polap, polap-fmlrc, getorganelle"
-	read -p "Do you want to uninstall all conda environments for polap? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to uninstall all conda environments for polap? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		source "$(conda info --base)/etc/profile.d/conda.sh"
 		if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
@@ -5224,7 +5272,12 @@ uninstall)
 	fi
 	;;
 install-getorganelle)
-	read -p "Do you want to install getorganelle? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to install getorganelle? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		# Check current conda environment
 		# Initialize Conda for non-interactive shells
@@ -5253,7 +5306,12 @@ install-getorganelle)
 	fi
 	;;
 install-cflye)
-	read -p "Do you want to install cflye? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to install cflye? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		# Check current conda environment
 		# Initialize Conda for non-interactive shells
@@ -5276,7 +5334,12 @@ install-cflye)
 	fi
 	;;
 mkdir-all)
-	read -p "Do you want to create all species folders? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to create all species folders? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	case "$confirm" in
 	[yY] | [yY][eE][sS])
 		echo "creating all species folder $i ..."

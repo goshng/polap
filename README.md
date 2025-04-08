@@ -509,7 +509,7 @@ polap-data-v2.sh download-test-data
 polap-data-v2.sh local-batch Eucalyptus_pauciflora t off
 polap-data-v2.sh install-getorganelle
 polap-data-v2.sh sample-csv polap-data-v2.csv all
-polap-data-v2.sh local-batche each
+polap-data-v2.sh local-batch each
 ```
 
 ### MT Contig Name File

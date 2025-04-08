@@ -3452,7 +3452,7 @@ maintable1_genus_species_for() {
 		echo "Error: no such file: ${_summary1_ordered_txt}" >&2
 		echo "  stage 1 might have been terminated prematurely, see ${_summary1_md}" >&2
 		cat "${_summary1_md}" >&2
-		exit 1
+		return
 	fi
 
 	local _ptdna_subsample="${_v1_inum}/disassemble/${_disassemble_index}/pt.subsample-polishing.1.fa"
@@ -4689,7 +4689,7 @@ sample-csv)
 		echo "${help_message_sample_csv}"
 		exit 0
 	fi
-	[[ "${_arg3}" == arg3 ]] && _arg3=""
+	[[ "${_arg3}" == arg3 ]] && _arg3="1"
 	[[ "${_arg4}" == arg4 ]] && _arg4="off"
 
 	if [[ -s "${_arg2}" ]] && [[ "${_arg4}" == "off" ]]; then

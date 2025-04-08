@@ -192,19 +192,20 @@ if [[ "$subcmd1" =~ ^[0-9]+$ ]]; then
 
 fi
 
+_polap_cmd="${_polap_script_bin_dir}/polap.sh"
 if [[ -d "src" ]]; then
-	_polap_cmd="src/polap.sh"
 	_brg_default_target_dir="$HOME/all/manuscript/polap-v0.4/"
 else
-	_polap_cmd="${_polap_script_bin_dir}/polap.sh"
 	if [[ -d "man" ]]; then
 		_brg_default_target_dir="man/"
+	else
+		mkdir man
 	fi
 fi
 
 # _polap_version="$(${_polap_cmd} --version | awk '{print $2}')"
 if [ -z "${_polap_version+x}" ]; then
-	_polap_version="0.4.3.7.5"
+	_polap_version="0.4.3.7.4"
 fi
 _media1_dir="/media/h1/sra"
 _media2_dir="/media/h2/sra"
@@ -530,6 +531,26 @@ help_message_uninstall=$(
 HEREDOC
 )
 
+help_message_clean=$(
+	cat <<HEREDOC
+
+  Cleanup the data and results.
+
+  (not yet) cleanup: on to delete fastq data at the end of the run, otherwise off
+HEREDOC
+)
+
+help_message_sample_csv=$(
+	cat <<HEREDOC
+
+  Copy all or parts of polap-data-v2.csv.
+
+  1: Spirodela_polyrhiza
+  2: Spirodela_polyrhiza and Eucalyptus_pauciflora
+  all: all
+HEREDOC
+)
+
 help_message_test=$(
 	cat <<HEREDOC
 
@@ -632,6 +653,8 @@ help_message_local_batch=$(
   ref: 0 uses table2's T/F, off for not use of ptGAUL, on for use of ptGAUL
   getorganelle: off for not executing getorganelle, on for getorganelle
   random: off to use CSV's random seed, otherwise on
+
+  CSV status: cleanup -> delete FASTQ data files
 HEREDOC
 )
 
@@ -1217,7 +1240,7 @@ remote-batch_genus_species_for() {
 		scp -p ${_brg_outdir}-a.tar.gz ${_local_host}:$PWD/${_brg_outdir}-a-${_brg_inum}.tar.gz
 	fi
 
-	clean_genus_species "${_brg_outdir}" on
+	clean_genus_species "${_brg_outdir}" "${_brg_inum}" on
 
 	return
 }
@@ -1283,6 +1306,7 @@ local-batch_genus_species_for() {
 	local short_sra="${_short["$target_index"]}"
 	local ssh_remote="${_ssh["$target_index"]}"
 	local extracted_inum="${_inum["$target_index"]}"
+	local extracted_status="${_status["$target_index"]}"
 	local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
 
 	# table2 column is for unknown case
@@ -1298,7 +1322,7 @@ local-batch_genus_species_for() {
 	mkdir -p backup
 	local timestamp=$(date +"%Y%m%d%H%M%S") # Get the current date and time
 	if [[ -d "${_brg_outdir}" ]]; then
-		echo "found: ${_brg_outdir}"
+		echo "found: ${_brg_outdir} -> backing-up to backup folder"
 		archive_genus_species ${_brg_outdir} ${timestamp}
 		mv ${_brg_outdir}-a-${timestamp}.tar.gz backup
 	fi
@@ -1338,7 +1362,14 @@ local-batch_genus_species_for() {
 	rm -rf "${long_sra}"
 	rm -rf "${short_sra}"
 
+	echo "Starting local-batch ${_brg_outdir} ${_brg_inum} ..."
 	batch_genus_species ${_brg_outdir} ${_brg_inum} "${_switch_ref}" on on "${_brg_getorganelle}" "${_brg_random}"
+
+	if [[ "${extracted_status}" == "cleanup" ]]; then
+		rm -f "${long_sra}.fastq"
+		rm -f "${short_sra}"_?.fastq
+		rm -f "${short_sra}".fastq # for Spirodela_polyrhiza
+	fi
 
 	return
 }
@@ -1628,12 +1659,14 @@ copy-ptdna-of-ncbi-as-reference_genus_species() {
 
 clean_genus_species() {
 	local _brg_outdir="$1"
-	local _brg_yes="${2:-off}"
-	local target_index="${_brg_outdir}-0"
+	local _brg_inum="${2:-0}"
+	local _brg_yes="${3:-off}"
+	local target_index="${_brg_outdir}-${_brg_inum}"
 
 	local long_sra="${_long["$target_index"]}"
 	local short_sra="${_short["$target_index"]}"
 	local extracted_inum="${_inum["$target_index"]}"
+	local extracted_status="${_status["$target_index"]}"
 	local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
 
 	local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
@@ -1663,9 +1696,13 @@ clean_genus_species() {
 		rm -rf "${_brg_outdir}"
 		rm -rf "${_brg_outdir}-a"
 		rm -f "${_brg_outdir}"-a*.tar.gz
+
+		# if [[ "${extracted_status}" == "cleanup" ]]; then
 		rm -f "${long_sra}.fastq"
 		rm -f "${short_sra}"_?.fastq
 		rm -f "${short_sra}".fastq # for Spirodela_polyrhiza
+		# fi
+
 		rm -f "${long_sra}.fastq.tar.gz"
 		rm -f "${short_sra}.fastq.tar.gz"
 
@@ -1836,7 +1873,6 @@ ptgaul_genus_species() {
 	mv ${_brg_outdir}-ptgaul/result_3000 ${_brg_outdir}/ptgaul
 	rm -rf "${_brg_outdir}-ptgaul"
 
-	msbwt_genus_species "${_brg_outdir}"
 }
 
 msbwt_genus_species() {
@@ -1865,7 +1901,6 @@ extract-ptgaul-ptdna_genus_species() {
 		-o ${_brg_outdir} \
 		2>${_brg_outdir}/timing/timing-ptgaul-polishing.txt
 	_log_echo "use extract-ptgaul-ptdna2 <species_folder> if not working"
-	copy-ptdna-of-ptgaul_genus_species "${_brg_outdir}"
 }
 
 # Extraction of ptDNA from the assembly: another try
@@ -3400,6 +3435,13 @@ maintable1_genus_species_for() {
 	local _disassemble_index="${_brg_d_index}"
 	local _extracted_memory="${_memory["$_key"]}"
 	local _summary1_ordered_txt="${_v1_inum}/disassemble/${_disassemble_index}/1/summary1-ordered.txt"
+	local _summary1_md="${_v1_inum}/disassemble/${_disassemble_index}/1/summary1.md"
+	if [[ ! -s "${_summary1_ordered_txt}" ]]; then
+		echo "Error: no such file: ${_summary1_ordered_txt}" >&2
+		echo "  stage 1 might have been terminated prematurely, see ${_summary1_md}" >&2
+		cat "${_summary1_md}" >&2
+		exit 1
+	fi
 
 	local _ptdna_subsample="${_v1_inum}/disassemble/${_disassemble_index}/pt.subsample-polishing.1.fa"
 	local _seq_length_subsample=0
@@ -4629,14 +4671,28 @@ refs)
 	get-ptdna-from-ncbi_genus_species "${_arg2}"
 	;;
 sample-csv)
-	if [[ -s "polap-data-v2.csv" ]]; then
-		echo "ERROR: you already have polap-data-v2.csv"
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <csv:polap-data-v2.csv> [number:1|2|all]"
+		echo "  $(basename $0) ${subcmd1} 1.csv 1"
+		echo "${help_message_sample_csv}"
+		exit 0
+	fi
+
+	if [[ -s "${_arg2}" ]]; then
+		echo "ERROR: you already have ${_arg2}"
 		echo "  delete it if you want to create a new one."
 	else
-		head -1 ${_POLAPLIB_DIR}/polap-data-v2.csv >polap-data-v2.csv
-		grep Spirodela_polyrhiza ${_POLAPLIB_DIR}/polap-data-v2.csv >>polap-data-v2.csv
-		grep Eucalyptus_pauciflora ${_POLAPLIB_DIR}/polap-data-v2.csv >>polap-data-v2.csv
-		echo "create polap-data-v2.csv"
+		if [[ "${_arg3}" == "1" ]]; then
+			head -1 ${_POLAPLIB_DIR}/polap-data-v2.csv >"${_arg2}"
+			grep Spirodela_polyrhiza ${_POLAPLIB_DIR}/polap-data-v2.csv >>"${_arg2}"
+		elif [[ "${_arg3}" == "2" ]]; then
+			head -1 ${_POLAPLIB_DIR}/polap-data-v2.csv >"${_arg2}"
+			grep Spirodela_polyrhiza ${_POLAPLIB_DIR}/polap-data-v2.csv >>"${_arg2}"
+			grep Eucalyptus_pauciflora ${_POLAPLIB_DIR}/polap-data-v2.csv >>"${_arg2}"
+		elif [[ "${_arg3}" == "all" ]]; then
+			grep -v test ${_POLAPLIB_DIR}/polap-data-v2.csv >"${_arg2}"
+		fi
+		echo "create CSV: ${_arg2}"
 	fi
 	;;
 sra)
@@ -4651,14 +4707,15 @@ sra)
 	;;
 clean)
 	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir> [confirm:off|on]"
-		echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana"
-		echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana on"
+		echo "Help: ${subcmd1} <outdir> [inum:0|N] [confirm:off|on]"
+		echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana 0"
+		echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana 0 on"
+		echo "${help_message_clean}"
 		exit 0
 	fi
 	[[ "${_arg3}" == arg3 ]] && _arg3=""
 	[[ "${_arg4}" == arg4 ]] && _arg4=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
+	${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
 	;;
 archive)
 	if [[ "${_arg2}" == arg2 ]]; then

@@ -13,22 +13,21 @@ S4=(
 	Juncus_roemerianus
 )
 
+_polap_data_cmd="${_polap_script_bin_dir}/polap-data-v2.sh"
 if [[ -d "src" ]]; then
-	_polap_data_cmd="bash src/polap-data-v2.sh"
 	_brg_default_target_dir="$HOME/all/manuscript/polap-v0.4/"
 else
-	_polap_data_cmd="${_polap_script_bin_dir}/polap-data-v2.sh"
 	if [[ -d "man" ]]; then
 		_brg_default_target_dir="man/"
 	fi
 fi
 
 for i in 0 1 2 3; do
-	# ${_polap_data_cmd} local-batch all $i 0 on
+	# ${_polap_data_cmd} local-batch all $i 0 on # in release mode only
 
-	# ${_polap_data_cmd} get all $i add off
+	${_polap_data_cmd} get all $i add off
 
-	# ${_polap_data_cmd} report all $i infer-1
+	# ${_polap_data_cmd} report all $i infer-1 # not use anymore
 
 	${_polap_data_cmd} maintable1 all $i infer-1
 	${_polap_data_cmd} supptable1 Eucalyptus_pauciflora $i infer-1 x

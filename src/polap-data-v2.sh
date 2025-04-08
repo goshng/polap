@@ -209,7 +209,7 @@ fi
 
 # _polap_version="$(${_polap_cmd} --version | awk '{print $2}')"
 if [ -z "${_polap_version+x}" ]; then
-	_polap_version="0.4.3.7.4"
+	_polap_version="0.4.3.7.5"
 fi
 _media1_dir="/media/h1/sra"
 _media2_dir="/media/h2/sra"

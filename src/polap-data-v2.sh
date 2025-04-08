@@ -1376,6 +1376,10 @@ local-batch_genus_species_for() {
 	batch_genus_species ${_brg_outdir} ${_brg_inum} "${_switch_ref}" on on "${_brg_getorganelle}" "${_brg_random}"
 
 	if [[ "${extracted_status}" == "cleanup" ]]; then
+		archive_genus_species ${_brg_outdir}
+		rm -rf "${_brg_outdir}"
+		rm -rf "${_brg_outdir}-a"
+
 		rm -f "${long_sra}.fastq"
 		rm -f "${short_sra}"_?.fastq
 		rm -f "${short_sra}".fastq # for Spirodela_polyrhiza

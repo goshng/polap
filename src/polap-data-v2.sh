@@ -125,6 +125,17 @@ S31=(
 	Vitis_vinifera
 )
 
+# Data28
+S7=(
+	Anthoceros_agrestis
+	Arabidopsis_thaliana
+	Canavalia_ensiformis
+	Eucalyptus_pauciflora
+	Spirodela_polyrhiza
+	Vaccinium_vitis-idaea
+	Vitis_vinifera
+)
+
 Snot=(
 	Delphinium_montanum
 )
@@ -548,6 +559,7 @@ help_message_sample_csv=$(
   1: Spirodela_polyrhiza
   2: Spirodela_polyrhiza and Eucalyptus_pauciflora
   all: all
+  force: delete the CSV file.
 HEREDOC
 )
 
@@ -4672,13 +4684,15 @@ refs)
 	;;
 sample-csv)
 	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <csv:polap-data-v2.csv> [number:1|2|all]"
+		echo "Help: ${subcmd1} <csv:polap-data-v2.csv> [number:1|2|7|test|all] [force:off|on]"
 		echo "  $(basename $0) ${subcmd1} 1.csv 1"
 		echo "${help_message_sample_csv}"
 		exit 0
 	fi
+	[[ "${_arg3}" == arg3 ]] && _arg3=""
+	[[ "${_arg4}" == arg4 ]] && _arg4="off"
 
-	if [[ -s "${_arg2}" ]]; then
+	if [[ -s "${_arg2}" ]] && [[ "${_arg4}" == "off" ]]; then
 		echo "ERROR: you already have ${_arg2}"
 		echo "  delete it if you want to create a new one."
 	else
@@ -4689,6 +4703,15 @@ sample-csv)
 			head -1 ${_POLAPLIB_DIR}/polap-data-v2.csv >"${_arg2}"
 			grep Spirodela_polyrhiza ${_POLAPLIB_DIR}/polap-data-v2.csv >>"${_arg2}"
 			grep Eucalyptus_pauciflora ${_POLAPLIB_DIR}/polap-data-v2.csv >>"${_arg2}"
+		elif [[ "${_arg3}" == "test" ]]; then
+			head -1 ${_POLAPLIB_DIR}/polap-data-v2.csv >"${_arg2}"
+			grep test ${_POLAPLIB_DIR}/polap-data-v2.csv >>"${_arg2}"
+		elif [[ "${_arg3}" == "7" ]]; then
+			head -1 ${_POLAPLIB_DIR}/polap-data-v2.csv >"${_arg2}"
+			for item in $(printf "%s\n" "${S7[@]}" | sort); do
+				grep $item ${_POLAPLIB_DIR}/polap-data-v2.csv |
+					grep -v test >>"${_arg2}"
+			done
 		elif [[ "${_arg3}" == "all" ]]; then
 			grep -v test ${_POLAPLIB_DIR}/polap-data-v2.csv >"${_arg2}"
 		fi

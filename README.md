@@ -495,16 +495,18 @@ A sample dataset demonstrating Polap's ptDNA assembly is available on Figshare: 
 
 ```bash
 git clone https://github.com/goshng/polap.git
+conda activate
+bash polap/src/polap-data-v2.sh uninstall
 bash polap/src/polap-data-v2.sh install-polap
+bash polap/src/polap-data-v2.sh bleeding-edge-polap
 conda activate polap
-polap-data-v2.sh bleeding-edge-polap
 polap-data-v2.sh install-fmlrc
 polap-data-v2.sh install-cflye
 polap-data-v2.sh delete-polap-github
-polap-data-v2.sh sample-csv 2
+polap-data-v2.sh sample-csv polap-data-v2.csv test
 polap-data-v2.sh download-test-data
 polap-data-v2.sh local-batch Eucalyptus_pauciflora t off
-polap-data-v2.sh sample-csv all
+polap-data-v2.sh sample-csv polap-data-v2.csv all
 polap-data-v2.sh local-batche each
 ```
 

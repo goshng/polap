@@ -1,23 +1,55 @@
 #!/usr/bin/env Rscript
 
+################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
 # Load libraries
 suppressPackageStartupMessages({
   library(ggplot2)
   library(dplyr)
   library(tidyr)
-  library(tools) # for file_path_sans_ext
+  library(tools)
 })
 
 # Parse command-line arguments
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) < 3 || "-o" %in% args == FALSE) {
-  stop("Usage: Rscript run.R file1.tsv file2.tsv ... -o output.pdf")
-}
 
-# Extract output file
-o_idx <- which(args == "-o")
-tsv_files <- args[1:(o_idx - 1)]
-output_file <- args[o_idx + 1]
+# Check for required options
+if (length(args) < 3 || !("-o" %in% args)) {
+  # stop("Usage: Rscript run.R file1.tsv file2.tsv ... [-l legend_title] -o output.pdf")
+  tsv_files <- c("0.00.tsv", "1.00.tsv", "2.00.tsv")
+  output_file <- "output.pdf"
+  legend_title <- "alpha"  # default
+} else {
+  # Find indices of options
+  o_idx <- which(args == "-o")
+  l_idx <- which(args == "-l")
+  
+  # Parse output file
+  output_file <- args[o_idx + 1]
+  
+  # Parse legend title
+  legend_title <- "Sample"  # default
+  if (length(l_idx) == 1) {
+    legend_title <- args[l_idx + 1]
+  }
+  
+  # Determine tsv files
+  option_indices <- sort(c(o_idx, o_idx + 1, l_idx, l_idx + 1))
+  tsv_files <- args[-option_indices]
+}
 
 # Read and merge data
 merged_df <- NULL
@@ -40,6 +72,6 @@ long_df <- merged_df %>%
 p <- ggplot(long_df, aes(x = index, y = Alpha, color = Sample)) +
   geom_line() +
   theme_minimal() +
-  labs(title = "Alpha values over index", x = "Index", y = "Alpha")
-
+  labs(title = "", x = "Index", y = "Alpha", color = legend_title)
+p
 ggsave(output_file, plot = p, width = 7, height = 5)

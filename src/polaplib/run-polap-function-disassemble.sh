@@ -1114,6 +1114,116 @@ function _disassemble-step16 {
 	echo "${arr[@]}"
 }
 
+function _disassemble-redownsample {
+
+	local input_file date input1 output1 long_read_bp genome_size
+	local long_read_coverage target_coverage sampling_rate random_seed
+
+	input_file="${_ga_outdir}/lx.txt" # change if your input comes from a different file
+
+	local -A redown # this array is local to this function
+	_disassemble_parse_redownsample "$input_file" redown
+
+	# Use the array locally
+	_polap_log0 "Input1: ${redown[input1]}"
+	_polap_log0 "Output1: ${redown[output1]}"
+	_polap_log0 "random_seed: ${redown[random_seed]}"
+	_polap_log0 "sampling_rate: ${redown[sampling_rate]}"
+
+	# cmd
+	seqkit sample \
+		-p "${redown[sampling_rate]}" \
+		-s "${redown[random_seed]}" \
+		"${redown[input1]}" \
+		-o "${redown[output1]}" 2>${_polap_output_dest}
+
+	input_file="${_ga_outdir}/sx.txt" # change if your input comes from a different file
+	_disassemble_parse_redownsample "$input_file" redown
+	_polap_log0 "input1: ${redown[input1]}"
+	_polap_log0 "input2: ${redown[input2]}"
+	_polap_log0 "output1: ${redown[output1]}"
+	_polap_log0 "output2: ${redown[output2]}"
+	_polap_log0 "random_seed: ${redown[random_seed]}"
+	_polap_log0 "sampling_rate: ${redown[sampling_rate]}"
+
+	seqtk sample \
+		-s "${redown[random_seed]}" \
+		"${redown[input1]}" \
+		"${redown[sampling_rate]}" \
+		>"${redown[output1]}" 2>${_polap_output_dest}
+
+	seqtk sample \
+		-s "${redown[random_seed]}" \
+		"${redown[input2]}" \
+		"${redown[sampling_rate]}" \
+		>"${redown[output2]}" 2>${_polap_output_dest}
+
+	cat "${redown[input1]}" \
+		"${redown[input2]}" \
+		>"${_ga_outdir}/s.fq"
+}
+
+_disassemble_parse_redownsample() {
+	local input_file="$1"
+	local -n result="$2" # name-ref to caller's associative array
+
+	while IFS= read -r line; do
+		line="$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+
+		case "$line" in
+		"coverage compute date:"*)
+			result[date]="${line#*: }"
+			;;
+		"input1:"*)
+			result[input1]="${line#*: }"
+			;;
+		"input2:"*)
+			result[input2]="${line#*: }"
+			;;
+		"output1:"*)
+			result[output1]="${line#*: }"
+			;;
+		"output2:"*)
+			result[output2]="${line#*: }"
+			;;
+		"short-read1:"*)
+			val="${line#*: }"
+			result[short_read1]="${val% (bp)}"
+			;;
+		"short-read2:"*)
+			val="${line#*: }"
+			result[short_read2]="${val% (bp)}"
+			;;
+		"short-read:"*)
+			val="${line#*: }"
+			result[short_read_total]="${val% (bp)}"
+			;;
+		"short-read coverage:"*)
+			val="${line#*: }"
+			result[short_read_coverage]="${val%x}"
+			;;
+		"long-read coverage:"*)
+			val="${line#*: }"
+			result[long_read_coverage]="${val%x}"
+			;;
+		"genome size:"*)
+			val="${line#*: }"
+			result[genome_size]="${val% (bp)}"
+			;;
+		"target coverage:"*)
+			val="${line#*: }"
+			result[target_coverage]="${val%x}"
+			;;
+		"sampling rate:"*)
+			result[sampling_rate]="${line#*: }"
+			;;
+		"random seed:"*)
+			result[random_seed]="${line#*: }"
+			;;
+		esac
+	done <"$input_file"
+}
+
 # stage 0
 # input: input sequencing data files
 # output:
@@ -1980,6 +2090,9 @@ function _run_polap_disassemble {
 	[ "$DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_/Menu_/)"
 
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
 	local exit_code
 	local i
 	local j
@@ -2033,6 +2146,8 @@ function _run_polap_disassemble {
 
 	# plastid genome is assembled; not for mitochondrial genome assembly
 	_arg_plastid="on"
+
+	# convert --disassemble-a and --disassemble-b
 
 	# base unit conversion to a regular positive number: 1k -> 1000
 	_arg_disassemble_s=$(_polap_utility_convert_unit_to_bp "${_arg_disassemble_s}")
@@ -2098,10 +2213,10 @@ Arguments
 -t ${_arg_threads}: the number of CPU cores
 --disassemble-i ${_arg_disassemble_i}: the index in disassemble any string
 --downsample ${_arg_downsample}: maximum genome coverage to downsample
---disassemble-a ${_arg_disassemble_a}: the smallest base pairs for a subsampling range
---disassemble-b ${_arg_disassemble_b}: the largest base pairs for a subsampling range
+--disassemble-a ${_arg_disassemble_a}: int for base pairs or .float for rate the smallest base pairs for a subsampling range
+--disassemble-b ${_arg_disassemble_b}: int for base pairs or .float for rate the largest base pairs for a subsampling range
+--disassemble-p ${_arg_disassemble_p}: the percentile of the largest long read, -a/-b or -p
 --disassemble-n ${_arg_disassemble_n}: the number of steps
---disassemble-p ${_arg_disassemble_p}: the percentile of the largest long read
 --disassemble-m ${_arg_disassemble_m}: the upper bound for a Flye assembly
 --disassemble-memory ${_arg_disassemble_memory}: the maximum memory in Gb
 --disassemble-alpha ${_arg_disassemble_alpha}: the starting Flye's disjointig coverage
@@ -2407,6 +2522,19 @@ HEREDOC
 	if [[ "${_arg_menu[1]}" == "downsample" ]]; then
 
 		_disassemble-stage0
+
+		# Disable debugging if previously enabled
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
+	fi
+
+	if [[ "${_arg_menu[1]}" == "redownsample" ]]; then
+
+		_disassemble-redownsample
+
+		# read lx.txt
+		# read sx.txt
 
 		# Disable debugging if previously enabled
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -2808,6 +2936,7 @@ HEREDOC
 	# output1: tmp/l50x.fq
 	# output2: tmp/s50x_1.fq
 	# output3: tmp/s50x_2.fq
+	_polap_log3_cmd mkdir -p "${_disassemble_i}"
 	if _polap_contains_step 0 "${_stage_array[@]}"; then
 		_polap_log1 "  stage 0: downsample the input data, if possible, to ${_arg_downsample}x"
 

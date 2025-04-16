@@ -2,3 +2,27 @@
 r-testthat
 conda install conda-forge::r-patchwork
 
+# PMAT installation issue
+
+## issue: fuse2fs not found
+Reads break end.
+2025-04-16 11:19:37
+The path of runAssembly : bin/PMAT-1.5.3/container/runAssembly.sif
+Reads assembly start ...
+2025-04-16 11:19:37
+INFO:    fuse2fs not found, will not be able to mount EXT3 filesystems
+INFO:    gocryptfs not found, will not be able to use gocryptfs
+ERROR  : Could not write info to setgroups: Permission denied
+ERROR  : Error while waiting event for user namespace mappings: no event received
+
+### Install apptainer in the system-wide
+https://apptainer.org/docs/admin/main/installation.html#install-ubuntu-packages
+sudo add-apt-repository -y ppa:apptainer/ppa
+sudo apt update
+sudo apt install -y apptainer
+
+sudo apptainer exec bin/PMAT-1.5.3/container/runAssembly.sif echo "test"
+echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/90-userns.conf
+echo 'kernel.apparmor_restrict_unprivileged_userns=0' | sudo tee /etc/sysctl.d/80-apparmor-userns.conf
+sudo sysctl --system
+

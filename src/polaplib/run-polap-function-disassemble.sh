@@ -1778,6 +1778,19 @@ function _disassemble-stage3 {
 			else
 				_polap_log1 "    index with 4 paths: ${j}"
 			fi
+
+			# TODO: check this part.
+			# check if the chosen index is the best one
+			# the top best: index of summary1-ordered.txt
+			# selected-index.txt: the chosen index
+			local _output_line=$(awk -F'\t' 'NR==2 {print $1}' "${_summary1_ordered}")
+			read -r _top_index <<<"$_output_line"
+			if [[ "${_top_index}" != "${_j_best_stage2}" ]]; then
+				_polap_log2 "    the top best: index of summary1-ordered.txt: ${_top_index}"
+				_polap_log2 "    selected-index.txt: the chosen index: ${_j_best_stage2}"
+				_polap_log0 "Warning: the selected index of assembly length nearest the mode of assembly length distribution is different from the chosen index."
+				_polap_log0 "Warning: the percent identity of the assembly might not be near 100% because the selected plastid genome structure is different from the reference although they are actually very similar."
+			fi
 		else
 			_polap_log0 "  you have no ptDNA assembly from the stage 2"
 			_polap_log0 "  suggestion: increase the replicate size --disassemble-r"
@@ -2500,7 +2513,7 @@ HEREDOC
 			--fontsize 3
 
 		_polap_log0 "Polap ptDNA gfa: ${_bandage_best_stage2}"
-		_polap_log0 "Polap ptDNA png: ${_png_best_stage2}"
+		_polap_log1 "Polap ptDNA png: ${_png_best_stage2}"
 
 		return 0
 	fi
@@ -2868,7 +2881,7 @@ HEREDOC
 		fi
 	fi
 
-	_polap_log0 "Assemble plastid genomes by subsampling long-read data (disassemble index: ${_arg_disassemble_i}, run type: ${_run_type}, full short-read polishing: ${_arg_disassemble_simple_polishing})"
+	_polap_log0 "Assemble plastid genomes by subsampling long-read data (i: ${_arg_inum}, disassemble index: ${_arg_disassemble_i}, run type: ${_run_type}, full short-read polishing: ${_arg_disassemble_simple_polishing})"
 
 	# if [[ "${_arg_menu[1]}" == "stage1" ]]; then
 	# 	_arg_stages_include="0-1"

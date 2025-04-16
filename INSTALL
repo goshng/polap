@@ -4,3 +4,11 @@ conda install networkx
 conda install gfatools
 conda install progressivemauve
 conda install r::r-mixr
+
+# Bandage command-line tool
+
+wget https://github.com/rrwick/Bandage/releases/download/v0.8.1/Bandage_Ubuntu_dynamic_v0.8.1.zip
+unzip Bandage_Ubuntu_dynamic_v0.8.1.zip
+cd Bandage_Ubuntu_dynamic_v0.8.1/
+chmod +x Bandage Bandage_image
+

@@ -9,23 +9,15 @@ _polap_script_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 S4=(
 	Anthoceros_agrestis
 	Codonopsis_lanceolata
-	Eucalyptus_pauciflora
 	Juncus_roemerianus
 )
 
 _polap_data_cmd="${_polap_script_bin_dir}/polap-data-v2.sh"
-if [[ -d "src" ]]; then
-	_brg_default_target_dir="$HOME/all/manuscript/polap-v0.4/"
-else
-	if [[ -d "man" ]]; then
-		_brg_default_target_dir="man/"
-	fi
-fi
 
-for i in 0 1 2 3; do
+for i in 0 1 2 3 4; do
 	# ${_polap_data_cmd} local-batch all $i 0 on # in release mode only
 
-	${_polap_data_cmd} get all $i add off
+	# ${_polap_data_cmd} get all $i add off
 
 	# ${_polap_data_cmd} report all $i infer-1 # not use anymore
 
@@ -35,11 +27,11 @@ done
 
 for i in "${S4[@]}"; do
 	${_polap_data_cmd} supptable1 $i 2 infer-1 x
-	${_polap_data_cmd} suppfigure1 $i 2 infer-1 1 1 yes
+	# ${_polap_data_cmd} suppfigure1 $i 2 infer-1 1 1 yes
 done
 
-${_polap_data_cmd} supptable1 all 2 infer-1 x
-${_polap_data_cmd} suppfigure1 all 2 infer-1 1 1 yes
+# ${_polap_data_cmd} supptable1 all 2 infer-1 x
+# ${_polap_data_cmd} suppfigure1 all 2 infer-1 1 1 yes
 ${_polap_data_cmd} suppfigure3 2 infer-1 on yes
 ${_polap_data_cmd} suppfigure3 2 infer-1 off yes
 ${_polap_data_cmd} copy-figures

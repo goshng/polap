@@ -52,10 +52,58 @@ _polap_lib_filepath-get_script_path() {
 }
 
 # Determine script path only if executed (not sourced)
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-	script_path="$(_polap_lib_filepath-get_script_path "$0")"
-	script_dir="$(dirname "$script_path")"
+# if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+# 	script_path="$(_polap_lib_filepath-get_script_path "$0")"
+# 	script_dir="$(dirname "$script_path")"
+#
+# 	echo "Resolved script path: $script_path"
+# 	echo "Script directory:    $script_dir"
+# fi
 
-	echo "Resolved script path: $script_path"
-	echo "Script directory:    $script_dir"
-fi
+_polap_lib_make_relative_symlink() {
+	local target="$1"
+	local linkpath="$2"
+
+	if [[ -z "$target" || -z "$linkpath" ]]; then
+		echo "Usage: make_relative_symlink <target-file> <symlink-path>" >&2
+		return 1
+	fi
+
+	# Resolve absolute target path
+	local abs_target
+	abs_target=$(realpath "$target") || {
+		echo "Error: target '$target' does not exist." >&2
+		return 2
+	}
+
+	# Create parent directory for link if needed
+	local link_dir
+	link_dir=$(dirname "$linkpath")
+	mkdir -p "$link_dir" || {
+		echo "Error: Failed to create parent directory '$link_dir'" >&2
+		return 3
+	}
+
+	# Compute relative path from link location to target
+	local rel_target
+	rel_target=$(realpath --relative-to="$link_dir" "$abs_target") || {
+		echo "Error: Failed to compute relative path." >&2
+		return 4
+	}
+
+	# Remove existing file/symlink if exists
+	if [[ -e "$linkpath" || -L "$linkpath" ]]; then
+		rm -f "$linkpath" || {
+			echo "Error: Failed to remove existing '$linkpath'" >&2
+			return 5
+		}
+	fi
+
+	# Create the symlink
+	ln -s "$rel_target" "$linkpath" || {
+		echo "Error: Failed to create symlink '$linkpath'" >&2
+		return 6
+	}
+
+	echo "Symlink created: $linkpath -> $rel_target"
+}

@@ -2152,10 +2152,10 @@ function _run_polap_disassemble {
 	local _disassemble_dir="${_ga_outdir}/disassemble"
 	local _ga_input_short_reads="${_ga_outdir}/s.fq"
 
-	if ! run_check_flye; then
-		_polap_log0 "Suggestion: (polap) $ conda install goshng::cflye"
-		exit $EXIT_ERROR
-	fi
+	# if ! run_check_flye; then
+	# 	_polap_log0 "Suggestion: (polap) $ conda install goshng::cflye"
+	# 	exit $EXIT_ERROR
+	# fi
 
 	# plastid genome is assembled; not for mitochondrial genome assembly
 	_arg_plastid="on"
@@ -2832,6 +2832,11 @@ HEREDOC
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		[ "$DEBUG" -eq 1 ] && set +x
 		return 0
+	fi
+
+	if ! run_check_flye; then
+		_polap_log0 "Suggestion: (polap) $ conda install goshng::cflye"
+		exit $EXIT_ERROR
 	fi
 
 	# main

@@ -10,6 +10,8 @@ timing/timing-check-1-subsample-polish.txt
 timing/timing-compare-1.txt
 timing/timing-infer-1-simple-polish.txt
 timing/timing-infer-1-subsample-polish.txt
+0/cns.fa
+7/cns.fa
 0/disassemble
 0/disassemble/compare-1/params.txt
 0/disassemble/compare-1/pt.simple-polishing.1.fa

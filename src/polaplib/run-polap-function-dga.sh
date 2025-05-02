@@ -50,7 +50,8 @@ function _polap_oga_determine-long-read-file {
 }
 
 ################################################################################
-#
+# From a user definedmt.contig.name-j, we first extract the long sequence itself.
+# In the seconed, we extract eaach contig _long_reads
 ################################################################################
 function _run_polap_directional-prepare-seeds { #
 	# Enable debugging if DEBUG is set

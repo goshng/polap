@@ -24,11 +24,11 @@ requirements:
     - {{ compiler('cxx') }}
     - make
   host:
-    - python
+    - python >=3.8,<3.13
     - pip
     - zlib
   run:
-    - python
+    - python >=3.8,<3.13
     - setuptools  # [osx]
 
 test:
@@ -46,3 +46,4 @@ extra:
   additional-platforms:
     - osx-arm64
     - linux-aarch64
+

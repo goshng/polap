@@ -141,6 +141,7 @@ HEREDOC
 		if [ "$result" -eq 1 ]; then
 			# echo "The rate value is less than 1"
 			if [[ "${_arg_dry}" == "off" ]]; then
+				rm -f "${_outfile}"
 				seqkit sample \
 					-p "${_rate}" \
 					-s "${_seed}" \
@@ -154,6 +155,9 @@ HEREDOC
 			_polap_log1 "  sampling rate is not less than 1: ${_rate}"
 			_polap_log1 "  no subsampling of input: ${_infile}"
 			_polap_log0 "  no subsampling: ${_outfile}"
+			rm -f "${_outfile}"
+			# ln -s "$(realpath ${_infile})" "$(realpath -m ${_outfile})"
+			_polap_lib_make_relative_symlink "${_infile}" "${_outfile}"
 		fi
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
@@ -231,6 +235,8 @@ HEREDOC
 			# seqtk sample -s100 read1.fq 0.1 >sub1.fq
 			# seqtk sample -s100 read2.fq 0.1 >sub2.fq
 
+			rm -f "${_outfile1}"
+			rm -f "${_outfile2}"
 			if [[ "${_arg_dry}" == "off" ]]; then
 				seqtk sample \
 					-s"${_seed}" \
@@ -254,6 +260,12 @@ HEREDOC
 			_polap_log1 "  no subsampling of input: ${_infile2}"
 			_polap_log0 "  no subsampling: ${_outfile1}"
 			_polap_log0 "  no subsampling: ${_outfile2}"
+			rm -f "${_outfile1}"
+			rm -f "${_outfile2}"
+			_polap_lib_make_relative_symlink "${_infile1}" "${_outfile1}"
+			_polap_lib_make_relative_symlink "${_infile2}" "${_outfile2}"
+			# ln -s "$(realpath ${_infile1})" "$(realpath -m ${_outfile1})"
+			# ln -s "$(realpath ${_infile2})" "$(realpath -m ${_outfile2})"
 		fi
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"

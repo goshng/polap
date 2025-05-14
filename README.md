@@ -104,9 +104,18 @@ conda create -y --name polap polap=0.3.7.3
 
 #### 5. Activate the polap conda environment and setup polap-fmlrc environment (2 min)
 
+Use this if your polap version is v0.3.x.x.
+
 ```bash
 conda activate polap
 base_dir=$(dirname "$(command -v polap)") && conda env create -f $base_dir/polap-conda-environment-fmlrc.yaml
+```
+
+Use the following if your polap version is v0.4.3.x.
+
+```bash
+conda activate polap
+base_dir=$(dirname "$(command -v polap)") && conda env create -f $base_dir/polaplib/polap-conda-environment-fmlrc.yaml
 ```
 
 #### 6. Polap run with a test dataset (10 mins)

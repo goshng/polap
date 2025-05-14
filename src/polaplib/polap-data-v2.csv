@@ -112,10 +112,10 @@ Spirodela_polyrhiza-0,Spirodela_polyrhiza,Spirodela_polyrhiza,SRR11472010,SRR114
 Spirodela_polyrhiza-1,Spirodela_polyrhiza,Spirodela_polyrhiza,SRR11472010,SRR11472009,kishino,kishino,160000,0,1,infer-1,169,10,16,5,10,5,1.0,0.75,0,0,T,F,F,dummy,done
 Spirodela_polyrhiza-2,Spirodela_polyrhiza,Spirodela_polyrhiza,SRR11472010,SRR11472009,kishino,kishino,160000,0,2,infer-1,369,10,16,5,10,5,1.0,0.75,0,0,T,F,F,dummy,done
 Spirodela_polyrhiza-4,Spirodela_polyrhiza,Spirodela_polyrhiza,SRR11472010,SRR11472009,kishino,kishino,160000,0,4,infer-1,469,10,16,1,10,5,1.0,0.75,0,0,T,F,F,dummy,cleanup
-Vaccinium_vitis-idaea-0,Vaccinium_vitis-idaea,Vaccinium_vitis-idaea,SRR25468450,SRR25477290,siepel,siepel,160000,0,0,infer-1,129,10,16,10,10,5,1.0,0.75,0,0,T,F,F,dummy,done
-Vaccinium_vitis-idaea-1,Vaccinium_vitis-idaea,Vaccinium_vitis-idaea,SRR25468450,SRR25477290,siepel,siepel,160000,0,1,infer-1,173,10,16,5,10,5,1.0,0.75,0,0,T,F,F,dummy,done
-Vaccinium_vitis-idaea-2,Vaccinium_vitis-idaea,Vaccinium_vitis-idaea,SRR25468450,SRR25477290,siepel,siepel,160000,0,2,infer-1,373,10,16,5,10,5,1.0,0.75,0,0,T,F,F,dummy,done
-Vaccinium_vitis-idaea-4,Vaccinium_vitis-idaea,Vaccinium_vitis-idaea,SRR25468450,SRR25477290,siepel,siepel,160000,0,4,infer-1,473,10,16,1,10,5,1.0,0.75,0,0,T,F,F,dummy,cleanup
+Vaccinium_vitis_idaea-0,Vaccinium_vitis-idaea,Vaccinium_vitis-idaea,SRR25468450,SRR25477290,siepel,siepel,160000,0,0,infer-1,129,10,16,10,10,5,1.0,0.75,0,0,T,F,F,dummy,done
+Vaccinium_vitis_idaea-1,Vaccinium_vitis-idaea,Vaccinium_vitis-idaea,SRR25468450,SRR25477290,siepel,siepel,160000,0,1,infer-1,173,10,16,5,10,5,1.0,0.75,0,0,T,F,F,dummy,done
+Vaccinium_vitis_idaea-2,Vaccinium_vitis-idaea,Vaccinium_vitis-idaea,SRR25468450,SRR25477290,siepel,siepel,160000,0,2,infer-1,373,10,16,5,10,5,1.0,0.75,0,0,T,F,F,dummy,done
+Vaccinium_vitis_idaea-4,Vaccinium_vitis-idaea,Vaccinium_vitis-idaea,SRR25468450,SRR25477290,siepel,siepel,160000,0,4,infer-1,473,10,16,1,10,5,1.0,0.75,0,0,T,F,F,dummy,cleanup
 Vitis_vinifera-0,Vitis_vinifera,Vitis_vinifera,SRR26163227,SRR26163231,user1-X99-PR8-H,lab01,160000,0,0,infer-1,101,10,16,10,10,5,1.0,0.75,0,0,T,F,F,dummy,done
 Vitis_vinifera-1,Vitis_vinifera,Vitis_vinifera,SRR26163227,SRR26163231,user1-X99-PR8-H,lab01,160000,0,1,infer-1,175,10,16,5,10,5,1.0,0.75,0,0,T,F,T,dummy,done
 Vitis_vinifera-2,Vitis_vinifera,Vitis_vinifera,SRR26163227,SRR26163231,user1-X99-PR8-H,lab01,160000,0,2,infer-1,375,10,16,5,10,5,1.0,0.75,0,0,T,F,T,dummy,done
@@ -146,5 +146,5 @@ Populus_x_sibirica-7,Populus_x_sibirica,Populus_x_sibirica,SRR15146668,SRR129637
 Prunus_mandshurica-7,Prunus_mandshurica,Prunus_mandshurica,ERR4656977,ERR4656978,siepel,siepel,160000,0,0,infer-1,149,10,32,10,10,5,1.0,0.75,0,0,T,F,F,dummy,done
 Solanum_lycopersicum-7,Solanum_lycopersicum,Solanum_lycopersicum,SRR11073833,SRR11205474,marybeth,marybeth,160000,0,0,infer-1,141,10,32,10,10,5,1.0,0.75,0,0,T,F,F,dummy,done
 Spirodela_polyrhiza-7,Spirodela_polyrhiza,Spirodela_polyrhiza,SRR11472010,SRR11472009,kishino,kishino,160000,0,0,infer-1,143,10,16,10,10,5,1.0,0.75,0,0,T,F,F,dummy,done
-Vaccinium_vitis-idaea-7,Vaccinium_vitis-idaea,Vaccinium_vitis-idaea,SRR25468450,SRR25477290,siepel,siepel,160000,0,0,infer-1,129,10,16,10,10,5,1.0,0.75,0,0,T,F,F,dummy,done
+Vaccinium_vitis_idaea-7,Vaccinium_vitis-idaea,Vaccinium_vitis-idaea,SRR25468450,SRR25477290,siepel,siepel,160000,0,0,infer-1,129,10,16,10,10,5,1.0,0.75,0,0,T,F,F,dummy,done
 Vitis_vinifera-7,Vitis_vinifera,Vitis_vinifera,SRR26163227,SRR26163231,user1-X99-PR8-H,lab01,160000,0,0,infer-1,101,10,16,10,10,5,1.0,0.75,0,0,T,F,F,dummy,done

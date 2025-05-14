@@ -117,6 +117,27 @@ help_message_install_polap=$(
 HEREDOC
 )
 
+help_message_install_tippo=$(
+	cat <<HEREDOC
+
+  Install conda environments: tippo
+  conda create -y --name tippo bioconda::tippo
+HEREDOC
+)
+
+help_message_install_oatk=$(
+	cat <<HEREDOC
+
+  Install conda environments: oatk
+
+  conda create -y --name oatk bioconda::oatk
+  conda activate oatk
+  conda install -y biopython
+  conda install -y hmmer seqtk mafft parallel entrez-direct
+  git clone https://github.com/c-zhou/OatkDB.git
+HEREDOC
+)
+
 help_message_uninstall=$(
 	cat <<HEREDOC
 
@@ -128,9 +149,944 @@ help_message_uninstall=$(
 HEREDOC
 )
 
+##### INSERT_HELP_HERE #####
+help_message_rsync=$(
+	cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_oatk_polished=$(
+	cat <<HEREDOC
+
+  all: process all 
+  outdir: process only outdir
+  inum: produce outdir/<inum>
+  polished: use hifiasm or nextdenovo-polished data
+  fc: oatk -c option value
+HEREDOC
+)
+
+help_message_hifiasm_polish=$(
+	cat <<HEREDOC
+
+  Polish an ONT long-read fastq data file.
+  Ref: https://github.com/c-zhou/oatk/issues/16
+
+  Code:
+  hifiasm -t64 --ont -o ONT.asm ONT.read.fastq.gz --write-ec
+
+  mkdir temp
+  cd temp
+  ln -s ../ONT.asm.ec.bin
+  ln -s ../ONT.asm.ovlp.source.bin
+  ln -s ../ONT.asm.ovlp.reverse.bin
+  hifiasm -t64 --ont -o ONT.asm --write-ec /dev/null
+HEREDOC
+)
+
+help_message_mitohifi=$(
+	cat <<HEREDOC
+
+  mitohifi using apptainer
+HEREDOC
+)
+
+help_message_install_apptainer=$(
+	cat <<HEREDOC
+
+  Ref: https://github.com/apptainer/apptainer
+HEREDOC
+)
+
+help_message_install_novoplasty=$(
+	cat <<HEREDOC
+
+  Ref: https://anaconda.org/bioconda/novoplasty
+  Ref: https://github.com/ndierckx/NOVOPlasty.git
+  NOVOPlasty4.3.1.pl -c config.txt
+HEREDOC
+)
+
+help_message_install_mitohifi=$(
+	cat <<HEREDOC
+
+  Ref: https://github.com/marcelauliano/MitoHiFi.git
+  docker pull ghcr.io/marcelauliano/mitohifi:master
+  singularity exec --bind /path/to/container_directory:/path/to/container_directory docker://ghcr.io/marcelauliano/mitohifi:master mitohifi.py -h
+HEREDOC
+)
+
+help_message_data_downsample_long=$(
+	cat <<HEREDOC
+
+  Subsample the long-read data and save it under o/tmp.
+  We want to see the effect on long-read subsampling on the final result.
+HEREDOC
+)
+
+help_message_data_downsample_short=$(
+	cat <<HEREDOC
+
+  Subsample the short-read data and save it at o/tmp.
+  We want to reduce the memory usage by polishing using FMLRC.
+HEREDOC
+)
+
+help_message_estimate_genomesize=$(
+	cat <<HEREDOC
+
+  Estimate the genome size.
+HEREDOC
+)
+
+help_message_data_long=$(
+	cat <<HEREDOC
+
+  Download the long-read data file.
+HEREDOC
+)
+
+help_message_data_short=$(
+	cat <<HEREDOC
+
+  Download the short-read data file.
+HEREDOC
+)
+
+##### INSERT_FUNCTION_HERE #####
+rsync_genus_species_for() {
+	local _brg_outdir="${1}"
+	local _brg_inum="${2:-0}"
+	local _brg_remote="${3:-siepel}"
+
+	local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
+	rsync -azvu "${_brg_remote}:${PWD}/${_brg_outdir_i}/" "${_brg_outdir_i}/"
+}
+
+rsync_genus_species() {
+	local _brg_outdir="${1-all}"
+	local _brg_inum="${2:-0}"
+	local _brg_remote="${3:-siepel}"
+
+	if [[ "${_brg_outdir}" == "all" ]]; then
+		for _v1 in "${Sall[@]}"; do
+			rsync_genus_species_for "${_v1}" "${@:2}"
+		done
+	elif [[ "${_brg_outdir}" == "each" ]]; then
+		for _v1 in "${Sall[@]}"; do
+			rsync_genus_species_for "${_v1}" "${@:2}"
+		done
+	else
+		rsync_genus_species_for "$@"
+	fi
+}
+
+nextdenovo-check-cns_genus_species() {
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		if ssh ${_local_host} "test -f $PWD/${_brg_outdir_i}/cns.fa"; then
+			if [[ ! -s "${_brg_outdir_i}/cns.fa" ]]; then
+				scp -p ${_local_host}:$PWD/"${_brg_outdir_i}/cns.fa" "${_brg_outdir_i}"
+			fi
+		else
+			echo "no such file at ${_local_host}: $PWD/${_brg_outdir_i}/cns.fa"
+			echo "We need the polished long-read data for oatk."
+			return 1
+		fi
+		if ssh ${_local_host} "test -f $PWD/${_brg_outdir}/short_expected_genome_size.txt"; then
+			scp -p ${_local_host}:"$PWD/${_brg_outdir}/short_expected_genome_size.txt" "${_brg_outdir}"
+		fi
+		if ssh ${_local_host} "test -f $PWD/${_brg_outdir}/o/short_expected_genome_size.txt"; then
+			mkdir -p "${_brg_outdir}/o"
+			scp -p ${_local_host}:"$PWD/${_brg_outdir}/o/short_expected_genome_size.txt" "${_brg_outdir}/o"
+		fi
+	else
+		if is_file_at_least_1MB "${_brg_outdir_i}/cns.fa"; then
+			echo "found: ${_brg_outdir_i}/cns.fa"
+		else
+			echo "no such file (greater than 1MB) ${_brg_outdir_i}/cns.fa"
+			echo "We need the polished long-read data for oatk."
+			return 1
+		fi
+	fi
+	return 0
+}
+
+hifiasm-check-cns_genus_species() {
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		if ssh ${_local_host} "test -f $PWD/${_brg_outdir_i}/ont.asm.ec.fq"; then
+			if [[ ! -s "${_brg_outdir_i}/ont.asm.ec.fq" ]]; then
+				scp -p ${_local_host}:$PWD/"${_brg_outdir_i}/ont.asm.ec.fq" "${_brg_outdir_i}"
+			fi
+		else
+			echo "no such file at ${_local_host}: $PWD/${_brg_outdir_i}/ont.asm.ec.fq"
+			echo "We need the polished long-read data for oatk."
+			return 1
+		fi
+
+		if ssh ${_local_host} "test -f $PWD/${_brg_outdir}/short_expected_genome_size.txt"; then
+			scp -p ${_local_host}:"$PWD/${_brg_outdir}/short_expected_genome_size.txt" "${_brg_outdir}"
+		fi
+		if ssh ${_local_host} "test -f $PWD/${_brg_outdir}/o/short_expected_genome_size.txt"; then
+			mkdir -p "${_brg_outdir}/o"
+			scp -p ${_local_host}:"$PWD/${_brg_outdir}/o/short_expected_genome_size.txt" "${_brg_outdir}/o"
+		fi
+
+	else
+		if is_file_at_least_1MB "${_brg_outdir_i}/ont.asm.ec.fq"; then
+			echo "found: ${_brg_outdir_i}/ont.asm.ec.fq"
+		else
+			echo "no such file (greater than 1MB) ${_brg_outdir_i}/ont.asm.ec.fq"
+			echo "We need the polished long-read data for oatk."
+			return 1
+		fi
+	fi
+	return 0
+}
+
+check-short-expected-genome-size_genus_species() {
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		if ssh ${_local_host} "test -f $PWD/${_brg_outdir}/short_expected_genome_size.txt"; then
+			scp -p ${_local_host}:"$PWD/${_brg_outdir}/short_expected_genome_size.txt" "${_brg_outdir}"
+		fi
+		if ssh ${_local_host} "test -f $PWD/${_brg_outdir}/o/short_expected_genome_size.txt"; then
+			mkdir -p "${_brg_outdir}/o"
+			scp -p ${_local_host}:"$PWD/${_brg_outdir}/o/short_expected_genome_size.txt" "${_brg_outdir}/o"
+		fi
+	else
+		if test -s "$PWD/${_brg_outdir}/short_expected_genome_size.txt"; then
+			echo "found: ${_brg_outdir}/short_expected_genome_size.txt"
+		elif test -s "$PWD/${_brg_outdir}/o/short_expected_genome_size.txt"; then
+			echo "found: ${_brg_outdir}/o/short_expected_genome_size.txt"
+		else
+			echo "We need the expected genome size."
+			return 1
+		fi
+	fi
+	return 0
+}
+
+oatk-polished_genus_species_for() {
+	local _brg_outdir="${1}"
+	local _brg_inum="${2:-0}"
+	local _brg_polished="${3:-hifiasm}"
+	local _brg_fc="${4:-30}"
+
+	local target_index="${_brg_outdir}-${_brg_inum}"
+	local long_sra="${_long["$target_index"]}"
+	if [[ -z "$long_sra" ]]; then
+		echo "Info: skipping oatk-polished on ${_brg_outdir}-${_brg_inum} because it is not in the CSV."
+		return
+	fi
+	local short_sra="${_short["$target_index"]}"
+	local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
+	local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+	# echo "long_sra: ${long_sra}"
+	# echo "short_sra: ${short_sra}"
+
+	# Step 0. Get the archive data file if this runs at a remote
+	# where we do not have the file: cns.fa
+	mkdir -p "${_brg_outdir_i}"
+	local _brg_corrected_fa="ont.asm.ec.fq"
+	if [[ "${_brg_polished}" == h* ]]; then
+		_brg_polished="hifiasm"
+	elif [[ "${_brg_polished}" == n* ]]; then
+		_brg_polished="nextdenovo"
+	else
+		echo "Error: option polished must either hifiasm or nextdenovo."
+		return 1
+	fi
+
+	if [[ "${_brg_polished}" == h* ]]; then
+		if ! hifiasm-check-cns_genus_species; then
+			echo "check ont.asm.ec.fq failed"
+			return
+		fi
+	elif [[ "${_brg_polished}" == n* ]]; then
+		_brg_corrected_fa="cns.fa"
+		if ! nextdenovo-check-cns_genus_species; then
+			echo "check cns.fa failed"
+			return
+		fi
+	else
+		echo "Error: option polished must either hifiasm or nextdenovo."
+		return 1
+	fi
+
+	# Step 2. genome size
+	genome_size=$(get_genome_size) || exit 1
+
+	source "$(conda info --base)/etc/profile.d/conda.sh"
+	if [[ "$CONDA_DEFAULT_ENV" != "oatk" ]]; then
+		echo "You're not in the oatk environment. Chaniging 'oatk'..."
+		conda activate oatk
+	fi
+
+	if [[ "$CONDA_DEFAULT_ENV" == "oatk" ]]; then
+
+		local fc_list=()
+
+		if [[ "${_brg_fc}" == *,* ]]; then
+			IFS=',' read -ra fc_list <<<"$_brg_fc"
+		else
+			fc_list=("$_brg_fc")
+		fi
+
+		for _brg_fc in "${fc_list[@]}"; do
+			echo "oatk on ${_brg_outdir}/${_brg_inum} using the ${_brg_polished}-polished data: ${_brg_outdir_i}/${_brg_corrected_fa} with -c ${_brg_fc}"
+			local _timing_oatk=${_brg_outdir_i}/timing-oatk-polished-${_brg_polished}-${_brg_fc}.txt
+			local _stdout_oatk=${_brg_outdir_i}/sdtout-oatk-polished-${_brg_polished}-${_brg_fc}.txt
+			mkdir -p "${_brg_outdir_i}"
+			local _outdir_oatk="${_brg_outdir}"-oatk-polished-${_brg_polished}-${_brg_fc}
+			mkdir -p "${_outdir_oatk}"
+
+			# oatk -k 1001 -c 30 -t 8 --nhmmscan /bin/nhmmscan -m embryophyta_mito.fam -p embryophyta_pltd.fam -o ddAraThal4 ddAraThal4_organelle.hifi.fa.gz
+			#
+			# tippo options:
+			# -p ont \
+			# -t ${_brg_threads} \
+			#
+			# oatk options:
+			# --nhmmscan /bin/nhmmscan \
+
+			# oatk -k 1001 -c 30 -t 8 \
+			# 	-m ./OatkDB/v20230921/embryophyta_mito.fam \
+			# 	-p ./OatkDB/v20230921/embryophyta_pltd.fam \
+			# 	-o oatk-1 \
+			# 	cns.fa
+
+			local _oatk_dir="${_brg_outdir_i}"/oatk-polished-${_brg_polished}-${_brg_fc}
+			rm -rf "${_oatk_dir}"
+			command time -v oatk \
+				-k 1001 \
+				-c ${_brg_fc} \
+				-t 8 \
+				-m ./OatkDB/v20230921/embryophyta_mito.fam \
+				-p ./OatkDB/v20230921/embryophyta_pltd.fam \
+				-o "${_outdir_oatk}"/oatk-1 \
+				"${_brg_outdir_i}"/"${_brg_corrected_fa}" \
+				>"${_stdout_oatk}" \
+				2>"${_timing_oatk}"
+
+			# Record the computer system info
+			echo "hostname: $(hostname)" >>"${_timing_oatk}"
+			free -h >>"${_timing_oatk}"
+			lscpu >>"${_timing_oatk}"
+
+			mv "${_outdir_oatk}" "${_oatk_dir}"
+			# rm -rf "${_oatk_dir}"
+			# mkdir "${_oatk_dir}"
+
+			# what to copy: consider this
+			# cp -pr "${_brg_outdir}"-oatk-${_brg_fc}/gfa_result "${_oatk_dir}"
+			# rm -rf "${_brg_outdir}"-oatk-${_brg_fc}
+		done
+
+		conda deactivate
+
+	else
+		echo "ERROR: no oatk conda environment"
+	fi
+
+}
+
+oatk-polished_genus_species() {
+	local _brg_outdir="${1:-all}"
+	local _brg_inum="${2:-0}"
+	local _brg_polished="${3:-hifiasm}"
+	local _brg_fc="${4:-30}"
+
+	if [[ "${_brg_outdir}" == "all" ]]; then
+		for _v1 in "${Sall[@]}"; do
+			oatk-polished_genus_species_for "${_v1}" "${@:2}"
+		done
+	elif [[ "${_brg_outdir}" == "each" ]]; then
+		for _v1 in "${Sall[@]}"; do
+			oatk-polished_genus_species_for "${_v1}" "${@:2}"
+		done
+	else
+		oatk-polished_genus_species_for "$@"
+	fi
+}
+
+hifiasm-polish_genus_species() {
+	local _brg_outdir="${1:-all}"
+	local _brg_inum="${2:-7}"
+	local _brg_fc="${3:-1}"
+
+	local target_index="${_brg_outdir}-${_brg_inum}"
+	local long_sra="${_long["$target_index"]}"
+	local short_sra="${_short["$target_index"]}"
+	if [ -z "${long_sra}" ]; then
+		echo "ERROR: no long-read SRA ID: ${long_sra}"
+		echo "Suggestion: use -c option for a user-povided CSV."
+		return
+	fi
+	local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
+	local _brg_threads="$(cat /proc/cpuinfo | grep -c processor)"
+	# local _memlog_csv="${_brg_outdir_i}/memlog-hifiasm-polish.csv"
+
+	# echo "long_sra: ${long_sra}"
+	# echo "short_sra: ${short_sra}"
+
+	# Step 0. Get the archive data file if this runs at a remote
+	# where we do not have the file.
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		if [[ ! -s "${_brg_outdir}-a.tar.gz" ]]; then
+			scp -p ${_local_host}:$PWD/${_brg_outdir}-a.tar.gz .
+		fi
+	fi
+
+	mkdir -p "${_brg_outdir_i}"
+
+	if [[ ! -s "${_brg_outdir}/polap.log" ]]; then
+		_log_echo "no such file: ${_brg_outdir}/polap.log -> recovering the ${_brg_outdir}"
+		recover_genus_species "${_brg_outdir}" "${_brg_inum}"
+	fi
+
+	# Step 1. prepare input data
+	prepare-long-data_genus_species "${_brg_outdir}" "${_brg_inum}"
+
+	source "$(conda info --base)/etc/profile.d/conda.sh"
+	if [[ "$CONDA_DEFAULT_ENV" != "oatk" ]]; then
+		echo "You're not in the oatk environment. Chaniging 'oatk'..."
+		conda activate oatk
+	fi
+
+	if [[ "$CONDA_DEFAULT_ENV" == "oatk" ]]; then
+		echo "hifiasm on ${_brg_outdir}/${_brg_inum} using the raw ONT data: ${long_sra}.fastq with option -c ${_brg_fc}"
+		local _timing_hifiasm=${_brg_outdir_i}/timing-hifiasm-polish-fc-${_brg_fc}.txt
+		local _stdout_hifiasm=${_brg_outdir_i}/stdout-hifiasm-polish-fc-${_brg_fc}.txt
+		local _outdir_hifiasm="${_brg_outdir}"-hifiasm-polish-${_brg_fc}
+		mkdir -p "${_brg_outdir_i}"
+		mkdir -p "${_outdir_hifiasm}"
+
+		# hifiasm -t64 --ont -o ONT.asm ONT.read.fastq.gz --write-ec
+		command time -v hifiasm \
+			-t${_brg_threads} \
+			--ont \
+			--write-ec \
+			-o "${_outdir_hifiasm}"/ont.asm \
+			"${long_sra}.fastq" \
+			>"${_stdout_hifiasm}" \
+			2>"${_timing_hifiasm}"
+
+		# cat "${work_dir}"/02.cns_align/01.seed_cns.sh.work/seed_cns*/cns.fasta >"${_brg_outdir_i}"/cns.fa
+
+		# Copy the hifiasm run configuration
+		# cp "${input_file}" "${_brg_outdir_i}"
+		# cp "${hifiasm_cfg}" "${_brg_outdir_i}"
+
+		# Record the computer system info
+		echo "hostname: $(hostname)" >>"${_timing_hifiasm}"
+		free -h >>"${_timing_hifiasm}"
+		lscpu >>"${_timing_hifiasm}"
+
+		local _hifiasm_dir="${_brg_outdir_i}/hifiasm-polish-${_brg_fc}"
+		cp -p "${_outdir_hifiasm}"/ont.asm.ec.fq "${_hifiasm_dir}"
+		# mv "${_outdir_hifiasm}"/ont.asm.ec.fq "${_hifiasm_dir}"
+		# rm -rf "${_outdir_hifiasm}"
+
+		conda deactivate
+
+		# Clean up the hifiasm working folder
+		# rm -rf "${work_dir}"
+		# rm "${long_sra}".fastq
+
+		if [[ "${_local_host}" != "$(hostname)" ]]; then
+			rsync -aq "${_brg_outdir_i}/" "${_local_host}:${PWD}/${_brg_outdir}/"
+		fi
+	else
+		echo "ERROR: no oatk conda environment"
+	fi
+
+}
+
+mitohifi_genus_species() {
+	local version="${1:-master}"
+	shift
+	local sif_file="mitohifi-${version}.sif"
+	local image_url="docker://ghcr.io/marcelauliano/mitohifi:${version}"
+	local bind_dir="${MITOHIFI_BIND_DIR:-$PWD}"
+	local tmpdir="${MITOHIFI_TMPDIR:-$(mktemp -d -p "$bind_dir" mitohifi_tmp_XXXX)}"
+	local timestamp=$(date '+%Y%m%d_%H%M%S')
+	local args=("$@")
+
+	if ! command -v apptainer &>/dev/null; then
+		echo "[!] Apptainer not installed." >&2
+		return 1
+	fi
+
+	if [[ ! -f "$sif_file" ]]; then
+		echo "[*] Building SIF image: $sif_file"
+		apptainer build "$sif_file" "$image_url" || {
+			echo "[!] Failed to build image." >&2
+			return 1
+		}
+	fi
+
+	# Auto-detect input file
+	if [[ ! "${args[*]}" =~ -r ]]; then
+		local fq
+		fq=$(find "$bind_dir" -maxdepth 1 -type f \( -iname "*.fastq" -o -iname "*.fastq.gz" \) | head -n 1)
+		if [[ -n "$fq" ]]; then
+			echo "[*] Auto-detected input: $fq"
+			args+=("-r" "$fq")
+		else
+			echo "[!] No input FASTQ found and none specified with -r." >&2
+			return 1
+		fi
+	fi
+
+	# Auto-create timestamped output dir if -o not given
+	local output_dir
+	if [[ "${args[*]}" =~ -o[[:space:]] ]]; then
+		output_dir=$(echo "${args[@]}" | sed -n 's/.*-o[[:space:]]\([^[:space:]]*\).*/\1/p')
+	else
+		output_dir="mitohifi_out_${timestamp}"
+		args+=("-o" "$output_dir")
+	fi
+
+	mkdir -p "$output_dir"
+	local log_file="$output_dir/mitohifi.log"
+	local timing_file="$output_dir/mitohifi.timing.txt"
+
+	echo "[*] Running MitoHiFi with output: $output_dir"
+	echo "$(date '+%F %T') | mitohifi.py ${args[*]}" >>"$log_file"
+
+	echo "[*] Profiling runtime and memory..."
+	{
+		/usr/bin/time -v \
+			APPTAINER_TMPDIR="$tmpdir" apptainer exec \
+			--bind "$bind_dir:$bind_dir" \
+			"$sif_file" mitohifi.py "${args[@]}"
+	} 2>>"$timing_file"
+
+	local exit_code=$?
+	rm -rf "$tmpdir"
+
+	local max_mem time_elapsed
+	max_mem=$(grep "Maximum resident set size" "$timing_file" | awk '{print $6}')
+	time_elapsed=$(grep "Elapsed (wall clock) time" "$timing_file" | awk -F': ' '{print $2}')
+	echo "[*] Summary:"
+	echo "    Max memory   : ${max_mem} KB"
+	echo "    Elapsed time : ${time_elapsed}"
+
+	echo "$(date '+%F %T') | Max memory: ${max_mem} KB | Time: ${time_elapsed}" >>"$log_file"
+	echo "[*] Logs saved to: $log_file and $timing_file"
+
+	if [[ $exit_code -eq 0 ]]; then
+		echo "[✔] MitoHiFi completed successfully"
+	else
+		echo "[!] MitoHiFi failed (exit code $exit_code)"
+	fi
+
+	return $exit_code
+}
+
+install-apptainer_genus_species() {
+	local version="${1:-1.4.0}"
+	local deb_url="https://github.com/apptainer/apptainer/releases/download/v${version}/apptainer_${version}_amd64.deb"
+	# https://github.com/apptainer/apptainer/releases/download/v1.4.0/apptainer_1.4.0_amd64.deb
+	local deb_file="apptainer_${version}_amd64.deb"
+
+	echo "[*] Attempting to install Apptainer v${version} via .deb..."
+
+	if wget -q --show-progress "$deb_url" -O "$deb_file"; then
+		if sudo apt install -y "./$deb_file"; then
+			echo "[✔] Apptainer installed successfully via .deb"
+			rm -f "$deb_file"
+			apptainer version
+			return 0
+		else
+			echo "[!] .deb install failed, will build from source..."
+			rm -f "$deb_file"
+		fi
+	else
+		echo "[!] Failed to download .deb, will build from source..."
+	fi
+
+	return
+
+	echo "[*] Installing build dependencies..."
+	sudo apt update
+	sudo apt install -y build-essential uuid-dev libgpgme11-dev libseccomp-dev \
+		pkg-config squashfs-tools cryptsetup runc git wget
+
+	if ! command -v go >/dev/null 2>&1; then
+		echo "[*] Installing Go..."
+		wget -q https://go.dev/dl/go1.21.6.linux-amd64.tar.gz
+		sudo tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz
+		export PATH="/usr/local/go/bin:$PATH"
+		echo 'export PATH="/usr/local/go/bin:$PATH"' >>~/.bashrc
+		rm -f go1.21.6.linux-amd64.tar.gz
+	else
+		echo "[*] Go is already installed: $(go version)"
+	fi
+
+	echo "[*] Cloning Apptainer source..."
+	git clone https://github.com/apptainer/apptainer.git
+	cd apptainer || {
+		echo "[!] Failed to enter apptainer dir"
+		return 1
+	}
+	git checkout "v${version}"
+
+	echo "[*] Building Apptainer..."
+	./mconfig && make -C builddir && sudo make -C builddir install
+
+	echo "[✔] Apptainer installed from source:"
+	apptainer version
+}
+
+install-novoplasty_genus_species() {
+	local _brg_outdir="${1}"
+	echo "Preparing archive for ${_brg_outdir} ..."
+	# tar zcf "${_brg_outdir}-a.tar.gz" "${_brg_outdir}"
+}
+
+install-mitohifi_genus_species() {
+	local version="${1:-master}"
+	local sif_name="mitohifi-${version}.sif"
+	local image_url="docker://ghcr.io/marcelauliano/mitohifi:${version}"
+
+	if [[ -f "$sif_name" ]]; then
+		echo "[✔] MitoHiFi SIF already exists: $sif_name"
+		return 0
+	fi
+
+	echo "[*] Pulling MitoHiFi image version: ${version}"
+	echo "[*] Saving as: $sif_name"
+
+	if ! command -v apptainer &>/dev/null; then
+		echo "[!] Apptainer is not installed. Please install it first."
+		return 1
+	fi
+
+	apptainer build "$sif_name" "$image_url" || {
+		echo "[!] Failed to build MitoHiFi image"
+		return 1
+	}
+
+	echo "[✔] MitoHiFi image installed: $sif_name"
+}
+
+data-peek_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_inum="${2:-0}"
+	local target_index="${_brg_outdir}-${_brg_inum}"
+
+	local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
+	local long_sra="${_long["$target_index"]}"
+	local short_sra="${_short["$target_index"]}"
+
+	echo "Species: ${species_name}"
+	echo "Long SRA ID: ${long_sra}"
+	echo "Short SRA ID: ${short_sra}"
+}
+
+data-long_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_inum="${2:-0}"
+	local target_index="${_brg_outdir}-${_brg_inum}"
+
+	local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
+	local long_sra="${_long["$target_index"]}"
+	local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
+
+	# check if long_sra is empty
+	if [[ -z "$long_sra" ]]; then
+		echo "Error: no long SRA for ${_brg_outdir}-${_brg_inum}"
+		return
+	fi
+
+	mkdir -p "${_brg_outdir}/${_brg_inum}"
+
+	# Step 1. prepare input fastq data
+	local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
+	local long_fastq="${long_sra}.fastq"
+
+	if [[ "${_local_host}" == "$(hostname)" ]]; then
+		if [[ -s "${long_fastq}" ]]; then
+			echo "found: ${long_fastq}"
+		else
+			if [[ -s "${long_data}" ]]; then
+				tar -zxf ${long_data}
+			else
+				ln -s "${_media1_dir}/${long_sra}.fastq"
+			fi
+		fi
+	else
+		if [[ -s "${long_sra}.fastq" ]]; then
+			echo "found: ${long_fastq}"
+		else
+			if ssh ${_local_host} "test -f ${long_data}"; then
+				if [[ -s "${long_sra}".fastq.tar.gz ]]; then
+					echo "found: ${long_fastq}.fastq.tar.gz"
+				else
+					scp ${_local_host}:${long_data} .
+				fi
+				echo "decompressing ..."
+				tar -zxf "${long_sra}".fastq.tar.gz
+				rm -f "${long_sra}".fastq.tar.gz
+			elif ssh ${_local_host} "test -f ${_media1_dir}/${long_sra}.fastq"; then
+				scp ${_local_host}:"${_media1_dir}/${long_sra}.fastq" .
+			else
+				echo "  downloading long-read SRA ID: ${long_sra} ... be patient!"
+				"${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$long_sra"
+			fi
+		fi
+	fi
+}
+
+data-short_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_inum="${2:-0}"
+	local target_index="${_brg_outdir}-${_brg_inum}"
+
+	local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
+	local short_sra="${_short["$target_index"]}"
+	local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
+
+	# check if short_sra is empty
+	if [[ -z "$short_sra" ]]; then
+		echo "Error: no short SRA for ${_brg_outdir}-${_brg_inum}"
+		return
+	fi
+
+	mkdir -p "${_brg_outdir}/${_brg_inum}"
+
+	# Step 1. prepare input fastq data
+	local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
+	local short_fastq="${short_sra}_1.fastq"
+
+	if [[ "${_local_host}" == "$(hostname)" ]]; then
+		if [[ -s "${short_fastq}" ]]; then
+			echo "found: ${short_fastq}"
+		else
+			if [[ -s "${short_data}" ]]; then
+				tar -zxf ${short_data}
+			else
+				ln -s "${_media1_dir}/${short_sra}_1.fastq"
+				ln -s "${_media1_dir}/${short_sra}_2.fastq"
+			fi
+		fi
+	else
+		if [[ -s "${short_sra}_1.fastq" ]]; then
+			echo "found: ${short_fastq}"
+		else
+			if ssh ${_local_host} "test -f ${short_data}"; then
+				if [[ -s "${short_sra}".fastq.tar.gz ]]; then
+					echo "found: ${short_fastq}.fastq.tar.gz"
+				else
+					scp ${_local_host}:${short_data} .
+				fi
+				echo "decompressing ..."
+				tar -zxf "${short_sra}".fastq.tar.gz
+			elif ssh ${_local_host} "test -f ${_media1_dir}/${short_sra}_1.fastq"; then
+				scp ${_local_host}:"${_media1_dir}/${short_sra}_1.fastq" .
+				scp ${_local_host}:"${_media1_dir}/${short_sra}_2.fastq" .
+			else
+				echo "  downloading short-read SRA ID: ${short_sra} ... be patient!"
+				"${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$short_sra"
+			fi
+		fi
+	fi
+}
+
+estimate-genomesize_genus_species() {
+	local _brg_outdir="${1:-all}"
+	local _brg_inum="${2:-0}"
+
+	local target_index="${_brg_outdir}-${_brg_inum}"
+	local long_sra="${_long["$target_index"]}"
+	local short_sra="${_short["$target_index"]}"
+
+	local _genome_size="0"
+	if [[ -s "${_brg_outdir}"/o/short_expected_genome_size.txt ]]; then
+		_genome_size=$(<"${_brg_outdir}"/o/short_expected_genome_size.txt)
+	elif [[ -s "${_brg_outdir}"/short_expected_genome_size.txt ]]; then
+		_genome_size=$(<"${_brg_outdir}"/short_expected_genome_size.txt)
+	else
+		${_polap_cmd} find-genome-size \
+			-a ${short_sra}_1.fastq \
+			-b ${short_sra}_2.fastq \
+			-o "${_brg_outdir}"
+		if [[ -s "${_brg_outdir}"/short_expected_genome_size.txt ]]; then
+			_genome_size=$(<"${_brg_outdir}"/short_expected_genome_size.txt)
+		fi
+	fi
+	_genome_size=${_genome_size%%.*}
+	echo "${_genome_size}"
+}
+
+data-downsample-long_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_inum="${2:-0}"
+	local _brg_coverage="${3:-50}"
+	local _brg_dry="${4:-off}"
+
+	local target_index="${_brg_outdir}-${_brg_inum}"
+	local long_sra="${_long["$target_index"]}"
+	local random_seed="${_random_seed["$target_index"]}"
+	local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
+
+	local _dry=""
+	if [[ "${_brg_dry}" == "on" ]]; then
+		_dry="--dry"
+	fi
+
+	mkdir -p "${_brg_outdir_i}"
+
+	# Step 1. check input fastq data
+	mkdir -p "${_brg_outdir}/tmp"
+	if [[ -s "${long_sra}.fastq" ]]; then
+		echo "found: ${long_sra}.fastq"
+		if [[ -s "${_brg_outdir}/tmp/${long_sra}.fastq" ]]; then
+			echo "found and use: ${_brg_outdir}/tmp/${long_sra}.fastq"
+		else
+			echo mv "${long_sra}.fastq" "${_brg_outdir}"/tmp
+			mv "${long_sra}.fastq" "${_brg_outdir}"/tmp
+		fi
+	else
+		if [[ -s "${_brg_outdir}/tmp/${long_sra}.fastq" ]]; then
+			echo "found and use: ${_brg_outdir}/tmp/${long_sra}.fastq"
+		else
+			echo "no such file: ${long_sra}.fastq"
+			return
+		fi
+	fi
+
+	source "$(conda info --base)/etc/profile.d/conda.sh"
+	if [[ "$CONDA_DEFAULT_ENV" != "polap" ]]; then
+		echo "You're not in the polap environment. Chaniging 'polap'..."
+		conda activate polap
+	fi
+
+	if [[ "$CONDA_DEFAULT_ENV" == "polap" ]]; then
+
+		# Step 2. Estimate the genome size
+		local _genome_size=$(
+			estimate-genomesize_genus_species \
+				"${_brg_outdir}" \
+				"${_brg_inum}" | tail -1
+		)
+		echo "Genome size estimate: ${_genome_size}"
+
+		# Step 3.
+		echo "downsampling ... ${long_sra}"
+		echo "input: ${_brg_outdir}/tmp/${long_sra}.fastq"
+		echo "output: ${long_sra}.fastq"
+		${_polap_cmd} fastq subsample -v ${_dry} \
+			"${_brg_outdir}/tmp/${long_sra}.fastq" \
+			"${long_sra}.fastq" \
+			-c "${_brg_coverage}" \
+			-o "${_brg_outdir_i}" \
+			--random-seed "${random_seed}" \
+			--genomesize "${_genome_size}" -v \
+			>"${_brg_outdir_i}/l${_brg_coverage}x.txt"
+		echo "log: ${_brg_outdir_i}/l${_brg_coverage}x.txt"
+	fi
+}
+
+data-downsample-short_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_inum="${2:-0}"
+	local _brg_coverage="${3:-50}"
+	local _brg_dry="${4:-off}"
+	local _brg_genomesize="${5}"
+
+	local target_index="${_brg_outdir}-${_brg_inum}"
+	local short_sra="${_short["$target_index"]}"
+	local random_seed="${_random_seed["$target_index"]}"
+	local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
+
+	local _dry=""
+	if [[ "${_brg_dry}" == "on" ]]; then
+		_dry="--dry"
+	fi
+
+	mkdir -p "${_brg_outdir_i}"
+
+	# Step 1. check input fastq data
+	mkdir -p "${_brg_outdir}/tmp"
+	rm "${_brg_outdir}/tmp/${short_sra}_1.fastq"
+	rm "${_brg_outdir}/tmp/${short_sra}_2.fastq"
+	if [[ -s "${short_sra}_1.fastq" ]]; then
+		echo "found: ${short_sra}_1.fastq"
+	else
+		echo "no such file: ${short_sra}_1.fastq"
+		return
+	fi
+	if [[ -s "${short_sra}_2.fastq" ]]; then
+		echo "found: ${short_sra}_2.fastq"
+	else
+		echo "no such file: ${short_sra}_2.fastq"
+		return
+	fi
+
+	source "$(conda info --base)/etc/profile.d/conda.sh"
+	if [[ "$CONDA_DEFAULT_ENV" != "polap" ]]; then
+		echo "You're not in the polap environment. Chaniging 'polap'..."
+		conda activate polap
+	fi
+
+	if [[ "$CONDA_DEFAULT_ENV" == "polap" ]]; then
+
+		local _genome_size=0
+		if [[ -z "${_brg_genomesize}" ]]; then
+			# Step 2. Estimate the genome size
+			_genome_size=$(
+				estimate-genomesize_genus_species \
+					"${_brg_outdir}" \
+					"${_brg_inum}" | tail -1
+			)
+		else
+			_genome_size="${_brg_genomesize}"
+		fi
+		echo "Genome size estimate: ${_genome_size}"
+
+		# Step 3.
+		echo "downsampling ${short_sra} coverage: ${_brg_coverage}x"
+		echo "input: ${short_sra}_1.fastq"
+		echo "input: ${short_sra}_2.fastq"
+		echo "output: ${_brg_outdir}/tmp/${short_sra}_1.fastq"
+		echo "output: ${_brg_outdir}/tmp/${short_sra}_2.fastq"
+
+		${_polap_cmd} fastq subsample2 -v ${_dry} \
+			"${short_sra}_1.fastq" \
+			"${short_sra}_2.fastq" \
+			"${_brg_outdir}/tmp/${short_sra}_1.fastq" \
+			"${_brg_outdir}/tmp/${short_sra}_2.fastq" \
+			-c "${_brg_coverage}" \
+			-o "${_brg_outdir_i}" \
+			--random-seed "${random_seed}" \
+			--genomesize "${_genome_size}" -v \
+			>"${_brg_outdir_i}/s${_brg_coverage}x.txt"
+		echo "log: ${_brg_outdir_i}/s${_brg_coverage}x.txt"
+
+	fi
+}
+
+clean_input_lines() {
+	while IFS= read -r line; do
+		# Remove leading spaces
+		line="${line#"${line%%[![:space:]]*}"}"
+
+		# Remove trailing ')'
+		line="${line%)}"
+
+		echo "$line"
+	done
+}
+
 function _polap_lib_data-execute-common-subcommand {
-	local subcmd1="$1"
-	local opt_y_flag="$2"
+	# local subcmd1="$1"
+	# local arg2="$2"
+	# local arg3="$3"
+	# local opt_y_flag="$4"
 	local handled=0
 
 	case "$subcmd1" in
@@ -139,8 +1095,25 @@ function _polap_lib_data-execute-common-subcommand {
 		install-fmlrc | patch-polap | bleeding-edge-polap | local-edge-polap | \
 		test-polap | \
 		install-bandage | install-getorganelle | install-cflye | install-dflye | \
+		install-oatk | \
 		install-tippo | \
-		install-pmat | download-pmat)
+		install-pmat | download-pmat | \
+		install-apptainer | \
+		install-mitohifi | \
+		data-long | data-short | data-peek | \
+		data-downsample-long | data-downsample-short | \
+		mitohifi | \
+		list-subcommands)
+		handled=1
+		;;
+		##### INSERT_COMMAND_HERE #####
+	rsync)
+		handled=1
+		;;
+	oatk-polished)
+		handled=1
+		;;
+	hifiasm-polish)
 		handled=1
 		;;
 	mkdir-all | rm-empty | rm)
@@ -149,6 +1122,60 @@ function _polap_lib_data-execute-common-subcommand {
 	esac
 
 	case "$subcmd1" in
+	data-peek)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
+			echo "Help: ${subcmd1} <outdir>"
+			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${_arg2}"
+		;;
+	data-long)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
+			echo "Help: ${subcmd1} <outdir>"
+			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${_arg2}"
+		;;
+	data-short)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
+			echo "Help: ${subcmd1} <outdir>"
+			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${_arg2}"
+		;;
+	list-subcommands)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
+			echo "Help: ${subcmd1} <query> [any|start|end]"
+			echo "  ${0} ${subcmd1} polap"
+			exit 0
+		fi
+		[[ "${_arg3}" == arg3 ]] && _arg3="any"
+		local _brg_query="${_arg2}"
+		local _brg_where="${_arg3}"
+
+		if [[ "${_brg_where}" == "any" ]]; then
+			grep ")$" "${_POLAPLIB_DIR}/polap-lib-data.sh" | grep -v "(" | grep "${_brg_query}" | clean_input_lines
+			grep ")$" $0 | grep -v "(" | grep "${_brg_query}" | clean_input_lines
+		elif [[ "${_brg_where}" == "end" ]]; then
+			grep ")$" "${_POLAPLIB_DIR}/polap-lib-data.sh" | grep -v "(" | grep "${_brg_query})$" | clean_input_lines
+			grep ")$" $0 | grep -v "(" | grep "${_brg_query})$" | clean_input_lines
+		else
+			grep ")$" "${_POLAPLIB_DIR}/polap-lib-data.sh" | clean_input_lines | grep -v "(" | grep "^${_brg_query}"
+			grep ")$" $0 | clean_input_lines | grep -v "(" | grep "^${_brg_query}"
+		fi
+		;;
 	install-conda)
 		read -p "Do you want to install miniconda3? (y/N): " confirm
 		if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
@@ -576,8 +1603,9 @@ function _polap_lib_data-execute-common-subcommand {
 				if conda env list | awk '{print $1}' | grep -qx "tippo"; then
 					echo "ERROR: Conda environment 'tippo' already exists."
 				else
-					conda create -y --name tippo bioconda::tipp
-					conda activate tippo
+					conda create -n TIPP python=3.8 #please specific the python version to 3.8 :)
+					conda activate TIPP
+					conda install -y bioconda::tipp
 				fi
 			else
 				echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
@@ -586,6 +1614,77 @@ function _polap_lib_data-execute-common-subcommand {
 		else
 			echo "tippo installation is canceled."
 			echo "${help_message_install_tippo}"
+		fi
+		;;
+	install-oatk)
+		if [[ "${opt_y_flag}" == false ]]; then
+			read -p "Do you want to install oatk? (y/N): " confirm
+		else
+			confirm="yes"
+		fi
+
+		if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+			# Check current conda environment
+			# Initialize Conda for non-interactive shells
+			source "$(conda info --base)/etc/profile.d/conda.sh"
+			if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+				echo "You're not in the base environment. Chaniging 'base'..."
+				conda activate base
+			fi
+
+			if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+				echo "You're in the base environment. Creating 'oatk'..."
+				if conda env list | awk '{print $1}' | grep -qx "oatk"; then
+					echo "ERROR: Conda environment 'oatk' already exists."
+				else
+					conda create -y --name oatk bioconda::oatk
+					conda activate oatk
+					conda install -y biopython
+					conda install -y hmmer seqtk mafft parallel entrez-direct
+					conda install -y hifiasm
+					git clone https://github.com/c-zhou/OatkDB.git
+				fi
+			else
+				echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
+				exit 1
+			fi
+		else
+			echo "oatk installation is canceled."
+			echo "${help_message_install_oatk}"
+		fi
+		;;
+	install-bolap)
+		if [[ "${opt_y_flag}" == false ]]; then
+			read -p "Do you want to install bolap? (y/N): " confirm
+		else
+			confirm="yes"
+		fi
+
+		if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+			# Check current conda environment
+			# Initialize Conda for non-interactive shells
+			source "$(conda info --base)/etc/profile.d/conda.sh"
+			if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+				echo "You're not in the base environment. Chaniging 'base'..."
+				conda activate base
+			fi
+
+			if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+				echo "You're in the base environment. Creating 'bolap'..."
+				if conda env list | awk '{print $1}' | grep -qx "bolap"; then
+					echo "ERROR: Conda environment 'bolap' already exists."
+				else
+					conda create -y --name bolap
+					conda activate bolap
+					conda install -y fqtools seqkit seqtk entrez-direct
+				fi
+			else
+				echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
+				exit 1
+			fi
+		else
+			echo "bolap installation is canceled."
+			echo "${help_message_install_bolap}"
 		fi
 		;;
 	download-pmat)
@@ -641,6 +1740,156 @@ function _polap_lib_data-execute-common-subcommand {
 		else
 			echo "pmat installation is canceled."
 		fi
+		;;
+		##### INSERT_CASE_HERE #####
+	rsync)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
+			echo "Help: ${subcmd1} <outdir|all> [inum:0|N]"
+			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		[[ "${_arg3}" == arg3 ]] && _arg3=""
+		${subcmd1}_genus_species "${_arg2}" "${_arg3}"
+		;;
+	oatk-polished)
+		if [[ "${_arg2}" == arg2 ]]; then
+			echo "Help: ${subcmd1} <all|outdir> [inum:0|N] [polished:hifiasm|nextdenovo] [fc:30|N|N1,N2,N3,...]"
+			echo "  polap-data-v2.sh ${subcmd1} all"
+			echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		[[ "${_arg3}" == arg3 ]] && _arg3="0"
+		[[ "${_arg4}" == arg4 ]] && _arg4="hifiasm"
+		[[ "${_arg5}" == arg5 ]] && _arg5="30"
+		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
+		;;
+	hifiasm-polish)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
+			echo "Help: ${subcmd1} <outdir> [inum:7|N]"
+			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		[[ "${_arg3}" == arg3 ]] && _arg3=""
+		${subcmd1}_genus_species "${_arg2}" "${_arg3}"
+		;;
+	mitohifi)
+		if [[ "${_arg2}" == "-h" || "${_arg2}" == --h* ]]; then
+			echo "Help: ${subcmd1} [master]"
+			echo "  ${0} ${subcmd1}"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		[[ "${_arg2}" == arg2 ]] && _arg2="master"
+		${subcmd1}_genus_species "${_arg2}" "${@:3}"
+		;;
+	install-apptainer)
+		if [[ "${_arg2}" == "-h" || "${_arg2}" == --h* ]]; then
+			echo "Help: ${subcmd1} [version:1.4.0]"
+			echo "  ${0} ${subcmd1}"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		[[ "${_arg2}" == arg2 ]] && _arg2="1.4.0"
+		${subcmd1}_genus_species "${_arg2}"
+		;;
+	install-novoplasty)
+		if [[ "${opt_y_flag}" == false ]]; then
+			read -p "Do you want to install novoplasty? (y/N): " confirm
+		else
+			confirm="yes"
+		fi
+
+		if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+			# Check current conda environment
+			# Initialize Conda for non-interactive shells
+			source "$(conda info --base)/etc/profile.d/conda.sh"
+			if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+				echo "You're not in the base environment. Chaniging 'base'..."
+				conda activate base
+			fi
+
+			if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+				echo "You're in the base environment. Creating 'novoplasty'..."
+				if conda env list | awk '{print $1}' | grep -qx "novoplasty"; then
+					echo "ERROR: Conda environment 'novoplasty' already exists."
+				else
+					conda create -y --name novoplasty bioconda::novoplasty
+				fi
+			else
+				echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
+				exit 1
+			fi
+		else
+			echo "novoplasty installation is canceled."
+			echo "${help_message_install_novoplasty}"
+		fi
+		;;
+	install-mitohifi)
+		if [[ "${_arg2}" == "-h" || "${_arg2}" == --h* ]]; then
+			echo "Help: ${subcmd1} [version:master]"
+			echo "  ${0} ${subcmd1}"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		[[ "${_arg2}" == arg2 ]] && _arg2="master"
+		${subcmd1}_genus_species "${_arg2}"
+		;;
+	estimate-genomesize)
+		if [[ "${_arg2}" == arg2 ]]; then
+			echo "Help: ${subcmd1} <outdir|all> <inum:N>"
+			echo "  polap-data-v2.sh ${subcmd1} all"
+			echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		[[ "${_arg3}" == arg3 ]] && _arg3=""
+		${subcmd1}_genus_species "${_arg2}" "${_arg3}"
+		;;
+	data-downsample-long)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
+			echo "Help: ${subcmd1} <outdir> [inum:0|N] [coverage:50|N] [dry:off|on]"
+			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		[[ "${_arg3}" == arg3 ]] && _arg3=""
+		[[ "${_arg4}" == arg4 ]] && _arg4=""
+		[[ "${_arg5}" == arg5 ]] && _arg5=""
+		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
+		;;
+	data-downsample-short)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
+			echo "Help: ${subcmd1} <outdir> [inum:0|N] [coverage:50|N] [dry:off|on] [genomesize]"
+			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		[[ "${_arg3}" == arg3 ]] && _arg3=""
+		[[ "${_arg4}" == arg4 ]] && _arg4=""
+		[[ "${_arg5}" == arg5 ]] && _arg5=""
+		[[ "${_arg6}" == arg6 ]] && _arg6=""
+		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}"
 		;;
 	mkdir-all)
 		handled=1

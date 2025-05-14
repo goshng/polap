@@ -1,3 +1,7 @@
+# 2025-05-13
+
+Write a function for adding a subcommand
+
 # 2025-04-30
 
 ## pmat run errors

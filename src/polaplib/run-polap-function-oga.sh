@@ -1218,7 +1218,7 @@ HEREDOC
 	_polap_log3_pipe "${_command1}"
 
 	rm -f "${_polap_var_output_oga_gfa}"
-	ln -s "${_polap_var_oga_assembly_graph_gfa}" "${_polap_var_output_oga_gfa}"
+	ln -sf "${_polap_var_oga_assembly_graph_gfa}" "${_polap_var_output_oga_gfa}"
 	_polap_log0 "  output: the assembly graph: ${_polap_var_oga_contigger_edges_gfa}"
 	_polap_log0 "  output: the assembly graph: ${_polap_var_oga_assembly_graph_gfa}"
 	_polap_log0 "  output: the assembly graph: ${_polap_var_output_oga_gfa}"

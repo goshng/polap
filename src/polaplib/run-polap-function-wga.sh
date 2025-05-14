@@ -705,11 +705,11 @@ HEREDOC
 
 	if [[ -s "${_polap_var_outdir_nk_fq_gz}" ]] &&
 		[[ -s "${_polap_var_outdir_lk_fq_gz}" ]] &&
-		[[ -s "${_polap_var_outdir_nk4_fq_gz}" ]] &&
 		[[ "${_arg_redo}" == "off" ]]; then
+		# [[ -s "${_polap_var_outdir_nk4_fq_gz}" ]] &&
 		_polap_log0 "  found: ${_polap_var_outdir_nk_fq_gz}, so skipping the long-read data reduction."
 		_polap_log0 "  found: ${_polap_var_outdir_lk_fq_gz}, so skipping the long-read data reduction."
-		_polap_log0 "  found: ${_polap_var_outdir_nk4_fq_gz}, so skipping the long-read data reduction."
+		# _polap_log0 "  found: ${_polap_var_outdir_nk4_fq_gz}, so skipping the long-read data reduction."
 		return
 	fi
 
@@ -761,7 +761,7 @@ HEREDOC
 				_polap_log3_cmd ln -s $(realpath "$_arg_long_reads") "$nfq_file"
 			else
 				_polap_log1 "SUGGESTION: you might want to increase the minimum read lengths because you have enough long-read data."
-				local _RATE=$(echo "scale=3; ${_arg_coverage}/${_EXPECTED_LONG_COVERAGE}" | bc)
+				local _RATE=$(echo "scale=9; ${_arg_coverage}/${_EXPECTED_LONG_COVERAGE}" | bc)
 				# Compare value with 0
 				if echo "${_RATE} > 0" | bc -l | grep -q 1; then
 					_polap_log1 "  sampling long-read data by ${_RATE} ..."
@@ -823,40 +823,40 @@ HEREDOC
 	fi
 
 	# nk4, nk8, nk16, nk32
-	_polap_log0 "  reducing ${_polap_var_outdir_lk_fq_gz} -> ${_polap_var_outdir_nk4_fq_gz} ..."
-
-	if [[ -s "${_polap_var_outdir_nk4_fq_gz}" ]] && [[ "${_arg_redo}" == "off" ]]; then
-		_polap_log0 "  found: ${_polap_var_outdir_nk4_fq_gz}, so skipping the long-read data reduction."
-	else
-		local target_file=$(readlink -f "${_polap_var_outdir_lk_fq_gz}")
-		local file_size=$(stat --format="%s" "$target_file")
-		local limit_file_size=$((4 * 1024 * 1024 * 1024))
-		local ratio=$(echo "scale=4; $limit_file_size / $file_size" | bc)
-
-		# if [ "$EXPECTED_LONG_COVERAGE " -lt ${_arg_coverage} ]; then
-		if echo "${file_size} < ${limit_file_size}" | bc -l | grep -q 1; then
-			_polap_log1 "  No reduction of the long-read data because ${_EXPECTED_LONG_COVERAGE} < ${_arg_coverage}"
-			_polap_log3_cmd ln -s $(realpath "${_polap_var_outdir_lk_fq_gz}") "${_polap_var_outdir_nk4_fq_gz}"
-		else
-			local _RATE=$(echo "scale=4; $limit_file_size / $file_size" | bc)
-			# Compare value with 0
-			if echo "${_RATE} > 0" | bc -l | grep -q 1; then
-				_polap_lib_random-get
-				local _random_seed=${_polap_var_random_number}
-				_polap_log1 "  random seed for reducing the whole-genome assembly long-read data: ${_random_seed}"
-				_polap_log3_pipe "seqkit sample \
-            -p ${_RATE} \
-            -s ${_random_seed} \
-            --quiet \
-            ${_polap_var_outdir_lk_fq_gz} \
-		        -o ${_polap_var_outdir_nk4_fq_gz} \
-            2>${_polap_output_dest}"
-				_polap_log3_pipe "echo ${_random_seed} >${_polap_var_outdir_nk4_fq_gz}.random.seed.${_random_seed}"
-			else
-				die "ERROR: long-read sampling rate is not greater than 0."
-			fi
-		fi
-	fi
+	# _polap_log0 "  reducing ${_polap_var_outdir_lk_fq_gz} -> ${_polap_var_outdir_nk4_fq_gz} ..."
+	#
+	# if [[ -s "${_polap_var_outdir_nk4_fq_gz}" ]] && [[ "${_arg_redo}" == "off" ]]; then
+	# 	_polap_log0 "  found: ${_polap_var_outdir_nk4_fq_gz}, so skipping the long-read data reduction."
+	# else
+	# 	local target_file=$(readlink -f "${_polap_var_outdir_lk_fq_gz}")
+	# 	local file_size=$(stat --format="%s" "$target_file")
+	# 	local limit_file_size=$((4 * 1024 * 1024 * 1024))
+	# 	local ratio=$(echo "scale=4; $limit_file_size / $file_size" | bc)
+	#
+	# 	# if [ "$EXPECTED_LONG_COVERAGE " -lt ${_arg_coverage} ]; then
+	# 	if echo "${file_size} < ${limit_file_size}" | bc -l | grep -q 1; then
+	# 		_polap_log1 "  No reduction of the long-read data because ${_EXPECTED_LONG_COVERAGE} < ${_arg_coverage}"
+	# 		_polap_log3_cmd ln -s $(realpath "${_polap_var_outdir_lk_fq_gz}") "${_polap_var_outdir_nk4_fq_gz}"
+	# 	else
+	# 		local _RATE=$(echo "scale=4; $limit_file_size / $file_size" | bc)
+	# 		# Compare value with 0
+	# 		if echo "${_RATE} > 0" | bc -l | grep -q 1; then
+	# 			_polap_lib_random-get
+	# 			local _random_seed=${_polap_var_random_number}
+	# 			_polap_log1 "  random seed for reducing the whole-genome assembly long-read data: ${_random_seed}"
+	# 			_polap_log3_pipe "seqkit sample \
+	#            -p ${_RATE} \
+	#            -s ${_random_seed} \
+	#            --quiet \
+	#            ${_polap_var_outdir_lk_fq_gz} \
+	# 	        -o ${_polap_var_outdir_nk4_fq_gz} \
+	#            2>${_polap_output_dest}"
+	# 			_polap_log3_pipe "echo ${_random_seed} >${_polap_var_outdir_nk4_fq_gz}.random.seed.${_random_seed}"
+	# 		else
+	# 			die "ERROR: long-read sampling rate is not greater than 0."
+	# 		fi
+	# 	fi
+	# fi
 
 	_polap_log1 "NEXT (for testing purpose only): $(basename "$0") flye1 -g 150000"
 	_polap_log1 "NEXT (for testing purpose only): $(basename "$0") flye1 --test"
@@ -1006,7 +1006,8 @@ HEREDOC
 
 	fi
 
-	ln -s "${_polap_var_wga_contigger_edges_gfa}" "${_polap_var_output_wga_gfa}"
+	rm -f "${_polap_var_output_wga_gfa}"
+	ln -sf "${_polap_var_wga_contigger_edges_gfa}" "${_polap_var_output_wga_gfa}"
 	_polap_log1 "  assembly graph in the flye contigger stage: ${_polap_var_wga_contigger_edges_gfa}"
 	_polap_log1 "  assembly graph in the flye contigger stage: ${_polap_var_output_wga_gfa}"
 	_polap_log1 "NEXT: $(basename "$0") edges-stats -o ${_arg_outdir} [-i ${_arg_inum}]"

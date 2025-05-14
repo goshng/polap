@@ -71,15 +71,15 @@ function _polap_lib_timing-parse-timing {
 	# local _timing_file=${_v1}/timing-${j}.txt
 
 	if [[ -s "${_timing_file}" ]]; then
-		local _time_wga=$(grep 'Elapsed' "${_timing_file}" | head -1)
-		local _memory_wga=$(grep 'Maximum resident set size' "${_timing_file}" | head -1)
+		local _time_wga=$(grep 'Elapsed' "${_timing_file}" | tail -1)
+		local _memory_wga=$(grep 'Maximum resident set size' "${_timing_file}" | tail -1)
 		# Extract the number in kilobytes
 		local _memory_kbytes=$(echo "$_memory_wga" | grep -oE "[0-9]+")
 		# Convert kilobytes to gigabytes
 		local _memory_gb=$(echo "scale=2; $_memory_kbytes / 1048576" | bc)
 		# Extract the time portion using grep with regex
 		# time_only=$(echo "$_time_wga" | grep -oE "[0-9]+(:[0-9]{2}){1,2}")
-		local time_only=$(grep "Elapsed (wall clock) time (h:mm:ss or m:ss):" "$_timing_file" | awk -F': ' '{print $2}')
+		local time_only=$(grep "Elapsed (wall clock) time (h:mm:ss or m:ss):" "$_timing_file" | awk -F': ' '{print $2}' | tail -1)
 
 		local _total_hours=$(_polap_lib_timing-convert_to_hours_or_minutes "${time_only}")
 	else
@@ -88,6 +88,51 @@ function _polap_lib_timing-parse-timing {
 	fi
 
 	echo "${_memory_gb} ${_total_hours}"
+}
+
+function _polap_lib_timing-parse-cumulative-timing {
+	local _timing_file="${1}"
+	local total_seconds=0
+
+	if [[ -s "${_timing_file}" ]]; then
+		# Loop through all elapsed time lines
+		grep 'Elapsed (wall clock) time' "${_timing_file}" | while IFS= read -r line; do
+			local time_str=$(echo "$line" | awk -F': ' '{print $NF}')
+
+			# Parse time string into total seconds
+			local IFS=':'
+			read -ra parts <<<"$time_str"
+
+			if [[ ${#parts[@]} -eq 3 ]]; then
+				local h=${parts[0]}
+				local m=${parts[1]}
+				local s=${parts[2]}
+			elif [[ ${#parts[@]} -eq 2 ]]; then
+				local h=0
+				local m=${parts[0]}
+				local s=${parts[1]}
+			else
+				continue
+			fi
+
+			local seconds=$((10#$h * 3600 + 10#$m * 60 + 10#$s))
+			total_seconds=$((total_seconds + seconds))
+		done
+
+		# Convert total seconds to H:MM:SS
+		local total_h=$((total_seconds / 3600))
+		local rem=$((total_seconds % 3600))
+		local total_m=$((rem / 60))
+		local total_s=$((rem % 60))
+		local formatted_time=$(printf "%d:%02d:%02d" "$total_h" "$total_m" "$total_s")
+
+		# Convert formatted_time using your existing function
+		local hm_str=$(_polap_lib_timing-convert_to_hours_or_minutes "$formatted_time")
+
+		echo "$hm_str"
+	else
+		echo "0h"
+	fi
 }
 
 # Function to set the start time

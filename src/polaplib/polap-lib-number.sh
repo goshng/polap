@@ -20,8 +20,8 @@ source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-	set -u
-	return 0
+  set -u
+  return 0
 fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
@@ -30,9 +30,9 @@ declare "$_POLAP_INCLUDE_=1"
 
 # Function to round a floating-point number
 function _polap_lib_number-round-number {
-	local number="$1"
-	# Add 0.5 before truncating to simulate rounding
-	echo "$number + 0.5" | bc | cut -d'.' -f1
+  local number="$1"
+  # Add 0.5 before truncating to simulate rounding
+  echo "$number + 0.5" | bc | cut -d'.' -f1
 }
 
 # Function to determine the minimum of two values in files.
@@ -45,16 +45,27 @@ function _polap_lib_number-round-number {
 # Output the result
 # echo "The minimum value is: $minimum"
 _polap_lib_number-minimum-two-values-in-files() {
-	# Read the first file and store the value
-	local value1=$(<"$1")
+  # Read the first file and store the value
+  local value1=$(<"$1")
 
-	# Read the second file and store the value
-	local value2=$(<"$2")
+  # Read the second file and store the value
+  local value2=$(<"$2")
 
-	# Compare the two values
-	if ((value1 < value2)); then
-		echo "$value1"
-	else
-		echo "$value2"
-	fi
+  # Compare the two values
+  if ((value1 < value2)); then
+    echo "$value1"
+  else
+    echo "$value2"
+  fi
+}
+
+function _polap_lib_number-max_float {
+  local max="$1"
+  shift
+  for num in "$@"; do
+    if (($(echo "$num > $max" | bc -l))); then
+      max="$num"
+    fi
+  done
+  echo "$max"
 }

@@ -188,6 +188,26 @@ HEREDOC
 		"${_polap_var_outdir_lk_fq_gz}" \
 		"${_polap_var_outdir_lk_fq_stats}"
 
+	# Get the total long-read size
+	local _l_size=$(awk 'NR==2 { print $5 }' "${_polap_var_outdir_l_fq_stats}")
+	local _lk_size=$(awk 'NR==2 { print $5 }' "${_polap_var_outdir_lk_fq_stats}")
+	local _nk_size=$(awk 'NR==2 { print $5 }' "${_polap_var_outdir_nk_fq_stats}")
+	local _EXPECTED_GENOME_SIZE=$(<"${_polap_var_outdir_genome_size}")
+	_EXPECTED_GENOME_SIZE=${_EXPECTED_GENOME_SIZE%.*}
+	local _l_coverage=$(echo "scale=3; ${_l_size}/${_EXPECTED_GENOME_SIZE}" | bc)
+	local _lk_coverage=$(echo "scale=3; ${_lk_size}/${_EXPECTED_GENOME_SIZE}" | bc)
+	local _nk_coverage=$(echo "scale=3; ${_nk_size}/${_EXPECTED_GENOME_SIZE}" | bc)
+
+	{
+		echo "genome size: ${_EXPECTED_GENOME_SIZE}"
+		echo "long-read size: ${_l_size}"
+		echo "long-read coverage: ${_l_coverage}"
+		echo "lk size: ${_lk_size}"
+		echo "lk coverage: ${_lk_coverage}"
+		echo "nk size: ${_nk_size}"
+		echo "nk coverage: ${_nk_coverage}"
+	} >"${_polap_var_outdir_fq_stats}"
+
 	_polap_log1 NEXT: $(basename "$0") total-length-long -o "${_arg_outdir}" -l ${_arg_long_reads}
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

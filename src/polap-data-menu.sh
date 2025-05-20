@@ -100,7 +100,7 @@ function print_function_block() {
   print "";
 
   print cmd "_genus_species() {";
-  print "  local _brg_outdir=\"${1-all}\"";
+  print "  local _brg_outdir=\"${1:-all}\"";
 	print "  local _brg_inum=\"${2:-0}\"";
 	print "  local _brg_polished=\"${3:-hifiasm}\"";
 	print "  local _brg_fc=\"${4:-30}\"";

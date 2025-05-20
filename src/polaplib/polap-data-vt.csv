@@ -1,0 +1,5 @@
+species,_long,_short,_random_seed,downsample,inref,dummy,_status
+Test_species-0,l,s,0,50,genus,dummy,done
+Test_species-10,l,s,0,10,genus,dummy,done
+Test_species-20,l,s,0,1,genus,dummy,done
+Test_species-30,l,s,0,0.1,genus,dummy,done

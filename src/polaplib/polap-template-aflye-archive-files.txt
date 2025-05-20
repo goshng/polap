@@ -1,0 +1,2 @@
+./o1/0/30-contigger/graph_final.gfa
+./b1/cns.fa

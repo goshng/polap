@@ -1,0 +1,3 @@
+# Example
+bash monitor_memory_tree_recursive-kill-and-cleanup.sh Eucalyptus_pauciflora
+bash monitor_memory_tree_recursive-run.sh execute_nextdenovo_Eucalyptus_pauciflora.sh

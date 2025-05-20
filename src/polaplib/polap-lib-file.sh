@@ -74,7 +74,7 @@ _polap_lib_file-archive-folder() {
 
 		if [[ -f "$src_path" ]]; then
 			mkdir -p "$dest_folder"
-			cp "$src_path" "$dest_path"
+			cp -p "$src_path" "$dest_path"
 		else
 			echo "Warning: File '$src_path' does not exist, skipping."
 		fi

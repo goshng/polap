@@ -69,6 +69,7 @@ source "${_POLAPLIB_DIR}/polap-lib-timing.sh"
 source "${_POLAPLIB_DIR}/polap-lib-number.sh"
 source "${_POLAPLIB_DIR}/polap-lib-ncbi.sh"
 source "${_POLAPLIB_DIR}/polap-lib-random.sh"
+source "${_POLAPLIB_DIR}/polap-lib-process.sh"
 source "${_POLAPLIB_DIR}/run-polap-function-menus.sh"
 source "${_POLAPLIB_DIR}/polap-function-set-variables.sh"
 source "${_POLAPLIB_DIR}/run-polap-function-fastq.sh"
@@ -135,8 +136,11 @@ if [ $# -eq 0 ]; then
 	exit $EXIT_SUCCESS
 fi
 
+# the default output o is created.
+# o/polap.log, o/tmp, o/log are created as well.
 source "${_POLAPLIB_DIR}/polap-variables-main.sh"
 
+# see polap-variables-main.sh for the logit function.
 # all message to a log file
 # https://stackoverflow.com/questions/49851882/how-to-log-echo-statement-with-timestamp-in-shell-script
 exec 3>&1 1>> >(logit)
@@ -147,11 +151,12 @@ CMD="$0 $*"
 echo "POLAP: ${_polap_version}"
 echo "CMD: $CMD"
 
+# Print all the global variables from polap-parsing.sh.
 for var in $(compgen -v _arg_); do
 	echo "$var=${!var}"
 done
 
-# subcommand function call
+# Call a subcommand function
 if declare -f "_run_polap_${_arg_menu[0]}" >/dev/null 2>&1; then
 	# invoke that function, passing arguments through
 	# _run_polap_"$@" # same as "$1" "$2" "$3" ... for full argument list

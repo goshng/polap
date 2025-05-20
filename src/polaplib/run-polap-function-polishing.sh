@@ -31,6 +31,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 # Prepares the polishing using FMLRC.
 #
+# 2025-05-16: add the memory and CPU tracking
+#
 # Arguments:
 #   -a s1.fq
 #   -b s2.fq
@@ -40,6 +42,378 @@ declare "$_POLAP_INCLUDE_=1"
 # Outputs:
 #   $${_arg_outdir}/msbwt
 ################################################################################
+function v_memtracker_run_polap_prepare-polishing { # prepare the polishing using FMLRC
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	local filesize
+	_polap_set-variables-short-read
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
+
+	help_message=$(
+		cat <<HEREDOC
+# Prepares the polishing using FMLRC.
+# Arguments:
+#   -a ${_arg_short_read1}
+#   -b ${_arg_short_read2}
+#   or
+#   --bioproject ${_arg_bioproject}
+# Inputs:
+#   ${_arg_short_read1}
+#   ${_arg_short_read2}
+# Outputs:
+#   ${_arg_outdir}/msbwt/comp_msbwt.npy
+# Precondition:
+#   get-bioproject --bioproject ${_arg_bioproject}
+Example: $(basename "$0") ${_arg_menu[0]} -a ${_arg_short_read1} [-b ${_arg_short_read2}]
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		ls -l "${_arg_outdir}/msbwt" >&2
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
+		exit $EXIT_SUCCESS
+	fi
+
+	if [[ -s "${_polap_var_outdir_msbwt}" ]]; then
+		# Get the file size in bytes
+		filesize=$(stat --format=%s "${_polap_var_outdir_msbwt}")
+	else
+		filesize=0
+	fi
+
+	if [ -s "${_polap_var_outdir_msbwt_tar_gz}" ]; then
+		_polap_log1_file "${_polap_var_outdir_msbwt_tar_gz}"
+		if [[ -s "${_polap_var_outdir_msbwt}" ]]; then
+			_polap_log1_file "${_polap_var_outdir_msbwt}"
+			_polap_log1 "  skipping the short-read polishing preparation."
+		else
+			tar -zxf "${_polap_var_outdir_msbwt_tar_gz}" -C "${_arg_outdir}"
+		fi
+	elif ((filesize > 1024)); then
+		# Check if the file size is greater than 100 KB (100 * 1024 bytes)
+		_polap_log1_file "${_polap_var_outdir_msbwt}"
+		_polap_log1 "  skipping the short-read polishing preparation."
+	else
+
+		_polap_log1 "preparing before excuting ropebwt2 and msbwt on the short reads"
+
+		_polap_log1 "  decompressing short-read data if necessary..."
+		if [[ -s "${_arg_short_read1}" ]]; then
+			_arg_short_read1=$(_polap_gunzip-fastq "${_arg_short_read1}")
+		else
+			_arg_short_read1=""
+		fi
+		if [[ -s "${_arg_short_read2}" ]]; then
+			_arg_short_read2=$(_polap_gunzip-fastq "${_arg_short_read2}")
+		else
+			_arg_short_read2=""
+		fi
+		if [[ -n "${_arg_short_read1}" ]]; then
+			_polap_log1 "    short-read1: ${_arg_short_read1}"
+		else
+			_polap_log1 "    short-read1: no such data file"
+		fi
+		if [[ -n "${_arg_short_read2}" ]]; then
+			_polap_log1 "    short-read2: ${_arg_short_read2}"
+		else
+			_polap_log1 "    short-read2: no such data file"
+		fi
+
+		if [[ ${_arg_short_read1} = *.fastq || ${_arg_short_read1} = *.fq ]]; then
+			_polap_log1 "    short-read1 file: ${_arg_short_read1}"
+		else
+			_polap_log1 "    short-read1: no fastq or fq file: ${_arg_short_read1}"
+		fi
+
+		if [[ ${_arg_short_read2} = *.fastq || ${_arg_short_read2} = *.fq ]]; then
+			_polap_log1 "    short-read2 file: ${_arg_short_read2}"
+		else
+			_polap_log1 "    short-read2: no fastq or fq file: ${_arg_short_read2}"
+		fi
+
+		_polap_log1 "excuting ropebwt2 and msbwt on the short reads ... be patient!"
+
+		local _memlog_file="${_arg_logdir}/memlog-polish.csv"
+		local _summary_file="${_arg_logdir}/summary-polish.txt"
+		local _logfile="${_arg_logdir}/polap-bash-polish-prepare-msbwt.log"
+
+		echo "[INFO] Starting polishing pipeline..."
+		local _start_ts=$(date +%s)
+
+		# Start memory logger
+		_polap_lib_process-start_memtracker "${_memlog_file}" 60
+
+		# Run your command
+		_polap_lib_process-run_script_with_args_in_bash_c "${_POLAPLIB_DIR}"/polap-bash-polish-prepare-msbwt.sh \
+			"${_arg_short_read1}" \
+			"${_arg_short_read2:-/dev/null}" \
+			"${_polap_output_dest}" \
+			"${_arg_outdir}"
+
+		# Summarize results after job (with previously defined summary function)
+		_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}"
+
+	fi
+
+	_polap_log1 "NEXT: $(basename $0) polish [-p mt.0.fasta] [-f mt.1.fa]"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+# 2025-05-16
+# this uses a somewhat complicated process tree monitor like nextDenovo's memory tracking
+function v_using_ps_tree_run_polap_prepare-polishing { # prepare the polishing using FMLRC
+	# Enable debugging if DEBUG is set
+	[ "$DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	local filesize
+	_polap_set-variables-short-read
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
+
+	help_message=$(
+		cat <<HEREDOC
+# Prepares the polishing using FMLRC.
+# Arguments:
+#   -a ${_arg_short_read1}
+#   -b ${_arg_short_read2}
+#   or
+#   --bioproject ${_arg_bioproject}
+# Inputs:
+#   ${_arg_short_read1}
+#   ${_arg_short_read2}
+# Outputs:
+#   ${_arg_outdir}/msbwt/comp_msbwt.npy
+# Precondition:
+#   get-bioproject --bioproject ${_arg_bioproject}
+Example: $(basename "$0") ${_arg_menu[0]} -a ${_arg_short_read1} [-b ${_arg_short_read2}]
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		ls -l "${_arg_outdir}/msbwt" >&2
+		# Disable debugging if previously enabled
+		[ "$DEBUG" -eq 1 ] && set +x
+		return 0
+		exit $EXIT_SUCCESS
+	fi
+
+	if [[ -s "${_polap_var_outdir_msbwt}" ]]; then
+		# Get the file size in bytes
+		filesize=$(stat --format=%s "${_polap_var_outdir_msbwt}")
+	else
+		filesize=0
+	fi
+
+	if [ -s "${_polap_var_outdir_msbwt_tar_gz}" ]; then
+		_polap_log1_file "${_polap_var_outdir_msbwt_tar_gz}"
+		if [[ -s "${_polap_var_outdir_msbwt}" ]]; then
+			_polap_log1_file "${_polap_var_outdir_msbwt}"
+			_polap_log1 "  skipping the short-read polishing preparation."
+		else
+			tar -zxf "${_polap_var_outdir_msbwt_tar_gz}" -C "${_arg_outdir}"
+		fi
+	elif ((filesize > 1024)); then
+		# Check if the file size is greater than 100 KB (100 * 1024 bytes)
+		_polap_log1_file "${_polap_var_outdir_msbwt}"
+		_polap_log1 "  skipping the short-read polishing preparation."
+	else
+
+		_polap_log1 "preparing before excuting ropebwt2 and msbwt on the short reads"
+
+		_polap_log1 "  decompressing short-read data if necessary..."
+		if [[ -s "${_arg_short_read1}" ]]; then
+			_arg_short_read1=$(_polap_gunzip-fastq "${_arg_short_read1}")
+		else
+			_arg_short_read1=""
+		fi
+		if [[ -s "${_arg_short_read2}" ]]; then
+			_arg_short_read2=$(_polap_gunzip-fastq "${_arg_short_read2}")
+		else
+			_arg_short_read2=""
+		fi
+		if [[ -n "${_arg_short_read1}" ]]; then
+			_polap_log1 "    short-read1: ${_arg_short_read1}"
+		else
+			_polap_log1 "    short-read1: no such data file"
+		fi
+		if [[ -n "${_arg_short_read2}" ]]; then
+			_polap_log1 "    short-read2: ${_arg_short_read2}"
+		else
+			_polap_log1 "    short-read2: no such data file"
+		fi
+
+		if [[ ${_arg_short_read1} = *.fastq || ${_arg_short_read1} = *.fq ]]; then
+			_polap_log1 "    short-read1 file: ${_arg_short_read1}"
+		else
+			_polap_log1 "    short-read1: no fastq or fq file: ${_arg_short_read1}"
+		fi
+
+		if [[ ${_arg_short_read2} = *.fastq || ${_arg_short_read2} = *.fq ]]; then
+			_polap_log1 "    short-read2 file: ${_arg_short_read2}"
+		else
+			_polap_log1 "    short-read2: no fastq or fq file: ${_arg_short_read2}"
+		fi
+
+		_polap_log1 "excuting ropebwt2 and msbwt on the short reads ... be patient!"
+
+		local _memlog_file="${_arg_logdir}/memlog-polish.csv"
+		local _summary_file="${_arg_logdir}/summary-polish.txt"
+		local _logfile="${_arg_logdir}/polap-bash-polish-prepare-msbwt.log"
+
+		echo "[INFO] Starting polishing pipeline..."
+		local _start_ts=$(date +%s)
+
+		# Run wrapped pipeline script in a separate Bash process
+		#
+		#
+		_polap_lib_process-run_script_with_args_in_bash_c "${_POLAPLIB_DIR}"/polap-bash-polish-prepare-msbwt.sh \
+			"${_arg_short_read1}" \
+			"${_arg_short_read2:-/dev/null}" \
+			"${_polap_output_dest}" \
+			"${_arg_outdir}" &
+		local pipeline_pid=$!
+
+		echo "[INFO] Tracking PSS memory using monitor_memory_tree_recursive.sh (PID: $pipeline_pid)"
+		# bash "${_POLAPLIB_DIR}"/monitor_memory_tree_recursive.sh "$pipeline_pid" "$_memlog_file" 60 &
+		bash "${_POLAPLIB_DIR}"/monitor_memory_tree_recursive.sh "$pipeline_pid" "$_memlog_file" 1 &
+
+		wait "$pipeline_pid"
+		local _end_ts=$(date +%s)
+		echo "[INFO] Polishing pipeline finished."
+
+		summarize_polish_memlog_file "${_memlog_file}" "${_summary_file}" \
+			"$_start_ts" "$_end_ts" "${_logfile}"
+
+		#   echo "[INFO] Summarizing peak PSS memory usage..."
+		#   awk -F',' -v summary_file="$_summary_file" -v start="$_start_ts" -v end="$_end_ts" '
+		#   function format_duration(seconds) {
+		#     h = int(seconds / 3600)
+		#     m = int((seconds % 3600) / 60)
+		#     s = seconds % 60
+		#     return sprintf("%d:%02d:%02d (%.2f h)", h, m, s, seconds / 3600)
+		#   }
+		#
+		#   NR == 1 { next }
+		#   $2 > max { max = $2; ts = $1 }
+		#   END {
+		#     cmd = "date -d @" ts " +\"%Y-%m-%d %H:%M:%S\""
+		#     cmd | getline ts_human
+		#     close(cmd)
+		#
+		#     elapsed = end - start
+		#     elapsed_str = format_duration(elapsed)
+		#
+		#     printf "📊 Peak total PSS during polishing:\n"                   | tee summary_file
+		#     printf "Timestamp:        %s (%s)\n", ts, ts_human               | tee -a summary_file
+		#     printf "Peak PSS:         %d KB (%.2f GB)\n", max, max/1048576   | tee -a summary_file
+		#     printf "Elapsed time:     %s\n", elapsed_str                     | tee -a summary_file
+		#   }
+		# ' "$_memlog_file"
+
+		# echo -e "\n📋 Pipeline log output:" >>"$_summary_file"
+		# cat "$_logfile" >>"$_summary_file"
+
+	fi
+
+	_polap_log1 "NEXT: $(basename $0) polish [-p mt.0.fasta] [-f mt.1.fa]"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+summarize_polish_memlog_file() {
+	local _memlog_file="$1"
+	local _summary_base="$2" # e.g., outdir/summary-polish.txt
+	local _start_ts="${3:-}"
+	local _end_ts="${4:-}"
+	local _pipeline_log="${5:-}"
+
+	local _timestamp
+	_timestamp=$(date +"%Y%m%d_%H%M")
+	local _summary_file="${_summary_base}.${_timestamp}.txt"
+
+	local _memlog_basename
+	_memlog_basename="$(basename "$_memlog_file")"
+
+	awk -F',' -v start="$_start_ts" -v end="$_end_ts" -v file="$_memlog_basename" '
+    function format_duration(seconds) {
+      h = int(seconds / 3600)
+      m = int((seconds % 3600) / 60)
+      s = seconds % 60
+      return sprintf("%d:%02d:%02d (%.2f h)", h, m, s, seconds / 3600)
+    }
+
+    NR == 1 { next }
+    $2 > max {
+      max = $2
+      ts = $1
+      load = $4
+      disk = $5
+      cmd = $6
+    }
+    END {
+      cmd_str = "date -d @" ts " +\"%Y-%m-%d %H:%M:%S\""
+      cmd_str | getline ts_human
+      close(cmd_str)
+
+      print "📊 Peak total PSS during polishing:"
+      print "File:             " file
+      print "Timestamp:        " ts " (" ts_human ")"
+      printf "Peak PSS:         %d KB (%.2f GB)\n", max, max / 1048576
+
+      if (start && end) {
+        elapsed = end - start
+        elapsed_str = format_duration(elapsed)
+        print "Elapsed time:     " elapsed_str
+      } else {
+        print "Elapsed time:     (not available)"
+      }
+
+      print "CPU load (1min):  " load
+      print "Disk free (GB):   " disk
+      print "Max PSS command:  " cmd
+    }
+  ' "$_memlog_file" | tee "$_summary_file"
+
+	if [[ -n "$_pipeline_log" && -r "$_pipeline_log" ]]; then
+		echo -e "\n📋 Full pipeline log:" >>"$_summary_file"
+		cat "$_pipeline_log" >>"$_summary_file"
+	fi
+
+	# Create/update symlink to point to the latest summary
+	ln -sf "$(basename "$_summary_file")" "$_summary_base"
+
+	echo "[INFO] Summary written to: $_summary_file"
+	echo "[INFO] Symlink created:    $_summary_base -> $(basename "$_summary_file")"
+}
+
+# The version without memory-usage tracking
 function _run_polap_prepare-polishing { # prepare the polishing using FMLRC
 	# Enable debugging if DEBUG is set
 	[ "$DEBUG" -eq 1 ] && set -x

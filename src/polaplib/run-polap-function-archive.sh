@@ -120,6 +120,8 @@ function _run_polap_archive { # archive a POLAP output folder for later use
 # Outputs:
 #   ${_arg_archive}
 Example: $(basename "$0") ${_arg_menu[0]} -o <folder1> -a <folder2>
+Example: $(basename "$0") ${_arg_menu[0]} cflye -o <folder1> -a <folder2>
+Example: $(basename "$0") ${_arg_menu[0]} aflye -o <folder1> -a <folder2>
 HEREDOC
 	)
 
@@ -128,6 +130,10 @@ HEREDOC
 
 	if [[ "${_arg_menu[1]}" == "cflye" ]]; then
 		_arg_template="${_POLAPLIB_DIR}/polap-template-cflye-archive-files.txt"
+		# _arg_max_filesize="1M"
+		_run_polap_archive-rsync-template
+	elif [[ "${_arg_menu[1]}" == "aflye" ]]; then
+		_arg_template="${_POLAPLIB_DIR}/polap-template-aflye-archive-files.txt"
 		# _arg_max_filesize="1M"
 		_run_polap_archive-rsync-template
 	else

@@ -214,6 +214,37 @@ function run_check_flye {
 	return $(check_commands "${commands[@]}")
 }
 
+# check the minimap2 version >=2.28
+#
+# if ! check_minimap2_version; then
+#   exit 1
+# fi
+#
+check_minimap2_version() {
+	if ! command -v minimap2 &>/dev/null; then
+		echo "[ERROR] minimap2 is not installed or not in PATH"
+		return 1
+	fi
+
+	local version
+	version=$(minimap2 --version 2>/dev/null)
+
+	if [[ "$version" =~ ([0-9]+)\.([0-9]+) ]]; then
+		local major="${BASH_REMATCH[1]}"
+		local minor="${BASH_REMATCH[2]}"
+		if ((major > 2)) || { ((major == 2)) && ((minor >= 28)); }; then
+			echo "[INFO] minimap2 version $version is OK"
+			return 0
+		else
+			echo "[ERROR] minimap2 version $version is too old; require at least 2.28"
+			return 1
+		fi
+	else
+		echo "[ERROR] Failed to parse minimap2 version"
+		return 1
+	fi
+}
+
 ###############################################################################
 # Logs all commands
 ###############################################################################

@@ -398,7 +398,7 @@ HEREDOC
 		fi
 	fi
 
-	_polap_log1 NEXT: $(basename "$0") flye2 -o "${_arg_outdir}" -j "${_arg_jnum}" -t "${_arg_threads}" -c "${_arg_coverage}"
+	_polap_log1 NEXT: $(basename "$0") flye2 -o "${_arg_outdir}" -j "${_arg_jnum}" -t "${_arg_threads}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -905,10 +905,10 @@ HEREDOC
 		_polap_log2 "    result1 (total size of reads mapped contigs): ${_seeds_length_bp}"
 		local _expected_organelle_coverage=$((_seeds_length / CONTIG_LENGTH))
 		_polap_log2 "    result2 (expected organelle coverage): ${_expected_organelle_coverage}x"
-		if [[ "$_expected_organelle_coverage" -gt "${_arg_coverage}" ]]; then
+		if [[ "$_expected_organelle_coverage" -gt "${_arg_coverage_oga}" ]]; then
 			if [[ "${_arg_coverage_check}" == "on" ]]; then
-				local _rate=$(echo "scale=5; ${_arg_coverage}/$_expected_organelle_coverage" | bc)
-				_polap_log0 "  long-read data reduction by rate of ${_rate} <= COV[${_arg_coverage}] / long-read organelle coverage[$_expected_organelle_coverage]"
+				local _rate=$(echo "scale=9; ${_arg_coverage_oga}/$_expected_organelle_coverage" | bc)
+				_polap_log0 "  long-read data reduction by rate of ${_rate} <= COV[${_arg_coverage_oga}] / long-read organelle coverage[$_expected_organelle_coverage]"
 				_polap_log1 "    sampling long-read data by ${_rate} ... wait ..."
 				_polap_lib_random-get
 				local _random_seed=${_polap_var_random_number}
@@ -926,7 +926,7 @@ HEREDOC
 				_polap_log3_cmd ln -s $(realpath "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz") "${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
 			fi
 		else
-			_polap_log0 "    no reduction of the long-read data because $_expected_organelle_coverage < ${_arg_coverage}"
+			_polap_log0 "    no reduction of the long-read data because $_expected_organelle_coverage < ${_arg_coverage_oga}"
 			_polap_log3_cmd ln -s $(realpath "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz") "${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
 		fi
 
@@ -1003,7 +1003,7 @@ HEREDOC
 		fi
 	done
 
-	# _polap_log1 NEXT: $0 flye2 -o "${_arg_outdir}" -j "${_arg_jnum}" -t "${_arg_threads}" -c "${_arg_coverage}"
+	# _polap_log1 NEXT: $0 flye2 -o "${_arg_outdir}" -j "${_arg_jnum}" -t "${_arg_threads}"
 	if [[ "${_arg_menu[0]}" == "test-reads" ]]; then
 		_polap_log1 "NEXT: $0 best-reads ..."
 	else
@@ -1239,7 +1239,6 @@ HEREDOC
 # Arguments:
 #   -j ${_arg_jnum}: destination Flye organelle assembly number
 #   -t ${_arg_threads}: the number of CPU cores
-#   -c ${_arg_coverage}: the Flye's coverage option
 #   -g <arg>: computed by find-genome-size menu or given by users
 # Inputs:
 #   ${MTDIR}/contig.fa
@@ -1268,7 +1267,6 @@ function _run_polap_flye-polishing { # finish a Flye organelle-genome assembly u
 # Arguments:
 #   -j ${_arg_jnum}: destination Flye organelle assembly number
 #   -t ${_arg_threads}: the number of CPU cores
-#   -c ${_arg_coverage}: the Flye's coverage option
 #   -g <arg>: computed by find-genome-size menu or given by users
 # Inputs:
 #   ${MTDIR}/contig.fa
@@ -1634,7 +1632,7 @@ HEREDOC
     ${_polap_var_oga_reads}/combined.names |\
     gzip >${_polap_var_oga_seeds}/combined.fq.gz"
 
-	_polap_log1 NEXT: $(basename "$0") flye2 -o "${_arg_outdir}" -j "${_arg_jnum}" -t "${_arg_threads}" -c "${_arg_coverage}"
+	_polap_log1 NEXT: $(basename "$0") flye2 -o "${_arg_outdir}" -j "${_arg_jnum}" -t "${_arg_threads}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -1884,7 +1882,7 @@ HEREDOC
 	local EXPECTED_ORGANELLE_COVERAGE=$((TOTAL_LENGTH / CONTIG_LENGTH))
 	_polap_log2 "    result2 (expected organelle coverage): ${EXPECTED_ORGANELLE_COVERAGE}x"
 
-	_polap_log1 "  reducing the single-mapped reads upto the coverage of ${_arg_coverage}x"
+	_polap_log1 "  reducing the single-mapped reads upto the coverage of ${_arg_coverage_oga}x"
 	_polap_log2 "    input1: ${MTSEEDSDIR}/1.fq.gz"
 	_polap_log2 "    output: ${MTSEEDSDIR}/2.fq.gz"
 	if [[ "${_arg_test}" == "on" ]]; then
@@ -1894,13 +1892,13 @@ HEREDOC
 		_polap_log0 "    OPTION: --no-coverage-check : No reduction of the long-read data"
 		_polap_log3_cmd ln -s $(realpath "${MTSEEDSDIR}"/1.fq.gz) "${MTSEEDSDIR}"/2.fq.gz
 	else
-		if [ "$EXPECTED_ORGANELLE_COVERAGE" -lt "${_arg_coverage}" ]; then
-			_polap_log1 "    no reduction of the long-read data because $EXPECTED_ORGANELLE_COVERAGE < ${_arg_coverage}"
+		if [ "$EXPECTED_ORGANELLE_COVERAGE" -lt "${_arg_coverage_oga}" ]; then
+			_polap_log1 "    no reduction of the long-read data because $EXPECTED_ORGANELLE_COVERAGE < ${_arg_coverage_oga}"
 			_polap_log3_cmd ln -s $(realpath "${MTSEEDSDIR}"/1.fq.gz) "${MTSEEDSDIR}"/2.fq.gz
 		else
 			_polap_log1 "    SUGGESTION: you might want to increase the minimum read lengths (use -w or -m) because you have enough long-read data."
-			RATE=$(echo "scale=10; ${_arg_coverage}/$EXPECTED_ORGANELLE_COVERAGE" | bc)
-			_polap_log0 "  long-read data reduction by rate of $RATE <= COV[${_arg_coverage}] / long-read organelle coverage[$EXPECTED_ORGANELLE_COVERAGE]"
+			RATE=$(echo "scale=10; ${_arg_coverage_oga}/$EXPECTED_ORGANELLE_COVERAGE" | bc)
+			_polap_log0 "  long-read data reduction by rate of $RATE <= COV[${_arg_coverage_oga}] / long-read organelle coverage[$EXPECTED_ORGANELLE_COVERAGE]"
 			_polap_log1 "    sampling long-read data by $RATE ... wait ..."
 			# seqkit sample -p "$RATE" "${MTSEEDSDIR}/1.fq.gz" -o "${MTSEEDSDIR}/2.fq.gz" >/dev/null 2>&1
 			_polap_lib_random-get
@@ -1968,7 +1966,7 @@ HEREDOC
 		fi
 	fi
 
-	_polap_log1 NEXT: $(basename "$0") flye2 -o "${_arg_outdir}" -j "${_arg_jnum}" -t "${_arg_threads}" -c "${_arg_coverage}"
+	_polap_log1 NEXT: $(basename "$0") flye2 -o "${_arg_outdir}" -j "${_arg_jnum}" -t "${_arg_threads}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -2180,7 +2178,7 @@ HEREDOC
 		_polap_log3_pipe "${_command1}"
 	done
 
-	_polap_log1 NEXT: $(basename "$0") flye2 -o "${_arg_outdir}" -j "${_arg_jnum}" -t "${_arg_threads}" -c "${_arg_coverage}"
+	_polap_log1 NEXT: $(basename "$0") flye2 -o "${_arg_outdir}" -j "${_arg_jnum}" -t "${_arg_threads}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
@@ -2194,7 +2192,6 @@ HEREDOC
 # Arguments:
 #   -j ${_arg_jnum}: destination Flye organelle assembly number
 #   -t ${_arg_threads}: the number of CPU cores
-#   -c ${_arg_coverage}: the Flye's coverage option
 #   -g <arg>: computed by find-genome-size menu or given by users
 # Inputs:
 #   ${MTDIR}/contig.fa
@@ -2226,7 +2223,6 @@ function _run_polap_x-v0.2.6-flye2() { # executes Flye for an organelle-genome a
 # Arguments:
 #   -j ${_arg_jnum}: destination Flye organelle assembly number
 #   -t ${_arg_threads}: the number of CPU cores
-#   -c ${_arg_coverage}: the Flye's coverage option
 #   -g <arg>: computed by find-genome-size menu or given by users
 # Inputs:
 #   ${MTDIR}/contig.fa

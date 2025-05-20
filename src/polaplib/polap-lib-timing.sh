@@ -28,6 +28,95 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+function _polap_lib_timing-get_system_info {
+	echo "===== System Information ====="
+
+	# Hostname
+	echo "Hostname: $(hostname)"
+
+	# Kernel version
+	echo "Kernel Version: $(uname -r)"
+
+	# OS version
+	if [[ -f /etc/os-release ]]; then
+		echo "OS Version: $(source /etc/os-release && echo "$PRETTY_NAME")"
+	else
+		echo "OS Version: Unknown"
+	fi
+
+	# CPU
+	echo "CPU Model: $(lscpu | grep 'Model name' | sed 's/Model name:[ \t]*//')"
+	echo "CPU Cores: $(nproc)"
+
+	# Memory
+	echo "Total Memory: $(free -h | awk '/^Mem:/ {print $2}')"
+
+	# Uptime
+	echo "System Uptime: $(uptime -p)"
+
+	# Load average
+	echo "Load Average: $(uptime | awk -F'load average: ' '{print $2}')"
+
+	# Disk usage
+	echo "Disk Usage (current dir):"
+	df -h .
+
+	# Filesystem type
+	echo "Filesystem Type (current dir): $(df -T . | tail -1 | awk '{print $2}')"
+
+	# Mount point device
+	mount_src=$(df -P . | tail -1 | awk '{print $1}')
+	echo "Mount Source: $mount_src"
+
+	# Storage type (HDD/SSD) for current directory
+	disk_device=$(lsblk -no pkname "$mount_src" 2>/dev/null)
+	if [[ -n "$disk_device" ]]; then
+		rotational=$(cat /sys/block/"$disk_device"/queue/rotational 2>/dev/null)
+		if [[ "$rotational" == "0" ]]; then
+			echo "Storage Type (current dir): SSD"
+		elif [[ "$rotational" == "1" ]]; then
+			echo "Storage Type (current dir): HDD"
+		else
+			echo "Storage Type (current dir): Unknown"
+		fi
+	else
+		echo "Storage Device Info: Unknown"
+	fi
+
+	# GPU info
+	echo "GPU(s):"
+	lspci | grep -i 'vga\|3d\|display' || echo "No GPU found or lspci not installed"
+
+	# Network interfaces and IPs
+	echo "Network Interfaces and IPs:"
+	ip -o -4 addr show | awk '{print $2 ": " $4}'
+
+	echo "==============================="
+}
+
+function _polap_lib_timing-sum_time_values {
+	local times=("$@")
+	local total_minutes=0
+
+	for t in "${times[@]}"; do
+		if [[ "$t" == *h ]]; then
+			local num=${t%h}
+			local minutes=$(echo "$num * 60" | bc)
+		elif [[ "$t" == *m ]]; then
+			local num=${t%m}
+			local minutes=$num
+		fi
+		total_minutes=$(echo "$total_minutes + $minutes" | bc)
+	done
+
+	if (($(echo "$total_minutes >= 60" | bc -l))); then
+		local hours=$(echo "scale=2; $total_minutes / 60" | bc)
+		echo "${hours}h"
+	else
+		echo "${total_minutes}m"
+	fi
+}
+
 function _polap_lib_timing-convert_to_hours_or_minutes {
 	local time_string="$1"
 	local _hm=0
@@ -90,45 +179,60 @@ function _polap_lib_timing-parse-timing {
 	echo "${_memory_gb} ${_total_hours}"
 }
 
-function _polap_lib_timing-parse-cumulative-timing {
-	local _timing_file="${1}"
+_polap_lib_timing-parse-multiple-time-only() {
+	local _timing_file="$1"
+	local max_kb=0
+	local count=0
+
+	if [[ -s "$_timing_file" ]]; then
+		while IFS= read -r line; do
+			local kb=$(echo "$line" | grep -oE '[0-9]+')
+			if [[ -n "$kb" ]]; then
+				((count++))
+				if ((kb > max_kb)); then
+					max_kb=$kb
+				fi
+			fi
+		done < <(grep 'Maximum resident set size' "$_timing_file")
+	fi
+
+	# Convert to GB with two decimal precision
+	local max_gb=$(echo "scale=2; $max_kb / 1048576" | bc)
+	echo "$max_gb $count"
+}
+
+_polap_lib_timing-parse-cumulative-timing() {
+	local _timing_file="$1"
 	local total_seconds=0
 
-	if [[ -s "${_timing_file}" ]]; then
-		# Loop through all elapsed time lines
-		grep 'Elapsed (wall clock) time' "${_timing_file}" | while IFS= read -r line; do
+	if [[ -s "$_timing_file" ]]; then
+		while IFS= read -r line; do
 			local time_str=$(echo "$line" | awk -F': ' '{print $NF}')
+			local seconds=0
 
-			# Parse time string into total seconds
-			local IFS=':'
-			read -ra parts <<<"$time_str"
-
-			if [[ ${#parts[@]} -eq 3 ]]; then
-				local h=${parts[0]}
-				local m=${parts[1]}
-				local s=${parts[2]}
-			elif [[ ${#parts[@]} -eq 2 ]]; then
-				local h=0
-				local m=${parts[0]}
-				local s=${parts[1]}
+			if [[ "$time_str" =~ ^([0-9]+):([0-9]{2}):([0-9]{2})$ ]]; then
+				local h="${BASH_REMATCH[1]}"
+				local m="${BASH_REMATCH[2]}"
+				local s="${BASH_REMATCH[3]}"
+				seconds=$((10#$h * 3600 + 10#$m * 60 + 10#$s))
+			elif [[ "$time_str" =~ ^([0-9]+):([0-9]{2})\.([0-9]+)$ ]]; then
+				local m="${BASH_REMATCH[1]}"
+				local s="${BASH_REMATCH[2]}"
+				seconds=$((10#$m * 60 + 10#$s))
 			else
 				continue
 			fi
 
-			local seconds=$((10#$h * 3600 + 10#$m * 60 + 10#$s))
 			total_seconds=$((total_seconds + seconds))
-		done
+		done < <(grep 'Elapsed (wall clock) time' "$_timing_file")
 
-		# Convert total seconds to H:MM:SS
 		local total_h=$((total_seconds / 3600))
 		local rem=$((total_seconds % 3600))
 		local total_m=$((rem / 60))
 		local total_s=$((rem % 60))
 		local formatted_time=$(printf "%d:%02d:%02d" "$total_h" "$total_m" "$total_s")
 
-		# Convert formatted_time using your existing function
 		local hm_str=$(_polap_lib_timing-convert_to_hours_or_minutes "$formatted_time")
-
 		echo "$hm_str"
 	else
 		echo "0h"

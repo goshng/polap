@@ -104,7 +104,33 @@ conda create -y --name polap polap=0.3.7.3
 
 #### 5. Activate the polap conda environment and setup polap-fmlrc environment (2 min)
 
-Use this if your polap version is v0.3.x.x.
+Copy and paste the following script to the terminal and type in ENTER
+to install `polap-fmlrc` conda environment.
+
+```bash
+conda activate polap
+
+# Get the full version string
+version_output=$(polap --version 2>/dev/null)
+
+# Extract the version number using pattern matching
+if [[ "$version_output" =~ v0\.3\.[0-9]+\.[0-9]+ ]]; then
+    echo "Detected POLAP v0.3.x.x"
+    base_dir=$(dirname "$(command -v polap)")
+    conda env create -f "$base_dir/polap-conda-environment-fmlrc.yaml"
+
+elif [[ "$version_output" =~ v0\.4\.[0-9]+\.[0-9]+ ]]; then
+    echo "Detected POLAP v0.4.x.x"
+    base_dir=$(dirname "$(command -v polap)")
+    conda env create -f "$base_dir/polaplib/polap-conda-environment-fmlrc.yaml"
+
+else
+    echo "POLAP version not recognized or POLAP not found."
+    exit 1
+fi
+```
+
+Or, use this if your polap version is v0.3.x.x.
 
 ```bash
 conda activate polap

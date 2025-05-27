@@ -2652,7 +2652,7 @@ HEREDOC
         # P	contig_1	edge_1+	*
         # P	contig_2	edge_2+	*
         #
-        ${_POLAPLIB_DIR}/run-polap-sh-extract-three-edges-of-ptdna.sh \
+        bash ${_POLAPLIB_DIR}/run-polap-sh-extract-three-edges-of-ptdna.sh \
           "${_contigger_edges_gfa}" \
           "${_mtcontigname}"
         if [[ -s "${_mtcontigname}" ]]; then

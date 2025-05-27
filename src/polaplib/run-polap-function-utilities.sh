@@ -170,6 +170,16 @@ function run_check2 {
 	return $(check_commands "${commands[@]}")
 }
 
+function run_check2_v2 {
+	local commands=(
+		"msbwt2-build"
+		"fmlrc2"
+	)
+
+	# Pass the array elements to the check_commands function
+	return $(check_commands "${commands[@]}")
+}
+
 ###############################################################################
 # Checks if ncbitools related commands are available.
 # called by fetch

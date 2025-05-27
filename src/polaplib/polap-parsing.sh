@@ -713,6 +713,14 @@ parse_commandline() {
     -t*)
       _arg_threads="${_key##-t}"
       ;;
+    --threads-fmlrc)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_threads_fmlrc="$2"
+      shift
+      ;;
+    --threads-fmlrc=*)
+      _arg_threads_fmlrc="${_key##--threads-fmlrc=}"
+      ;;
     --flye-asm-coverage)
       test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
       _arg_flye_asm_coverage="$2"

@@ -30,8 +30,11 @@ declare "$_POLAP_INCLUDE_=1"
 
 # TODO: Check
 # _POLAP_RELEASE
-_polap_var_memtracker_time_interval=60
-_polap_var_memtracker_time_interval=6
+if [[ "${_POLAP_RELEASE}" == "1" ]]; then
+  _polap_var_memtracker_time_interval=60
+else
+  _polap_var_memtracker_time_interval=6
+fi
 
 system_genus_species() {
   # echo "Host: $(hostname)"
@@ -103,8 +106,8 @@ help_message_install_getorganelle=$(
   cat <<HEREDOC
 
   Install conda environments: getorganelle
-  conda create -y --name getorganelle bioconda::getorganelle
-  conda activate getorganelle
+  conda create -y --name polap-getorganelle bioconda::getorganelle
+  conda activate polap-getorganelle
   get_organelle_config.py --add embplant_pt,embplant_mt
 HEREDOC
 )
@@ -139,7 +142,7 @@ help_message_install_oatk=$(
   Install conda environments: oatk
 
   conda create -y --name oatk bioconda::oatk
-  conda activate oatk
+  conda activate polap-oatk
   conda install -y biopython
   conda install -y hmmer seqtk mafft parallel entrez-direct
   git clone https://github.com/c-zhou/OatkDB.git
@@ -149,16 +152,153 @@ HEREDOC
 help_message_uninstall=$(
   cat <<HEREDOC
 
+  Installable tools include:
+  conda
+  polap
+  fmlrc
+  getorganelle
+  pmat
+  tippo
+  oatk
+  man
+  cflye
+  dflye
+
+  Additional tools:
+  nvim
+
   Uninstall conda environments: polap, polap-fmlrc, getorganelle
+  (better) conda env remove -y -n myenv
+  (works the same) conda remove -n myenv --all -y
+
   conda remove -n polap --all
   conda remove -n polap-fmlrc --all
   conda remove -n getorganelle --all
-  conda env remove -n pmat
+  conda env remove -y -n pmat
 HEREDOC
 )
 
 ##### INSERT_HELP_HERE #####
-help_message_install_man=$(
+help_message_setup_fmlrc2=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_install_fmlrc2=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_install_minimal=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_install_all=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_setup_nvim=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_setup_pmat=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_setup_polap=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_install_nvim=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_remove=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_uninstall_fmlrc=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_uninstall_dflye=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_uninstall_cflye=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_uninstall_oatk=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_uninstall_tippo=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_uninstall_pmat=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_uninstall_getorganelle=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_uninstall_polap=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_run_summary_data=$(
   cat <<HEREDOC
 
   menu title
@@ -359,6 +499,8 @@ help_message_setup=$(
   Setup a tool after installation before using it.
   Tools that need a setup include:
   conda
+  polap
+  pmat
 HEREDOC
 )
 
@@ -655,6 +797,648 @@ HEREDOC
 )
 
 ##### INSERT_FUNCTION_HERE #####
+setup-fmlrc2_genus_species() {
+  local dest_dir="$HOME/.cargo"
+
+  # Add to PATH if not already present
+  if ! grep -q "$dest_dir/bin" ~/.bashrc; then
+    echo "export PATH=\"$dest_dir/bin:\$PATH\"" >>~/.bashrc
+    echo "[INFO] Added $HOME/.cargo to PATH in ~/.bashrc" >&2
+
+    # Final message
+    echo "[INFO] fmlrc2 installed. Run 'source ~/.bashrc' or restart your terminal." >&2
+    echo "[INFO] Test with: msbwt2-build -h" >&2
+    echo "[INFO] Test with: fmlrc2 -h" >&2
+  fi
+}
+
+_polap_setup_fmlrc2_env() {
+  local env_name="polap-fmlrc2"
+  local tools=("msbwt2-build" "msbwt2-convert")
+  local cargo_bin="$HOME/.cargo/bin"
+
+  echo "[INFO] Creating or updating Conda environment: $env_name" >&2
+  conda create -y -n "$env_name" -c bioconda -c conda-forge fmlrc2 rust || {
+    echo "[ERROR] Failed to create environment: $env_name" >&2
+    return 1
+  }
+
+  # Activate environment
+  # shellcheck disable=SC1091
+  source "$(conda info --base)/etc/profile.d/conda.sh"
+  conda activate "$env_name"
+
+  # Install msbwt2
+  if ! command -v msbwt2-build &>/dev/null || ! command -v msbwt2-convert &>/dev/null; then
+    echo "[INFO] Installing msbwt2 using cargo..." >&2
+    cargo install msbwt2 || {
+      echo "[ERROR] cargo install msbwt2 failed" >&2
+      return 1
+    }
+  fi
+
+  # Symlink into conda's bin directory
+  local conda_bin="${CONDA_PREFIX}/bin"
+  mkdir -p "$conda_bin"
+  for tool in "${tools[@]}"; do
+    if [[ -x "${cargo_bin}/${tool}" ]]; then
+      ln -sf "${cargo_bin}/${tool}" "${conda_bin}/${tool}"
+      echo "[INFO] Linked ${tool} to ${conda_bin}" >&2
+    else
+      echo "[WARNING] ${tool} not found in ${cargo_bin}" >&2
+    fi
+  done
+
+  echo "[SUCCESS] Environment '$env_name' is ready with fmlrc2 and msbwt2" >&2
+  return 0
+}
+
+install-fmlrc2_genus_species() {
+  if [[ "${opt_y_flag}" == false ]]; then
+    read -p "Do you want to install polap-fmlrc2? (y/N): " confirm
+  else
+    confirm="yes"
+  fi
+
+  if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+    # Check current conda environment
+    # Initialize Conda for non-interactive shells
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+      echo "You're not in the base environment. Chaniging 'base'..."
+      conda activate base
+    fi
+
+    if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+      echo "You're in the base environment. Creating 'polap-fmlrc2'..."
+      if conda env list | awk '{print $1}' | grep -qx "polap-fmlrc2"; then
+        echo "ERROR: Conda environment 'polap-fmlrc2' already exists."
+      else
+        _polap_setup_fmlrc2_env
+      fi
+    else
+      echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
+      exit 1
+    fi
+  else
+    echo "polap-fmlrc2 installation is canceled."
+    echo "${help_message_install_fmlrc2}"
+  fi
+}
+
+install-minimal_genus_species() {
+  local tools_to_install=(
+    polap
+    fmlrc
+    man
+    cflye
+  )
+
+  for item in "${tools_to_install[@]}"; do
+    install-${item}_genus_species
+  done
+}
+
+install-all_genus_species() {
+  local tools_to_install=(
+    polap
+    fmlrc
+    getorganelle
+    pmat
+    tippo
+    oatk
+    man
+    cflye
+    dflye
+  )
+
+  for item in "${tools_to_install[@]}"; do
+    install-${item}_genus_species
+  done
+}
+
+setup-nvim_genus_species() {
+  # required
+  mv ~/.config/nvim{,.bak} >/dev/null 2>&1
+
+  # optional but recommended
+  mv ~/.local/share/nvim{,.bak} >/dev/null 2>&1
+  mv ~/.local/state/nvim{,.bak} >/dev/null 2>&1
+  mv ~/.cache/nvim{,.bak} >/dev/null 2>&1
+
+  # Clone the starter
+  git clone https://github.com/LazyVim/starter ~/.config/nvim
+
+  # Remove the .git folder, so you can add it to your own repo later
+  rm -rf ~/.config/nvim/.git
+
+  # Start Neovim!
+  echo nvim
+
+  if ! grep -q "alias v=" ~/.bashrc; then
+    echo "alias v='nvim'" >>~/.bashrc
+    echo "[INFO] Added alias v for nvim in ~/.bashrc" >&2
+  fi
+}
+
+setup-pmat_genus_species() {
+  local url_basename="PMAT-1.5.3"
+  local url="https://github.com/bichangwei/PMAT/archive/refs/tags/v1.5.3.tar.gz"
+  local dest_dir="$HOME/bin/pmat"
+  local tmp_dir
+
+  # Create a temporary working directory
+  tmp_dir=$(mktemp -d)
+  echo "[INFO] Downloading PMAT to $tmp_dir..." >&2
+
+  # Download and extract
+  # Download using wget
+  wget -q --show-progress -O "$tmp_dir/pmat.tar.gz" "$url" || {
+    echo "[ERROR] Failed to download PMAT binary." >&2
+    return 1
+  }
+
+  # Download using curl
+  # curl -L "$url" -o "$tmp_dir/pmat.tar.gz" || {
+  # 	echo "[ERROR] Failed to download PMAT binary." >&2
+  # 	return 1
+  # }
+
+  tar -xzf "$tmp_dir/pmat.tar.gz" -C "$tmp_dir" || {
+    echo "[ERROR] Failed to extract PMAT archive." >&2
+    return 1
+  }
+
+  # Move to /opt (requires sudo)
+  echo "[INFO] Installing to $dest_dir..." >&2
+  rm -rf "$dest_dir"
+  if [[ ! -d "$HOME/bin" ]]; then
+    read -p "Proceed to create a folder at $HOME/bin? (y/N): " confirm
+
+    if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+      mkdir -p "$HOME/bin"
+    else
+      echo "[ERROR] Failed to create $HOME/bin"
+      return 1
+    fi
+  fi
+  mv "$tmp_dir/${url_basename}" "$dest_dir"
+
+  # Add to PATH if not already present
+  if ! grep -q "$dest_dir/bin" ~/.bashrc; then
+    echo "export PATH=\"$dest_dir/bin:\$PATH\"" >>~/.bashrc
+    echo "[INFO] Added PMAT to PATH in ~/.bashrc" >&2
+  fi
+
+  # Clean up
+  rm -rf "$tmp_dir"
+
+  # Final message
+  echo "[INFO] PMAT installed. Run 'source ~/.bashrc' or restart your terminal." >&2
+  echo "[INFO] Test with: PMAT --version" >&2
+
+  # tar -zxvf v1.5.3.tar.gz
+  # source <(echo 'export PATH="$PWD/PMAT-1.5.3/bin:$PATH"')
+  # cd PMAT-1.5.3/bin
+  # chmod +x PMAT
+}
+
+setup-polap_genus_species() {
+  # Add to PATH if not already present
+  if ! grep -q "polap/src/polap-data-v1.sh" ~/.bashrc; then
+    echo "alias p1='bash polap/src/polap-data-v1.sh'" >>~/.bashrc
+    echo "[INFO] Added alias polap-data-aflye in ~/.bashrc" >&2
+  fi
+  if ! grep -q "polap/src/polap-data-v2.sh" ~/.bashrc; then
+    echo "alias p2='bash polap/src/polap-data-v2.sh'" >>~/.bashrc
+    echo "alias p='bash polap/src/polap-data-v2.sh'" >>~/.bashrc
+    echo "[INFO] Added alias polap-data-cflye in ~/.bashrc" >&2
+  fi
+  if ! grep -q "polap/src/polap-data-v4.sh" ~/.bashrc; then
+    echo "alias p4='bash polap/src/polap-data-v4.sh'" >>~/.bashrc
+    echo "[INFO] Added alias polap-data-dflye in ~/.bashrc" >&2
+  fi
+}
+
+install-nvim_genus_species() {
+  local url_basename="nvim-linux-x86_64"
+  local url="https://github.com/neovim/neovim/releases/latest/download/${url_basename}.tar.gz"
+  local dest_dir="/opt/nvim"
+  local tmp_dir
+
+  # Create a temporary working directory
+  tmp_dir=$(mktemp -d)
+  echo "[INFO] Downloading Neovim to $tmp_dir..." >&2
+
+  # Download and extract
+  wget -q --show-progress -O "$tmp_dir/nvim.tar.gz" "$url" || {
+    echo "[ERROR] Failed to download Neovim binary." >&2
+    return 1
+  }
+  # curl -L "$url" -o "$tmp_dir/nvim.tar.gz" || {
+  # 	echo "[ERROR] Failed to download Neovim binary." >&2
+  # 	return 1
+  # }
+
+  tar -xzf "$tmp_dir/nvim.tar.gz" -C "$tmp_dir" || {
+    echo "[ERROR] Failed to extract Neovim archive." >&2
+    return 1
+  }
+
+  # Move to /opt (requires sudo)
+  echo "[INFO] Installing to $dest_dir..." >&2
+  sudo rm -rf "$dest_dir"
+  sudo mv "$tmp_dir/${url_basename}" "$dest_dir"
+
+  # Add to PATH if not already present
+  if ! grep -q "$dest_dir/bin" ~/.bashrc; then
+    echo "export PATH=\"$dest_dir/bin:\$PATH\"" >>~/.bashrc
+    echo "[INFO] Added Neovim to PATH in ~/.bashrc" >&2
+  fi
+
+  # Clean up
+  rm -rf "$tmp_dir"
+
+  # Final message
+  echo "[INFO] Neovim installed. Run 'source ~/.bashrc' or restart your terminal." >&2
+  echo "[INFO] Test with: nvim --version" >&2
+}
+
+uninstall_genus_species() {
+  local args=("$@")
+
+  for item in "$@"; do
+    uninstall-${item}_genus_species
+  done
+}
+
+uninstall-polap_genus_species() {
+  echo "Removing the following conda environments: polap"
+  if [[ "${opt_y_flag}" == false ]]; then
+    read -p "Do you want to uninstall polap conda environments? (y/N): " confirm
+  else
+    confirm="yes"
+  fi
+
+  if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+      echo "You're not in the base environment. Chaniging 'base'..."
+      conda activate base
+    fi
+
+    if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+      if conda info --envs | awk '{print $1}' | grep -Fxq polap; then
+        conda env remove -y -n polap
+        # conda remove -y -n polap --all
+      fi
+      echo "conda deactivate if necessary"
+    fi
+  else
+    echo "Uninstallation of polap is canceled."
+    echo "${help_message_uninstall}"
+  fi
+}
+
+uninstall-getorganelle_genus_species() {
+  echo "Removing the following conda environments: polap-getorganelle"
+  if [[ "${opt_y_flag}" == false ]]; then
+    read -p "Do you want to uninstall polap-getorganelle conda environments for polap? (y/N): " confirm
+  else
+    confirm="yes"
+  fi
+
+  if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+      echo "You're not in the base environment. Chaniging 'base'..."
+      conda activate base
+    fi
+
+    if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+      if conda info --envs | awk '{print $1}' | grep -Fxq polap-getorganelle; then
+        conda env remove -y -n polap-getorganelle
+        # conda remove -y -n polap-getorganelle --all
+      fi
+      echo "conda deactivate if necessary"
+    fi
+  else
+    echo "Uninstallation of getorganelle is canceled."
+    echo "${help_message_uninstall_getorganelle}"
+  fi
+}
+
+uninstall-fmlrc2_genus_species() {
+  echo "Removing the following conda environments: polap-fmlrc2"
+  if [[ "${opt_y_flag}" == false ]]; then
+    read -p "Do you want to uninstall polap-fmlrc2 conda environments for polap? (y/N): " confirm
+  else
+    confirm="yes"
+  fi
+
+  if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+      echo "You're not in the base environment. Chaniging 'base'..."
+      conda activate base
+    fi
+
+    if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+      if conda info --envs | awk '{print $1}' | grep -Fxq polap-fmlrc2; then
+        conda env remove -y -n polap-fmlrc2
+        # conda remove -y -n polap-fmlrc2 --all
+      fi
+      echo "conda deactivate if necessary"
+    fi
+  else
+    echo "Uninstallation of fmlrc2 is canceled."
+    echo "${help_message_uninstall_fmlrc2}"
+  fi
+}
+
+uninstall-fmlrc_genus_species() {
+  echo "Removing the following conda environments: polap-fmlrc"
+  if [[ "${opt_y_flag}" == false ]]; then
+    read -p "Do you want to uninstall polap-fmlrc conda environments for polap? (y/N): " confirm
+  else
+    confirm="yes"
+  fi
+
+  if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+      echo "You're not in the base environment. Chaniging 'base'..."
+      conda activate base
+    fi
+
+    if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+      if conda info --envs | awk '{print $1}' | grep -Fxq polap-fmlrc; then
+        conda env remove -y -n polap-fmlrc
+        # conda remove -y -n polap-fmlrc --all
+      fi
+      echo "conda deactivate if necessary"
+    fi
+  else
+    echo "Uninstallation of fmlrc is canceled."
+    echo "${help_message_uninstall_fmlrc}"
+  fi
+}
+
+uninstall-dflye_genus_species() {
+  echo "Removing the following conda environments: polap-dflye"
+  if [[ "${opt_y_flag}" == false ]]; then
+    read -p "Do you want to uninstall polap-dflye conda environments for polap? (y/N): " confirm
+  else
+    confirm="yes"
+  fi
+
+  if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+      echo "You're not in the base environment. Chaniging 'base'..."
+      conda activate base
+    fi
+
+    if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+      if conda info --envs | awk '{print $1}' | grep -Fxq polap-dflye; then
+        conda env remove -y -n polap-dflye
+        # conda remove -y -n polap-dflye --all
+      fi
+      echo "conda deactivate if necessary"
+    fi
+  else
+    echo "Uninstallation of dflye is canceled."
+    echo "${help_message_uninstall_dflye}"
+  fi
+}
+
+uninstall-cflye_genus_species() {
+  echo "Removing the following conda environments: polap-cflye"
+  if [[ "${opt_y_flag}" == false ]]; then
+    read -p "Do you want to uninstall polap-cflye conda environments for polap? (y/N): " confirm
+  else
+    confirm="yes"
+  fi
+
+  if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+      echo "You're not in the base environment. Chaniging 'base'..."
+      conda activate base
+    fi
+
+    if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+      if conda info --envs | awk '{print $1}' | grep -Fxq polap-cflye; then
+        conda env remove -y -n polap-cflye
+        # conda remove -y -n polap-cflye --all
+      fi
+      echo "conda deactivate if necessary"
+    fi
+  else
+    echo "Uninstallation of cflye is canceled."
+    echo "${help_message_uninstall_cflye}"
+  fi
+}
+
+uninstall-oatk_genus_species() {
+  echo "Removing the following conda environments: polap-oatk"
+  if [[ "${opt_y_flag}" == false ]]; then
+    read -p "Do you want to uninstall polap-oatk conda environments for polap? (y/N): " confirm
+  else
+    confirm="yes"
+  fi
+
+  if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+      echo "You're not in the base environment. Chaniging 'base'..."
+      conda activate base
+    fi
+
+    if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+      if conda info --envs | awk '{print $1}' | grep -Fxq polap-oatk; then
+        conda env remove -y -n polap-oatk
+        # conda remove -y -n polap-oatk --all
+      fi
+      echo "conda deactivate if necessary"
+    fi
+  else
+    echo "Uninstallation of oatk is canceled."
+    echo "${help_message_uninstall_oatk}"
+  fi
+}
+
+uninstall-tippo_genus_species() {
+  echo "Removing the following conda environments: polap-tippo"
+  if [[ "${opt_y_flag}" == false ]]; then
+    read -p "Do you want to uninstall polap-tippo conda environments for polap? (y/N): " confirm
+  else
+    confirm="yes"
+  fi
+
+  if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+      echo "You're not in the base environment. Chaniging 'base'..."
+      conda activate base
+    fi
+
+    if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+      if conda info --envs | awk '{print $1}' | grep -Fxq polap-tippo; then
+        conda env remove -y -n polap-tippo
+        # conda remove -y -n polap-tippo --all
+      fi
+      echo "conda deactivate if necessary"
+    fi
+  else
+    echo "Uninstallation of tippo is canceled."
+    echo "${help_message_uninstall_tippo}"
+  fi
+}
+
+uninstall-pmat_genus_species() {
+  echo "Removing the following conda environments: polap-pmat"
+  if [[ "${opt_y_flag}" == false ]]; then
+    read -p "Do you want to uninstall polap-pmat conda environments for polap? (y/N): " confirm
+  else
+    confirm="yes"
+  fi
+
+  if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+      echo "You're not in the base environment. Chaniging 'base'..."
+      conda activate base
+    fi
+
+    if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+      if conda info --envs | awk '{print $1}' | grep -Fxq polap-pmat; then
+        conda env remove -y -n polap-pmat
+        # conda remove -y -n polap-pmat --all
+      fi
+      echo "conda deactivate if necessary"
+    fi
+  else
+    echo "Uninstallation of pmat is canceled."
+    echo "${help_message_uninstall_pmat}"
+  fi
+}
+
+uninstall-efg_genus_species() {
+  echo "Removing the following conda environments: polap-efg"
+  if [[ "${opt_y_flag}" == false ]]; then
+    read -p "Do you want to uninstall polap-efg conda environments for polap? (y/N): " confirm
+  else
+    confirm="yes"
+  fi
+
+  if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+      echo "You're not in the base environment. Chaniging 'base'..."
+      conda activate base
+    fi
+
+    if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+      if conda info --envs | awk '{print $1}' | grep -Fxq polap-efg; then
+        conda env remove -y -n polap-efg
+        # conda remove -y -n polap-efg --all
+      fi
+      echo "conda deactivate if necessary"
+    fi
+  else
+    echo "Uninstallation of efg is canceled."
+    echo "${help_message_uninstall_efg}"
+  fi
+}
+
+run-summary-data_genus_species() {
+  local _brg_outdir="${1}"
+  local _brg_inum="${2:-0}"
+
+  # Set the run title
+  local full_name="${FUNCNAME[0]}"
+  local middle_part="${full_name#run-}"
+  local _run_title="${middle_part%%_*}"
+
+  # Directory without a slash
+  _brg_outdir="${_brg_outdir%/}"
+
+  # Folders
+  local _brg_outdir_t="${_brg_outdir}/${opt_t_arg}"
+  local _brg_outdir_i="${_brg_outdir_t}/${_brg_inum}"
+  local _brg_rundir="${_brg_outdir_i}/${_run_title}"
+  local _run_dir="${_brg_outdir}-${_run_title}"
+  local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+  mkdir -p "${_run_dir}"
+  mkdir -p "${_brg_rundir}"
+
+  local target_index="${_brg_outdir}-${_brg_inum}"
+  local long_sra="${_long["$target_index"]}"
+  if [[ -z "$long_sra" ]]; then
+    echo "Error: skipping ${_brg_outdir}-${_brg_inum} because it is not in the CSV."
+    return
+  fi
+  local short_sra="${_short["$target_index"]}"
+
+  # Activate a conda environment
+  source "$(conda info --base)/etc/profile.d/conda.sh"
+  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+    echo "[INFO] Activating conda environment 'polap'..."
+    conda activate polap
+  fi
+
+  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+    echo "[ERROR] Failed to enter conda environment 'polap'"
+    return
+  fi
+
+  # Files for memtracker
+  local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
+  local _timing_txt="${_brg_outdir_i}/timing-${_run_title}.txt"
+  local _memlog_file="${_brg_outdir_i}/memlog-${_run_title}.csv"
+  local _summary_file="${_brg_outdir_i}/summary-${_run_title}.txt"
+
+  rm -f "${_stdout_txt}"
+  rm -f "${_timing_txt}"
+
+  # Start memory logger
+  _polap_lib_process-start_memtracker "${_memlog_file}" \
+    "${_polap_var_memtracker_time_interval}"
+
+  command time -v seqkit stats -T \
+    ${long_sra}.fastq \
+    -o "${_run_dir}"/l.fq.stats \
+    >>"${_stdout_txt}" \
+    2>>"${_timing_txt}"
+
+  command time -v seqkit stats -T \
+    ${short_sra}_1.fastq \
+    -o "${_run_dir}"/s1.fq.stats \
+    >>"${_stdout_txt}" \
+    2>>"${_timing_txt}"
+
+  command time -v seqkit stats -T \
+    ${short_sra}_2.fastq \
+    -o "${_run_dir}"/s2.fq.stats \
+    >>"${_stdout_txt}" \
+    2>>"${_timing_txt}"
+
+  # Save system info
+  _polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+  _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}"
+
+  conda deactivate
+
+  # Save results
+  rsync -azuq "${_run_dir}"/ "${_brg_rundir}"/
+
+  # Clean-up
+  rm -rf "${_run_dir}"
+}
+
 install-man_genus_species() {
   if [[ "${opt_y_flag}" == false ]]; then
     read -p "Do you want to install man in the polap-man conda environment? (y/N): " confirm
@@ -852,12 +1636,36 @@ run-polap-disassemble-check_genus_species() {
     # echo "see ${blast_dir}/pident.txt"
     # cat "${blast_dir}/pident.txt"
 
-    ${_polap_cmd} mafft-mtdna -a "${_brg_outdir_i}/ptdna-ptgaul.fa" \
+    # mafft/1. ptGAUL vs. subsample-polishing
+    i=1
+    ${_polap_cmd} mafft-mtdna \
+      -a "${_brg_outdir_i}/ptdna-ptgaul.fa" \
       -b "${_run_dir}/${_brg_inum}/disassemble/${_d_i}/pt.subsample-polishing.reference.aligned.1.fa" \
       -o "${mafft_dir}" \
       >"${mafft_dir}/log.txt"
     # echo "see ${mafft_dir}/pident.txt"
     # cat "${mafft_dir}/pident.txt"
+
+    # mafft/2. simple-polishing vs. subsample-polishing
+    i=2
+    local mafft_dir="${_run_dir}/mafft/${i}"
+    mkdir -p "${mafft_dir}"
+    ${_polap_cmd} mafft-mtdna \
+      -a "${_run_dir}/${_brg_inum}/disassemble/${_d_i}/pt.simple-polishing.reference.aligned.1.fa" \
+      -b "${_run_dir}/${_brg_inum}/disassemble/${_d_i}/pt.subsample-polishing.reference.aligned.1.fa" \
+      -o "${mafft_dir}" \
+      >"${mafft_dir}/log.txt"
+
+    # mafft/3. ptGAUL vs. simple-polishing
+    i=3
+    local mafft_dir="${_run_dir}/mafft/${i}"
+    mkdir -p "${mafft_dir}"
+    ${_polap_cmd} mafft-mtdna \
+      -a "${_brg_outdir_i}/ptdna-ptgaul.fa" \
+      -b "${_run_dir}/${_brg_inum}/disassemble/${_d_i}/pt.simple-polishing.reference.aligned.1.fa" \
+      -o "${mafft_dir}" \
+      >"${mafft_dir}/log.txt"
+
   else
     echo "ERROR: no such file: ${_brg_outdir_i}/disassemble/${_d_i}/pt.subsample-polishing.reference.aligned.1.fa"
   fi
@@ -1050,56 +1858,6 @@ run-polap_genus_species() {
   local _run_title="${middle_part%%_*}"
 }
 
-run_genus_species_for() {
-  local _brg_outdir="${1}"
-  echo "Preparing archive for ${_brg_outdir} ..."
-  # tar zcf "${_brg_outdir}-a.tar.gz" "${_brg_outdir}"
-}
-
-run_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-0}"
-  local _brg_polished="${3:-hifiasm}"
-  local _brg_fc="${4:-30}"
-
-  if [[ "${_brg_outdir}" == "all" ]]; then
-    for _v1 in "${Sall[@]}"; do
-      run_genus_species_for "${_v1}" "${@:2}"
-    done
-  elif [[ "${_brg_outdir}" == "each" ]]; then
-    for _v1 in "${Sall[@]}"; do
-      run_genus_species_for "${_v1}" "${@:2}"
-    done
-  else
-    run_genus_species_for "$@"
-  fi
-}
-
-run_genus_species_for() {
-  local _brg_outdir="${1}"
-  echo "Preparing archive for ${_brg_outdir} ..."
-  # tar zcf "${_brg_outdir}-a.tar.gz" "${_brg_outdir}"
-}
-
-run_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-0}"
-  local _brg_polished="${3:-hifiasm}"
-  local _brg_fc="${4:-30}"
-
-  if [[ "${_brg_outdir}" == "all" ]]; then
-    for _v1 in "${Sall[@]}"; do
-      run_genus_species_for "${_v1}" "${@:2}"
-    done
-  elif [[ "${_brg_outdir}" == "each" ]]; then
-    for _v1 in "${Sall[@]}"; do
-      run_genus_species_for "${_v1}" "${@:2}"
-    done
-  else
-    run_genus_species_for "$@"
-  fi
-}
-
 run-oatk-nextdenovo_genus_species() {
   local _brg_outdir="${1}"
   local _brg_inum="${2:-0}"
@@ -1281,16 +2039,17 @@ run-nextdenovo-polish_genus_species() {
     cp "${nextdenovo_cfg}" "${_brg_outdir_i}"
   fi
 
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "pmat" ]]; then
-    echo "[INFO] Activating conda environment 'pmat'..."
-    conda activate pmat
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "pmat" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'pmat'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap-pmat || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "pmat" ]]; then
+  # 	echo "[INFO] Activating conda environment 'pmat'..."
+  # 	conda activate polap-pmat
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "pmat" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'pmat'"
+  # 	return
+  # fi
 
   # Files for memtracker
   local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
@@ -1333,6 +2092,8 @@ run-pmat_genus_species() {
   local _brg_type="${3:-nextdenovo}"
   local _run_title="pmat-${_brg_type}"
 
+  source <(echo 'export PATH="$PWD/PMAT-1.5.3/bin:$PATH"')
+
   # Directory without a slash
   _brg_outdir="${_brg_outdir%/}"
 
@@ -1374,16 +2135,17 @@ run-pmat_genus_species() {
     return
   fi
 
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-pmat" ]]; then
-    echo "[INFO] Activating conda environment 'polap-pmat'..."
-    conda activate polap-pmat
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-pmat" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap-pmat'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap-pmat || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-pmat" ]]; then
+  # 	echo "[INFO] Activating conda environment 'polap-pmat'..."
+  # 	conda activate polap-pmat
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-pmat" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'polap-pmat'"
+  # 	return
+  # fi
 
   # Files for memtracker
   local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
@@ -1421,6 +2183,7 @@ run-pmat_genus_species() {
 
     rm -rf "${_run_dir}"
 
+    # command time -v timeout 12h PMAT autoMito \
     command time -v PMAT autoMito \
       -i "${_brg_input_data}" \
       -o "${_run_dir}" \
@@ -1490,16 +2253,17 @@ run-tippo_genus_species() {
     _brg_input_data="${long_sra}.fastq"
   fi
 
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-tippo" ]]; then
-    echo "[INFO] Activating conda environment 'polap-tippo'..."
-    conda activate polap-tippo
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-tippo" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap-tippo'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap-tippo || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-tippo" ]]; then
+  # 	echo "[INFO] Activating conda environment 'polap-tippo'..."
+  # 	conda activate polap-tippo
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-tippo" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'polap-tippo'"
+  # 	return
+  # fi
 
   # Files for memtracker
   local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
@@ -1535,6 +2299,7 @@ run-tippo_genus_species() {
     rm -rf "${_tippo_actual_outdir}"
 
     # if [[ "${_brg_fc}" == "1" ]]; then
+    # command time -v timeout 12h TIPPo.v2.4.pl \
     command time -v TIPPo.v2.4.pl \
       -f "${_brg_input_data}" \
       -t ${_brg_threads} \
@@ -1600,16 +2365,17 @@ run-oatk_genus_species() {
     _brg_input_data="${long_sra}.fastq"
   fi
 
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-oatk" ]]; then
-    echo "[INFO] Activating conda environment 'polap-oatk'..."
-    conda activate polap-oatk
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-oatk" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap-oatk'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap-oatk || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-oatk" ]]; then
+  # 	echo "[INFO] Activating conda environment 'polap-oatk'..."
+  # 	conda activate polap-oatk
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-oatk" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'polap-oatk'"
+  # 	return
+  # fi
 
   # Files for memtracker
   local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
@@ -1697,23 +2463,28 @@ run-extract-ptdna-ptgaul_genus_species() {
   local _summary_file="${_brg_outdir_i}/summary-${_run_title}.txt"
 
   # Initialize Conda
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    if [[ "$DEBUG" == "1" ]]; then
-      echo "[INFO] Activating conda environment 'polap'..."
-    fi
-    conda activate polap
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+  # 	if [[ "$DEBUG" == "1" ]]; then
+  # 		echo "[INFO] Activating conda environment 'polap'..."
+  # 	fi
+  # 	conda activate polap
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'polap'"
+  # 	return
+  # fi
 
   # extract ptGAUL result
   _log_echo "extract ptDNA from the ptGAUL result with fmlrc polishing"
   # echo command time -v ${_polap_cmd} disassemble ptgaul \
   # 	-o ${_brg_outdir_i}
+
+  _polap_lib_process-start_memtracker "${_memlog_file}" \
+    "${_polap_var_memtracker_time_interval}"
+
   command time -v ${_polap_cmd} disassemble ptgaul \
     -o ${_brg_outdir_i} \
     >"${_stdout_txt}" \
@@ -1721,13 +2492,23 @@ run-extract-ptdna-ptgaul_genus_species() {
 
   conda deactivate
 
+  # End with summary of the system usage
+  _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}"
+
+  # Save system info
+  _polap_lib_timing-get_system_info >>"${_timing_txt}"
+
   _log_echo "use extract-ptgaul-ptdna2 <species_folder> if not working"
 
   # copy ptGAUL result
   echo "copy ${_brg_outdir_i}/ptdna-ptgaul.fa"
   local _outdir="${_brg_outdir_i}/ptgaul/flye_cpONT/ptdna"
   local _brg_final_assembly="${_outdir}/pt.1.fa"
-  cp -pu ${_brg_final_assembly} ${_brg_outdir_i}/ptdna-ptgaul.fa
+  if [[ -s "${_brg_final_assembly}" ]]; then
+    cp -pu ${_brg_final_assembly} ${_brg_outdir_i}/ptdna-ptgaul.fa
+  else
+    _log_echo "[Fail] extraction of a polished ptDNA"
+  fi
 }
 
 run-ptgaul_genus_species() {
@@ -1760,18 +2541,19 @@ run-ptgaul_genus_species() {
   mkdir -p "${_brg_rundir}"
 
   # Initialize Conda
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    if [[ "$DEBUG" == "1" ]]; then
-      echo "[INFO] Activating conda environment 'polap'..."
-    fi
-    conda activate polap
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+  # 	if [[ "$DEBUG" == "1" ]]; then
+  # 		echo "[INFO] Activating conda environment 'polap'..."
+  # 	fi
+  # 	conda activate polap
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'polap'"
+  # 	return
+  # fi
 
   # Files for memtracker
   local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
@@ -1803,7 +2585,10 @@ run-ptgaul_genus_species() {
   conda deactivate
 
   # Save some results
-  rsync -azuq "${_run_dir}"/result_3000/ "${_brg_rundir}"/
+  rsync -azuq --max-size=5M \
+    "${_run_dir}"/result_3000/ \
+    "${_brg_rundir}"/
+
   rm -rf "${_run_dir}"
 }
 
@@ -1827,18 +2612,19 @@ download-ptdna_genus_species() {
   mkdir -p "${_brg_rundir}"
 
   # Initialize Conda
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    if [[ "$DEBUG" == "1" ]]; then
-      echo "[INFO] Activating conda environment 'polap'..."
-    fi
-    conda activate polap
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+  # 	if [[ "$DEBUG" == "1" ]]; then
+  # 		echo "[INFO] Activating conda environment 'polap'..."
+  # 	fi
+  # 	conda activate polap
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'polap'"
+  # 	return
+  # fi
 
   if [[ "${_brg_outdir}" == "Juncus_inflexus" ]]; then
     species_name="Juncus effusus"
@@ -1898,21 +2684,23 @@ run-msbwt_genus_species() {
   local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
 
   # Check the input short-read data
-  mkdir -p "${_brg_outdir_i}"
+  mkdir -p "${_brg_outdir_i}"/msbwt
 
   # Initialize Conda
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-fmlrc" ]]; then
-    if [[ "$DEBUG" == "1" ]]; then
-      echo "[INFO] Activating conda environment 'polap-fmlrc'..."
-    fi
-    conda activate polap-fmlrc
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-fmlrc" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap-fmlrc'"
-    return
-  fi
+  # _polap_lib_conda-ensure_conda_env polap-fmlrc || exit 1
+  _polap_lib_conda-ensure_conda_env polap-fmlrc2 || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-fmlrc" ]]; then
+  # 	if [[ "$DEBUG" == "1" ]]; then
+  # 		echo "[INFO] Activating conda environment 'polap-fmlrc'..."
+  # 	fi
+  # 	conda activate polap-fmlrc
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-fmlrc" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'polap-fmlrc'"
+  # 	return
+  # fi
 
   # Files for memtracker
   local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
@@ -1940,7 +2728,7 @@ run-msbwt_genus_species() {
   _polap_lib_timing-get_system_info >>"${_timing_txt}"
 
   # Save some results
-  mv "${_run_dir}"/msbwt "${_brg_outdir_i}"/
+  rsync -azuq "${_run_dir}"/msbwt/ "${_brg_outdir_i}"/msbwt/
   rm -rf "${_run_dir}"
 }
 
@@ -1972,18 +2760,19 @@ run-getorganelle_genus_species() {
   mkdir -p "${_brg_outdir_i}"
 
   # Initialize Conda
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-getorganelle" ]]; then
-    if [[ "$DEBUG" == "1" ]]; then
-      echo "[INFO] Activating conda environment 'polap-getorganelle'..."
-    fi
-    conda activate polap-getorganelle
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-getorganelle" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap-getorganelle'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap-getorganelle || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-getorganelle" ]]; then
+  # 	if [[ "$DEBUG" == "1" ]]; then
+  # 		echo "[INFO] Activating conda environment 'polap-getorganelle'..."
+  # 	fi
+  # 	conda activate polap-getorganelle
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-getorganelle" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'polap-getorganelle'"
+  # 	return
+  # fi
 
   # Files for memtracker
   local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
@@ -2014,7 +2803,7 @@ run-getorganelle_genus_species() {
 
   # Save some results
   mkdir -p "${_brg_rundir}"
-  rsync -aq \
+  rsync -azuq \
     --max-size=5M \
     "${_run_dir}"/ \
     "${_brg_rundir}"/
@@ -2304,7 +3093,7 @@ install-fmlrc_genus_species() {
 
 setup-conda_genus_species() {
   if [[ "${opt_y_flag}" == false ]]; then
-    read -p "Do you want to install miniconda3? (y/N): " confirm
+    read -p "Do you want to setup miniconda3 for conda-forge and bioconda? (y/N): " confirm
   else
     confirm="yes"
   fi
@@ -2340,16 +3129,16 @@ list_genus_species() {
 
   if [[ "${_brg_where}" == "any" ]]; then
     grep ")$" "${_POLAPLIB_DIR}/polap-lib-data.sh" |
-      grep -v "(" | grep "${_brg_query}" | clean_input_lines
-    grep ")$" $0 | grep -v "(" | grep "${_brg_query}" | clean_input_lines
+      grep -v "(" | grep "${_brg_query}" | clean_input_lines | sort | uniq
+    grep ")$" $0 | grep -v "(" | grep "${_brg_query}" | clean_input_lines | sort | uniq
   elif [[ "${_brg_where}" == "end" ]]; then
     grep ")$" "${_POLAPLIB_DIR}/polap-lib-data.sh" |
-      grep -v "(" | grep "${_brg_query})$" | clean_input_lines
-    grep ")$" $0 | grep -v "(" | grep "${_brg_query})$" | clean_input_lines
+      grep -v "(" | grep "${_brg_query})$" | clean_input_lines | sort | uniq
+    grep ")$" $0 | grep -v "(" | grep "${_brg_query})$" | clean_input_lines | sort | uniq
   else
     grep ")$" "${_POLAPLIB_DIR}/polap-lib-data.sh" |
-      clean_input_lines | grep -v "(" | grep "^${_brg_query}"
-    grep ")$" $0 | clean_input_lines | grep -v "(" | grep "^${_brg_query}"
+      clean_input_lines | grep -v "(" | grep "^${_brg_query}" | sort | uniq
+    grep ")$" $0 | clean_input_lines | grep -v "(" | grep "^${_brg_query}" | sort | uniq
   fi
 }
 
@@ -2453,7 +3242,7 @@ install-getorganelle_genus_species() {
         echo "ERROR: Conda environment 'polap-getorganelle' already exists."
       else
         conda create -y --name polap-getorganelle getorganelle
-        conda activate getorganelle
+        conda activate polap-getorganelle
         get_organelle_config.py --add embplant_pt,embplant_mt
       fi
     else
@@ -2759,16 +3548,17 @@ nextdenovo-polish-memmonitor_genus_species() {
     generate_nextdenovo_cfg "${genome_size}" "${input_file}" "${work_dir}" "${nextdenovo_cfg}"
   fi
 
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "pmat" ]]; then
-    echo "[INFO] Activating conda environment 'pmat'..."
-    conda activate pmat
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "pmat" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'pmat'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap-pmat || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "pmat" ]]; then
+  # 	echo "[INFO] Activating conda environment 'pmat'..."
+  # 	conda activate polap-pmat
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "pmat" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'pmat'"
+  # 	return
+  # fi
 
   local _timing_txt="${_brg_outdir_i}/timing-${_brg_title}.txt"
   local _stdout_txt="${_brg_outdir_i}/stdout-${_brg_title}.txt"
@@ -2893,16 +3683,17 @@ nextdenovo-polish_genus_species() {
     generate_nextdenovo_cfg "${genome_size}" "${input_file}" "${work_dir}" "${nextdenovo_cfg}"
   fi
 
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "pmat" ]]; then
-    echo "[INFO] Activating conda environment 'pmat'..."
-    conda activate pmat
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "pmat" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'pmat'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap-pmat || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "pmat" ]]; then
+  # 	echo "[INFO] Activating conda environment 'pmat'..."
+  # 	conda activate polap-pmat
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "pmat" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'pmat'"
+  # 	return
+  # fi
 
   local _timing_txt="${_brg_outdir_i}/timing-${_brg_title}.txt"
   local _stdout_txt="${_brg_outdir_i}/stdout-${_brg_title}.txt"
@@ -3121,16 +3912,17 @@ polap-analysis-polish_genus_species() {
   local _brg_outdir_i="${_brg_outdir}/${_brg_adir}/${_brg_inum}"
   local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
 
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-fmlrc" ]]; then
-    echo "[INFO] Activating conda environment 'polap-fmlrc'..."
-    conda activate polap-fmlrc
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-fmlrc" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap-fmlrc'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap-fmlrc || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-fmlrc" ]]; then
+  # 	echo "[INFO] Activating conda environment 'polap-fmlrc'..."
+  # 	conda activate polap-fmlrc
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-fmlrc" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'polap-fmlrc'"
+  # 	return
+  # fi
 
   local _timing_txt="${_brg_outdir_i}/timing-${_brg_title}.txt"
   local _stdout_txt="${_brg_outdir_i}/stdout-${_brg_title}.txt"
@@ -3210,16 +4002,17 @@ polap-analysis-msbwt_genus_species() {
     return
   fi
 
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-fmlrc" ]]; then
-    echo "[INFO] Activating conda environment 'polap-fmlrc'..."
-    conda activate polap-fmlrc
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-fmlrc" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap-fmlrc'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap-fmlrc || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-fmlrc" ]]; then
+  # 	echo "[INFO] Activating conda environment 'polap-fmlrc'..."
+  # 	conda activate polap-fmlrc
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-fmlrc" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'polap-fmlrc'"
+  # 	return
+  # fi
 
   local _timing_txt="${_brg_outdir_i}/timing-${_brg_title}.txt"
   local _stdout_txt="${_brg_outdir_i}/stdout-${_brg_title}.txt"
@@ -3296,16 +4089,17 @@ polap-analysis-assemble2_genus_species() {
   # Prepare the input data files
   rsync -azuq "${_brg_outdir_i}"/ "${_outdir}"/
 
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    echo "[INFO] Activating conda environment 'polap'..."
-    conda activate polap
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+  # 	echo "[INFO] Activating conda environment 'polap'..."
+  # 	conda activate polap
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'polap'"
+  # 	return
+  # fi
 
   local _timing_txt="${_brg_outdir_i}/timing-${_brg_title}.txt"
   local _stdout_txt="${_brg_outdir_i}/stdout-${_brg_title}.txt"
@@ -3371,16 +4165,17 @@ polap-analysis-assemble1_genus_species() {
   # Prepare the input data files
   rsync -azuq "${_brg_outdir_i}"/ "${_outdir}"/
 
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    echo "[INFO] Activating conda environment 'polap'..."
-    conda activate polap
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+  # 	echo "[INFO] Activating conda environment 'polap'..."
+  # 	conda activate polap
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'polap'"
+  # 	return
+  # fi
 
   local _timing_txt="${_brg_outdir_i}/timing-${_brg_title}.txt"
   local _stdout_txt="${_brg_outdir_i}/stdout-${_brg_title}.txt"
@@ -3457,16 +4252,17 @@ polap-analysis-reduce_genus_species() {
   local _brg_outdir_i="${_brg_outdir}/${_brg_adir}/${_brg_inum}"
   local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
 
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    # echo "[INFO] Activating conda environment 'polap'..."
-    conda activate polap
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap || exit 1
+  # source "$(conda info --base)/etc/profile.d/conda.sh"
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+  # 	# echo "[INFO] Activating conda environment 'polap'..."
+  # 	conda activate polap
+  # fi
+  #
+  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
+  # 	echo "[ERROR] Failed to enter conda environment 'polap'"
+  # 	return
+  # fi
 
   local _timing_txt="${_brg_outdir_i}/timing-${_brg_title}.txt"
   local _stdout_txt="${_brg_outdir_i}/stdout-${_brg_title}.txt"
@@ -3766,7 +4562,7 @@ oatk-polished_genus_species_for() {
   source "$(conda info --base)/etc/profile.d/conda.sh"
   if [[ "$CONDA_DEFAULT_ENV" != "oatk" ]]; then
     echo "You're not in the oatk environment. Chaniging 'oatk'..."
-    conda activate oatk
+    conda activate polap-oatk
   fi
 
   if [[ "$CONDA_DEFAULT_ENV" == "oatk" ]]; then
@@ -3897,7 +4693,7 @@ hifiasm-polish_genus_species() {
   source "$(conda info --base)/etc/profile.d/conda.sh"
   if [[ "$CONDA_DEFAULT_ENV" != "oatk" ]]; then
     echo "You're not in the oatk environment. Chaniging 'oatk'..."
-    conda activate oatk
+    conda activate polap-oatk
   fi
 
   if [[ "$CONDA_DEFAULT_ENV" == "oatk" ]]; then
@@ -4185,8 +4981,10 @@ data-long_genus_species() {
       elif ssh ${_local_host} "test -f ${_media1_dir}/${long_sra}.fastq"; then
         scp ${_local_host}:"${_media1_dir}/${long_sra}.fastq" .
       else
+        _polap_lib_conda-ensure_conda_env polap || exit 1
         echo "  downloading long-read SRA ID: ${long_sra} ... be patient!"
-        "${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$long_sra"
+        bash "${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$long_sra"
+        conda deactivate
       fi
     fi
   fi
@@ -4237,12 +5035,15 @@ data-short_genus_species() {
         fi
         echo "decompressing ..."
         tar -zxf "${short_sra}".fastq.tar.gz
+        rm -f "${short_sra}".fastq.tar.gz
       elif ssh ${_local_host} "test -f ${_media1_dir}/${short_sra}_1.fastq"; then
         scp ${_local_host}:"${_media1_dir}/${short_sra}_1.fastq" .
         scp ${_local_host}:"${_media1_dir}/${short_sra}_2.fastq" .
       else
+        _polap_lib_conda-ensure_conda_env polap || exit 1
         echo "  downloading short-read SRA ID: ${short_sra} ... be patient!"
-        "${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$short_sra"
+        bash "${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$short_sra"
+        conda deactivate
       fi
     fi
   fi
@@ -4449,8 +5250,7 @@ function _polap_lib_data-execute-common-subcommand {
   local _arg3=${cmd_args_ref[1]}
 
   case "$subcmd1" in
-  uninstall | \
-    download-polap-github | \
+  download-polap-github | \
     patch-polap | bleeding-edge-polap | local-edge-polap | \
     test-polap | \
     install-apptainer | \
@@ -4462,6 +5262,63 @@ function _polap_lib_data-execute-common-subcommand {
     handled=1
     ;;
     ##### INSERT_COMMAND_HERE #####
+  setup-fmlrc2)
+    handled=1
+    ;;
+  install-fmlrc2)
+    handled=1
+    ;;
+  install-minimal)
+    handled=1
+    ;;
+  install-all)
+    handled=1
+    ;;
+  setup-nvim)
+    handled=1
+    ;;
+  setup-pmat)
+    handled=1
+    ;;
+  setup-polap)
+    handled=1
+    ;;
+  install-nvim)
+    handled=1
+    ;;
+  remove)
+    handled=1
+    ;;
+  uninstall-fmlrc)
+    handled=1
+    ;;
+  uninstall-dflye)
+    handled=1
+    ;;
+  uninstall-cflye)
+    handled=1
+    ;;
+  uninstall-oatk)
+    handled=1
+    ;;
+  uninstall-tippo)
+    handled=1
+    ;;
+  uninstall-pmat)
+    handled=1
+    ;;
+  uninstall-getorganelle)
+    handled=1
+    ;;
+  uninstall-polap)
+    handled=1
+    ;;
+  uninstall)
+    handled=1
+    ;;
+  run-summary-data)
+    handled=1
+    ;;
   install-man)
     handled=1
     ;;
@@ -4681,43 +5538,6 @@ function _polap_lib_data-execute-common-subcommand {
       grep ")$" $0 | clean_input_lines | grep -v "(" | grep "^${_brg_query}"
     fi
     ;;
-  uninstall)
-    echo "Removing the following conda environments: polap, polap-fmlrc, getorganelle"
-    if [[ "${opt_y_flag}" == false ]]; then
-      read -p "Do you want to uninstall all conda environments for polap? (y/N): " confirm
-    else
-      confirm="yes"
-    fi
-
-    if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
-      source "$(conda info --base)/etc/profile.d/conda.sh"
-      if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
-        echo "You're not in the base environment. Chaniging 'base'..."
-        conda activate base
-      fi
-
-      if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
-        if conda info --envs | awk '{print $1}' | grep -Fxq polap; then
-          conda env remove -n polap
-          # conda remove -y -n polap --all
-        fi
-        if conda info --envs | awk '{print $1}' | grep -Fxq polap-fmlrc; then
-          conda env remove -n polap-fmlrc
-        fi
-        if conda info --envs | awk '{print $1}' | grep -Fxq getorganelle; then
-          conda env remove -n getorganelle
-        fi
-        if conda info --envs | awk '{print $1}' | grep -Fxq pmat; then
-          conda env remove -n pmat
-        fi
-
-        echo "conda deactivate if necessary"
-      fi
-    else
-      echo "Uninstallation is canceled."
-      echo "${help_message_uninstall}"
-    fi
-    ;;
   download-polap-github)
     if [[ "${opt_y_flag}" == false ]]; then
       read -p "Do you want to download polap from github? (y/N): " confirm
@@ -4897,7 +5717,69 @@ function _polap_lib_data-execute-common-subcommand {
       echo "${help_message_install_bolap}"
     fi
     ;;
-  ##### INSERT_CASE_HERE #####
+    ##### INSERT_CASE_HERE #####
+  setup-fmlrc2)
+    ${subcmd1}_genus_species
+    ;;
+  install-fmlrc2)
+    ${subcmd1}_genus_species
+    ;;
+  install-minimal)
+    ${subcmd1}_genus_species
+    ;;
+  install-all)
+    ${subcmd1}_genus_species
+    ;;
+  setup-nvim)
+    ${subcmd1}_genus_species
+    ;;
+  setup-pmat)
+    ${subcmd1}_genus_species
+    ;;
+  setup-polap)
+    ${subcmd1}_genus_species
+    ;;
+  remove)
+    uninstall_genus_species "${cmd_args_ref[@]}"
+    ;;
+  uninstall-fmlrc2)
+    ${subcmd1}_genus_species
+    ;;
+  uninstall-fmlrc)
+    ${subcmd1}_genus_species
+    ;;
+  uninstall-dflye)
+    ${subcmd1}_genus_species
+    ;;
+  uninstall-cflye)
+    ${subcmd1}_genus_species
+    ;;
+  uninstall-oatk)
+    ${subcmd1}_genus_species
+    ;;
+  uninstall-tippo)
+    ${subcmd1}_genus_species
+    ;;
+  uninstall-pmat)
+    ${subcmd1}_genus_species
+    ;;
+  uninstall-getorganelle)
+    ${subcmd1}_genus_species
+    ;;
+  uninstall-polap)
+    ${subcmd1}_genus_species
+    ;;
+  run-summary-data)
+    if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+      echo "Help: ${subcmd1} <outdir> [inum:0|N]"
+      echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
+      _subcmd1_clean="${subcmd1//-/_}"
+      declare -n ref="help_message_${_subcmd1_clean}"
+      echo "$ref"
+      exit 0
+    fi
+    ${subcmd1}_genus_species "${cmd_args_ref[@]}"
+    ;;
   install-man)
     ${subcmd1}_genus_species
     ;;
@@ -5127,6 +6009,9 @@ function _polap_lib_data-execute-common-subcommand {
   install-fmlrc)
     ${subcmd1}_genus_species
     ;;
+  install-nvim)
+    ${subcmd1}_genus_species
+    ;;
   setup-conda)
     ${subcmd1}_genus_species
     ;;
@@ -5148,6 +6033,17 @@ function _polap_lib_data-execute-common-subcommand {
       echo "$ref"
       exit 0
     fi
+    ${subcmd1}_genus_species "${cmd_args_ref[@]}"
+    ;;
+  uninstall)
+    if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+      echo "Help: ${subcmd1} TOOL..."
+      _subcmd1_clean="${subcmd1//-/_}"
+      declare -n ref="help_message_${_subcmd1_clean}"
+      echo "$ref"
+      exit 0
+    fi
+    # [[ -z "${_arg3}" ]] && _arg3=""
     ${subcmd1}_genus_species "${cmd_args_ref[@]}"
     ;;
   install)

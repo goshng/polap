@@ -25,6 +25,8 @@ suppressPackageStartupMessages(library("taxize"))
 suppressPackageStartupMessages(library("rgbif"))
 suppressPackageStartupMessages(library("ggplot2"))
 
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 # https://chatgpt.com/share/6739a37d-0c7c-800e-9473-f748e3c5acee
 
 # Parse the main subcommand
@@ -123,15 +125,15 @@ switch(subcommand,
     if (is_null(options$output)) {
       input_dir0 <- file.path(".")
       input1 <- file.path(input_dir0, "sequence.taxon.tsv")
-      input2 <- 'family'
+      input2 <- "family"
       output1 <- file.path(input_dir0, "sampled_accessions.txt")
 
       input1 <- file.path(input_dir0, "Megaceros_flagellaris/taxonomy/02-sample/sequence.taxon.tsv")
-      input2 <- 'class'
+      input2 <- "class"
       output1 <- file.path(input_dir0, "accesssions_outgroup_sampled.txt")
 
       input1 <- file.path(input_dir0, "Hylodesmum_podocarpum/taxonomy/02-sample/sequence.ingroup.taxon.tsv")
-      input2 <- 'genus'
+      input2 <- "genus"
       output1 <- file.path(input_dir0, "accesssions_outgroup_sampled.txt")
 
       options <- parse_args(parser, args = c(
@@ -176,40 +178,40 @@ switch(subcommand,
 
     # Randomly sample two species per order and one accession per species
     if (options$rank == "genus") {
-    sampled_data <- joined_data %>%
-      group_by(genus) %>%
-      sample_n(options$number, replace = TRUE) %>%
-      group_by(TaxonomyID) %>%
-      sample_n(1) %>%
-      ungroup()
+      sampled_data <- joined_data %>%
+        group_by(genus) %>%
+        sample_n(options$number, replace = TRUE) %>%
+        group_by(TaxonomyID) %>%
+        sample_n(1) %>%
+        ungroup()
     } else if (options$rank == "family") {
-    sampled_data <- joined_data %>%
-      group_by(family) %>%
-      sample_n(options$number, replace = TRUE) %>%
-      group_by(TaxonomyID) %>%
-      sample_n(1) %>%
-      ungroup()
+      sampled_data <- joined_data %>%
+        group_by(family) %>%
+        sample_n(options$number, replace = TRUE) %>%
+        group_by(TaxonomyID) %>%
+        sample_n(1) %>%
+        ungroup()
     } else if (options$rank == "order") {
-    sampled_data <- joined_data %>%
-      group_by(order) %>%
-      sample_n(options$number, replace = TRUE) %>%
-      group_by(TaxonomyID) %>%
-      sample_n(1) %>%
-      ungroup()
+      sampled_data <- joined_data %>%
+        group_by(order) %>%
+        sample_n(options$number, replace = TRUE) %>%
+        group_by(TaxonomyID) %>%
+        sample_n(1) %>%
+        ungroup()
     } else if (options$rank == "class") {
-    sampled_data <- joined_data %>%
-      group_by(class) %>%
-      sample_n(options$number, replace = TRUE) %>%
-      group_by(TaxonomyID) %>%
-      sample_n(1) %>%
-      ungroup()
+      sampled_data <- joined_data %>%
+        group_by(class) %>%
+        sample_n(options$number, replace = TRUE) %>%
+        group_by(TaxonomyID) %>%
+        sample_n(1) %>%
+        ungroup()
     } else {
-    sampled_data <- joined_data %>%
-      group_by(phylum) %>%
-      sample_n(options$number, replace = TRUE) %>%
-      group_by(TaxonomyID) %>%
-      sample_n(1) %>%
-      ungroup()
+      sampled_data <- joined_data %>%
+        group_by(phylum) %>%
+        sample_n(options$number, replace = TRUE) %>%
+        group_by(TaxonomyID) %>%
+        sample_n(1) %>%
+        ungroup()
     }
 
     # Save sampled data

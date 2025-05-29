@@ -28,6 +28,13 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+  return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
 source "${_POLAPLIB_DIR}/run-polap-function-utilities.sh"
 
 function _polap_oga_determine-long-read-file {
@@ -53,8 +60,8 @@ function _polap_oga_determine-long-read-file {
 # create a dummy assembly for preparing seed contigs
 ################################################################################
 function _run_polap_prepare-seeds { # prepare seed contigs in a not usual way
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -174,7 +181,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -209,8 +216,8 @@ HEREDOC
 #   ${_polap_var_oga_reads}/contig.tab
 ################################################################################
 function _run_polap_map-reads { # selects reads mapped on a genome assembly
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -382,7 +389,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 	return
 
@@ -402,7 +409,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -450,8 +457,8 @@ HEREDOC
 #   polap-rw-base-length
 ################################################################################
 function _run_polap_test-reads { # selects reads mapped on a genome assembly
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -513,7 +520,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 		return
 	fi
@@ -637,7 +644,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 		return
 	fi
@@ -687,7 +694,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 		return
 	fi
@@ -1012,7 +1019,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -1020,8 +1027,8 @@ HEREDOC
 #
 ################################################################################
 function _run_polap_select-reads { # selects reads mapped on a genome assembly
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -1075,7 +1082,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 		return
 	fi
@@ -1120,7 +1127,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -1128,8 +1135,8 @@ HEREDOC
 # Best flye2
 ################################################################################
 function _run_polap_flye2 { # executes Flye for an organelle-genome assembly
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -1227,7 +1234,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -1248,8 +1255,8 @@ HEREDOC
 #   ${MTDIR}/assembly_graph.gfa
 ################################################################################
 function _run_polap_flye-polishing { # finish a Flye organelle-genome assembly upto flye-polishing step
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -1318,7 +1325,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -1326,8 +1333,8 @@ HEREDOC
 # Reports the organelle-genome assembly results.
 ################################################################################
 function _run_polap_report-assembly { # report an organelle-genome assembly result
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -1428,7 +1435,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -1479,8 +1486,8 @@ HEREDOC
 #   ${_polap_var_oga_reads}/contig.tab
 ################################################################################
 function _run_polap_x-v0.3.7-collect-reads() { # replaced by select-reads
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -1547,7 +1554,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 		return
 	fi
@@ -1636,7 +1643,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -1663,8 +1670,8 @@ HEREDOC
 #   ${MTSEEDSDIR}/2.fq.gz
 ################################################################################
 function _run_polap_x-v0.2.6-select-reads() { # selects reads mapped on a genome assembly
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -1970,7 +1977,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -1978,8 +1985,8 @@ HEREDOC
 # simply use read names to extract reads from a long-read data file
 ################################################################################
 function _run_polap_x-select-reads { # selects reads mapped on a genome assembly
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -2044,7 +2051,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 		return
 	fi
@@ -2182,7 +2189,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -2204,8 +2211,8 @@ HEREDOC
 #   ${MTDIR}/30-contigger/graph_final.gfa
 ################################################################################
 function _run_polap_x-v0.2.6-flye2() { # executes Flye for an organelle-genome assembly
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -2315,6 +2322,6 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }

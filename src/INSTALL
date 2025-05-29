@@ -3,6 +3,8 @@ mkdir -p all/polap/cflye1
 cd all/polap/cflye1
 git clone https://github.com/goshng/polap.git
 bash polap/src/polap-data-v2.sh install conda
+source ~/miniconda3/bin/activate
+cd all/polap/cflye1
 bash polap/src/polap-data-v2.sh setup conda
 bash polap/src/polap-data-v2.sh -y install all
 bash polap/src/polap-data-v2.sh setup polap
@@ -63,10 +65,14 @@ ERROR  : Could not write info to setgroups: Permission denied
 ERROR  : Error while waiting event for user namespace mappings: no event received
 
 ### Install apptainer in the system-wide
+apptainer exec $HOME/bin/pmat/container/runAssembly.sif echo "test"
 sudo apptainer exec bin/PMAT-1.5.3/container/runAssembly.sif echo "test"
 echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/90-userns.conf
 echo 'kernel.apparmor_restrict_unprivileged_userns=0' | sudo tee /etc/sysctl.d/80-apparmor-userns.conf
 sudo sysctl --system
+sudo apt update
+sudo apt -y install fuse2fs gocryptfs
+
 
 ### no need such thing like this
 https://apptainer.org/docs/admin/main/installation.html#install-ubuntu-packages

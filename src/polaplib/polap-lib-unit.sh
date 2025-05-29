@@ -35,17 +35,23 @@ fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
-# 1. Using esearch and esummary to Query Genome Size
-# You can fetch genome size information from NCBI's Assembly database:
-_polap_lib_ncbi-query-genome-size() {
-	local _species="${1}"
-
-	echo $(esearch -db assembly -query "${_species}[Organism]" |
-		esummary |
-		grep 'total_length' |
-		awk -F'[<>]' '{print $3}' |
-		awk '{sum+=$1; count+=1} END {if (count > 0) print sum/count}' |
-		awk '{print int($1)}')
-
-	# xtract -pattern DocumentSummary -element species,assembly_name,total_length
+################################################################################
+# Function to convert base pairs to the highest appropriate unit
+# Example usage
+# bp=31846726397
+# convert_bp $bp
+################################################################################
+function _polap_lib_unit-convert_bp {
+	local bp=${1%.*}
+	if ((bp >= 1000000000000)); then
+		echo "$(bc <<<"scale=1; $bp/1000000000000") Tbp"
+	elif ((bp >= 1000000000)); then
+		echo "$(bc <<<"scale=1; $bp/1000000000") Gbp"
+	elif ((bp >= 1000000)); then
+		echo "$(bc <<<"scale=1; $bp/1000000") Mbp"
+	elif ((bp >= 1000)); then
+		echo "$(bc <<<"scale=1; $bp/1000") kbp"
+	else
+		echo "$bp bp"
+	fi
 }

@@ -28,6 +28,13 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+  return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
 _polap_lib_process-run_script_with_args_in_bash_c() {
   local script="$1"
   shift
@@ -48,6 +55,12 @@ _polap_lib_process-run_script_with_args_in_bash_c() {
 _polap_lib_process-start_memtracker() {
   local log_file="$1"
   local interval="${2:-60}"
+
+  # input: "/a/b/c/memlog-msbwt-node.csv"
+  # output: msbwt-node
+  local run_title="${log_file##*/}"
+  run_title="${run_title#*-}"
+  run_title="${run_title%.csv}"
 
   echo "timestamp,total_used_kb,cpu_load_1min,disk_free_gb,max_rss_cmd" >"$log_file"
   # local start_ts
@@ -83,7 +96,7 @@ _polap_lib_process-start_memtracker() {
     done
   ) &
   echo $! >"${log_file}.pid"
-  echo "[INFO] Logging started with PID $(<"${log_file}.pid")"
+  echo "[INFO] Job: [$run_title]: Logging started with PID $(<"${log_file}.pid")"
 }
 
 _polap_lib_process-end_memtracker() {
@@ -165,26 +178,20 @@ _polap_lib_process-end_memtracker() {
   ln -sf "$(basename "$summary_file")" "$summary_base"
 }
 
-v1_polap_lib_process-end_memtracker() {
+_polap_lib_process-analyze_memtracker_log() {
   local log_file="$1"
   local summary_base="${2:-memtrack-summary.txt}"
   local timestamp
   timestamp=$(date +"%Y%m%d_%H%M")
   local summary_file="${summary_base}.${timestamp}.txt"
-  local md_summary_file="${summary_base}.${timestamp}.md"
 
   if [[ ! -f "$log_file" ]]; then
     echo "[ERROR] Log file not found: $log_file" >&2
     return 1
   fi
 
-  # Stop logger
-  if [[ -f "${log_file}.pid" ]]; then
-    kill "$(cat "${log_file}.pid")" 2>/dev/null || true
-    rm -f "${log_file}.pid"
-  fi
-
-  local line_count=$(wc -l <"$log_file" | xargs)
+  local line_count
+  line_count=$(wc -l <"$log_file" | xargs)
   if [[ "$line_count" -le 1 ]]; then
     echo "[ERROR] Log file has no log: $log_file" >&2
     return 1
@@ -192,18 +199,23 @@ v1_polap_lib_process-end_memtracker() {
 
   local start_ts end_ts elapsed
   start_ts=$(awk -F',' 'NR==2 {print $1; exit}' "$log_file")
-  end_ts=$(awk -F',' 'END {print $1}' "$log_file")
+  # end_ts=$(awk -F',' 'END {print $1}' "$log_file")
+  end_ts=$(tail -n2 "$log_file" | head -n1 | cut -d',' -f1)
   elapsed=$((end_ts - start_ts))
 
   awk -F',' -v start_ts="$start_ts" -v end_ts="$end_ts" -v elapsed="$elapsed" \
-    -v summary_file="$summary_file" -v md_file="$md_summary_file" '
+    -v summary_file="$summary_file" '
     BEGIN {
       min_disk = 999999
       peak_cpu = 0
       peak_mem = 0
+      start_disk_free = -1
     }
     NR == 1 { next }
-    NR == 2 { start_used = $2 }
+    NR == 2 {
+      start_used = $2
+      start_disk_free = $4
+    }
     {
       if ($2 > peak_mem) {
         peak_mem = $2
@@ -213,44 +225,26 @@ v1_polap_lib_process-end_memtracker() {
       if ($4 < min_disk) min_disk = $4
     }
     END {
-      delta = peak_mem - start_used
+      delta_mem = peak_mem - start_used
+      delta_disk = start_disk_free - min_disk
       h = int(elapsed / 3600)
       m = int((elapsed % 3600) / 60)
       s = elapsed % 60
       elapsed_str = sprintf("%02d:%02d:%02d (%.2f h)", h, m, s, elapsed / 3600)
 
-      # Plain text
-      printf "🧠 Physical Memory Usage Summary:\n"                       > summary_file
+      print "🧠 Physical Memory Usage Summary:"                       > summary_file
       printf "Start used:      %d KB (%.2f GB)\n", start_used, start_used/1048576  >> summary_file
       printf "Peak used:       %d KB (%.2f GB)\n", peak_mem, peak_mem/1048576      >> summary_file
-      printf "Net increase:    %d KB (%.2f GB)\n", delta, delta/1048576            >> summary_file
+      printf "Net increase:    %d KB (%.2f GB)\n", delta_mem, delta_mem/1048576    >> summary_file
       printf "Elapsed time:    %s\n", elapsed_str                                  >> summary_file
       printf "Peak CPU load:   %.2f\n", peak_cpu                                   >> summary_file
-      printf "Min disk space:  %d GB\n", min_disk                                  >> summary_file
+      printf "Start disk free: %d GB\n", start_disk_free                           >> summary_file
+      printf "Min disk free:   %d GB\n", min_disk                                   >> summary_file
+      printf "Disk used:       %d GB\n", delta_disk                                 >> summary_file
       printf "Top memory cmd:  %s\n", peak_cmd                                     >> summary_file
-
-      # Markdown
-      print "### 🧠 Physical Memory Usage Summary" > md_file
-      print "| Metric           | Value                         |" >> md_file
-      print "|------------------|-------------------------------|" >> md_file
-      printf "| Start used       | %d KB (%.2f GB)              |\n", start_used, start_used/1048576 >> md_file
-      printf "| Peak used        | %d KB (%.2f GB)              |\n", peak_mem, peak_mem/1048576 >> md_file
-      printf "| Net increase     | %d KB (%.2f GB)              |\n", delta, delta/1048576 >> md_file
-      printf "| Elapsed time     | %s                          |\n", elapsed_str >> md_file
-      printf "| Peak CPU load    | %.2f                          |\n", peak_cpu >> md_file
-      printf "| Min disk space   | %d GB                         |\n", min_disk >> md_file
-      printf "| Top memory cmd   | `%s`                         |\n", peak_cmd >> md_file
     }
   ' "$log_file"
 
-  # Show plain-text summary to terminal
   cat "$summary_file"
-
-  # Update symlinks
   ln -sf "$(basename "$summary_file")" "$summary_base"
-  ln -sf "$(basename "$md_summary_file")" "${summary_base%.txt}.md"
-
-  # echo "[INFO] Summary written to: $summary_file"
-  # echo "[INFO] Markdown written to: $md_summary_file"
-  # echo "[INFO] Symlinks updated: $summary_base, ${summary_base%.txt}.md"
 }

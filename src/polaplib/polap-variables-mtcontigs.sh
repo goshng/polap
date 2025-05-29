@@ -14,6 +14,13 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+  return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
 # common: mtcontigs
 local _polap_var_ga_mtcontigs="${_polap_var_ga}/51-mtcontigs"
 local _polap_var_mtcontigs="${_polap_var_ga}/51-mtcontigs/${_arg_knum}"

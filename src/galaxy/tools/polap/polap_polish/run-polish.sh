@@ -41,8 +41,8 @@ declare "$_POLAP_INCLUDE_=1"
 #   $${_arg_outdir}/msbwt
 ################################################################################
 function _run_polap_prepare-polishing { # prepare the polishing using FMLRC
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -78,7 +78,7 @@ HEREDOC
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 		ls -l "${_arg_outdir}/msbwt" >&2
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 		exit $EXIT_SUCCESS
 	fi
@@ -176,7 +176,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -193,8 +193,8 @@ HEREDOC
 #   ${_arg_final_assembly}
 ################################################################################
 function _run_polap_polish { # polish organelle genome sequences using FMLRC
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -249,6 +249,6 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }

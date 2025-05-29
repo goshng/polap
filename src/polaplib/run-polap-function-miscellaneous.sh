@@ -28,8 +28,15 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+  return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
 function _run_polap_report-table {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
 		cat <<HEREDOC
@@ -61,11 +68,11 @@ HEREDOC
 	_arg_menu[1]=$(basename "${_project}" | sed 's/_/ /g')
 	_run_polap_get-taxonomy-species
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 }
 
 function _run_polap_get-taxonomy-species {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
 		cat <<HEREDOC
@@ -88,14 +95,14 @@ HEREDOC
 	local _v=$(esearch -db taxonomy -query "${_species}" | efetch -format xml | xtract -pattern Taxon -block "LineageEx/Taxon" -sep ";" -element ScientificName)
 	_polap_log0 "taxonomy: ${_v}"
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 }
 
 ################################################################################
 # FIXME: something are complicated. Do we need it?
 ################################################################################
 function _run_polap_x-bioproject2 {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	mkdir ${_arg_outdir}
 	# BIOPRJ=$_arg_bioproject
@@ -118,7 +125,7 @@ function _run_polap_x-bioproject2 {
 	done >${_arg_outdir}/accessions_demo.tab
 	# csvtk cut -f Run,bases,LibraryName,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName | csvtk pretty 1>&2
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 }
 
 ###############################################################################
@@ -129,7 +136,7 @@ function _run_polap_x-bioproject2 {
 #   SRR10190639.fastq
 ###############################################################################
 function _run_polap_x-ncbi-fetch-sra {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
 		cat <<HEREDOC
@@ -165,7 +172,7 @@ HEREDOC
 	_polap_log1 if your download try is successful. Then, you would want to delete
 	_polap_log1 the folder because we need only the fastq file.
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 }
 
 ################################################################################
@@ -174,7 +181,7 @@ HEREDOC
 #   --sra SRR10190639
 ################################################################################
 function _run_polap_x-ncbi-fetch-sra-runinfo {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
 		cat <<HEREDOC
@@ -213,11 +220,11 @@ HEREDOC
 		echoall "ERROR: SRA ${_arg_sra} and its FASTQ files: total bases do not match."
 	fi
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 }
 
 function _run_polap_x-get-sra-info {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
 		cat <<HEREDOC
@@ -247,11 +254,11 @@ HEREDOC
 		csvtk cut -f Run,bases,LibraryStrategy,LibrarySource,LibraryLayout,Platform,ScientificName |
 		csvtk pretty >&3
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 }
 
 function _run_polap_x-check-disk-space {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	local _polap_return=${RETURN_SUCCESS}
 
@@ -299,7 +306,7 @@ HEREDOC
 		_polap_return=${_POLAP_ERR_NO_DISK_SPACE}
 	fi
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 	return ${_polap_return}
 }
 
@@ -328,7 +335,7 @@ function _run_polap_x-link-sra {
 #   --species
 ################################################################################
 function _run_polap_x-ncbi-fetch-mtdna-genbank {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
 		cat <<HEREDOC
@@ -356,11 +363,11 @@ HEREDOC
 			efetch -format gb >"${S}".mt.gb
 	fi
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 }
 
 function _run_polap_x-ncbi-fetch-cpdna-genbank {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
 		cat <<HEREDOC
@@ -388,7 +395,7 @@ HEREDOC
 			efetch -format gb >"${S}".mt.gb
 	fi
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 }
 ################################################################################
 # Fetches mtDNA genome sequence by accession.
@@ -400,7 +407,7 @@ HEREDOC
 #   <accession>.fa
 ################################################################################
 function _run_polap_x-ncbi-fetch-mtdna-nucleotide {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
 		cat <<HEREDOC
@@ -428,7 +435,7 @@ HEREDOC
 		_polap_log1 "NEXT: $(basename "$0") align-two-dna-sequences --query mt.1.fa --subject ${_arg_accession}.fa"
 	fi
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 }
 
 ################################################################################
@@ -446,7 +453,7 @@ HEREDOC
 #   pairwise-alignment.txt
 ################################################################################
 function _run_polap_x-align-two-dna-sequences {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
 		cat <<HEREDOC
@@ -484,7 +491,7 @@ HEREDOC
 		echoerr see pairwise-alignment.txt
 	fi
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 }
 
 ################################################################################
@@ -499,7 +506,7 @@ HEREDOC
 #   subject: a known mtDNA sequence
 ################################################################################
 function _run_polap_x-clustal {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
 		cat <<HEREDOC
@@ -555,7 +562,7 @@ HEREDOC
 	echoall "INFO: Sequence2: $NAME2"
 	echoall "INFO: SequenceLen2: $LENGTH2"
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 }
 
 ################################################################################
@@ -569,7 +576,7 @@ HEREDOC
 #   ${_arg_final_assembly}
 ################################################################################
 function _run_polap_x-check-coverage {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	LRNK="${_arg_outdir}/nk.fq.gz"
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
@@ -619,19 +626,19 @@ HEREDOC
 		_polap_log1 "NEXT: $(basename "$0") prepare-polishing [-a s1.fq] [-b s2.fq]"
 	fi
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 }
 
 function _run_polap_x-help {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	print_x-help 1>&2
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 }
 
 function _run_polap_x-link-fastq {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	# Loop through all .fastq files in the current directory
 	for file in *.fastq *.fq; do
@@ -650,12 +657,12 @@ function _run_polap_x-link-fastq {
 		fi
 	done
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 	return 0
 }
 
 function _run_polap_x-prepend-gplv3 {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	help_message=$(
 		cat <<HEREDOC
@@ -686,13 +693,13 @@ HEREDOC
 
 	_polap_log0 "$file1" now has a header of the POLAP GPLv3 copyright.
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 	return 0
 }
 
 # copy seed test data
 function _run_polap_x-copy-seed-test {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
 
@@ -703,7 +710,7 @@ function _run_polap_x-copy-seed-test {
 
 	echo "input1 <- file.path(input_dir0, \"${_base_name}_${_id}.txt\")" >>"${_POLAPLIB_DIR}/run-polap-r-determine-depth-range.txt"
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 	return 0
 }
 
@@ -721,10 +728,10 @@ function _polap_gfatools-gfa2fasta {
 }
 
 function _run_polap_get-revision1 {
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	cp -p "${_POLAPLIB_DIR}/polap-revision1.sh" .
 
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 	return 0
 }

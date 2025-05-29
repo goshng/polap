@@ -28,6 +28,13 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
 function _polap_lib_timing-get_system_info {
 	echo "===== System Information ====="
 
@@ -86,10 +93,6 @@ function _polap_lib_timing-get_system_info {
 	# GPU info
 	echo "GPU(s):"
 	lspci | grep -i 'vga\|3d\|display' || echo "No GPU found or lspci not installed"
-
-	# Network interfaces and IPs
-	echo "Network Interfaces and IPs:"
-	ip -o -4 addr show | awk '{print $2 ": " $4}'
 
 	echo "==============================="
 }
@@ -150,6 +153,7 @@ function _polap_lib_timing-convert_to_hours_or_minutes {
 	echo "${_hours}"
 }
 
+# Parse GNU time -v command output.
 # read -r memory1 time1 < <(parse_timing Eucalyptus_pauciflora 3)
 function _polap_lib_timing-parse-timing {
 	local _timing_file="${1}"

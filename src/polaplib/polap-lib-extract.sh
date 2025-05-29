@@ -28,6 +28,16 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+  return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
+source "${_POLAPLIB_DIR}/polap-lib-unit.sh"
+source "${_POLAPLIB_DIR}/polap-lib-timing.sh"
+
 _polap_lib_extract-seqkit_stats() {
 	local _fq_stats="$1"
 
@@ -133,6 +143,32 @@ _polap_lib_extract-time_memory_timing_summary_file() {
 	return 0
 }
 
+_polap_lib_extract-time_memory_timing_gnu_time_file() {
+	local _v1="$1"
+	local _timing_file="${_v1}"
+
+	_memory_gb="NA"
+	_total_hours="NA"
+
+	if [[ ! -s "$_timing_file" ]]; then
+		echo "Error: timing file not found or empty: $_timing_file" >&2
+		return 0
+	fi
+
+	local _output
+	_output=$(_polap_lib_timing-parse-timing "$_timing_file" 2>/dev/null)
+
+	# validate output: must contain two fields
+	if [[ "$_output" =~ ^[^[:space:]]+[[:space:]]+[^[:space:]]+ ]]; then
+		read -r _memory_gb _total_hours <<<"$_output"
+	else
+		echo "Warning: malformed output from _polap_lib_timing-parse-timing" >&2
+		echo "  Got: $_output" >&2
+	fi
+
+	return 0
+}
+
 _polap_lib_extract-fasta_seqlen_plain() {
 	local fasta="$1"
 
@@ -163,6 +199,45 @@ _polap_lib_extract-fasta_seqlen_plain() {
 	' "$fasta" 2>/dev/null || echo -e "0"
 
 	return 0
+}
+
+_polap-lib_extract-short_sra_size_gb() {
+	local _v1="$1"
+	local _s_sra_size
+
+	if [[ -s "${_v1}/short_total_length.txt" ]]; then
+		_s_sra_size=$(<"${_v1}/short_total_length.txt")
+	else
+		local _s_sra_size1
+		local _s_sra_size2
+		_s_sra_size1=$(<"${_v1}/s1.fq.txt")
+		_s_sra_size2=$(<"${_v1}/s2.fq.txt")
+		_s_sra_size=$((_s_sra_size1 + _s_sra_size2))
+	fi
+
+	local _s_sra_size_gb
+	_s_sra_size_gb=$(_polap_lib_unit-convert_bp "${_s_sra_size}")
+	echo "$_s_sra_size_gb"
+}
+
+_polap_lib_extract-target_read_coverage() {
+	local file="$1"
+	if [[ ! -f "$file" ]]; then
+		echo "Error: File not found!"
+		return 1
+	fi
+
+	local coverage
+	# coverage=$(grep -oP 'target coverage:\s*\K\d+' "$file")
+	coverage=$(grep -oP 'target coverage:\s*\K[\d.]+(?=x)' "$file" | tail -1)
+
+	if [[ -n "$coverage" ]]; then
+		coverage=$(echo "$coverage" | tr -d '[:space:]') # Remove spaces
+		printf "%.1f\n" "$coverage"
+	else
+		echo "Error: Coverage information not found!"
+		return 1
+	fi
 }
 
 _polap_lib_extract-fasta_seqlen() {

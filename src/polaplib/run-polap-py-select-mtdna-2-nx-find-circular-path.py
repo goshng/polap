@@ -6,6 +6,9 @@ import sys
 import pandas as pd
 import networkx as nx
 
+import os
+debug = os.getenv("_POLAP_DEBUG", "0")
+
 # Driver Code
 if __name__ == "__main__":
 

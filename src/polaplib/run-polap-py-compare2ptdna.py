@@ -2,6 +2,8 @@ import os
 import subprocess
 import pandas as pd
 
+debug = os.getenv("_POLAP_DEBUG", "0")
+# print(f"[script.py] DEBUG = {debug}")
 
 def run_command(command):
     """Run a shell command and handle errors."""

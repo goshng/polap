@@ -34,6 +34,13 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+  return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
 source "${_POLAPLIB_DIR}/polap-function-set-variables.sh"
 source "${_POLAPLIB_DIR}/run-polap-function-utilities.sh"
 
@@ -64,8 +71,8 @@ function _polap_summary-generated-reads {
 # Statisics of the short-read and POLAP's long-read (nk.fq.gz) dataset.
 ################################################################################
 function _run_polap_summary-reads { # statisics of the read dataset
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -136,7 +143,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 	fi
 
@@ -211,7 +218,7 @@ HEREDOC
 	_polap_log1 NEXT: $(basename "$0") total-length-long -o "${_arg_outdir}" -l ${_arg_long_reads}
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -227,8 +234,8 @@ HEREDOC
 #   ${_arg_outdir}/long_total_length.txt
 ################################################################################
 function _run_polap_total-length-long { # total size (bp) of long-read data
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -293,7 +300,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 		return
 	fi
@@ -325,13 +332,13 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
 function _run_polap_total-length-short { # total size (bp) of short-read data
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -384,7 +391,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 	fi
 
@@ -418,7 +425,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -440,8 +447,8 @@ HEREDOC
 #   ${_arg_outdir}/short_expected_genome_size.txt
 ################################################################################
 function _run_polap_find-genome-size { # estimate the whole genome size
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -488,7 +495,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 		exit $EXIT_SUCCESS
 	fi
@@ -584,7 +591,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -601,8 +608,8 @@ HEREDOC
 #    threshold, such as 3 kilobases.
 ################################################################################
 function _run_polap_reduce-data { # reduce the long-read data, if too big
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -682,7 +689,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 		exit $EXIT_SUCCESS
 	fi
@@ -696,7 +703,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 		exit $EXIT_SUCCESS
 	fi
@@ -884,7 +891,7 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -905,8 +912,8 @@ HEREDOC
 #   $FDIR/30-contigger/graph_final.gfa
 ################################################################################
 function _run_polap_flye1 { # execute Flye for a whole-genome assembly
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -1035,6 +1042,6 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }

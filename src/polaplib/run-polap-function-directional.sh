@@ -28,6 +28,13 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+  return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
 ################################################################################
 # The idea is as follows. One intriguing yet somewhat challenging aspect is the use of directional reads in genome assembly. This approach could be useful when the results of plant mitochondrial genome assemblies are difficult to interpret.
 #
@@ -44,8 +51,8 @@ declare "$_POLAP_INCLUDE_=1"
 # As a proof of concept, we tested our method on a plant mitochondrial genome that was otherwise difficult to interpret, and found that it produced a somewhat simpler assembly graph. Going forward, it seems promising to apply this method to bacterial genome assembly as well.
 ################################################################################
 function _run_polap_directional {
-  # Enable debugging if DEBUG is set
-  [ "$DEBUG" -eq 1 ] && set -x
+  # Enable debugging if _POLAP_DEBUG is set
+  [ "$_POLAP_DEBUG" -eq 1 ] && set -x
   _polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
   # Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -206,6 +213,6 @@ HEREDOC
 
   _polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
   # Disable debugging if previously enabled
-  [ "$DEBUG" -eq 1 ] && set +x
+  [ "$_POLAP_DEBUG" -eq 1 ] && set +x
   return 0
 }

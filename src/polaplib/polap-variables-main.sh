@@ -14,6 +14,13 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+  return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
 # variables
 if [ "${_arg_archive_is}" = "off" ]; then
   _arg_archive="${_arg_outdir}-a"
@@ -21,9 +28,9 @@ fi
 
 # tuning variables for optimal performance
 # COV=${_arg_coverage} -> --asm-coverage option meaning
-if test -z "$DEBUG"; then
-  DEBUG=0
-fi
+# if test -z "$_POLAP_DEBUG"; then
+#   _POLAP_DEBUG=0
+# fi
 
 SECONDS=0
 

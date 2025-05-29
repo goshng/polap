@@ -28,6 +28,13 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+  return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
 ################################################################################
 # Runs the whole-genome assembly.
 #
@@ -46,8 +53,8 @@ declare "$_POLAP_INCLUDE_=1"
 #   $FDIR
 ################################################################################
 function _run_polap_assemble1 { # whole-genome genome assembly
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -105,7 +112,7 @@ HEREDOC
 		fi
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 		exit $EXIT_SUCCESS
 	fi
@@ -221,7 +228,7 @@ HEREDOC
 
 	_polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -241,8 +248,8 @@ HEREDOC
 # Outputs:
 ################################################################################
 function _run_polap_assemble2 { # organelle-genome assembly
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -309,7 +316,7 @@ HEREDOC
 	_polap_log1 "NEXT: $(basename "$0") prepare-polishing -o ${_arg_outdir} -i ${_arg_inum} -j ${_arg_jnum}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -331,8 +338,8 @@ HEREDOC
 # Outputs:
 ################################################################################
 function _run_polap_assemble { # whole-genome and then organelle-genome assembly
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
 	local _polap_output_dest="/dev/null"
@@ -428,6 +435,6 @@ HEREDOC
 	# _run_polap_polish
 
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }

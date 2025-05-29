@@ -14,6 +14,13 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+  return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
 ################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
@@ -472,7 +479,7 @@ _polap_disassemble_seeds_prepare-cc() {
 		# fi
 
 		_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 	fi
 
@@ -584,8 +591,8 @@ function _polap_disassemble_seeds_report-mtcontig {
 }
 
 function _run_polap_choose-seed { # select seed contigs
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -648,7 +655,7 @@ HEREDOC
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
@@ -656,8 +663,8 @@ HEREDOC
 # Prepare seed contigs using a Flye genome assembly.
 ################################################################################
 polap_disassemble-seeds() {
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Grouped file path declarations
@@ -778,14 +785,14 @@ polap_disassemble-seeds() {
 
 	_polap_log2 "Function end (${_arg_select_contig}): $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
 
 # step-by-step of disassemble seeds graph
 function _run_polap_step-disassemble-seeds-graph {
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	local include="${_arg_steps_include}"
@@ -1007,6 +1014,6 @@ HEREDOC
 
 	# Disable debugging if previously enabled
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }

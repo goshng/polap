@@ -76,6 +76,8 @@ import networkx as nx
 import csv
 from networkx.algorithms.shortest_paths.weighted import single_source_dijkstra
 
+import os
+debug = os.getenv("_POLAP_DEBUG", "0")
 
 def shortest_cycle_max_nodes_revisitable(graph):
     max_nodes_visited = 0

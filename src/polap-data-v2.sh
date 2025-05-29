@@ -15,164 +15,47 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# DEBUG=0
-# _POLAP_RELEASE=0
-: "${DEBUG:=0}"  # only set DEBUG=0 if not already set
-_POLAP_RELEASE=0 # only set _POLAP_RELEASE=0 if not already set
+# polap and polap-data-cflye are release-versions with _POLAP_RELEASE to be 1.
+: "${_POLAP_DEBUG:=0}"
+export _POLAP_DEBUG
+: "${_POLAP_RELEASE:=0}"
+export _POLAP_RELEASE
 
-# Data directories
+# Data directories: we download data from the NCBI SRA database
+# unless they exist in the following folders.
+_local_host="thorne"
 _media1_dir="/media/h1/sra"
 _media2_dir="/media/h2/sra"
 _media_dir="/media/h2/sra"
 
-# _polap_version="$(${_polap_cmd} --version | awk '{print $2}')"
-if [ -z "${_polap_version+x}" ]; then
-  _polap_version="0.4.3.7"
-fi
-
-_brg_default_target_dir="$HOME/all/manuscript/polap-v0.4/figures"
-_brg_default_target_dir="man/v0.4/figures"
-if [[ -d "src" || -d "polap" ]]; then
-  _brg_default_target_dir="$HOME/all/manuscript/polap-v0.4/figures"
-else
-  if [[ -d "man" ]]; then
-    _brg_default_target_dir="man/v0.4/figures"
-  fi
-  mkdir -p "${_brg_default_target_dir}"
-fi
-
-help_message=$(
-  cat <<HEREDOC
-usage: polap-data-cflye [-h] [-y] [-c CSV] [-V] COMMAND ...
-
-polap-data-cflye is a tool for data analysis of subsampling-based plastid genome assembly
-
-options:
-  -h, --help          Show this help message and exit.
-  -y                  Enable -y flag to say YES to any question.
-  -c <arg>            Set value for -c option (default: off)
-  -t <arg>            Set value for -t option (default: t1)
-  -m <arg>            Set value for -m option figure folder (default: ${_brg_default_target_dir})
-  -e <ame>            Call <name>_genus_species function and exit.
-  -v, --verbose       [Not Yet] Can be used multiple times. Once for detailed output,
-                      twice for INFO logging, thrice for DEBUG logging, four
-                      times for TRACE logging.
-  -V, --version       [Not Yet] Show the conda version number and exit.
-
-commands:
-  The following built-in and plugins subcommands are available.
-
-  COMMAND
-    install            Install a list of tools to some conda environments.
-    setup              Setup installed tools.
-    list               List tools.
-    search             Search for tools and display associated information
-    run                Run an executable in a conda environment.
-    download           Download data.
-    remove (uninstall) Remove a list of tools.
-    build              Build conda packages from a conda recipe.
-    compare            Compare packages between conda environments.
-    batch              Batch run per polap-data version.
-    clean              Remove unused packages and caches.
-    delete             Delete tools.
-    man                Generate reports.
-HEREDOC
-)
-
-v1_help_message=$(
-  cat <<HEREDOC
-Polap version: ${_polap_version}
-Usage: $0 [Options] <subcommand> [species_folder] [[option] ...]
-
-Polap data analysis of subsampling-based plastid genome assembly
-
-Options:
-  -c <arg>       Set value for -c option (default: off)
-  -t <arg>       Set value for -t option (default: off)
-  -y             Enable -y flag
-  -e <name>      Call <name>_genus_species function and exit
-  -h, --help     Show this help message
-
-List of subcommands:
-  list-subcommands, mkdir-all, rm-empty, rm, data-example, data2csv, sample-csv
-  install-conda, setup-conda, install-polap, install-fmlrc, install-cflye
-  install-getorganelle, install-pmat, install-man
-  download-polap-github, patch-polap, bleeding-edge-polap
-  delete-polap-github, uninstall, test-polap, download-test-data, help, system
-  sra, refs, getorganelle, ptgaul, msbwt,
-  nextdenovo-polish, pmat-nextdenovo2, pmat-track,
-  batch-local-v2, batch-remote-v2, batch, archive, clean, report, get
-  maintable1, supptable1, suppfigure1, suppfigure3, suppfigure4
-  download-man, make-man
-
-How to set a custom CSV:
-csv_file=a.csv $0
-
-More help for subcommands:
-$(basename $0) help <subcommand>
-
-usage: polap-data-cflye [-h] [-y] [-c CSV] [-V] COMMAND ...
-
-polap-data-cflye is a tool for data analysis of subsampling-based plastid genome assembly
-
-Options:
-
-options:
-  -h, --help          Show this help message and exit.
-  -y                  Enable -y flag to say YES to any question.
-  -c <arg>            Set value for -c option (default: off)
-  -t <arg>            Set value for -t option (default: off)
-  -e <name>           Call <name>_genus_species function and exit.
-  -v, --verbose       [Not Yet] Can be used multiple times. Once for detailed output,
-                      twice for INFO logging, thrice for DEBUG logging, four
-                      times for TRACE logging.
-  -V, --version       [Not Yet] Show the conda version number and exit.
-
-commands:
-  The following built-in and plugins subcommands are available.
-
-  COMMAND
-    activate          Activate a conda environment.
-    build             Build conda packages from a conda recipe.
-    config            Modify configuration values in .condarc.
-    content-trust     Signing and verification tools for Conda
-    convert           Convert pure Python packages to other platforms (a.k.a.,
-                      subdirs).
-    create            Create a new conda environment from a list of specified
-                      packages.
-    deactivate        Deactivate the current active conda environment.
-    debug             Debug the build or test phases of conda recipes.
-    develop           Install a Python package in 'development mode'. Similar
-                      to pip install --editable.
-    doctor            Display a health report for your environment.
-    env               See conda env --help.
-    index             Update package index metadata files.
-    info              Display information about current conda install.
-    init              Initialize conda for shell interaction.
-    inspect           Tools for inspecting conda packages.
-    metapackage       Specialty tool for generating conda metapackage.
-    notices           Retrieve latest channel notifications.
-    package           Create low-level conda packages. (EXPERIMENTAL)
-    rename            Rename an existing environment.
-    render            Expand a conda recipe into a platform-specific recipe.
-    repoquery         Advanced search for repodata.
-    skeleton          Generate boilerplate conda recipes.
-    update (upgrade)  Update conda packages to the latest compatible version.
-
-HEREDOC
-)
-
 # TODO:
 # [ ] A manual for proper understanding and execution of tasks.
-# [x] Sall read from the CSV file
-# [ ] cflye conda env polap-cflye execution
-# [ ] benchmarking: GetOrganelle, ptGAUL, PMAT, TIPPo, oatk
-#
-# TODO:
 # [ ] assembly graphs for all plastid genomes
 # [ ] species list and summary table: monocots, eudicots, mosses, liverwort, ...
 # [ ] genome assembly results from other tools
+# [ ] consider what we should do if no assembly is built in Stage 1 or 2.
+#
+# 2025-05-29
+# [x] Sall read from the CSV file
+# [x] cflye conda env polap-cflye execution
+# [x] benchmarking: GetOrganelle, ptGAUL, PMAT, TIPPo, oatk
 
+# NOTE: we might consider how we change the options if no assembly is built.
+#
+# TODO: we need to consider much more than just adding this, we wil consider
+# Stage 1: -n => -sn, -a -sa -sap, -p => -sb -sap
+# Stage 2: -r => -rn, -ra -rap, -rb -rbp
+# Stage 3: -l -ln, -la -lap, -lb -lbp
+# CSV: add sa, sb, and others more
+# This is another idea that might need to consider:
+# we might use the second candidate if Stage 2 produces no assembly.
+# Then, we need to move or copy the check of candidate front of Stage 2
+# not at the end of Stage 1.
+# In Stage 1, we could do something else if it does not produce assembly.
+# Although it may not be obvious, we might increase the max subsampling rate.
+# Or, we could increase the max memory limit. Something we already mentioned
+# in the manuscript. To do such thing, we need to move around the candidate
+# checking part.
 # How-To
 #
 # Edit "${_POLAPLIB_DIR}/polap-data-v2.csv"
@@ -188,58 +71,80 @@ HEREDOC
 # _local_host=${_local_host}
 # host=$(hostname)
 #
-# Requrements
-# [ ] getorganelle conda environment: execute install-getorganelle, if needed
-#     If you need to create a Conda environment for GetOrganelle,
-#     simply execute the "install-getorganelle" subcommand, which will guide
-#     you through the process.
-#
 # Development
 # 1. Add a function named test_genus_species
 # 2. Add its caller in a case statement: search for 'test'
 # 3. Add a function named test_genus_species_for to iterate over all datasets.
 
+# Use man folder for a release-version
+# otherwise use a custom folder.
+_brg_default_target_dir="$HOME/all/manuscript/polap-v0.4/figures"
+_brg_default_target_dir="man/v0.4/figures"
+if [[ -d "src" || -d "polap" ]]; then
+  _brg_default_target_dir="$HOME/all/manuscript/polap-v0.4/figures"
+else
+  if [[ -d "man" ]]; then
+    _brg_default_target_dir="man/v0.4/figures"
+  fi
+  mkdir -p "${_brg_default_target_dir}"
+fi
+
+help_message=$(
+  cat <<HEREDOC
+usage: polap-data-cflye [-h] [-y] [-c CSV] [--version] COMMAND [-h] ...
+
+polap-data-cflye is a tool for data analysis of subsampling-based plastid genome assembly
+
+options:
+  -h, --help          Show this help message and exit.
+  -y                  Enable -y flag to say YES to any question.
+  -c <arg>            Set value for -c option (default: off)
+  -t <arg>            Set value for -t option (default: t1)
+  -m <arg>            Set value for -m option figure folder (default: ${_brg_default_target_dir})
+  -e <ame>            Call <name>_genus_species function and exit.
+  -v, --verbose       [Not Yet] Can be used multiple times. Once for detailed output,
+                      twice for INFO logging, thrice for _POLAP_DEBUG logging, four
+                      times for TRACE logging.
+  --version           Show the conda version number and exit.
+
+commands:
+  The following commands are available for the script.
+
+  COMMAND
+    install            Install a list of tools to some conda environments.
+    setup              Setup installed tools.
+    update             Update tools.
+    list (search)      List tools.
+    run                Run an executable in a conda environment.
+    remove (uninstall) Remove a list of tools.
+    benchmark          Benchmark GetOrganelle, ptGAUL, PMAT, TIPPo, and Oatk.
+    get                Get results.
+    archive            Archive results.
+    man                Generate reports.
+    help               Print help message for commands and others.
+
+    batch              Batch run per data. (not implemented yet!)
+    build (assemble)   Build plastid genomes.
+    compare            Compare the performance of two tools.
+    clean              Remove unnecessary results.
+    download           Download data.
+    delete             Delete data.
+    print-help-all     List all help messages.
+HEREDOC
+)
+
+# Tesing groups of datasets
+declare -a Sall
+
 Smain=(
   'Eucalyptus_pauciflora'
 )
 
-# OTHER STUFF GENERATED BY Argbash
-_polap_script_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
-  echo "Couldn't determine the script's running directory, which probably matters, bailing out" >&2
-  exit 2
-}
-_POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
-
-source "${_POLAPLIB_DIR}/polap-lib-conda.sh"
-source "${_POLAPLIB_DIR}/polap-lib-timing.sh"
-source "${_POLAPLIB_DIR}/polap-lib-array.sh"
-source "${_POLAPLIB_DIR}/polap-lib-number.sh"
-source "${_POLAPLIB_DIR}/polap-lib-data.sh"
-source "${_POLAPLIB_DIR}/polap-lib-process.sh"
-source "${_POLAPLIB_DIR}/polap-lib-extract.sh"
-source <(echo 'export PATH="$PWD/bin:$PATH"')
-# source <(echo 'export QT_QPA_PLATFORM=offscreen')
-source <(echo 'export QT_QPA_PLATFORM=minimal')
-
-# echo "export QT_QPA_PLATFORM=offscreen"
-
-_polap_data_csv="$(basename "$0" .sh).csv"
-_polap_data_data="$(basename "$0" .sh).data"
-_polap_data_txt="$(basename "$0" .sh).txt"
-
-# TODO: need to create this
-# touch "${_brg_outdir}/${_polap_data_txt}"
-_log_echo() {
-  # if [[ -s "${_brg_outdir}/${_polap_data_txt}" ]]; then
-  echo "$(date '+%Y-%m-%d %H:%M:%S') [$subcmd1] - $1" >>"${_brg_outdir}/${_polap_data_txt}"
-  # fi
-  echo "$(date '+%Y-%m-%d %H:%M:%S') [$subcmd1] - $1"
-}
-
-declare -a Sall
-
 # Data28
 Stest=(
+  Euonymus_alatus
+  Vaccinium_vitis_idaea
+  Vitis_vinifera
   Test_species
   Taxon_genus
 )
@@ -275,41 +180,7 @@ S28=(
   Prunus_mandshurica
   Solanum_lycopersicum
   Spirodela_polyrhiza
-  Vaccinium_vitis-idaea
-  Vitis_vinifera
-)
-
-S31=(
-  Anthoceros_agrestis
-  Arabidopsis_thaliana
-  Brassica_carinata
-  Canavalia_ensiformis
-  Cinchona_pubescens
-  Codonopsis_lanceolata
-  Cucumis_sativus_var_hardwickii
-  Dioscorea_japonica
-  Dunaliella_tertiolecta
-  Eucalyptus_pauciflora
-  Euonymus_alatus
-  Gossypium_herbaceum
-  Juncus_effusus
-  Juncus_inflexus
-  Juncus_roemerianus
-  Juncus_validus
-  Leiosporoceros_dussii
-  Macadamia_jansenii
-  Musa_acuminata_subsp_malaccensis
-  Notothylas_orbicularis
-  Ophrys_lutea
-  Oryza_rufipogon
-  Phaeomegaceros_chiloensis
-  Pisum_sativum
-  Populus_x_sibirica
-  Prunus_mandshurica
-  Pterocarpus_santalinus
-  Solanum_lycopersicum
-  Spirodela_polyrhiza
-  Vaccinium_vitis-idaea
+  Vaccinium_vitis_idaea
   Vitis_vinifera
 )
 
@@ -324,31 +195,50 @@ S7=(
   Vitis_vinifera
 )
 
-Spmat=(
-  Anthoceros_agrestis
-  Dunaliella_tertiolecta
-  Eucalyptus_pauciflora
-  Leiosporoceros_dussii
-  Spirodela_polyrhiza
-)
+# OTHER STUFF GENERATED BY Argbash
+_polap_script_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
+  echo "Couldn't determine the script's running directory, which probably matters, bailing out" >&2
+  exit 2
+}
+_POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
 
-Snot=(
-  Delphinium_montanum
-)
+# Target version is 0.4.4
+source "${_POLAPLIB_DIR}/polap-git-hash-version.sh"
+_polap_version=v0.4.3.7-"${_polap_git_hash_version}"
+if [ -z "${_polap_version+x}" ]; then
+  _polap_version="0.4.3.7"
+fi
 
-Stable5=(
-  x_y
-  # 'Juncus_effusus'
-  # 'Juncus_inflexus'
-  # 'Juncus_roemerianus'
-  # 'Juncus_validus'
-  # 'Eucalyptus_pauciflora'
-)
+source "${_POLAPLIB_DIR}/polap-lib-conda.sh"
+source "${_POLAPLIB_DIR}/polap-lib-timing.sh"
+source "${_POLAPLIB_DIR}/polap-lib-unit.sh"
+source "${_POLAPLIB_DIR}/polap-lib-array.sh"
+source "${_POLAPLIB_DIR}/polap-lib-number.sh"
+source "${_POLAPLIB_DIR}/polap-lib-data.sh"
+source "${_POLAPLIB_DIR}/polap-lib-file.sh"
+source "${_POLAPLIB_DIR}/polap-lib-process.sh"
+source "${_POLAPLIB_DIR}/polap-lib-extract.sh"
+source <(echo 'export PATH="$PWD/bin:$PATH"')
+# source <(echo 'export QT_QPA_PLATFORM=offscreen')
+source <(echo 'export QT_QPA_PLATFORM=minimal')
+# echo "export QT_QPA_PLATFORM=offscreen"
 
-_local_host="thorne"
+: "${_brg_outdir:=.}"
+_polap_data_csv="$(basename "$0" .sh).csv"
+_polap_data_data="$(basename "$0" .sh).data"
+_polap_data_txt="$(basename "$0" .sh).txt"
 
-data-example_genus_species() {
-  local _brg_data="${1:-${_polap_data_data}}"
+_log_echo() {
+  if [[ -d "${_brg_outdir}" ]]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [$subcmd1] - $1" >>"${_brg_outdir}/${_polap_data_txt}"
+  else
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [$subcmd1] - $1" >>"./${_polap_data_txt}"
+  fi
+  echo "$(date '+%Y-%m-%d %H:%M:%S') [$subcmd1] - $1"
+}
+
+setup-csv_genus_species() {
+  local _brg_data="${1:-${_polap_data_csv}}"
 
   local _data=$(
     cat <<HEREDOC
@@ -384,8 +274,32 @@ Vitis_vinifera,SRR26163227,SRR26163231
 HEREDOC
   )
 
-  echo "${_data}" >"${_brg_data}"
-  echo "create ${_brg_data}"
+  local confirm="no"
+  if [[ -s "${_brg_data}" ]]; then
+    read -p "Do you want to replace ${_brg_data}? (y/N): " confirm
+  fi
+
+  if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+    # Write the output to CSV
+    {
+      # Print the header
+      echo species,taxon,long,short,host,random,down,memory,p,n,r,alpha,delta,ptgaul,pmat,tippo,oatk,dummy,status
+
+      local seed=101
+      # Skip the header and read each line
+      while IFS=',' read -r species long short; do
+        # Skip header
+        if [[ "$species" == "species" ]]; then
+          continue
+        fi
+        echo "$species,$species,$long,$short,hostname,$seed,10,16,10,10,5,1.0,0.25,160000,0.1,ont,30,dummy,done"
+        seed=$((seed + 2))
+      done <<<"$_data"
+    } >"${_brg_data}"
+    _log_echo "A new CSV: ${_brg_data}"
+  else
+    echo "Canceled: A new CSV: ${_brg_data}"
+  fi
 }
 
 ############################################################
@@ -400,6 +314,10 @@ opt_e_arg=""
 
 print_help() {
   echo "${help_message}"
+}
+
+print_version() {
+  echo "polap-data-cflye ${_polap_version}"
 }
 
 # Parse options
@@ -448,6 +366,10 @@ while [[ "${1-}" == -* ]]; do
       exit 1
     fi
     ;;
+  --version)
+    print_version
+    exit 0
+    ;;
   -h | --help)
     print_help
     exit 0
@@ -475,9 +397,18 @@ fi
 # Input parameter
 subcmd1="${1:-help}"
 
+if [[ "${subcmd1}" == "search" ]]; then
+  subcmd1="list"
+fi
+
 # TODO: depending on _POLAP_RELEASE, we could use polap
 # but then polap needs to be the current conda env, which is not.
 _polap_cmd="${_polap_script_bin_dir}/polap.sh"
+if [[ "${_POLAP_RELEASE}" == "1" ]]; then
+  _polap_cmd="${_polap_script_bin_dir}/polap"
+else
+  _polap_cmd="${_polap_script_bin_dir}/polap.sh"
+fi
 
 help_message_requirement=$(
   cat <<HEREDOC
@@ -513,34 +444,29 @@ It looks for a CSV file in the following order:
 
 The CSV file should have its first line serving as a header, followed by
 additional lines containing the options for an analysis. Example:
-species,_taxon,_folder,_long,_short,_host,_ptgaul_genomesize,_compare_n,_compare_p,_compare_r,_disassemble_alpha,_disassemble_delta,_random_seed,_ssh,_memory,_downsample,_inum,_table1,_table2,_mainfigure,dummy,_status
-Anthoceros_agrestis-0,Anthoceros_agrestis,Anthoceros_agrestis,SRR10190639,SRR10250248,siepel,160000,20,10,10,5,5,157,siepel,16,10,0,T,F,F,dummy,done
+species,taxon,long,short,host,random,down,memory,p,n,r,alpha,delta,ptgaul,pmat,tippo,oatk,dummy,status
 
 The following descriptions outline the column items present in the CSV file.
-The first three columns can be considered redundant, admittedly.
 
-- species: index, <genus>_<species>-<inum>
-- _taxon: species name, <genus>_<species>
-- _folder: <genus>_<species>
-- _long: long-read NCBI SRA accession
-- _short: short-read NCBI SRA accession
-- _host: the remote comuputer host name echoed by hostname command
-- _ptgaul_genomesize: the genome size used by ptGAUL assembly
-- _compare_n: the number of steps in the first stage of polap's disassemble
-- _compare_p: the maximum rate in the first stage of polap's disassemble
-- _compare_r: the number of steps in the second and third stages
-- _disassemble_alpha: NA or any number
-- _disassemble_delta: NA or any number
-- _random_seed: seed for random number generation
-- _ssh: the ssh name to connect to the remote
-- _memory: the maximum memory to use in polap's disassemble
-- _downsample: the downsample coverage
-- _inum: analysis number e.g., 2, 0, or 3
-- _table1: T or F indicating the use of the analysis in the main table
-- _table2: T/F indicating reference-based ptGAUL run
-- _mainfigure: T or F indicating the use of the analysis as the main result
-- dummy: dummy always
-- _status: comment any string
+  - species: index, <genus>_<species>-<inum>
+  - taxon: species name, <genus>_<species>
+  - long: long-read NCBI SRA accession
+  - short: short-read NCBI SRA accession
+  - host: the remote comuputer host name echoed by hostname command
+  - random: seed for random number generation
+  - down: the downsample coverage
+  - memory: the maximum memory to use in polap's disassemble
+  - p: the maximum rate in the first stage of polap's disassemble
+  - n: the number of steps in the first stage of polap's disassemble
+  - r: the number of steps in the second and third stages
+  - alpha: NA or any number
+  - delta: NA or any number
+  - ptgaul: the genome size used by ptGAUL assembly
+  - pmat: -fc option e.g., 0.1
+  - tippo: e.g., ont onthq
+  - oatk: -c option e.g., 30
+  - dummy: dummy always
+  - status: comment any string
 
 ### Variables
 
@@ -565,120 +491,6 @@ List of subcommands:
 HEREDOC
 )
 
-help_message_old=$(
-  cat <<HEREDOC
-# Polap data analysis for subsampling-based plastid genome assembly
-
-## Help
-
-The following displays a simple usage.
-$0 help <subcommand>
-$0 <subcommand>
-
-## Subcommands
-
-- system: to display the Linux CPU and memory
-- batch <species_folder> [number]: To execute all subcommands.
-- sra <species_folder>: scp data files to the remote 
-- send <species_folder>: scp data files to the remote 
-- recover <species_folder>
-- mkdir <species_folder>
-- mkdir-all: to create empty folders for the analyses 
-- refs <species_folder>: get-ptdna-from-ncbi <species_folder>
-- getorganelle <species_folder>
-- ptgaul <species_folder>: ptGAUL analysis on the data
-- msbwt <species_folder>: prepare short-read polishing
-- extract-ptgaul-ptdna <species_folder>: extract ptDNA from ptGAUL's result
-- coverage <species_folder> [number]: ptGAUL's result
-- infer <species_folder> [number] [--disassemble-simple-polishing]: assemble the ptDNA without a reference ptDNA
-- infer2 <species_folder> [number] [--disassemble-simple-polishing]: assemble the ptDNA without a reference ptDNA
-- check <species_folder> [number] [index:0] [--disassemble-simple-polishing]: assemble ptDNA with subsampling by comparing it with the ptGAUL assembly
-- compare <species_folder>: compare ptDNAs with the ptGAUL ptDNA
-- archive <species_folder>: archive the results
-- get: fetch or recover the data from the archive from local or remote
-- report [species_folder]: report the results
-- maintable1: to create the main table for all the assemblies
-- supptable1: to create the 3-stage tables
-- suppfigure1: to create the assembly figure for the first stage
-- suppfigure3: to create the figure for all the assemblies
-- wga <species_folder>: whole-genome assembly
-- simple-polish <species_folder>: simple polish the ptDNA using the short-read data
-- subsample-polish <species_folder>: subsampling polish the ptDNA using the short-read data
-- mauve <species_folder>: subsampling polish the ptDNA using the short-read data
-- clean: [DANGER] delete the species folder
-- write-config src/polap-data-v2.csv: write config
-#
-#
-downsample2infer <outdir> <inum>
-infer <outdir> <inum> [polish|simple]
-check <outdir> <inmu> [polish|simple]
-#
-
-# call the following menu to create tables and figures
-#
-bandage1 <species_folder> 2
-bandage2 <species_folder> 2
-copy-figure: copy all figures to the target directory
-table1 2
-table1 0
-table2 2
-table2 0
-
-for i in 0 2; do
-  bash src/polap-data-v2.sh table1 \$i
-  bash src/polap-data-v2.sh table2 \$i
-done
-
-for i in 1 2 3-infer; do
-  for j in 0 2; do
-    for k in on off; do
-      bash src/polap-data-v2.sh suptable1 \$j \$k \$i
-    done
-  done
-done
-
-suptable1 2 off 1
-suptable1 2 off 2
-suptable1 2 off 3-infer
-suptable1 2 on 1
-suptable1 2 on 2
-suptable1 2 on 3-infer
-
-for i in 0 2; do
-  bash src/polap-data-v2.sh supfigure1 \$i no off
-  bash src/polap-data-v2.sh supfigure2 \$i off
-done
-
-supfigure1 2 no off
-supfigure1 2 no on
-
-supfigure2 2 off <- for sup
-supfigure2 2 on
-
-copy-figure: copy all figures to the target directory
-
-
-# Main Table 1 and others
-maintable1
-supptable1
-suppfigure1
-suppfigure3
-copy-figures
-
-# Example
-bash src/polap-data-v2.sh get all 2 off
-bash src/polap-data-v2.sh maintable1 all 2 infer-1 1
-bash src/polap-data-v2.sh supptable1 all 2 infer-1 x
-bash src/polap-data-v2.sh supptable1 Eucalyptus_pauciflora 2 infer-1 x
-bash src/polap-data-v2.sh suppfigure1 all 2 infer-1 1 1 yes
-bash src/polap-data-v2.sh suppfigure3 2 infer-1 yes
-bash src/polap-data-v2.sh copy-figures
-
-# files
-
-HEREDOC
-)
-
 help_message_man=$(
   cat <<HEREDOC
 
@@ -691,28 +503,6 @@ help_message_man=$(
   man table-polap-disassemble Test_species
   man figure-alpha Eucalyptus_pauciflora
   man figure-delta Eucalyptus_pauciflora
-HEREDOC
-)
-
-help_message_getorganelle=$(
-  cat <<HEREDOC
-
-  Execute GetOrganelle with the short-read data.
-  TODO: it needs to work on it more about local and remote parts.
-HEREDOC
-)
-
-help_message_ptgaul=$(
-  cat <<HEREDOC
-
-  Execute ptGAUL with the long- and short-read data.
-HEREDOC
-)
-
-help_message_msbwt=$(
-  cat <<HEREDOC
-
-  Execute FMLRC polishing preparation with the short-read data.
 HEREDOC
 )
 
@@ -734,36 +524,6 @@ conda deactivate
 HEREDOC
 )
 
-help_message_convert_data=$(
-  cat <<HEREDOC
-
-  Convert a simpler $(basename $0 .sh).data to ${_polap_data_csv}.
-  The data file is a text that looks like this:
-
-    species,long,short
-    Eucalyptus_pauciflora,SRR7153095,SRR7161123
-    Spirodela_polyrhiza,SRR11472010,SRR11472009
-
-  The header line must read as above. Use the species name separated
-  by a underscore. A long-read SRA accession follows a short-read SRA.
-  C: the downsampling coverage
-  P: the maximum subsampling rate
-  N: the number of replicates in Stage 1
-  R: the number of replicates in Stages 2 and 3
-  I: the index
-  Seed: random number seed
-HEREDOC
-)
-
-help_message_clean=$(
-  cat <<HEREDOC
-
-  Cleanup the data and results.
-
-  (not yet) cleanup: on to delete fastq data at the end of the run, otherwise off
-HEREDOC
-)
-
 help_message_sample_csv=$(
   cat <<HEREDOC
 
@@ -778,124 +538,7 @@ help_message_sample_csv=$(
 HEREDOC
 )
 
-help_message_tippo_nextdenovo=$(
-  cat <<HEREDOC
-
-  TIPPo.v2.3.pl -f ERR2173373.fastq -y --nano-raw -a map-ont
-  TIPPo.v2.3.pl -f ERR2173373.fastq -y --nano-raw -a map-ont -m 1500
-  TIPPo.v2.4.pl -f ERR2173373.fastq -p ont
-  TIPPo.v2.4.pl -f ERR2173373.fastq -p ont -m 1500
-
-  Execute TIPPo v2.4 on the nextDenovo polished reads.
-  TIPPo.v2.4.pl -f cns.fa
-  stderr: o/<inum>/timing-tippo-nextdenovo-fc-1.txt
-  stdout: o/<inum>/stdout-tippo-nextdenovo-fc-1.txt
-HEREDOC
-)
-
-help_message_pmat_subsample=$(
-  cat <<HEREDOC
-  PMAT has -fc option for sampling a subset of the input data.
-  This subcommand generates a subset of the input data that can be utilized by PMAT.
-
-  all: all with the same inum
-  each: line-by-line execution in CSV file
-  outdir: only that folder and the inum
-  inum: o/inum
-  type: all, mt, or pt
-  timeout: run time limit e.g., 1m
-    DURATION is a floating point number with an optional suffix:
-    's' (the default), 'm' for minutes, 'h' for hours or 'd' for days.
-    A duration of 0 disables the associated timeout.
-  subsample: subsample coverage by genome size,
-    no subsample if -1
-    auto subsample if 0; if type is pt, subsample = 1x, otherwise (e.g., mt) 10x
-    use subsample value if subsample > 0.
-  bn, ml, mi: PMAT options
-HEREDOC
-)
-
-help_message_pmat=$(
-  cat <<HEREDOC
-
-  timeout: days of run time limit
-  fc: computed if -fc 0; if computed, value for 1x if type = pt, 1 otherwise
-
-  Required arguments:
-  -st SEQTYPE, --seqtype SEQTYPE
-                        sequencing platform(ONT/CLR/HiFi)
-  -g GENOMESIZE, --genomesize GENOMESIZE
-                        Please enter the genome size of the species, such as 1G, 1000M.
-
-  -fc FACTOR, --factor FACTOR
-                        Subset extraction of error-corrected ONT, CLR or HiFi data. Sampling ratio factor in 0-1. Default: 1
-  -sd SUBSEED, --subseed SUBSEED
-                        Sampling set random number seeds, Default: 6
-                        Filter according to the minimum link depth provided by the user
-  -m, --mem             Flag to keep sequence data in memory to speed up cup time
-
-HEREDOC
-)
-
-help_message_pmat_nextdenovo=$(
-  cat <<HEREDOC
-
-  PMAT on a nextDenovo-polished sequence data file.
-HEREDOC
-)
-
-help_message_remote_get_data=$(
-  cat <<HEREDOC
-
-  Download data from a remote or the NCBI SRA.
-HEREDOC
-)
-
-help_message_compute_subsample_rate=$(
-  cat <<HEREDOC
-
-  Compute the subsampling rate to meet the given coverage.
-  subsampling rate = Genome Size / Long-read data size * Coverage
-  It is saved in o/fc.txt
-HEREDOC
-)
-
-help_message_prepare_data=$(
-  cat <<HEREDOC
-
-  Prepare input data.
-HEREDOC
-)
-
-help_message_nextdenovo=$(
-  cat <<HEREDOC
-
-  Test the code.
-HEREDOC
-)
-
-help_message_downsample=$(
-  cat <<HEREDOC
-
-  coverage: default from CSV
-HEREDOC
-)
-
-help_message_get_archive=$(
-  cat <<HEREDOC
-
-  get ${_local_host}:$PWD/<outdir>-a.tar.gz
-HEREDOC
-)
-
 ##### INSERT_HELP_HERE #####
-help_message_assemble=$(
-  cat <<HEREDOC
-
-  menu title
-HEREDOC
-)
-
 help_message_man_figure_delta=$(
   cat <<HEREDOC
 
@@ -973,115 +616,31 @@ help_message_man_table_benchmark=$(
 HEREDOC
 )
 
-help_message_batch_v2=$(
+help_message_kickstart=$(
   cat <<HEREDOC
 
-  menu title
+  Log in a terminal of a Linux computer:
+  mkdir -p all/polap/cflye1
+  cd all/polap/cflye1
+  git clone https://github.com/goshng/polap.git
+  bash polap/src/polap-data-v2.sh install conda
+  bash polap/src/polap-data-v2.sh setup conda
+  bash polap/src/polap-data-v2.sh -y install all
+  bash polap/src/polap-data-v2.sh setup polap
+  bash polap/src/polap-data-v2.sh setup pmat
+  Log out and back into the terminal:
+  source ~/miniconda3/bin/activate
+  cd all/polap/cflye1
+  p -y mkdir-all
+  p -y benchmark <outdir>
 HEREDOC
 )
 
-help_message_tippo_ont=$(
+help_message_setup_csv=$(
   cat <<HEREDOC
 
-  fc: 1
-  Execute TIPPo v2.4 on the ONT reads.
-  TIPPo.v2.4.pl -f <long_sra>.fastq -p ont
-  stderr: o/<inum>/timing-tippo-ont-fc-1.txt
-  stdout: o/<inum>/stdout-tippo-ont-fc-1.txt
-
-  fc: 2
-  Execute TIPPo v2.3 on the ONT reads.
-  TIPPo.v2.3.pl -f <long_sra>.fastq -y --nano-raw -a map-ont
-HEREDOC
-)
-
-help_message_oatk_nextdenovo=$(
-  cat <<HEREDOC
-  Requirement: git clone https://github.com/c-zhou/OatkDB.git
-
-  oatk -k 1001 -c 30 -t 8 --nhmmscan /bin/nhmmscan -m embryophyta_mito.fam -p embryophyta_pltd.fam -o ddAraThal4 ddAraThal4_organelle.hifi.fa.gz
-
-  stderr: o/<inum>/timing-oatk-nextdenovo-fc-1.txt
-  stdout: o/<inum>/stdout-oatk-nextdenovo-fc-1.txt
-HEREDOC
-)
-
-help_message_oatk_ont=$(
-  cat <<HEREDOC
-  Requirement: git clone https://github.com/c-zhou/OatkDB.git
-
-  oatk -k 1001 -c 30 -t 8 --nhmmscan /bin/nhmmscan -m embryophyta_mito.fam -p embryophyta_pltd.fam -o ddAraThal4 ddAraThal4_organelle.hifi.fa.gz
-
-  stderr: o/<inum>/timing-oatk-ont-fc-1.txt
-  stdout: o/<inum>/stdout-oatk-ont-fc-1.txt
-HEREDOC
-)
-
-help_message_nextdenovo_polish_peak_memory=$(
-  cat <<HEREDOC
-
-  get ${_local_host}:$PWD/<outdir>-a.tar.gz
-HEREDOC
-)
-
-help_message_nextdenovo_polish_time=$(
-  cat <<HEREDOC
-
-  Display the time spent by nextDenovo.
-HEREDOC
-)
-
-help_message_list_subcommands=$(
-  cat <<HEREDOC
-
-  Search for subcommands of this script.
-  where: start, any, end
-HEREDOC
-)
-
-help_message_pmat_track=$(
-  cat <<HEREDOC
-
-  Display some of the progress of PMAT.
-HEREDOC
-)
-
-help_message_nextdenovo_polish_memory=$(
-  cat <<HEREDOC
-
-  Display the peak memory used by nextDenovo. We log memory usage in a file named memlog.csv
-  because GNU time command does not track some of nextDenovo's background processes.
-HEREDOC
-)
-
-help_message_nextdenovo_polish_cleanup=$(
-  cat <<HEREDOC
-
-  get ${_local_host}:$PWD/<outdir>-a.tar.gz
-HEREDOC
-)
-
-help_message_downsample_long_data=$(
-  cat <<HEREDOC
-
-  coverage: use CSV if 0
-  input: o/tmp/original.fastq
-  output: original.fastq
-  log: o/<inum>/l<coverage>x.txt
-HEREDOC
-)
-
-help_message_prepare_long_data=$(
-  cat <<HEREDOC
-
-  place long-read data at the current folder.
-HEREDOC
-)
-
-help_message_recover=$(
-  cat <<HEREDOC
-
-  extract <outdir>-a.tar.gz to <outdir>
+  Create a csv config file.
+  csv: a default csv config file.
 HEREDOC
 )
 
@@ -1092,41 +651,7 @@ help_message_test=$(
 HEREDOC
 )
 
-help_message_infer=$(
-  cat <<HEREDOC
-
-  Build a plastid genome via subsampling ONT long-read data.
-
-  simple-polish: default for subsampling-based short-read polishing
-  random: off to use CSV's random seed, otherwise on
-HEREDOC
-)
-
-help_message_check=$(
-  cat <<HEREDOC
-
-  Build a plastid genome and check the accuracy via subsampling ONT long-read data.
-
-  simple-polish: default for subsampling-based short-read polishing
-  random: off to use CSV's random seed, otherwise on
-HEREDOC
-)
-
-help_message_refs=$(
-  cat <<HEREDOC
-
-  Fetch the reference plastid genomes from NCBI.
-HEREDOC
-)
-
-help_message_sra=$(
-  cat <<HEREDOC
-
-  Download FASTQ files from the NCBI SRA database.
-HEREDOC
-)
-
-help_message_get=$(
+_v1_help_message_get=$(
   cat <<HEREDOC
 
   Archive files are named in either one of these two forms:
@@ -1144,86 +669,7 @@ help_message_get=$(
 HEREDOC
 )
 
-help_message_maintable1=$(
-  cat <<HEREDOC
-
-  The main table for the summary of all analyses is created. In the CSV data
-  file, only those with table1 column being T and <inum> being given as option
-  are included in the table.
-
-  each: actually all rows in the CSV
-  format: output file format (only 3 for alpha0 and delta)
-HEREDOC
-)
-
-help_message_maintable2=$(
-  cat <<HEREDOC
-
-  This main table (table 3) is for comparison of memory and time used by programs used.
-  This was tested with only table3 option or the comparison case.
-  Use maintable1 for the other main tables.
-
-  each: actually all rows in the CSV
-  format: output file format (only 3 for alpha0 and delta)
-HEREDOC
-)
-
-help_message_supptable1=$(
-  cat <<HEREDOC
-
-  The supplementary table for the three-stage run is created. In the CSV data
-  file, only those with table1 column being T and <inum> being given as option
-  are included in the table.
-HEREDOC
-)
-
-help_message_report=$(
-  cat <<HEREDOC
-
-  Create a set of report tables using markdown formatting to present data.
-  It creates only this kind of file: 0/disassemble/infer-1/3-infer/summary1x.md
-HEREDOC
-)
-
-help_message_local_batch=$(
-  cat <<HEREDOC
-
-  Execute the batch job in the the same computer where you execute this script.
-
-  - get the data
-  - execute batch
-
-  all: combined with inum to locate the source
-  each: actually all rows in the CSV
-  inum: output i number or o/<inum> folder
-  ref: 0 uses table2's T/F, off for not use of ptGAUL, on for use of ptGAUL
-  getorganelle: off for not executing getorganelle, on for getorganelle
-  random: off to use CSV's random seed, otherwise on
-
-  CSV status: cleanup -> delete FASTQ data files
-HEREDOC
-)
-
-help_message_remote_batch=$(
-  cat <<HEREDOC
-
-  Execute the batch job in the remote in dev mode only.
-
-  - get the data
-  - execute batch
-  - send the result back to the local
-
-  all: combined with inum to locate the source
-  each: actually all rows in the CSV
-  inum: output i number or o/<inum> folder
-  ref: 0 uses table2's T/F, off for not use, on for use
-  getorganelle: off for not executing of getorganelle, on for getorganelle run
-  random: off to use CSV's random seed, otherwise on
-  jobs: the number jobs to execute simultaneously (1 if outdir is not all)
-HEREDOC
-)
-
-help_message_batch=$(
+help_message_benchmark=$(
   cat <<HEREDOC
 
   The main batch command does the followings.
@@ -1233,11 +679,18 @@ help_message_batch=$(
   - fetch reference from NCBI
   - ptGAUL assembly
   - ptGAUL's polishing
-  - subsampling-based assembly
+  - NextDenovo long-read data error correction
+  - Oatk assembly with the error-corrected long-read data
+  - TIPPo assembly with the error-corrected long-read data
+  - PMAT assembly with the error-corrected long-read data
+  - Polap subsampling-based assembly
+
+  See Also:
+  benchmark-command
 HEREDOC
 )
 
-help_message_batch_cmd=$(
+help_message_benchmark_command=$(
   cat <<HEREDOC
 
   The main batch command does the following polap subcommands:
@@ -1257,6 +710,7 @@ help_message_batch_cmd=$(
   run polap-disassemble <outdir> <inum> simple
   run polap-disassemble-check <outdir> <inum> default
   run polap-disassemble-check <outdir> <inum> simple
+  run polap-disassemble-compare <outdir> <inum>
 HEREDOC
 )
 
@@ -1297,10 +751,10 @@ set +u
 read-a-tsv-file-into-associative-arrays() {
   # Define input TSV file
   if [ -z "${csv_file+x}" ]; then
-    csv_file="${PWD}/polap-data-v2.csv"
+    csv_file="${PWD}/${_polap_data_csv}"
   fi
   if [[ ! -s "${csv_file}" ]]; then
-    csv_file="${_POLAPLIB_DIR}/polap-data-v2.csv"
+    csv_file="${_POLAPLIB_DIR}/${_polap_data_csv}"
   fi
 
   # Read the TSV file (skip header)
@@ -1353,6 +807,7 @@ read-a-tsv-file-into-associative-arrays
 keys_array=($(for key in "${!_long[@]}"; do echo "$key"; done | sort))
 Skeys=("${keys_array[@]}")
 
+# Command arguments
 _arg1=${1:-arg1}
 # Check if the species folder is provided
 if [[ "${_arg1}" == "arg1" ]]; then
@@ -1386,8 +841,10 @@ test_genus_species_for() {
   local short_sra="${_short["$key"]}"
 
   echo "Key: $key"
-  echo "  long_sra: ${long_sra}"
-  echo "  short_sra: ${short_sra}"
+  if [[ "${_POLAP_RELEASE}" == "1" ]]; then
+    echo "  long_sra: ${long_sra}"
+    echo "  short_sra: ${short_sra}"
+  fi
 }
 
 test_genus_species() {
@@ -1409,53 +866,11 @@ test_genus_species() {
   fi
 }
 
-is_file_at_least_1MB() {
-  local file="$1"
-  [[ -f "$file" && $(stat -c%s "$file") -ge 1048576 ]]
-}
-
-# I could have used:
-# rsync -aq --max-size=5M A/ B/
-tippo_copy_organelle_outputs() {
-  local org_dir="$1"
-  local dest_dir="$2"
-
-  if [[ ! -d "$org_dir" ]]; then
-    echo "Error: Organelle directory '$org_dir' not found." >&2
-    return 1
-  fi
-
-  # Normalize destination path
-  dest_dir=$(realpath "$dest_dir")
-  mkdir -p "$dest_dir"
-
-  # Enter the source dir (org_dir) to make paths relative
-  pushd "$org_dir" >/dev/null || return 1
-
-  # Collect matching files (file only, relative paths)
-  mapfile -t files < <(find . -type f \( \
-    -name "*.chloroplast.fasta.filter.800.round*.edge*.organelle.chloroplast.fasta" \
-    -o -name "assembly.fasta" \
-    -o -name "assembly_graph.gfa" \
-    \))
-
-  # Exit if nothing to copy
-  if [[ ${#files[@]} -eq 0 ]]; then
-    echo "Warning: No matching files found." >&2
-    popd >/dev/null
-    return 0
-  fi
-
-  # Copy with relative paths using rsync
-  rsync -R "${files[@]}" "$dest_dir/"
-
-  popd >/dev/null
-}
-
 ##### INSERT_FUNCTION_HERE #####
-assemble_genus_species_for() {
+benchmark-command_genus_species_for() {
   local _brg_outdir="$1"
-  local _brg_inum="${2:-1}"
+  local _brg_inum="${2:-0}"
+  local _brg_inum_0=0
 
   local full_name="${FUNCNAME[0]}"
   local middle_part="${full_name#man-}"
@@ -1477,27 +892,18 @@ assemble_genus_species_for() {
   local _brg_outdir_0="${_brg_outdir_t}/0"
 
   if [[ "${opt_y_flag}" == false ]]; then
+    echo "We will execute benchmarking using GetOrganelle, ptGAUL, PMAT, TIPPo, Oatk on ${_brg_outdir}/${opt_t_arg}/0 ..."
     read -p "Do you want to execute assemble on ${_brg_outdir}/${opt_t_arg}/${_brg_inum}? (yes/no): " confirm
   else
     confirm="yes"
   fi
 
   if [[ "${confirm}" != "yes" ]]; then
-    echo "assemble processing is canceled."
+    echo "assemble processing with benchmarking analysis is canceled."
     return
   fi
 
-  _log_echo "START: polap assembling using cflye"
-
-  # debug local variables
-  # for debugging: Inline local printing local var
-  # while IFS= read -r line; do
-  #   if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
-  #     var="${BASH_REMATCH[1]}"
-  #     printf "%s=%q\n" "$var" "${!var}"
-  #   fi
-  # done < <(local -p 2>/dev/null)
-  # return
+  _log_echo "START: polap assembling using cflye with banchmarking analysis"
 
   # Prepare the input data
   polap-analysis-data_genus_species "${_brg_outdir}"
@@ -1557,7 +963,7 @@ assemble_genus_species_for() {
   if [[ -s "${_brg_rundir}/ptdna-reference.fa" ]]; then
     _log_echo "Found: reference ptDNA"
   else
-    download-ptdna_genus_species "${_brg_outdir}" "${_brg_inum}"
+    download-ptdna_genus_species "${_brg_outdir}"
     if [[ -s "${_brg_rundir}/ptdna-reference.fa" ]]; then
       _log_echo "Success: reference ptDNA"
     else
@@ -1587,7 +993,7 @@ assemble_genus_species_for() {
   if [[ -s "${_brg_outdir_0}/ptdna-ptgaul.fa" ]]; then
     _log_echo "Found: ptGAUL polished genome"
   else
-    run-extract-ptdna-ptgaul_genus_species "${_brg_outdir}" "${_brg_inum}"
+    run-extract-ptdna-ptgaul_genus_species "${_brg_outdir}" "${_brg_inum_0}"
     if [[ -s "${_brg_outdir_0}/ptdna-ptgaul.fa" ]]; then
       _log_echo "Success: ptGAUL polished genome"
     else
@@ -1603,7 +1009,7 @@ assemble_genus_species_for() {
   if [[ -s "${_brg_rundir}/short_expected_genome_size.txt" ]]; then
     _log_echo "Found: the genome size estimate"
   else
-    run-estimate-genomesize_genus_species "${_brg_outdir}" "${_brg_inum}"
+    run-estimate-genomesize_genus_species "${_brg_outdir}" "${_brg_inum_0}"
     if [[ -s "${_brg_rundir}/short_expected_genome_size.txt" ]]; then
       _log_echo "Success: the genome size estimate"
     else
@@ -1618,7 +1024,7 @@ assemble_genus_species_for() {
   if [[ -s "${_brg_outdir_0}/cns.fa" ]]; then
     _log_echo "Found: the long-read NextDenovo polished data"
   else
-    run-nextdenovo-polish_genus_species "${_brg_outdir}" "${_brg_inum}"
+    run-nextdenovo-polish_genus_species "${_brg_outdir}" "${_brg_inum_0}"
     if [[ -s "${_brg_outdir_0}/cns.fa" ]]; then
       _log_echo "Success: the long-read NextDenovo polished data"
     else
@@ -1633,7 +1039,7 @@ assemble_genus_species_for() {
   if [[ -s "${_brg_rundir}/oatk-nextdenovo-30.utg.gfa" ]]; then
     _log_echo "Found: the oatk result"
   else
-    run-oatk_genus_species "${_brg_outdir}" "${_brg_inum}"
+    run-oatk_genus_species "${_brg_outdir}" "${_brg_inum_0}"
     if [[ -s "${_brg_rundir}/oatk-nextdenovo-30.utg.gfa" ]]; then
       _log_echo "Success: the oatk result"
     else
@@ -1645,11 +1051,11 @@ assemble_genus_species_for() {
   # run-tippo
   local _run_title="tippo-nextdenovo"
   local _brg_rundir="${_brg_outdir_0}/${_run_title}"
-  if [[ -s "${_brg_rundir}/ont/cns.fa.tiara.out" ]]; then
+  if [[ -s "${_brg_rundir}/ont/log_cns.fa.tiara.out" ]]; then
     _log_echo "Found: the tippo result"
   else
-    run-tippo_genus_species "${_brg_outdir}" "${_brg_inum}"
-    if [[ -s "${_brg_rundir}/ont/cns.fa.tiara.out" ]]; then
+    run-tippo_genus_species "${_brg_outdir}" "${_brg_inum_0}"
+    if [[ -s "${_brg_rundir}/ont/log_cns.fa.tiara.out" ]]; then
       _log_echo "Success: the tippo result"
     else
       _log_echo "Fail: the tippo result"
@@ -1660,10 +1066,15 @@ assemble_genus_species_for() {
   # run-pmat
   local _run_title="pmat-nextdenovo"
   local _brg_rundir="${_brg_outdir_0}/${_run_title}"
-  if [[ -s "${_brg_rundir}/0.1/PMAT_mt_blastn.txt" ]]; then
+  # NOTE: PMAT run first try to run withouth time limit.
+  # If it fails for some reason, then it crashes. If the run time is over 12 hours,
+  # then we would use PMATContigGraph.txt to skip the run and just report the run time.
+  local _check_file_for_finish="${_brg_rundir}/0.1/assembly_result/PMATContigGraph.txt"
+  local _check_file_for_finish="${_brg_rundir}/0.1/PMAT_mt_blastn.txt"
+  if [[ -s "${_check_file_for_finish}" ]]; then
     _log_echo "Found: the pmat result"
   else
-    run-pmat_genus_species "${_brg_outdir}" "${_brg_inum}"
+    run-pmat_genus_species "${_brg_outdir}" "${_brg_inum_0}"
     if [[ -s "${_brg_rundir}/0.1/PMAT_mt_blastn.txt" ]]; then
       _log_echo "Success: the pmat result"
     else
@@ -1671,12 +1082,6 @@ assemble_genus_species_for() {
       return 1
     fi
   fi
-
-  # delete if you want to redo the analysis
-  # if [[ "${_brg_redo}" == "on" ]]; then
-  #   _log_echo "INFO: delete ${_brg_outdir_i} to reanalyze the subsampling part."
-  #   rm -rf "${_brg_outdir_i}"
-  # fi
 
   # run-polap
   local _run_title="polap-disassemble"
@@ -1705,6 +1110,7 @@ assemble_genus_species_for() {
     else
       run-polap-disassemble-check_genus_species "${_brg_outdir}" "${_brg_inum}" default "${_brg_random}"
       run-polap-disassemble-check_genus_species "${_brg_outdir}" "${_brg_inum}" simple "${_brg_random}"
+      run-polap-disassemble-compare_genus_species "${_brg_outdir}" "${_brg_inum}"
       if [[ -s "${_brg_rundir}/${_brg_inum}/disassemble/infer-1/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
         _log_echo "Success: check case"
       else
@@ -1714,26 +1120,47 @@ assemble_genus_species_for() {
     fi
   fi
 
-  _log_echo "END: polap assembling using cflye"
+  _log_echo "END: polap assembling using cflye with banchmarking analysis"
 }
 
-assemble_genus_species() {
+benchmark-command_genus_species() {
   local _brg_outdir="${1:-all}"
   local _brg_inum="${2:-0}"
 
   if [[ "${_brg_outdir}" == "all" ]]; then
     for _v1 in "${Sall[@]}"; do
-      assemble_genus_species_for "${_v1}" "${@:2}"
+      benchmark-command_genus_species_for "${_v1}" "${@:2}"
     done
   elif [[ "${_brg_outdir}" == "each" ]]; then
     for _v1 in "${Sall[@]}"; do
-      assemble_genus_species_for "${_v1}" "${@:2}"
+      benchmark-command_genus_species_for "${_v1}" "${@:2}"
     done
   else
-    assemble_genus_species_for "$@"
+    benchmark-command_genus_species_for "$@"
   fi
 }
 
+benchmark_genus_species_for() {
+  local _brg_outdir="${1}"
+
+  _brg_outdir="${_brg_outdir%/}"
+  # batch-cmd_genus_species "${_brg_outdir}" 0
+  for i in 0 1 2 4; do
+    benchmark-command_genus_species "${_brg_outdir}" $i
+  done
+}
+
+benchmark_genus_species() {
+  local args=("$@")
+
+  for item in "$@"; do
+    benchmark_genus_species_for "${item}"
+  done
+}
+
+################################################################################
+# Figures and Tables
+#
 man-figure-delta_genus_species() {
   local _brg_outdir="${1:-Eucalyptus_pauciflora}"
   local _brg_inum="${2:-0}"
@@ -1881,7 +1308,7 @@ man-figure-sheet-pmat_genus_species_for() {
       captions+=("${i}, ${_disjointig_min_coverage}x, ${_memory_gb_cflye} GB")
       ((k++))
 
-      if [[ "$DEBUG" == "0" ]]; then
+      if [[ "$_POLAP_DEBUG" == "0" ]]; then
         printf "%s,%s,%s,%s\n" "${_run_title}" "${_species}" "${_fc}" "${_base_figure}/${_png_infer}" >>"${_brg_csv}"
       else
         printf "%s,%s,%s,%s\n" "${_run_title}" "${_species}" "${_fc}" "${_base_figure}/${_png_infer}"
@@ -1955,7 +1382,7 @@ man-figure-sheet-tippo_genus_species_for() {
       captions+=("${i}, ${_disjointig_min_coverage}x, ${_memory_gb_cflye} GB")
       ((k++))
 
-      if [[ "$DEBUG" == "0" ]]; then
+      if [[ "$_POLAP_DEBUG" == "0" ]]; then
         printf "%s,%s,%s,%s\n" "${_run_title}" "${_species}" "${_fc}" "${_base_figure}/${_png_infer}" >>"${_brg_csv}"
       else
         printf "%s,%s,%s,%s\n" "${_run_title}" "${_species}" "${_fc}" "${_base_figure}/${_png_infer}"
@@ -2030,7 +1457,7 @@ man-figure-sheet-oatk_genus_species_for() {
       captions+=("${i}, ${_disjointig_min_coverage}x, ${_memory_gb_cflye} GB")
       ((k++))
 
-      if [[ "$DEBUG" == "0" ]]; then
+      if [[ "$_POLAP_DEBUG" == "0" ]]; then
         printf "%s,%s,%s,%s\n" "${_run_title}" "${_species}" "${_fc}" "${_base_figure}/${_png_infer}" >>"${_brg_csv}"
       else
         printf "%s,%s,%s,%s\n" "${_run_title}" "${_species}" "${_fc}" "${_base_figure}/${_png_infer}"
@@ -2044,7 +1471,7 @@ man-figure-sheet-oatk_genus_species_for() {
 
   # debug local variables
   # for debugging: Inline local printing local var
-  # if [[ "$DEBUG" == "1" ]]; then
+  # if [[ "$_POLAP_DEBUG" == "1" ]]; then
   #   while IFS= read -r line; do
   #     if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
   #       var="${BASH_REMATCH[1]}"
@@ -2120,7 +1547,7 @@ man-figure-sheet-polap_genus_species_for() {
 
       printf "polap,%s,%d,%s\n" "${_species}" "$i" "figures/${_png_infer}" >>"${_brg_csv}"
 
-      if [[ "$DEBUG" == "0" ]]; then
+      if [[ "$_POLAP_DEBUG" == "0" ]]; then
         printf "%s,%s,%s,%s\n" "${_run_title}" "${_species}" "${i}" "${_base_figure}/${_png_infer}" >>"${_brg_csv}"
       else
         printf "%s,%s,%s,%s\n" "${_run_title}" "${_species}" "${i}" "${_base_figure}/${_png_infer}"
@@ -2133,7 +1560,7 @@ man-figure-sheet-polap_genus_species_for() {
 
   # debug local variables
   # for debugging: Inline local printing local var
-  if [[ "$DEBUG" == "1" ]]; then
+  if [[ "$_POLAP_DEBUG" == "1" ]]; then
     while IFS= read -r line; do
       if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
         var="${BASH_REMATCH[1]}"
@@ -2282,695 +1709,6 @@ man-figure-sheet_genus_species() {
   fi
 }
 
-batch_genus_species_for() {
-  local _brg_outdir="${1}"
-
-  _brg_outdir="${_brg_outdir%/}"
-  batch-cmd_genus_species "${_brg_outdir}" 0
-}
-
-batch_genus_species() {
-  local args=("$@")
-
-  for item in "$@"; do
-    batch_genus_species_for "${item}"
-  done
-}
-
-batch-v2_genus_species() {
-  local _brg_outdir="${1}"
-
-  echo "outdir: ${_brg_outdir}"
-}
-
-oatk-nextdenovo_genus_species_for() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-7}"
-  local _brg_fc="${3:-30}"
-  local _brg_type="${4:-all}"
-
-  local target_index="${_brg_outdir}-${_brg_inum}"
-  local long_sra="${_long["$target_index"]}"
-  if [[ -z "$long_sra" ]]; then
-    echo "Error: no long SRA for ${_brg_outdir}-${_brg_inum}"
-    echo "Info: skipping oatk-nextdenovo on ${_brg_outdir}-${_brg_inum}"
-    return
-  fi
-  local short_sra="${_short["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
-  local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
-
-  # echo "long_sra: ${long_sra}"
-  # echo "short_sra: ${short_sra}"
-
-  # Step 0. Get the archive data file if this runs at a remote
-  # where we do not have the file: cns.fa
-  mkdir -p "${_brg_outdir_i}"
-  if ! nextdenovo-check-cns_genus_species; then
-    echo "check cns.fa failed"
-    return
-  fi
-
-  # Step 2. genome size
-  genome_size=$(get_genome_size) || exit 1
-
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "$CONDA_DEFAULT_ENV" != "oatk" ]]; then
-    echo "You're not in the oatk environment. Chaniging 'oatk'..."
-    conda activate polap-oatk
-  fi
-
-  if [[ "$CONDA_DEFAULT_ENV" == "oatk" ]]; then
-
-    local fc_list=()
-
-    if [[ "${_brg_fc}" == *,* ]]; then
-      IFS=',' read -ra fc_list <<<"$_brg_fc"
-    else
-      fc_list=("$_brg_fc")
-    fi
-
-    for _brg_fc in "${fc_list[@]}"; do
-      echo "oatk on ${_brg_outdir}/${_brg_inum} using the nextDenovo-polished data: ${_brg_outdir_i}/cns.fa with -c ${_brg_fc}"
-      local _timing_oatk=${_brg_outdir_i}/timing-oatk-nextdenovo-fc-${_brg_fc}.txt
-      local _stdout_oatk=${_brg_outdir_i}/stdout-oatk-nextdenovo-fc-${_brg_fc}.txt
-      mkdir -p "${_brg_outdir_i}"
-      local _outdir_oatk="${_brg_outdir}"-oatk-nextdenovo-${_brg_fc}
-      mkdir -p "${_outdir_oatk}"
-
-      # oatk -k 1001 -c 30 -t 8 --nhmmscan /bin/nhmmscan -m embryophyta_mito.fam -p embryophyta_pltd.fam -o ddAraThal4 ddAraThal4_organelle.hifi.fa.gz
-      #
-      # tippo options:
-      # -p ont \
-      # -t ${_brg_threads} \
-      #
-      # oatk options:
-      # --nhmmscan /bin/nhmmscan \
-
-      # oatk -k 1001 -c 30 -t 8 \
-      # 	-m ./OatkDB/v20230921/embryophyta_mito.fam \
-      # 	-p ./OatkDB/v20230921/embryophyta_pltd.fam \
-      # 	-o oatk-1 \
-      # 	cns.fa
-
-      local _oatk_dir="${_brg_outdir_i}"/oatk-nextdenovo-${_brg_fc}
-      rm -rf "${_oatk_dir}"
-      command time -v oatk \
-        -k 1001 \
-        -c ${_brg_fc} \
-        -t 8 \
-        -m ./OatkDB/v20230921/embryophyta_mito.fam \
-        -p ./OatkDB/v20230921/embryophyta_pltd.fam \
-        -o "${_outdir_oatk}"/oatk-1 \
-        "${_brg_outdir_i}"/cns.fa \
-        >"${_stdout_oatk}" \
-        2>"${_timing_oatk}"
-
-      # Record the computer system info
-      echo "hostname: $(hostname)" >>"${_timing_oatk}"
-      free -h >>"${_timing_oatk}"
-      lscpu >>"${_timing_oatk}"
-
-      mv "${_outdir_oatk}" "${_oatk_dir}"
-      # rm -rf "${_oatk_dir}"
-      # mkdir "${_oatk_dir}"
-
-      # what to copy: consider this
-      # cp -pr "${_brg_outdir}"-oatk-${_brg_fc}/gfa_result "${_oatk_dir}"
-      # rm -rf "${_brg_outdir}"-oatk-${_brg_fc}
-    done
-
-    conda deactivate
-
-  else
-    echo "ERROR: no oatk conda environment"
-  fi
-
-}
-
-oatk-nextdenovo_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-0}"
-  local _brg_fc="${3:-30}"
-  local _brg_type="${4:-all}"
-
-  if [[ "${_brg_outdir}" == "all" ]]; then
-    for _v1 in "${Sall[@]}"; do
-      oatk-nextdenovo_genus_species_for "${_v1}" "${_brg_inum}" "${_brg_fc}"
-    done
-  elif [[ "${_brg_outdir}" == "each" ]]; then
-    for _v1 in "${Sall[@]}"; do
-      oatk-nextdenovo_genus_species_for "${_v1}" "${_brg_inum}" "${_brg_fc}"
-    done
-  else
-    oatk-nextdenovo_genus_species_for "$@"
-  fi
-}
-
-nextdenovo-polish-peak-memory_genus_species() {
-  local _brg_outdir="${1}"
-  local _brg_inum="${2:-0}"
-
-  local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
-  local _memlog_csv="${_brg_outdir_i}/memlog-nextdenovo-polish.csv"
-
-  local best_file=""
-  local best_line=""
-  local best_ts=""
-  local max_pss=0
-
-  for file in "${_memlog_csv}" "${_memlog_csv}".*; do
-    [[ -f "$file" ]] || continue
-    awk -F',' -v f="$file" '
-      NR == 1 { next }
-      $2 > max {
-        max = $2
-        ts = $1
-        line = $0
-        load = $4
-        disk = $5
-        cmd = $6
-      }
-      END {
-        if (max > 0) {
-          printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", f, max, ts, line, load, disk, cmd
-        }
-      }
-    ' "$file"
-  done | awk -F'\t' '
-    $2 > max {
-      max = $2
-      best_file = $1
-      best_ts = $3
-      best_line = $4
-      best_load = $5
-      best_disk = $6
-      best_cmd = $7
-    }
-    END {
-      if (max > 0) {
-        cmd = "date -d @" best_ts " +\"%Y-%m-%d %H:%M:%S\""
-        cmd | getline readable_ts
-        close(cmd)
-
-        print "📊 Peak total memory usage across all logs:"
-        print "File:            ", best_file
-        print "Timestamp:       ", best_ts " (" readable_ts ")"
-        print "Peak memory:     ", max, "KB (" sprintf("%.2f", max / 1048576) " GB)"
-        print "CPU load (1min): ", best_load
-        print "Disk free (GB):  ", best_disk
-        print "Max PSS command: ", best_cmd
-      }
-    }
-  '
-}
-
-list-subcommands_genus_species() {
-  local _brg_query="${1}"
-  local _brg_where="${2:-start}"
-
-  if [[ "${_brg_where}" == "start" ]]; then
-    grep ")$" "${_POLAPLIB_DIR}/polap-lib-data.sh" | grep -v "(" | grep "^${_brg_query}"
-    grep ")$" $0 | grep -v "(" | grep "^${_brg_query}"
-  elif [[ "${_brg_where}" == "any" ]]; then
-    grep ")$" "${_POLAPLIB_DIR}/polap-lib-data.sh" | grep -v "(" | grep "${_brg_query}"
-    grep ")$" $0 | grep -v "(" | grep "${_brg_query}"
-  elif [[ "${_brg_where}" == "end" ]]; then
-    grep ")$" "${_POLAPLIB_DIR}/polap-lib-data.sh" | grep -v "(" | grep "${_brg_query})$"
-    grep ")$" $0 | grep -v "(" | grep "${_brg_query})$"
-  fi
-}
-
-pmat-track_genus_species() {
-  local _brg_outdir="${1}"
-  local _brg_inum="${2:-0}"
-  local _brg_fc="${3:-1}"
-  local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
-  local _stdout="${_brg_outdir_i}"/stdout-pmat-nextdenovo-fc-${_brg_fc}.txt
-  local _timing_nextdenovo="${_brg_outdir_i}"/timing-nextdenovo.txt
-
-  grep "\.\.\." "${_stdout}" | grep -v "-"
-  grep Depth -A 3 "${_timing_nextdenovo}"
-}
-
-nextdenovo-polish-time_genus_species() {
-  local _brg_outdir="${1}"
-  local _brg_inum="${2:-0}"
-
-  local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
-  local _memlog_csv="${_brg_outdir_i}/memlog-nextdenovo-polish.csv"
-
-  local total_sec=0
-
-  for file in "${_memlog_csv}" "${_memlog_csv}".*; do
-    [[ -f "$file" ]] || continue
-    local start=$(awk -F',' 'NR == 2 { print $1 }' "$file")
-    local end=$(awk -F',' 'END { print $1 }' "$file")
-    if [[ -n "$start" && -n "$end" && "$end" -ge "$start" ]]; then
-      total_sec=$((total_sec + end - start))
-    fi
-  done
-
-  local h=$((total_sec / 3600))
-  local m=$(((total_sec % 3600) / 60))
-  local s=$((total_sec % 60))
-
-  # printf "Total wall-clock time: %d:%02d:%02d (%d seconds)\n" "$h" "$m" "$s" "$total_sec"
-  printf "%d:%02d:%02d\n" "$h" "$m" "$s"
-}
-
-nextdenovo-polish-memory_genus_species() {
-  local _brg_outdir="${1}"
-  local _brg_inum="${2:-0}"
-  local max_kb=0
-
-  local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
-  local _memlog_csv="${_brg_outdir_i}/memlog-nextdenovo-polish.csv"
-
-  for file in "${_memlog_csv}" "${_memlog_csv}".*; do
-    [[ -f "$file" ]] || continue
-    local peak_kb=$(awk -F',' 'NR > 1 && $2 > max { max = $2 } END { print max }' "$file")
-    if [[ "$peak_kb" -gt "$max_kb" ]]; then
-      max_kb=$peak_kb
-    fi
-  done
-
-  local mb=$(echo "scale=2; $max_kb / 1024" | bc)
-  local gb=$(echo "scale=2; $max_kb / 1048576" | bc)
-
-  # echo "Peak memory usage: $max_kb KB ($mb MB, $gb GB)"
-  echo "${gb}GB"
-}
-
-nextdenovo-polish-cleanup_genus_species() {
-  local _brg_outdir="${1}"
-
-  if [[ ! -d "${_brg_outdir}" ]]; then
-    echo "Error: no such outdir: ${_brg_outdir}"
-    return
-  fi
-
-  rm -rf "${_brg_outdir}"-nextdenovo
-  rm -rf "${_brg_outdir}"-pmat
-  pkill -f execute_nextdenovo_"${_brg_outdir}".sh
-  pkill -f nextDenovo
-  pkill -f minimap2-nd
-}
-
-# look for a file named short_expected_genome_size.txt in the outdir.
-# Use it if it exists. Otherwise, estimate the genome size.
-remote-get-data_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-0}"
-
-  local target_index="${_brg_outdir}-${_brg_inum}"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-
-  local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
-  local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
-
-  if [[ ! -s "${long_sra}.fastq" ]]; then
-    if ssh ${_local_host} "test -f ${long_data}"; then
-      scp ${_local_host}:${long_data} .
-    elif ssh ${_local_host} "test -f ${_media1_dir}/${long_sra}.fastq"; then
-      scp ${_local_host}:"${_media1_dir}/${long_sra}.fastq" .
-    else
-      echo "  downloading long-read SRA ID: ${long_sra} ... be patient!"
-      "${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$long_sra"
-    fi
-  fi
-
-  if [[ ! -s "${short_sra}_1.fastq" ]]; then
-    if ssh ${_local_host} "test -f ${short_data}"; then
-      scp ${_local_host}:${short_data} .
-    elif ssh ${_local_host} "test -f ${_media1_dir}/${short_sra}_1.fastq"; then
-      scp ${_local_host}:"${_media1_dir}/${short_sra}_1.fastq" .
-      scp ${_local_host}:"${_media1_dir}/${short_sra}_2.fastq" .
-    else
-      echo "  downloading short-read SRA ID: ${short_sra} ... be patient!"
-      "${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$short_sra"
-    fi
-  fi
-
-}
-
-prepare-long-data_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
-
-  # check if long_sra is empty
-  if [[ -z "$long_sra" ]]; then
-    echo "Error: no long SRA for ${_brg_outdir}-${_brg_inum}"
-    return
-  fi
-
-  mkdir -p "${_brg_outdir}/${_brg_inum}"
-
-  # Step 1. prepare input fastq data
-  local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
-  local long_fastq="${long_sra}.fastq"
-
-  if [[ "${_local_host}" == "$(hostname)" ]]; then
-    if [[ -s "${long_fastq}" ]]; then
-      echo "found: ${long_fastq}"
-    else
-      if [[ -s "${long_data}" ]]; then
-        tar -zxf ${long_data}
-      else
-        ln -s "${_media1_dir}/${long_sra}.fastq"
-      fi
-    fi
-  else
-    if [[ -s "${long_sra}.fastq" ]]; then
-      echo "found: ${long_fastq}"
-    else
-      if ssh ${_local_host} "test -f ${long_data}"; then
-        if [[ -s "${long_sra}".fastq.tar.gz ]]; then
-          echo "found: ${long_fastq}.fastq.tar.gz"
-        else
-          scp ${_local_host}:${long_data} .
-        fi
-        echo "decompressing ..."
-        tar -zxf "${long_sra}".fastq.tar.gz
-        rm -f "${long_sra}".fastq.tar.gz
-      elif ssh ${_local_host} "test -f ${_media1_dir}/${long_sra}.fastq"; then
-        scp ${_local_host}:"${_media1_dir}/${long_sra}.fastq" .
-      else
-        echo "  downloading long-read SRA ID: ${long_sra} ... be patient!"
-        "${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$long_sra"
-      fi
-    fi
-  fi
-}
-
-prepare-data_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
-
-  # check if long_sra is empty
-  if [[ -z "$long_sra" ]]; then
-    echo "Error: no long SRA for ${_brg_outdir}-${_brg_inum}"
-  fi
-
-  mkdir -p "${_brg_outdir}/${_brg_inum}"
-
-  # Step 1. prepare input fastq data
-  local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
-  local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
-  local long_fastq="${long_sra}.fastq"
-  local short_fastq="${short_sra}_1.fastq"
-
-  if [[ "${_local_host}" == "$(hostname)" ]]; then
-    if [[ -s "${long_fastq}" ]]; then
-      echo "found: ${long_fastq}"
-    else
-      if [[ -s "${long_data}" ]]; then
-        tar -zxf ${long_data}
-      else
-        ln -s "${_media1_dir}/${long_sra}.fastq"
-      fi
-    fi
-    if [[ -s "${short_fastq}" ]]; then
-      echo "found: ${short_fastq}"
-    else
-      if [[ -s "${short_data}" ]]; then
-        tar -zxf ${short_data}
-      else
-        ln -s "${_media1_dir}/${short_sra}_1.fastq"
-        ln -s "${_media1_dir}/${short_sra}_2.fastq"
-      fi
-    fi
-  else
-    if [[ -s "${long_sra}.fastq" ]]; then
-      echo "found: ${long_fastq}"
-    else
-      if ssh ${_local_host} "test -f ${long_data}"; then
-        if [[ -s "${long_sra}".fastq.tar.gz ]]; then
-          echo "found: ${long_fastq}.fastq.tar.gz"
-        else
-          scp ${_local_host}:${long_data} .
-        fi
-        echo "decompressing ..."
-        tar -zxf "${long_sra}".fastq.tar.gz
-      elif ssh ${_local_host} "test -f ${_media1_dir}/${long_sra}.fastq"; then
-        scp ${_local_host}:"${_media1_dir}/${long_sra}.fastq" .
-      else
-        echo "  downloading long-read SRA ID: ${long_sra} ... be patient!"
-        "${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$long_sra"
-      fi
-    fi
-
-    if [[ -s "${short_sra}_1.fastq" ]]; then
-      echo "found: ${short_fastq}"
-    else
-      if ssh ${_local_host} "test -f ${short_data}"; then
-        if [[ -s "${short_sra}".fastq.tar.gz ]]; then
-          echo "found: ${short_fastq}.fastq.tar.gz"
-        else
-          scp ${_local_host}:${short_data} .
-        fi
-        echo "decompressing ..."
-        tar -zxf "${short_sra}".fastq.tar.gz
-      elif ssh ${_local_host} "test -f ${_media1_dir}/${short_sra}_1.fastq"; then
-        scp ${_local_host}:"${_media1_dir}/${short_sra}_1.fastq" .
-        scp ${_local_host}:"${_media1_dir}/${short_sra}_2.fastq" .
-      else
-        echo "  downloading short-read SRA ID: ${short_sra} ... be patient!"
-        "${_polap_script_bin_dir}"/polap-ncbitools fetch sra "$short_sra"
-      fi
-    fi
-  fi
-}
-
-# NOTE: use this strategy in other tools
-# Verify the input parameters provided by the user.
-pmat-subsample_verify_brg_inputs() {
-  if [[ ! "$_brg_outdir" =~ ^[a-zA-Z0-9._-]+$ ]]; then
-    echo "Error: _brg_outdir must be a valid directory name (no spaces or slashes)" >&2
-    exit 1
-  fi
-  if [[ ! "$_brg_inum" =~ ^[a-zA-Z0-9]+$ ]]; then
-    echo "Error: _brg_inum must consist only of alphabets and numbers" >&2
-    exit 1
-  fi
-
-  if [[ ! "$_brg_type" =~ ^(all|mt|pt)$ ]]; then
-    echo "Error: type must be one of: all, mt, pt" >&2
-    exit 1
-  fi
-  if [[ ! "$_brg_coverage" =~ ^-1$|^0$|^([0-9]*[.])?[0-9]+$ ]]; then
-    echo "Error: coverage must be -1, 0, or a positive number" >&2
-    exit 1
-  fi
-  if [[ ! "$_brg_timeout" =~ ^([0-9]*[.])?[0-9]+([smhd])?$ ]]; then
-    echo "Error: _brg_timeout must be a floating-point number with optional suffix: s, m, h, or d" >&2
-    exit 1
-  fi
-  if [[ ! "$_brg_ml" =~ ^[0-9]+$ ]] || ((_brg_ml < 40 || _brg_ml > 200)); then
-    echo "Error: _brg_ml must be an integer between 40 and 200 (inclusive)" >&2
-    exit 1
-  fi
-  if ! [[ "$_brg_mi" =~ ^([0-9]*[.])?[0-9]+$ ]] || (($(echo "$_brg_mi < 90 || $_brg_mi > 98" | bc -l))); then
-    echo "Error: _brg_mi must be a number between 90 and 98 (inclusive)" >&2
-    exit 1
-  fi
-}
-
-# use extract_genome_size instead
-get_genome_size() {
-  # Step 2. genome size
-  local _genome_size="0"
-
-  if [[ -s "${_brg_outdir}/o/short_expected_genome_size.txt" ]]; then
-    _genome_size=$(<"${_brg_outdir}/o/short_expected_genome_size.txt")
-  elif [[ -s "${_brg_outdir}/short_expected_genome_size.txt" ]]; then
-    _genome_size=$(<"${_brg_outdir}/short_expected_genome_size.txt")
-  else
-    echo "ERROR: no genome size file"
-    return 1
-  fi
-
-  _genome_size=${_genome_size%%.*}
-  echo "$_genome_size"
-}
-
-generate_nextdenovo_cfg() {
-  local genome_size="$1"
-  local input_file="${2:-input.fofn}"
-  local work_dir="${3:-01_rundir}"
-  local output_file="${4:-nextdenovo.cfg}"
-
-  local _ncpu="$(cat /proc/cpuinfo | grep -c processor)"
-  local mem_gb=$(free -g | awk '/^Mem:/{print $2}')
-  local parallel_jobs=2
-  local pa_correction=2
-  local _nthreads=4
-  if ((mem_gb > 260)); then
-    parallel_jobs=8
-    _nthreads=$((_ncpu / parallel_jobs - 1))
-  elif ((mem_gb > 130)); then
-    parallel_jobs=6
-    _nthreads=$((_ncpu / parallel_jobs - 1))
-  elif ((mem_gb > 70)); then
-    parallel_jobs=3
-    _nthreads=$((_ncpu / parallel_jobs - 1))
-  fi
-  local pa_correction=$parallel_jobs
-
-  cat >"$output_file" <<EOF
-[General]
-job_type = local
-job_prefix = nextDenovo
-task = correct
-rewrite = yes
-deltmp = yes
-parallel_jobs = ${parallel_jobs}
-input_type = raw
-read_type = ont
-input_fofn = ${input_file}
-workdir = ${work_dir}
-
-[correct_option]
-read_cutoff = 1k
-genome_size = ${genome_size}
-pa_correction = ${pa_correction}
-sort_options = -m 20g -t ${_nthreads}
-correction_options = -p ${_nthreads} -b
-minimap2_options_raw = -t ${_nthreads}
-
-[assemble_option]
-minimap2_options_cns = -t ${_nthreads}
-nextgraph_options = -a 1
-EOF
-}
-
-get-archive_genus_species() {
-  local _brg_outdir="${1}"
-
-  # Step 0. Get the archive data file if this runs at a remote
-  # where we do not have the file.
-  if [[ "${_local_host}" == "$(hostname)" ]]; then
-    echo "local: ${_local_host}"
-  else
-    if ssh ${_local_host} "test -f $PWD/${_brg_outdir}-a.tar.gz"; then
-      scp -p ${_local_host}:$PWD/${_brg_outdir}-a.tar.gz .
-    else
-      echo "local: no such file: ${_local_host}:$PWD/${_brg_outdir}-a.tar.gz"
-    fi
-  fi
-}
-
-pmat-nextdenovo_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-7}"
-  local _brg_type="${3:-all}"
-  local _brg_fc="${4:-1}"
-
-  local target_index="${_brg_outdir}-${_brg_inum}"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
-  local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
-
-  # echo "long_sra: ${long_sra}"
-  # echo "short_sra: ${short_sra}"
-
-  # Step 0. Get the archive data file if this runs at a remote
-  # where we do not have the file.
-  mkdir -p "${_brg_outdir_i}"
-  if ! nextdenovo-check-cns_genus_species; then
-    echo "check cns.fa failed"
-    return
-  fi
-
-  # Step 2. genome size
-  genome_size=$(get_genome_size) || exit 1
-
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "$CONDA_DEFAULT_ENV" != "pmat" ]]; then
-    echo "You're not in the pmat environment. Chaniging 'pmat'..."
-    conda activate polap-pmat
-  fi
-
-  if [[ "$CONDA_DEFAULT_ENV" == "pmat" ]]; then
-
-    local fc_list=()
-
-    if [[ "${_brg_fc}" == *,* ]]; then
-      IFS=',' read -ra fc_list <<<"$_brg_fc"
-    else
-      fc_list=("$_brg_fc")
-    fi
-
-    for _brg_fc in "${fc_list[@]}"; do
-      echo "PMAT on ${_brg_outdir_i} using the nextDenovo-polished data: ${_brg_outdir_i}/cns.fa with -fc ${_brg_fc}"
-      local _timing_pmat="${_brg_outdir_i}/timing-pmat-nextdenovo-fc-${_brg_fc}.txt"
-      local _stdout_pmat="${_brg_outdir_i}/stdout-pmat-nextdenovo-fc-${_brg_fc}.txt"
-      local _outdir_pmat="${_brg_outdir}-pmat-nextdenovo-${_brg_fc}"
-      mkdir -p "${_brg_outdir_i}"
-      mkdir -p "${_outdir_pmat}"
-
-      command time -v PMAT autoMito \
-        -i "${_brg_outdir_i}"/cns.fa \
-        -o "${_outdir_pmat}" \
-        -st ont \
-        -g ${genome_size} \
-        --task p1 \
-        --type ${_brg_type} \
-        -cpu ${_brg_threads} \
-        -fc ${_brg_fc} \
-        -m \
-        >"${_stdout_pmat}" \
-        2>"${_timing_pmat}"
-
-      # Record the computer system info
-      echo "hostname: $(hostname)" >>"${_timing_pmat}"
-      free -h >>"${_timing_pmat}"
-      lscpu >>"${_timing_pmat}"
-
-      local _pmat_dir="${_brg_outdir_i}/pmat-nextdenovo-${_brg_fc}"
-      rm -rf "${_pmat_dir}"
-      mkdir "${_pmat_dir}"
-      cp -pr "${_outdir_pmat}"/gfa_result "${_pmat_dir}"
-      rm -rf "${_outdir_pmat}"
-    done
-
-    # results
-    # echo "results"
-    # echo "output: ${_brg_outdir_i}/pmat.out"
-    # echo "timing output: ${_brg_outdir_i}/timing-pmat.txt"
-    # echo "${_brg_outdir_i}"/pmat/gfa_result/PMAT_mt_master.gfa
-    # echo "${_brg_outdir_i}"/pmat/gfa_result/PMAT_pt_master.gfa
-
-    conda deactivate
-
-    # archive it
-    # send it back if it is remote
-    # if [[ "${_local_host}" == "$(hostname)" ]]; then
-    # 	echo "no operation for the local"
-    # else
-    # 	archive_genus_species ${_brg_outdir}
-    # 	scp -p ${_brg_outdir}-a.tar.gz ${_local_host}:$PWD/${_brg_outdir}-a-${_brg_inum}.tar.gz
-    # fi
-
-  else
-    echo "ERROR: no pmat conda environment"
-  fi
-
-}
-
 man_genus_species() {
   local first_arg="$1"
   local remaining_args=("${@:2}")
@@ -2978,2206 +1716,13 @@ man_genus_species() {
   man-${first_arg}_genus_species "${remaining_args[@]}"
 }
 
-data2csv_genus_species() {
-  local _brg_data="${1:-${_polap_data_data}}"
-  local _brg_csv="${2:-${_polap_data_csv}}"
-  local _brg_hostname="${3:-$(hostname)}"
-  local _brg_setting_C="${4:-10}"
-  local _brg_setting_P="${5:-10}"
-  local _brg_setting_N="${6:-10}"
-  local _brg_setting_R="${7:-10}"
-  local _brg_setting_I="${8:-0}"
-  local _brg_setting_S="${9:-0}"
-
-  # Input and output file paths
-  # local input_file="polap-data-v2.data"
-  # output_file="converted_data.csv"
-
-  # Print header
-  echo "species,_taxon,_long,_short,_host,_ssh,_ptgaul_genomesize,_disassemble_type,_inum,_disassemble_index,_random_seed,_downsample,_memory,_compare_p,_compare_n,_compare_r,_disassemble_alpha,_disassemble_delta,_disassemble_a,_disassemble_b,_table1,_table2,_mainfigure,dummy,_status" >"${_brg_csv}"
-
-  # Read input file line by line
-  while IFS=',' read -r species long short; do
-    [[ "$species" == "species" ]] && continue
-
-    local base="${species}"
-    local species="${species}-${_brg_setting_I}"
-    echo "${species},${base},${base},${long},${short},${_brg_hostname},${_brg_hostname},160000,0,${_brg_setting_I},infer-1,${_brg_setting_S},${_brg_setting_C},16,${_brg_setting_P},${_brg_setting_N},${_brg_setting_R},1.0,0.75,0,0,T,F,F,dummy,done" >>"${_brg_csv}"
-  done <"${_brg_data}"
-
-  echo "create ${_brg_csv}"
-}
-
-data2csv1_genus_species() {
-  local _brg_data="${1:-${_polap_data_data}}"
-  local _brg_csv="${2:-${_polap_data_csv}}"
-  local _brg_hostname="${3:-$(hostname)}"
-  local _brg_setting_C="${4:-10}"
-  local _brg_setting_P="${5:-10}"
-  local _brg_setting_N="${6:-10}"
-  local _brg_setting_R="${7:-10}"
-  local _brg_setting_I="${8:-0}"
-  local _brg_setting_S="${9:-0}"
-
-  # Input and output file paths
-  # local input_file="polap-data-v2.data"
-  # output_file="converted_data.csv"
-
-  # Print header
-  echo "species,_taxon,_long,_short,_host,_ssh,_ptgaul_genomesize,_disassemble_type,_inum,_disassemble_index,_random_seed,_downsample,_memory,_compare_p,_compare_n,_compare_r,_disassemble_alpha,_disassemble_delta,_disassemble_a,_disassemble_b,_table1,_table2,_mainfigure,dummy,_status" >"${_brg_csv}"
-
-  # Read input file line by line
-  while IFS=',' read -r species long short; do
-    [[ "$species" == "species" ]] && continue
-
-    local base="${species}"
-    local species="${species}-${_brg_setting_I}"
-    echo "${species},${base},${base},${long},${short},${_brg_hostname},${_brg_hostname},160000,0,${_brg_setting_I},infer-1,${_brg_setting_S},${_brg_setting_C},16,${_brg_setting_P},${_brg_setting_N},${_brg_setting_R},1.0,0.75,0,0,T,F,F,dummy,done" >>"${_brg_csv}"
-  done <"${_brg_data}"
-
-  echo "create ${_brg_csv}"
-}
-
-batch-cmd_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-
-  local _brg_ref="${3:-off}"
-  local _brg_confirm="${4:-off}"
-  local _brg_redo="${5:-off}"
-  local _brg_getorganelle="${6:-off}"
-  local _brg_random="${7:-off|on}"
-
-  local target_index="${_brg_outdir}-${_brg_inum}"
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local _brg_outdir_t="${_brg_outdir}/${opt_t_arg}"
-  local _brg_outdir_i="${_brg_outdir_t}/${_brg_inum}"
-
-  if [[ "${opt_y_flag}" == false ]]; then
-    read -p "Do you want to batch-process ${_brg_outdir}/${_brg_inum}? (yes/no): " confirm
-  else
-    confirm="yes"
-  fi
-
-  if [[ "${confirm}" != "yes" ]]; then
-    echo "batch processing is canceled."
-    return
-  fi
-
-  _log_echo "START: polap benchmarking"
-
-  # Prepare the input data
-  polap-analysis-data_genus_species "${_brg_outdir}"
-
-  # main
-  mkdir -p "${_brg_outdir_i}"
-
-  # Execute summary-data
-  local _run_title="summary-data"
-  local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-  if [[ -s "${_brg_rundir}"/l.fq.stats ]]; then
-    _log_echo "Found: the data summary"
-  else
-    run-summary-data_genus_species "${_brg_outdir}" "${_brg_inum}"
-    if [[ -s "${_brg_rundir}"/l.fq.stats ]]; then
-      _log_echo "Success: the data summary"
-    else
-      _log_echo "Fail: the data summary"
-      return 1
-    fi
-  fi
-
-  # Execute GetOrganelle
-  local _run_title="getorganelle"
-  local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-  if [[ -d "${_brg_rundir}" ]] &&
-    find "${_brg_rundir}" -maxdepth 1 -type f -name 'embplant_pt.*.gfa' -size +0c | grep -q .; then
-    _log_echo "Found: GetOrganelle assembled ptDNA"
-  else
-    run-getorganelle_genus_species "${_brg_outdir}" "${_brg_inum}"
-    if find "${_brg_rundir}" -maxdepth 1 -type f -name 'embplant_pt.*.gfa' -size +0c | grep -q .; then
-      _log_echo "Success: GetOrganelle assembled ptDNA"
-    else
-      _log_echo "Fail: GetOrganelle assembled ptDNA"
-      return 1
-    fi
-  fi
-
-  # Execute FMLRC's msbwt preparation
-  if [[ -s "${_brg_outdir_i}/msbwt/comp_msbwt.npy" ]]; then
-    _log_echo "Found: FMLRC msbwt"
-  else
-    run-msbwt_genus_species "${_brg_outdir}" "${_brg_inum}"
-    if [[ -s "${_brg_outdir_i}/msbwt/comp_msbwt.npy" ]]; then
-      _log_echo "Success: FMLRC msbwt"
-    else
-      _log_echo "Fail: FMLRC msbwt"
-      return 1
-    fi
-  fi
-
-  # Execute NCBI edirect download ptDNA
-  if [[ -s "${_brg_outdir_i}/ncbi-ptdna/ptdna-reference.fa" ]]; then
-    _log_echo "Found: reference ptDNA"
-  else
-    download-ptdna_genus_species "${_brg_outdir}" "${_brg_inum}"
-    if [[ -s "${_brg_outdir_i}/ncbi-ptdna/ptdna-reference.fa" ]]; then
-      _log_echo "Success: reference ptDNA"
-    else
-      _log_echo "Fail: reference ptDNA"
-      return 1
-    fi
-  fi
-
-  # Execute ptGAUL
-  local _run_title="ptgaul"
-  local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-  if [[ -s "${_brg_rundir}/flye_cpONT/assembly_graph.gfa" ]]; then
-    _log_echo "Found: ptGAUL assembly"
-  else
-    run-ptgaul_genus_species "${_brg_outdir}" "${_brg_inum}"
-    if [[ -s "${_brg_rundir}/flye_cpONT/assembly_graph.gfa" ]]; then
-      _log_echo "Success: ptGAUL assembly"
-    else
-      _log_echo "Fail: ptGAUL assembly"
-      return 1
-    fi
-  fi
-
-  # Extract ptDNA from ptGAUL
-  local _run_title="ptgaul"
-  local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-  if [[ -s "${_brg_outdir_i}/ptdna-ptgaul.fa" ]]; then
-    _log_echo "Found: ptGAUL polished genome"
-  else
-    run-extract-ptdna-ptgaul_genus_species "${_brg_outdir}" "${_brg_inum}"
-    if [[ -s "${_brg_outdir_i}/ptdna-ptgaul.fa" ]]; then
-      _log_echo "Success: ptGAUL polished genome"
-    else
-      _log_echo "Fail: ptGAUL polished genome"
-      _log_echo "${help_message_extract_ptgaul_ptdna}"
-      return 1
-    fi
-  fi
-
-  # run-estimate-genomesize
-  local _run_title="estimate-genomesize"
-  local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-  if [[ -s "${_brg_rundir}/short_expected_genome_size.txt" ]]; then
-    _log_echo "Found: the genome size estimate"
-  else
-    run-estimate-genomesize_genus_species "${_brg_outdir}" "${_brg_inum}"
-    if [[ -s "${_brg_rundir}/short_expected_genome_size.txt" ]]; then
-      _log_echo "Success: the genome size estimate"
-    else
-      _log_echo "Fail: the genome size estimate"
-      return 1
-    fi
-  fi
-
-  # run-nextdenovo-polish
-  local _run_title="nextdenovo-polish"
-  local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-  if [[ -s "${_brg_outdir_i}/cns.fa" ]]; then
-    _log_echo "Found: the long-read NextDenovo polished data"
-  else
-    run-nextdenovo-polish_genus_species "${_brg_outdir}" "${_brg_inum}"
-    if [[ -s "${_brg_outdir_i}/cns.fa" ]]; then
-      _log_echo "Success: the long-read NextDenovo polished data"
-    else
-      _log_echo "Fail: the long-read NextDenovo polished data"
-      return 1
-    fi
-  fi
-
-  # run-oatk
-  local _run_title="oatk-nextdenovo"
-  local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-  if [[ -s "${_brg_rundir}/oatk-nextdenovo-30.utg.gfa" ]]; then
-    _log_echo "Found: the oatk result"
-  else
-    run-oatk_genus_species "${_brg_outdir}" "${_brg_inum}"
-    if [[ -s "${_brg_rundir}/oatk-nextdenovo-30.utg.gfa" ]]; then
-      _log_echo "Success: the oatk result"
-    else
-      _log_echo "Fail: the oatk result"
-      return 1
-    fi
-  fi
-
-  # run-tippo
-  local _run_title="tippo-nextdenovo"
-  local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-  if [[ -s "${_brg_rundir}/ont/cns.fa.tiara.out" ]]; then
-    _log_echo "Found: the tippo result"
-  else
-    run-tippo_genus_species "${_brg_outdir}" "${_brg_inum}"
-    if [[ -s "${_brg_rundir}/ont/cns.fa.tiara.out" ]]; then
-      _log_echo "Success: the tippo result"
-    else
-      _log_echo "Fail: the tippo result"
-      return 1
-    fi
-  fi
-
-  # run-pmat
-  local _run_title="pmat-nextdenovo"
-  local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-  if [[ -s "${_brg_rundir}/0.1/PMAT_mt_blastn.txt" ]]; then
-    _log_echo "Found: the pmat result"
-  else
-    run-pmat_genus_species "${_brg_outdir}" "${_brg_inum}"
-    if [[ -s "${_brg_rundir}/0.1/PMAT_mt_blastn.txt" ]]; then
-      _log_echo "Success: the pmat result"
-    else
-      _log_echo "Fail: the pmat result"
-      return 1
-    fi
-  fi
-
-  # delete if you want to redo the analysis
-  # if [[ "${_brg_redo}" == "on" ]]; then
-  #   _log_echo "INFO: delete ${_brg_outdir_i} to reanalyze the subsampling part."
-  #   rm -rf "${_brg_outdir_i}"
-  # fi
-
-  # run-polap
-  local _run_title="polap-disassemble"
-  local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-  if [[ -s "${_brg_rundir}/${_brg_inum}/disassemble/infer-1/pt.subsample-polishing.1.fa" ]]; then
-    _log_echo "Found: infer case"
-  else
-    run-polap-disassemble_genus_species "${_brg_outdir}" "${_brg_inum}" default "${_brg_random}"
-    run-polap-disassemble_genus_species "${_brg_outdir}" "${_brg_inum}" simple "${_brg_random}"
-    if [[ -s "${_brg_rundir}/${_brg_inum}/disassemble/infer-1/pt.subsample-polishing.1.fa" ]]; then
-      _log_echo "Success: infer case"
-    else
-      _log_echo "Fail: infer case"
-      return 1
-    fi
-  fi
-
-  if [[ -s "${_brg_outdir_i}/ptdna-ptgaul.fa" ]]; then
-    local _run_title="polap-disassemble"
-    local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-    if [[ -s "${_brg_rundir}/${_brg_inum}/disassemble/infer-1/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
-      _log_echo "Found: check case"
-    else
-      run-polap-disassemble-check_genus_species "${_brg_outdir}" "${_brg_inum}" default "${_brg_random}"
-      run-polap-disassemble-check_genus_species "${_brg_outdir}" "${_brg_inum}" simple "${_brg_random}"
-      if [[ -s "${_brg_rundir}/${_brg_inum}/disassemble/infer-1/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
-        _log_echo "Success: check case"
-      else
-        _log_echo "Fail: check case"
-        return 1
-      fi
-    fi
-  fi
-
-  _log_echo "END: polap benchmarking"
-}
-
-batch-cmd-original_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local _brg_ref="${3:-off}"
-  local _brg_confirm="${4:-off}"
-  local _brg_redo="${5:-off}"
-  local _brg_getorganelle="${6:-off}"
-  local _brg_random="${7:-off|on}"
-
-  # local do_simple_polishing="on"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  _log_echo host: $(hostname)
-  _log_echo ssh-remote: $ssh_remote
-  _log_echo output: $_brg_outdir
-  _log_echo inum: $extracted_inum
-  _log_echo species: $species_name
-  _log_echo random seed: $random_seed
-  local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
-  local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
-
-  if [[ -s "${long_sra}.fastq.tar.gz" ]] ||
-    [[ -s "${long_sra}.fq.tar.gz" ]] ||
-    [[ -s "${long_sra}.fq" ]] ||
-    [[ -s "${long_sra}.fastq" ]]; then
-    _log_echo "found: long-read data file"
-  else
-    echo "ERROR: No long-read data file"
-    return 1
-  fi
-
-  if [[ "${_brg_confirm}" == "off" ]]; then
-    read -p "Do you want to execute the batch procedure? (y/N): " confirm
-    case "$confirm" in
-    [yY] | [yY][eE][sS])
-      _brg_confirm="on"
-      ;;
-    *)
-      echo "Batch procedure is canceled."
-      ;;
-    esac
-  fi
-
-  if [[ "${_brg_confirm}" == "off" ]]; then
-    return 0
-  fi
-
-  # main
-  if [[ ! -s "${_brg_outdir}/polap.log" ]]; then
-    _log_echo "no such file: ${_brg_outdir}/polap.log -> recovering the ${_brg_outdir}"
-    recover_genus_species "${_brg_outdir}" "${_brg_inum}"
-  fi
-
-  mkdir -p "${_brg_outdir_i}"
-
-  if [[ -s "${long_sra}.fastq" ]] &&
-    [[ -s "${short_sra}_1.fastq" ]] &&
-    [[ -s "${short_sra}_2.fastq" ]]; then
-    _log_echo "Found: sequencing data"
-  else
-    mkdir_genus_species "${_brg_outdir}" "${_brg_inum}"
-    if [[ -s "${long_sra}.fastq" ]] &&
-      [[ -s "${short_sra}_1.fastq" ]] &&
-      [[ -s "${short_sra}_2.fastq" ]]; then
-      _log_echo "Success: sequencing data"
-    else
-      _log_echo "Fail: sequencing data"
-      return 1
-    fi
-  fi
-
-  if [[ "${_brg_getorganelle}" == "on" ]]; then
-    if [[ -d "${_brg_outdir}/getorganelle" ]] &&
-      find "${_brg_outdir}/getorganelle" -maxdepth 1 -type f -name 'embplant_pt.*.gfa' -size +0c | grep -q .; then
-      _log_echo "Found: GetOrganelle assembled ptDNA"
-    else
-      getorganelle_genus_species "${_brg_outdir}" "${_brg_inum}"
-      if find "${_brg_outdir}/getorganelle" -maxdepth 1 -type f -name 'embplant_pt.*.gfa' -size +0c | grep -q .; then
-        _log_echo "Success: GetOrganelle assembled ptDNA"
-      else
-        _log_echo "Fail: GetOrganelle assembled ptDNA"
-        return 1
-      fi
-    fi
-  fi
-
-  if [[ -d "${_brg_outdir}/pmat/gfa_result/PMAT_pt_master.gfa" ]]; then
-    _log_echo "Found: pmat assembled ptDNA"
-  else
-    # pmat_genus_species "${_brg_outdir}" pt 0.05
-    if [[ -d "${_brg_outdir}/pmat/gfa_result/PMAT_pt_master.gfa" ]]; then
-      _log_echo "Success: pmat assembled ptDNA"
-    else
-      _log_echo "Fail: pmat assembled ptDNA"
-      # return 1
-    fi
-  fi
-
-  # skip if the reference is not known
-
-  if [[ "${_brg_ref}" == "on" ]]; then
-    if [[ -s "${_brg_outdir}/msbwt/comp_msbwt.npy" ]]; then
-      _log_echo "Found: FMLRC msbwt"
-    else
-      msbwt_genus_species "${_brg_outdir}" "${_brg_inum}"
-      if [[ -s "${_brg_outdir}/msbwt/comp_msbwt.npy" ]]; then
-        _log_echo "Success: FMLRC msbwt"
-      else
-        _log_echo "Fail: FMLRC msbwt"
-        return 1
-      fi
-    fi
-
-    if [[ -s "${_brg_outdir}/ptdna-reference.fa" ]]; then
-      _log_echo "Found: reference ptDNA"
-    else
-      get-ptdna-from-ncbi_genus_species "${_brg_outdir}" "${_brg_inum}"
-      if [[ -s "${_brg_outdir}/ptdna-reference.fa" ]]; then
-        _log_echo "Success: reference ptDNA"
-      else
-        _log_echo "Fail: reference ptDNA"
-        return 1
-      fi
-    fi
-
-    if [[ -s "${_brg_outdir}/ptgaul/flye_cpONT/assembly_graph.gfa" ]]; then
-      _log_echo "Found: ptGAUL assembly"
-    else
-      ptgaul_genus_species "${_brg_outdir}" "${_brg_inum}"
-      if [[ -s "${_brg_outdir}/ptgaul/flye_cpONT/assembly_graph.gfa" ]]; then
-        _log_echo "Success: ptGAUL assembly"
-      else
-        _log_echo "Fail: ptGAUL assembly"
-        return 1
-      fi
-    fi
-
-    if [[ -s "${_brg_outdir}/ptdna-ptgaul.fa" ]]; then
-      _log_echo "Found: ptGAUL polished genome"
-    else
-      extract-ptgaul-ptdna_genus_species "${_brg_outdir}"
-      copy-ptdna-of-ptgaul_genus_species "${_brg_outdir}"
-      if [[ -s "${_brg_outdir}/ptdna-ptgaul.fa" ]]; then
-        _log_echo "Success: ptGAUL polished genome"
-      else
-        _log_echo "Fail: ptGAUL polished genome"
-        return 1
-      fi
-    fi
-  fi
-
-  # delete if you want to redo the analysis
-  if [[ "${_brg_redo}" == "on" ]]; then
-    _log_echo "INFO: delete ${_brg_outdir_i} to reanalyze the subsampling part."
-    rm -rf "${_brg_outdir_i}"
-  fi
-
-  if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.subsample-polishing.1.fa" ]]; then
-    _log_echo "Found: infer case"
-  else
-    infer_genus_species "${_brg_outdir}" "${_brg_inum}" default "${_brg_random}"
-    if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.subsample-polishing.1.fa" ]]; then
-      _log_echo "Success: infer case"
-    else
-      _log_echo "Fail: infer case"
-      return 1
-    fi
-  fi
-
-  if [[ "${_brg_ref}" == "on" ]]; then
-
-    if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.simple-polishing.1.fa" ]]; then
-      _log_echo "Found: infer case - simple polishing"
-    else
-      infer_genus_species "${_brg_outdir}" "${_brg_inum}" simple "${_brg_random}"
-      if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.simple-polishing.1.fa" ]]; then
-        _log_echo "Success: infer case - simple polishing"
-      else
-        _log_echo "Fail: infer case - simple polishing"
-        _log_echo "  potenial error: fmlrc not enough memory"
-        return 1
-      fi
-    fi
-  fi
-
-  # if [[ -s "${_brg_outdir}/ptgaul/flye_cpONT/assembly_graph.gfa" ]]; then
-  if [[ -s "${_brg_outdir}/ptdna-ptgaul.fa" ]]; then
-
-    if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
-      _log_echo "Found: check case"
-    else
-      check_genus_species "${_brg_outdir}" "${_brg_inum}" default "${_brg_random}"
-      if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
-        _log_echo "Success: check case"
-      else
-        _log_echo "Fail: check case"
-        return 1
-      fi
-    fi
-
-    if [[ "${_brg_ref}" == "on" ]]; then
-      if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.simple-polishing.reference.aligned.1.fa" ]]; then
-        _log_echo "Found: check case - simple polishing"
-      else
-        check_genus_species "${_brg_outdir}" "${_brg_inum}" simple "${_brg_random}"
-        if [[ -s "${_brg_outdir_i}/disassemble/infer-1/pt.simple-polishing.reference.aligned.1.fa" ]]; then
-          _log_echo "Success: check case - simple polishing"
-        else
-          _log_echo "Fail: check case - simple polishing"
-          _log_echo "  potenial error: fmlrc not enough memory"
-          return 1
-        fi
-      fi
-    fi
-
-    if printf '%s\n' "${Stable5[@]}" | grep -qx "${_brg_outdir}"; then
-      if [[ -s "${_brg_outdir_i}/disassemble/compare-1/pt.simple-polishing.1.fa" ]]; then
-        _log_echo "Found: compare case"
-      else
-        compare_genus_species "${_brg_outdir}" "${_brg_inum}"
-        if [[ -s "${_brg_outdir_i}/disassemble/compare-1/pt.simple-polishing.1.fa" ]]; then
-          _log_echo "Success: compare case"
-        else
-          _log_echo "Fail: compare case"
-          return 1
-        fi
-      fi
-    fi
-  else
-    _log_echo "No such file: ${_brg_outdir}/ptdna-ptgaul.fa"
-    _log_echo "  so, skip comparing the ptGAUL and the subsampling-based assembly"
-  fi
-
-}
-
-send-data_genus_species() {
-  local _brg_outdir="$1"
-  local inum="${2:-0}"
-  local target_index="${_brg_outdir}-${inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local ssh_name="${_ssh["$target_index"]}"
-
-  echo host: $(hostname)
-  echo remote dir: ${ssh_name}:$PWD
-  echo output: ${_brg_outdir}
-  echo target_index: ${target_index}
-  echo species: $species_name
-  echo long: $long_sra
-  echo short: $short_sra
-
-  local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
-  local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
-
-  if [[ "${_local_host}" == "$(hostname)" ]]; then
-    if [[ -s "${long_data}" ]]; then
-      echo long: $(du -h ${long_data})
-      echo short: $(du -h ${short_data})
-    else
-      echo long: $(du -h "${_media1_dir}/${long_sra}.fastq")
-      echo short1: $(du -h "${_media1_dir}/${short_sra}_1.fastq")
-      echo short2: $(du -h "${_media1_dir}/${short_sra}_2.fastq")
-    fi
-  else
-    echo "You can send the data from the central host: ${_local_host}"
-    return 1
-  fi
-
-  if [[ "${_local_host}" == "$(hostname)" ]]; then
-
-    ssh ${ssh_name} "mkdir -p $PWD/${_brg_outdir}"
-
-    if [[ -s "${long_data}" ]]; then
-      scp "${long_data}" ${ssh_name}:$PWD/
-    else
-      scp \
-        "${_media1_dir}/${long_sra}.fastq" \
-        ${ssh_name}:$PWD/
-    fi
-
-    if [[ -s "${short_data}" ]]; then
-      scp "${short_data}" ${ssh_name}:$PWD/
-    else
-      scp \
-        "${_media1_dir}/${short_sra}_1.fastq" \
-        "${_media1_dir}/${short_sra}_2.fastq" \
-        ${ssh_name}:$PWD/
-    fi
-  else
-    echo "ERROR: run at the local host."
-  fi
-}
-
-# send the input data to the remote
-send_genus_species() {
-  local _brg_outdir="$1"
-  local inum="${2:-0}"
-  local target_index="${_brg_outdir}-${inum}"
-
-  if [[ "${_local_host}" == "$(hostname)" ]]; then
-    archive_genus_species "${_brg_outdir}"
-    scp "${_brg_outdir}-a.tar.gz" ${_ssh["${target_index}"]}:$PWD/
-  else
-    echo "ERROR: run at the local host."
-  fi
-
-  send-data_genus_species "${_brg_outdir}" "${inum}"
-}
-
-send-archive_genus_species() {
-  local _brg_outdir="$1"
-  local inum="${2:-0}"
-  local target_index="${_brg_outdir}-${inum}"
-
-  if [[ "${_local_host}" == "$(hostname)" ]]; then
-    archive_genus_species "${_brg_outdir}"
-    scp "${_brg_outdir}-a.tar.gz" ${_ssh["${target_index}"]}:$PWD/
-  else
-    echo "ERROR: run at the local host."
-  fi
-}
-
-# extract the archive at the remote
-recover_genus_species() {
-  local _brg_outdir="$1"
-
-  if [[ -s "${_brg_outdir}-a.tar.gz" ]]; then
-    _log_echo "Deleting ${_brg_outdir} ..."
-    rm -rf "${_brg_outdir}"
-    tar -zxf "${_brg_outdir}-a.tar.gz"
-    mv "${_brg_outdir}-a" "${_brg_outdir}"
-    _log_echo "we have recovered ${_brg_outdir}"
-  else
-    mkdir -p "${_brg_outdir}"
-  fi
-}
-
-# create input files
-mkdir_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
-  local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
-
-  # echo "create ${_brg_outdir} ..."
-  mkdir -p "${_brg_outdir}/timing"
-  if [[ -s "${long_sra}.fastq" ]]; then
-    _log_echo "  found: long SRA: ${long_sra}.fastq"
-  else
-    if [[ -s "$(basename ${long_data})" ]]; then
-      if tar -zxf "$(basename ${long_data})"; then
-        _log_echo "Extraction: ${long_sra} deleted."
-        rm "$(basename ${long_data})"
-      fi
-    else
-      echo "ERRO: no such file: $(basename ${long_data})"
-    fi
-  fi
-  if [[ -s "${short_sra}_1.fastq" ]] && [[ -s "${short_sra}_2.fastq" ]]; then
-    _log_echo "  found: short SRA1: ${short_sra}_1.fastq"
-    _log_echo "  found: short SRA1: ${short_sra}_2.fastq"
-  else
-    if [[ -s "$(basename ${short_data})" ]]; then
-      if tar -zxf "$(basename ${short_data})"; then
-        _log_echo "Extraction: ${short_sra} deleted."
-        rm "$(basename ${short_data})"
-      fi
-    else
-      echo "ERRO: no such file: $(basename ${short_data})"
-    fi
-  fi
-
-  # echo "Next: $0 refs ${_brg_outdir} [number] to download reference ptDNAs from NCBI"
-  # echo "Next: $0 coverage ${_brg_outdir} [number] to overview your data"
-}
-
-sra_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local long_sra
-  if [[ -v _long["$target_index"] ]]; then
-    local long_sra="${_long["$target_index"]}"
-  else
-    echo "ERROR: no such entry in ${csv_file}: $target_index"
-    return
-  fi
-
-  echo "create ${_brg_outdir} ..."
-  mkdir -p "${_brg_outdir}"/{tmp,timing}
-
-  local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
-  if [ -z "${long_sra}" ]; then
-    echo "ERROR: no long-read SRA ID: ${long_sra}"
-  elif [[ -s "${long_data}" ]]; then
-    echo "decompressing the long-read data ..."
-    tar zxf "${long_data}"
-  elif [[ -s "${_media1_dir}/${long_sra}.fastq" ]]; then
-    echo "copying the long-read data ..."
-    cp -p "${_media1_dir}/${long_sra}.fastq" .
-  else
-    echo "  downloading long-read SRA ID: ${long_sra} ... be patient!"
-    command time -v "${_polap_script_bin_dir}"/polap-ncbitools \
-      fetch sra "$long_sra" \
-      >${_brg_outdir}/tmp/long-sra.out \
-      2>${_brg_outdir}/timing/timing-long-sra.out
-  fi
-
-  # prepare short-read data
-  local short_sra="${_short["$target_index"]}"
-  if [[ -v _short["$target_index"] ]]; then
-    local short_sra="${_short["$target_index"]}"
-  else
-    echo "ERROR: no such entry in ${csv_file}: $target_index"
-    return
-  fi
-  local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
-  if [ -z "${short_sra}" ]; then
-    echo "ERROR: no short-read SRA ID: ${short_sra}"
-  elif [[ -s "${short_data}" ]]; then
-    echo "decompressing the short-read data ..."
-    tar zxf "${short_data}"
-  elif [[ -s "${_media1_dir}/${short_sra}_1.fastq" ]]; then
-    echo "copying the short-read data ..."
-    cp -p "${_media1_dir}/${short_sra}_1.fastq" .
-    cp -p "${_media1_dir}/${short_sra}_2.fastq" .
-  else
-    echo "  downloading short-read SRA ID: ${short_sra} ... be patient!"
-    command time -v "${_polap_script_bin_dir}"/polap-ncbitools \
-      fetch sra "$short_sra" \
-      >${_brg_outdir}/tmp/short-sra.out \
-      2>${_brg_outdir}/timing/timing-short-sra.out
-  fi
-
-  echo "Next: $0 refs ${_brg_outdir} [number] to download reference ptDNAs from NCBI"
-  echo "Next: $0 coverage ${_brg_outdir} [number] to overview your data"
-}
-
-get-ptdna-from-ncbi_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  if [[ "${_brg_outdir}" == "Juncus_inflexus" ]]; then
-    species_name="Juncus effusus"
-    echo "No ptDNA for ${_brg_outdir}, so we use ${species_name}"
-  fi
-
-  if [[ -s "${_brg_outdir}/ptdna-reference.fa" ]]; then
-    echo "found: ptDNA reference: ${_brg_outdir}/ptdna-reference.fa"
-  else
-
-    ${_polap_cmd} get-mtdna \
-      --plastid \
-      --species "${species_name}" \
-      -o ${_brg_outdir}
-
-    if [[ -s "${_brg_outdir}/00-bioproject/2-mtdna.fasta" ]]; then
-      echo "copy ${_brg_outdir}/ptdna-reference.fa"
-      cp -p "${_brg_outdir}/00-bioproject/2-mtdna.fasta" \
-        "${_brg_outdir}/ptdna-reference.fa"
-    else
-      echo "No such file: ${_brg_outdir}/ptdna-reference.fa"
-      local _genus_name=$(echo ${species_name} | awk '{print $1}')
-      echo "  trying to search NCBI plastid genomes for genus name only: ${_genus_name}"
-      ${_polap_cmd} get-mtdna \
-        --plastid \
-        --species "${_genus_name}" \
-        -o ${_brg_outdir}
-      if [[ -s "${_brg_outdir}/00-bioproject/2-mtdna.fasta" ]]; then
-        echo "copy ${_brg_outdir}/ptdna-reference.fa"
-        cp -p "${_brg_outdir}/00-bioproject/2-mtdna.fasta" \
-          "${_brg_outdir}/ptdna-reference.fa"
-      else
-        echo "  we could not find one even in the genus level."
-        echo "No such file: ${_brg_outdir}/ptdna-reference.fa"
-      fi
-    fi
-  fi
-}
-
-copy-ptdna-of-ncbi-as-reference_genus_species() {
-  local _brg_outdir="$1"
-
-  echo "copy ${_brg_outdir}/ptdna-reference.fa"
-  cp -p "${_brg_outdir}/00-bioproject/2-mtdna.fasta" \
-    "${_brg_outdir}/ptdna-reference.fa"
-}
-
-clean_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local _brg_yes="${3:-off}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local extracted_status="${_status["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  local long_data="${_media_dir}/${long_sra}.fastq.tar.gz"
-  local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
-
-  if [[ "${_brg_yes}" == "off" ]]; then
-    read -p "Do you want to delete it? (y/N): " confirm
-    case "$confirm" in
-    [yY] | [yY][eE][sS])
-      _brg_yes="on"
-      ;;
-    *)
-      echo "Batch procedure is canceled."
-      ;;
-    esac
-  fi
-
-  if [[ "${_brg_yes}" == "off" ]]; then
-    return 0
-  fi
-
-  # Check if the directory exists
-  echo "cleaning ${_brg_outdir} ..."
-  if [[ -d "$_brg_outdir" ]]; then
-    echo "  directory '$_brg_outdir' exists."
-
-    rm -rf "${_brg_outdir}"
-    rm -rf "${_brg_outdir}-a"
-    rm -f "${_brg_outdir}"-a*.tar.gz
-
-    # if [[ "${extracted_status}" == "cleanup" ]]; then
-    rm -f "${long_sra}.fastq"
-    rm -f "${short_sra}"_?.fastq
-    rm -f "${short_sra}".fastq # for Spirodela_polyrhiza
-    # fi
-
-    rm -f "${long_sra}.fastq.tar.gz"
-    rm -f "${short_sra}.fastq.tar.gz"
-
-  else
-    echo "  directory '$_brg_outdir' does not exist."
-    echo "  but, deleting its fastq.tar.gz files ... if any"
-    rm -f "${long_sra}.fastq.tar.gz"
-    rm -f "${short_sra}.fastq.tar.gz"
-  fi
-
-}
-
-getorganelle_genus_species_for() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  if [[ "${_local_host}" == "$(hostname)" ]]; then
-    decompress-short_genus_species "${_brg_outdir}"
-  else
-    _log_echo "  run at the local host for the decompressing the data"
-  fi
-  echo "${short_sra}_1.fastq"
-
-  if [[ -s "${short_sra}_1.fastq" ]] &&
-    [[ -s "${short_sra}_2.fastq" ]]; then
-    # Initialize Conda
-    source "$(conda info --base)/etc/profile.d/conda.sh"
-    conda activate polap-getorganelle
-
-    mkdir -p "${_brg_outdir}/timing"
-    command time -v get_organelle_from_reads.py \
-      -1 ${short_sra}_1.fastq \
-      -2 ${short_sra}_2.fastq \
-      -o ${_brg_outdir}-getorganelle \
-      -t 24 \
-      -F embplant_pt \
-      >${_brg_outdir}/tmp/getorganelle.out \
-      2>${_brg_outdir}/timing/timing-getorganelle.txt
-
-    rsync -aq \
-      --max-size=5M \
-      "${_brg_outdir}-getorganelle/" \
-      "${_brg_outdir}/getorganelle/"
-    rm -rf "${_brg_outdir}-getorganelle"
-
-    conda deactivate
-
-    if [[ "${_local_host}" == "$(hostname)" ]]; then
-      delete-short_genus_species "${_brg_outdir}"
-    else
-      _log_echo "  run at the local host for deleting the data"
-    fi
-  else
-    _log_echo "  no run getorganelle"
-  fi
-}
-
-decompress-short_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  local short_data="${_media_dir}/${short_sra}.fastq.tar.gz"
-
-  if [[ -s "${short_data}" ]]; then
-    echo "decompressing the short-read data ..."
-    tar zxf "${short_data}"
-  else
-    echo "copying the short-read data ..."
-    cp -p "/media/h1/sra/${short_sra}_1.fastq" .
-    cp -p "/media/h1/sra/${short_sra}_2.fastq" .
-  fi
-
-  if [[ -s "${short_sra}_1.fastq" ]] &&
-    [[ -s "${short_sra}_2.fastq" ]]; then
-    echo short: $short_sra
-  else
-    echo short: no such fastq file: $short_sra
-    echo run $0 send-data-to at ${_local_host}
-  fi
-}
-
-delete-short_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  if [[ -s "${short_sra}_1.fastq" ]] &&
-    [[ -s "${short_sra}_2.fastq" ]]; then
-    echo deleteing short-read data: $short_sra
-    rm -f "${short_sra}_1.fastq"
-    rm -f "${short_sra}_2.fastq"
-  else
-    echo short: no such fastq file: $short_sra
-    echo run $0 send-data-to at ${_local_host}
-  fi
-}
-
-getorganelle_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  if [[ "${_brg_outdir}" == "default" ]]; then
-    for _v1 in "${Sall[@]}"; do
-      if [[ -d "${_v1}" ]]; then
-        getorganelle_genus_species_for "${_v1}" "${_brg_inum}"
-      else
-        echo "No such folder: ${_v1}"
-      fi
-    done
-  else
-    getorganelle_genus_species_for "${_brg_outdir}" "${_brg_inum}"
-  fi
-}
-
-ptgaul_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local long_sra="${_long["$target_index"]}"
-  local extracted_ptgaul_genomesize="${_ptgaul_genomesize["$target_index"]}"
-
-  mkdir -p "${_brg_outdir}/timing"
-  command time -v bash ${_POLAPLIB_DIR}/polap-ptGAUL1.sh \
-    -o ${_brg_outdir}-ptgaul \
-    -r ${_brg_outdir}/ptdna-reference.fa \
-    -g "${extracted_ptgaul_genomesize}" \
-    -l ${long_sra}.fastq \
-    -t 24 \
-    >${_brg_outdir}/tmp/ptgaul.out \
-    2>${_brg_outdir}/timing/timing-ptgaul.txt
-
-  mv ${_brg_outdir}-ptgaul/result_3000 ${_brg_outdir}/ptgaul
-  rm -rf "${_brg_outdir}-ptgaul"
-
-}
-
-msbwt_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local short_sra="${_short["$target_index"]}"
-
-  mkdir -p "${_brg_outdir}/timing"
-  echo "This polishing preparation takes long ..."
-  command time -v ${_polap_cmd} prepare-polishing \
-    -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-    -o ${_brg_outdir} \
-    2>${_brg_outdir}/timing/timing-prepare-polishing.txt
-}
-
-# Extraction of ptDNA from the assembly: a first try
-extract-ptgaul-ptdna_genus_species() {
-  local _brg_outdir="$1"
-
-  mkdir -p "${_brg_outdir}/timing"
-  # extract ptGAUL result
-  _log_echo "extract ptDNA from the ptGAUL result with fmlrc polishing"
-  command time -v ${_polap_cmd} disassemble ptgaul \
-    -o ${_brg_outdir} \
-    2>${_brg_outdir}/timing/timing-ptgaul-polishing.txt
-  _log_echo "use extract-ptgaul-ptdna2 <species_folder> if not working"
-}
-
-# Extraction of ptDNA from the assembly: another try
-# not using it much
-extract-ptgaul-ptdna2_genus_species() {
-  local _brg_outdir="$1"
-
-  mkdir -p "${_brg_outdir}/timing"
-  # extract ptGAUL result
-  echo "extract ptDNA from the ptGAUL result with fmlrc polishing"
-  ${_polap_cmd} disassemble ptgaul 2 \
-    -o ${_brg_outdir}
-  command time -v ${_polap_cmd} disassemble ptgaul 3 \
-    -v -v -v \
-    -o ${_brg_outdir} \
-    2>${_brg_outdir}/timing/timing-ptgaul-polishing.txt
-
-  _outdir="${_brg_outdir}/ptgaul/flye_cpONT/ptdna"
-  _brg_final_assembly="${_outdir}/pt.1.fa"
-  if [[ -s "${_brg_final_assembly}" ]]; then
-    # copy ptGAUL result
-    echo "copy ${_brg_outdir}/ptdna-ptgaul.fa"
-    cp -p ${_brg_final_assembly} ${_brg_outdir}/ptdna-ptgaul.fa
-  else
-    echo "No such file: ${_brg_final_assembly}"
-  fi
-}
-
-copy-ptdna-of-ptgaul_genus_species() {
-  local _brg_outdir="$1"
-
-  # copy ptGAUL result
-  echo "copy ${_brg_outdir}/ptdna-ptgaul.fa"
-  _outdir="${_brg_outdir}/ptgaul/flye_cpONT/ptdna"
-  _brg_final_assembly="${_outdir}/pt.1.fa"
-  cp -pu ${_brg_final_assembly} ${_brg_outdir}/ptdna-ptgaul.fa
-}
-
-# Case of the infer menu
-# no --disassemble-c
-coverage_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  local extracted_downsample="${_downsample["$target_index"]}"
-
-  local i=1
-  mkdir -p "${_brg_outdir_i}"
-  _log_echo "Analysis (coverage): ${_brg_outdir} at ${_brg_inum}"
-  _log_echo "  downsample=${extracted_downsample}x"
-
-  local _d_i="infer-$i"
-  local _x_i="coverage-$i"
-  local _stages="--stages-include 0"
-
-  # NOTE: "${_stages}" is a bug.
-  # use it without quotations.
-  command time -v ${_polap_cmd} disassemble \
-    ${_stages} \
-    --downsample ${extracted_downsample} \
-    -i ${extracted_inum} \
-    -o ${_brg_outdir} \
-    -l ${long_sra}.fastq \
-    -a ${short_sra}_1.fastq \
-    -b ${short_sra}_2.fastq \
-    --disassemble-i "${_d_i}" \
-    --random-seed "${random_seed}" \
-    2>"${_brg_outdir_i}/timing-${_x_i}.txt"
-
-  # echo "See ${_brg_outdir_i}/{lx.txt,sx.txt} for the basic statistics of your data"
-  # echo "Next: $0 infer ${_brg_outdir} [number] to assemble the ptDNA genome"
-}
-
-delete-disassemble_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  local i=1
-  echo "Deleting disassemble: ${_brg_outdir_i}/disassemble"
-  read -p "Do you want to delete it? (y/N): " confirm
-
-  case "$confirm" in
-  [yY] | [yY][eE][sS])
-    rm -rf "${_brg_outdir_i}/disassemble"
-    ;;
-  *)
-    echo "Deletion canceled."
-    ;;
-  esac
-
-  echo "See ${_brg_outdir_i}/{lx.txt,sx.txt} for the basic statistics of your data"
-  echo "Next: $0 infer ${_brg_outdir} [number] to assemble the ptDNA genome"
-}
-
-# Case of the infer menu
-# no --disassemble-c
-#
-# infer <outdir> <inum> [default|polishing|simple]
-#
-# default: all stages
-# polish: stage 3 only
-# simple: stage 3 only but simple polishing
-infer_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local simple_polishing="${3:-default}"
-  local _brg_random="${4:-off}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  if [[ "${_brg_random}" == "on" ]]; then
-    random_seed=0
-  fi
-
-  local i=0
-  local n
-  local p
-  IFS=':' read -r -a extracted_array_n <<<"${_compare_n["$target_index"]}"
-  IFS=':' read -r -a extracted_array_p <<<"${_compare_p["$target_index"]}"
-  local extracted_r="${_compare_r["$target_index"]}"
-  local extracted_memory="${_memory["$target_index"]}"
-  local extracted_downsample="${_downsample["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local extracted_alpha="${_disassemble_alpha["$target_index"]}"
-  local extracted_delta="${_disassemble_delta["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  mkdir -p "${_brg_outdir_i}"
-
-  for n in "${extracted_array_n[@]}"; do
-    for p in "${extracted_array_p[@]}"; do
-      i=$((i + 1))
-      _log_echo "Analysis (inference): ${_brg_outdir} at ${_brg_inum}"
-      _log_echo "($i) n=$n, p=$p, r=${extracted_r} memory=${extracted_memory}G, downsample=${extracted_downsample}x"
-
-      local _d_i="infer-$i"
-      local _x_i="infer-$i"
-      local _s_i="subsample-polish"
-      local _stages="--stages-include 0-3"
-      if [[ "${simple_polishing}" == "simple" ]]; then
-        simple_polishing="--disassemble-simple-polishing"
-        _stages="--stages-include 3"
-        _s_i="simple-polish"
-      elif [[ "${simple_polishing}" == "polish" ]]; then
-        simple_polishing=""
-        _stages="--stages-include 3"
-        _s_i="subsample-polish-only"
-      else
-        simple_polishing=""
-      fi
-
-      # NOTE: "${_stages}" is a bug.
-      # use it without quotations.
-      command time -v ${_polap_cmd} disassemble \
-        ${_stages} \
-        --downsample ${extracted_downsample} \
-        -i ${extracted_inum} \
-        -o ${_brg_outdir} \
-        -l ${long_sra}.fastq \
-        -a ${short_sra}_1.fastq \
-        -b ${short_sra}_2.fastq \
-        ${simple_polishing} \
-        --disassemble-i "${_d_i}" \
-        --disassemble-n $n \
-        --disassemble-p $p \
-        --disassemble-r ${extracted_r} \
-        --disassemble-memory ${extracted_memory} \
-        --disassemble-alpha ${extracted_alpha} \
-        --disassemble-delta ${extracted_delta} \
-        --random-seed "${random_seed}" \
-        2>"${_brg_outdir_i}/timing-${_x_i}-${_s_i}.txt"
-
-      if [[ -d "${_brg_outdir_i}/disassemble/${_d_i}/3" ]]; then
-        rm -rf "${_brg_outdir_i}/disassemble/${_d_i}/3-infer"
-        mv "${_brg_outdir_i}/disassemble/${_d_i}/3" \
-          "${_brg_outdir_i}/disassemble/${_d_i}/3-infer"
-      fi
-    done
-  done
-  # echo "Next: $0 check ${_brg_outdir} [number] to compare the assembly of the ptDNA genome with ptGAUL's"
-}
-
-# start with a copy of infer_genus_species
-# TODO: we need to consider much more than just adding this, we wil consider
-# Stage 1: -n => -sn, -a -sa -sap, -p => -sb -sap
-# Stage 2: -r => -rn, -ra -rap, -rb -rbp
-# Stage 3: -l -ln, -la -lap, -lb -lbp
-# CSV: add sa, sb, and others more
-# This is another idea that might need to consider:
-# we might use the second candidate if Stage 2 produces no assembly.
-# Then, we need to move or copy the check of candidate front of Stage 2
-# not at the end of Stage 1.
-# In Stage 1, we could do something else if it does not produce assembly.
-# Although it may not be obvious, we might increase the max subsampling rate.
-# Or, we could increase the max memory limit. Something we already mentioned
-# in the manuscript. To do such thing, we need to move around the candidate
-# checking part.
-infer-alpha_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local simple_polishing="${3:-default}"
-  local _brg_random="${4:-off}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  if [[ "${_brg_random}" == "on" ]]; then
-    random_seed=0
-  fi
-
-  local i=0
-  local n
-  local p
-  IFS=':' read -r -a extracted_array_n <<<"${_compare_n["$target_index"]}"
-  IFS=':' read -r -a extracted_array_p <<<"${_compare_p["$target_index"]}"
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_r="${_compare_r["$target_index"]}"
-  local extracted_memory="${_memory["$target_index"]}"
-  local extracted_downsample="${_downsample["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local extracted_alpha="${_disassemble_alpha["$target_index"]}"
-  local extracted_delta="${_disassemble_delta["$target_index"]}"
-  local extracted_a="${_disassemble_a["$target_index"]}"
-  local extracted_b="${_disassemble_b["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  mkdir -p "${_brg_outdir_i}"
-
-  for n in "${extracted_array_n[@]}"; do
-    for p in "${extracted_array_p[@]}"; do
-      i=$((i + 1))
-      _log_echo "Analysis (inference): ${_brg_outdir} at ${_brg_inum}"
-      _log_echo "($i) n=$n, p=$p, r=${extracted_r} memory=${extracted_memory}G, downsample=${extracted_downsample}x"
-
-      local _d_i="infer-$i"
-      local _x_i="infer-$i"
-      local _s_i="subsample-polish"
-      local _stages="--stages-include 0-3"
-      if [[ "${simple_polishing}" == "simple" ]]; then
-        simple_polishing="--disassemble-simple-polishing"
-        _stages="--stages-include 3"
-        _s_i="simple-polish"
-      elif [[ "${simple_polishing}" == "polish" ]]; then
-        simple_polishing=""
-        _stages="--stages-include 3"
-        _s_i="subsample-polish-only"
-      fi
-
-      # NOTE: "${_stages}" is a bug.
-      # use it without quotations.
-      command time -v ${_polap_cmd} disassemble \
-        ${_stages} \
-        --downsample ${extracted_downsample} \
-        -i ${extracted_inum} \
-        -o ${_brg_outdir} \
-        -l ${long_sra}.fastq \
-        -a ${short_sra}_1.fastq \
-        -b ${short_sra}_2.fastq \
-        ${simple_polishing} \
-        --disassemble-i "${_d_i}" \
-        --disassemble-n $n \
-        --disassemble-p $p \
-        --disassemble-a ${extracted_a} \
-        --disassemble-p ${extracted_p} \
-        --disassemble-r ${extracted_r} \
-        --disassemble-memory ${extracted_memory} \
-        --disassemble-alpha ${extracted_alpha} \
-        --disassemble-delta ${extracted_delta} \
-        --random-seed "${random_seed}" \
-        2>"${_brg_outdir_i}/timing-${_x_i}-${_s_i}.txt"
-
-      if [[ -d "${_brg_outdir_i}/disassemble/${_d_i}/3" ]]; then
-        rm -rf "${_brg_outdir_i}/disassemble/${_d_i}/3-infer"
-        mv "${_brg_outdir_i}/disassemble/${_d_i}/3" \
-          "${_brg_outdir_i}/disassemble/${_d_i}/3-infer"
-      fi
-    done
-  done
-  # echo "Next: $0 check ${_brg_outdir} [number] to compare the assembly of the ptDNA genome with ptGAUL's"
-}
-
-downsample2infer_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local simple_polishing="${3:-default}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  local i=0
-  local n
-  local p
-  IFS=':' read -r -a extracted_array_n <<<"${_compare_n["$target_index"]}"
-  IFS=':' read -r -a extracted_array_p <<<"${_compare_p["$target_index"]}"
-  local extracted_r="${_compare_r["$target_index"]}"
-  local extracted_memory="${_memory["$target_index"]}"
-  local extracted_downsample="${_downsample["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  mkdir -p "${_brg_outdir_i}"
-
-  for n in "${extracted_array_n[@]}"; do
-    for p in "${extracted_array_p[@]}"; do
-      i=$((i + 1))
-      _log_echo "Analysis (inference): ${_brg_outdir} at ${_brg_inum}"
-      _log_echo "($i) n=$n, p=$p, r=${extracted_r} memory=${extracted_memory}G, downsample=${extracted_downsample}x"
-
-      local _d_i="infer-$i"
-      local _x_i="infer-$i"
-      local _s_i="downsample"
-
-      # NOTE: "${_stages}" is a bug.
-      # use it without quotations.
-      command time -v ${_polap_cmd} disassemble downsample \
-        --downsample ${extracted_downsample} \
-        --disassemble-i ${_d_i} \
-        -i ${extracted_inum} \
-        -o ${_brg_outdir} \
-        -l ${long_sra}.fastq \
-        -a ${short_sra}_1.fastq \
-        -b ${short_sra}_2.fastq \
-        --random-seed "${random_seed}" \
-        2>"${_brg_outdir_i}/timing-${_x_i}-${_s_i}.txt"
-
-    done
-  done
-  # echo "Next: $0 check ${_brg_outdir} [number] to compare the assembly of the ptDNA genome with ptGAUL's"
-}
-
-# what is this? fix the sampling size?
-# fix: alpha and beta
-infer_xxx_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local simple_polishing="${3:-default}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  local i=0
-  local n
-  local p
-  IFS=':' read -r -a extracted_array_n <<<"${_compare_n["$target_index"]}"
-  IFS=':' read -r -a extracted_array_p <<<"${_compare_p["$target_index"]}"
-  local extracted_r="${_compare_r["$target_index"]}"
-  local extracted_memory="${_memory["$target_index"]}"
-  local extracted_downsample="${_downsample["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  mkdir -p "${_brg_outdir_i}"
-
-  for n in "${extracted_array_n[@]}"; do
-    for p in "${extracted_array_p[@]}"; do
-      i=$((i + 2))
-      _log_echo "Analysis (inference): ${_brg_outdir} at ${_brg_inum}"
-      _log_echo "($i) n=$n, p=$p, r=${extracted_r} memory=${extracted_memory}G, downsample=${extracted_downsample}x"
-
-      local _d_i="infer-$i"
-      local _x_i="infer-$i"
-      local _s_i="subsample-polish"
-      local _stages="--stages-include 0-3"
-      if [[ "${simple_polishing}" != "default" ]]; then
-        _stages="--stages-include 3"
-        _s_i="simple-polish"
-      fi
-
-      # NOTE: "${_stages}" is a bug.
-      # use it without quotations.
-      command time -v ${_polap_cmd} disassemble \
-        ${_stages} \
-        --downsample ${extracted_downsample} \
-        -i ${extracted_inum} \
-        -o ${_brg_outdir} \
-        -l ${long_sra}.fastq \
-        -a ${short_sra}_1.fastq \
-        -b ${short_sra}_2.fastq \
-        ${simple_polishing} \
-        --disassemble-i "${_d_i}" \
-        --disassemble-n $n \
-        --disassemble-p $p \
-        --disassemble-r ${extracted_r} \
-        --disassemble-memory ${extracted_memory} \
-        --disassemble-alpha 1.5 \
-        --disassemble-beta 0.05 \
-        --random-seed "${random_seed}" \
-        2>"${_brg_outdir_i}/timing-${_x_i}-${_s_i}.txt"
-
-      if [[ -d "${_brg_outdir_i}/disassemble/${_d_i}/3" ]]; then
-        rm -rf "${_brg_outdir_i}/disassemble/${_d_i}/3-infer"
-        mv "${_brg_outdir_i}/disassemble/${_d_i}/3" \
-          "${_brg_outdir_i}/disassemble/${_d_i}/3-infer"
-      fi
-    done
-  done
-  # echo "Next: $0 check ${_brg_outdir} [number] to compare the assembly of the ptDNA genome with ptGAUL's"
-}
-
-# Case of the check menu
-# --disassemble-c
-# --disassemble-align-reference
-# --disassemble-simple-polishing
-#
-# check <outdir> <inum> [simple|polish]
-#
-check_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local simple_polishing="${3:-default}"
-  local _brg_random="${4:-off}"
-
-  local icount="${3:-0}" # not used any more
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  if [[ "${_brg_random}" == "on" ]]; then
-    random_seed=0
-  fi
-
-  local i="${icount}"
-  local n
-  local p
-  IFS=':' read -r -a extracted_array_n <<<"${_compare_n["$target_index"]}"
-  IFS=':' read -r -a extracted_array_p <<<"${_compare_p["$target_index"]}"
-  local extracted_r="${_compare_r["$target_index"]}"
-  local extracted_memory="${_memory["$target_index"]}"
-  local extracted_downsample="${_downsample["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local extracted_alpha="${_disassemble_alpha["$target_index"]}"
-  local extracted_delta="${_disassemble_delta["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  mkdir -p "${_brg_outdir_i}"
-
-  for n in "${extracted_array_n[@]}"; do
-    for p in "${extracted_array_p[@]}"; do
-      i=$((i + 1))
-      _log_echo "Analysis (check): ${_brg_outdir} at ${_brg_inum}"
-      _log_echo "($i) n=$n, p=$p, memory=${extracted_memory}G, downsample=${extracted_downsample}x"
-
-      local _d_i="infer-$i"
-      local _x_i="check-$i"
-      local _s_i="subsample-polish"
-      local _stages="--stages-include 3"
-      if [[ "${simple_polishing}" == "simple" ]]; then
-        simple_polishing="--disassemble-simple-polishing"
-        _s_i="simple-polish"
-      elif [[ "${simple_polishing}" == "polish" ]]; then
-        simple_polishing=""
-        _stages="--stages-include 3"
-        _s_i="subsample-polish-only"
-      else
-        simple_polishing=""
-      fi
-
-      # "${_stages}" \
-      command time -v ${_polap_cmd} disassemble \
-        ${_stages} \
-        --downsample ${extracted_downsample} \
-        -i ${extracted_inum} \
-        -o ${_brg_outdir} \
-        -l ${long_sra}.fastq \
-        -a ${short_sra}_1.fastq \
-        -b ${short_sra}_2.fastq \
-        --disassemble-c ${_brg_outdir}/ptdna-ptgaul.fa \
-        --disassemble-align-reference \
-        ${simple_polishing} \
-        --disassemble-i "${_d_i}" \
-        --disassemble-n $n \
-        --disassemble-p $p \
-        --disassemble-r ${extracted_r} \
-        --disassemble-memory ${extracted_memory} \
-        --random-seed "${random_seed}" \
-        2>"${_brg_outdir_i}/timing-${_x_i}-${_s_i}.txt"
-
-      # compare the results
-
-      if [[ -d "${_brg_outdir_i}/disassemble/${_d_i}/3" ]]; then
-        rm -rf "${_brg_outdir_i}/disassemble/${_d_i}/3-check"
-        mv "${_brg_outdir_i}/disassemble/${_d_i}/3" \
-          "${_brg_outdir_i}/disassemble/${_d_i}/3-check"
-      fi
-
-      local mauve_dir="${_brg_outdir_i}/mauve/${i}"
-      local blast_dir="${_brg_outdir_i}/blast/${i}"
-      local mafft_dir="${_brg_outdir_i}/mafft/${i}"
-      mkdir -p "${mauve_dir}"
-      mkdir -p "${blast_dir}"
-      mkdir -p "${mafft_dir}"
-      if [[ -s "${_brg_outdir_i}/disassemble/${_d_i}/pt.subsample-polishing.reference.aligned.1.fa" ]]; then
-
-        ${_polap_cmd} mauve-mtdna -a "${_brg_outdir}/ptdna-ptgaul.fa" \
-          -b "${_brg_outdir_i}/disassemble/${_d_i}/pt.subsample-polishing.reference.aligned.1.fa" \
-          -o "${mauve_dir}" \
-          >"${mauve_dir}/log.txt"
-        # echo "see ${mauve_dir}/log.txt"
-        # cat "${mauve_dir}/log.txt"
-
-        ${_polap_cmd} compare2ptdna -a "${_brg_outdir}/ptdna-ptgaul.fa" \
-          -b "${_brg_outdir_i}/disassemble/${_d_i}/pt.subsample-polishing.reference.aligned.1.fa" \
-          -o "${blast_dir}"
-        # echo "see ${blast_dir}/pident.txt"
-        # cat "${blast_dir}/pident.txt"
-
-        ${_polap_cmd} mafft-mtdna -a "${_brg_outdir}/ptdna-ptgaul.fa" \
-          -b "${_brg_outdir_i}/disassemble/${_d_i}/pt.subsample-polishing.reference.aligned.1.fa" \
-          -o "${mafft_dir}" \
-          >"${mafft_dir}/log.txt"
-        # echo "see ${mafft_dir}/pident.txt"
-        # cat "${mafft_dir}/pident.txt"
-      else
-        echo "ERROR: no such file: ${_brg_outdir_i}/disassemble/${_d_i}/pt.subsample-polishing.reference.aligned.1.fa"
-      fi
-
-    done
-  done
-}
-
-# Case of the compare menu
-# --disassemble-c
-# --no-disassemble-align-reference
-compare_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local simple_polishing="${3:-default}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  local i=0
-  local n
-  local p
-  IFS=':' read -r -a extracted_array_n <<<"${_compare_n["$target_index"]}"
-  IFS=':' read -r -a extracted_array_p <<<"${_compare_p["$target_index"]}"
-  local extracted_r="${_compare_r["$target_index"]}"
-  local extracted_memory="${_memory["$target_index"]}"
-  local extracted_downsample="${_downsample["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local extracted_alpha="${_disassemble_alpha["$target_index"]}"
-  local extracted_delta="${_disassemble_delta["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  mkdir -p "${_brg_outdir_i}"
-
-  for n in "${extracted_array_n[@]}"; do
-    for p in "${extracted_array_p[@]}"; do
-      i=$((i + 1))
-      _log_echo "Analysis (check stage 1 or compare): ${_brg_outdir} at ${_brg_inum}"
-      _log_echo "($i) n=$n, p=$p, memory=${extracted_memory}G, downsample=${extracted_downsample}x"
-
-      local _d_i
-      _d_i="compare-$i"
-      local _stages="--stages-include 1-3" # to avoid another down-sampling
-
-      command time -v ${_polap_cmd} disassemble \
-        ${_stages} \
-        --downsample ${extracted_downsample} \
-        -i ${extracted_inum} \
-        -o ${_brg_outdir} \
-        -l ${long_sra}.fastq \
-        -a ${short_sra}_1.fastq \
-        -b ${short_sra}_2.fastq \
-        --disassemble-c ${_brg_outdir}/ptdna-ptgaul.fa \
-        --disassemble-i "${_d_i}" \
-        --disassemble-n $n \
-        --disassemble-p $p \
-        --disassemble-r ${extracted_r} \
-        --disassemble-memory ${extracted_memory} \
-        --disassemble-alpha ${extracted_alpha} \
-        --disassemble-delta ${extracted_delta} \
-        --random-seed "${random_seed}" \
-        2>${_brg_outdir_i}/timing-${_d_i}.txt
-    done
-  done
-}
-
-best-genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local simple_polishing="${3:-default}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-
-  ${_polap_cmd} disassemble best \
-    -i ${extracted_inum} \
-    -o ${_brg_outdir} \
-    --disassemble-i infer-1
-
-}
-
-bandage_genus_species() {
-  source <(echo 'export PATH="$PWD/bin:$PATH"')
-
-  Bandage --version
-}
-
-bandage1_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local simple_polishing="${3:-default}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-  local images=()
-  local captions=()
-
-  ${_polap_cmd} disassemble bandage \
-    -i ${extracted_inum} \
-    -o ${_brg_outdir} \
-    --disassemble-i infer-1
-  local _gfa_polap="${_brg_outdir}/${_brg_inum}/disassemble/infer-1/pt.1.gfa"
-  local _png_polap="${_brg_outdir}/${_brg_inum}/disassemble/infer-1/pt.1.png"
-
-  images+=(${_png_polap})
-  captions+=("Polap")
-
-  local _gfa_ptgaul="${_brg_outdir}/ptgaul/flye_cpONT/assembly_graph.gfa"
-  local _png_ptgaul="${_brg_outdir}/ptgaul.png"
-  ${_polap_cmd} bandage png \
-    ${_gfa_ptgaul} \
-    ${_png_ptgaul}
-  images+=(${_png_ptgaul})
-  captions+=("ptGAUL")
-
-  echo "ptGAUL ptDNA gfa: ${_gfa_ptgaul}"
-  echo "ptGAUL ptDNA png: ${_png_ptgaul}"
-
-  local _gfa_getorganelle=$(find "${_brg_outdir}/getorganelle" -type f -name 'embplant_pt*.gfa' | head -n 1)
-  local _png_getorganelle="${_brg_outdir}/getorganelle.png"
-  ${_polap_cmd} bandage png \
-    ${_gfa_getorganelle} \
-    ${_png_getorganelle}
-  images+=(${_png_getorganelle})
-  captions+=("GetOrganelle")
-
-  echo "GetOrganelle ptDNA gfa: ${_gfa_getorganelle}"
-  echo "GetOrganelle ptDNA png: ${_png_getorganelle}"
-
-  local _figure_md="figure1.md"
-
-  # echo "Warning: no such file: ${_gfa}"
-  # echo "FIX QT5 problem:"
-  # problem solved
-  # echo "export QT_QPA_PLATFORM=offscreen"
-  # Output Markdown file
-  #
-  output="${_figure_md}"
-
-  # Start writing to the markdown file
-  cat <<EOF >"$output"
----
-title: "${species_name}"
-geometry: margin=1in
----
-
-# Image Grid
-
-| Three Organelle genome assemblies |  |  |
-|-----------------|-----------------|-----------------|
-EOF
-
-  # Generate the image table with subcaptions
-  count=0
-  row="| "
-  caption_row="| "
-
-  for ((i = 0; i < ${#images[@]}; i++)); do
-    row+="![${captions[i]}](figures/${images[i]}){width=100px} | "
-    caption_row+="**${captions[i]}** | "
-    ((count++))
-
-    # End row if 3 images are added
-    if ((count % 3 == 0)); then
-      echo "$row" >>"$output"
-      echo "|-----------------|-----------------|-----------------|" >>"$output"
-      echo "$caption_row" >>"$output"
-      # echo "" >>"$output"
-      row="| "
-      caption_row="| "
-    fi
-  done
-}
-
-# figure1's all bandage assembly_graph
-# figure2.md
-bandage2_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local simple_polishing="${3:-default}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-  local extracted_n="${_compare_n["$target_index"]}"
-  local i
-  local width=13
-  local images=()
-  local captions=()
-
-  local _figure2_md="figure2.md"
-  local k=0
-  for ((i = 0; i < extracted_n; i++)); do
-
-    local _gfa_infer="${_brg_outdir}/${extracted_inum}/disassemble/infer-1/1/${i}/30-contigger/graph_final.gfa"
-    local _png_infer="${_brg_outdir}/${extracted_inum}/disassemble/infer-1/1/${i}/30-contigger/graph_final.png"
-    if [[ -s "${_gfa_infer}" ]]; then
-      echo "gfa file: ${_gfa_infer}"
-      ${_polap_cmd} bandage png \
-        ${_gfa_infer} \
-        ${_png_infer}
-      printf "| ![polap %s](figures/%s){ width=%s%% } " "${i}" "${_png_infer}" "${width}" >>"${_figure2_md}"
-      images+=("figures/${_png_infer}")
-      captions+=(${i})
-      ((k++))
-    else
-      echo "no such file: ${_gfa_infer}"
-    fi
-  done
-
-  printf "Figure. Polap inference - %s\n" "${species_name}" >>"${_figure2_md}"
-
-  #!/bin/bash
-
-  # Define an array of PNG files and their subcaptions
-  # images=("fig1.png" "fig2.png" "fig3.png" "fig4.png" "fig5.png" "fig6.png" "fig7.png" "fig8.png")
-  # captions=("Subcaption 1" "Subcaption 2" "Subcaption 3" "Subcaption 4" "Subcaption 5" "Subcaption 6" "Subcaption 7" "Subcaption 8")
-
-  # Output Markdown file
-  output="${_figure2_md}"
-
-  # Start writing to the markdown file
-  cat <<EOF >"$output"
----
-title: "${species_name}"
-geometry: margin=1in
----
-
-# Image Grid
-
-| Organelle genome assemblies |  |  |
-|-----------------|-----------------|-----------------|
-EOF
-
-  # Generate the image table with subcaptions
-  count=0
-  row="| "
-  caption_row="| "
-
-  for ((i = 0; i < ${#images[@]}; i++)); do
-    row+="![${captions[i]}](${images[i]}){width=100px} | "
-    caption_row+="**${captions[i]}** | "
-    ((count++))
-
-    # End row if 3 images are added
-    if ((count % 3 == 0)); then
-      echo "$row" >>"$output"
-      echo "|-----------------|-----------------|-----------------|" >>"$output"
-      echo "$caption_row" >>"$output"
-      # echo "" >>"$output"
-      row="| "
-      caption_row="| "
-    fi
-  done
-
-  # Handle the last incomplete row (if any)
-  remaining=$((3 - count % 3))
-  if ((remaining < 3)); then
-    # Fill empty image columns
-    for ((i = 0; i < remaining; i++)); do
-      row+=" | "
-      caption_row+=" | "
-    done
-    echo "$row" >>"$output"
-    echo "|-----------------|-----------------|-----------------|" >>"$output"
-    echo "$caption_row" >>"$output"
-  fi
-
-  echo "" >>"${output}"
-  printf "Figure. Polap inference - %s\n" "${species_name}" >>"${output}"
-
-}
-
+# copy figures from the analysis to the manuscript folder.
 copy-figures_genus_species() {
   local _brg_t_dir_figures="${1:-"${_brg_default_target_dir}"}"
   rsync -qav --include='*/' --include='*.png' --exclude='*' ./ "${_brg_t_dir_figures}/"
   rsync -qav --include='*/' --include='*.pdf' --exclude='*' ./ "${_brg_t_dir_figures}/"
   # rsync -av --include='*/' --include='*.png' --exclude='*' ./ ../../manuscript/polap-v0.4/figures/
   # rsync -av --include='*/' --include='*.pdf' --exclude='*' ./ ../../manuscript/polap-v0.4/figures/
-}
-
-# downsample <folder> <_brg_inum> [--dry]
-# e.g., downsample Pisum_sativum 0 --dry
-downsample_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local _brg_coverage="${3:-0}"
-  local _brg_dry="${4:--1}"
-
-  # for debugging: Inline local printing
-  #
-  # local var
-  # while IFS= read -r line; do
-  # 	if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
-  # 		var="${BASH_REMATCH[1]}"
-  # 		printf "%s=%q\n" "$var" "${!var}"
-  # 	fi
-  # done < <(local -p 2>/dev/null)
-  # return
-
-  local target_index="${_brg_outdir}-${_brg_inum}"
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
-  if [[ "${_brg_coverage}" == "0" ]]; then
-    _brg_coverage="${_downsample["$target_index"]}"
-  fi
-
-  if [[ "${_brg_dry}" == "-1" ]]; then
-    _brg_dry=""
-  fi
-
-  local _d_i
-  _d_i="downsample"
-
-  mkdir -p "${_brg_outdir_i}"
-
-  # Step 1. prepare input fastq data
-  local long_fastq="${long_sra}.fastq"
-  local short_fastq="${short_sra}_1.fastq"
-  prepare-data_genus_species "${_brg_outdir}" "${_brg_inum}"
-
-  # Step 2. Estimate the genome size
-  local _genome_size=$(
-    estimate-genomesize_genus_species \
-      "${_brg_outdir}" \
-      "${_brg_inum}" | tail -1
-  )
-  echo "Genome size estimate: ${_genome_size}"
-
-  # Step 3.
-  ${_polap_cmd} fastq subsample -v ${_dry} \
-    "${long_sra}.fastq" \
-    "${_brg_outdir_i}/l.fq" \
-    -c "${_brg_coverage}" \
-    -o "${_brg_outdir_i}" \
-    --random-seed "${random_seed}" \
-    --genomesize "${_genome_size}" -v \
-    >"${_brg_outdir_i}/l${_brg_coverage}x.txt"
-
-  ${_polap_cmd} fastq subsample2 -v ${_dry} \
-    "${short_sra}_1.fastq" \
-    "${short_sra}_2.fastq" \
-    "${_brg_outdir_i}/s_1.fq" \
-    "${_brg_outdir_i}/s_2.fq" \
-    -c "${_brg_coverage}" \
-    -o "${_brg_outdir_i}" \
-    --random-seed "${random_seed}" \
-    --genomesize "${_genome_size}" -v \
-    >"${_brg_outdir_i}/s${_brg_coverage}x.txt"
-}
-
-# preconditions:
-# 1. outdir
-# 2. long_sra fastq
-# postcondition:
-# 1. downsampled long_sra fastq
-downsample-long-data_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local _brg_coverage="${3:-0}"
-  local _brg_dry="${4:--1}"
-
-  local target_index="${_brg_outdir}-${_brg_inum}"
-  local long_sra="${_long["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
-
-  if [[ "${_brg_coverage}" == "0" ]]; then
-    _brg_coverage="${_downsample["$target_index"]}"
-  fi
-
-  if [[ "${_brg_dry}" == "-1" ]]; then
-    _brg_dry=""
-  fi
-
-  mkdir -p "${_brg_outdir_i}"
-
-  # Step 1. check input fastq data
-  mkdir -p "${_brg_outdir}/tmp"
-  if [[ -s "${long_sra}.fastq" ]]; then
-    echo "found: ${long_sra}.fastq"
-    mv "${long_sra}.fastq" "${_brg_outdir}"/tmp
-  else
-    echo "no such file: ${long_sra}.fastq"
-    return
-  fi
-
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "$CONDA_DEFAULT_ENV" != "polap" ]]; then
-    echo "You're not in the polap environment. Chaniging 'polap'..."
-    conda activate polap
-  fi
-
-  if [[ "$CONDA_DEFAULT_ENV" == "polap" ]]; then
-
-    # Step 2. Estimate the genome size
-    local _genome_size=$(
-      estimate-genomesize_genus_species \
-        "${_brg_outdir}" \
-        "${_brg_inum}" | tail -1
-    )
-    echo "Genome size estimate: ${_genome_size}"
-
-    # Step 3.
-    echo "downsampling ... ${long_sra}"
-    echo "input: ${_brg_outdir}/tmp/${long_sra}.fastq"
-    echo "output: ${long_sra}.fastq"
-    ${_polap_cmd} fastq subsample -v ${_dry} \
-      "${_brg_outdir}/tmp/${long_sra}.fastq" \
-      "${long_sra}.fastq" \
-      -c "${_brg_coverage}" \
-      -o "${_brg_outdir_i}" \
-      --random-seed "${random_seed}" \
-      --genomesize "${_genome_size}" -v \
-      >"${_brg_outdir_i}/l${_brg_coverage}x.txt"
-    echo "log: ${_brg_outdir_i}/l${_brg_coverage}x.txt"
-  fi
-}
-
-compute-subsample-rate_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local _brg_coverage="${3:-1}"
-  local _dry="${4:-default_value}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-  local extracted_downsample="${_downsample["$target_index"]}"
-
-  if [[ -s "$_brg_outdir/short_expected_genome_size.txt" ]]; then
-    echo "Found: $_brg_outdir/short_expected_genome_size.txt"
-  else
-    ${_polap_cmd} find-genome-size \
-      -a ${short_sra}_1.fastq \
-      -b ${short_sra}_2.fastq \
-      -o "${_brg_outdir}"
-  fi
-  local _genome_size=$(<"$_brg_outdir/short_expected_genome_size.txt")
-  echo "Genome size estimate: ${_genome_size}"
-
-  local _long_total_length=$(<"$_brg_outdir/l.fq.txt")
-  echo "Long total length: ${_long_total_length}"
-
-  local _rate=$(
-    echo "scale=10; ${_genome_size} / ${_long_total_length} * ${_brg_coverage}" | bc -l
-  )
-  echo "Rate for ${_brg_coverage}x genome size: ${_rate}"
-
-  echo "${_rate}" >"${_brg_outdir}"/fc.txt
-}
-
-# use-downsample <folder> [inum]
-# replace the input data with the downsampled data
-use-downsample_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-  local target_index="${_brg_outdir}-${_brg_inum}"
-
-  local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-  local random_seed="${_random_seed["$target_index"]}"
-  local ssh_remote="${_ssh["$target_index"]}"
-  local extracted_inum="${_inum["$target_index"]}"
-  local _brg_outdir_i="${_brg_outdir}/${extracted_inum}"
-  local extracted_downsample="${_downsample["$target_index"]}"
-
-  _c=${extracted_downsample}
-
-  # mv "${long_sra}.fastq" "${_brg_outdir}/l.fq"
-  rm -f "${long_sra}.fastq"
-  # gunzip -f "${_brg_outdir}/l${_c}x.fq.gz"
-  mv "${_brg_outdir}/l${_c}x.fq" "${long_sra}.fastq"
-
-  # mv "${short_sra}_1.fastq" "${_brg_outdir}/s_1.fq"
-  rm -f "${short_sra}_1.fastq"
-  # gunzip -f "${_brg_outdir}/s${_c}x_1.fq.gz"
-  mv "${_brg_outdir}/s${_c}x_1.fq" "${short_sra}_1.fastq"
-
-  # mv "${short_sra}_2.fastq" "${_brg_outdir}/s_2.fq"
-  rm -f "${short_sra}_2.fastq"
-  # gunzip -f "${_brg_outdir}/s${_c}x_2.fq.gz"
-  mv "${_brg_outdir}/s${_c}x_2.fq" "${short_sra}_2.fastq"
-}
-
-restart_genus_species() {
-  local _brg_outdir="$1"
-
-  local target_dir="${_brg_outdir}-t"
-  mkdir "${target_dir}"
-
-  for i in \
-    00-bioproject \
-    0-bioproject \
-    getorganelle \
-    ptgaul \
-    msbwt \
-    timing \
-    polap.log; do
-    mv "${_brg_outdir}/$i" "${target_dir}"
-  done
-  mv "${_brg_outdir}"/*.fa "${target_dir}"
-
-  mv "${_brg_outdir}" "${_brg_outdir}-backup"
-  mv "${target_dir}" "${_brg_outdir}"
-}
-
-write-config_genus_species() {
-  local csv_file="$1"
-
-  # Write the output to CSV
-  {
-    # Print the header
-    echo "species,_long,_short,_host,_ptgaul_genomesize,_compare_n,_compare_p,_compare_r,_disassemble_alpha,_disassemble_delta,_random_seed"
-
-    # Loop through species and print their values
-    local seed=101
-    for key in "${!_long[@]}"; do
-      if [[ -z "${_ptgaul_genomesize[$key]}" ]]; then
-        _ptgaul_genomesize[$key]=160000
-      fi
-      _random_seed[$key]="${seed}"
-      _disassemble_alpha[$key]="5"
-      _disassemble_delta[$key]="5"
-      echo "$key,${_long[$key]},${_short[$key]},${_host[$key]},${_ptgaul_genomesize[$key]},${_compare_n[$key]},${_compare_p[$key]},${_compare_r[$key]},${_disassemble_alpha[$key]},${_disassemble_delta[$key]},${_random_seed[$key]}"
-      seed=$((seed + 2))
-    done
-  } >"$csv_file"
-}
-
-wga_genus_species() {
-  local _brg_outdir="$1"
-  local _brg_inum="${2:-0}"
-
-  local target_index="${_brg_outdir}-0"
-
-  local species_name="$(echo $1 | sed 's/_/ /')"
-  local long_sra="${_long["$target_index"]}"
-  local short_sra="${_short["$target_index"]}"
-
-  rm -rf "${_brg_outdir}/0"
-
-  ${_polap_cmd} assemble1 \
-    -o ${_brg_outdir} \
-    -l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-    --stopafter data
-
-  rm -rf "${_brg_outdir}/0"
-
-  command time -v ${_polap_cmd} flye1 polishing \
-    -o ${_brg_outdir} \
-    -l ${long_sra}.fastq -a ${short_sra}_1.fastq -b ${short_sra}_2.fastq \
-    2>${_brg_outdir}/timing-flye1.txt
 }
 
 archive_genus_species_for() {
@@ -5220,159 +1765,20 @@ archive_genus_species() {
   fi
 }
 
-get_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:--1}"
-  local _brg_confirm="${3:-off}"
-  local _brg_download="${4:-off}"
-
-  if [[ "${_brg_outdir}" == "all" ]]; then
-    for _v1 in "${Sall[@]}"; do
-      get_genus_species_for "${_v1}" "${_brg_inum}" "${_brg_confirm}" "${_brg_download}"
-    done
-  else
-    get_genus_species_for "${_brg_outdir}" "${_brg_inum}" "${_brg_confirm}" "${_brg_download}"
-  fi
-}
-
-get_genus_species_for() {
-  local _brg_outdir="${1:-default}"
-  local _brg_inum="${2:--1}"
-  local _brg_confirm="${3:-off}"
-  local _brg_download="${4:-off}"
-
-  local target_index="${_brg_outdir}-0"
-  local ssh_remote="${_ssh["$target_index"]}"
-
-  local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
-
-  # local extracted_inum="${_inum["$target_index"]}"
-
-  # if [[ "${_local_host}" == "$(hostname)" ]]; then
-
-  # Define the directory name (can be passed as an argument)
-  dir_to_check="${_brg_outdir}"
-
-  if [[ "${_brg_confirm}" == "off" ]]; then
-    # Check if the directory exists
-    if [[ -d "$dir_to_check" ]]; then
-      echo "Directory '$dir_to_check' exists."
-      # Ask for user confirmation before deleting
-      read -p "Do you want to delete or add ${_brg_inum} to it? (a/N/y): " confirm
-    else
-      echo "Directory '$dir_to_check' does not exist."
-      confirm="yes"
-    fi
-  else
-    confirm="${_brg_confirm}"
-  fi
-
-  case "$confirm" in
-  [yY] | [yY][eE][sS])
-
-    local _atargz="${_brg_outdir}-a.tar.gz"
-    if [[ "${_brg_inum}" != "-1" ]]; then
-      _atargz="${_brg_outdir}-a-${_brg_inum}.tar.gz"
-    fi
-
-    if [[ "${_brg_download}" == "on" ]]; then
-      rm -f "${_atargz}"
-      scp -p "${ssh_remote}:$PWD/${_atargz}" .
-    fi
-
-    if [[ -s "${_atargz}" ]]; then
-      tar zxf "${_atargz}"
-      mv "$dir_to_check/0-bioproject" "${_brg_outdir}-a/"
-      mv "$dir_to_check/bioproject.txt" "${_brg_outdir}-a/"
-      rm -rf "$dir_to_check"
-      echo "Directory '$dir_to_check' deleted."
-      mv ${_brg_outdir}-a ${_brg_outdir}
-      # echo "${_brg_outdir} is replaced by ${_brg_outdir}-a."
-    else
-      echo "INFO: no such file: ${_atargz}, so we do nothing."
-    fi
-    ;;
-  [aA] | [aA][dD][dD])
-    if [[ "${_brg_inum}" == "-1" ]]; then
-      echo "ERRO: <inum> must be zero or positive for add operation."
-    else
-      local _atargz="${_brg_outdir}-a-${_brg_inum}.tar.gz"
-      echo "Replacing ${_brg_outdir}/${_brg_inum} using ${_atargz} ..."
-      if [[ "${_brg_download}" == "on" ]]; then
-        echo "  fetching ${ssh_remote}:$PWD/${_atargz} ..."
-        scp -p "${ssh_remote}:$PWD/${_atargz}" .
-        if [ $? -ne 0 ]; then
-          echo "  SCP failed: file not found on remote: ${ssh_remote}:$PWD/${_atargz}"
-          return
-        fi
-      fi
-
-      if [[ -s "${_atargz}" ]]; then
-        tar zxf "${_atargz}"
-        rm -rf "${_brg_outdir}/${_brg_inum}"
-        mv ${_brg_outdir}-a/${_brg_inum} ${_brg_outdir}
-        cp -p ${_brg_outdir}-a/polap.log ${_brg_outdir}/
-        # echo "  ${_brg_outdir}/${_brg_inum} is replaced b ${_brg_outdir}-a/${_brg_inum}"
-        rm -rf "${_brg_outdir}-a"
-      else
-        echo "Error: no such file: ${_atargz}, so we skip adding for ${_brg_outdir}/${_brg_inum}"
-      fi
-    fi
-
-    ;;
-  *)
-    echo "Deletion canceled."
-    ;;
-  esac
-}
-
-# TODO
-report_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-2}"
-  local _brg_d_index="${3:-infer-1}"
-
-  if [[ "${_brg_outdir}" == "all" ]]; then
-    for _v1 in "${Sall[@]}"; do
-      report_genus_species_for "${_v1}" "${_brg_inum}" "${_brg_d_index}"
-    done
-  else
-    report_genus_species_for "$@"
-  fi
-}
-
-# TODO
-report_genus_species_for() {
+# kill nextdenovo jobs.
+nextdenovo-polish-cleanup_genus_species() {
   local _brg_outdir="${1}"
-  local _brg_inum="${2:-2}"
-  local _brg_d_index="${3:-infer-1}"
-  local _key="${_brg_outdir}-${_brg_inum}"
 
-  local i=0
-  local n
-  local p
-  IFS=':' read -r -a extracted_array_n <<<"${_compare_n["$_key"]}"
-  IFS=':' read -r -a extracted_array_p <<<"${_compare_p["$_key"]}"
-  for n in "${extracted_array_n[@]}"; do
-    for p in "${extracted_array_p[@]}"; do
-      i=$((i + 1))
-      k="3x"
-      ${_polap_cmd} disassemble report ${k} 3-infer \
-        -o "${_brg_outdir}" \
-        -i "${_brg_inum}" \
-        --disassemble-i "${_brg_d_index}"
+  if [[ ! -d "${_brg_outdir}" ]]; then
+    echo "Error: no such outdir: ${_brg_outdir}"
+    return
+  fi
 
-      # for k in {1..2}; do
-      # 	${_polap_cmd} disassemble report ${k} infer \
-      # 		-o ${_brg_outdir} \
-      # 		--disassemble-i infer-$i
-      # 	${_polap_cmd} disassemble report ${k} \
-      # 		-o ${_brg_outdir} \
-      # 		--disassemble-i compare-$i
-      # done
-
-    done
-  done
+  rm -rf "${_brg_outdir}"-nextdenovo
+  rm -rf "${_brg_outdir}"-pmat
+  pkill -f execute_nextdenovo_"${_brg_outdir}".sh
+  pkill -f nextDenovo
+  pkill -f minimap2-nd
 }
 
 ################################################################################
@@ -5448,2528 +1854,6 @@ parse_params() {
 
   # Print the variables (return as output)
   echo "$I $P $N $R $A $B $M $D $Alpha $Memory"
-}
-
-# read -r memory1 time1 < <(parse_timing Eucalyptus_pauciflora 3)
-parse_timing() {
-  local _v1="${1}"
-  local j="${2}"
-  local _memory_gb
-  local _total_hours
-  local _timing_file=${_v1}/timing-${j}.txt
-  local _params_txt=${_v1}/disassemble/${j}/params.txt
-  # percent_identity=$(<"${_v1}/disassemble/${j}/c/coverage.txt")
-  # ipn=$(parse_params "${params_txt}")
-  # read -r I P N <<<"$ipn"
-
-  if [[ -s "${_timing_file}" ]]; then
-    local _time_wga=$(grep 'Elapsed' "${_timing_file}" | head -1)
-    local _memory_wga=$(grep 'Maximum resident set size' "${_timing_file}" | head -1)
-    # Extract the number in kilobytes
-    local _memory_kbytes=$(echo "$_memory_wga" | grep -oE "[0-9]+")
-    # Convert kilobytes to gigabytes
-    # Extract the time portion using grep with regex
-    local _memory_gb=$(echo "scale=2; $_memory_kbytes / 1048576" | bc)
-    # time_only=$(echo "$_time_wga" | grep -oE "[0-9]+(:[0-9]{2}){1,2}")
-    local time_only=$(grep "Elapsed (wall clock) time (h:mm:ss or m:ss):" "$_timing_file" | awk -F': ' '{print $2}')
-
-    local _total_hours=$(convert_to_hours "${time_only}")
-  else
-    _memory_gb=0
-    _total_hours=0
-  fi
-
-  echo "${_memory_gb} ${_total_hours}"
-}
-
-function _polap_utility_convert_bp {
-  local bp=${1%.*}
-  if ((bp >= 1000000000000)); then
-    echo "$(bc <<<"scale=1; $bp/1000000000000") Tbp"
-  elif ((bp >= 1000000000)); then
-    echo "$(bc <<<"scale=1; $bp/1000000000") Gbp"
-  elif ((bp >= 1000000)); then
-    echo "$(bc <<<"scale=1; $bp/1000000") Mbp"
-  elif ((bp >= 1000)); then
-    echo "$(bc <<<"scale=1; $bp/1000") kbp"
-  else
-    echo "$bp bp"
-  fi
-}
-
-# extract short-read coverage
-get_short_read_coverage() {
-  local file="$1"
-  if [[ ! -f "$file" ]]; then
-    echo "Error: File not found!"
-    return 1
-  fi
-
-  local coverage
-  # coverage=$(grep -oP 'short-read coverage:\s*\K\d+' "$file")
-  coverage=$(grep -oP 'short-read coverage:\s*\K[\d.]+(?=x)' "$file" | tail -1)
-
-  if [[ -n "$coverage" ]]; then
-    coverage=$(echo "$coverage" | tr -d '[:space:]') # Remove spaces
-    printf "%.1f\n" "$coverage"
-  else
-    echo "Error: Coverage information not found!"
-    return 1
-  fi
-}
-
-get_long_read_coverage() {
-  local file="$1"
-  if [[ ! -f "$file" ]]; then
-    echo "Error: File not found!"
-    return 1
-  fi
-
-  local coverage
-  # coverage=$(grep -oP 'long-read coverage:\s*\K\d+' "$file")
-  coverage=$(grep -oP 'long-read coverage:\s*\K[\d.]+(?=x)' "$file" | tail -1)
-
-  if [[ -n "$coverage" ]]; then
-    coverage=$(echo "$coverage" | tr -d '[:space:]') # Remove spaces
-    printf "%.1f\n" "$coverage"
-  else
-    echo "Error: Coverage information not found!"
-    return 1
-  fi
-}
-
-get_target_read_coverage() {
-  local file="$1"
-  if [[ ! -f "$file" ]]; then
-    echo "Error: File not found!"
-    return 1
-  fi
-
-  local coverage
-  # coverage=$(grep -oP 'target coverage:\s*\K\d+' "$file")
-  coverage=$(grep -oP 'target coverage:\s*\K[\d.]+(?=x)' "$file" | tail -1)
-
-  if [[ -n "$coverage" ]]; then
-    coverage=$(echo "$coverage" | tr -d '[:space:]') # Remove spaces
-    printf "%.1f\n" "$coverage"
-  else
-    echo "Error: Coverage information not found!"
-    return 1
-  fi
-}
-
-maintable1_genus_species_header() {
-  local _brg_table="${1:-1}"
-
-  local _items=(
-    "Species"
-    "Order"
-    "Family"
-    "I"
-    "C"
-    "L_SRA"
-    "L_size"
-    "L_cov"
-    "S_SRA"
-    "S_size"
-    "S_cov"
-    "G"
-    "N"
-    "P"
-    "R"
-    "D"
-    "A0"
-    "Rate"
-    "Size"
-    "Alpha"
-    "ptDNA"
-    "Length1"
-    "Length2"
-    "Pident"
-    "N1"
-    "Mode"
-    "SD"
-    "N2"
-    "M"
-    "M_g"
-    "M_p"
-    "M_t1"
-    "M_t2"
-    "M_s"
-    "M_f"
-    "T"
-  )
-
-  if ((_brg_table == 2)); then
-    _items=(
-      "Species"
-      "Order"
-      "Family"
-      "N"
-      "C"
-      "L_SRA"
-      "L_size"
-      "L_cov"
-      "S_SRA"
-      "S_size"
-      "S_cov"
-      "P"
-      "R"
-      "Rate"
-      "Size"
-      "Alpha"
-      "Length2"
-      "N1"
-      "Mode"
-      "SD"
-      "N2"
-      "M"
-      "M_g"
-      "M_f"
-      "T"
-    )
-  fi
-
-  printf "%s\t" "${_items[@]::${#_items[@]}-1}"
-  printf "%s\n" "${_items[-1]}"
-}
-
-# Table 1's row for a given outdir and inum.
-#
-# arg1: outdir
-# arg2: inum
-# arg3: disassemble-i
-# arg4: 1 or 2
-# arg5: target directory to copy the result
-#
-# outdir-inum is used as the key as well.
-#
-# return:
-#
-maintable1_genus_species_for() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-2}"
-  local _brg_d_index="${3:-infer-1}"
-  local _brg_table="${4:-1}"
-  local _brg_t_dir="${5:-"${_brg_default_target_dir}"}"
-  local _key="${_brg_outdir}-${_brg_inum}"
-
-  local _v1="${_brg_outdir}"
-  local _polap_log=${_v1}/polap.log
-
-  # Taxon names: species, genus, family, and order
-  local _species=${_taxon[$_key]}
-  local _species="${_species//_/ }"
-  local _genus=${_species%% *}
-  local _family=$(grep "${_genus}" ${_POLAPLIB_DIR}/taxonomy_output.tsv | cut -f 7 | head -1)
-  local _order=$(grep "${_genus}" ${_POLAPLIB_DIR}/taxonomy_output.tsv | cut -f 6 | head -1)
-
-  # Long SRA
-  local _l_sra=$(awk '/long-read/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_polap_log" | sort -u | grep -v '^$')
-  if [[ -s "${_v1}/long_total_length.txt" ]]; then
-    _l_sra_size=$(<"${_v1}/long_total_length.txt")
-  else
-    _l_sra_size=$(<"${_v1}/l.fq.txt")
-  fi
-  local _l_sra_size_gb=$(_polap_utility_convert_bp "${_l_sra_size}")
-
-  # Short SRA
-  local _s_sra=$(awk '/short-read1/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_polap_log" | sort -u | grep -v '^$')
-  if [[ -s "${_v1}/short_total_length.txt" ]]; then
-    local _s_sra_size=$(<"${_v1}/short_total_length.txt")
-  else
-    local _s_sra_size1=$(<"${_v1}/s1.fq.txt")
-    local _s_sra_size2=$(<"${_v1}/s2.fq.txt")
-    local _s_sra_size=$((_s_sra_size1 + _s_sra_size2))
-  fi
-  local _s_sra_size_gb=$(_polap_utility_convert_bp "${_s_sra_size}")
-
-  # Known ptDNA NCBI accession
-  local _known_mtdna=$(grep 'NCBI accession:' ${_polap_log} | cut -d: -f4 | tail -n 1 || true)
-  _known_mtdna=${_known_mtdna:-'NA'}
-
-  # Genome size estimates
-  if [[ -s "${_v1}/short_expected_genome_size.txt" ]]; then
-    _genome_size=$(<"${_v1}/short_expected_genome_size.txt")
-  else
-    echo "ERROR: no such file: ${_v1}/short_expected_genome_size.txt"
-    exit 1
-  fi
-
-  if ((_brg_table == 1)); then
-    local _ptdna_ptgaul=${_v1}/ptdna-ptgaul.fa
-    local _ptdna_reference=${_v1}/ptdna-reference.fa
-    if [[ -s "${_ptdna_ptgaul}" ]]; then
-      local _seq_length_ptgaul=$(bioawk -c fastx 'NR==1 {print length($seq); exit}' "${_ptdna_ptgaul}")
-    else
-      _seq_length_ptgaul='NA'
-    fi
-  fi
-
-  # read -r _memory_gb_flye1 _total_hours_flye1 < <(parse_timing "${_v1}" "infer12-4")
-
-  local j=1
-  local _i="${_brg_inum}"
-  local _v1_inum="${_v1}/${_brg_inum}"
-  local _disassemble_index="${_brg_d_index}"
-  local _extracted_memory="${_memory["$_key"]}"
-  local _summary1_ordered_txt="${_v1_inum}/disassemble/${_disassemble_index}/1/summary1-ordered.txt"
-  local _summary1_md="${_v1_inum}/disassemble/${_disassemble_index}/1/summary1.md"
-  if [[ ! -s "${_summary1_ordered_txt}" ]]; then
-    echo "Error: no such file: ${_summary1_ordered_txt}" >&2
-    echo "  stage 1 might have been terminated prematurely, see ${_summary1_md}" >&2
-    cat "${_summary1_md}" >&2
-    return
-  fi
-
-  local _ptdna_subsample="${_v1_inum}/disassemble/${_disassemble_index}/pt.subsample-polishing.1.fa"
-  local _seq_length_subsample=0
-  if [[ -s "${_ptdna_subsample}" ]]; then
-    # Count the number of sequences (lines starting with '>')
-    local _seq_count=$(grep -c "^>" "$_ptdna_subsample")
-
-    # Ensure there is exactly one sequence
-    if ((_seq_count != 1)); then
-      echo "Error: FASTA file does not contain exactly one sequence: ${_ptdna_subsample}"
-      exit 1
-    fi
-
-    # Compute the sequence length
-    _seq_length_subsample=$(bioawk -c fastx 'NR==1 {print length($seq); exit}' "${_ptdna_subsample}")
-  else
-    echo "Error: no such file: ${_ptdna_subsample}" >&2
-    return
-  fi
-
-  # Extract mode value
-  # Extract SD value
-  # Extract the first index value
-  local _mode=$(grep "^#mode:" "$_summary1_ordered_txt" | awk '{print $2}')
-  local _sd=$(grep "^#sd:" "$_summary1_ordered_txt" | awk '{print $2}')
-  local _first_index=$(grep "^#index:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
-  local _n1=$(grep "^#n:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
-  local _output=$(awk -F'\t' 'NR==2 {print $1}' "${_summary1_ordered_txt}")
-  read -r _second_line_index <<<"$_output"
-  if ((_first_index != _second_line_index)); then
-    echo "ERROR: #index: ${_first_index} vs. #2nd line index: ${_second_line_index}" >&2
-    echo "See ${_summary1_ordered_txt}" >&2
-    echo "------------------------------" >&2
-    cat "${_summary1_ordered_txt}" >&2
-    echo "------------------------------> skip it!" >&2
-    # exit 1
-  fi
-
-  local _params_txt=${_v1_inum}/disassemble/${_disassemble_index}/params.txt
-  local _ipn=$(parse_params "${_params_txt}")
-  local _I _P _N _R _A _B _M _D _Alpha _Memory
-  read -r _I _P _N _R _A _B _M _D _Alpha _Memory <<<"$_ipn"
-
-  # The determined subsampling rate and alpha
-  local _summary2_ordered_txt=${_v1_inum}/disassemble/${_disassemble_index}/2/summary1-ordered.txt
-  local _n2=$(grep "^#n:" "$_summary2_ordered_txt" | awk 'NR==1 {print $2}')
-  local _output=$(awk -F'\t' 'NR==2 {print $1, $2, $4, $11}' "${_summary2_ordered_txt}")
-  local _summary2_index
-  local _summary2_size
-  local _summary2_size_gb
-  local _summary2_rate_rounded
-  local _summary2_alpha
-  local _summary2_alpha_formatted
-  read -r _summary2_index _summary2_size _summary2_rate _summary2_alpha <<<"$_output"
-  _summary2_size_gb=$(_polap_utility_convert_bp "${_summary2_size}")
-  local _summary2_rate_decimal=$(printf "%.10f" "$_summary2_rate")
-  _summary2_rate_rounded=$(echo "scale=4; $_summary2_rate_decimal / 1" | bc)
-  _summary2_alpha_formatted=$(echo "scale=2; $_summary2_alpha / 1" | bc | awk '{printf "%.2f\n", $1}')
-
-  # Timing
-  if ((_brg_table == 1)); then
-    read -r _memory_gb_getorganelle _total_hours_getorganelle < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-getorganelle.txt")
-    if [[ -s "${_v1}/timing/timing-ptgaul.txt" ]]; then
-      read -r _memory_gb_ptgaul _total_hours_ptgaul < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-ptgaul.txt")
-      read -r _memory_gb_prepare_polishing _total_hours_prepare_polishing < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-prepare-polishing.txt")
-      read -r _memory_gb_ptgaul_polishing _total_hours_ptgaul_polishing < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-ptgaul-polishing.txt")
-      read -r _memory_gb_subsampling_polishing _total_hours_subsampling_polishing < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-check-${j}-subsample-polish.txt")
-    else
-      _memory_gb_ptgaul='NA'
-      _memory_gb_prepare_polishing='NA'
-      _memory_gb_ptgaul_polishing='NA'
-      _memory_gb_subsampling_polishing='NA'
-    fi
-    read -r _memory_gb _total_hours < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-infer-${j}-subsample-polish.txt")
-  elif ((_brg_table == 2)); then
-    read -r _memory_gb_getorganelle _total_hours_getorganelle < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-getorganelle.txt")
-    read -r _memory_gb_prepare_polishing _total_hours_prepare_polishing < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-prepare-polishing.txt")
-    read -r _memory_gb_subsampling_polishing _total_hours_subsampling_polishing < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-check-${j}-subsample-polish.txt")
-    read -r _memory_gb _total_hours < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-infer-${j}-subsample-polish.txt")
-
-    #   read -r _memory_gb_getorganelle _total_hours_getorganelle < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-getorganelle.txt")
-    # read -r _memory_gb_polishing _total_hours_polishing < <(_polap_lib_timing-parse-timing "${_v1}/timing/timing-prepare-polishing.txt")
-    #   read -r _memory_gb_subsampling_polishing _total_hours_subsampling_polishing < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-infer-${j}-subsample-polish.txt")
-    #   read -r _memory_gb _total_hours < <(_polap_lib_timing-parse-timing "${_v1_inum}/timing-infer-${j}-subsample-polish.txt")
-  fi
-
-  # Percent identity from pairwise sequence alignment
-  local _mafft_pident="NA"
-  if [[ -s "${_v1_inum}/mafft/${j}/pident.txt" ]]; then
-    _mafft_pident="$(<${_v1_inum}/mafft/${j}/pident.txt)"
-  fi
-
-  # local _blast_pident="NA"
-  # if [[ -s "${_v1_inum}/blast/${j}/pident.txt" ]]; then
-  # 	_blast_pident="$(<${_v1_inum}/blast/${j}/pident.txt)"
-  # else
-  # 	_blast_pident=0
-  # fi
-
-  # local _mauve_lcb_coverage="NA"
-  # if [[ -s "${_v1_inum}/mauve/${j}/log.txt" ]]; then
-  # 	_mauve_lcb_coverage=$(awk '{print $2}' "${_v1_inum}/mauve/${j}/log.txt")
-  # else
-  # 	_mauve_lcb_coverage=0
-  # fi
-
-  local _pident="${_mafft_pident}"
-
-  # sequencing data coverage
-  local _short_coverage=$(get_short_read_coverage "${_v1_inum}/sx.txt")
-  local _long_coverage=$(get_long_read_coverage "${_v1_inum}/lx.txt")
-  local _target_coverage=$(get_target_read_coverage "${_v1_inum}/lx.txt")
-
-  local _items
-  if ((_brg_table == 1)); then
-    local _items=(
-      "_${_species}_"
-      "${_order}"
-      "${_family}"
-      "${_i}"
-      "${_target_coverage}"
-      "${_l_sra}"
-      "${_l_sra_size_gb}"
-      "${_long_coverage}"
-      "${_s_sra}"
-      "${_s_sra_size_gb}"
-      "${_short_coverage}"
-      "${_genome_size}"
-      "${_N}"
-      "${_P}"
-      "${_R}"
-      "${_D}"
-      "${_Alpha}"
-      "${_summary2_rate_rounded}"
-      "${_summary2_size_gb}"
-      "${_summary2_alpha_formatted}"
-      "${_known_mtdna}"
-      "${_seq_length_ptgaul}"
-      "${_seq_length_subsample}"
-      "${_pident}"
-      "${_n1}"
-      "${_mode}"
-      "${_sd}"
-      "${_n2}"
-      "${_extracted_memory}"
-      "${_memory_gb_getorganelle}"
-      "${_memory_gb_ptgaul}"
-      "${_memory_gb_prepare_polishing}"
-      "${_memory_gb_ptgaul_polishing}"
-      "${_memory_gb_subsampling_polishing}"
-      "${_memory_gb}"
-      "${_total_hours}"
-    )
-  elif ((_brg_table == 2)); then
-    _items=(
-      "_${_species}_"
-      "${_order}"
-      "${_family}"
-      "${_i}"
-      "${_target_coverage}"
-      "${_l_sra}"
-      "${_l_sra_size_gb}"
-      "${_long_coverage}"
-      "${_s_sra}"
-      "${_s_sra_size_gb}"
-      "${_short_coverage}"
-      "${_P}"
-      "${_R}"
-      "${_summary2_rate_rounded}"
-      "${_summary2_size_gb}"
-      "${_summary2_alpha_formatted}"
-      "${_seq_length_subsample}"
-      "${_n1}"
-      "${_mode}"
-      "${_sd}"
-      "${_n2}"
-      "${_extracted_memory}"
-      "${_memory_gb_getorganelle}"
-      "${_memory_gb}"
-      "${_total_hours}"
-    )
-  fi
-
-  printf "%s\t" "${_items[@]::${#_items[@]}-1}" >>"${_table_tsv}"
-  printf "%s\n" "${_items[-1]}" >>"${_table_tsv}"
-}
-
-# Table 1's row for a given outdir and inum.
-#
-# arg1: outdir
-# arg2: inum
-# arg3: disassemble-i
-# arg4: 1 or 2
-# arg5: target directory to copy the result
-#
-maintable1_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-2}"
-  local _brg_d_index="${3:-infer-1}"
-  local _brg_table="${4:-1}"
-  local _brg_format="${5:-1}"
-  local _brg_t_dir="${6:-"${_brg_default_target_dir}"}"
-  # local _table_name=$(echo "${FUNCNAME[0]}" | cut -d'_' -f1)
-
-  local _table_name="maintable1"
-  if ((_brg_table == 2)); then
-    _table_name="maintable2"
-  fi
-  local _table_tsv="${_table_name}-${_brg_inum}.tsv"
-
-  maintable1_genus_species_header "${_brg_table}" >"${_table_tsv}"
-
-  if [[ "${_brg_outdir}" == "all" ]]; then
-
-    # Extract and sort keys
-    sorted_keys=($(for key in "${!_table1[@]}"; do echo "$key"; done | sort))
-
-    # Iterate over sorted keys and check if value is "T"
-    for key in "${sorted_keys[@]}"; do
-      if ((_brg_table == 1)); then
-        if [[ "${_table1[$key]}" == "F" ]]; then
-          continue
-        fi
-      elif ((_brg_table == 2)); then
-        if [[ "${_table2[$key]}" == "F" ]]; then
-          continue
-        fi
-      fi
-      local _extracted_inum=${_inum[$key]}
-      if [[ "${_extracted_inum}" != "${_brg_inum}" ]]; then
-        continue
-      fi
-      local _v_folder=${_folder[$key]}
-      local _v_folder_inum="${_v_folder}/${_brg_inum}"
-      if [[ ! -d "${_v_folder_inum}" ]]; then
-        continue
-      fi
-
-      # echo "${key}"
-
-      maintable1_genus_species_for "${_v_folder}" \
-        "${_brg_inum}" "${_brg_d_index}" "${_brg_table}" "${_brg_t_dir}" \
-        >>"${_table_tsv}"
-    done
-  elif [[ "${_brg_outdir}" == "each" ]]; then
-    for key in $(printf "%s\n" "${!_folder[@]}" | sort); do
-      # for key in "${!_folder[@]}"; do
-      _brg_outdir="${_folder[$key]}"
-      _brg_inum="${_inum[$key]}"
-      maintable1_genus_species_for "${_brg_outdir}" \
-        "${_brg_inum}" "${_brg_d_index}" "${_brg_table}" "${_brg_t_dir}" \
-        >>"${_table_tsv}"
-    done
-  else
-    maintable1_genus_species_for "$@" >>"${_table_tsv}"
-  fi
-
-  if ((_brg_table == 1)); then
-    csvtk -t cut -f Species,P,R,Rate,Alpha,Length1,Length2,Pident,N1,Mode,SD,M,M_g,M_p,M_t2,M_s,M_f,T \
-      ${_table_tsv} |
-      csvtk -t rename -f 1-18 -n Species,P,R,Rate,Alpha,L1,L2,Pident,N1,Mode,SD,M,Mg,Mp,Mt,Ms,Mf,T |
-      csvtk -t csv2md -a right -o ${_table_name}-${_brg_inum}-analysis.md
-
-  elif ((_brg_table == 2)); then
-    csvtk -t cut -f Species,C,N,P,R,Rate,Alpha,Length2,N1,Mode,SD,M,M_g,M_f,T \
-      ${_table_tsv} |
-      csvtk -t rename -f 1-15 -n Species,C,N,P,R,Rate,Alpha,L2,N1,Mode,SD,M,Mg,Mf,T |
-      csvtk -t csv2md -a right -o ${_table_name}-${_brg_inum}-analysis.md
-  fi
-
-  if ((_brg_format == 3)); then
-    csvtk -t cut -f Species,A0,D,P,R,Rate,Alpha,Length1,Length2,Pident,N1,Mode,SD,M,M_g,M_p,M_t2,M_s,M_f,T \
-      ${_table_tsv} |
-      csvtk -t rename -f 1-20 -n Species,A0,D,P,R,Rate,Alpha,L1,L2,Pident,N1,Mode,SD,M,Mg,Mp,Mt,Ms,Mf,T |
-      csvtk -t csv2md -a right -o ${_table_name}-${_brg_inum}-analysis.md
-  fi
-
-  csvtk -t cut -f Species,Order,Family,L_SRA,L_size,L_cov,S_SRA,S_size,S_cov ${_table_tsv} |
-    csvtk -t rename -f 1-9 -n Species,Order,Family,L_SRA,L_size,L_cov,S_SRA,S_size,S_cov |
-    csvtk -t csv2md -a right -o ${_table_name}-${_brg_inum}-data.md
-
-  echo "  copying to ${_brg_t_dir}"
-  cp -p ${_table_name}-${_brg_inum}-analysis.md "${_brg_t_dir}"
-  cp -p ${_table_name}-${_brg_inum}-data.md "${_brg_t_dir}"
-
-  csvtk -t csv2md -a right ${_table_tsv} -o ${_table_name}-${_brg_inum}.md
-
-  Rscript "${_POLAPLIB_DIR}"/polap-data-v2.R --inum ${_brg_inum} \
-    >${_table_name}-${_brg_inum}.txt
-
-  cat "${_table_name}-${_brg_inum}.md"
-  echo "ouput: ${_table_name}-${_brg_inum}-analysis.md"
-  echo "ouput: ${_table_name}-${_brg_inum}-data.md"
-  echo "ouput: ${_table_name}-${_brg_inum}.txt"
-  echo "ouput: ${_table_name}-${_brg_inum}.md"
-  echo "ouput: ${_table_tsv}"
-  echo cp -p ${_table_name}-${_brg_inum}-analysis.md "${_brg_t_dir}"
-}
-
-############################################################
-# main table 2
-#
-# a copy of maintable1 to focus on the memory and time used
-# by GetOrganelle, ptGAUL, PMAT, and Polap's disassemble menu
-# to construct plastid genomes.
-maintable2_genus_species_header() {
-  local _brg_table="${1:-1}"
-
-  local _items=(
-    "Species"
-    "Order"
-    "Family"
-    "I"
-    "C"
-    "L_SRA"
-    "L_size"
-    "L_cov"
-    "S_SRA"
-    "S_size"
-    "S_cov"
-    "G"
-    "N"
-    "P"
-    "R"
-    "D"
-    "A0"
-    "Rate"
-    "Size"
-    "Alpha"
-    "ptDNA"
-    "Length1"
-    "Length2"
-    "Pident"
-    "N1"
-    "Mode"
-    "SD"
-    "N2"
-    "M"
-    "M_g"
-    "T_g"
-    "M_p"
-    "T_p"
-    "M_pmat1"
-    "M_pmat2"
-    "T_pmat1"
-    "T_pmat2"
-    "M_t1"
-    "M_t2"
-    "M_s"
-    "M_f"
-    "T"
-  )
-
-  if ((_brg_table == 2)); then
-    _items=(
-      "Species"
-      "Order"
-      "Family"
-      "N"
-      "C"
-      "L_SRA"
-      "L_size"
-      "L_cov"
-      "S_SRA"
-      "S_size"
-      "S_cov"
-      "P"
-      "R"
-      "Rate"
-      "Size"
-      "Alpha"
-      "Length2"
-      "N1"
-      "Mode"
-      "SD"
-      "N2"
-      "M"
-      "M_g"
-      "M_f"
-      "T"
-    )
-  elif ((_brg_table == 3)); then
-    _items=(
-      "Species"
-      "Order"
-      "Family"
-      "I"
-      "C"
-      "L_SRA"
-      "L_size"
-      "L_cov"
-      "S_SRA"
-      "S_size"
-      "S_cov"
-      "G"
-      "N"
-      "P"
-      "R"
-      "D"
-      "A0"
-      "Rate"
-      "Size"
-      "Alpha"
-      "ptDNA"
-      "Length1"
-      "Length2"
-      "Pident"
-      "N1"
-      "Mode"
-      "SD"
-      "N2"
-      "M"
-      "M_g"
-      "T_g"
-      "M_p"
-      "T_p"
-      "M_pmat1"
-      "T_pmat1"
-      "M_pmat2"
-      "T_pmat2"
-      "M_t1"
-      "M_t2"
-      "M_s"
-      "M_f"
-      "T"
-    )
-  fi
-
-  printf "%s\t" "${_items[@]::${#_items[@]}-1}"
-  printf "%s\n" "${_items[-1]}"
-}
-
-# Extract long-read SRA from polap.log
-# extract_long_sra() {
-# 	local _polap_log="$1"
-# 	local _l_sra
-# 	_l_sra=$(awk '/long-read/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_polap_log" | sort -u | grep -v '^$')
-# 	echo "$_l_sra"
-# }
-#
-extract_long_sra() {
-  local _polap_log="$1"
-
-  # Check if input file is readable
-  if [[ ! -r "$_polap_log" ]]; then
-    echo "Error: Log file '$_polap_log' does not exist or is not readable" >&2
-    return 1
-  fi
-
-  # Extract matching SRA IDs from lines containing 'long-read'
-  local _l_sra=$(awk '/long-read/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_polap_log" | sort -u | grep -v '^$')
-  # local _l_sra
-  # _l_sra=$(awk '
-  # 	/long-read/ {
-  # 		if (match($0, /([A-Z]RR[0-9]+)/, arr))
-  # 			print arr[0]
-  # 	}' "$_polap_log" | sort -u | grep -v '^$')
-
-  # Warn if nothing was found
-  if [[ -z "$_l_sra" ]]; then
-    echo "Warning: No long-read SRA ID found in '$_polap_log'" >&2
-  fi
-
-  echo "$_l_sra"
-}
-
-# extract_long_sra_size_gb() {
-# 	local _v1="$1"
-# 	local _l_sra_size
-#
-# 	if [[ -s "${_v1}/long_total_length.txt" ]]; then
-# 		_l_sra_size=$(<"${_v1}/long_total_length.txt")
-# 	else
-# 		_l_sra_size=$(<"${_v1}/l.fq.txt")
-# 	fi
-#
-# 	local _l_sra_size_gb
-# 	_l_sra_size_gb=$(_polap_utility_convert_bp "${_l_sra_size}")
-# 	echo "$_l_sra_size_gb"
-# }
-extract_long_sra_size_gb() {
-  local _v1="$1"
-
-  # Check that input directory is provided
-  if [[ -z "$_v1" ]]; then
-    echo "Error: No directory provided to extract_long_sra_size_gb" >&2
-    return 1
-  fi
-
-  local _long_file="${_v1}/long_total_length.txt"
-  local _fallback_file="${_v1}/l.fq.txt"
-  local _l_sra_size
-
-  # Check for long_total_length.txt or fallback to l.fq.txt
-  if [[ -s "$_long_file" ]]; then
-    _l_sra_size=$(<"$_long_file")
-  elif [[ -s "$_fallback_file" ]]; then
-    _l_sra_size=$(<"$_fallback_file")
-  else
-    echo "Error: Neither '$_long_file' nor '$_fallback_file' is available or non-empty" >&2
-    return 1
-  fi
-
-  # Check that value is numeric
-  if ! [[ "$_l_sra_size" =~ ^[0-9]+$ ]]; then
-    echo "Error: SRA size value is not a valid integer: $_l_sra_size" >&2
-    return 1
-  fi
-
-  # Ensure the conversion function exists
-  if ! command -v _polap_utility_convert_bp &>/dev/null; then
-    echo "Error: Conversion function '_polap_utility_convert_bp' not found" >&2
-    return 1
-  fi
-
-  # Attempt the conversion
-  local _l_sra_size_gb
-  if ! _l_sra_size_gb=$(_polap_utility_convert_bp "${_l_sra_size}"); then
-    echo "Error: _polap_utility_convert_bp failed for input $_l_sra_size" >&2
-    return 1
-  fi
-
-  echo "$_l_sra_size_gb"
-}
-
-extract_short_sra() {
-  local _polap_log="$1"
-  local _s_sra
-  _s_sra=$(awk '/short-read1/ {match($0, /([A-Z]RR[0-9]+)/, arr); print arr[0]}' "$_polap_log" | sort -u | grep -v '^$')
-  echo "$_s_sra"
-}
-
-extract_short_sra_size_gb() {
-  local _v1="$1"
-  local _s_sra_size
-
-  if [[ -s "${_v1}/short_total_length.txt" ]]; then
-    _s_sra_size=$(<"${_v1}/short_total_length.txt")
-  else
-    local _s_sra_size1
-    local _s_sra_size2
-    _s_sra_size1=$(<"${_v1}/s1.fq.txt")
-    _s_sra_size2=$(<"${_v1}/s2.fq.txt")
-    _s_sra_size=$((_s_sra_size1 + _s_sra_size2))
-  fi
-
-  local _s_sra_size_gb
-  _s_sra_size_gb=$(_polap_utility_convert_bp "${_s_sra_size}")
-  echo "$_s_sra_size_gb"
-}
-
-extract_known_mtdna_accession() {
-  local _polap_log="$1"
-
-  # Check if the log file exists and is readable
-  if [[ ! -r "$_polap_log" ]]; then
-    echo "Error: Cannot read log file '$_polap_log'" >&2
-    return 1
-  fi
-
-  local _known_mtdna
-  _known_mtdna=$(grep 'NCBI accession: ' "$_polap_log" | cut -d: -f4 | tail -n 1 | xargs || true)
-  _known_mtdna=${_known_mtdna:-'NA'}
-
-  echo "$_known_mtdna"
-}
-
-extract_genome_size() {
-  local _brg_outdir="$1"
-  local _genome_size="NA"
-
-  if [[ ! -d "$_brg_outdir" ]]; then
-    echo "$_genome_size"
-    return
-  fi
-
-  if [[ -s "${_brg_outdir}/o/short_expected_genome_size.txt" ]]; then
-    _genome_size=$(<"${_brg_outdir}/o/short_expected_genome_size.txt")
-  elif [[ -s "${_brg_outdir}/short_expected_genome_size.txt" ]]; then
-    _genome_size=$(<"${_brg_outdir}/short_expected_genome_size.txt")
-  else
-    echo "$_genome_size"
-    return
-  fi
-
-  _genome_size=${_genome_size%%.*}
-  echo "$_genome_size"
-}
-
-extract_fasta_seqlen_plain() {
-  local fasta="$1"
-
-  if [[ ! -f "$fasta" ]]; then
-    echo -e "NA\t0"
-    return 0
-  fi
-
-  awk '
-	/^>/ {
-		if (seq != "") {
-			print header "\t" length(seq)
-		}
-		header = substr($0, 2)
-		seq = ""
-		next
-	}
-	{
-		seq = seq $0
-	}
-	END {
-		if (seq != "") {
-			print header "\t" length(seq)
-		}
-	}
-	' "$fasta" 2>/dev/null || echo -e "NA\t0"
-
-  return 0
-}
-
-extract_fasta_seqlen() {
-  local fasta="$1"
-
-  # If file does not exist, print length 0 and return
-  if [[ ! -f "$fasta" ]]; then
-    echo "NA"
-    return 0
-  fi
-
-  # If bioawk is available, use it
-  if command -v bioawk >/dev/null 2>&1; then
-    bioawk -c fastx 'NR==1 {print length($seq); exit}' "$fasta" 2>/dev/null || echo "0"
-    return 0
-  fi
-
-  # If seqkit is available and succeeds
-  if command -v seqkit >/dev/null 2>&1; then
-    if seqkit fx2tab -l -n "$fasta" | cut -f2 | xargs 2>/dev/null; then
-      return 0
-    fi
-  fi
-
-  # Fallback: extract headers and print 0 length
-  extract_fasta_seqlen_plain "$fasta"
-  return 0
-}
-
-extract_fasta_numseq() {
-  local fasta="$1"
-
-  # Check if file exists
-  if [[ ! -f "$fasta" ]]; then
-    echo 0
-    return 0
-  fi
-
-  # Try seqkit if available
-  if command -v seqkit >/dev/null 2>&1; then
-    seqkit stats "$fasta" 2>/dev/null | awk 'NR > 1 {print $4}' || echo 0
-    return 0
-  fi
-
-  # Fallback: count '>' lines with grep
-  grep -c '^>' "$fasta" 2>/dev/null || echo 0
-  return 0
-}
-
-extract_time_memory_timing() {
-  local _v1="$1"
-  local _timing_file="${_v1}"
-
-  _memory_gb="NA"
-  _total_hours="NA"
-
-  if [[ ! -s "$_timing_file" ]]; then
-    echo "Error: timing file not found or empty: $_timing_file" >&2
-    return 0
-  fi
-
-  local _output
-  _output=$(_polap_lib_timing-parse-timing "$_timing_file" 2>/dev/null)
-
-  # validate output: must contain two fields
-  if [[ "$_output" =~ ^[^[:space:]]+[[:space:]]+[^[:space:]]+ ]]; then
-    read -r _memory_gb _total_hours <<<"$_output"
-  else
-    echo "Warning: malformed output from _polap_lib_timing-parse-timing" >&2
-    echo "  Got: $_output" >&2
-  fi
-
-  return 0
-}
-
-extract_time_memory_pmat1() {
-  local _v1="$1"
-  local _timing_file="${_v1}/timing-nextdenovo.txt"
-
-  _memory_gb_pmat1="NA"
-  _total_hours_pmat1="NA"
-
-  if [[ ! -s "$_timing_file" ]]; then
-    echo "Error: timing file not found or empty: $_timing_file" >&2
-    return 0
-  fi
-
-  local _output
-  _output=$(_polap_lib_timing-parse-timing "$_timing_file" 2>/dev/null)
-
-  # Accept any two non-whitespace strings
-  if [[ "$_output" =~ ^[^[:space:]]+[[:space:]]+[^[:space:]]+ ]]; then
-    read -r _memory_gb_pmat1 _total_hours_pmat1 <<<"$_output"
-  else
-    echo "Warning: malformed output from _polap_lib_timing-parse-timing" >&2
-    echo "  Got: $_output" >&2
-  fi
-
-  return 0
-}
-
-extract_time_memory_pmat2() {
-  local _v1="$1"
-  local _timing_file="${_v1}/timing-pmat-nextdenovo-fc-0.1.txt"
-
-  _memory_gb_pmat2="NA"
-  _total_hours_pmat2="NA"
-
-  if [[ ! -s "$_timing_file" ]]; then
-    echo "Error: timing file not found or empty: $_timing_file" >&2
-    return 0
-  fi
-
-  local _output
-  _output=$(_polap_lib_timing-parse-timing "$_timing_file" 2>/dev/null)
-
-  # Accept any two non-whitespace strings
-  if [[ "$_output" =~ ^[^[:space:]]+[[:space:]]+[^[:space:]]+ ]]; then
-    read -r _memory_gb_pmat2 _total_hours_pmat2 <<<"$_output"
-  else
-    echo "Warning: malformed output from _polap_lib_timing-parse-timing" >&2
-    echo "  Got: $_output" >&2
-  fi
-
-  return 0
-}
-
-extract_mafft_pident() {
-  local _v1_inum="$1"
-  local _pident_file="${_v1_inum}/mafft/1/pident.txt"
-
-  local _mafft_pident="NA"
-
-  if [[ -s "$_pident_file" ]]; then
-    local _raw
-    _raw="$(<"$_pident_file")"
-
-    # Check if it is a valid number (integer or decimal)
-    if [[ "$_raw" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
-      _mafft_pident="$_raw"
-    else
-      echo "Warning: invalid number in $_pident_file: '$_raw'" >&2
-    fi
-  fi
-
-  echo "${_mafft_pident}"
-
-  return 0
-}
-
-# A copy of Table 1's row for a given outdir and inum.
-#
-# arg1: outdir
-# arg2: inum
-# arg3: disassemble-i
-# arg4: 1 or 2
-# arg5: target directory to copy the result
-#
-# outdir-inum is used as the key as well.
-#
-# return:
-#
-# Done in pmat-0.1
-##################
-# Eucalyptus_pauciflora
-# Dunaliella_tertiolecta
-# Leiosporoceros_dussii
-# Anthoceros_agrestis
-# Spirodela_polyrhiza
-#
-maintable2_genus_species_for() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-2}"
-  local _brg_d_index="${3:-infer-1}"
-  local _brg_table="${4:-3}"
-  local _brg_t_dir="${5:-"${_brg_default_target_dir}"}"
-  local _key="${_brg_outdir}-${_brg_inum}"
-  local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
-
-  local _polap_log=${_brg_outdir}/polap.log
-
-  # Taxon names: species, genus, family, and order
-  local _species=${_taxon[$_key]}
-  local _species="${_species//_/ }"
-  local _genus=${_species%% *}
-  local _family=$(grep "${_genus}" ${_POLAPLIB_DIR}/taxonomy_output.tsv | cut -f 7 | head -1)
-  local _order=$(grep "${_genus}" ${_POLAPLIB_DIR}/taxonomy_output.tsv | cut -f 6 | head -1)
-
-  # Extract long-read SRA ID
-  local _l_sra=$(extract_long_sra "${_polap_log}")
-  # Extract long-read SRA data size in GB
-  local _l_sra_size_gb=$(extract_long_sra_size_gb "${_brg_outdir}")
-
-  # Extract short-read SRA ID
-  local _s_sra=$(extract_short_sra "${_polap_log}")
-  # Extract short-read SRA data size in GB
-  local _s_sra_size_gb=$(extract_short_sra_size_gb "${_brg_outdir}")
-
-  # Known ptDNA NCBI accession
-  local _known_mtdna=$(extract_known_mtdna_accession "${_polap_log}")
-
-  # Extract the genome size estimate
-  local _genome_size=$(extract_genome_size "${_brg_outdir}")
-
-  local _ptdna_ptgaul=${_brg_outdir}/ptdna-ptgaul.fa
-  local _ptdna_reference=${_brg_outdir}/ptdna-reference.fa
-  local _seq_length_ptgaul=$(extract_fasta_seqlen "${_ptdna_ptgaul}")
-
-  local _ptdna_subsample="${_brg_outdir_i}/disassemble/infer-1/pt.subsample-polishing.1.fa"
-  local _num_seq_subsample=$(extract_fasta_numseq "${_ptdna_subsample}")
-  # Ensure there is exactly one sequence
-  if ((_num_seq_subsample != 1)); then
-    echo "Error: FASTA file does not contain exactly one sequence: ${_ptdna_subsample}"
-    exit 1
-  fi
-  local _seq_length_subsample=$(extract_fasta_seqlen "${_ptdna_subsample}")
-
-  # Extract from summary1-ordered.txt
-  #
-  # Extract mode value
-  # Extract SD value
-  # Extract the first index value
-  local _mode='NA'
-  local _sd='NA'
-  local _first_index='NA'
-  local _n1='NA'
-  summary1_ordered_txt_maintable2__impl() {
-    local _summary1_ordered_txt="${_brg_outdir_i}/disassemble/infer-1/1/summary1-ordered.txt"
-    if [[ ! -s "${_summary1_ordered_txt}" ]]; then
-      echo "Error: no such file: ${_summary1_ordered_txt}" >&2
-      echo "  stage 1 might have been terminated prematurely, see ${_summary1_md}" >&2
-      cat "${_summary1_md}" >&2
-      return
-    fi
-    _mode=$(grep "^#mode:" "$_summary1_ordered_txt" | awk '{print $2}')
-    _sd=$(grep "^#sd:" "$_summary1_ordered_txt" | awk '{print $2}')
-    _first_index=$(grep "^#index:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
-    _n1=$(grep "^#n:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
-
-    local _output=$(awk -F'\t' 'NR==2 {print $1}' "${_summary1_ordered_txt}")
-    read -r _second_line_index <<<"$_output"
-    if ((_first_index != _second_line_index)); then
-      echo "ERROR: #index: ${_first_index} vs. #2nd line index: ${_second_line_index}" >&2
-      echo "See ${_summary1_ordered_txt}" >&2
-      echo "------------------------------" >&2
-      cat "${_summary1_ordered_txt}" >&2
-      echo "------------------------------> skip it!" >&2
-      # exit 1
-    fi
-  }
-  summary1_ordered_txt_maintable2__impl
-
-  # Extract from params.txt
-  local _params_txt=${_brg_outdir_i}/disassemble/infer-1/params.txt
-  local _ipn=$(parse_params "${_params_txt}")
-  local _I _P _N _R _A _B _M _D _Alpha _Memory
-  read -r _I _P _N _R _A _B _M _D _Alpha _Memory <<<"$_ipn"
-
-  # The determined subsampling rate and alpha
-  local _summary2_index='NA'
-  local _summary2_size='NA'
-  local _summary2_size_gb='NA'
-  local _summary2_rate_rounded='NA'
-  local _summary2_alpha='NA'
-  local _summary2_alpha_formatted='NA'
-  summary2_ordered_txt_maintable2__impl() {
-    local _summary2_ordered_txt=${_brg_outdir_i}/disassemble/infer-1/2/summary1-ordered.txt
-    local _n2=$(grep "^#n:" "$_summary2_ordered_txt" | awk 'NR==1 {print $2}')
-    local _output=$(awk -F'\t' 'NR==2 {print $1, $2, $4, $11}' "${_summary2_ordered_txt}")
-    read -r _summary2_index _summary2_size _summary2_rate _summary2_alpha <<<"$_output"
-    _summary2_size_gb=$(_polap_utility_convert_bp "${_summary2_size}")
-    local _summary2_rate_decimal=$(printf "%.10f" "$_summary2_rate")
-    _summary2_rate_rounded=$(echo "scale=4; $_summary2_rate_decimal / 1" | bc)
-    _summary2_alpha_formatted=$(echo "scale=2; $_summary2_alpha / 1" | bc | awk '{printf "%.2f\n", $1}')
-  }
-  summary2_ordered_txt_maintable2__impl
-
-  local _memory_gb='NA'
-  local _total_hours='NA'
-  extract_time_memory_timing "${_brg_outdir}/timing/timing-getorganelle.txt"
-  local _memory_gb_getorganelle=$_memory_gb
-  local _total_hours_getorganelle=$_total_hours
-
-  extract_time_memory_timing "${_brg_outdir}/timing/timing-ptgaul.txt"
-  local _memory_gb_ptgaul=$_memory_gb
-  local _total_hours_ptgaul=$_total_hours
-
-  extract_time_memory_timing "${_brg_outdir}/7/timing-nextdenovo.txt"
-  local _memory_gb_pmat1=$_memory_gb
-  local _total_hours_pmat1=$_total_hours
-
-  extract_time_memory_timing "${_brg_outdir}/7/timing-pmat-nextdenovo-fc-0.1.txt"
-  local _memory_gb_pmat2=$_memory_gb
-  local _total_hours_pmat2=$_total_hours
-
-  extract_time_memory_timing "${_brg_outdir}/timing/timing-prepare-polishing.txt"
-  local _memory_gb_prepare_polishing=$_memory_gb
-  local _total_hours_prepare_polishing=$_total_hours
-
-  extract_time_memory_timing "${_brg_outdir}/timing/timing-ptgaul-polishing.txt"
-  local _memory_gb_ptgaul_polishing=$_memory_gb
-  local _total_hours_ptgaul_polishing=$_total_hours
-
-  extract_time_memory_timing "${_brg_outdir_i}/timing-check-1-subsample-polish.txt"
-  local _memory_gb_subsampling_polishing=$_memory_gb
-  local _total_hours_subsampling_polishing=$_total_hours
-
-  extract_time_memory_timing "${_brg_outdir_i}/timing-infer-1-subsample-polish.txt"
-  local _memory_gb_infer_subsampling_polishing=$_memory_gb
-  local _total_hours_infer_subsampling_polishing=$_total_hours
-
-  # sequencing data coverage
-  local _short_coverage=$(get_short_read_coverage "${_brg_outdir_i}/sx.txt")
-  local _long_coverage=$(get_long_read_coverage "${_brg_outdir_i}/lx.txt")
-  local _target_coverage=$(get_target_read_coverage "${_brg_outdir_i}/lx.txt")
-
-  local _extracted_memory="${_memory["$_key"]}"
-
-  local _pident=$(extract_mafft_pident "${_brg_outdir_i}")
-
-  # debug local variables
-  # for debugging: Inline local printing local var
-  # while IFS= read -r line; do
-  #   if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
-  #     var="${BASH_REMATCH[1]}"
-  #     printf "%s=%q\n" "$var" "${!var}"
-  #   fi
-  # done < <(local -p 2>/dev/null)
-  # return
-
-  local _summary1_md="${_brg_outdir_i}/disassemble/infer-1/1/summary1.md"
-
-  local _items
-  if ((_brg_table == 1)); then
-    _items=(
-      "_${_species}_"
-      "${_order}"
-      "${_family}"
-      "${_i}"
-      "${_target_coverage}"
-      "${_l_sra}"
-      "${_l_sra_size_gb}"
-      "${_long_coverage}"
-      "${_s_sra}"
-      "${_s_sra_size_gb}"
-      "${_short_coverage}"
-      "${_genome_size}"
-      "${_N}"
-      "${_P}"
-      "${_R}"
-      "${_D}"
-      "${_Alpha}"
-      "${_summary2_rate_rounded}"
-      "${_summary2_size_gb}"
-      "${_summary2_alpha_formatted}"
-      "${_known_mtdna}"
-      "${_seq_length_ptgaul}"
-      "${_seq_length_subsample}"
-      "${_pident}"
-      "${_n1}"
-      "${_mode}"
-      "${_sd}"
-      "${_n2}"
-      "${_extracted_memory}"
-      "${_memory_gb_getorganelle}"
-      "${_memory_gb_ptgaul}"
-      "${_memory_gb_prepare_polishing}"
-      "${_memory_gb_ptgaul_polishing}"
-      "${_memory_gb_subsampling_polishing}"
-      "${_memory_gb}"
-      "${_total_hours}"
-    )
-  elif ((_brg_table == 2)); then
-    _items=(
-      "_${_species}_"
-      "${_order}"
-      "${_family}"
-      "${_i}"
-      "${_target_coverage}"
-      "${_l_sra}"
-      "${_l_sra_size_gb}"
-      "${_long_coverage}"
-      "${_s_sra}"
-      "${_s_sra_size_gb}"
-      "${_short_coverage}"
-      "${_P}"
-      "${_R}"
-      "${_summary2_rate_rounded}"
-      "${_summary2_size_gb}"
-      "${_summary2_alpha_formatted}"
-      "${_seq_length_subsample}"
-      "${_n1}"
-      "${_mode}"
-      "${_sd}"
-      "${_n2}"
-      "${_extracted_memory}"
-      "${_memory_gb_getorganelle}"
-      "${_memory_gb}"
-      "${_total_hours}"
-    )
-  elif ((_brg_table == 3)); then
-    _items=(
-      "_${_species}_"
-      "${_order}"
-      "${_family}"
-      "${_brg_inum}"
-      "${_target_coverage}"
-      "${_l_sra}"
-      "${_l_sra_size_gb}"
-      "${_long_coverage}"
-      "${_s_sra}"
-      "${_s_sra_size_gb}"
-      "${_short_coverage}"
-      "${_genome_size}"
-      "${_N}"
-      "${_P}"
-      "${_R}"
-      "${_D}"
-      "${_Alpha}"
-      "${_summary2_rate_rounded}"
-      "${_summary2_size_gb}"
-      "${_summary2_alpha_formatted}"
-      "${_known_mtdna}"
-      "${_seq_length_ptgaul}"
-      "${_seq_length_subsample}"
-      "${_pident}"
-      "${_n1}"
-      "${_mode}"
-      "${_sd}"
-      "${_n2}"
-      "${_extracted_memory}"
-      "${_memory_gb_getorganelle}"
-      "${_total_hours_getorganelle}"
-      "${_memory_gb_ptgaul}"
-      "${_total_hours_ptgaul}"
-      "${_memory_gb_pmat1}"
-      "${_total_hours_pmat1}"
-      "${_memory_gb_pmat2}"
-      "${_total_hours_pmat2}"
-      "${_memory_gb_prepare_polishing}"
-      "${_memory_gb_ptgaul_polishing}"
-      "${_memory_gb_subsampling_polishing}"
-      "${_memory_gb}"
-      "${_total_hours}"
-    )
-  fi
-
-  printf "%s\t" "${_items[@]::${#_items[@]}-1}" >>"${_table_tsv}"
-  printf "%s\n" "${_items[-1]}" >>"${_table_tsv}"
-}
-
-# A better version of maintable1
-# comparing memory and computing time used by tools
-# focusing on table3, which compares the computing time and memory
-#
-# nextDenovo correction time and memory needs more than command time -v.
-# It is because nextDenovo creates jobs in the background, which cannot be
-# tracked by command time -v.
-#
-# inum for polap: 2
-# inum for pmat: 7
-maintable2_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-2}"
-  local _brg_d_index="${3:-infer-1}"
-  local _brg_table="${4:-3}"
-  local _brg_format="${5:-1}"
-  local _brg_t_dir="${6:-"${_brg_default_target_dir}"}"
-  # local _table_name=$(echo "${FUNCNAME[0]}" | cut -d'_' -f1)
-
-  local _table_name="maintable1"
-  if ((_brg_table == 2)); then
-    _table_name="maintable2"
-  elif ((_brg_table == 3)); then
-    _table_name="maintable3"
-  fi
-  local _table_tsv="${_table_name}-${_brg_inum}.tsv"
-
-  maintable2_genus_species_header "${_brg_table}" >"${_table_tsv}"
-
-  if [[ "${_brg_outdir}" == "all" ]]; then
-    for outdir in "${Spmat[@]}"; do
-      maintable2_genus_species_for "${outdir}" \
-        "${_brg_inum}" "${_brg_d_index}" "${_brg_table}" "${_brg_t_dir}" \
-        >>"${_table_tsv}"
-    done
-  else
-    maintable2_genus_species_for "$@" >>"${_table_tsv}"
-  fi
-
-  echo "Table: ${_table_tsv}"
-
-  if ((_brg_table == 1)); then
-    csvtk -t cut -f Species,P,R,Rate,Alpha,Length1,Length2,Pident,N1,Mode,SD,M,M_g,M_p,M_t2,M_s,M_f,T \
-      ${_table_tsv} |
-      csvtk -t rename -f 1-18 -n Species,P,R,Rate,Alpha,L1,L2,Pident,N1,Mode,SD,M,Mg,Mp,Mt,Ms,Mf,T |
-      csvtk -t csv2md -a right -o ${_table_name}-${_brg_inum}-analysis.md
-  elif ((_brg_table == 2)); then
-    csvtk -t cut -f Species,C,N,P,R,Rate,Alpha,Length2,N1,Mode,SD,M,M_g,M_f,T \
-      ${_table_tsv} |
-      csvtk -t rename -f 1-15 -n Species,C,N,P,R,Rate,Alpha,L2,N1,Mode,SD,M,Mg,Mf,T |
-      csvtk -t csv2md -a right -o ${_table_name}-${_brg_inum}-analysis.md
-  elif ((_brg_table == 3)); then
-    csvtk -t cut -f Species,M,T_g,M_g,T_p,M_p,T_pmat1,T_pmat2,M_pmat2,M_t2,M_s,M_f,T \
-      ${_table_tsv} |
-      csvtk -t rename -f 1-13 -n Species,M,Tg,Mg,Tp,Mp,Tn,Ta,Ma,Mt,Ms,Mf,T |
-      csvtk -t csv2md -a right -o ${_table_name}-${_brg_inum}-analysis.md
-  fi
-
-  echo cp -p ${_table_name}-${_brg_inum}-analysis.md "${_brg_t_dir}"
-}
-
-supptable1_genus_species_for() {
-  local _brg_outdir="${1}"
-  local _brg_inum="${2:-2}"
-  local _brg_d_index="${3:-infer-1}"
-  local _brg_stage="${4:-x}"
-  local _brg_table="${5:-1}"
-  local _brg_t_dir="${6:-"${_brg_default_target_dir}"}"
-  local _brg_one="${7:-0}"
-  local _key="${_brg_outdir}-${_brg_inum}"
-
-  local _table_name="supptable1"
-  if ((_brg_table == 2)); then
-    _table_name="supptable2"
-  fi
-  local _supptable_md="${_table_name}-${_brg_inum}-${_brg_stage}.md"
-  if [[ "${_brg_one}" == "1" ]]; then
-    _supptable_md="${_table_name}-${_brg_inum}-${_brg_stage}-${_brg_outdir}.md"
-  fi
-
-  local _i=${_brg_inum}
-  local j="${_brg_stage}"
-
-  local _species=${_taxon[$_key]}
-  local _species="${_species//_/ }"
-  local _v1=${_folder[$_key]}
-  local _label_base="${_v1/_/-}"
-  _label_base=$(echo "$_label_base" | awk '{print tolower($0)}')
-
-  local _v1_inum="${_v1}/${_brg_inum}"
-  local _params_txt=${_v1_inum}/disassemble/${_brg_d_index}/params.txt
-  local _ipn=$(parse_params "${_params_txt}")
-  local _I _P _N _R _A _B _M _D _Alpha _Memory
-  read -r _I _P _N _R _A _B _M _D _Alpha _Memory <<<"$_ipn"
-  local _label="${_brg_inum}-${_label_base}"
-  if [[ "${_brg_one}" == "1" ]]; then
-    _label="main-${_brg_inum}-${_label_base}"
-  fi
-
-  case "${_brg_stage}" in
-  1*)
-    printf "Table: Plastid genome assemblies with the increasing subsample size upto the maximum subsampling rate of ${_P}%% from Stage 1 of Polap's subsampling-based analysis for the dataset of _${_species}_. {#tbl:supptable1-${_label}}\n\n" \
-      >>"${_supptable_md}"
-    ;;
-  2*)
-    printf "Table: Plastid genome assemblies with a fixed subsample size and subsampling-rate from Stage 2 of Polap's subsampling-based analysis for the dataset of _${_species}_. {#tbl:supptable2-${_label}}\n\n" \
-      >>"${_supptable_md}"
-    ;;
-  3*)
-    printf "Table: Plastid genome assemblies with the subsampling-based short-read polishing from Stage 3 of Polap's subsampling-based analysis for the dataset of _${_species}_. {#tbl:supptable3-${_label}}\n\n" \
-      >>"${_supptable_md}"
-    ;;
-  x)
-    printf "Table: Three stages of subsampling-based plastid genome assembly for the _${_species}_ dataset. The configuration includes an increasing subsample size up to a maximum subsampling rate of ${_P}%%, a step size of ${_N} in Stage 1, ${_R} replicates in Stages 2 and 3, and a maximum memory limit of ${_Memory} GB. {#tbl:supptable1-${_label}}\n\n" \
-      >>"${_supptable_md}"
-    ;;
-  *)
-    echo "ERROR: no such stage: ${_brg_stage}"
-    exit 1
-    ;;
-  esac
-
-  case "${_brg_stage}" in
-  1* | 2* | 3*)
-    cat "${_v1_inum}/disassemble/${_brg_d_index}/${_brg_stage}/summary1.md" \
-      >>"${_supptable_md}"
-    ;;
-  2*)
-    cat "${_v1_inum}/disassemble/${_brg_d_index}/${_brg_stage}/summary1.md" \
-      >>"${_supptable_md}"
-    ;;
-  3*)
-    cat "${_v1_inum}/disassemble/${_brg_d_index}/${_brg_stage}/summary1.md" \
-      >>"${_supptable_md}"
-    ;;
-  x)
-    #!/bin/bash
-
-    # Output file
-    output="${_supptable_md}"
-
-    # Print the header for Stage 1
-    echo "| Stage 1 |  I |  Rate | Alpha | Pmem |    D | Time |  N |    L |  C | Length |" >>$output
-    echo "| -----: | --: | -----: | ----: | ---: | ------: | ---: | --: | -----: | --: | -----: |" >>$output
-
-    # Append the content of 1.md with Stage 1 formatting
-    awk 'NR>2 {print "|        " $0}' "${_v1_inum}/disassemble/${_brg_d_index}/1/summary1.md" >>$output
-
-    # Print the separation line
-    echo "|     |    |       |      |      |       |       |     |      |     |             |" >>$output
-
-    # Print the header for Stage 2
-    echo "| Stage 2 |   I |   Rate | Alpha | Pmem |       G | Time |   N |       L |   C | Length |" >>$output
-    echo "|     |    |       |      |      |       |       |     |      |     |             |" >>$output
-
-    # Append the content of 2.md with Stage 2 formatting
-    awk 'NR>2 {print "|       " $0}' "${_v1_inum}/disassemble/${_brg_d_index}/2/summary1.md" >>$output
-
-    # Print the separation line
-    echo "|     |    |       |      |      |       |       |     |      |     |             |" >>$output
-
-    # Print the header for Stage 3
-    echo "| Stage 3 |   I |     Rate |   Size  | Seed   |  Tp |  Mp |  Ts |  Ms | Pident |    Length |" >>$output
-    echo "|     |    |       |      |      |       |       |     |      |     |             |" >>$output
-
-    # Append the content of 3.md with Stage 3 formatting
-    awk 'NR>2 {print "|      " $0}' "${_v1_inum}/disassemble/${_brg_d_index}/3-infer/summary1.md" >>$output
-
-    # cat "${_v1_inum}/disassemble/${_brg_d_index}/1/summary1.md" \
-    # 	>>"${_supptable_md}"
-    # cat "${_v1_inum}/disassemble/${_brg_d_index}/2/summary1.md" \
-    # 	>>"${_supptable_md}"
-    # cat "${_v1_inum}/disassemble/${_brg_d_index}/3-infer/summary1.md" \
-    # 	>>"${_supptable_md}"
-    ;;
-  *)
-    echo "ERROR: no such stage: ${_brg_stage}"
-    exit 1
-    ;;
-  esac
-
-  # cat "${_v1_inum}/disassemble/${_brg_d_index}/${_brg_stage}/summary1.md" \
-  # 	>>"${_supptable_md}"
-
-  printf "\n" \
-    >>"${_supptable_md}"
-
-  case "${_brg_stage}" in
-  1*)
-    cat "${_POLAPLIB_DIR}"/polap-data-v2-suptable1_footnote.tex \
-      >>"${_supptable_md}"
-    ;;
-  2*)
-    cat "${_POLAPLIB_DIR}"/polap-data-v2-suptable2_footnote.tex \
-      >>"${_supptable_md}"
-    ;;
-  3*)
-    cat "${_POLAPLIB_DIR}"/polap-data-v2-suptable3_footnote.tex \
-      >>"${_supptable_md}"
-    ;;
-  x)
-    cat "${_POLAPLIB_DIR}"/polap-data-v2-suptable1_footnote.tex \
-      >>"${_supptable_md}"
-    ;;
-  *)
-    echo "ERROR: no such stage: ${_brg_stage}"
-    exit 1
-    ;;
-  esac
-
-  # printf "\\\elandscape\n\n\\\newpage\n\n" \
-  # 	>>"${_supptable_md}"
-
-  printf "\n\n\\\newpage\n\n" \
-    >>"${_supptable_md}"
-
-}
-
-supptable1_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-2}"
-  local _brg_d_index="${3:-infer-1}"
-  local _brg_stage="${4:-x}"
-  local _brg_table="${5:-1}"
-  local _brg_t_dir="${6:-"${_brg_default_target_dir}"}"
-
-  local _table_name="supptable1"
-  if ((_brg_table == 2)); then
-    _table_name="supptable2"
-  fi
-  local _supptable_md="${_table_name}-${_brg_inum}-${_brg_stage}.md"
-  if [[ "${_brg_outdir}" != "all" ]]; then
-    _supptable_md="${_table_name}-${_brg_inum}-${_brg_stage}-${_brg_outdir}.md"
-  fi
-
-  rm -f "${_supptable_md}"
-
-  # maintable1_genus_species_header "${_brg_table}" >"${_table_tsv}"
-
-  if [[ "${_brg_outdir}" == "all" ]]; then
-
-    # Extract and sort keys
-    sorted_keys=($(for key in "${!_table1[@]}"; do echo "$key"; done | sort))
-
-    # Iterate over sorted keys and check if value is "T"
-    for key in "${sorted_keys[@]}"; do
-      if ((_brg_table == 1)); then
-        if [[ "${_table1[$key]}" == "F" ]]; then
-          continue
-        fi
-      elif ((_brg_table == 2)); then
-        if [[ "${_table2[$key]}" == "F" ]]; then
-          continue
-        fi
-      fi
-      local _extracted_inum=${_inum[$key]}
-      if [[ "${_extracted_inum}" != "${_brg_inum}" ]]; then
-        continue
-      fi
-      local _v_folder=${_folder[$key]}
-      local _v_folder_inum="${_v_folder}/${_brg_inum}"
-      if [[ ! -d "${_v_folder_inum}" ]]; then
-        continue
-      fi
-      # skip the main figure
-      if [[ " ${Smain[@]} " =~ " ${_v_folder} " ]]; then
-        continue
-      fi
-
-      supptable1_genus_species_for "${_v_folder}" \
-        "${_brg_inum}" "${_brg_d_index}" "${_brg_stage}" \
-        "${_brg_table}" "${_brg_t_dir}" 0
-    done
-  else
-    supptable1_genus_species_for "$@" 1
-  fi
-
-  echo "See ${_supptable_md}"
-  cp -p ${_supptable_md} "${_brg_t_dir}"
-  echo cp -p ${_supptable_md} "${_brg_t_dir}"
-}
-
-suppfigure1_genus_species_for() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-2}"
-  local _brg_d_index="${3:-infer-1}"
-  local _brg_stage="${4:-1}"
-  local _brg_table="${5:-1}"
-  local _brg_bandage="${6:-no}"
-  local _brg_t_dir="${7:-"${_brg_default_target_dir}"}"
-  local _brg_one="${8:-0}"
-  local _key="${_brg_outdir}-${_brg_inum}"
-
-  local _table_name="suppfigure1"
-  if ((_brg_table == 2)); then
-    _table_name="suppfigure2"
-  fi
-  local _supptable_md="${_table_name}-${_brg_inum}-${_brg_stage}.md"
-  if [[ "${_brg_one}" == "1" ]]; then
-    _supptable_md="${_table_name}-${_brg_inum}-${_brg_stage}-${_brg_outdir}.md"
-  fi
-
-  # local _supptable_md="${_supptable_md}"
-
-  local _species=${_taxon[$_key]}
-  local _species="${_species//_/ }"
-  local _genus=${_species%% *}
-  local _order=$(grep "${_genus}" ${_POLAPLIB_DIR}/taxonomy_output.tsv | cut -f 6 | head -1)
-  local _v1=${_folder[$_key]}
-  local _label_base="${_v1/_/-}"
-  _label_base=$(echo "$_label_base" | awk '{print tolower($0)}')
-
-  _brg_outdir=${_v1}
-  _log_echo outdir: ${_brg_outdir}
-
-  local j=1
-
-  local _v1_inum="${_v1}/${_brg_inum}"
-  local _params_txt=${_v1_inum}/disassemble/${_brg_d_index}/params.txt
-  local _ipn=$(parse_params "${_params_txt}")
-  local _I _P _N _R _A _B _M _D _Alpha _Memory
-  read -r _I _P _N _R _A _B _M _D _Alpha _Memory <<<"$_ipn"
-  local _label="${_brg_inum}-${_label_base}"
-  if [[ "${_brg_one}" == "1" ]]; then
-    _label="main-${_brg_inum}-${_label_base}"
-  fi
-
-  printf "\\\newpage\n\n" \
-    >>"${_supptable_md}"
-
-  printf "\n\n" \
-    >>"${_supptable_md}"
-
-  #########################################################
-  # all figures
-  local extracted_n="${_compare_n["$_key"]}"
-  local i
-  local width=13
-  local images=()
-  local captions=()
-
-  local k=0
-  for ((i = 0; i < extracted_n; i++)); do
-
-    local _gfa_infer="${_v1_inum}/disassemble/${_brg_d_index}/${_brg_stage}/${i}/30-contigger/graph_final.gfa"
-    local _png_infer="${_v1_inum}/disassemble/${_brg_d_index}/${_brg_stage}/${i}/30-contigger/graph_final.png"
-    local _timing_cflye="${_v1_inum}/disassemble/${_brg_d_index}/${_brg_stage}/${i}/timing-cflye.txt"
-    read -r _memory_gb_cflye _total_hours_cflye < <(_polap_lib_timing-parse-timing "${_timing_cflye}")
-    # local _disjointig_min_coverage=$(grep -oP '--disjointig-min-coverage\s+\K[0-9.]+' "${_timing_cflye}")
-    # echo "${_timing_cflye}"
-
-    local _disjointig_min_coverage=$(grep "Command being timed" "${_timing_cflye}" | awk -F '--disjointig-min-coverage ' '{print $2}' | awk '{print $1}')
-    if [[ -s "${_gfa_infer}" ]]; then
-      # echo "gfa file: ${_gfa_infer}"
-      if [[ "${_brg_bandage}" == "yes" ]]; then
-        ${_polap_cmd} bandage png \
-          ${_gfa_infer} \
-          ${_png_infer}
-      fi
-      # printf "| ![polap %s](figures/%s){ width=%s%% } " "${i}" "${_png_infer}" "${width}" >>"${_supptable_md}"
-      images+=("figures/${_png_infer}")
-      captions+=("${i}, ${_disjointig_min_coverage}x, ${_memory_gb_cflye} GB")
-      ((k++))
-    else
-      echo "no such file: ${_gfa_infer}"
-    fi
-  done
-
-  # Start writing to the markdown file
-  cat <<EOF >>"$_supptable_md"
-
-| Organelle genome assemblies | _${_species}_ | ${_order} |
-|-----------------|-----------------|-----------------|
-EOF
-
-  # Generate the image table with subcaptions
-  count=0
-  row="| "
-  caption_row="| "
-
-  for ((i = 0; i < ${#images[@]}; i++)); do
-    row+="![${captions[i]}](${images[i]}){width=100px} | "
-    caption_row+="**${captions[i]}** | "
-    ((count++))
-
-    # End row if 3 images are added
-    if ((count % 3 == 0)); then
-      echo "$row" >>"$_supptable_md"
-      echo "$caption_row" >>"$_supptable_md"
-      echo "|-----------------|-----------------|-----------------|" >>"$_supptable_md"
-      # echo "" >>"$_supptable_md"
-      row="| "
-      caption_row="| "
-    fi
-  done
-
-  # Handle the last incomplete row (if any)
-  remaining=$((3 - count % 3))
-  if ((remaining < 3)); then
-    # Fill empty image columns
-    for ((i = 0; i < remaining; i++)); do
-      row+=" | "
-      caption_row+=" | "
-    done
-    echo "$row" >>"$_supptable_md"
-    echo "$caption_row" >>"$_supptable_md"
-    echo "|-----------------|-----------------|-----------------|" >>"$_supptable_md"
-  fi
-
-  cat <<EOF >>"$_supptable_md"
-  
-![Plastid genome assembly graphs generated from Stage 1 of the subsampling-based method for the _${_species}_ dataset. Each number corresponds to the iteration index in Stage 1 as shown in @tbl:supptable1-${_label}. The value followed by "x" indicates the read-coverage threshold, and the accompanying gigabyte value represents the peak memory used by the *Flye* assembler. All graphs were drawn using Bandage software (Wick et al. 2015).](empty.png){#fig:suppfigure1-${_label}} 
-
-EOF
-
-  echo "" >>"${_supptable_md}"
-
-}
-
-suppfigure1_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-2}"
-  local _brg_d_index="${3:-infer-1}"
-  local _brg_stage="${4:-1}"
-  local _brg_table="${5:-1}"
-  local _brg_bandage="${6:-no}"
-  local _brg_t_dir="${7:-"${_brg_default_target_dir}"}"
-
-  local _table_name="suppfigure1"
-  if ((_brg_table == 2)); then
-    _table_name="suppfigure2" # we had figure 2
-  fi
-  local _supptable_md="${_table_name}-${_brg_inum}-${_brg_stage}.md"
-  if [[ "${_brg_outdir}" != "all" ]]; then
-    _supptable_md="${_table_name}-${_brg_inum}-${_brg_stage}-${_brg_outdir}.md"
-  fi
-
-  rm -f "${_supptable_md}"
-
-  # maintable1_genus_species_header "${_brg_table}" >"${_table_tsv}"
-
-  if [[ "${_brg_outdir}" == "all" ]]; then
-
-    # Extract and sort keys
-    sorted_keys=($(for key in "${!_table1[@]}"; do echo "$key"; done | sort))
-
-    # Iterate over sorted keys and check if value is "T"
-    for key in "${sorted_keys[@]}"; do
-      if ((_brg_table == 1)); then
-        if [[ "${_table1[$key]}" == "F" ]]; then
-          continue
-        fi
-      elif ((_brg_table == 2)); then
-        if [[ "${_table2[$key]}" == "F" ]]; then
-          continue
-        fi
-      fi
-      local _extracted_inum=${_inum[$key]}
-      if [[ "${_extracted_inum}" != "${_brg_inum}" ]]; then
-        continue
-      fi
-      local _v_folder=${_folder[$key]}
-      local _v_folder_inum="${_v_folder}/${_brg_inum}"
-      if [[ ! -d "${_v_folder_inum}" ]]; then
-        continue
-      fi
-      # skip the main figure
-      if [[ " ${Smain[@]} " =~ " ${_v_folder} " ]]; then
-        continue
-      fi
-
-      suppfigure1_genus_species_for "${_v_folder}" \
-        "${_brg_inum}" "${_brg_d_index}" "${_brg_stage}" \
-        "${_brg_table}" "${_brg_bandage}" "${_brg_t_dir}" 0
-    done
-  else
-    suppfigure1_genus_species_for "$@" 1
-  fi
-
-  echo "See ${_supptable_md}"
-  cp -p ${_supptable_md} "${_brg_t_dir}"
-  # echo "rsync figures as well"
-}
-
-pmat-suppfigure1_genus_species_for() {
-  local _brg_outdir="${1}"
-  local _brg_inum="${2:-0}"
-  local _brg_bandage="${3:-no}"
-  local _brg_t_dir="${4:-"${_brg_default_target_dir}"}"
-  local _brg_one="${5:-0}"
-  local _key="${_brg_outdir}-${_brg_inum}"
-
-  local _table_name="pmat-suppfigure1"
-  local _supptable_md="${_table_name}-${_brg_inum}.md"
-  if [[ "${_brg_one}" == "1" ]]; then
-    _supptable_md="${_table_name}-${_brg_inum}-${_brg_outdir}.md"
-  fi
-
-  local _species=${_taxon[$_key]}
-  local _species="${_species//_/ }"
-  local _genus=${_species%% *}
-  local _order=$(grep "${_genus}" ${_POLAPLIB_DIR}/taxonomy_output.tsv | cut -f 6 | head -1)
-  local _v1=${_folder[$_key]}
-  local _label_base="${_v1/_/-}"
-  _label_base=$(echo "$_label_base" | awk '{print tolower($0)}')
-
-  _brg_outdir=${_v1}
-  # _log_echo outdir: ${_brg_outdir}
-  local j=1
-  local _v1_inum="${_v1}/${_brg_inum}"
-
-  local at_least_one_exist=0
-  for v in 0.1 0.2 0.3 0.4 0.5 1.0; do
-    local _gfa_pt_master="${_v1_inum}/pmat-${v}/gfa_result/PMAT_pt_master.gfa"
-    if [[ -s "${_gfa_pt_master}" ]]; then
-      at_least_one_exist=1
-    fi
-  done
-  if [[ "${at_least_one_exist}" -eq 0 ]]; then
-    echo "no pmat assembly for ${_brg_outdir}"
-    return
-  fi
-
-  local _label="${_brg_inum}-${_label_base}"
-  if [[ "${_brg_one}" == "1" ]]; then
-    _label="main-${_brg_inum}-${_label_base}"
-  fi
-
-  printf "\\\newpage\n\n" \
-    >>"${_supptable_md}"
-
-  printf "\n\n" \
-    >>"${_supptable_md}"
-
-  # for debugging: Inline local printing local var
-  # while IFS= read -r line; do
-  #   if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
-  #     var="${BASH_REMATCH[1]}"
-  #     printf "%s=%q\n" "$var" "${!var}"
-  #   fi
-  # done < <(local -p 2>/dev/null)
-  # return
-
-  #########################################################
-  # all figures
-  local extracted_n=6
-  local i
-  local width=13
-  local images=()
-  local captions=()
-
-  local k=0
-  local i=0
-  echo "processing: ${_brg_outdir} ..."
-  for v in 0.1 0.2 0.3 0.4 0.5 1.0; do
-    i=$((i + 1))
-
-    local _gfa_pt_master="${_v1_inum}/pmat-${v}/gfa_result/PMAT_pt_master.gfa"
-    local _gfa_pt_raw="${_v1_inum}/pmat-${v}/gfa_result/PMAT_pt_raw.gfa"
-    local _png_pt_master="${_v1_inum}/pmat-${v}/gfa_result/PMAT_pt_master.png"
-
-    if [[ -s "${_gfa_pt_master}" ]]; then
-      # echo "gfa file: ${_gfa_infer}"
-      if [[ "${_brg_bandage}" == "yes" ]]; then
-        ${_polap_cmd} bandage png \
-          ${_gfa_pt_master} \
-          ${_png_pt_master} color
-      fi
-      images+=("figures/${_png_pt_master}")
-      captions+=("${i}")
-      ((k++))
-    else
-      echo "no such file: ${_gfa_pt_master}"
-    fi
-  done
-
-  # Start writing to the markdown file
-  cat <<EOF >>"$_supptable_md"
-
-| Organelle genome assemblies | _${_species}_ | ${_order} |
-|-----------------|-----------------|-----------------|
-EOF
-
-  # Generate the image table with subcaptions
-  count=0
-  row="| "
-  caption_row="| "
-
-  for ((i = 0; i < ${#images[@]}; i++)); do
-    row+="![${captions[i]}](${images[i]}){width=100px} | "
-    caption_row+="**${captions[i]}** | "
-    ((count++))
-
-    # End row if 3 images are added
-    if ((count % 3 == 0)); then
-      echo "$row" >>"$_supptable_md"
-      echo "$caption_row" >>"$_supptable_md"
-      echo "|-----------------|-----------------|-----------------|" >>"$_supptable_md"
-      # echo "" >>"$_supptable_md"
-      row="| "
-      caption_row="| "
-    fi
-  done
-
-  # Handle the last incomplete row (if any)
-  remaining=$((3 - count % 3))
-  if ((remaining < 3)); then
-    # Fill empty image columns
-    for ((i = 0; i < remaining; i++)); do
-      row+=" | "
-      caption_row+=" | "
-    done
-    echo "$row" >>"$_supptable_md"
-    echo "$caption_row" >>"$_supptable_md"
-    echo "|-----------------|-----------------|-----------------|" >>"$_supptable_md"
-  fi
-
-  cat <<EOF >>"$_supptable_md"
-  
-![Plastid genome assembly graphs generated from Stage 1 of the subsampling-based method for the _${_species}_ dataset. Each number corresponds to the iteration index in Stage 1 as shown in @tbl:supptable1-${_label}. The value followed by "x" indicates the read-coverage threshold, and the accompanying gigabyte value represents the peak memory used by the *Flye* assembler. All graphs were drawn using Bandage software (Wick et al. 2015).](empty.png){#fig:suppfigure1-${_label}} 
-
-EOF
-
-  echo "" >>"${_supptable_md}"
-
-}
-
-# figures from PMAT
-pmat-suppfigure1_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-2}"
-  local _brg_bandage="${3:-no}"
-  local _brg_t_dir="${4:-"${_brg_default_target_dir}"}"
-
-  # table-like figure
-  local _table_name="pmat-suppfigure1"
-  local _supptable_md="${_table_name}-${_brg_inum}.md"
-  if [[ "${_brg_outdir}" == "all" ]]; then
-    _supptable_md="${_table_name}-${_brg_inum}.md"
-  elif [[ "${_brg_outdir}" == "test" ]]; then
-    _supptable_md="${_table_name}-${_brg_inum}.md"
-  else
-    _supptable_md="${_table_name}-${_brg_inum}-${_brg_outdir}.md"
-  fi
-
-  # create always the same table
-  rm -f "${_supptable_md}"
-
-  if [[ "${_brg_outdir}" == "all" ]]; then
-
-    # Extract and sort keys
-    # sorted_keys=($(for key in "${!_table1[@]}"; do echo "$key"; done | sort))
-
-    # Iterate over sorted keys and check if value is "T"
-    for key in "${S28[@]}"; do
-      pmat-suppfigure1_genus_species_for "${key}" \
-        "${_brg_inum}" \
-        "${_brg_bandage}" "${_brg_t_dir}" 0
-    done
-  elif [[ "${_brg_outdir}" == "test" ]]; then
-    pmat-suppfigure1_genus_species_for Anthoceros_agrestis \
-      "${_brg_inum}" \
-      "${_brg_bandage}" "${_brg_t_dir}" 0
-    pmat-suppfigure1_genus_species_for Eucalyptus_pauciflora \
-      "${_brg_inum}" \
-      "${_brg_bandage}" "${_brg_t_dir}" 0
-    pmat-suppfigure1_genus_species_for Arabidopsis_thaliana \
-      "${_brg_inum}" \
-      "${_brg_bandage}" "${_brg_t_dir}" 0
-  else
-    pmat-suppfigure1_genus_species_for "$@" 1
-  fi
-
-  echo "See ${_supptable_md}"
-  echo cp -p ${_supptable_md} "${_brg_t_dir}"
-  cp -p ${_supptable_md} "${_brg_t_dir}"
-}
-
-# figures of Polap, ptGAUL, and GetOrganelle's assemblies
-
-# supfigure2.md
-# 2 no
-# 2 yes to extract bandage graph png
-suppfigure3_genus_species() {
-  local _brg_inum="${1:-2}"
-  local _brg_d_index="${2:-infer-1}"
-  local _brg_mainfigure="${3:-off}"
-  local _brg_bandage="${4:-no}"
-  local _brg_t_dir="${5:-"${_brg_default_target_dir}"}"
-
-  # local _table_name="suppfigure1"
-  # if ((_brg_table == 2)); then
-  # 	_table_name="suppfigure2"
-  # fi
-  # local _supptable_md="${_table_name}-${_brg_inum}-${_brg_stage}.md"
-
-  local _tf_mainfigure="F"
-  local _supfigure_file="suppfigure3-${_brg_inum}.md"
-  if [[ "${_brg_mainfigure}" == "on" ]]; then
-    _tf_mainfigure="T"
-    _supfigure_file="mainfigure3-${_brg_inum}.md"
-  fi
-
-  # printf "# Supplementary Figures: Polap, ptGAUL, and GetOrganelle\n\n" \
-  # 	>"${_supfigure_file}"
-  rm -f "${_supfigure_file}"
-
-  # Start writing to the markdown file
-  cat <<EOF >>"${_supfigure_file}"
-
-  | Species (Order) | Polap | ptGAUL | GetOrganelle |
-|-----------------|-----------------|-----------------|-----------------|
-EOF
-
-  # Extract and sort keys
-  sorted_keys=($(for key in "${!_table1[@]}"; do echo "$key"; done | sort))
-
-  # Iterate over sorted keys and check if value is "T"
-  for key in "${sorted_keys[@]}"; do
-
-    if [[ "${_mainfigure[$key]}" != ${_tf_mainfigure} ]]; then
-      continue
-    fi
-    if [[ "${_table1[$key]}" == "F" ]]; then
-      continue
-    fi
-
-    # if [[ "${_table1[$key]}" == "F" ]]; then
-    # 	continue
-    # fi
-    # echo "key: $key"
-    local _v1=${_folder[$key]}
-
-    local _species=${_taxon[$key]}
-    local _species="${_species//_/ }"
-    local _genus=${_species%% *}
-    _label_base="${_v1/_/-}"
-    _label_base=$(echo "$_label_base" | awk '{print tolower($0)}')
-
-    # bandage graph
-    extracted_inum=${_inum[$key]}
-    if [[ "${extracted_inum}" != "${_brg_inum}" ]]; then
-      continue
-    fi
-
-    local _order=$(grep "${_genus}" ${_POLAPLIB_DIR}/taxonomy_output.tsv | cut -f 6 | head -1)
-    _brg_outdir=${_v1}
-    # echo inum: ${extracted_inum}
-    # echo _brg_outdir: ${_brg_outdir}
-    # echo species: ${_species}
-    # echo order: ${_order}
-
-    if [[ "${_brg_bandage}" == "yes" ]]; then
-      ${_polap_cmd} disassemble bandage \
-        -i ${extracted_inum} \
-        -o ${_brg_outdir} \
-        --disassemble-i infer-1
-    fi
-    local _gfa_polap="${_brg_outdir}/${extracted_inum}/disassemble/infer-1/pt.1.gfa"
-    local _png_polap="${_brg_outdir}/${extracted_inum}/disassemble/infer-1/pt.1.png"
-
-    local images=()
-    local captions=()
-    images+=("${_species}")
-    captions+=("${_order}")
-    images+=(${_png_polap})
-    captions+=("Polap")
-
-    local _gfa_ptgaul="${_brg_outdir}/ptgaul/flye_cpONT/assembly_graph.gfa"
-    local _png_ptgaul="${_brg_outdir}/ptgaul.png"
-    if [[ "${_brg_bandage}" == "yes" ]]; then
-      ${_polap_cmd} bandage png \
-        ${_gfa_ptgaul} \
-        ${_png_ptgaul}
-    fi
-    images+=(${_png_ptgaul})
-    captions+=("ptGAUL")
-
-    local _gfa_getorganelle=$(find "${_brg_outdir}/getorganelle" -type f -name 'embplant_pt*.gfa' | head -n 1)
-    local _png_getorganelle="${_brg_outdir}/getorganelle.png"
-    if [[ "${_brg_bandage}" == "yes" ]]; then
-      ${_polap_cmd} bandage png \
-        ${_gfa_getorganelle} \
-        ${_png_getorganelle}
-    fi
-    images+=(${_png_getorganelle})
-    captions+=("GetOrganelle")
-
-    # echo "Warning: no such file: ${_gfa}"
-    # echo "FIX QT5 problem:"
-    # problem solved
-    # echo "export QT_QPA_PLATFORM=offscreen"
-    # Output Markdown file
-    #
-    output="${_supfigure_file}"
-
-    # Generate the image table with subcaptions
-    count=0
-    row="| "
-    caption_row="| "
-
-    for ((i = 0; i < ${#images[@]}; i++)); do
-      if [[ ${i} == "0" ]]; then
-        row+="_${images[i]}_ | "
-      else
-        row+="![${captions[i]}](figures/${images[i]}){width=100px} | "
-      fi
-      caption_row+="**${captions[i]}** | "
-      ((count++))
-
-      # End row if 3 images are added
-      if ((count % 4 == 0)); then
-        echo "$row" >>"$output"
-        echo "$caption_row" >>"$output"
-        echo "|-----------------|-----------------|-----------------|-----------------|" >>"$output"
-        # echo "" >>"$output"
-        row="| "
-        caption_row="| "
-      fi
-    done
-
-  done
-
-  echo ${_supfigure_file}
-  cp -p ${_supfigure_file} "${_brg_t_dir}"
-  echo cp -p ${_supfigure_file} "${_brg_t_dir}"
-}
-
-# Compare polap, ptGAUL, GetOrganelle, and PMAT
-pmat-suppfigure3_genus_species() {
-  local _brg_inum="${1:-2}"
-  local _brg_bandage="${2:-no}"
-  local _brg_t_dir="${3:-"${_brg_default_target_dir}"}"
-
-  # local _table_name="suppfigure1"
-  # if ((_brg_table == 2)); then
-  # 	_table_name="suppfigure2"
-  # fi
-  # local _supptable_md="${_table_name}-${_brg_inum}-${_brg_stage}.md"
-
-  declare -A pmat_fc
-
-  # Add key-value pairs
-  pmat_fc[Anthoceros_agrestis]=0.1
-  pmat_fc[Dunaliella_tertiolecta]=0.1
-  pmat_fc[Eucalyptus_pauciflora]=0.1
-  pmat_fc[Leiosporoceros_dussii]=0.1
-  pmat_fc[Spirodela_polyrhiza]=0.1
-
-  local _tf_mainfigure="F"
-  local _supfigure_file="pmat-suppfigure3-${_brg_inum}.md"
-
-  # printf "# Supplementary Figures: Polap, ptGAUL, and GetOrganelle\n\n" \
-  # 	>"${_supfigure_file}"
-  rm -f "${_supfigure_file}"
-
-  # Start writing to the markdown file
-  cat <<EOF >>"${_supfigure_file}"
-
-  | Species (Order) | Polap | ptGAUL | GetOrganelle | PMAT |
-|-----------------|-----------------|-----------------|-----------------|-----------------|
-EOF
-
-  # Extract and sort keys
-  # sorted_keys=($(for key in "${!_table1[@]}"; do echo "$key"; done | sort))
-
-  # Iterate over sorted keys and check if value is "T"
-  for _brg_outdir in \
-    Anthoceros_agrestis \
-    Dunaliella_tertiolecta \
-    Eucalyptus_pauciflora \
-    Leiosporoceros_dussii \
-    Spirodela_polyrhiza; do
-
-    key="${_brg_outdir}-${_brg_inum}"
-    local _species=${_taxon[$key]}
-    local _species="${_species//_/ }"
-    local _genus=${_species%% *}
-    local _order=$(grep "${_genus}" ${_POLAPLIB_DIR}/taxonomy_output.tsv | cut -f 6 | head -1)
-    # echo inum: ${extracted_inum}
-    # echo _brg_outdir: ${_brg_outdir}
-    # echo species: ${_species}
-    # echo order: ${_order}
-
-    local _gfa_polap="${_brg_outdir}/2/disassemble/infer-1/pt.1.gfa"
-    local _png_polap="${_brg_outdir}/2/disassemble/infer-1/pt.1.png"
-
-    local images=()
-    local captions=()
-    images+=("${_species}")
-    captions+=("${_order}")
-    images+=(${_png_polap})
-    captions+=("Polap")
-
-    local _gfa_ptgaul="${_brg_outdir}/ptgaul/flye_cpONT/assembly_graph.gfa"
-    local _png_ptgaul="${_brg_outdir}/ptgaul.png"
-    if [[ "${_brg_bandage}" == "yes" ]]; then
-      ${_polap_cmd} bandage png \
-        ${_gfa_ptgaul} \
-        ${_png_ptgaul}
-    fi
-    images+=(${_png_ptgaul})
-    captions+=("ptGAUL")
-
-    local _gfa_getorganelle=$(find "${_brg_outdir}/getorganelle" -type f -name 'embplant_pt*.gfa' | head -n 1)
-    local _png_getorganelle="${_brg_outdir}/getorganelle.png"
-    if [[ "${_brg_bandage}" == "yes" ]]; then
-      ${_polap_cmd} bandage png \
-        ${_gfa_getorganelle} \
-        ${_png_getorganelle}
-    fi
-    images+=(${_png_getorganelle})
-    captions+=("GetOrganelle")
-
-    local v=${pmat_fc[${_brg_outdir}]}
-    local _gfa_pt_master="${_brg_outdir}/7/pmat-${v}/gfa_result/PMAT_pt_master.gfa"
-    local _png_pmat="${_brg_outdir}/7/pmat-${v}/gfa_result/PMAT_pt_master.png"
-    images+=(${_png_pmat})
-    captions+=("PMAT")
-
-    # echo "Warning: no such file: ${_gfa}"
-    # echo "FIX QT5 problem:"
-    # problem solved
-    # echo "export QT_QPA_PLATFORM=offscreen"
-    # Output Markdown file
-    #
-    output="${_supfigure_file}"
-
-    # Generate the image table with subcaptions
-    count=0
-    row="| "
-    caption_row="| "
-
-    for ((i = 0; i < ${#images[@]}; i++)); do
-      if [[ ${i} == "0" ]]; then
-        row+="_${images[i]}_ | "
-      else
-        row+="![${captions[i]}](figures/${images[i]}){width=100px} | "
-      fi
-      caption_row+="**${captions[i]}** | "
-      ((count++))
-
-      # End row if 3 images are added
-      if ((count % 5 == 0)); then
-        echo "$row" >>"$output"
-        echo "$caption_row" >>"$output"
-        echo "|-----------------|-----------------|-----------------|-----------------|-----------------|" >>"$output"
-        # echo "" >>"$output"
-        row="| "
-        caption_row="| "
-      fi
-    done
-
-  done
-
-  echo ${_supfigure_file}
-  cp -p ${_supfigure_file} "${_brg_t_dir}"
-  echo cp -p ${_supfigure_file} "${_brg_t_dir}"
-}
-
-function _run_polap_menu { # Interactive menu interface
-  local species_key=0
-
-  # Function to display the main menu
-  show_main_menu() {
-    echo "===================="
-    echo "     Main Menu      "
-    echo "===================="
-    echo "1. BioProject Folder"
-    echo "2. BioProject-species"
-    echo "E. Exit"
-    echo "--------------------------------------------------"
-    local _species_name="${keys_array[$species_key]}"
-    local _remote_name="${_ssh["$_species_name"]}"
-    local _status_name="${_status["$_species_name"]}"
-    echo "POLAP Species Folder ([$species_key] ${keys_array[$species_key]} [$_remote_name] [$_status_name])"
-    echo "===================="
-    echo -n "Enter your choice [2] (or just press ENTER): "
-  }
-
-  # Function to display the species operations submenu
-  show_bioproject_menu() {
-    echo "===================="
-    echo "  BioProject"
-    echo "===================="
-    for i in "${!keys_array[@]}"; do
-      local _species_index=${keys_array[$i]}
-      echo "$i. ${keys_array[$i]} (${_ssh[$_species_index]}: ${_status[$_species_index]})"
-    done
-    echo "M. Back to Main Menu"
-    echo "--------------------------------------------------"
-    local _species_name="${keys_array[$species_key]}"
-    local _remote_name="${_ssh["$_species_name"]}"
-    local _status_name="${_status["$_species_name"]}"
-    echo "POLAP Species Folder ([$species_key] ${keys_array[$species_key]} [$_remote_name] [$_status_name])"
-    echo "===================="
-    echo -n "Enter your choice: "
-  }
-
-  # Function to display the system operations submenu
-  #
-  # BioProject folder has species name appended
-  #
-  #
-  # Download BioProject runinfo (creating folders for all species)
-  # Download
-  show_species_menu() {
-    local _species_name="${keys_array[$species_key]}"
-    local _remote_name="${_ssh["$_species_name"]}"
-    local _species_folder="${keys_array[$species_key]}"
-    local _status_name="${_status["$_species_name"]}"
-    echo "===================="
-    echo "  BioProject-species"
-    echo "===================="
-    echo "0. Batch"
-    echo "1. Send data to the remote: ${_remote_name}"
-    echo "2. Make a starting folder (3)"
-    echo "3. Get ptDNA from NCBI"
-    echo "4. GetOrganelle assembly with the short-read data"
-    echo "5. ptGAUL assembly with the reference (6)"
-    echo "6. Prepare the short-read polishing"
-    echo "7. Extract the ptGAUL assembly (8)"
-    echo "8. Copy the ptGAUL assembly"
-    echo "9. Infer with POLAP"
-    echo "10. Check with POLAP (needs step 5,7)"
-    echo "11. (only for 5 datasets) Compare with POLAP (needs step 5,7)"
-    echo "L. List the folder: ${_species_folder}"
-    echo "S. Estimate the coverage ${_species_folder}"
-    echo "A. Archive the ${_species_folder}"
-    echo "G. Get the result from the remote"
-    echo "C. Clean up the ${_species_folder}"
-    echo "M. Back to Main Menu"
-    echo "--------------------------------------------------"
-    echo current host: "$(hostname)"
-    echo rement host name: "${_host["$_species_name"]}"
-    echo "POLAP Species Folder ([$species_key] ${keys_array[$species_key]} [$_remote_name] [$_status_name])"
-    echo "===================="
-    # echo -n "Enter your choice: "
-  }
-
-  # Function to navigate between menus
-  navigate_menu() {
-    local current_menu="$1"
-    while true; do
-      date +"%Y-%m-%d %H:%M:%S"
-      case "$current_menu" in
-      main)
-        show_main_menu
-        read -r choice
-        if [[ -z "${choice}" ]]; then
-          choice=2
-        fi
-        # Convert the input to lowercase for case-insensitive comparison
-        local choice="${choice,,}"
-        case $choice in
-        1) current_menu="bioproject" ;;
-        2) current_menu="species" ;;
-        e | q)
-          echo "Exiting..."
-          exit 0
-          ;;
-        *) echo "Invalid choice, please select a valid option." ;;
-        esac
-        ;;
-      bioproject)
-        show_bioproject_menu
-        read -r choice
-        # Convert the input to lowercase for case-insensitive comparison
-        local choice="${choice,,}"
-        case $choice in
-        m | e) current_menu="main" ;; # Go back to Main Menu
-        A)
-          echo "Case A detected"
-          ;;
-        '' | *[!0-9]*)
-          echo "Invalid number"
-          ;;
-        *)
-          current_menu="species"
-          species_key=$choice
-          ;;
-        esac
-        ;;
-      species)
-        show_species_menu
-        read -r -p "Enter your chioces: " input
-        for choice in $input; do
-          case $choice in
-          0)
-            # src/polap.sh -o "${_brg_outdir}" get-mtdna file
-
-            echo "$species_key: ${keys_array[$species_key]}"
-            batch-cmd_genus_species "${keys_array[$species_key]}"
-            # current_menu="bioproject"
-
-            ;;
-          1)
-            send-data-to_genus_species "${keys_array[$species_key]}"
-            ;;
-          2)
-            mkdir_genus_species "${keys_array[$species_key]}"
-            ;;
-          3)
-            get-ptdna-from-ncbi_genus_species "${keys_array[$species_key]}"
-            ;;
-          4)
-            getorganelle_genus_species \
-              "${keys_array[$species_key]}"
-            ;;
-          5)
-            ptgaul_genus_species \
-              "${keys_array[$species_key]}"
-            ;;
-          6)
-            msbwt_genus_species \
-              "${keys_array[$species_key]}"
-            ;;
-          7)
-            extract-ptgaul-ptdna_genus_species \
-              "${keys_array[$species_key]}"
-            ;;
-          8)
-            copy-ptdna-of-ptgaul_genus_species \
-              "${keys_array[$species_key]}"
-            ;;
-          9)
-            infer_genus_species \
-              "${keys_array[$species_key]}"
-            infer_genus_species \
-              "${keys_array[$species_key]}" \
-              --disassemble-simple-polishing
-            ;;
-          10)
-            check_genus_species \
-              "${keys_array[$species_key]}"
-            check_genus_species \
-              "${keys_array[$species_key]}" \
-              --disassemble-simple-polishing
-            ;;
-          11)
-            compare_genus_species \
-              "${keys_array[$species_key]}"
-            ;;
-          l)
-            ls -l \
-              "${keys_array[$species_key]}"
-            ;;
-          g)
-            get_genus_species \
-              "${keys_array[$species_key]}"
-            ;;
-          a)
-            archive_genus_species \
-              "${keys_array[$species_key]}"
-            ;;
-          s)
-            downsample_genus_species \
-              "${keys_array[$species_key]}" \
-              5 --dry
-            ;;
-          c)
-            clean_genus_species \
-              "${keys_array[$species_key]}"
-            ;;
-          m | e) current_menu="main" ;; # Go back to Main Menu
-          *) echo "Invalid choice, please select a valid option." ;;
-          esac
-        done
-        ;;
-      *)
-        echo "Unknown menu. Returning to main menu."
-        current_menu="main"
-        ;;
-      esac
-      echo
-    done
-  }
-
-  # Start at the main menu
-  # navigate_menu "main"
-  navigate_menu "bioproject"
 }
 
 # functions
@@ -8203,34 +2087,32 @@ man-table-benchmark_genus_species_for() {
   local _l_fq_stats="${_brg_outdir_0}/summary-data/l.fq.stats"
   local _l_sra=$(_polap_lib_extract-seqkit_stats "${_l_fq_stats}")
   local _l_sra_size=$(_polap_lib_extract-seqkit_stats_sum_len "${_l_fq_stats}")
-  local _l_sra_size_gb=$(_polap_utility_convert_bp "${_l_sra_size}")
+  local _l_sra_size_gb=$(_polap_lib_unit-convert_bp "${_l_sra_size}")
 
   # Extract short-read SRA ID
   local _s1_fq_stats="${_brg_outdir_0}/summary-data/s1.fq.stats"
   local _s1_sra=$(_polap_lib_extract-seqkit_stats "${_s1_fq_stats}")
   local _s_sra="${_s1_sra%%_*}"
   local _s1_sra_size=$(_polap_lib_extract-seqkit_stats_sum_len "${_s1_fq_stats}")
-  local _s1_sra_size_gb=$(_polap_utility_convert_bp "${_s1_sra_size}")
+  local _s1_sra_size_gb=$(_polap_lib_unit-convert_bp "${_s1_sra_size}")
   local _s2_fq_stats="${_brg_outdir_0}/summary-data/s2.fq.stats"
   local _s2_sra=$(_polap_lib_extract-seqkit_stats "${_s2_fq_stats}")
   local _s2_sra_size=$(_polap_lib_extract-seqkit_stats_sum_len "${_s2_fq_stats}")
-  local _s2_sra_size_gb=$(_polap_utility_convert_bp "${_s2_sra_size}")
+  local _s2_sra_size_gb=$(_polap_lib_unit-convert_bp "${_s2_sra_size}")
   local _s_sra_size=$((_s1_sra_size + _s2_sra_size))
-  local _s_sra_size_gb=$(_polap_utility_convert_bp "${_s_sra_size}")
+  local _s_sra_size_gb=$(_polap_lib_unit-convert_bp "${_s_sra_size}")
 
   # Extract the genome size estimate
   local _genome_size_dir="${_brg_outdir_0}/estimate-genomesize"
   local _genome_size=$(_polap_lib_extract-genome_size "${_genome_size_dir}")
-  local _genome_size_gb=$(_polap_utility_convert_bp "${_genome_size}")
+  local _genome_size_gb=$(_polap_lib_unit-convert_bp "${_genome_size}")
 
   # sequencing data coverage
   local _long_coverage=$(echo "scale=2; ${_l_sra_size} / ${_genome_size}" | bc)
   local _short_coverage=$(echo "scale=2; ${_s_sra_size} / ${_genome_size}" | bc)
 
   # sequencing data coverage
-  local _target_coverage=$(get_target_read_coverage "${_brg_outdir_i}/polap-disassemble/${_brg_inum}/lx.txt")
-  # local _short_coverage=$(get_short_read_coverage "${_brg_outdir_i}/polap-disassemble/0/sx.txt")
-  # local _long_coverage=$(get_long_read_coverage "${_brg_outdir_i}/polap-disassemble/0/lx.txt")
+  local _target_coverage=$(_polap_lib_extract-target_read_coverage "${_brg_outdir_i}/polap-disassemble/${_brg_inum}/lx.txt")
 
   # Extract the timing for the corresponing coverage x case
   local _timing_dir="${_brg_outdir_0}"
@@ -8384,7 +2266,7 @@ man-table-benchmark_genus_species_for() {
   read -r _index2 _summary2_size _summary2_rate _summary2_alpha <<<"$_output"
   local _summary2_rate_decimal=$(printf "%.10f" "$_summary2_rate")
   local _summary2_rate_rounded=$(echo "scale=4; $_summary2_rate_decimal / 1" | bc)
-  local _summary2_size_gb=$(_polap_utility_convert_bp "${_summary2_size}")
+  local _summary2_size_gb=$(_polap_lib_unit-convert_bp "${_summary2_size}")
   local _summary2_alpha_formatted=$(echo "scale=2; $_summary2_alpha / 1" | bc | awk '{printf "%.2f\n", $1}')
 
   # Percent identity from pairwise sequence alignment
@@ -8574,7 +2456,7 @@ man-table-benchmark_genus_species() {
   local table_md="${run_title}-${_brg_type}-${_brg_outdir}-${_brg_inum}.md"
   local table_tsv="${run_title}-${_brg_type}-${_brg_outdir}-${_brg_inum}.tsv"
 
-  if [[ "$DEBUG" == "0" ]]; then
+  if [[ "$_POLAP_DEBUG" == "0" ]]; then
     man-table-benchmark_genus_species_header >"${table_tsv}"
   else
     man-table-benchmark_genus_species_header
@@ -8600,7 +2482,7 @@ man-table-benchmark_genus_species() {
       man-table-benchmark_genus_species_for "$key" "${@:2}" >>"${table_tsv}"
     done
   else
-    if [[ "$DEBUG" == "0" ]]; then
+    if [[ "$_POLAP_DEBUG" == "0" ]]; then
       man-table-benchmark_genus_species_for "$@" >>"${table_tsv}"
     else
       man-table-benchmark_genus_species_for "$@"
@@ -8689,7 +2571,7 @@ man-table-polap-disassemble_genus_species_for() {
   # Initialize Conda and activate polap environment
   source "$(conda info --base)/etc/profile.d/conda.sh"
   if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    if [[ "$DEBUG" == "1" ]]; then
+    if [[ "$_POLAP_DEBUG" == "1" ]]; then
       echo "[INFO] Activating conda environment 'polap'..."
     fi
     conda activate polap
@@ -8771,16 +2653,16 @@ man-table-polap-disassemble_genus_species() {
 ################################################################################
 # main cases
 #
-if [[ "${subcmd1}" == "help" ]]; then
-  if [[ "${_arg2}" == "arg2" ]]; then
-    subcmd1="help"
-  else
-    subcmd1="${_arg2}"
-    _arg2="arg2"
-  fi
-fi
+# if [[ "${subcmd1}" == "help" ]]; then
+#   if [[ "${_arg2}" == "arg2" ]]; then
+#     subcmd1="help"
+#   else
+#     subcmd1="${_arg2}"
+#     _arg2="arg2"
+#   fi
+# fi
 
-if [[ "$DEBUG" == "1" ]]; then
+if [[ "$_POLAP_DEBUG" == "1" ]]; then
   echo "option -y: ${opt_y_flag}"
   echo "option -c: ${opt_c_arg}"
   echo "option -t: ${opt_t_arg}"
@@ -8800,69 +2682,14 @@ common_handled=$?
 
 # Main case statement
 case "$subcmd1" in
-'help')
-  echo "${help_message}"
-  ;;
-dev)
-  echo "${help_message_development}"
-  ;;
-bandage)
+system)
   ${subcmd1}_genus_species
   ;;
-'system' | \
-  'copy-figures')
+copy-figures)
   ${subcmd1}_genus_species
   ;;
-'send-data' | \
-  'send' | \
-  'send-archive' | \
-  'mkdir' | \
-  'copy-ptdna-of-ncbi-as-reference' | \
-  'extract-ptgaul-ptdna2' | \
-  'copy-ptdna-of-ptgaul' | \
-  'wga' | \
-  'restart' | \
-  'clean-infer' | \
-  'write-config' | \
-  'single-argument')
-  ${subcmd1}_genus_species "${_arg2}"
-  ;;
-'compare' | \
-  'use-downsample' | \
-  'best' | \
-  'mauve' | \
-  bandage* | \
-  'coverage' | \
-  'delete-disassemble' | \
-  'two-arguments')
+coverage)
   ${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-  ;;
-'infer2' | \
-  'infer3only' | \
-  'downsample2infer')
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
-  # ${subcmd1}_genus_species "${_arg2}" --disassemble-simple-polishing
-  ;;
-req*)
-  echo "${help_message_requirement}"
-  ;;
-ptgaul)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir>"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-    echo "${help_message_ptgaul}"
-    exit 0
-  fi
-  ${subcmd1}_genus_species "${_arg2}"
-  ;;
-msbwt)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir>"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-    echo "${help_message_msbwt}"
-    exit 0
-  fi
-  ${subcmd1}_genus_species "${_arg2}"
   ;;
 extract-ptgaul-ptdna)
   if [[ "${_arg2}" == arg2 ]]; then
@@ -8872,24 +2699,6 @@ extract-ptgaul-ptdna)
     exit 0
   fi
   ${subcmd1}_genus_species "${_arg2}"
-  ;;
-getorganelle)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir>"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-    echo "${help_message_getorganelle}"
-    exit 0
-  fi
-  ${subcmd1}_genus_species "${_arg2}"
-  ;;
-refs)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir>"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-    echo "${help_message_refs}"
-    exit 0
-  fi
-  get-ptdna-from-ncbi_genus_species "${_arg2}"
   ;;
 sample-csv)
   if [[ "${_arg2}" == arg2 ]]; then
@@ -8930,28 +2739,6 @@ sample-csv)
     echo "create CSV: ${_arg2}"
   fi
   ;;
-sra)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir> <inum:0|N>"
-    echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana 0"
-    echo "${help_message_sra}"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-  ;;
-clean)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir> [inum:0|N] [confirm:off|on]"
-    echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana 0"
-    echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana 0 on"
-    echo "${help_message_clean}"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
-  ;;
 archive)
   if [[ "${_arg2}" == arg2 ]]; then
     echo "Help: ${subcmd1} <outdir|all> <inum:-1|N>"
@@ -8964,210 +2751,17 @@ archive)
   [[ "${_arg3}" == arg3 ]] && _arg3=""
   ${subcmd1}_genus_species "${_arg2}" "${_arg3}"
   ;;
-batch-cmd)
+benchmark-command)
   if [[ "${_arg2}" == arg2 ]]; then
     echo "Help: ${subcmd1} <outdir> [inum:0|N]"
     echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana"
-    echo "${help_message_batch_cmd}"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  [[ "${_arg6}" == arg6 ]] && _arg6=""
-  [[ "${_arg7}" == arg7 ]] && _arg7=""
-  [[ "${_arg8}" == arg8 ]] && _arg8=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}" "${_arg7}" "${_arg8}"
-  ;;
-get)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir|all> [inum:-1|N] [confirm-yes:off|yes|add] [download:off|on]"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana -1 off off"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 0 off"
-    echo "  polap-data-v2.sh ${subcmd1} all 2 add off"
-    echo "${help_message_get}"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
-  ;;
-report)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir|all> <inum:N> <disassemble index:infer-1>"
-    echo "  polap-data-v2.sh ${subcmd1} all 2 infer-1"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 infer-1"
-    echo "${help_message_report}"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
-  ;;
-infer)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir> [inum:0|N] [simple-polish:default|simple] [random:off|on]"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 default on"
-    echo "${help_message_infer}"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
-  ;;
-check)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir> [inum:0|N] [simple-polish:default|simple] [random:off|on]"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 2 default on"
-    echo "${help_message_infer}"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
-  ;;
-maintable1)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir|all|each> <inum:N> <disassemble index:infer-1> <table:1|2> <format:1|3> <targe dir>"
-    echo "  polap-data-v2.sh $subcmd1 all 2 infer-1"
-    echo "  polap-data-v2.sh $subcmd1 all 0 infer-1"
-    echo "  $0 $subcmd1 Eucalyptus_pauciflora 2 infer-1"
-    echo "  csv_file=a.csv $0 $subcmd1 each x infer-1 1 3"
-    echo "${help_message_maintable1}"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  [[ "${_arg6}" == arg6 ]] && _arg6=""
-  [[ "${_arg7}" == arg7 ]] && _arg7=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}" "${_arg7}"
-  ;;
-maintable2)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir|all|each> <inum:2|N> <disassemble index:infer-1> <table:3|1|2> <format:1|3> <targe dir>"
-    echo "  $0 $subcmd1 all"
-    echo "  $0 $subcmd1 Eucalyptus_pauciflora"
     _subcmd1_clean="${subcmd1//-/_}"
     declare -n ref="help_message_${_subcmd1_clean}"
     echo "$ref"
     exit 0
   fi
   [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  [[ "${_arg6}" == arg6 ]] && _arg6=""
-  [[ "${_arg7}" == arg7 ]] && _arg7=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}" "${_arg7}"
-  ;;
-supptable1)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir|all> <inum:N> <disassemble index:infer-1> <stage:x|1|2|3-infer> <table:1|2> <targe dir>"
-    echo "  polap-data-v2.sh $subcmd1 all 2 infer-1 x"
-    echo "  polap-data-v2.sh $subcmd1 Eucalyptus_pauciflora 2 infer-1 x"
-    echo "  polap-data-v2.sh $subcmd1 Eucalyptus_pauciflora 0 infer-1 x"
-    echo "  polap-data-v2.sh $subcmd1 Eucalyptus_pauciflora 8 infer-1 x"
-    echo "${help_message_supptable1}"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  [[ "${_arg6}" == arg6 ]] && _arg6=""
-  [[ "${_arg7}" == arg7 ]] && _arg7=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}" "${_arg7}"
-  ;;
-suppfigure1)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir|all> <inum:N> <disassemble index:infer-1> <stage> <table:1|2> <bandage:no|yes> <targe dir>"
-    echo "  polap-data-v2.sh $subcmd1 all 2 infer-1 1 1 yes"
-    echo "  polap-data-v2.sh $subcmd1 Eucalyptus_pauciflora 2 infer-1 1 1 yes"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  [[ "${_arg6}" == arg6 ]] && _arg6=""
-  [[ "${_arg7}" == arg7 ]] && _arg7=""
-  [[ "${_arg8}" == arg8 ]] && _arg8=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}" "${_arg7}" "${_arg8}"
-  ;;
-pmat-suppfigure1)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir|all> <inum:N> <bandage:no|yes> <targe dir>"
-    echo "  polap-data-v2.sh $subcmd1 Eucalyptus_pauciflora 2 yes"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  [[ "${_arg6}" == arg6 ]] && _arg6=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
-  ;;
-pmat-suppfigure3)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <inum> <bandage:no|yes> <targe dir>"
-    echo "  polap-data-v2.sh $subcmd1 2 yes"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
-  ;;
-suppfigure3)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <inum> <disassemble index> <main:off|on> <bandage:no|yes> <targe dir>"
-    echo "  polap-data-v2.sh $subcmd1 2 infer-1 on yes"
-    echo "  polap-data-v2.sh $subcmd1 2 infer-1 off yes"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  [[ "${_arg6}" == arg6 ]] && _arg6=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}"
-  ;;
-suppfigure4)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <alpha0|delta> [targe dir for figure copy]"
-    echo "  $0 $subcmd1 alpha0"
-    echo "  $0 $subcmd1 delta"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  case "${_arg2}" in
-  a*)
-    ${subcmd1}-alpha0_genus_species "${_arg3}"
-    ;;
-  d*)
-    ${subcmd1}-delta_genus_species "${_arg3}"
-    ;;
-  *)
-    echo "Error: no such argument: alpha0 or delta"
-    ;;
-  esac
-  ;;
-data2csv*)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} [data:${_polap_data_data}] [csv:${_polap_data_csv}] [host:$(hostname)] [C:10|N] [P:10|N] [N:10|N] [R:10|N] [I:0|N] [Seed:0|N]"
-    echo "  $0 ${subcmd1}"
-    echo "${help_message_convert_data}"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  [[ "${_arg6}" == arg6 ]] && _arg6=""
-  [[ "${_arg7}" == arg7 ]] && _arg7=""
-  [[ "${_arg8}" == arg8 ]] && _arg8=""
-  [[ "${_arg9}" == arg9 ]] && _arg9=""
-  [[ "${_arg10}" == arg10 ]] && _arg10=""
-  ${subcmd1}_genus_species "${_arg2}" \
-    "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}" "${_arg7}" "${_arg8}" \
-    "${_arg9}" "${_arg10}"
+  ${subcmd1}_genus_species "${_arg2}" "${_arg3}"
   ;;
 man)
   if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
@@ -9180,84 +2774,9 @@ man)
   fi
   ${subcmd1}_genus_species "${cmd_args[@]}"
   ;;
-remote-get-data)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir>"
-    echo "${help_message_remote_get_data}"
-    exit 0
-  fi
-  ${subcmd1}_genus_species "${_arg2}"
-  ;;
-downsample)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir|all> [inum:0|N] [coverage:0|N] [--dry]"
-    echo "  polap-data-v2.sh ${subcmd1} all"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-    echo "${help_message_test}"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
-  ;;
-compute-subsample-rate)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir|all> [inum:0|N] [coverage:1|N]"
-    echo "  polap-data-v2.sh ${subcmd1} all"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
-  ;;
-prepare-data)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir|all> [inum:0|N]"
-    echo "  polap-data-v2.sh ${subcmd1} all"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-  ;;
-pmat-nextdenovo)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir> [inum:7|N] [type:all|mt|pt] [fc:1|0.1,0.2,0.3]"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
-  ;;
-get-archive)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir> <inum:0|N>"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  ${subcmd1}_genus_species "${_arg2}"
-  ;;
-  ##### INSERT_CASE_HERE #####
-assemble)
+setup-csv)
   if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-    echo "Help: ${subcmd1} <outdir> [inum:1|N]"
-    echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
+    echo "Help: ${subcmd1} <${_polap_data_csv}>"
     _subcmd1_clean="${subcmd1//-/_}"
     declare -n ref="help_message_${_subcmd1_clean}"
     echo "$ref"
@@ -9386,10 +2905,10 @@ man-table-benchmark)
   fi
   ${subcmd1}_genus_species "${cmd_args[@]}"
   ;;
-batch)
+benchmark)
   if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-    echo "Help: ${subcmd1} <outdir>"
-    echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
+    echo "Help: ${subcmd1} <outdir> ..."
+    echo "  $(basename $0) ${subcmd1}"
     _subcmd1_clean="${subcmd1//-/_}"
     declare -n ref="help_message_${_subcmd1_clean}"
     echo "$ref"
@@ -9397,119 +2916,7 @@ batch)
   fi
   ${subcmd1}_genus_species "${cmd_args[@]}"
   ;;
-batch-v2)
-  if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-    echo "Help: ${subcmd1} <outdir>"
-    echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  ${subcmd1}_genus_species "${_arg2}"
-  ;;
-oatk-nextdenovo)
-  if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <all|each|outdir> [inum:7|N] [fc:30|N|N1,N2,N3,...]"
-    echo "  polap-data-v2.sh ${subcmd1} all"
-    echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  [[ "${_arg5}" == arg5 ]] && _arg5=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
-  ;;
-nextdenovo-polish-peak-memory)
-  if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-    echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-  ;;
-nextdenovo-polish-time)
-  if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-    echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
-  ;;
-pmat-track)
-  if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir> [inum:0|N] [fc:1.0|N]"
-    echo "  ${0} ${subcmd1} Arabidopsis_thaliana 7 0.1"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
-  ;;
-nextdenovo-polish-memory)
-  if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir> [inum:7|N]"
-    echo "  ${0##*/} ${subcmd1} Arabidopsis_thaliana"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-  ;;
 nextdenovo-polish-cleanup)
-  if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir>"
-    echo "  ${0##*/} ${subcmd1} Arabidopsis_thaliana"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  ${subcmd1}_genus_species "${_arg2}"
-  ;;
-downsample-long-data)
-  if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir> [inum:0|N] [coverage:0|N]"
-    echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  [[ "${_arg4}" == arg4 ]] && _arg4=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
-  ;;
-prepare-long-data)
-  if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-    echo "  ${0##*/} ${subcmd1} Arabidopsis_thaliana"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  ${subcmd1}_genus_species "${_arg2}"
-  ;;
-recover)
   if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
     echo "Help: ${subcmd1} <outdir>"
     echo "  ${0##*/} ${subcmd1} Arabidopsis_thaliana"

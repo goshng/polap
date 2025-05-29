@@ -153,8 +153,8 @@ _arg_disassemble_b_is="off"   #
 # we use the same rate not the actual sampling size for the short-read data
 # just as we use the long-read sampling rate.
 _arg_downsample="10"        # 10x downsample
-_arg_disassemble_n=10       # the number cycles
 _arg_disassemble_p=5        # 5% of the sample size
+_arg_disassemble_n=10       # the number cycles
 _arg_disassemble_r=5        # the number of replicates
 _arg_disassemble_p_is="off" #
 # disassemble/i/j
@@ -344,7 +344,7 @@ Options:
   -t, --threads: number of CPUs (default: maximum number of cores)
     The option '-t' or '--threads' specifies the number of CPU threads to 
     utilize, with a default value equal to the maximum number of available 
-    cores.
+    cores in the computer you execute 'polap'.
 
   -c, --coverage: coverage for the organelle-genome assembly (default: ${_arg_coverage})
     The option '-c' or '--coverage' specifies the coverage percentage for the 
@@ -437,24 +437,28 @@ Options:
 
   --markdown: display the table in markdown format (default: ${_arg_markdown})
 
-  disassemble options:
+disassemble options:
     Use help menu of the subcommand to see more example commands.
 
   --downsample : maximum genome coverage to downsample (default: ${_arg_downsample})
     The coverage for downsampling before assembling the plastid genome.
     The genome size for the coverage is computed using short-read data.
     Use option -i for a new downsampled set of data.
-
-  --disassemble-n: the number of steps (default: ${_arg_disassemble_n})
-    The number of iterations in the first stage.
+    The default is a recommended downsample depth relative to a genome size estimate.
 
   --disassemble-p: the percentile of the largest long-read (default: ${_arg_disassemble_p})
     The maximum percentage for the long-read data subsampling. Use this or
     option --disassemble-b for the maximum subsample size for a range of the
     subsampling.
+    The default is a recommended value given the downsample value.
+
+  --disassemble-n: the number of steps (default: ${_arg_disassemble_n})
+    The number of iterations in the first stage of the subsampling-based assembly.
+    The default is a recommended number of iterations.
 
   --disassemble-r: the number of replicates (default: ${_arg_disassemble_r})
     The number of iterations in the second and third stages.
+    The default is a recommended number of iterations.
 
   --disassemble-q: the percentile of the largest short-read (default: ${_arg_disassemble_p})
     The maximum percentage for the short-read data subsampling.
@@ -475,7 +479,8 @@ Options:
     The largest subsample size in base pairs. 
 
   --disassemble-m: the upper bound for a Flye assembly (default: ${_arg_disassemble_m})
-    The upper bound for an initital preassembly size. The default is 500 kb.
+    The upper bound for an initital preassembly size.
+    The default for plastid genome assembly is 500 kb.
     We keep the Flye's preassembly size under this value by adjusting
     the read-coverage threshold.
 

@@ -1,6 +1,8 @@
 import argparse
 import networkx as nx
 
+import os
+debug = os.getenv("_POLAP_DEBUG", "0")
 
 def parse_gfa_to_graph(gfa_file):
     """

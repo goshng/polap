@@ -1,7 +1,7 @@
 #!/bin/bash
 
 print_usage() {
-	cat <<EOF
+  cat <<EOF
 Usage: $0 [-c cmd] [-f file] [file] [cmd]
 
 Options:
@@ -21,8 +21,8 @@ EOF
 }
 
 if [[ $# -eq 0 ]]; then
-	print_usage
-	exit 0
+  print_usage
+  exit 0
 fi
 
 # Defaults
@@ -31,30 +31,30 @@ file=""
 
 # Parse options
 while [[ $# -gt 0 ]]; do
-	case "$1" in
-	-c)
-		cmd="$2"
-		shift 2
-		;;
-	-f)
-		file="$2"
-		shift 2
-		;;
-	-h | --help)
-		print_usage
-		exit 0
-		;;
-	--)
-		shift
-		break
-		;;
-	-*)
-		echo "❌ Unknown option: $1" >&2
-		print_usage
-		exit 1
-		;;
-	*) break ;;
-	esac
+  case "$1" in
+  -c)
+    cmd="$2"
+    shift 2
+    ;;
+  -f)
+    file="$2"
+    shift 2
+    ;;
+  -h | --help)
+    print_usage
+    exit 0
+    ;;
+  --)
+    shift
+    break
+    ;;
+  -*)
+    echo "❌ Unknown option: $1" >&2
+    print_usage
+    exit 1
+    ;;
+  *) break ;;
+  esac
 done
 
 # Fallback to positional arguments
@@ -67,14 +67,14 @@ file="${file:-polaplib/polap-lib-data.sh}"
 
 # Allow the first argument to be a subcommand
 if [[ ! -r "$file" ]]; then
-	cmd="$file"
-	file=polaplib/polap-lib-data.sh
+  cmd="$file"
+  file=polaplib/polap-lib-data.sh
 fi
 
 # Validate file exists and readable
 if [[ ! -r "$file" ]]; then
-	echo "❌ Error: File '$file' does not exist or is not readable." >&2
-	exit 1
+  echo "❌ Error: File '$file' does not exist or is not readable." >&2
+  exit 1
 fi
 
 # echo "cmd: $cmd"
@@ -83,12 +83,12 @@ fi
 
 # Validate required placeholder lines
 for placeholder in "##### INSERT_HELP_HERE #####" \
-	"##### INSERT_FUNCTION_HERE #####" \
-	"##### INSERT_CASE_HERE #####"; do
-	if ! grep -qF "$placeholder" "$file"; then
-		echo "❌ Error: Missing required placeholder in $file: $placeholder" >&2
-		exit 1
-	fi
+  "##### INSERT_FUNCTION_HERE #####" \
+  "##### INSERT_CASE_HERE #####"; do
+  if ! grep -qF "$placeholder" "$file"; then
+    echo "❌ Error: Missing required placeholder in $file: $placeholder" >&2
+    exit 1
+  fi
 done
 
 cmd_snake="${cmd//-/_}"
@@ -138,7 +138,7 @@ function print_case_block() {
   print "    " cmd ")"
   print "      if [[ -z \"${_arg2}\" || \"${_arg2}\" == arg2 || \"${_arg2}\" == \"-h\" || \"${_arg2}\" == \"--help\" ]]; then"
   print "        echo \"Help: ${subcmd1} <outdir> [inum:0|N]\""
-  print "        echo \"  ${0} ${subcmd1} Arabidopsis_thaliana\""
+  print "        echo \"  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana\""
   print "        _subcmd1_clean=\"${subcmd1//-/_}\""
   print "        declare -n ref=\"help_message_${_subcmd1_clean}\""
   print "        echo \"$ref\""
@@ -178,8 +178,8 @@ function print_command_block() {
 ' "$file.bak" >"$file"
 
 if [[ -s "$file" ]]; then
-	echo "✅ Inserted blocks for '${cmd}' into ${file}. Backup saved as ${file}.bak"
+  echo "✅ Inserted blocks for '${cmd}' into ${file}. Backup saved as ${file}.bak"
 else
-	echo "❌ Output file is empty! Restoring backup..."
-	mv "$file.bak" "$file"
+  echo "❌ Output file is empty! Restoring backup..."
+  mv "$file.bak" "$file"
 fi

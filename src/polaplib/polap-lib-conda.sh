@@ -28,6 +28,13 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+  return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
 _polap_lib_conda-ensure_conda_env() {
 	local env_name="$1"
 
@@ -40,7 +47,7 @@ _polap_lib_conda-ensure_conda_env() {
 	source "$(conda info --base)/etc/profile.d/conda.sh"
 
 	if [[ "${CONDA_DEFAULT_ENV:-}" != "$env_name" ]]; then
-		if [[ "$DEBUG" == "1" ]]; then
+		if [[ "$_POLAP_DEBUG" == "1" ]]; then
 			echo "[INFO] Activating conda environment '$env_name'..."
 		fi
 		conda activate "$env_name"

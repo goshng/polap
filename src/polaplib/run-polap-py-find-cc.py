@@ -25,6 +25,8 @@
 
 import sys
 
+import os
+debug = os.getenv("_POLAP_DEBUG", "0")
 
 class Graph:
 

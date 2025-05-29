@@ -28,9 +28,16 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+  return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
 function _run_polap_blast-genome-contig { # v0.2.6: BLAST contig sequences on MT and PT genes
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -66,7 +73,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
 	fi
 
@@ -79,7 +86,7 @@ HEREDOC
 		_polap_log0 "  found1: ${_polap_var_ann_MTGENECOUNT}"
 		_polap_log0 "  found2: ${_polap_var_ann_PTGENECOUNT}"
 		_polap_log0 "  so skipping the blast genome ..."
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return
 	fi
 
@@ -144,7 +151,7 @@ HEREDOC
 	mkdir "${_polap_var_ann_MTAABED}"
 
 	_polap_log2 "  counting mitochondrial genes in the contigs ..."
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 	while IFS= read -r contig; do
 		grep -w "${contig}" "${_polap_var_ann_MTAABLAST}".sorted.bed \
 			>"${_polap_var_ann_MTAABED}/${contig}".bed
@@ -154,7 +161,7 @@ HEREDOC
 			$(wc -l <"${_polap_var_ann_MTAABED}/${contig}".bed.txt)
 	done <"${_polap_var_ann_CONTIGNAME}" |
 		sort -k2 -rn >"${_polap_var_ann_MTGENECOUNT}"
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	_polap_log2 "  compressing the BLAST results of mitochondrial gene annotation"
 	tar zcf "${_polap_var_ann_MTAABED}".tar.gz "${_polap_var_ann_MTAABED}"
@@ -185,7 +192,7 @@ HEREDOC
 	mkdir "${_polap_var_ann_PTAABED}"
 
 	_polap_log2 "  counting plastid genes in the contigs ..."
-	if [ "$DEBUG" -eq 1 ]; then set +x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 	while IFS= read -r contig; do
 		grep -w "${contig}" "${_polap_var_ann_PTAABLAST}".sorted.bed \
 			>"${_polap_var_ann_PTAABED}/${contig}".bed
@@ -195,7 +202,7 @@ HEREDOC
 			$(wc -l <"${_polap_var_ann_PTAABED}/${contig}".bed.txt)
 	done <"${_polap_var_ann_CONTIGNAME}" |
 		sort -k2 -rn >"${_polap_var_ann_PTGENECOUNT}"
-	if [ "$DEBUG" -eq 1 ]; then set -x; fi
+	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
 	_polap_log2 "  compressing the BLAST results of plastid gene annotation"
 	tar zcf "${_polap_var_ann_PTAABED}".tar.gz "${_polap_var_ann_PTAABED}"
@@ -208,12 +215,12 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 }
 
 function _run_polap_count-gene-contig { # v0.2.6: count MT and PT genes
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -264,7 +271,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
 	fi
 
@@ -301,15 +308,15 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 }
 
 ################################################################################
 # Annotates the genome assembly.
 ################################################################################
 function _run_polap_annotate-contig { # annotate v0.2.6 for contigs_stats.txt
-	# Enable debugging if DEBUG is set
-	[ "$DEBUG" -eq 1 ] && set -x
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
 	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
@@ -376,7 +383,7 @@ HEREDOC
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled
-		[ "$DEBUG" -eq 1 ] && set +x
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		exit $EXIT_SUCCESS
 	fi
 
@@ -391,5 +398,5 @@ HEREDOC
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
-	[ "$DEBUG" -eq 1 ] && set +x
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 }

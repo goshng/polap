@@ -1,6 +1,7 @@
 import os
 import argparse
 
+debug = os.getenv("_POLAP_DEBUG", "0")
 
 def read_file_to_set(filepath):
     """Read a file and return a sorted set of its lines."""

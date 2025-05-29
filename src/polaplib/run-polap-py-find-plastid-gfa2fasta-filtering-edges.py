@@ -4,6 +4,7 @@ import sys
 import networkx as nx
 import argparse
 
+debug = os.getenv("_POLAP_DEBUG", "0")
 
 def parse_gfa_to_graph_with_reverses_and_filter(gfa_file, seed_file):
     """

@@ -50,6 +50,8 @@ suppressWarnings(suppressPackageStartupMessages(library("purrr")))
 suppressWarnings(suppressPackageStartupMessages(library("tidyr")))
 suppressWarnings(suppressPackageStartupMessages(library("ggplot2")))
 
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 parser <- OptionParser()
 
 clean_string <- function(input_string) {

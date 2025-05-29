@@ -28,6 +28,13 @@ declare "$_POLAP_INCLUDE_=1"
 #
 ################################################################################
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+  return 1 2>/dev/null || exit 1
+fi
+: "${_POLAP_DEBUG:=0}"
+: "${_POLAP_RELEASE:=0}"
+
 source "${_POLAPLIB_DIR}/polap-constants.sh"
 source "${_POLAPLIB_DIR}/run-polap-function-log.sh"
 
@@ -210,15 +217,9 @@ function run_check_ncbitools {
 }
 
 function run_check_flye {
-	if [[ "${_POLAP_RELEASE}" -eq 0 ]]; then
-		local commands=(
-			"$HOME/all/polap/Flye/bin/cflye"
-		)
-	else
-		local commands=(
-			"cflye"
-		)
-	fi
+	local commands=(
+		"cflye"
+	)
 
 	# Pass the array elements to the check_commands function
 	return $(check_commands "${commands[@]}")

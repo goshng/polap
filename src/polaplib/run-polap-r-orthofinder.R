@@ -22,6 +22,9 @@ suppressPackageStartupMessages(library("readr"))
 suppressPackageStartupMessages(library("purrr"))
 suppressPackageStartupMessages(library("tidyr"))
 suppressPackageStartupMessages(library("ggplot2"))
+
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 # args = commandArgs(trailingOnly=TRUE)
 parser <- OptionParser()
 parser <- add_option(parser, c("-t", "--table"),
@@ -40,9 +43,9 @@ if (is_null(args1$table)) {
   input1 <- file.path(input_dir0, "Hylodesmum_podocarpum/taxonomy/04-orthofinder/OrthoFinder/Results_1/Orthogroups/Orthogroups.GeneCount.tsv")
   output1 <- file.path(input_dir0, "minimum.og.txt")
   args1 <- parse_args(parser, args = c(
-    "--table", input1, 
-    "-o", output1)
-  )
+    "--table", input1,
+    "-o", output1
+  ))
 }
 
 # Read the TSV file
@@ -58,4 +61,3 @@ filtered_data <- data %>%
 # Print the number of OG groups after filtering
 num_og_groups <- nrow(filtered_data)
 cat(num_og_groups, "\n")
-

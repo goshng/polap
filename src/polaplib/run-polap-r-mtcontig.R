@@ -23,6 +23,8 @@ suppressPackageStartupMessages(library("purrr"))
 suppressPackageStartupMessages(library("tidyr"))
 suppressPackageStartupMessages(library("ggplot2"))
 
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 parser <- OptionParser()
 
 parser <- add_option(parser, c("-m", "--mitochondrial"),
@@ -108,7 +110,6 @@ if (is_null(args1$`flyeout-edges-stats`)) {
     "--out-pt-annotation-depth-table", output5,
     "--contigger"
   ))
-
 }
 
 # flye_dir <- args[1]
@@ -217,4 +218,3 @@ z.1 %>%
   rename(Contig = V1, Length = V2, Depth = V3, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
   relocate(Edge, .after = last_col()) %>%
   write.table(args1$`out-annotation-all`, row.names = F, quote = F)
-

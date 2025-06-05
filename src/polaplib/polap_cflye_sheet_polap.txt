@@ -1,0 +1,13 @@
+\section*{Supporting Material - Plastid genome assemblies using Polap}
+
+\begin{center}
+\Large\textbf{On the plastid genome assembly by subsampling low-quality Oxford Nanopore long-read data} \\[1ex]
+\normalsize Sang Chul Choi
+\end{center}
+
+\section*{Figure description}
+
+We used \texttt{Polap} to assemble plastid genomes by the subsampling-based approach without error-correcting low-quality Oxford Nanopore long-read data.
+The index at Stage 1 is displayed at the bottom of an assembly graph figure, if any, next to the species name.
+All of the figures were created using Bandage software (Wick et al. 2015).
+

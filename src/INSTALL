@@ -3,6 +3,7 @@ mkdir -p all/polap/cflye1
 cd all/polap/cflye1
 git clone https://github.com/goshng/polap.git
 bash polap/src/polap-data-v2.sh install conda
+## log out and back in
 source ~/miniconda3/bin/activate
 cd all/polap/cflye1
 bash polap/src/polap-data-v2.sh setup conda
@@ -13,7 +14,7 @@ bash polap/src/polap-data-v2.sh setup pmat
 source ~/miniconda3/bin/activate
 cd all/polap/cflye1
 p -y mkdir-all
-p -y batch <outdir>
+p -y benchmark <outdir>
 
 ## manual extraction of ptDNA
 check <outdir>/t1/0/ptgaul/flye_cpONT/assembly_graph.gfa using Bandage

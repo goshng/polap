@@ -96,7 +96,7 @@ _polap_lib_process-start_memtracker() {
     done
   ) &
   echo $! >"${log_file}.pid"
-  echo "[INFO] Job: [$run_title]: Logging started with PID $(<"${log_file}.pid")"
+  echo "[INFO] Job: [$run_title] started with PID $(<"${log_file}.pid")"
 }
 
 _polap_lib_process-end_memtracker() {

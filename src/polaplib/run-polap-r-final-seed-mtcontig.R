@@ -22,6 +22,8 @@ suppressPackageStartupMessages(library("readr"))
 suppressPackageStartupMessages(library("purrr"))
 suppressPackageStartupMessages(library("tidyr"))
 
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 parser <- OptionParser()
 parser <- add_option(parser, c("-t", "--table"),
   action = "store",
@@ -34,9 +36,9 @@ parser <- add_option(parser, c("-a", "--annotation"),
   metavar = "<FILE>"
 )
 parser <- add_option(parser, c("-m", "--mt-contig-name"),
-                     action = "store",
-                     help = "Organelle seed contigs: mt.contig.name-1",
-                     metavar = "<FILE>"
+  action = "store",
+  help = "Organelle seed contigs: mt.contig.name-1",
+  metavar = "<FILE>"
 )
 parser <- add_option(parser, c("-o", "--out"),
   action = "store",

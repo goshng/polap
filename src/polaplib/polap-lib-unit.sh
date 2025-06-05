@@ -42,6 +42,12 @@ fi
 # convert_bp $bp
 ################################################################################
 function _polap_lib_unit-convert_bp {
+	local _bp="$1"
+	if [[ "$_bp" == "NA" ]]; then
+		echo "NA"
+		return
+	fi
+
 	local bp=${1%.*}
 	if ((bp >= 1000000000000)); then
 		echo "$(bc <<<"scale=1; $bp/1000000000000") Tbp"

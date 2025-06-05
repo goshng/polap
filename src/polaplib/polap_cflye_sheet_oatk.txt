@@ -1,0 +1,14 @@
+\section*{Supporting Material - Plastid genome assemblies using Oatk}
+
+\begin{center}
+\Large\textbf{On the plastid genome assembly by subsampling low-quality Oxford Nanopore long-read data} \\[1ex]
+\normalsize Sang Chul Choi
+\end{center}
+
+\section*{Figure description}
+
+We used \texttt{Oatk} to assemble plastid genomes after error-correcting low-quality Oxford Nanopore long-read data.
+Option \texttt{-c} is displayed at the bottom of an assembly graph figure, if any, next to the species name.
+All of the figures were created using Bandage software (Wick et al. 2015).
+
+

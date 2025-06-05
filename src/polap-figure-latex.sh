@@ -1,39 +1,50 @@
 #!/bin/bash
 
 csv_file="$1"
-ncol="$2"
-groupby="${3:-none}" # tool | species | none
-percent="${4:-22}"   # figure width % of \textwidth
+text_file="$2"
+ncol="${3:-2}"
+startpage="${4:-1}"
+groupby="${5:-none}" # tool | species | none
+percent="${6:-15}"   # figure width % of \textwidth
 
 if [[ -z "$csv_file" || -z "$ncol" ]]; then
-  echo "Usage: $0 <input.csv> <num_columns> [groupby: tool|species|none] [percent_of_textwidth]" >&2
+  echo "Usage: $0 <input.csv> <text.txt> [num_columns:2] [page:1] [groupby: none|tool|species] [percent_of_textwidth:15]" >&2
   exit 1
 fi
 
 width_frac=$(awk -v p="$percent" 'BEGIN { printf "%.4f", p/100 }')
 
 echo "\\documentclass{article}"
-echo "\\usepackage[margin=1cm]{geometry}"
+echo "\\usepackage[bottom=2.5cm, top=2cm, left=2cm, right=2cm]{geometry}"
 echo "\\usepackage{graphicx}"
 echo "\\usepackage{caption}"
 echo "\\usepackage{float}"
+echo "\\usepackage{fancyhdr}"
+echo "\\pagestyle{fancy}"
+echo "\\fancyhf{}"
+echo "\\rfoot{\\thepage}"
+echo "\\renewcommand{\\headrulewidth}{0pt}"
+echo "\\setcounter{page}{${startpage}}"
 echo "\\begin{document}"
+
+cat "${text_file}"
 
 groupkey=""
 count=0
 
 print_group_header() {
-  if [[ "$groupby" != "none" ]]; then
-    echo "\\section*{$1}"
-  fi
   echo "\\begin{figure}[H]"
   echo "\\centering"
+  if [[ "$groupby" != "none" ]]; then
+    echo "\\noindent{\\Large\\textit{$1}}\\\\[0.8em]"
+  fi
 }
 
 end_group() {
   if ((count % ncol != 0)); then
     echo "\\\\[1em]"
   fi
+  echo "\\vspace{1em}\\hrule\\vspace{1em}"
   echo "\\end{figure}"
   count=0
 }

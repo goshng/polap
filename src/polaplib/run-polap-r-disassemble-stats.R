@@ -22,6 +22,9 @@ suppressPackageStartupMessages(library("readr"))
 suppressPackageStartupMessages(library("purrr"))
 suppressPackageStartupMessages(library("tidyr"))
 suppressPackageStartupMessages(library("ggplot2"))
+
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 # args = commandArgs(trailingOnly=TRUE)
 parser <- OptionParser()
 parser <- add_option(parser, c("-a", "--dista"),
@@ -30,9 +33,9 @@ parser <- add_option(parser, c("-a", "--dista"),
   metavar = "<FILE>"
 )
 parser <- add_option(parser, c("-b", "--distb"),
-                     action = "store",
-                     help = "Summary table b: summary2.txt from disassemble single run",
-                     metavar = "<FILE>"
+  action = "store",
+  help = "Summary table b: summary2.txt from disassemble single run",
+  metavar = "<FILE>"
 )
 parser <- add_option(parser, c("-o", "--out"),
   action = "store",
@@ -73,4 +76,3 @@ lower_percentage <- sum(filtered_lengths1 < length2[1]) / length(filtered_length
 
 # Display the result
 write(lower_percentage, file = args1$out)
-

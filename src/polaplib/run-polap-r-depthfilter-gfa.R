@@ -22,6 +22,8 @@ suppressPackageStartupMessages(library("readr"))
 suppressPackageStartupMessages(library("purrr"))
 suppressPackageStartupMessages(library("tidyr"))
 
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 parser <- OptionParser()
 parser <- add_option(parser, c("-m", "--mitochondrial"),
   action = "store_true",
@@ -75,14 +77,14 @@ if (is_null(args1$gfa)) {
 x1 <- read_tsv(args1$gfa, col_names = FALSE, show_col_types = FALSE)
 
 if (is_null(args1$depth)) {
-stopifnot(!is_null(args1$`lower-bound-depth`))    
-stopifnot(!is_null(args1$`upper-bound-depth`))    
-v1 <- args1$`lower-bound-depth`
-v2 <- args1$`upper-bound-depth`
+  stopifnot(!is_null(args1$`lower-bound-depth`))
+  stopifnot(!is_null(args1$`upper-bound-depth`))
+  v1 <- args1$`lower-bound-depth`
+  v2 <- args1$`upper-bound-depth`
 } else {
-x2 <- read_tsv(args1$depth, show_col_types = FALSE)
-v1 <- x2$depth_lower_bound
-v2 <- x2$depth_upper_bound
+  x2 <- read_tsv(args1$depth, show_col_types = FALSE)
+  v1 <- x2$depth_lower_bound
+  v2 <- x2$depth_upper_bound
 }
 
 y <- x1 |>

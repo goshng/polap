@@ -17,6 +17,9 @@
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))
 suppressPackageStartupMessages(library("tidyr"))
+
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) > 0) {

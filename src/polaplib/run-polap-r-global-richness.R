@@ -25,6 +25,8 @@ suppressPackageStartupMessages(library("taxize"))
 suppressPackageStartupMessages(library("rgbif"))
 suppressPackageStartupMessages(library("ggplot2"))
 
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 # https://chatgpt.com/share/6739a37d-0c7c-800e-9473-f748e3c5acee
 
 # Parse the main subcommand

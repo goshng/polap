@@ -43,8 +43,9 @@ _polap_lib_extract-seqkit_stats() {
 
 	# Check if input file is readable
 	if [[ ! -r "$_fq_stats" ]]; then
-		echo "Error: Log file '$_fq_stats' does not exist or is not readable" >&2
-		return 1
+		# echo "Error: Log file '$_fq_stats' does not exist or is not readable" >&2
+		echo "NA"
+		return
 	fi
 
 	local _l_sra=$(awk 'NR==2 { sub(/\.fastq$/, "", $1); print $1 }' "${_fq_stats}")
@@ -99,7 +100,16 @@ _polap_lib_extract-long_sra_size_gb() {
 }
 
 _polap_lib_extract-seqkit_stats_sum_len() {
-	awk 'NR==2 { print $5 }' $1
+	local _fq_stats="$1"
+
+	# Check if input file is readable
+	if [[ ! -r "$_fq_stats" ]]; then
+		# echo "Error: Log file '$_fq_stats' does not exist or is not readable" >&2
+		echo "NA"
+		return
+	fi
+
+	awk 'NR==2 { print $5 }' "${_fq_stats}"
 }
 
 _polap_lib_extract-genome_size() {
@@ -132,8 +142,11 @@ _polap_lib_extract-time_memory_timing_summary_file() {
 	_total_hours="NA"
 
 	if [[ ! -s "$_timing_file" ]]; then
-		echo "Error: timing file not found or empty: $_timing_file" >&2
-		return 0
+		# echo "Error: timing file not found or empty: $_timing_file" >&2
+		# echo "NA"
+		_memory_gb="NA"
+		_total_hours="NA"
+		return
 	fi
 
 	_memory_gb=$(grep 'Net increase' "${_v1}" | awk -F'[()]' '{print $2}' | sed 's/ GB//')
@@ -141,6 +154,17 @@ _polap_lib_extract-time_memory_timing_summary_file() {
 	_total_hours=$(_polap_lib_timing-convert_to_hours_or_minutes "${_total_hours}")
 
 	return 0
+}
+
+_polap_lib_extract-content() {
+	local _v1="$1"
+
+	if [[ ! -s "$_v1" ]]; then
+		echo "NA"
+		return
+	fi
+
+	cat "${_v1}"
 }
 
 _polap_lib_extract-time_memory_timing_gnu_time_file() {
@@ -222,9 +246,10 @@ _polap-lib_extract-short_sra_size_gb() {
 
 _polap_lib_extract-target_read_coverage() {
 	local file="$1"
+
 	if [[ ! -f "$file" ]]; then
-		echo "Error: File not found!"
-		return 1
+		echo "NA"
+		return
 	fi
 
 	local coverage
@@ -285,4 +310,185 @@ _polap_lib_extract-fasta_numseq() {
 	# Fallback: count '>' lines with grep
 	grep -c '^>' "$fasta" 2>/dev/null || echo 0
 	return 0
+}
+
+_polap_lib_extract-system_info() {
+  local info_file="$1"
+  local -n ref="$2"  # name reference to the associative array
+
+  # Define all expected keys
+  local keys=(
+    hostname kernel_version os_version cpu_model cpu_cores total_memory
+    system_uptime load_average filesystem_type mount_source storage_type
+    disk_filesystem disk_size disk_used disk_avail disk_use_percent disk_mount
+  )
+
+  # Initialize all values to "NA"
+  for key in "${keys[@]}"; do
+    ref["$key"]="NA"
+  done
+
+  # Exit early if file does not exist
+  if [[ ! -f "$info_file" ]]; then
+    # echo "[ERROR] File not found: $info_file" >&2
+    return
+  fi
+
+  while IFS= read -r line; do
+    case "$line" in
+      "Hostname:"*)            ref[hostname]="${line#Hostname: }" ;;
+      "Kernel Version:"*)      ref[kernel_version]="${line#Kernel Version: }" ;;
+      "OS Version:"*)          ref[os_version]="${line#OS Version: }" ;;
+      "CPU Model:"*)
+        model="${line#CPU Model: }"
+        ref[cpu_model]="${model#Intel(R) Xeon(R) CPU }"
+        ;;
+      "CPU Cores:"*)           ref[cpu_cores]="${line#CPU Cores: }" ;;
+      "Total Memory:"*)        ref[total_memory]="${line#Total Memory: }" ;;
+      "System Uptime:"*)       ref[system_uptime]="${line#System Uptime: }" ;;
+      "Load Average:"*)        ref[load_average]="${line#Load Average: }" ;;
+      "Filesystem Type"*)      ref[filesystem_type]="${line#Filesystem Type (current dir): }" ;;
+      "Mount Source:"*)        ref[mount_source]="${line#Mount Source: }" ;;
+      *"Storage Type"*)        ref[storage_type]="${line#*: }" ;;
+      "/dev/"*)
+        read -r fs size used avail use mounted <<<"$line"
+        ref[disk_filesystem]="$fs"
+        ref[disk_size]="$size"
+        ref[disk_used]="$used"
+        ref[disk_avail]="$avail"
+        ref[disk_use_percent]="$use"
+        ref[disk_mount]="$mounted"
+        ;;
+    esac
+  done < "$info_file"
+}
+
+_polap_lib_extract-params() {
+  local param_file="$1"
+  local -n ref="$2"  # name reference to the associative array
+
+  # Define all expected keys
+  local keys=(
+    I P N R A B M D Alpha Memory
+  )
+
+  # Initialize all values to "NA"
+  for key in "${keys[@]}"; do
+    ref["$key"]="NA"
+  done
+
+  # Exit early if file does not exist
+  if [[ ! -f "$param_file" ]]; then
+    # echo "[ERROR] File not found: $info_file" >&2
+    return
+  fi
+
+  # Initialize default values
+  ref=(
+    [I]=-1
+    [P]=-1
+    [N]=-1
+    [R]=-1
+    [A]=-1
+    [B]=-1
+    [M]=-1
+    [D]=-1
+    [Alpha]=-1
+    [Memory]=-1
+  )
+
+  # Parse the parameter file
+  while IFS=": " read -r key value; do
+    case "$key" in
+    I|P|N|R|A|B|M|D|Alpha|Memory)
+      ref["$key"]="$value"
+      ;;
+    esac
+  done < "$param_file"
+}
+
+# subsample disassemble result
+# parse summary1-ordered.txt
+_polap_lib_extract-summary1_ordered() {
+  local _summary1_ordered_txt="$1"
+  local -n ref="$2"  # name reference to the associative array
+
+  # Define all expected keys
+  local keys=(
+    n1 mode1 sd1 index1 second_line_index
+  )
+
+  # Initialize all values to "NA"
+  for key in "${keys[@]}"; do
+    ref["$key"]="NA"
+  done
+
+  # Exit early if file does not exist
+  if [[ ! -f "$_summary1_ordered_txt" ]]; then
+    # echo "[ERROR] File not found: $info_file" >&2
+    return
+  fi
+
+  # Extract mode value
+  # Extract SD value
+  # Extract the first index value
+  ref[n1]=$(grep "^#n:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
+  ref[mode1]=$(grep "^#mode:" "$_summary1_ordered_txt" | awk '{print $2}')
+  ref[sd1]=$(grep "^#sd:" "$_summary1_ordered_txt" | awk '{print $2}')
+  ref[index1]=$(grep "^#index:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
+
+  # NOTE: so which one is selected for the next stage?
+  # problem: the first sorted and the selected one are different.
+  # use either one of the two.
+  # Then, we should not check the following unnecessary step of checking.
+  # Use #index the first one and do not sort them.
+  # Or, sort them and use the first one. Problem is we are not sure which index
+  # is used.
+  local _output=$(awk -F'\t' 'NR==2 {print $1}' "${_summary1_ordered_txt}")
+  read -r _second_line_index <<<"$_output"
+	ref[second_line_index]="${_second_line_index}"
+
+  if [[ "${ref[index1]}" != "${_second_line_index}" ]]; then
+    echo "ERROR: #index: ${ref[index1]} vs. #2nd line index: ${_second_line_index}" >&2
+    echo "See ${_summary1_ordered_txt}" >&2
+    echo "------------------------------" >&2
+    cat "${_summary1_ordered_txt}" >&2
+    echo "------------------------------> skip it!" >&2
+    # exit 1
+  fi
+}
+
+# subsample disassemble result
+# parse summary2-ordered.txt
+_polap_lib_extract-summary2_ordered() {
+  local _summary2_ordered_txt="$1"
+  local -n ref="$2"  # name reference to the associative array
+
+  # Define all expected keys
+  local keys=(
+    n2 index2 size rate alpha
+  )
+
+  # Initialize all values to "NA"
+  for key in "${keys[@]}"; do
+    ref["$key"]="NA"
+  done
+
+  # Exit early if file does not exist
+  if [[ ! -f "$_summary2_ordered_txt" ]]; then
+    # echo "[ERROR] File not found: $info_file" >&2
+    return
+  fi
+
+  ref[n2]=$(grep "^#n:" "$_summary2_ordered_txt" | awk 'NR==1 {print $2}')
+  local _output=$(awk -F'\t' 'NR==2 {print $1, $2, $4, $11}' "${_summary2_ordered_txt}")
+  local _index2
+  local _summary2_rate
+  local _summary2_size
+  local _summary2_alpha
+  read -r _index2 _summary2_size _summary2_rate _summary2_alpha <<<"$_output"
+  local _summary2_rate_decimal=$(printf "%.10f" "$_summary2_rate")
+  ref[rate]=$(echo "scale=4; $_summary2_rate_decimal / 1" | bc)
+  ref[size]=$(_polap_lib_unit-convert_bp "${_summary2_size}")
+  ref[alpha]=$(echo "scale=2; $_summary2_alpha / 1" | bc | awk '{printf "%.2f\n", $1}')
 }

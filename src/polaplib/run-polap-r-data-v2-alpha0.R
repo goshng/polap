@@ -23,6 +23,8 @@ suppressPackageStartupMessages({
   library(tools)
 })
 
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 # Parse command-line arguments
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -31,21 +33,21 @@ if (length(args) < 3 || !("-o" %in% args)) {
   # stop("Usage: Rscript run.R file1.tsv file2.tsv ... [-l legend_title] -o output.pdf")
   tsv_files <- c("0.00.tsv", "1.00.tsv", "2.00.tsv")
   output_file <- "output.pdf"
-  legend_title <- "alpha"  # default
+  legend_title <- "alpha" # default
 } else {
   # Find indices of options
   o_idx <- which(args == "-o")
   l_idx <- which(args == "-l")
-  
+
   # Parse output file
   output_file <- args[o_idx + 1]
-  
+
   # Parse legend title
-  legend_title <- "Sample"  # default
+  legend_title <- "Sample" # default
   if (length(l_idx) == 1) {
     legend_title <- args[l_idx + 1]
   }
-  
+
   # Determine tsv files
   option_indices <- sort(c(o_idx, o_idx + 1, l_idx, l_idx + 1))
   tsv_files <- args[-option_indices]

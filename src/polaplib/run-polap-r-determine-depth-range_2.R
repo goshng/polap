@@ -21,6 +21,8 @@ suppressPackageStartupMessages(library("readr"))
 suppressPackageStartupMessages(library("purrr"))
 suppressPackageStartupMessages(library("tidyr"))
 
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 parser <- OptionParser()
 parser <- add_option(parser, c("-m", "--mitochondrial"),
   action = "store_true",

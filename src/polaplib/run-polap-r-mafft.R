@@ -23,6 +23,9 @@ suppressPackageStartupMessages(library("purrr"))
 suppressPackageStartupMessages(library("tidyr"))
 suppressPackageStartupMessages(library("Biostrings"))
 suppressPackageStartupMessages(library("ggplot2"))
+
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 # args = commandArgs(trailingOnly=TRUE)
 parser <- OptionParser()
 parser <- add_option(parser, c("-i", "--input"),
@@ -46,34 +49,33 @@ if (is_null(args1$input)) {
 
 # Function to compute alignment statistics
 compute_alignment_stats <- function(aligned_fasta_file, output_text_file) {
-    # Read the aligned sequences
-    aln <- readDNAStringSet(aligned_fasta_file)
-    
-    # Extract sequences
-    seq1 <- as.character(aln[[1]])
-    seq2 <- as.character(aln[[2]])
-    
-    # Ensure both sequences have the same length
-    if (nchar(seq1) != nchar(seq2)) {
-        stop("Error: Sequences have different lengths in alignment!")
-    }
-    
-    # Compute statistics
-    alignment_length <- nchar(seq1)
-    matches <- sum(strsplit(seq1, "")[[1]] == strsplit(seq2, "")[[1]] & strsplit(seq1, "")[[1]] != "-")
-    mismatches <- sum(strsplit(seq1, "")[[1]] != strsplit(seq2, "")[[1]] & strsplit(seq1, "")[[1]] != "-" & strsplit(seq2, "")[[1]] != "-")
-    gaps <- sum(strsplit(seq1, "")[[1]] == "-" | strsplit(seq2, "")[[1]] == "-")
-    percent_identity <- (matches / alignment_length) * 100
-    # percent_identity <- round((matches / alignment_length) * 100, 5)
-    
-    # Print results
-    cat("Alignment:", alignment_length, "\n", file = output_text_file)
-    cat("Match:", matches, "\n", file = output_text_file, append = TRUE)
-    cat("Mismatch:", mismatches, "\n", file = output_text_file, append = TRUE)
-    cat("Gap:", gaps, "\n", file = output_text_file, append = TRUE)
-    cat(sprintf("Percent Identity: %.5f%%\n", percent_identity), file = output_text_file, append = TRUE)
+  # Read the aligned sequences
+  aln <- readDNAStringSet(aligned_fasta_file)
+
+  # Extract sequences
+  seq1 <- as.character(aln[[1]])
+  seq2 <- as.character(aln[[2]])
+
+  # Ensure both sequences have the same length
+  if (nchar(seq1) != nchar(seq2)) {
+    stop("Error: Sequences have different lengths in alignment!")
+  }
+
+  # Compute statistics
+  alignment_length <- nchar(seq1)
+  matches <- sum(strsplit(seq1, "")[[1]] == strsplit(seq2, "")[[1]] & strsplit(seq1, "")[[1]] != "-")
+  mismatches <- sum(strsplit(seq1, "")[[1]] != strsplit(seq2, "")[[1]] & strsplit(seq1, "")[[1]] != "-" & strsplit(seq2, "")[[1]] != "-")
+  gaps <- sum(strsplit(seq1, "")[[1]] == "-" | strsplit(seq2, "")[[1]] == "-")
+  percent_identity <- (matches / alignment_length) * 100
+  # percent_identity <- round((matches / alignment_length) * 100, 5)
+
+  # Print results
+  cat("Alignment:", alignment_length, "\n", file = output_text_file)
+  cat("Match:", matches, "\n", file = output_text_file, append = TRUE)
+  cat("Mismatch:", mismatches, "\n", file = output_text_file, append = TRUE)
+  cat("Gap:", gaps, "\n", file = output_text_file, append = TRUE)
+  cat(sprintf("Percent Identity: %.5f%%\n", percent_identity), file = output_text_file, append = TRUE)
 }
 
 # Run the function with the MAFFT output file
 compute_alignment_stats(args1$input, args1$out)
-

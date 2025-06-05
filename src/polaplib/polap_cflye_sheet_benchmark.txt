@@ -1,0 +1,12 @@
+\section*{Supporting Material - Plastid genome assemblies using the six pipelines}
+
+\begin{center}
+\Large\textbf{On the plastid genome assembly by subsampling low-quality Oxford Nanopore long-read data} \\[1ex]
+\normalsize Sang Chul Choi
+\end{center}
+
+\section*{Figure description}
+
+We used \texttt{GetOrganelle}, \texttt{ptGAUL}, \texttt{PMAT}, \texttt{TIPPo}, and \texttt{Oatk} to assemble plastid genomes using low-quality Oxford Nanopore long-read data.
+All of the figures were created using Bandage software (Wick et al. 2015).
+

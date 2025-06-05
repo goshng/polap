@@ -28,6 +28,8 @@
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))
 
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 args <- commandArgs(trailingOnly = TRUE)
 
 # x = as_tibble(read.table(args[1]))

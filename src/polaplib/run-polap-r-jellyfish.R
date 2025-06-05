@@ -15,6 +15,8 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 args <- commandArgs(trailingOnly = TRUE)
 
 # Test if the number of arguments is exactly 2

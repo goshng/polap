@@ -48,10 +48,30 @@ source "${_POLAPLIB_DIR}/polap-lib-timing.sh"
 source "${_POLAPLIB_DIR}/polap-lib-unit.sh"
 source "${_POLAPLIB_DIR}/polap-lib-array.sh"
 source "${_POLAPLIB_DIR}/polap-lib-number.sh"
-source "${_POLAPLIB_DIR}/polap-lib-data.sh"
 source "${_POLAPLIB_DIR}/polap-lib-file.sh"
 source "${_POLAPLIB_DIR}/polap-lib-process.sh"
 source "${_POLAPLIB_DIR}/polap-lib-extract.sh"
+
+# oatk options
+declare -a _polap_oatk_options
+_polap_oatk_options=(
+  30
+  20
+)
+
+# pmat options
+declare -a _polap_pmat_options
+_polap_pmat_options=(
+  0.1
+  1.0
+)
+
+# tippo options
+declare -a _polap_tippo_options
+_polap_tippo_options=(
+  onthq
+  ont
+)
 
 system_genus_species() {
   _polap_lib_timing-get_system_info
@@ -194,7 +214,7 @@ HEREDOC
 help_message_clean_cflye=$(
   cat <<HEREDOC
 
-  menu title
+  Clean-up the output from polap-cflye.
 HEREDOC
 )
 
@@ -247,6 +267,8 @@ help_message_get_cflye=$(
   cat <<HEREDOC
 
   Get results cflye1 from a remote host.
+  outdir: species folder
+  host: remote hostname to download results from
 HEREDOC
 )
 
@@ -298,7 +320,8 @@ HEREDOC
 help_message_run_summary_data=$(
   cat <<HEREDOC
 
-  menu title
+  outdir: species folder
+  inum: number folder
 HEREDOC
 )
 
@@ -332,35 +355,40 @@ HEREDOC
 help_message_run_oatk_nextdenovo=$(
   cat <<HEREDOC
 
-  menu title
+  outdir: species folder
+  inum: number folder
 HEREDOC
 )
 
 help_message_run_oatk_ont=$(
   cat <<HEREDOC
 
-  menu title
+  outdir: species folder
+  inum: number folder
 HEREDOC
 )
 
 help_message_run_estimate_genomesize=$(
   cat <<HEREDOC
 
-  menu title
+  outdir: species folder
+  inum: number folder
 HEREDOC
 )
 
 help_message_run_nextdenovo_polish=$(
   cat <<HEREDOC
 
-  menu title
+  outdir: species folder
+  inum: number folder
 HEREDOC
 )
 
 help_message_run_pmat=$(
   cat <<HEREDOC
 
-  menu title
+  outdir: species folder
+  inum: number folder
 HEREDOC
 )
 
@@ -395,10 +423,13 @@ HEREDOC
 help_message_run_oatk=$(
   cat <<HEREDOC
 
+  outdir: species folder
+  inum: number folder
+  type: nextdenovo or ont
+
   Requirement: git clone https://github.com/c-zhou/OatkDB.git
-
+  Example:
   oatk -k 1001 -c 30 -t 8 --nhmmscan /bin/nhmmscan -m embryophyta_mito.fam -p embryophyta_pltd.fam -o ddAraThal4 ddAraThal4_organelle.hifi.fa.gz
-
   stderr: o/<inum>/timing-oatk-nextdenovo-fc-1.txt
   stdout: o/<inum>/stdout-oatk-nextdenovo-fc-1.txt
 HEREDOC
@@ -407,7 +438,16 @@ HEREDOC
 help_message_run_extract_ptdna_ptgaul=$(
   cat <<HEREDOC
 
-  menu title
+  Extract ptDNA from ptGAUL result.
+  outdir: species folder
+  inum: number folder
+HEREDOC
+)
+
+help_message_run_polish_ptdna_ptgaul=$(
+  cat <<HEREDOC
+
+  Polish ptDNA from ptGAUL result.
 HEREDOC
 )
 
@@ -441,6 +481,7 @@ help_message_run=$(
   msbwt
   ptgaul
   extract-ptdna-ptgaul
+  polish-ptdna-ptgaul
   nextdenovo-polish
   pmat
   tippo
@@ -825,6 +866,11 @@ clean_genus_species() {
 clean-cflye_genus_species() {
   local _brg_outdir="${1}"
 
+  if [[ "${_brg_outdir}" == "-h" || "${_brg_outdir}" == "--help" ]]; then
+    echo "$help_message_clean_cflye"
+    return
+  fi
+
   if [[ ! -d "${_brg_outdir}" ]]; then
     echo "[ERROR] no such folder: ${_brg_outdir}"
     return 1
@@ -886,6 +932,11 @@ get-timing_genus_species() {
 update-local_genus_species() {
   local local_path="$1"
 
+  if [[ "${local_path}" == "-h" || "${local_path}" == "--help" ]]; then
+    echo "$help_message_update_local"
+    return
+  fi
+
   local repo_url="https://github.com/goshng/polap.git"
   local github_path="$PWD"
   local conda_env="polap"
@@ -894,6 +945,7 @@ update-local_genus_species() {
   local target_path="$conda_base/envs/$conda_env/bin/polap"
 
   if [[ "${opt_y_flag}" == false ]]; then
+    echo "[INFO] polap local path: ${local_path}"
     read -p "Do you want to update conda env polap with the local polap source? (y/N): " confirm
   else
     confirm="yes"
@@ -916,6 +968,10 @@ update-local_genus_species() {
   echo "[INFO] Checking the local repository: $local_path"
   if [[ ! -d "${local_path}" ]]; then
     echo "[ERROR] no such local path: ${local_path}"
+    return 1
+  fi
+  if [[ ! -d "${local_path}/src" ]]; then
+    echo "[ERROR] no src in the local path: ${local_path}"
     return 1
   fi
 
@@ -993,7 +1049,7 @@ get-cflye_genus_species() {
   local _brg_host="${2}"
 
   if [[ "${_brg_outdir}" == "-h" || "${_brg_outdir}" == "--help" ]]; then
-    echo $help_message_get_cflye
+    echo "$help_message_get_cflye"
     return
   fi
 
@@ -1019,7 +1075,8 @@ get-cflye_genus_species() {
     "${_brg_outdir}"/
   # copy and compress cns.fa
   rsync -azq "${_brg_host}:${PWD}/${_brg_outdir}/t1/0/cns.fa" "${_brg_outdir}/t1/0/"
-  gzip "${_brg_outdir}/t1/0/cns.fa"
+  rsync -azq "${_brg_host}:${PWD}/${_brg_outdir}/t1/0/msbwt/comp_msbwt.npy" "${_brg_outdir}/t1/0/msbwt/"
+  # gzip "${_brg_outdir}/t1/0/cns.fa"
 }
 
 get_genus_species() {
@@ -1206,6 +1263,7 @@ setup-nvim_genus_species() {
 
   if ! grep -q "alias v=" ~/.bashrc; then
     echo "alias v='nvim'" >>~/.bashrc
+    echo "export EDITOR='nvim'" >>~/.bashrc
     echo "[INFO] Added alias v for nvim in ~/.bashrc" >&2
   fi
 }
@@ -1242,7 +1300,12 @@ finalize-pmat_genus_species() {
   echo "[INFO] Installing to $dest_dir..." >&2
   rm -rf "$dest_dir"
   if [[ ! -d "$HOME/bin" ]]; then
-    read -p "Proceed to create a folder at $HOME/bin? (y/N): " confirm
+
+    if [[ "${opt_y_flag}" == false ]]; then
+      read -p "Proceed to create a folder at $HOME/bin? (y/N): " confirm
+    else
+      confirm="yes"
+    fi
 
     if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
       mkdir -p "$HOME/bin"
@@ -1283,8 +1346,8 @@ setup-pmat_genus_species() {
 }
 
 setup-polap_genus_species() {
-  # local bashrc="$HOME/.bashrc"
-  local bashrc="$PWD/bashrc.txt"
+  local bashrc="$HOME/.bashrc"
+  # local bashrc="$PWD/bashrc.txt"
   local start_marker="# >>> polap initialize >>>"
   local end_marker="# <<< polap initialize <<<"
 
@@ -2545,44 +2608,18 @@ run-pmat_genus_species() {
   fi
 
   _polap_lib_conda-ensure_conda_env polap-pmat || exit 1
-  # source "$(conda info --base)/etc/profile.d/conda.sh"
-  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-pmat" ]]; then
-  # 	echo "[INFO] Activating conda environment 'polap-pmat'..."
-  # 	conda activate polap-pmat
+
+  # local fc_list=()
+  # local _brg_fc="0.1,1.0"
+  # if [[ "${_brg_fc}" == *,* ]]; then
+  #   IFS=',' read -ra fc_list <<<"$_brg_fc"
+  # else
+  #   fc_list=("$_brg_fc")
   # fi
-  #
-  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-pmat" ]]; then
-  # 	echo "[ERROR] Failed to enter conda environment 'polap-pmat'"
-  # 	return
-  # fi
-
-  # Files for memtracker
-  local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
-  local _timing_txt="${_brg_outdir_i}/timing-${_run_title}.txt"
-  local _memlog_file="${_brg_outdir_i}/memlog-${_run_title}.csv"
-  local _summary_file="${_brg_outdir_i}/summary-${_run_title}.txt"
-
-  rm -f "${_stdout_txt}"
-  rm -f "${_timing_txt}"
-
-  local fc_list=()
-  local _brg_fc="0.1,1.0"
-
-  if [[ "${_brg_fc}" == *,* ]]; then
-    IFS=',' read -ra fc_list <<<"$_brg_fc"
-  else
-    fc_list=("$_brg_fc")
-  fi
-
-  echo "pmat on ${_brg_rundir} using the nextDenovo-polished data: ${_brg_outdir_i}/cns.fa with -c ${_brg_fc}"
-
-  # Start memory logger
-  _polap_lib_process-start_memtracker "${_memlog_file}" \
-    "${_polap_var_memtracker_time_interval}"
 
   local _fc=0.1
-  for _fc in "${fc_list[@]}"; do
-
+  for _fc in "${_polap_pmat_options[@]}"; do
+    echo "pmat on ${_brg_rundir} using the nextDenovo-polished data: ${_brg_outdir_i}/cns.fa with -fc ${_fc}"
     # local formatted_fc=$(printf "%02d" "${_fc}")
 
     # https://github.com/c-zhou/pmat
@@ -2590,10 +2627,23 @@ run-pmat_genus_species() {
     # NOTE: pmat threads 56 -> seg. fault.
     # local _pmat_threads=8
 
+    # Files for memtracker
+    local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}-${_fc}.txt"
+    local _timing_txt="${_brg_outdir_i}/timing-${_run_title}-${_fc}.txt"
+    local _memlog_file="${_brg_outdir_i}/memlog-${_run_title}-${_fc}.csv"
+    local _summary_file="${_brg_outdir_i}/summary-${_run_title}-${_fc}.txt"
+
+    rm -f "${_stdout_txt}"
+    rm -f "${_timing_txt}"
+
+    # Start memory logger
+    _polap_lib_process-start_memtracker "${_memlog_file}" \
+      "${_polap_var_memtracker_time_interval}"
+
     rm -rf "${_run_dir}"
 
     # command time -v PMAT autoMito \
-    command time -v timeout 12h PMAT autoMito \
+    command time -v timeout 6h PMAT autoMito \
       -i "${_brg_input_data}" \
       -o "${_run_dir}" \
       -st ont \
@@ -2603,20 +2653,21 @@ run-pmat_genus_species() {
       -cpu ${_brg_threads} \
       -fc ${_fc} \
       -m \
-      >>"${_stdout_txt}" \
-      2>>"${_timing_txt}"
+      >"${_stdout_txt}" \
+      2>"${_timing_txt}"
 
     # Save results
     mkdir -p "${_brg_rundir}/${_fc}"
     # rsync -azuq "${_run_dir}"/ "${_brg_rundir}/${_fc}"/
     rsync -azuq --max-size=5M \
       "${_run_dir}"/ "${_brg_rundir}/${_fc}"/
+
+    # Save system info
+    _polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+    _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}"
+
   done
-
-  # Save system info
-  _polap_lib_timing-get_system_info >>"${_timing_txt}"
-
-  _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}"
 
   conda deactivate
 
@@ -2665,69 +2716,57 @@ run-tippo_genus_species() {
   fi
 
   _polap_lib_conda-ensure_conda_env polap-tippo || exit 1
-  # source "$(conda info --base)/etc/profile.d/conda.sh"
-  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-tippo" ]]; then
-  # 	echo "[INFO] Activating conda environment 'polap-tippo'..."
-  # 	conda activate polap-tippo
+
+  # local fc_list=()
+  # # local _brg_fc="hifi,clr,ont,onthq"
+  # local _brg_fc="onthq,ont"
+  # if [[ "${_brg_fc}" == *,* ]]; then
+  #   IFS=',' read -ra fc_list <<<"$_brg_fc"
+  # else
+  #   fc_list=("$_brg_fc")
   # fi
-  #
-  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-tippo" ]]; then
-  # 	echo "[ERROR] Failed to enter conda environment 'polap-tippo'"
-  # 	return
-  # fi
-
-  # Files for memtracker
-  local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
-  local _timing_txt="${_brg_outdir_i}/timing-${_run_title}.txt"
-  local _memlog_file="${_brg_outdir_i}/memlog-${_run_title}.csv"
-  local _summary_file="${_brg_outdir_i}/summary-${_run_title}.txt"
-
-  rm -f "${_stdout_txt}"
-  rm -f "${_timing_txt}"
-
-  local fc_list=()
-  # local _brg_fc="hifi,clr,ont,onthq"
-  local _brg_fc="ont,onthq"
-
-  if [[ "${_brg_fc}" == *,* ]]; then
-    IFS=',' read -ra fc_list <<<"$_brg_fc"
-  else
-    fc_list=("$_brg_fc")
-  fi
-  echo "tippo on ${_brg_rundir} using the nextDenovo-polished data: ${_brg_outdir_i}/cns.fa with -p ${_brg_fc}"
-
-  # Start memory logger
-  _polap_lib_process-start_memtracker "${_memlog_file}" \
-    "${_polap_var_memtracker_time_interval}"
 
   # TIPPo has no option for output directory
   local _tippo_actual_outdir="cns.fa.organelle"
 
-  for _fc in "${fc_list[@]}"; do
+  for _fc in "${_polap_tippo_options[@]}"; do
+    echo "tippo on ${_brg_rundir} using the nextDenovo-polished data: ${_brg_outdir_i}/cns.fa with -p ${_fc}"
 
     # https://github.com/Wenfei-Xian/TIPP
+
+    # Files for memtracker
+    local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}-${_fc}.txt"
+    local _timing_txt="${_brg_outdir_i}/timing-${_run_title}-${_fc}.txt"
+    local _memlog_file="${_brg_outdir_i}/memlog-${_run_title}-${_fc}.csv"
+    local _summary_file="${_brg_outdir_i}/summary-${_run_title}-${_fc}.txt"
+
+    rm -f "${_stdout_txt}"
+    rm -f "${_timing_txt}"
+
+    # Start memory logger
+    _polap_lib_process-start_memtracker "${_memlog_file}" \
+      "${_polap_var_memtracker_time_interval}"
 
     rm -rf "${_tippo_actual_outdir}"
 
     # if [[ "${_brg_fc}" == "1" ]]; then
-    # command time -v timeout 12h TIPPo.v2.4.pl \
-    command time -v TIPPo.v2.4.pl \
+    command time -v timeout 6h TIPPo.v2.4.pl \
       -f "${_brg_input_data}" \
       -t ${_brg_threads} \
       -p ${_fc} \
-      >>"${_stdout_txt}" \
-      2>>"${_timing_txt}"
+      >"${_stdout_txt}" \
+      2>"${_timing_txt}"
 
     # Save results
     mkdir -p "${_brg_rundir}/${_fc}"
     rsync -azuq "${_tippo_actual_outdir}"/ "${_brg_rundir}/${_fc}"/
 
+    # Save system info
+    _polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+    _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}"
+
   done
-
-  # Save system info
-  _polap_lib_timing-get_system_info >>"${_timing_txt}"
-
-  _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}"
 
   conda deactivate
 
@@ -2745,6 +2784,11 @@ run-oatk_genus_species() {
   local _brg_inum="${2:-0}"
   local _brg_type="${3:-nextdenovo}"
   local _run_title="oatk-${_brg_type}"
+
+  if [[ "${_brg_outdir}" == "-h" || "${_brg_outdir}" == "--help" ]]; then
+    echo "$help_message_run_oatk"
+    return
+  fi
 
   # Directory without a slash
   _brg_outdir="${_brg_outdir%/}"
@@ -2777,51 +2821,38 @@ run-oatk_genus_species() {
   fi
 
   _polap_lib_conda-ensure_conda_env polap-oatk || exit 1
-  # source "$(conda info --base)/etc/profile.d/conda.sh"
-  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-oatk" ]]; then
-  # 	echo "[INFO] Activating conda environment 'polap-oatk'..."
-  # 	conda activate polap-oatk
+
+  # local fc_list=()
+  # local _brg_fc="30,20"
+  # if [[ "${_brg_fc}" == *,* ]]; then
+  #   IFS=',' read -ra fc_list <<<"$_brg_fc"
+  # else
+  #   fc_list=("$_brg_fc")
   # fi
-  #
-  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap-oatk" ]]; then
-  # 	echo "[ERROR] Failed to enter conda environment 'polap-oatk'"
-  # 	return
-  # fi
-
-  # Files for memtracker
-  local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
-  local _timing_txt="${_brg_outdir_i}/timing-${_run_title}.txt"
-  local _memlog_file="${_brg_outdir_i}/memlog-${_run_title}.csv"
-  local _summary_file="${_brg_outdir_i}/summary-${_run_title}.txt"
-
-  rm -f "${_stdout_txt}"
-  rm -f "${_timing_txt}"
-
-  local fc_list=()
-  local _brg_fc="1,10,20,30"
-
-  if [[ "${_brg_fc}" == *,* ]]; then
-    IFS=',' read -ra fc_list <<<"$_brg_fc"
-  else
-    fc_list=("$_brg_fc")
-  fi
-
-  echo "oatk on ${_brg_rundir} using the nextDenovo-polished data: ${_brg_outdir_i}/cns.fa with -c ${_brg_fc}"
-
-  # Start memory logger
-  _polap_lib_process-start_memtracker "${_memlog_file}" \
-    "${_polap_var_memtracker_time_interval}"
 
   local _fc=1
-  for _fc in "${fc_list[@]}"; do
-
+  for _fc in "${_polap_oatk_options[@]}"; do
+    echo "oatk on ${_brg_rundir} using the nextDenovo-polished data: ${_brg_outdir_i}/cns.fa with -c ${_fc}"
     local formatted_fc=$(printf "%02d" "${_fc}")
+
+    # Files for memtracker
+    local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}-${formatted_fc}.txt"
+    local _timing_txt="${_brg_outdir_i}/timing-${_run_title}-${formatted_fc}.txt"
+    local _memlog_file="${_brg_outdir_i}/memlog-${_run_title}-${formatted_fc}.csv"
+    local _summary_file="${_brg_outdir_i}/summary-${_run_title}-${formatted_fc}.txt"
+
+    rm -f "${_stdout_txt}"
+    rm -f "${_timing_txt}"
+
+    # Start memory logger
+    _polap_lib_process-start_memtracker "${_memlog_file}" \
+      "${_polap_var_memtracker_time_interval}"
 
     # https://github.com/c-zhou/oatk
 
     # NOTE: oatk threads 56 -> seg. fault.
     local _oatk_threads=8
-    command time -v oatk \
+    command time -v timeout 6h oatk \
       -k 1001 \
       -c ${_fc} \
       -t ${_oatk_threads} \
@@ -2829,15 +2860,15 @@ run-oatk_genus_species() {
       -p ./OatkDB/v20230921/embryophyta_pltd.fam \
       -o "${_run_dir}/oatk-${_brg_type}-${formatted_fc}" \
       "${_brg_input_data}" \
-      >>"${_stdout_txt}" \
-      2>>"${_timing_txt}"
+      >"${_stdout_txt}" \
+      2>"${_timing_txt}"
+
+    # Save system info
+    _polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+    _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}"
 
   done
-
-  # Save system info
-  _polap_lib_timing-get_system_info >>"${_timing_txt}"
-
-  _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}"
 
   conda deactivate
 
@@ -2852,6 +2883,11 @@ run-extract-ptdna-ptgaul_genus_species() {
   local _brg_outdir="$1"
   local _brg_inum="${2:-0}"
 
+  if [[ "${_brg_outdir}" == "-h" || "${_brg_outdir}" == "--help" ]]; then
+    echo "$help_message_run_extract_ptdna_ptgaul"
+    return
+  fi
+
   # Directory without a slash
   _brg_outdir="${_brg_outdir%/}"
 
@@ -2865,8 +2901,6 @@ run-extract-ptdna-ptgaul_genus_species() {
   local _run_dir="${_brg_outdir}-${_run_title}"
   local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
 
-  mkdir -p "${_brg_outdir}/timing"
-
   # Files for memtracker
   local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
   local _timing_txt="${_brg_outdir_i}/timing-${_run_title}.txt"
@@ -2877,14 +2911,20 @@ run-extract-ptdna-ptgaul_genus_species() {
   _polap_lib_conda-ensure_conda_env polap || exit 1
 
   # extract ptGAUL result
-  _log_echo "extract ptDNA from the ptGAUL result with fmlrc polishing"
+  _log_echo "extract ptDNA from the ptGAUL result"
   # echo command time -v ${_polap_cmd} disassemble ptgaul \
   # 	-o ${_brg_outdir_i}
 
-  _polap_lib_process-start_memtracker "${_memlog_file}" \
-    "${_polap_var_memtracker_time_interval}"
+  # Too fast to catch
+  _polap_lib_process-start_memtracker "${_memlog_file}" 3
+  # "${_polap_var_memtracker_time_interval}"
 
-  command time -v ${_polap_cmd} disassemble ptgaul \
+  # command time -v ${_polap_cmd} disassemble ptgaul \
+  #   -o ${_brg_outdir_i} \
+  #   >"${_stdout_txt}" \
+  #   2>"${_timing_txt}"
+
+  command time -v ${_polap_cmd} ptgaul extract-ptdna \
     -o ${_brg_outdir_i} \
     >"${_stdout_txt}" \
     2>"${_timing_txt}"
@@ -2897,14 +2937,81 @@ run-extract-ptdna-ptgaul_genus_species() {
   # Save system info
   _polap_lib_timing-get_system_info >>"${_timing_txt}"
 
-  _log_echo "use extract-ptgaul-ptdna2 <species_folder> if not working"
+  # copy ptGAUL result
+  local _outdir="${_brg_outdir_i}/ptgaul/flye_cpONT/ptdna"
+  local _brg_unpolished_fasta="${_outdir}/circular_path_1_concatenated.fa"
+  if [[ -s "${_brg_unpolished_fasta}" ]]; then
+    _log_echo "[Success] extraction of a draft ptDNA"
+  else
+    _log_echo "[Fail] extraction of a draft ptDNA"
+    echo "Check (tail): ${_brg_outdir_i}/polap.log"
+  fi
+}
+
+run-polish-ptdna-ptgaul_genus_species() {
+  local _brg_outdir="$1"
+  local _brg_inum="${2:-0}"
+
+  if [[ "${_brg_outdir}" == "-h" || "${_brg_outdir}" == "--help" ]]; then
+    echo "$help_message_run_polish_ptdna_ptgaul"
+    return
+  fi
+
+  # Directory without a slash
+  _brg_outdir="${_brg_outdir%/}"
+
+  # Config CSV
+  local _run_title="polish-ptdna-ptgaul"
+
+  # Folders
+  local _brg_outdir_t="${_brg_outdir}/${opt_t_arg}"
+  local _brg_outdir_i="${_brg_outdir_t}/${_brg_inum}"
+  local _brg_rundir="${_brg_outdir_i}/${_run_title}"
+  local _run_dir="${_brg_outdir}-${_run_title}"
+  local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+  # Files for memtracker
+  local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
+  local _timing_txt="${_brg_outdir_i}/timing-${_run_title}.txt"
+  local _memlog_file="${_brg_outdir_i}/memlog-${_run_title}.csv"
+  local _summary_file="${_brg_outdir_i}/summary-${_run_title}.txt"
+
+  # Initialize Conda
+  _polap_lib_conda-ensure_conda_env polap || exit 1
+
+  # polish ptGAUL result
+  _log_echo "polish ptDNA from the ptGAUL result with fmlrc polishing"
+  # echo command time -v ${_polap_cmd} disassemble ptgaul \
+  # 	-o ${_brg_outdir_i}
+
+  # It could be too fast to catch the system info.
+  _polap_lib_process-start_memtracker "${_memlog_file}" 10
+  # "${_polap_var_memtracker_time_interval}"
+
+  # command time -v ${_polap_cmd} disassemble ptgaul \
+  #   -o ${_brg_outdir_i} \
+  #   >"${_stdout_txt}" \
+  #   2>"${_timing_txt}"
+
+  command time -v ${_polap_cmd} ptgaul polish-ptdna \
+    -o ${_brg_outdir_i} \
+    >"${_stdout_txt}" \
+    2>"${_timing_txt}"
+
+  conda deactivate
+
+  # End with summary of the system usage
+  _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}"
+
+  # Save system info
+  _polap_lib_timing-get_system_info >>"${_timing_txt}"
 
   # copy ptGAUL result
-  echo "copy ${_brg_outdir_i}/ptdna-ptgaul.fa"
   local _outdir="${_brg_outdir_i}/ptgaul/flye_cpONT/ptdna"
   local _brg_final_assembly="${_outdir}/pt.1.fa"
   if [[ -s "${_brg_final_assembly}" ]]; then
-    cp -pu ${_brg_final_assembly} ${_brg_outdir_i}/ptdna-ptgaul.fa
+    cp -p ${_brg_final_assembly} ${_brg_outdir_i}/ptdna-ptgaul.fa
+    _log_echo "[Success] extraction of a polished ptDNA"
   else
     _log_echo "[Fail] extraction of a polished ptDNA"
   fi
@@ -3007,6 +3114,7 @@ download-ptdna_genus_species() {
   local _run_dir="${_brg_outdir}-${_run_title}"
   local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
   local _species=${_taxon[$target_index]}
+  local _ref_species=${_ptgaul_ref[$target_index]}
   local species_name="${_species//_/ }"
 
   mkdir -p "${_brg_rundir}"
@@ -3014,8 +3122,8 @@ download-ptdna_genus_species() {
   # Initialize Conda
   _polap_lib_conda-ensure_conda_env polap || exit 1
 
-  if [[ "${_brg_outdir}" == "Juncus_inflexus" ]]; then
-    species_name="Juncus effusus"
+  if [[ "${_ref_species}" != "NA" ]]; then
+    species_name="${_ref_species}"
     echo "No ptDNA for ${_brg_outdir}, so we use ${species_name}"
   fi
 
@@ -3261,6 +3369,11 @@ download-test-data2_genus_species() {
 download_genus_species() {
   local first_arg="$1"
   local remaining_args=("${@:2}")
+
+  if ! declare -F download-${first_arg}_genus_species >/dev/null; then
+    echo "Function does not exist"
+    return 1
+  fi
 
   download-${first_arg}_genus_species "${remaining_args[@]}"
 }
@@ -5346,6 +5459,9 @@ function _polap_lib_data-execute-common-subcommand {
   run-extract-ptdna-ptgaul)
     handled=1
     ;;
+  run-polish-ptdna-ptgaul)
+    handled=1
+    ;;
   run-ptgaul)
     handled=1
     ;;
@@ -5463,7 +5579,13 @@ function _polap_lib_data-execute-common-subcommand {
   hifiasm-polish)
     handled=1
     ;;
-  mkdir-all | rm-empty | rm)
+  mkdir-all)
+    handled=1
+    ;;
+  rm-empty)
+    handled=1
+    ;;
+  rm)
     handled=1
     ;;
   esac
@@ -5741,7 +5863,7 @@ function _polap_lib_data-execute-common-subcommand {
     ;;
   update-local)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-      echo "Help: ${subcmd1}"
+      echo "Help: ${subcmd1} <local_github_path>"
       _subcmd1_clean="${subcmd1//-/_}"
       declare -n ref="help_message_${_subcmd1_clean}"
       echo "$ref"
@@ -5993,6 +6115,17 @@ function _polap_lib_data-execute-common-subcommand {
     ${subcmd1}_genus_species "${cmd_args_ref[@]}"
     ;;
   run-extract-ptdna-ptgaul)
+    if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+      echo "Help: ${subcmd1} <outdir>"
+      echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
+      _subcmd1_clean="${subcmd1//-/_}"
+      declare -n ref="help_message_${_subcmd1_clean}"
+      echo "$ref"
+      exit 0
+    fi
+    ${subcmd1}_genus_species "${cmd_args_ref[@]}"
+    ;;
+  run-polish-ptdna-ptgaul)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
       echo "Help: ${subcmd1} <outdir>"
       echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
@@ -6500,13 +6633,23 @@ function _polap_lib_data-execute-common-subcommand {
     esac
     ;;
   rm-empty)
+    if [[ "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+      echo "Help: ${subcmd1}"
+      echo "  Delete all empty folders at the current folder."
+      exit 0
+    fi
     handled=1
     find . -type d -empty -delete
     echo "Deleting empty folders ... done."
     ;;
   rm)
+    if [[ "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+      echo "Help: ${subcmd1}"
+      echo "  Delete all species folders at the current folder."
+      exit 0
+    fi
     handled=1
-    read -p "Do you really want to delete all? (YES/NO): " confirm
+    read -p "Do you really want to delete all species folders? (YES/NO): " confirm
     case "$confirm" in
     YES)
       read -p "Really, type in YES? (YES): " confirm
@@ -6518,7 +6661,7 @@ function _polap_lib_data-execute-common-subcommand {
       fi
       ;;
     *)
-      echo "Deleting all is canceled."
+      echo "Deleting all species folders is canceled."
       ;;
     esac
     ;;

@@ -21,6 +21,8 @@ suppressPackageStartupMessages(library("readr"))
 suppressPackageStartupMessages(library("purrr"))
 suppressPackageStartupMessages(library("tidyr"))
 
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 parser <- OptionParser()
 parser <- add_option(parser, c("-m", "--mitochondrial"),
   action = "store_true",
@@ -52,10 +54,12 @@ if (is_null(args1$table)) {
   input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all_test.txt")
   output1 <- file.path(input_dir0, "2-depth.range.by.cdf.copy.number.txt")
   output2 <- file.path(input_dir0, "contig-annotation-cdf-table.txt")
-  args1 <- parse_args(parser, args = c("--table", input1,
-                                       "--plastid",
-                                       "-o", output1, 
-                                       "-c", output2))
+  args1 <- parse_args(parser, args = c(
+    "--table", input1,
+    "--plastid",
+    "-o", output1,
+    "-c", output2
+  ))
 }
 
 # Steps;
@@ -190,4 +194,3 @@ if (nrow(xt) > 1) {
 } else {
   tibble() |> write_tsv(args1$out)
 }
-

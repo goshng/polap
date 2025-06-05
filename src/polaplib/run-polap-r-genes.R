@@ -29,6 +29,9 @@
 # 	-outfmt "6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle salltitles"
 
 suppressPackageStartupMessages(library("dplyr"))
+
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 args <- commandArgs(trailingOnly = TRUE)
 
 x <- as_tibble(read.table(args[1]))
@@ -48,4 +51,3 @@ write.table(z, args[2],
   quote = FALSE,
   sep = "\t"
 )
-

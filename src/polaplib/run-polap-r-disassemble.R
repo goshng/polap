@@ -23,6 +23,9 @@ suppressPackageStartupMessages(library("purrr"))
 suppressPackageStartupMessages(library("tidyr"))
 suppressPackageStartupMessages(library("ggplot2"))
 suppressPackageStartupMessages(library("patchwork"))
+
+debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
+
 # args = commandArgs(trailingOnly=TRUE)
 parser <- OptionParser()
 parser <- add_option(parser, c("-t", "--table"),
@@ -95,9 +98,13 @@ if (nrow(df) == 0) {
   cat(message, file = args1$out, append = TRUE, sep = "\n")
   message <- paste("#sd: NA")
   cat(message, file = args1$out, append = TRUE, sep = "\n")
-  message <- paste("#index: 0")
+  # 2025-06-05
+  # message <- paste("#index: 0")
+  message <- paste("#index: -1")
   cat(message, file = args1$out, append = TRUE, sep = "\n")
-  message <- paste("#n: 0")
+  # 2025-06-05
+  # message <- paste("#n: 0")
+  message <- paste("#n: 1")
   cat(message, file = args1$out, append = TRUE, sep = "\n")
   quit(save = "no")
 }
@@ -127,12 +134,12 @@ selected_row_nearest_mode <- df_no_outliers %>%
 
 # print(selected_row_nearest_mode)
 
-#selected_row_nearest_mode <- df_no_outliers %>%
+# selected_row_nearest_mode <- df_no_outliers %>%
 #  filter(diff == 1)
 
-#df_no_outliers |> mutate(abs(length - mode_length))
+# df_no_outliers |> mutate(abs(length - mode_length))
 
-#filter(abs(length - mode_length) == min(abs(length - mode_length)))
+# filter(abs(length - mode_length) == min(abs(length - mode_length)))
 
 sd_length <- sd(df_no_outliers$length)
 n_length <- length(df_no_outliers$length)

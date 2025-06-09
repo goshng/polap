@@ -9,11 +9,6 @@ Taxon_genus-1,Eucalyptus_pauciflora,l,s,siepel,101,100,16,100,10,5,1.0,0.75,1600
 Taxon_genus-2,Eucalyptus_pauciflora,l,s,siepel,301,100,16,100,10,5,1.0,0.75,160000,0.1,onthq,30,Eucalyptus pauciflora,dummy,done
 Taxon_genus-4,Eucalyptus_pauciflora,l,s,siepel,401,100,16,100,10,5,1.0,0.75,160000,0.1,onthq,30,Eucalyptus pauciflora,dummy,cleanup
 Taxon_genus-7,Eucalyptus_pauciflora,l,s,siepel,557,100,16,100,10,5,1.0,0.75,160000,0.1,onthq,30,Eucalyptus pauciflora,dummy,done
-Taxon_genus-3,Eucalyptus_pauciflora,l,s,siepel,0,100,16,100,20,5,1.0,0.75,160000,0.1,onthq,30,Eucalyptus pauciflora,dummy,done
-Taxon_genus-11,Eucalyptus_pauciflora,l,s,siepel,0,100,16,100,20,5,0.0,0.75,160000,0.1,onthq,30,Eucalyptus pauciflora,dummy,done
-Taxon_genus-12,Eucalyptus_pauciflora,l,s,siepel,0,100,16,100,20,5,1.0,0.75,160000,0.1,onthq,30,Eucalyptus pauciflora,dummy,done
-Taxon_genus-21,Eucalyptus_pauciflora,l,s,siepel,0,100,16,100,20,5,1.0,0.25,160000,0.1,onthq,30,Eucalyptus pauciflora,dummy,done
-Taxon_genus-22,Eucalyptus_pauciflora,l,s,siepel,0,100,16,100,20,5,1.0,0.50,160000,0.1,onthq,30,Eucalyptus pauciflora,dummy,done
 Anthoceros_agrestis-0,Anthoceros_agrestis,SRR10190639,SRR10250248,siepel,157,10,16,10,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,done
 Anthoceros_agrestis-1,Anthoceros_agrestis,SRR10190639,SRR10250248,siepel,101,10,16,5,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,done
 Anthoceros_agrestis-2,Anthoceros_agrestis,SRR10190639,SRR10250248,siepel,301,10,16,5,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,done
@@ -55,25 +50,6 @@ Eucalyptus_pauciflora-4,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,417,1
 Eucalyptus_pauciflora-test,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,155,1,16,10,5,3,1.0,0.75,160000,0.1,onthq,30,NA,dummy,test
 Eucalyptus_pauciflora-all,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,155,0,16,1,5,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,test
 Eucalyptus_pauciflora-t,Eucalyptus_pauciflora,l,s,siepel,155,10,16,100,5,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,test
-Eucalyptus_pauciflora-11,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,0,10,16,10,50,10,0.0,0.75,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-12,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,0,10,16,10,50,10,1.0,0.75,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-13,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,0,10,16,10,50,10,2.0,0.75,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-14,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,0,10,16,10,50,10,3.0,0.75,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-15,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,0,10,16,10,50,10,4.0,0.75,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-16,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,0,10,16,10,50,10,5.0,0.75,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-17,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,0,10,16,10,50,10,6.0,0.75,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-18,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,0,10,16,10,50,10,7.0,0.75,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-19,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,0,10,16,10,50,10,8.0,0.75,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-20,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,0,10,16,10,50,10,9.0,0.75,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-21,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,155,10,16,10,50,10,1.0,0.25,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-22,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,155,10,16,10,50,10,1.0,0.50,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-23,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,155,10,16,10,50,10,1.0,0.75,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-24,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,155,10,16,10,50,10,1.0,1.00,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-25,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,155,10,16,10,50,10,1.0,1.25,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-26,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,155,10,16,10,50,10,1.0,1.50,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-27,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,155,10,16,10,50,10,1.0,1.75,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-28,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,155,10,16,10,50,10,1.0,2.00,160000,0.1,onthq,30,NA,dummy,cleanup
-Eucalyptus_pauciflora-29,Eucalyptus_pauciflora,SRR7153095,SRR7161123,siepel,155,10,16,10,50,10,1.0,2.25,160000,0.1,onthq,30,NA,dummy,cleanup
 Euonymus_alatus-0,Euonymus_alatus,SRR16133411,SRR16122871,kishino,137,10,32,10,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,done
 Euonymus_alatus-1,Euonymus_alatus,SRR16133411,SRR16122871,kishino,119,10,32,5,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,done
 Euonymus_alatus-2,Euonymus_alatus,SRR16133411,SRR16122871,kishino,319,10,32,5,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,done

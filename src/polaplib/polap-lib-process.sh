@@ -96,12 +96,15 @@ _polap_lib_process-start_memtracker() {
     done
   ) &
   echo $! >"${log_file}.pid"
-  echo "[INFO] Job: [$run_title] started with PID $(<"${log_file}.pid")"
+  if [[ "${_POLAP_DEBUG}" == "1" ]]; then
+    echo "[INFO] Job: [$run_title] started with PID $(<"${log_file}.pid")"
+  fi
 }
 
 _polap_lib_process-end_memtracker() {
   local log_file="$1"
   local summary_base="${2:-memtrack-summary.txt}"
+  local _arg_verbose="${3:-no_verbose}"
   local timestamp
   timestamp=$(date +"%Y%m%d_%H%M")
   local summary_file="${summary_base}.${timestamp}.txt"
@@ -172,7 +175,9 @@ _polap_lib_process-end_memtracker() {
   ' "$log_file"
 
   # Show summary to terminal
-  cat "$summary_file"
+  if [[ "${_arg_verbose}" == "verbose" ]]; then
+    cat "$summary_file"
+  fi
 
   # Update symlink to point to latest
   ln -sf "$(basename "$summary_file")" "$summary_base"

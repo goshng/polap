@@ -526,7 +526,8 @@ A sample dataset demonstrating Polap's mtDNA assembly is available on Figshare: 
 
 #### ptDNA subsampling-based method
 
-A sample dataset demonstrating Polap's ptDNA assembly is available on Figshare: [Polap data analysis of 28 datasets](https://figshare.com/s/ec1cb394870c7727a2d4).
+A sample dataset demonstrating Polap's ptDNA assembly is available on Figshare:
+[Polap subsampling-based ptDNA assembly of 23 datasets](https://figshare.com/s/ec1cb394870c7727a2d4).
 
 ```bash
 # using github source

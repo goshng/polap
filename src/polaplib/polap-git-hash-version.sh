@@ -1,2 +1,2 @@
-# Commit hash: c7a8e820de7dc2632dd34e57b6413938b5c49940
-_polap_git_hash_version='c7a8e82'
+# Commit hash: 57248ebdf63697964420d59b09ff43f5ae8846fa
+_polap_git_hash_version='57248eb'

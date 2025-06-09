@@ -59,6 +59,7 @@ requirements:
     - perl
     - pandoc
     - pandoc-crossref
+    - yq
 
 test:
   commands:

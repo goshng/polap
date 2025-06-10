@@ -382,6 +382,14 @@ help_message_directional=$(
   Test the code.
 HEREDOC
 )
+##### INSERT_HELP_HERE #####
+help_message_main=$(
+  cat <<HEREDOC
+
+  main menu title
+HEREDOC
+)
+
 #
 # END: Help messages
 ################################################################################
@@ -525,6 +533,22 @@ test_genus_species() {
 }
 
 ##### INSERT_FUNCTION_HERE #####
+main_genus_species() {
+  local _brg_outdir="${1:-all}"
+  local _brg_inum="${2:-0}"
+
+  if [[ "${_brg_outdir}" == "all" ]]; then
+    for _v1 in "${Sall[@]}"; do
+      echo main_genus_species_for "${_v1}" "${@:2}"
+    done
+  elif [[ "${_brg_outdir}" == "each" ]]; then
+    for _v1 in "${Sall[@]}"; do
+      echo main_genus_species_for "${_v1}" "${@:2}"
+    done
+  else
+    echo main_genus_species_for "$@"
+  fi
+}
 
 # whole-genome assembly
 # assemble1
@@ -751,6 +775,17 @@ common_handled=$?
 # Main case statement
 case "$subcmd1" in
 ##### INSERT_CASE_HERE #####
+main)
+  if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+    echo "Help: ${subcmd1} <outdir> [inum:0|N]"
+    echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+    _subcmd1_clean="${subcmd1//-/_}"
+    declare -n ref="help_message_${_subcmd1_clean}"
+    echo "$ref"
+    exit 0
+  fi
+  ${subcmd1}_genus_species "${cmd_args[@]}"
+  ;;
 example-data)
   if [[ "${_arg2}" == arg2 ]]; then
     echo "Help: ${subcmd1} <data:${_polap_data_data}>"

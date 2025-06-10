@@ -49,11 +49,32 @@ showDetails: false
 
 <!-- https://github.com/jgm/pandoc/issues/3148 -->
 
-# Title
+# Title: On the plastid genome assembly by subsampling low-quality Oxford Nanopore long-read data
 
-Author Last and first names
+Authors
 
-Address
+Affiliations
+
+_Corresponding author_:
+Author and mailing address
+
+Email: author@email.edu
+
+Tel.
+
+Fax.
+
+_Running head_:
+Plastid genome assembly via long-read subsampling
+
+_Keywords_:
+ptGAUL, Flye, Minimap2, TIPPo, PMAT, Oatk, long-read assembly
+
+Word count of the abstract: xxx
+
+Word count of the text: xxxx
+
+\newpage
 
 \newpage
 
@@ -91,11 +112,7 @@ Content of abstract.
 - `BLAST` [@Altschul1997]
 - `SeqKit` [@Shen2016]
 - `MAFFT` [@Katoh2013]
-
-(@fig:mainfigure1)
-
 - `Bandage` [@Wick2015]
-
 - `Canu` [@Koren2017]
 - `NextDenovo` better than `Canu` [@Wick2021]
 
@@ -105,25 +122,19 @@ Content of abstract.
 
 # Results
 
-## Comparison with other plastid assembly pipelines
-
 (@tbl:benchmark-polap-some-1)
 
 (Supporting Materials – Plastid genome assemblies using the six pipelines)
 
-(@tbl:benchmark-time-2)
+<!--(@tbl:benchmark-time-2)-->
 
-(@tbl:benchmark-memory-2)
-
-## Subsampling-based plastome assemblies
+<!--(@tbl:benchmark-memory-2)-->
 
 (@tbl:benchmark-polap-some-1)
 
 (@tbl:benchmark-polap-some-0)
 
 (@tbl:benchmark-polap-some-4)
-
-## Three-stage of subsampling-based assembly
 
 - (@tbl:polap-disassemble-Eucalyptus_pauciflora-2)
 
@@ -133,63 +144,25 @@ Content of abstract.
 
 # Discussion
 
-`Polap` (Plant Organelle Long-read Assembly Pipeline v0.4.3.7), which includes the subsampling-based plastid genome assembly feature, is available under the GNU General Public License version 3.0 at [http://github.com/goshng/polap](http://github.com/goshng/polap).
+content
 
-# Supplementary Material
+# Supplementary Materials
 
-Supplementary material, including 10 tables and three figures, is appended to the main text of this manuscript. A `BASH` script for executing the pipeline used to generate the results presented in the manuscript is also included.
+content
 
 # Acknowledgements {-}
 
-We thank Jeffrey L. Thorne for improving the presentation of this work.
+content
 
 # Author Contributions
 
-S.C.C. developed the Polap pipeline and prepared the manuscript.
-
-# Conflict of Interest
-
-The author declare no conflicts.
+content
 
 # Data availability
 
-`Polap` (Plant Organelle Long-read Assembly Pipeline v0.4.3.7) is available under the GNU General Public License version 3.0 at [http://github.com/goshng/polap](http://github.com/goshng/polap).
-The results presented in this manuscript are available at Figshare: [https://figshare.com/s/ec1cb394870c7727a2d4](https://figshare.com/s/ec1cb394870c7727a2d4).
+content
 
 # References {-}
 
 ::: {#refs}
 :::
-
-<!-- # Species -->
-<!---->
-<!-- - _Anthoceros agrestis_ -->
-<!-- - _Arabidopsis thaliana_ -->
-<!-- - _Canavalia ensiformis_ -->
-<!-- - _Cinchona pubescens_ -->
-<!-- - _Codonopsis lanceolata_ -->
-<!-- - _Cucumis sativus_var_hardwickii_ -->
-<!-- - _Dioscorea japonica_ -->
-<!-- - _Dunaliella tertiolecta_ -->
-<!-- - _Eucalyptus pauciflora_ -->
-<!-- - _Euonymus alatus_ -->
-<!-- - _Gossypium herbaceum_ -->
-<!-- - _Juncus effusus_ -->
-<!-- - _Juncus inflexus_ -->
-<!-- - _Juncus roemerianus_ -->
-<!-- - _Juncus validus_ -->
-<!-- - _Leiosporoceros dussii_ -->
-<!-- - _Macadamia jansenii_ -->
-<!-- - _Musa acuminata_subsp_malaccensis_ -->
-<!-- - _Ophrys lutea_ -->
-<!-- - _Oryza rufipogon_ -->
-<!-- - _Pisum sativum_ -->
-<!-- - _Populus x_sibirica_ -->
-<!-- - _Prunus mandshurica_ -->
-<!-- - _Pterocarpus santalinus_ -->
-<!-- - _Solanum lycopersicum_ -->
-<!-- - _Spirodela polyrhiza_ -->
-<!-- - _Vaccinium vitis-idaea_ -->
-<!-- - _Vitis vinifera_ -->
-<!-- - _Notothylas orbicularis_ -->
-<!-- - _Phaeomegaceros chiloensis_ -->

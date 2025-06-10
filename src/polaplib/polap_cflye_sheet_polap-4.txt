@@ -1,4 +1,4 @@
-\section*{Supporting Material - Plastid genome assemblies using Polap - Run Setting A}
+\section*{Supporting Materials - Plastid genome assemblies using Polap - Run Setting A}
 
 \begin{center}
 \Large\textbf{On the plastid genome assembly by subsampling low-quality Oxford Nanopore long-read data} \\[1ex]

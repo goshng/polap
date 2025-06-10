@@ -198,7 +198,7 @@ assign_positional_args 1 "${_positionals[@]}"
 
 : "${_POLAP_DEBUG:=0}"
 export _POLAP_DEBUG
-: "${_POLAP_RELEASE:=0}"
+: "${_POLAP_RELEASE:=1}"
 export _POLAP_RELEASE
 
 get_free_cpus() {

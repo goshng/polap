@@ -19,7 +19,6 @@ files=(polap
 	polap-data-cflye
 	polap-data-dflye
 	polap-data-taxon
-  polap-figure-latex.sh
   bolap
   bolap.sh
 HEREDOC
@@ -37,6 +36,7 @@ cp -pr src/polaplib \$PREFIX/bin
 
 chmod +x \$PREFIX/bin/polap
 chmod +x \$PREFIX/bin/polap.sh
+chmod +x \$PREFIX/bin/polap-ncbitools
 chmod +x \$PREFIX/bin/polap-data-aflye
 chmod +x \$PREFIX/bin/polap-data-cflye
 chmod +x \$PREFIX/bin/polap-data-dflye

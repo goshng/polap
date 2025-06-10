@@ -555,7 +555,7 @@ help_message_man=$(
 
   man figure-sheet some 0 bandage sheet_benchmark.csv sheet_benchmark.txt
 
-  bash polap/src/polap-figure-latex.sh
+  bash polap/src/polaplib/polap-bash-figure-latex.sh
 
   Output:
   sheet_polap-2.csv.pdf
@@ -1636,7 +1636,7 @@ man-figure-sheet-latex_genus_species() {
   local _brg_n="${3:-2}"
   local _brg_page="${4:-1}"
 
-  bash ${_polap_script_bin_dir}/polap-figure-latex.sh \
+  bash ${_POLAPLIB_DIR}/polap-bash-figure-latex.sh \
     "${_brg_csv}" \
     "${_brg_txt}" \
     "${_brg_n}" \
@@ -1645,7 +1645,7 @@ man-figure-sheet-latex_genus_species() {
 
   pdflatex "${_brg_csv}.tex"
 
-  echo "use polap-figure-latex.sh"
+  echo "use bash ${_POLAPLIB_DIR}/polap-bash-figure-latex.sh"
   echo "csv file: ${_brg_csv}"
   echo "tex file: ${_brg_csv}.tex"
   echo "pdf file: ${_brg_csv}.pdf"

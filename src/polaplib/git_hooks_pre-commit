@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Get the upcomming commit hash
+COMMIT_HASH=$(git rev-parse --short HEAD)
+echo "# Use the commit that follows this commit hash." >src/polaplib/polap-git-hash-version.sh
+echo "# Commit hash: $(git rev-parse HEAD)" >src/polaplib/polap-git-hash-version.sh
+
+# Update the version file
+echo "_polap_git_hash_version='$COMMIT_HASH'" >>src/polaplib/polap-git-hash-version.sh
+
+git add src/polaplib/polap-git-hash-version.sh

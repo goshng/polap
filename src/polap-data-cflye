@@ -118,10 +118,6 @@ commands:
     man                Generate reports.
     help               Print help message for commands and others.
     print-help-all     List all help messages.
-
-  NOT-IMPLEMENTED-YET
-    batch              Batch run per data. (not implemented yet!)
-    compare            Compare the performance of two tools.
 HEREDOC
 )
 
@@ -238,8 +234,8 @@ source "${_POLAPLIB_DIR}/polap-lib-file.sh"
 source "${_POLAPLIB_DIR}/polap-lib-process.sh"
 source "${_POLAPLIB_DIR}/polap-lib-extract.sh"
 source <(echo 'export PATH="$PWD/bin:$PATH"')
-# source <(echo 'export QT_QPA_PLATFORM=offscreen')
 source <(echo 'export QT_QPA_PLATFORM=minimal')
+# source <(echo 'export QT_QPA_PLATFORM=offscreen')
 # echo "export QT_QPA_PLATFORM=offscreen"
 
 # NOTE: globaly defined in polap-lib-data.sh
@@ -435,6 +431,8 @@ else
   _polap_cmd="${_polap_script_bin_dir}/polap.sh"
 fi
 
+################################################################################
+# BEGIN: Help messages
 help_message_requirement=$(
   cat <<HEREDOC
 Polap data analysis of subsampling-based plastid genome assembly
@@ -861,6 +859,9 @@ help_message_archive=$(
   <inum>: 0, meaning archiving it with the file name of -a-0.tar.gz
 HEREDOC
 )
+#
+# END: Help messages
+################################################################################
 
 ############################################################
 # CSV setting for each analysis

@@ -330,6 +330,7 @@ HEREDOC
 opt_c_arg="off"
 opt_t_arg="t1"
 opt_m_arg="off"
+opt_v_arg=false
 opt_y_flag=false
 opt_e_arg=""
 
@@ -380,6 +381,9 @@ while [[ "${1-}" == -* ]]; do
     ;;
   -y)
     opt_y_flag=true
+    ;;
+  -v)
+    opt_v_flag=true
     ;;
   -e)
     shift
@@ -1598,9 +1602,18 @@ man-figure-sheet-latex_genus_species() {
     "${_brg_page}" \
     species >"${_brg_csv}.tex"
 
-  pdflatex "${_brg_csv}.tex"
+  if [[ "${opt_v_arg}" == "false" ]]; then
+    if pdflatex "${_brg_csv}.tex" >/dev/null 2>&1; then
+      echo "PDF built successfully"
+    else
+      echo "Error: pdflatex failed to compile"
+      exit 1
+    fi
+  else
+    pdflatex "${_brg_csv}.tex"
+  fi
 
-  echo "use bash ${_POLAPLIB_DIR}/polap-bash-figure-latex.sh"
+  # echo "use bash ${_POLAPLIB_DIR}/polap-bash-figure-latex.sh"
   echo "csv file: ${_brg_csv}"
   echo "tex file: ${_brg_csv}.tex"
   echo "pdf file: ${_brg_csv}.pdf"

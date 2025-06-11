@@ -31,10 +31,13 @@ cat "${text_file}"
 
 groupkey=""
 count=0
+group_count=0
+first=1
 
 print_group_header() {
   echo "\\begin{figure}[H]"
   echo "\\centering"
+  echo "\\mbox{}" # prevents LaTeX from dropping single figure
   if [[ "$groupby" != "none" ]]; then
     echo "\\noindent{\\Large\\textit{$1}}\\\\[0.8em]"
   fi
@@ -44,7 +47,9 @@ end_group() {
   if ((count % ncol != 0)); then
     echo "\\\\[1em]"
   fi
-  echo "\\vspace{1em}\\hrule\\vspace{1em}"
+  if ((group_count > 1)); then
+    echo "\\vspace{1em}\\hrule\\vspace{1em}"
+  fi
   echo "\\end{figure}"
   count=0
 }
@@ -60,11 +65,24 @@ while IFS=',' read -r tool species caption path; do
   *) current_group="" ;;
   esac
 
+  # 2025-06-11: single-group problem: single group has errors.
   # New group detected
-  if [[ "$current_group" != "$groupkey" ]]; then
-    [[ "$groupkey" != "" ]] && end_group
+  # if [[ "$current_group" != "$groupkey" ]]; then
+  #   [[ "$groupkey" != "" ]] && end_group
+  #   groupkey="$current_group"
+  #   print_group_header "$groupkey"
+  # fi
+  # New group detected
+  if ((first)); then
     groupkey="$current_group"
     print_group_header "$groupkey"
+    ((group_count++))
+    first=0
+  elif [[ "$current_group" != "$groupkey" ]]; then
+    end_group
+    groupkey="$current_group"
+    print_group_header "$groupkey"
+    ((group_count++))
   fi
 
   echo "\\begin{minipage}[b]{${width_frac}\\textwidth}"
@@ -82,6 +100,6 @@ while IFS=',' read -r tool species caption path; do
   fi
 done <"$csv_file"
 
-[[ "$groupkey" != "" ]] && end_group
+end_group
 
 echo "\\end{document}"

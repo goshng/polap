@@ -24,19 +24,19 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 polap: polap.sh
 	sed 's/_POLAP_RELEASE:=0/_POLAP_RELEASE:=1/' $< > $@
 
-polap-data-aflye: polap-data-v1.sh polaplib/polap-data-v1.csv
+polap-data-aflye: polap-data-v1.sh polaplib/polap-data-v1.csv polaplib/polap-bash-figure-latex.sh
 	sed 's/_POLAP_RELEASE:=0/_POLAP_RELEASE:=1/' $< > $@
 	cp -p polaplib/polap-data-v1.csv polaplib/polap-data-aflye.csv
 
-polap-data-cflye: polap-data-v2.sh polaplib/polap-data-v2.csv
+polap-data-cflye: polap-data-v2.sh polaplib/polap-data-v2.csv polaplib/polap-bash-figure-latex.sh
 	sed 's/_POLAP_RELEASE:=0/_POLAP_RELEASE:=1/' $< > $@
 	cp -p polaplib/polap-data-v2.csv polaplib/polap-data-cflye.csv
 
-polap-data-taxon: polap-data-v3.sh polaplib/polap-data-v3.csv
+polap-data-taxon: polap-data-v3.sh polaplib/polap-data-v3.csv polaplib/polap-bash-figure-latex.sh
 	sed 's/_POLAP_RELEASE:=0/_POLAP_RELEASE:=1/' $< > $@
 	cp -p polaplib/polap-data-v3.csv polaplib/polap-data-taxon.csv
 
-polap-data-dflye: polap-data-v4.sh polaplib/polap-data-v4.csv
+polap-data-dflye: polap-data-v4.sh polaplib/polap-data-v4.csv polaplib/polap-bash-figure-latex.sh
 	sed 's/_POLAP_RELEASE:=0/_POLAP_RELEASE:=1/' $< > $@
 	cp -p polaplib/polap-data-v4.csv polaplib/polap-data-dflye.csv
 

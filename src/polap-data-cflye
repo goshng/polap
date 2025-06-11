@@ -613,7 +613,10 @@ HEREDOC
 help_message_man_init=$(
   cat <<HEREDOC
 
-  menu title
+  Initialize the man folder.
+  We use the man folder at the current directory to save tables and figures.
+  Otherwise, they are save to $HOME/all/manuscript/polap-v0.4/figures
+  Use -m option to change the figures folder.
 HEREDOC
 )
 
@@ -623,7 +626,7 @@ help_message_man_figure_benchmark=$(
   Create figures for benchmark results.
   outdir: some, test
   inum: number folder
-  type: memory, time
+  type: memory, time, time-nextdenovo
 HEREDOC
 )
 
@@ -638,28 +641,23 @@ HEREDOC
 help_message_man_figure_delta=$(
   cat <<HEREDOC
 
-  menu title
+  Create a figure for the transient plot of alpha or the read coverage
+  over a range of delta or the jump size.
 HEREDOC
 )
 
 help_message_man_figure_alpha=$(
   cat <<HEREDOC
 
-  menu title
+  Create a figure for the transient plot of alpha or the read coverage
+  over a range of initial alpha values.
 HEREDOC
 )
 
 help_message_man_table_data=$(
   cat <<HEREDOC
 
-  menu title
-HEREDOC
-)
-
-help_message_man_figure_polap=$(
-  cat <<HEREDOC
-
-  menu title
+  Create a benchmark data table.
 HEREDOC
 )
 
@@ -738,7 +736,7 @@ help_message_man_table_benchmark=$(
 
   outdir: some, test
   inum: number folder
-  type: memory, time
+  type: data, memory, time, polap
 HEREDOC
 )
 
@@ -857,6 +855,9 @@ help_message_archive=$(
   Archive the result.
   <inum>: -1 is default, meaning archiving it with the file name of -a.tar.gz
   <inum>: 0, meaning archiving it with the file name of -a-0.tar.gz
+  <max-filesize>: 1M
+
+  Note: t0 is not archived.
 HEREDOC
 )
 #
@@ -1067,6 +1068,12 @@ man-figure-benchmark_genus_species() {
   local table_md_hostname="${run_title}-benchmark-hostname-${_brg_outdir}-${_brg_inum}.md"
   local table_tsv="table-${_brg_outdir}-${_brg_inum}.tsv"
   local figure_pdf="${run_title}-${_brg_type}-${_brg_outdir}-${_brg_inum}.pdf"
+
+  if [[ "${_brg_view}" == "on" || "${_brg_view}" == "view" ]]; then
+    echo "Use TSV: ${table_tsv}"
+    echo "Open PDF: ${figure_pdf}"
+    return
+  fi
 
   # echo "TSV: ${table_tsv}"
   # echo "Type: ${_brg_type}"
@@ -1457,9 +1464,16 @@ benchmark_genus_species() {
 #
 man-figure-delta_genus_species() {
   local _brg_outdir="${1:-Eucalyptus_pauciflora}"
-  local _brg_t_dir="${2:-"${_brg_default_target_dir}"}"
+  local _brg_view="${2:-off}"
+
+  local _brg_t_dir="${_brg_default_target_dir}"
 
   local _suppfigure_file="delta.pdf"
+
+  if [[ "${_brg_view}" == "view" ]]; then
+    echo "Open PDF: ${_suppfigure_file}"
+    return
+  fi
 
   local -A number2delta
   number2delta["21"]="0.25"
@@ -1506,9 +1520,15 @@ man-figure-delta_genus_species() {
 
 man-figure-alpha_genus_species() {
   local _brg_outdir="${1:-Eucalyptus_pauciflora}"
-  local _brg_t_dir="${2:-"${_brg_default_target_dir}"}"
+  local _brg_view="${2:-off}"
 
+  local _brg_t_dir="${_brg_default_target_dir}"
   local _suppfigure_file="alpha0.pdf"
+
+  if [[ "${_brg_view}" == "view" ]]; then
+    echo "Open PDF: ${_suppfigure_file}"
+    return
+  fi
 
   local -A number2alpha0
   number2alpha0["11"]="0.00"
@@ -1553,27 +1573,26 @@ man-figure-alpha_genus_species() {
   fi
 }
 
-man-figure-polap_genus_species_for() {
-  local _brg_outdir="${1}"
-  local _brg_inum="${2:-0}"
+# Create PDF with assembly graph figures
+man-figure-sheet-latex_genus_species() {
+  local _brg_csv="${1}"
+  local _brg_txt="${2}"
+  local _brg_n="${3:-2}"
+  local _brg_page="${4:-1}"
 
-}
+  bash ${_POLAPLIB_DIR}/polap-bash-figure-latex.sh \
+    "${_brg_csv}" \
+    "${_brg_txt}" \
+    "${_brg_n}" \
+    "${_brg_page}" \
+    species >"${_brg_csv}.tex"
 
-man-figure-polap_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-0}"
+  pdflatex "${_brg_csv}.tex"
 
-  if [[ "${_brg_outdir}" == "all" ]]; then
-    for _v1 in "${Sall[@]}"; do
-      man-figure-polap_genus_species_for "${_v1}" "${@:2}"
-    done
-  elif [[ "${_brg_outdir}" == "each" ]]; then
-    for _v1 in "${Sall[@]}"; do
-      man-figure-polap_genus_species_for "${_v1}" "${@:2}"
-    done
-  else
-    man-figure-polap_genus_species_for "$@"
-  fi
+  echo "use bash ${_POLAPLIB_DIR}/polap-bash-figure-latex.sh"
+  echo "csv file: ${_brg_csv}"
+  echo "tex file: ${_brg_csv}.tex"
+  echo "pdf file: ${_brg_csv}.pdf"
 }
 
 # Draw assembly graphs from PMAT
@@ -1627,29 +1646,12 @@ man-figure-sheet-pmat_genus_species_for() {
       fi
     else
       printf "%s,%s,%s,%s\n" "${_run_title}" "${_species}" "${_fc}" "${_base_figure}/na.png" >>"${_brg_csv}"
+
+      if [[ "$_POLAP_DEBUG" == "1" ]]; then
+        printf "gfa: no such file: %s\n" "${_gfa_infer}" >&2
+      fi
     fi
   done
-}
-
-man-figure-sheet-latex_genus_species() {
-  local _brg_csv="${1}"
-  local _brg_txt="${2}"
-  local _brg_n="${3:-2}"
-  local _brg_page="${4:-1}"
-
-  bash ${_POLAPLIB_DIR}/polap-bash-figure-latex.sh \
-    "${_brg_csv}" \
-    "${_brg_txt}" \
-    "${_brg_n}" \
-    "${_brg_page}" \
-    species >"${_brg_csv}.tex"
-
-  pdflatex "${_brg_csv}.tex"
-
-  echo "use bash ${_POLAPLIB_DIR}/polap-bash-figure-latex.sh"
-  echo "csv file: ${_brg_csv}"
-  echo "tex file: ${_brg_csv}.tex"
-  echo "pdf file: ${_brg_csv}.pdf"
 }
 
 # Draw assembly graphs from PMAT
@@ -2121,10 +2123,9 @@ man-figure-sheet_genus_species() {
     man-figure-sheet_genus_species_for "${_args_full[@]}"
   fi
 
-  # page number: 58
-
+  # page number: 64
   if [[ -s "${_brg_csv}" ]]; then
-    man-figure-sheet-latex_genus_species "${_brg_csv}" "${_brg_txt}" 6 59
+    man-figure-sheet-latex_genus_species "${_brg_csv}" "${_brg_txt}" 6 64
   else
     echo "Error: no such file: ${_brg_csv}"
   fi
@@ -2168,9 +2169,8 @@ old_man-figure-sheet_genus_species() {
   fi
 
   # page number: 58
-
   if [[ -s "${_brg_csv}" ]]; then
-    man-figure-sheet-latex_genus_species "${_brg_csv}" "${_brg_txt}" 6 57
+    man-figure-sheet-latex_genus_species "${_brg_csv}" "${_brg_txt}" 6 57 # old no use
   else
     echo "Error: no such file: ${_brg_csv}"
   fi
@@ -2202,54 +2202,53 @@ copy-figures_genus_species() {
 archive_genus_species_for() {
   local _brg_outdir="$1"
   local _brg_inum="${2:--1}"
+  local _brg_max_filesize="${3:-1M}"
 
-  rmdir "${_brg_outdir}"/0
-  rmdir "${_brg_outdir}"/tmp
-  rmdir "${_brg_outdir}"/log
-
-  mv "${_brg_outdir}"/t0 Temp-t/
+  if [[ -d "${_brg_outdir}"/t0 ]]; then
+    mkdir -p Temp-t
+    mv "${_brg_outdir}"/t0 Temp-t/
+  fi
 
   rm -rf "${_brg_outdir}-a"
   rm -f "${_brg_outdir}-a.tar.gz"
 
   if [[ "${_brg_inum}" != "-1" ]]; then
-    _log_echo "  creating ${_brg_outdir}-a-${_brg_inum}.tar.gz ..."
+    _log_echo "create ${_brg_outdir}-a-${_brg_inum}.tar.gz by archiving upto ${_brg_max_filesize}"
   else
-    _log_echo "  creating ${_brg_outdir}-a.tar.gz ..."
+    _log_echo "create ${_brg_outdir}-a.tar.gz by archiving upto ${_brg_max_filesize}"
   fi
 
   ${_polap_cmd} disassemble archive \
-    --max-filesize 1M \
+    --max-filesize "${_brg_max_filesize}" \
     -o ${_brg_outdir}
 
   if [[ "${_brg_inum}" != "-1" ]]; then
     mv "${_brg_outdir}-a.tar.gz" "${_brg_outdir}-a-${_brg_inum}.tar.gz"
-    # _log_echo "  creating ${_brg_outdir}-a-${_brg_inum}.tar.gz ..."
-    # echo "  creating ${_brg_outdir}-a-${_brg_inum}.tar.gz ..."
-  else
-    _log_echo "  creating ${_brg_outdir}-a.tar.gz ..."
-    # echo "  creating ${_brg_outdir}-a.tar.gz ..."
   fi
 
   rm -rf "${_brg_outdir}-a"
-  mv Temp-t/t0 "${_brg_outdir}"/
+
+  if [[ -d "Temp-t/t0" ]]; then
+    mv Temp-t/t0 "${_brg_outdir}"/
+  fi
 }
 
 archive_genus_species() {
-  local _brg_outdir="${1:-all}"
+  local _brg_outdir="${1:-some}"
   local _brg_inum="${2:--1}"
+  local _brg_max_filesize="${3:-1M}"
 
   if [[ "${_brg_outdir}" == "all" ]]; then
     for _v1 in "${Sall[@]}"; do
-      archive_genus_species_for "${_v1}" "${_brg_inum}"
+      archive_genus_species_for "${_v1}" "${@:2}"
     done
   elif [[ "${_brg_outdir}" == "some" ]]; then
     for _v1 in "${Ssome[@]}"; do
-      archive_genus_species_for "${_v1}" "${_brg_inum}"
+      archive_genus_species_for "${_v1}" "${@:2}"
     done
   elif [[ "${_brg_outdir}" == "test" ]]; then
     for _v1 in "${Stest[@]}"; do
-      archive_genus_species_for "${_v1}" "${_brg_inum}"
+      archive_genus_species_for "${_v1}" "${@:2}"
     done
   else
     archive_genus_species_for "$@"
@@ -2397,6 +2396,7 @@ extract_and_replace_suffix() {
 # Figure S. alpha
 # Figure S. delta
 #
+# FIXME: we may not need this man-table-data.
 man-table-data_genus_species() {
   local _brg_outdir="${1:-all}"
   local _brg_inum="${2:-0}"
@@ -3274,15 +3274,14 @@ man-pdf)
   ;;
 archive)
   if [[ "${_arg2}" == arg2 ]]; then
-    echo "Help: ${subcmd1} <outdir|all> <inum:-1|N>"
-    echo "  polap-data-v2.sh ${subcmd1} all"
+    echo "Help: ${subcmd1} <some|outdir|all|test> [inum:-1|N] [max-filesize:1M]"
+    echo "  polap-data-v2.sh ${subcmd1} some -1 1M"
     echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
     echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 0"
     echo "${help_message_archive}"
     exit 0
   fi
-  [[ "${_arg3}" == arg3 ]] && _arg3=""
-  ${subcmd1}_genus_species "${_arg2}" "${_arg3}"
+  ${subcmd1}_genus_species "${cmd_args[@]}"
   ;;
 benchmark-command)
   if [[ "${_arg2}" == arg2 ]]; then
@@ -3319,7 +3318,7 @@ setup-csv)
   ;;
 man-figure-delta)
   if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-    echo "Help: ${subcmd1} <outdir>"
+    echo "Help: ${subcmd1} <outdir> [view]"
     echo "  ${0} ${subcmd1} Eucalyptus_pauciflora"
     _subcmd1_clean="${subcmd1//-/_}"
     declare -n ref="help_message_${_subcmd1_clean}"
@@ -3330,7 +3329,7 @@ man-figure-delta)
   ;;
 man-figure-alpha)
   if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-    echo "Help: ${subcmd1} <outdir>"
+    echo "Help: ${subcmd1} <outdir> [view]"
     echo "  ${0} ${subcmd1} Eucalyptus_pauciflora"
     _subcmd1_clean="${subcmd1//-/_}"
     declare -n ref="help_message_${_subcmd1_clean}"
@@ -3342,17 +3341,6 @@ man-figure-alpha)
 man-table-data)
   if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
     echo "Help: ${subcmd1} <all|outdir> [inum:0|N]"
-    echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-    _subcmd1_clean="${subcmd1//-/_}"
-    declare -n ref="help_message_${_subcmd1_clean}"
-    echo "$ref"
-    exit 0
-  fi
-  ${subcmd1}_genus_species "${cmd_args[@]}"
-  ;;
-man-figure-polap)
-  if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-    echo "Help: ${subcmd1} <outdir> [inum:0|N]"
     echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
     _subcmd1_clean="${subcmd1//-/_}"
     declare -n ref="help_message_${_subcmd1_clean}"

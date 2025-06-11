@@ -2534,7 +2534,7 @@ HEREDOC
   # menu: archive
   # archive the disassemble analysis
   if [[ "${_arg_menu[1]}" == "archive" ]]; then
-    _polap_log0 "archiving ${_arg_outdir} to ${_arg_archive}"
+    _polap_log1 "archiving ${_arg_outdir} to ${_arg_archive} ... upto ${_arg_max_filesize}"
 
     _arg_menu[1]="cflye"
     _run_polap_archive

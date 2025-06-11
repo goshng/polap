@@ -45,6 +45,7 @@ polap-data-dflye is a tool for data analysis of plant mitochondrial genome assem
 options:
   -h, --help          Show this help message and exit.
   -y                  Enable -y flag to say YES to any question.
+  -f                  Enable -f flag to say YES to profiling.
   -c <arg>            Set value for -c option (default: off)
   -t <arg>            Set value for -t option (default: t1)
   -m <arg>            Set value for -m option figure folder (default: ${_brg_default_target_dir})
@@ -219,6 +220,7 @@ opt_c_arg="off"
 opt_t_arg="t1"
 opt_m_arg="off"
 opt_y_flag=false
+opt_f_flag=false
 opt_e_arg=""
 
 print_help() {
@@ -258,6 +260,9 @@ while [[ "${1-}" == -* ]]; do
     ;;
   -y)
     opt_y_flag=true
+    ;;
+  -f)
+    opt_f_flag=true
     ;;
   -e)
     shift

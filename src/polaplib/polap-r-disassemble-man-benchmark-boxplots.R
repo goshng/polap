@@ -163,10 +163,16 @@ method_labels <- c(
   "pmat_nextdenovo_1.0" = "PMAT-1.0"
 )
 
+if (args1$type == "time") {
 methods_to_remove <- c("nextdenovo_polish",
                        "polap_disassemble_simple",
                        "polap_disassemble_check_default", 
                        "polap_disassemble_check_simple")
+} else {
+methods_to_remove <- c("polap_disassemble_simple",
+                       "polap_disassemble_check_default", 
+                       "polap_disassemble_check_simple")
+}
 
 # Process and filter time data
 df_time <- df %>%

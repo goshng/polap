@@ -14,7 +14,7 @@ Taxon_genus-11,Eucalyptus_pauciflora,l,s,siepel,0,100,16,100,20,5,0.0,0.75,16000
 Taxon_genus-12,Eucalyptus_pauciflora,l,s,siepel,0,100,16,100,20,5,1.0,0.75,160000,0.1,onthq,30,Eucalyptus pauciflora,dummy,done
 Taxon_genus-21,Eucalyptus_pauciflora,l,s,siepel,0,100,16,100,20,5,1.0,0.25,160000,0.1,onthq,30,Eucalyptus pauciflora,dummy,done
 Taxon_genus-22,Eucalyptus_pauciflora,l,s,siepel,0,100,16,100,20,5,1.0,0.50,160000,0.1,onthq,30,Eucalyptus pauciflora,dummy,done
-Anthoceros_agrestis-0,Anthoceros_agrestis,SRR10190639,SRR10250248,siepel,157,10,16,10,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,done
+Anthoceros_agrestis-0,Anthoceros_agrestis,SRR10190639,SRR10250248,siepel,157,10,16,10,10,5,1.0,0.75,160000,0.1,onthq,20,NA,dummy,done
 Anthoceros_agrestis-1,Anthoceros_agrestis,SRR10190639,SRR10250248,siepel,101,10,16,5,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,done
 Anthoceros_agrestis-2,Anthoceros_agrestis,SRR10190639,SRR10250248,siepel,301,10,16,5,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,done
 Anthoceros_agrestis-4,Anthoceros_agrestis,SRR10190639,SRR10250248,siepel,401,10,16,1,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,cleanup
@@ -118,7 +118,7 @@ Notothylas_orbicularis-0,Notothylas_orbicularis,SRR25405055,SRR25405056,siepel,1
 Notothylas_orbicularis-1,Notothylas_orbicularis,SRR25405055,SRR25405056,siepel,151,10,16,5,10,5,1.0,0.75,160000,0.1,onthq,30,Anthoceros agrestis,dummy,unknown
 Notothylas_orbicularis-2,Notothylas_orbicularis,SRR25405055,SRR25405056,siepel,351,10,16,5,10,5,1.0,0.75,160000,0.1,onthq,30,Anthoceros agrestis,dummy,done
 Notothylas_orbicularis-4,Notothylas_orbicularis,SRR25405055,SRR25405056,siepel,451,10,16,1,10,5,1.0,0.75,160000,0.1,onthq,30,Anthoceros agrestis,dummy,cleanup
-Ophrys_lutea-0,Ophrys_lutea,ERR5167480,ERR5303530,siepel,147,10,16,10,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,done
+Ophrys_lutea-0,Ophrys_lutea,ERR5167480,ERR5303530,siepel,147,10,16,10,10,5,1.0,0.75,160000,0.1,onthq,20,NA,dummy,done
 Ophrys_lutea-1,Ophrys_lutea,ERR5167480,ERR5303530,siepel,165,10,16,5,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,done
 Ophrys_lutea-2,Ophrys_lutea,ERR5167480,ERR5303530,siepel,365,10,16,5,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,done
 Ophrys_lutea-4,Ophrys_lutea,ERR5167480,ERR5303530,siepel,465,10,16,1,10,5,1.0,0.75,160000,0.1,onthq,30,NA,dummy,cleanup

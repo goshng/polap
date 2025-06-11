@@ -337,6 +337,16 @@ print_help() {
   echo "${help_message}"
 }
 
+print_version_git_message() {
+  # curl -s https://api.github.com/repos/goshng/polap/commits/${_polap_git_hash_version} |
+  wget -qO- https://api.github.com/repos/goshng/polap/commits/${_polap_git_hash_version} |
+    awk '
+  /"date":/ && !seen++ { sub(/^[[:space:]]*"date": "/, ""); sub(/".*/, ""); date=$0 }
+  /"message":/ && !msg++ { sub(/^[[:space:]]*"message": "/, ""); sub(/",?$/, ""); msg=$0 }
+  END { print "Date: " date "\nMessage: " msg }
+'
+}
+
 print_version() {
   echo "polap-data-cflye ${_polap_version}"
 }
@@ -389,6 +399,7 @@ while [[ "${1-}" == -* ]]; do
     ;;
   --version)
     print_version
+    print_version_git_message
     exit 0
     ;;
   -h | --help)
@@ -1679,6 +1690,10 @@ man-figure-sheet-pmat_genus_species() {
     done
   elif [[ "${_brg_outdir}" == "some" ]]; then
     for _v1 in "${Ssome[@]}"; do
+      ${first_part}_genus_species_for "${_v1}" "${@:2}"
+    done
+  elif [[ "${_brg_outdir}" == "test" ]]; then
+    for _v1 in "${Stest[@]}"; do
       ${first_part}_genus_species_for "${_v1}" "${@:2}"
     done
   elif [[ "${_brg_outdir}" == "each" ]]; then

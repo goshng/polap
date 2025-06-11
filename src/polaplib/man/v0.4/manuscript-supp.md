@@ -6,6 +6,7 @@
 
 <!--table1-->
 <!-- polap-data-cflye man table-benchmark some 2 -->
+<!-- polap-data-cflye man table-benchmark some 2 polap view -->
 
 Table: Plastid genome assemblies for 23 plant species datasets using subsampled sequencing data with a maximum subsampling rate of 5% (Run Setting A).
 All datasets were downsampled to 10x genome coverage, and Stage 1 included 10 subsampling steps (N).
@@ -19,6 +20,7 @@ NA represents no assemblies in the subsampling-based method and no comparison av
 
 <!--table2-->
 <!-- polap-data-cflye man table-polap-disassemble Eucalyptus_pauciflora 2 -->
+<!-- polap-data-cflye man table-polap-disassemble Eucalyptus_pauciflora 2 view -->
 
 \newpage
 
@@ -32,7 +34,7 @@ the number of circular genome paths detected (C); and
 the draft plastid genome assembly length (Length).
 Alpha at Stage 3 is the percent identity values between consecutive indices.
 NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the stage but just polishing of the draft genome sequences.
-{#tbl:polap-disassemble-Eucalyptus_pauciflora-2}
+{#tbl:polap-disassemble-Eucalyptus-pauciflora-2}
 
 !include figures/table-polap-disassemble-Eucalyptus_pauciflora-2.md
 
@@ -45,8 +47,11 @@ NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the s
 ![Workflow of the subsampling-based plastid genome assembly. The genome assembly procedure is applied repeatedly in Stages 1 and 2.](figures/polap2-figure1.pdf){#fig:mainfigure1 width=100%}
 
 <!--figure2-->
+<!-- polap-data-cflye man figure-benchmark some 2 time -->
+<!-- polap-data-cflye man figure-benchmark some 2 time view -->
 
 ![Benchmark of `GetOrganelle`, `ptGAUL`, `PMAT`, `TIPPo`, `Oatk` and the method (Run Setting A) presented here in terms of data processing time.
+See @fig:time-nextdenovo-some-2 for the same results, including the processing time of NextDenovo.
 Abbreviations are as follows:
 Genome size estimation by `JellyFish` (G),
 Short-read polishing preparation (MSBWT),
@@ -60,6 +65,8 @@ Short-read polishing (FMLRC),
 ](figures/figure-time-some-2.pdf){#fig:time-some-2 width=100%}
 
 <!--figure3-->
+<!-- polap-data-cflye man figure-benchmark some 2 memory -->
+<!-- polap-data-cflye man figure-benchmark some 2 memory view -->
 
 ![Benchmark of `GetOrganelle`, `ptGAUL`, `PMAT`, `TIPPo`, `Oatk` and the method (Run Setting A) presented here in terms of peak memory usage.
 Abbreviations are as follows:
@@ -86,6 +93,7 @@ Long-read error-correction (NextDenovo),
 
 <!--tableS1-->
 <!-- polap-data-cflye man table-benchmark some 2 -->
+<!-- polap-data-cflye man table-benchmark some 2 data view -->
 
 Table: Sequencing data for the datasets, including species names and their corresponding taxonomic ranks studied. {#tbl:benchmark-data-some-2}
 
@@ -108,8 +116,11 @@ Table: Sequencing data for the datasets, including species names and their corre
 
 \elandscape
 
+<!--tableS2-->
 <!--tableS:computer-->
 <!-- polap-data-cflye man table-benchmark some 2 -->
+<!-- polap-data-cflye man table-benchmark some 2 computer view -->
+<!-- polap-data-cflye man table-benchmark some 2 hostname view -->
 
 \newpage
 
@@ -118,8 +129,9 @@ Table: Computer setup for the 23 datasets.
 
 !include figures/table-benchmark-computer-some-2.md
 
-<!--tableS2-->
+<!--tableS3-->
 <!-- polap-data-cflye man table-benchmark some 1 -->
+<!-- polap-data-cflye man table-benchmark some 1 polap view -->
 
 \newpage
 
@@ -137,6 +149,7 @@ NA represents no assemblies in the subsampling-based method and no comparison av
 
 <!--table:benchmark-time-->
 <!-- polap-data-cflye man table-benchmark some 2 -->
+<!-- polap-data-cflye man table-benchmark some 2 time view # Table for Figure 2 and S3 -->
 
 <!-- \newpage -->
 <!---->
@@ -162,6 +175,7 @@ NA represents no assemblies in the subsampling-based method and no comparison av
 
 <!--table:benchmark-memory-->
 <!-- polap-data-cflye man table-benchmark some 2 -->
+<!-- polap-data-cflye man table-benchmark some 2 memory view # Table for Figure 3 -->
 
 <!-- \newpage -->
 <!---->
@@ -185,12 +199,11 @@ NA represents no assemblies in the subsampling-based method and no comparison av
 <!---->
 <!-- \elandscape -->
 
-<!--tableS3-->
+<!--tableS4-->
 <!-- polap-data-cflye man table-benchmark some 0 -->
+<!-- polap-data-cflye man table-benchmark some 0 polap view -->
 
 \newpage
-
-<!-- \blandscape -->
 
 Table: Plastid genome assemblies for 23 plant species datasets using subsampled sequencing data with a maximum subsampling rate of 10% (Run Setting B).
 All datasets were downsampled to 10x genome coverage, and Stage 1 included 10 subsampling steps (N).
@@ -200,12 +213,9 @@ NA represents no assemblies in the subsampling-based method and no comparison av
 
 !include figures/table-benchmark-polap-some-0.md
 
-<!-- !include manuscript-table1-footnote.md -->
-
-<!-- \elandscape -->
-
-<!--tableS4-->
+<!--tableS5-->
 <!-- polap-data-cflye man table-benchmark some 4 -->
+<!-- polap-data-cflye man table-benchmark some 4 polap view -->
 
 \newpage
 
@@ -219,6 +229,7 @@ NA represents no assemblies in the subsampling-based method and no comparison av
 
 <!--tableS6-->
 <!-- polap-data-cflye man table-polap-disassemble Eucalyptus_pauciflora 0 -->
+<!-- polap-data-cflye man table-polap-disassemble Eucalyptus_pauciflora 0 view -->
 
 \newpage
 
@@ -232,12 +243,13 @@ the number of circular genome paths detected (C); and
 the draft plastid genome assembly length (Length).
 Alpha at Stage 3 is the percent identity values between consecutive indices.
 NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the stage but just polishing of the draft genome sequences.
-{#tbl:polap-disassemble-Eucalyptus_pauciflora-0}
+{#tbl:polap-disassemble-Eucalyptus-pauciflora-0}
 
 !include figures/table-polap-disassemble-Eucalyptus_pauciflora-0.md
 
 <!--tableS7-->
 <!-- polap-data-cflye man table-polap-disassemble Eucalyptus_pauciflora 3 -->
+<!-- polap-data-cflye man table-polap-disassemble Eucalyptus_pauciflora 3 view -->
 
 \newpage
 
@@ -251,12 +263,13 @@ the number of circular genome paths detected (C); and
 the draft plastid genome assembly length (Length).
 Alpha at Stage 3 is the percent identity values between consecutive indices.
 NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the stage but just polishing of the draft genome sequences.
-{#tbl:polap-disassemble-Eucalyptus_pauciflora-3}
+{#tbl:polap-disassemble-Eucalyptus-pauciflora-3}
 
 !include figures/table-polap-disassemble-Eucalyptus_pauciflora-3.md
 
 <!--figureS1-->
 <!-- polap-data-cflye man figure-alpha Eucalyptus_pauciflora -->
+<!-- polap-data-cflye man figure-alpha Eucalyptus_pauciflora view # Figure S1 -->
 
 \newpage
 
@@ -264,12 +277,29 @@ NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the s
 
 <!--figureS2-->
 <!-- polap-data-cflye man figure-delta Eucalyptus_pauciflora -->
+<!-- polap-data-cflye man figure-delta Eucalyptus_pauciflora view # Figure S2 -->
 
 \newpage
 
 ![Line plot of increment size versus subsample size index in Stage 1 of the subsampling-based assemblies for _Eucalyptus pauciflora_.](figures/delta.pdf){#fig:delta width=100%}
 
 <!--figureS3-->
+<!-- polap-data-cflye man figure-benchmark some 2 time-nextdenovo -->
+<!-- polap-data-cflye man figure-benchmark some 2 time-nextdenovo view # Figure S3 -->
+
+![Benchmark of `GetOrganelle`, `ptGAUL`, `PMAT`, `TIPPo`, `Oatk` and the method (Run Setting A) presented here in terms of data processing time.
+See @fig:time-some-2 for the same results, excluding the processing time of NextDenovo.
+Abbreviations are as follows:
+Genome size estimation by `JellyFish` (G),
+Short-read polishing preparation (MSBWT),
+Short-read polishing (FMLRC),
+`Oatk` with `-c 30` (Oatk-30),
+`Oatk` with `-c 20` (Oatk-20),
+`TIPPo` with `-p onthq` (TIPPo-hq),
+`TIPPo` with `-p ont` (TIPPo-ont),
+`PMAT` with `-fc 0.1` (PMAT-0.1), and
+`PMAT` with `-fc 1.0` (PMAT-1.0).
+](figures/figure-time-nextdenovo-some-2.pdf){#fig:time-nextdenovo-some-2 width=100%}
 
 <!-- Supporting Material - plastid genome assemblies using the six pipelines -->
 
@@ -302,23 +332,25 @@ The expected screen output includes the following two lines.
 
 ```txt
 GNU bash, version 5.2.21(1)-release (x86_64-pc-linux-gnu)
-Description:    Ubuntu 24.04.1 LTS
+Description: Ubuntu 24.04 LTS
 ```
 
 **2. Install Miniconda**:
 Use the following script to download and install **[Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/)**. It uses the [instructions](https://docs.anaconda.com/miniconda/#quick-command-line-install) for the installation.
 Use either `git` or `wget` (along with `unzip` and `mv`) to prepare a folder named `polap` at the current directory.
-Replace the version number 0.4.3.7.7 with something recommended at [Polap's github website](http://github.com/goshng/polap).
+Replace the version number 0.4.3.7.8 with something recommended at [Polap's github website](http://github.com/goshng/polap).
 
 ```bash
+cd
 mkdir -p all/polap/cflye1
 cd all/polap/cflye1
+rm -rf polap
 # option 1: use git command
 git clone https://github.com/goshng/polap.git
 # option 2: use wget, unzip, and mv
-wget -O polap.zip -q https://github.com/goshng/polap/archive/refs/tags/0.4.3.7.7.zip
-unzip -o -q polap.zip
-mv polap-0.4.3.7.7 polap
+wget -q https://github.com/goshng/polap/archive/refs/tags/0.4.3.7.8.zip
+unzip -o -q 0.4.3.7.8.zip
+mv polap-0.4.3.7.8 polap
 # Now, we have the polap folder.
 bash polap/src/polap-data-cflye -y install conda
 ```
@@ -334,10 +366,11 @@ bash polap/src/polap-data-cflye setup conda
 
 **3. Install Bioconda packages**:
 Install conda packages incluing `polap` and others in their own conda environments.
-Remove the version number `0.4.3.7.7` from `polap-data-cflye -y install all` if you want the latest version of `polap`.
+Execute `polap-data-cflye -y install polap` if you want the latest version of `polap`.
 
 ```bash
-bash polap/src/polap-data-cflye -y install all 0.4.3.7.7
+bash polap/src/polap-data-cflye -y install polap=0.4.3.7.8
+bash polap/src/polap-data-cflye -y install all
 bash polap/src/polap-data-cflye setup polap
 bash polap/src/polap-data-cflye setup pmat
 ```
@@ -358,7 +391,7 @@ polap-data-cflye benchmark Taxon_genus
 for i in 3 11 12 21 22; do
   polap-data-cflye run polap-disassemble Taxon_genus $i
 done
-# run time: about 3 hour on a 56-core Ubuntu computer
+# run time: about 12 hour on a 56-core Ubuntu computer
 ```
 
 **5. Tables and figures in the manuscript using the test data**:
@@ -390,6 +423,7 @@ Now, you have `manuscript-test.pdf` for the test report. Use the following to di
 polap-data-cflye man table-benchmark test 2 computer view
 polap-data-cflye man table-benchmark test 2 time view
 polap-data-cflye man table-benchmark test 2 memory view
+polap-data-cflye man table-polap-disassemble Taxon_genus 2 view
 ```
 
 **6. Polap assemble run with a test dataset**:
@@ -423,6 +457,9 @@ Because the test dataset is too small, we downsample the data to the 100x of the
 We use the line-continuation backslash character to prevent the command from exceeding the page width; that is, the three lines together form a single command starting with `polap disassemble` below.
 
 ```bash
+cd
+cd all/polap/cflye1
+# option 1: download ONT long- and Illumina short-read datasets
 # polap x-ncbi-fetch-sra --sra SRR7153095
 # polap x-ncbi-fetch-sra --sra SRR7161123
 # polap disassemble -l SRR7153095.fastq \
@@ -466,6 +503,7 @@ We are ready to perform the subsampling-based plastid genome assemblies for the 
 One could do the analyses for either all datasets or each dataset depending on available computing resources.
 
 ```bash
+cd
 cd all/polap/cflye1
 source ~/miniconda3/bin/activate
 conda activate polap
@@ -489,21 +527,40 @@ for i in 0 1 2 4; do polap-data-cflye man table-benchmark some $i; done
 for i in {0..4}; do
   polap-data-cflye man table-polap-disassemble Eucalyptus_pauciflora $i
 done
-polap-data-cflye man figure-sheet some 2 bandage
+polap-data-cflye man figure-sheet some 2 bandage # Requires latex
+polap-data-cflye man figure-sheet-pmat some # Requires latex
+polap-data-cflye man figure-sheet-oatk some # Requires latex
+polap-data-cflye man figure-sheet-tippo some # Requires latex
 polap-data-cflye man figure-benchmark some 2 time
 polap-data-cflye man figure-benchmark some 2 memory
+polap-data-cflye man figure-benchmark some 2 time-nextdenovo
 polap-data-cflye man figure-alpha Eucalyptus_pauciflora
 polap-data-cflye man figure-delta Eucalyptus_pauciflora
-polap-data-cflye man pdf
+polap-data-cflye man pdf # Requires latex
 ```
 
 Now, you have `manuscript.pdf` for the report.
 Use the following to display the result if `latex` is not installed into the Ubuntu computer.
 
 ```bash
-polap-data-cflye man table-benchmark some 2 computer view
-polap-data-cflye man table-benchmark some 2 time view
-polap-data-cflye man table-benchmark some 2 memory view
+polap-data-cflye man table-benchmark some 2 computer view # Table S2
+polap-data-cflye man table-benchmark some 2 hostname view # Table S2
+polap-data-cflye man table-benchmark some 2 data view # Table S1
+polap-data-cflye man table-benchmark some 2 time view # Table for Figure 2 and S3
+polap-data-cflye man table-benchmark some 2 memory view # Table for Figure 3
+polap-data-cflye man table-benchmark some 2 polap view # Table 1
+polap-data-cflye man table-benchmark some 1 polap view # Table S3
+polap-data-cflye man table-benchmark some 0 polap view # Table S4
+polap-data-cflye man table-benchmark some 4 polap view # Table S5
+polap-data-cflye man table-polap-disassemble Eucalyptus_pauciflora 2 view # Table 2
+polap-data-cflye man table-polap-disassemble Eucalyptus_pauciflora 0 view # Table S6
+polap-data-cflye man table-polap-disassemble Eucalyptus_pauciflora 3 view # Table S7
+polap-data-cflye man figure-benchmark some 2 time view # Figure 2
+polap-data-cflye man figure-benchmark some 2 memory view # Figure 3
+polap-data-cflye man figure-alpha Eucalyptus_pauciflora view # Figure S1
+polap-data-cflye man figure-delta Eucalyptus_pauciflora view # Figure S2
+polap-data-cflye man figure-benchmark some 2 time-nextdenovo view # Figure S3
+polap-data-cflye man figure-sheet some 2 bandage # Genome assembly graphs
 ```
 
 <!-- benchmark assembly graph figure -->

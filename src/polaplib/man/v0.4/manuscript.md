@@ -136,11 +136,11 @@ Content of abstract.
 
 (@tbl:benchmark-polap-some-4)
 
-- (@tbl:polap-disassemble-Eucalyptus_pauciflora-2)
+- (@tbl:polap-disassemble-Eucalyptus-pauciflora-2)
 
-- (@tbl:polap-disassemble-Eucalyptus_pauciflora-0)
+- (@tbl:polap-disassemble-Eucalyptus-pauciflora-0)
 
-- (@tbl:polap-disassemble-Eucalyptus_pauciflora-3)
+- (@tbl:polap-disassemble-Eucalyptus-pauciflora-3)
 
 # Discussion
 

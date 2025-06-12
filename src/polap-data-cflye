@@ -330,7 +330,7 @@ HEREDOC
 opt_c_arg="off"
 opt_t_arg="t1"
 opt_m_arg="off"
-opt_v_arg=false
+opt_v_flag=false
 opt_y_flag=false
 opt_e_arg=""
 
@@ -1041,15 +1041,12 @@ man-init_genus_species() {
       echo "deleting and creating man ... done!"
       rm -rf man
       cp -pr "${_POLAPLIB_DIR}"/man .
-      cp -p "${_POLAPLIB_DIR}"/man/v0.4/figures/na.png .
-      cp -p "${_POLAPLIB_DIR}"/man/v0.4/figures/empty.png .
-      return
     else
       echo "you already have the man folder!"
     fi
-
-    echo "[INFO] you already have the man folder!"
   fi
+  cp -p "${_POLAPLIB_DIR}"/man/v0.4/figures/na.png .
+  cp -p "${_POLAPLIB_DIR}"/man/v0.4/figures/empty.png .
 }
 
 man-figure-benchmark_genus_species() {
@@ -1602,7 +1599,7 @@ man-figure-sheet-latex_genus_species() {
     "${_brg_page}" \
     species >"${_brg_csv}.tex"
 
-  if [[ "${opt_v_arg}" == "false" ]]; then
+  if [[ "${opt_v_flag}" == "false" ]]; then
     if pdflatex "${_brg_csv}.tex" >/dev/null 2>&1; then
       echo "PDF built successfully"
     else

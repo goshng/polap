@@ -338,7 +338,7 @@ Description: Ubuntu 24.04 LTS
 **2. Install Miniconda**:
 Use the following script to download and install **[Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/)**. It uses the [instructions](https://docs.anaconda.com/miniconda/#quick-command-line-install) for the installation.
 Use either `git` or `wget` (along with `unzip` and `mv`) to prepare a folder named `polap` at the current directory.
-Replace the version number 0.4.3.7.8 with something recommended at [Polap's github website](http://github.com/goshng/polap).
+Replace the version number 0.4.3.7.9 with something recommended at [Polap's github website](http://github.com/goshng/polap).
 
 ```bash
 cd
@@ -348,14 +348,14 @@ rm -rf polap
 # option 1: use git command
 git clone https://github.com/goshng/polap.git
 # option 2: use wget, unzip, and mv
-wget -q https://github.com/goshng/polap/archive/refs/tags/0.4.3.7.8.zip
-unzip -o -q 0.4.3.7.8.zip
-mv polap-0.4.3.7.8 polap
+wget -q https://github.com/goshng/polap/archive/refs/tags/0.4.3.7.9.zip
+unzip -o -q 0.4.3.7.9.zip
+mv polap-0.4.3.7.9 polap
 # Now, we have the polap folder.
 bash polap/src/polap-data-cflye -y install conda
 ```
 
-After installing, close and reopen your terminal application to log out and back into the terminal.
+After installing, close and reopen the terminal application to log out and back into the terminal.
 Then, execute the followings to setup the conda channels for `polap`.
 
 ```bash
@@ -366,11 +366,13 @@ bash polap/src/polap-data-cflye setup conda
 
 **3. Install Bioconda packages**:
 Install conda packages incluing `polap` and others in their own conda environments.
-Execute `polap-data-cflye -y install polap` if you want the latest version of `polap`.
+We execute `polap-data-cflye -y install polap` if we want the latest version of `polap`.
 
 ```bash
-bash polap/src/polap-data-cflye -y install polap=0.4.3.7.8
-bash polap/src/polap-data-cflye -y install all
+# option 1: to install all tools necessary
+bash polap/src/polap-data-cflye -y install all=0.4.3
+# option 2: to install polap only
+bash polap/src/polap-data-cflye -y install polap=0.4.3
 bash polap/src/polap-data-cflye setup polap
 bash polap/src/polap-data-cflye setup pmat
 ```
@@ -396,9 +398,9 @@ done
 
 **5. Tables and figures in the manuscript using the test data**:
 Tables in Markdown format will be generated and saved in the `man` directory after executing the following command.
-You should download a precompiled binary version 0.8.1 of `Bandage` genome assembly graph visualization tool from [the official Bandage GitHub](https://github.com/rrwick/Bandage/releases).
+Download a precompiled binary version 0.8.1 of `Bandage` genome assembly graph visualization tool from [the official Bandage GitHub](https://github.com/rrwick/Bandage/releases).
 To generate a report in PDF format, we need `latex` installed in the Ubuntu computer.
-You may skip the installation of `latex`, but you won't be able to generate a PDF-format report.
+We may skip the installation of `latex`, but we won't be able to generate a PDF-format report.
 
 ```bash
 polap-data-cflye -y install bandage
@@ -410,14 +412,18 @@ for i in {0..4}; do
   polap-data-cflye man table-polap-disassemble Taxon_genus $i
 done
 polap-data-cflye man figure-sheet test 2 bandage # Requires latex
+polap-data-cflye man figure-sheet-pmat test # Requires latex
+polap-data-cflye man figure-sheet-oatk test # Requires latex
+polap-data-cflye man figure-sheet-tippo test # Requires latex
 polap-data-cflye man figure-benchmark test 2 time
 polap-data-cflye man figure-benchmark test 2 memory
+polap-data-cflye man figure-benchmark test 2 time-nextdenovo
 polap-data-cflye man figure-alpha Taxon_genus
 polap-data-cflye man figure-delta Taxon_genus
 polap-data-cflye man pdf test # Requires latex
 ```
 
-Now, you have `manuscript-test.pdf` for the test report. Use the following to display the result if `latex` is not installed into the Ubuntu computer.
+Now, we have `manuscript-test.pdf` for the test report. Use the following to display the result if `latex` is not installed into the Ubuntu computer.
 
 ```bash
 polap-data-cflye man table-benchmark test 2 computer view
@@ -438,7 +444,7 @@ cd polap/test
 polap assemble --test
 ```
 
-You should check if there is a file named `2-oga.gfa` at the curent directory.
+There is a file named `2-oga.gfa` at the curent directory.
 One could extract a sequence file from `2-oga.gfa` and name it `mt.0.fasta` using `Bandage` software.
 For testing purpose, we polish the extracted sequence.
 
@@ -470,11 +476,11 @@ polap disassemble -l l.fastq -a s_1.fastq -b s_2.fastq \
   -o a
 ```
 
-Your assembled plastid genome sequence will be `a/ptdna.0.fa`.
+The assembled plastid genome sequence should be `a/ptdna.0.fa`.
 
 **8. Check the accuracy of the plastid genome assembly**:
 We use the Polap disassemble command with _Eucalyptus pauciflora_ dataset and check its similarity with its known plastid genome sequence
-Your assembled plastid genome sequence will be `o/ptdna.ref.0.fa`. The text file named `o/0/mafft/pident.txt` has the percent identity between the assembled ptDNA and the knomn reference.
+The assembled plastid genome sequence will be `o/ptdna.ref.0.fa`. The text file named `o/0/mafft/pident.txt` has the percent identity between the assembled ptDNA and the knomn reference.
 One could skip this step because it is not the main part of the subsampling-based method but a part for benchmarking.
 
 ```bash
@@ -515,13 +521,16 @@ polap-data-cflye benchmark Spirodela_polyrhiza
 for i in 3 {11..29}; do
   polap-data-cflye run polap-disassemble Eucalyptus_pauciflora $i
 done
+# option 3: download the archived results
+wget -O 28740323.zip https://figshare.com/ndownloader/articles/28740323?private_link=ec1cb394870c7727a2d4
+unzip 28740323.zip
+for i in *-a.tar.gz; do polap-data-cflye recover ${i%-a.tar.gz}; done
 ```
 
 **10. Tables and figures in the manuscript**:
 We create the report in PDF format.
 
 ```bash
-rm -rf man
 polap-data-cflye man init
 for i in 0 1 2 4; do polap-data-cflye man table-benchmark some $i; done
 for i in {0..4}; do
@@ -539,12 +548,11 @@ polap-data-cflye man figure-delta Eucalyptus_pauciflora
 polap-data-cflye man pdf # Requires latex
 ```
 
-Now, you have `manuscript.pdf` for the report.
+Now, we have `manuscript.pdf` for the report.
 Use the following to display the result if `latex` is not installed into the Ubuntu computer.
 
 ```bash
 polap-data-cflye man table-benchmark some 2 computer view # Table S2
-polap-data-cflye man table-benchmark some 2 hostname view # Table S2
 polap-data-cflye man table-benchmark some 2 data view # Table S1
 polap-data-cflye man table-benchmark some 2 time view # Table for Figure 2 and S3
 polap-data-cflye man table-benchmark some 2 memory view # Table for Figure 3
@@ -560,7 +568,7 @@ polap-data-cflye man figure-benchmark some 2 memory view # Figure 3
 polap-data-cflye man figure-alpha Eucalyptus_pauciflora view # Figure S1
 polap-data-cflye man figure-delta Eucalyptus_pauciflora view # Figure S2
 polap-data-cflye man figure-benchmark some 2 time-nextdenovo view # Figure S3
-polap-data-cflye man figure-sheet some 2 bandage # Genome assembly graphs
+polap-data-cflye man figure-sheet some 2 no-bandage # Genome assembly graphs
 ```
 
 <!-- benchmark assembly graph figure -->

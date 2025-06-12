@@ -307,7 +307,7 @@ Short-read polishing (FMLRC),
 
 # Code
 
-`Polap` (Plant Organelle Long-read Assembly Pipeline v0.4.3.7) is available at [http://github.com/goshng/polap](http://github.com/goshng/polap).
+`Polap` (Plant Organelle Long-read Assembly Pipeline v0.4.3) is available at [http://github.com/goshng/polap](http://github.com/goshng/polap).
 A guide of the subsampling-based plastome assembly is provided for use on a Linux system with an Internet connection.
 It offers a step-by-step description of the procedures used for the results presented in the manuscript.
 

@@ -1620,7 +1620,6 @@ man-figure-sheet-latex_genus_species() {
     pdflatex "${_brg_csv}.tex"
   fi
 
-  # echo "use bash ${_POLAPLIB_DIR}/polap-bash-figure-latex.sh"
   echo "csv file: ${_brg_csv}"
   echo "tex file: ${_brg_csv}.tex"
   echo "pdf file: ${_brg_csv}.pdf"

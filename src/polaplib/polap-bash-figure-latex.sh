@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# Convert a CSV file and a text file to a latex file for creating a PDF file of
+# assembly graphs. Assembly graph png files are necessary before executing this
+# command. Such assembly graph png files can be generated using Bandage software.
+# Adjust the number of columns for displaying figures using <num_columns>.
+# The start page numebr is updated using <page>.
+# Use <groupby> to group assembly graphs: we tested using species.
+# Use <percent_of_textwidth> to adjust the size of assembly graph figure.
+#
+# Example:
+# input.csv (group, taxon, tool name, assembly graph png filename)
+# ---------
+# getorganelle,Anthoceros agrestis,GetOrganelle,./Test_species/t1/0/getorganelle/embplant_pt.K115.complete.graph1.selected_graph.png
+# ptgaul,Anthoceros agrestis,ptGAUL,./Test_species/t1/0/ptgaul/flye_cpONT/assembly_graph.png
+#
+# text.txt
+# --------
+# Any text that can be used as a latex document.
+
 csv_file="$1"
 text_file="$2"
 ncol="${3:-2}"

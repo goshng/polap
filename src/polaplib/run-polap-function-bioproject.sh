@@ -15,6 +15,22 @@
 ################################################################################
 
 ################################################################################
+# BioProject subcommand collects data from the NCBI.
+#
+# TEST-SCC: not yet
+# TODO: menus need to be documented.
+# Collect animal data for animal mitochondrial genome assembly.
+#
+# function _run_polap_get-bioproject-sra {
+# function _run_polap_copy-sra-bioproject {
+# function _run_polap_get-bioproject { # get BioProject info from NCBI
+# function _run_polap_bioproject-prepare { # bioproject data preparation
+# function _run_polap_x-assemble-draft { # called after bioproject-prepare
+# function _run_polap_bioproject-postprocess { # postprocess the bioproject assembly
+# function _run_polap_assemble-bioproject { # main function for this bioproject module
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

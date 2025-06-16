@@ -14,6 +14,14 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# Polap has many global variables, most of which are defined in
+# 1. polap-variables-common.sh
+# 2. polap-variables-mtcontigs.sh
+# This script helps to see all of the global variables and their assigned
+# values.
+################################################################################
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
   return 1 2>/dev/null || exit 1

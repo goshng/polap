@@ -1,4 +1,28 @@
 #!/bin/bash
+################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
+################################################################################
+# This is called by polap-data-v3.sh not polap-data-v2 or v4.
+# FIXME: 
+# v3 is polap-data-taxon, which we have not finished with that yet.
+# TEST-SCC: not yet. I do not know what we should do with this.
+################################################################################
+# This is called by polap-data-v3.sh not polap-data-v2 or v4.
+
 S=('Juncus_effusus' 'Juncus_inflexus' 'Juncus_roemerianus' 'Juncus_validus' 'Eucalyptus_pauciflora')
 S=('Juncus_effusus' 'Juncus_roemerianus' 'Juncus_validus' 'Eucalyptus_pauciflora')
 S=('Juncus_effusus' 'Eucalyptus_pauciflora')

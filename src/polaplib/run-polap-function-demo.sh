@@ -15,6 +15,15 @@
 ################################################################################
 
 ################################################################################
+# This script was used in the polap version 0.3.7.3 or the polap1.
+# It is the main batch shell script.
+# See Also:
+# polap-revision1.sh
+# TODO: delete this script in the future.
+# TODO: it should be replaced by polap-data-aflye or polap-data-v1.sh
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

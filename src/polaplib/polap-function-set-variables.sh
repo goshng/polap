@@ -15,6 +15,11 @@
 ################################################################################
 
 ################################################################################
+# This script sets variables for short- and long-read data files.
+# It is used by functions that need read data files.
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

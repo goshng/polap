@@ -15,6 +15,13 @@
 ################################################################################
 
 ################################################################################
+# Bandage subcommand creates png figure files for the given assembly graphs.
+# function _run_polap_bandage
+# TEST-SCC: not yet.
+# TEST-DOC: not yet.
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

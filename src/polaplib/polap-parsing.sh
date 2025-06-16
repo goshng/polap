@@ -1,4 +1,28 @@
 #!/bin/bash
+################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
+################################################################################
+# Polap uses argbash to process the command-line options.
+# We initialized polap.sh script with the followings.
+# Now, we do not use them but edit the script polap-parsing.sh when we need
+# to change options. It is instructive to learn how one can use argbash to
+# process the command-line options in order to understand the way how polap
+# script handles them.
+################################################################################
 
 # Created by argbash-init v2.10.0
 # ARG_OPTIONAL_SINGLE([long-reads],[l],[long-reads data file in fastq format],[l.fq])

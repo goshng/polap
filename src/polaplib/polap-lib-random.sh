@@ -15,6 +15,13 @@
 ################################################################################
 
 ################################################################################
+# Bash functions for pseudo-RNG-like feature.
+# Bash shell does not provide a good RNG, but we could make a very simple RNG
+# that is not efficient but works fine for the purpose of Polap's features.
+# TEST-SCC: not yet
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

@@ -1,4 +1,31 @@
 #!/bin/bash
+################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
+################################################################################
+# This script was used in the polap version 0.3.7.3 or the polap1.
+# It used to print the main table1 in the manuscript.
+# Now, it is not used any more. But, we keep it for the record.
+# See Also:
+# run-polap-function-demo.sh
+# polap-revision1.sh
+# TODO: rename: polap-bash-report-table1.sh
+# TODO: it should be replaced by polap-data-aflye or polap-data-v1.sh
+################################################################################
+
 S=('Spirodela polyrhiza' 'Taraxacum mongolicum' 'Trifolium pratense' 'Salix dunnii' 'Anthoceros agrestis' 'Anthoceros angustus' 'Brassica rapa' 'Vigna radiata' 'Macadamia tetraphylla' 'Punica granatum' 'Lolium perenne')
 S=('Spirodela polyrhiza'
 	'Taraxacum mongolicum'

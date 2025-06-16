@@ -15,6 +15,17 @@
 ################################################################################
 
 ################################################################################
+# Polap subcommand, disassemble, assembles ptDNAs using a sampling approach.
+# 
+# See Also:
+# polap-function-disassemble-seeds.sh
+# polap-r-disassemble-man-benchmark-boxplots.R
+# run-polap-function-disassemble.sh
+# run-polap-r-disassemble-stats.R
+# run-polap-r-disassemble.R
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

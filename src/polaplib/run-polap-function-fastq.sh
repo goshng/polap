@@ -15,6 +15,11 @@
 ################################################################################
 
 ################################################################################
+# Do something about FASTQ files.
+# TODO: document the help message.
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
@@ -57,6 +62,12 @@ function _run_polap_fastq {
 # Inputs:
 #
 # Outputs:
+#
+# Menu:
+# view
+# sample
+# subsample
+# subsample2
 #
 # See:
 Example: $(basename $0) ${_arg_menu[0]}

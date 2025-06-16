@@ -14,6 +14,14 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# The following two scripts used to be used for archiving output files.
+# Now, we use rsync and archive template text file for archiving.
+# We could delete them later but leave them now.
+# polaplib/polap-package-common.sh
+# polaplib/polap-package-mtcontigs.sh
+################################################################################
+
 # Global option variables
 #
 # _arg_outdir

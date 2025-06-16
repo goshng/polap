@@ -15,6 +15,16 @@
 ################################################################################
 
 ################################################################################
+# Some of polap functions have multiple steps in its body.
+# We name such steps by numebrs and use if-statement to decide whether we
+# execute the step or not. 
+# It is used by polap's disassemble subcommand where we use steps and stages
+# to turn on and off different parts of the flow.
+# Try out by executing:
+# polap test-steps 
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

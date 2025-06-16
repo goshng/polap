@@ -15,6 +15,18 @@
 ################################################################################
 
 ################################################################################
+# Arichve polap results.
+# Polap creates many files with different sizes. 
+# Instead of saving particular result files, we save them by size limit.
+# We also use a text file, which has file paths to save even if they are
+# greater than the size limit.
+# See Also:
+# polaplib/polap-template-aflye-archive-files.txt
+# polaplib/polap-template-cflye-archive-files.txt
+# TEST-SCC: not yet
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

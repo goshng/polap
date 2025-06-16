@@ -14,6 +14,14 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# The following two scripts used to be used for archiving output files.
+# Now, we use rsync and archive template text file for archiving.
+# We could delete them later but leave them now.
+# polaplib/polap-package-common.sh
+# polaplib/polap-package-mtcontigs.sh
+################################################################################
+
 # common: mtcontigs
 local _ppack_var_ga_mtcontigs="${_ppack_var_ga}/51-mtcontigs"
 local _ppack_var_mtcontigs="${_ppack_var_ga}/51-mtcontigs/${_arg_knum}"

@@ -15,8 +15,16 @@
 ################################################################################
 
 ################################################################################
+# Print the version information of polap and its tools.
+# 
+# Example:
+# polap version
+# TODO: rename: polap-cmd-version.sh
+################################################################################
+
+################################################################################
 # Tip!
-# How to extract commands that were expected:
+# How to extract commands that were executed:
 # src/polap.sh reduce-data --redo -v -v -v 2>&1 | grep -E "^rm|^seqkit|^ln"
 ################################################################################
 
@@ -48,6 +56,11 @@ function print_version_history {
 		cat <<HEREDOC
 POLAP - Plant organelle DNA long-read assembly pipeline.
 version ${_polap_version}
+
+------
+v0.4.3
+------
+- Add disassemble subcommand for ptDNA assembly
 
 ------
 v0.3.8

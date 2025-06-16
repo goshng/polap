@@ -15,6 +15,16 @@
 ################################################################################
 
 ################################################################################
+# This script has functions that extract information from text files generated
+# by polap scripts.
+# Much of the input files are handled by polap's test scripts including
+# polap-data-v2.sh or polap-data-cflye script.
+# Polap is a bash shell script, which creates output files that are used for
+# other bash functions of the script. 
+# TEST-SCC: net-yet
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

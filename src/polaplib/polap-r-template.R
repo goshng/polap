@@ -16,6 +16,11 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# Copy this R template file to create a new R script that is used in polap.
+# The following template file provides argument processing.
+################################################################################
+
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))

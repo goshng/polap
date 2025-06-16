@@ -15,6 +15,14 @@
 ################################################################################
 
 ################################################################################
+# Polap writes activities in <out>/polap.log file.
+# This script defines various log functions.
+# See Also:
+# run-polap-function-template.sh
+# TODO: rename: polap-lib-log.sh
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

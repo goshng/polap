@@ -15,6 +15,13 @@
 ################################################################################
 
 ################################################################################
+# polap-lib-array.sh
+# We need a test code using this library.
+# A polap subcommand could be a good one for testing this code.
+# TEST-SCC: not-yet
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

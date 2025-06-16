@@ -15,6 +15,11 @@
 ################################################################################
 
 ################################################################################
+# Bash functions for monitoring system usage such as memory, CPU, storage
+# TEST-SCC: not yet
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
@@ -172,7 +177,7 @@ _polap_lib_process-end_memtracker() {
       s = elapsed % 60
       elapsed_str = sprintf("%02d:%02d:%02d (%.2f h)", h, m, s, elapsed / 3600)
 
-      print "🧠 Physical Memory Usage Summary:"                       > summary_file
+      print "Physical Memory Usage Summary:"                       > summary_file
       printf "Start used:      %d KB (%.2f GB)\n", start_used, start_used/1048576  >> summary_file
       printf "Peak used:       %d KB (%.2f GB)\n", peak_mem, peak_mem/1048576      >> summary_file
       printf "Net increase:    %d KB (%.2f GB)\n", delta_mem, delta_mem/1048576    >> summary_file
@@ -248,7 +253,7 @@ _polap_lib_process-analyze_memtracker_log() {
       s = elapsed % 60
       elapsed_str = sprintf("%02d:%02d:%02d (%.2f h)", h, m, s, elapsed / 3600)
 
-      print "🧠 Physical Memory Usage Summary:"                       > summary_file
+      print "Physical Memory Usage Summary:"                       > summary_file
       printf "Start used:      %d KB (%.2f GB)\n", start_used, start_used/1048576  >> summary_file
       printf "Peak used:       %d KB (%.2f GB)\n", peak_mem, peak_mem/1048576      >> summary_file
       printf "Net increase:    %d KB (%.2f GB)\n", delta_mem, delta_mem/1048576    >> summary_file

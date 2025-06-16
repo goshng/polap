@@ -14,6 +14,10 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# This script has functions for ptDNA contig seed selection.
+################################################################################
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
   return 1 2>/dev/null || exit 1

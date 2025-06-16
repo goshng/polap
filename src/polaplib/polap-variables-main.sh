@@ -14,6 +14,13 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# This script is included in the early part of the polap.sh script.
+# It initializes the output folder.
+# It also defines the log function.
+# Put something here that must be initialized early on.
+################################################################################
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
   return 1 2>/dev/null || exit 1

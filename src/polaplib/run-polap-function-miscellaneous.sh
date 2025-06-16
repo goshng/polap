@@ -15,6 +15,13 @@
 ################################################################################
 
 ################################################################################
+# Polap subcommands that are not hosted in any shell script.
+# NOTE: They are for internal use only.
+# But, help messages could be documented.
+# TODO: document help messages.
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

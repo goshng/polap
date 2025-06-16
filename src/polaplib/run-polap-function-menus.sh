@@ -15,6 +15,17 @@
 ################################################################################
 
 ################################################################################
+# Polap had a menu-interface where users select one to execute a particular
+# job. It comes from the version 0.3 and is not used much any more.
+# We use the menu for listing subcommands avaiable. It is like a file version
+# of bash completion by creating empty files with names that are the same as
+# the subcommands.
+# See Also:
+# bash completion source files
+# polap source-menu -> will source polap-command-completion.sh
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

@@ -15,6 +15,12 @@
 ################################################################################
 
 ################################################################################
+# Annotate edge sequences.
+# See Also:
+# polaplib/run-polap-function-annotate-contig.sh
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

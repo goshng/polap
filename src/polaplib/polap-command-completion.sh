@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# A bash command completion source file for polap3 command.
+# It is not working yet.
+
 _polap3_completions() {
 	local cur prev subcommand
 	cur="${COMP_WORDS[COMP_CWORD]}"

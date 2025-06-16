@@ -1,3 +1,6 @@
+# A bash command completion source file for polap-data-cflye.
+# It is not working yet.
+
 # polap-data-cflye.complete.sh
 # Bash completion for polap-data-cflye
 _polap_data_cflye_completions() {

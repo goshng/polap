@@ -73,7 +73,6 @@ source "${_POLAPLIB_DIR}/polap-lib-file.sh"
 source "${_POLAPLIB_DIR}/polap-lib-filepath.sh"
 source "${_POLAPLIB_DIR}/polap-lib-fastq.sh"
 source "${_POLAPLIB_DIR}/polap-lib-array.sh"
-source "${_POLAPLIB_DIR}/polap-lib-table.sh"
 source "${_POLAPLIB_DIR}/polap-lib-timing.sh"
 source "${_POLAPLIB_DIR}/polap-lib-number.sh"
 source "${_POLAPLIB_DIR}/polap-lib-ncbi.sh"
@@ -133,6 +132,7 @@ source "${_POLAPLIB_DIR}/run-polap-function-ncbixml.sh"
 source "${_POLAPLIB_DIR}/run-polap-function-config.sh"
 
 source "${_POLAPLIB_DIR}/polap-cmd-ptgaul.sh"
+# ADD A NEW SUBCOMMAND SOURCE HERE.
 
 ################################################################################
 # All of the variables at our disposal

@@ -15,6 +15,10 @@
 ################################################################################
 
 ################################################################################
+# Install FMLRC in polap-fmlrc conda environment.
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
@@ -50,16 +54,8 @@ function _run_polap_install {
 	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
-# Template for an external shell script
-#
-# Arguments:
-#
-# Inputs:
-#
-# Outputs:
-#
-Example: $(basename $0) ${_arg_menu[0]} fmlrc
-Example: $(basename $0) ${_arg_menu[0]} polishing
+# Install FMLRC in polap-fmlrc conda environment.
+Example: $(basename $0) ${_arg_menu[0]}
 HEREDOC
 	)
 

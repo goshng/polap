@@ -30,6 +30,11 @@ declare "$_POLAP_INCLUDE_=1"
 
 _polap_var_function_verbose=4
 
+# Each _run_polap_ function has these 3 lines to set the verbose level.
+# This source is intended to be used as a global so that each _run_polap_
+# function does not need to have these 3 lines.
+# However, it is not used much.
+#
 # Set verbosity level: stderr if verbose >= 2, otherwise discard output
 _polap_output_dest="/dev/null"
 [ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"

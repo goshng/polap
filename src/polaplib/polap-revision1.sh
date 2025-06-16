@@ -1,4 +1,29 @@
 #!/bin/bash
+################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
+################################################################################
+# This script was used in the polap version 0.3.7.3 or the polap1.
+# It is the main batch shell script.
+# See Also:
+# run-polap-function-demo.sh
+# polap-revision1.sh
+# TODO: rename: polap-bash-revision1.sh
+# TODO: it should be replaced by polap-data-aflye or polap-data-v1.sh
+################################################################################
 
 S=('Spirodela_polyrhiza' 'Taraxacum_mongolicum' 'Trifolium_pratense' 'Salix_dunnii' 'Anthoceros_agrestis' 'Anthoceros_angustus' 'Brassica_rapa' 'Vigna_radiata' 'Macadamia_tetraphylla' 'Punica_granatum' 'Lolium_perenne')
 

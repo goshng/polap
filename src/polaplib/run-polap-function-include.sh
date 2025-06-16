@@ -15,6 +15,11 @@
 ################################################################################
 
 ################################################################################
+# This script emulates the include in C.
+# It includes or sources a bash shell script only once.
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 SCRIPT_NAME="${BASH_SOURCE[0]}"
 SCRIPT_NAME=$(basename "${SCRIPT_NAME}")

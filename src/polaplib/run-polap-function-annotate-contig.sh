@@ -15,6 +15,15 @@
 ################################################################################
 
 ################################################################################
+# Annotate contigs not edge sequences.
+# See Also:
+# polaplib/run-polap-function-annotate.sh
+# TODO: delete this script in the future.
+# The edge sequence version in polaplib/run-polap-function-annotate.sh replaces
+# this script.
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

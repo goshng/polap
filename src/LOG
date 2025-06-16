@@ -1,29 +1,6 @@
-# Add a new subcommand to polap
+# 2025-06-16
 
-How to create a polap menu or subcommand:
-polap works with a subcommand. If you want to add a hello-world subcommand.
-
-1. Copy polaplib/polap-cmd-template.sh to create polaplib/polap-cmd-hello-world.sh
-2. Replace the function named \_run_polap_template with \_run_polap_hello-world.
-3. Find the line of 'ADD A NEW SUBCOMMAND SOURCE HERE' and add this line.
-   source "${\_POLAPLIB_DIR}/polap-cmd-hello-world.sh"
-4. A subcommand has 'help' menu; 'polap hello-world help' should display a message.
-5. A subcommand can be create using \_arg_menu[1] variable.
-
-# Script file structure
-
-polap.sh
-polaplib/polap-parsing.sh - commmand options
-polaplib/polap-variables-main.sh - variables defined before entering the subcommand
-
-polap-lib-xxx.sh - polap bash library
-polap-cmd-xxx.sh - subcommand scripts (New)
-run-polap-function-xxx.sh - subcommand scripts (Old)
-
-## Template files
-
-polap-cmd-template.sh
-polap-r-template.sh
+Replace README.md with LOG.
 
 # 2025-06-15
 

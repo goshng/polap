@@ -15,6 +15,19 @@
 ################################################################################
 
 ################################################################################
+# Polap has its main script called polap.sh and its testing scripts including
+# polap-data-v1.sh and polap-data-v2.sh. There are more such scripts with
+# similar names. But, they are extensively tested yet although they are used
+# for testing purpose.
+# These testing scripts, e.g., polap-data-v2.sh, have their own subcommands.
+# Common subcommands used by these testing scripts are placed in this script.
+# Such common subcommands include installation and execution of other tools.
+# See Also:
+# A helper script named polap-data-menu.sh can be used to add a new subcommand
+# for the testing scripts.
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

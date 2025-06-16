@@ -15,6 +15,12 @@
 ################################################################################
 
 ################################################################################
+# Subcommands for mtDNA or ptDNA sequences.
+# 1. compare two sequences by a pairwise alignment.
+# 2. fetch mtDNA or ptDNA sequences from the NCBI.
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")

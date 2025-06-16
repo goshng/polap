@@ -220,10 +220,35 @@ HEREDOC
 )
 
 ##### INSERT_HELP_HERE #####
+help_message_run_direct_select_oga=$(
+  cat <<HEREDOC
+
+  Select one of oga graphs.
+  outdir: species folder, outdir/t2/inum is the actual outdir.
+  inum: the number folder. outdir-inum is the key in the CSV config.
+  jnum: index of selected oga, out/1/05-flye/ptgaul-intra-base-length/<jnum>
+  tdir: t2 can be changed.
+HEREDOC
+)
+
+help_message_run_direct_bandage_oga=$(
+  cat <<HEREDOC
+
+  Create bandage graphs of oga result.
+  outdir: species folder, outdir/t2/inum is the actual outdir.
+  inum: the number folder. outdir-inum is the key in the CSV config.
+  tdir: t2 can be changed.
+  bandage: draw bandage graphs.
+HEREDOC
+)
+
 help_message_run_direct_oga=$(
   cat <<HEREDOC
 
   Perform an organelle-genome assembly.
+  outdir: species folder, outdir/t2/inum is the actual outdir.
+  inum: the number folder. outdir-inum is the key in the CSV config.
+  tdir: t2 can be changed.
 HEREDOC
 )
 
@@ -231,13 +256,21 @@ help_message_run_direct_wga=$(
   cat <<HEREDOC
 
   Perform a whole-genome assembly for seed contig selection.
+  outdir: species folder, outdir/t2/inum is the actual outdir.
+  inum: the number folder. outdir-inum is the key in the CSV config.
+  tdir: t2 can be changed.
 HEREDOC
 )
 
 help_message_run_direct_flye=$(
   cat <<HEREDOC
 
-  Execute Flye with directional reads.
+  Execute Flye with directional reads. (not tested yet)
+  outdir: species folder, outdir/t2/inum is the actual <out>.
+  inum: the number folder. outdir-inum is the key in the CSV config.
+  jnum: index of selected oga, <out>/<junm>
+  knum: index of selected oga, <out>/<kunm>
+  tdir: t2 can be changed.
 HEREDOC
 )
 
@@ -245,6 +278,11 @@ help_message_run_direct_read=$(
   cat <<HEREDOC
 
   Select reads for directional Flye run.
+  outdir: species folder, outdir/t2/inum is the actual <out>.
+  inum: the number folder. outdir-inum is the key in the CSV config.
+  jnum: index of selected oga, <out>/<junm>
+  knum: index of selected oga, <out>/<kunm>
+  tdir: t2 can be changed.
 HEREDOC
 )
 
@@ -252,6 +290,11 @@ help_message_run_direct_map=$(
   cat <<HEREDOC
 
   Map reads on directional seed contigs.
+  outdir: species folder, outdir/t2/inum is the actual <out>.
+  inum: the number folder. outdir-inum is the key in the CSV config.
+  jnum: index of selected oga, <out>/<junm>
+  knum: index of selected oga, <out>/<kunm>
+  tdir: t2 can be changed.
 HEREDOC
 )
 
@@ -259,6 +302,11 @@ help_message_run_direct_seed=$(
   cat <<HEREDOC
 
   Create directional seed contigs.
+  outdir: species folder, outdir/t2/inum is the actual <out>.
+  inum: the number folder. outdir-inum is the key in the CSV config.
+  jnum: index of selected oga, <out>/<junm>
+  knum: index of selected oga, <out>/<kunm>
+  tdir: t2 can be changed.
 HEREDOC
 )
 
@@ -1138,41 +1186,400 @@ EOF
 }
 
 ##### INSERT_FUNCTION_HERE #####
-run-direct-oga_genus_species() {
-  local _brg_outdir="${1:-all}"
+run-direct-bandage-oga_genus_species() {
+  local _brg_outdir="${1}"
   local _brg_inum="${2:-0}"
+  local _brg_adir="${3:-t2}"
+  local _brg_bandage="${4:-bandage}"
+  local _run_title="run-direct-bandage-oga"
+
+  local target_index="${_brg_outdir}-${_brg_inum}"
+  # Check the key exists in the CSV config.
+  local long_sra="${_long["$target_index"]}"
+  if [[ -z "$long_sra" ]]; then
+    echo "Error: skipping ${_brg_outdir}-${_brg_inum} because it is not in the CSV."
+    return
+  fi
+  local extracted_range="${_range["$target_index"]//:/,}"
+  local extracted_min_read="${_min_read["$target_index"]}"
+  local _outdir="${_brg_outdir}"-"${_brg_inum}"
+  local _brg_outdir_i="${_brg_outdir}/${_brg_adir}/${_brg_inum}"
+  local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+  # debug local variables
+  # for debugging: Inline local printing local var
+  while IFS= read -r line; do
+    if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
+      var="${BASH_REMATCH[1]}"
+      printf "%s=%q\n" "$var" "${!var}"
+    fi
+  done < <(local -p 2>/dev/null)
+
+  echo "A: ${extracted_range}"
+
+  # We fix the j to be 1.
+  # Test_species-0/t2/0/1/05-flye/ptgaul-intra-base-length/X-graph_final.gfa
+  # outdir/1/05-flye/ptgaul-intra-base-length/X-graph_final.gfa
+  # outdir/1/01-contig/ptgaul-intra-base-length.txt
+  local index_txt="${_outdir}"/1/01-contig/ptgaul-intra-base-length.txt
+  cat "${index_txt}"
+  local w_values=()
+  read -a w_values <"${index_txt}"
+
+  for i in "${w_values[@]}"; do
+    echo "$i"
+  done
+
+  local _base_figure="."
+  local _fc=1
+  local _species=Species
+  local _brg_csv="1.csv"
+
+  for ((i = 0; i < ${#w_values[@]}; i++)); do
+    local _gfa_infer="${_outdir}/1/05-flye/ptgaul-intra-base-length/$i-graph_final.gfa"
+    local _png_infer="${_outdir}/1/05-flye/ptgaul-intra-base-length/$i-graph_final.png"
+    if [[ -s "${_gfa_infer}" ]]; then
+      # echo "gfa file: ${_gfa_infer}"
+      if [[ "${_brg_bandage}" == "bandage" ]]; then
+        ${_polap_cmd} bandage png \
+          ${_gfa_infer} \
+          ${_png_infer}
+      fi
+      printf "%s,%s,%s,%s\n" "${_run_title}" "${_species}" "${_fc}" "${_base_figure}/${_png_infer}" >>"${_brg_csv}"
+
+    else
+      printf "%s,%s,%s,%s\n" "${_run_title}" "${_species}" "${_fc}" "${_base_figure}/na.png" >>"${_brg_csv}"
+
+    fi
+  done
+
+  return
 }
 
 run-direct-wga_genus_species() {
-  local _brg_outdir="${1:-all}"
+  local _brg_outdir="${1}"
   local _brg_inum="${2:-0}"
+  local _brg_adir="${3:-t2}"
+  local _brg_title="run-direct-wga"
 
-  polap-analysis-wga_genus_species "${_brg_outdir}" "${_brg_inum}" t2 off
+  polap-analysis-wga_genus_species "${_brg_outdir}" "${_brg_inum}" "${_brg_adir}" off
 }
 
-run-direct-flye_genus_species() {
-  local _brg_outdir="${1:-all}"
+run-direct-oga_genus_species() {
+  local _brg_outdir="${1}"
   local _brg_inum="${2:-0}"
+  local _brg_adir="${3:-t2}"
+  local _brg_title="run-direct-oga"
+
+  local target_index="${_brg_outdir}-${_brg_inum}"
+  # Check the key exists in the CSV config.
+  local long_sra="${_long["$target_index"]}"
+  if [[ -z "$long_sra" ]]; then
+    echo "Error: skipping ${_brg_outdir}-${_brg_inum} because it is not in the CSV."
+    return
+  fi
+  local extracted_range="${_range["$target_index"]//:/,}"
+  local extracted_min_read="${_min_read["$target_index"]}"
+  local _outdir="${_brg_outdir}"-"${_brg_inum}"
+  local _brg_outdir_i="${_brg_outdir}/${_brg_adir}/${_brg_inum}"
+  local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+  # Prepare the input data files
+  # if [[ ! -d "${_outdir}" ]]; then
+  #   rsync -azuq "${_brg_outdir_i}"/ "${_outdir}"/
+  # fi
+
+  _polap_lib_conda-ensure_conda_env polap || exit 1
+
+  local _timing_txt="${_brg_outdir_i}/timing-${_brg_title}.txt"
+  local _stdout_txt="${_brg_outdir_i}/stdout-${_brg_title}.txt"
+  mkdir -p "${_brg_outdir_i}"
+  local _memlog_file="${_brg_outdir_i}/memlog-${_brg_title}.csv"
+  local _summary_file="${_brg_outdir_i}/summary-${_brg_title}.txt"
+  rm -f "${_timing_txt}"
+  rm -f "${_stdout_txt}"
+
+  echo "[INFO] Starting an organelle-genome assembly pipeline on ${_brg_outdir}-${_brg_inum} on a range of omega values: ${extracted_range} and minimum read length of ${extracted_min_read}"
+
+  # Start memory logger
+  _polap_lib_process-start_memtracker "${_memlog_file}" \
+    "${_polap_var_memtracker_time_interval}"
+
+  local _inum=0
+  for j in {1..9}; do
+    _brg_jnum=$((_inum + j))
+    if [[ -s "${_outdir}/${_inum}/mt.contig.name-${_brg_jnum}" ]]; then
+      command time -v "${_polap_cmd}" assemble-wrange \
+        -o "${_outdir}" \
+        -i "${_inum}" \
+        -j "${_brg_jnum}" \
+        -s "${extracted_range}" \
+        -m "${extracted_min_read}" \
+        >>"${_stdout_txt}" \
+        2>>"${_timing_txt}"
+    fi
+  done
+
+  # Summarize results after job (with previously defined summary function)
+  _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+
+  conda deactivate
+
+  _polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+  # rsync -azuq --max-size=100M "${_outdir}"/ "${_brg_outdir_i}"/
+  # rm -rf "${_outdir_assemble2}"
 }
 
-run-direct-read_genus_species() {
-  local _brg_outdir="${1:-all}"
+run-direct-select-oga_genus_species() {
+  local _brg_outdir="${1}"
   local _brg_inum="${2:-0}"
-}
+  local _brg_jnum="${3:-0}"
+  local _brg_adir="${4:-t2}"
+  local _brg_title="run-direct-select-oga"
 
-run-direct-map_genus_species() {
-  local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-0}"
+  local target_index="${_brg_outdir}-${_brg_inum}"
+  # Check the key exists in the CSV config.
+  local long_sra="${_long["$target_index"]}"
+  if [[ -z "$long_sra" ]]; then
+    echo "Error: skipping ${_brg_outdir}-${_brg_inum} because it is not in the CSV."
+    return
+  fi
+  local extracted_range="${_range["$target_index"]//:/,}"
+  local extracted_min_read="${_min_read["$target_index"]}"
+  local _outdir="${_brg_outdir}"-"${_brg_inum}"
+  local _brg_outdir_i="${_brg_outdir}/${_brg_adir}/${_brg_inum}"
+  local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+  # debug local variables
+  # for debugging: Inline local printing local var
+  while IFS= read -r line; do
+    if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
+      var="${BASH_REMATCH[1]}"
+      printf "%s=%q\n" "$var" "${!var}"
+    fi
+  done < <(local -p 2>/dev/null)
+
+  echo "A: ${extracted_range}"
+
+  # We fix the j to be 1.
+  # Test_species-0/t2/0/1/05-flye/ptgaul-intra-base-length/X-graph_final.gfa
+  # outdir/1/05-flye/ptgaul-intra-base-length/X-graph_final.gfa
+  # outdir/1/01-contig/ptgaul-intra-base-length.txt
+  local index_txt="${_outdir}"/1/01-contig/ptgaul-intra-base-length.txt
+  cat "${index_txt}"
+  local w_values=()
+  read -a w_values <"${index_txt}"
+
+  for i in "${w_values[@]}"; do
+    echo "$i"
+  done
+
+  local _base_figure="."
+  local _fc=1
+  local _species=Species
+  local _brg_csv="1.csv"
+
+  local i="${_brg_jnum}"
+  rm -rf "${_outdir}/1/30-contigger"
+  cp -pr "${_outdir}/1/05-flye/ptgaul-intra-base-length/$i/30-contigger" "${_outdir}/1"
+  cp -pr "${_outdir}/1/05-flye/ptgaul-intra-base-length/$i/30-contigger/graph_final.gfa" \
+    "${_outdir}/1/assembly_graph.gfa"
+  echo $i >"${_outdir}/1/30-contigger/index.txt"
 }
 
 run-direct-seed_genus_species() {
   local _brg_outdir="${1}"
   local _brg_inum="${2:-0}"
+  local _brg_jnum="${3:-1}"
+  local _brg_knum="${4:-2}"
+  local _brg_adir="${5:-t2}"
+  local _brg_title="run-direct-seed"
+
+  local target_index="${_brg_outdir}-${_brg_inum}"
+  # Check the key exists in the CSV config.
+  local long_sra="${_long["$target_index"]}"
+  if [[ -z "$long_sra" ]]; then
+    echo "Error: skipping ${_brg_outdir}-${_brg_inum} because it is not in the CSV."
+    return
+  fi
+  local extracted_range="${_range["$target_index"]//:/,}"
+  local extracted_min_read="${_min_read["$target_index"]}"
+  local _outdir="${_brg_outdir}"-"${_brg_inum}"
+  local _brg_outdir_i="${_brg_outdir}/${_brg_adir}/${_brg_inum}"
+  local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+  # debug local variables
+  # for debugging: Inline local printing local var
+  while IFS= read -r line; do
+    if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
+      var="${BASH_REMATCH[1]}"
+      printf "%s=%q\n" "$var" "${!var}"
+    fi
+  done < <(local -p 2>/dev/null)
+
+  echo "A: ${extracted_range}"
+
+  local i="${_brg_jnum}"
+  rm -rf "${_outdir}/1/30-contigger"
+  cp -pr "${_outdir}/1/05-flye/ptgaul-intra-base-length/$i/30-contigger" "${_outdir}/1"
+  echo $i >"${_outdir}/1/30-contigger/index.txt"
+
+  _polap_lib_conda-ensure_conda_env polap || exit 1
 
   # mt.contig.name-1 with plus/minus signed edge_<number>[+-]
-  echo ${_polap_cmd} directional-prepare-seeds \
-    -o ${_brg_outdir}/o ${_brg_inum} \
-    -i 1 -j 2
+  ${_polap_cmd} directional-prepare-seeds \
+    -o ${_outdir} \
+    -i "${_brg_jnum}" -j "${_brg_knum}"
+
+  conda deactivate
+}
+
+run-direct-map_genus_species() {
+  local _brg_outdir="${1}"
+  local _brg_inum="${2:-0}"
+  local _brg_jnum="${3:-1}"
+  local _brg_knum="${4:-2}"
+  local _brg_adir="${5:-t2}"
+  local _brg_title="run-direct-map"
+
+  local target_index="${_brg_outdir}-${_brg_inum}"
+  # Check the key exists in the CSV config.
+  local long_sra="${_long["$target_index"]}"
+  if [[ -z "$long_sra" ]]; then
+    echo "Error: skipping ${_brg_outdir}-${_brg_inum} because it is not in the CSV."
+    return
+  fi
+  local extracted_range="${_range["$target_index"]//:/,}"
+  local extracted_min_read="${_min_read["$target_index"]}"
+  local _outdir="${_brg_outdir}"-"${_brg_inum}"
+  local _brg_outdir_i="${_brg_outdir}/${_brg_adir}/${_brg_inum}"
+  local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+  # debug local variables
+  # for debugging: Inline local printing local var
+  while IFS= read -r line; do
+    if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
+      var="${BASH_REMATCH[1]}"
+      printf "%s=%q\n" "$var" "${!var}"
+    fi
+  done < <(local -p 2>/dev/null)
+
+  echo "A: ${extracted_range}"
+
+  local i="${_brg_jnum}"
+  rm -rf "${_outdir}/1/30-contigger"
+  cp -pr "${_outdir}/1/05-flye/ptgaul-intra-base-length/$i/30-contigger" "${_outdir}/1"
+  echo $i >"${_outdir}/1/30-contigger/index.txt"
+
+  _polap_lib_conda-ensure_conda_env polap || exit 1
+
+  # mt.contig.name-1 with plus/minus signed edge_<number>[+-]
+  ${_polap_cmd} directional-map-reads \
+    -o ${_outdir} \
+    -i "${_brg_jnum}" -j "${_brg_knum}"
+
+  conda deactivate
+}
+
+run-direct-read_genus_species() {
+  local _brg_outdir="${1}"
+  local _brg_inum="${2:-0}"
+  local _brg_jnum="${3:-1}"
+  local _brg_knum="${4:-2}"
+  local _brg_adir="${5:-t2}"
+  local _brg_title="run-direct-read"
+
+  local target_index="${_brg_outdir}-${_brg_inum}"
+  # Check the key exists in the CSV config.
+  local long_sra="${_long["$target_index"]}"
+  if [[ -z "$long_sra" ]]; then
+    echo "Error: skipping ${_brg_outdir}-${_brg_inum} because it is not in the CSV."
+    return
+  fi
+  local extracted_range="${_range["$target_index"]//:/,}"
+  local extracted_min_read="${_min_read["$target_index"]}"
+  local _outdir="${_brg_outdir}"-"${_brg_inum}"
+  local _brg_outdir_i="${_brg_outdir}/${_brg_adir}/${_brg_inum}"
+  local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+  # debug local variables
+  # for debugging: Inline local printing local var
+  while IFS= read -r line; do
+    if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
+      var="${BASH_REMATCH[1]}"
+      printf "%s=%q\n" "$var" "${!var}"
+    fi
+  done < <(local -p 2>/dev/null)
+
+  echo "A: ${extracted_range}"
+
+  local i="${_brg_jnum}"
+  rm -rf "${_outdir}/1/30-contigger"
+  cp -pr "${_outdir}/1/05-flye/ptgaul-intra-base-length/$i/30-contigger" "${_outdir}/1"
+  echo $i >"${_outdir}/1/30-contigger/index.txt"
+
+  _polap_lib_conda-ensure_conda_env polap || exit 1
+
+  ${_polap_cmd} directional-select-reads \
+    -o ${_outdir} \
+    -i "${_brg_jnum}" -j "${_brg_knum}" \
+    -s "${extracted_range}"
+
+  conda deactivate
+}
+
+run-direct-flye_genus_species() {
+  local _brg_outdir="${1}"
+  local _brg_inum="${2:-0}"
+  local _brg_jnum="${3:-1}"
+  local _brg_knum="${4:-2}"
+  local _brg_adir="${5:-t2}"
+  local _brg_title="run-direct-flye"
+
+  local target_index="${_brg_outdir}-${_brg_inum}"
+  # Check the key exists in the CSV config.
+  local long_sra="${_long["$target_index"]}"
+  if [[ -z "$long_sra" ]]; then
+    echo "Error: skipping ${_brg_outdir}-${_brg_inum} because it is not in the CSV."
+    return
+  fi
+  local extracted_range="${_range["$target_index"]//:/,}"
+  local extracted_min_read="${_min_read["$target_index"]}"
+  local _outdir="${_brg_outdir}"-"${_brg_inum}"
+  local _brg_outdir_i="${_brg_outdir}/${_brg_adir}/${_brg_inum}"
+  local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+  # debug local variables
+  # for debugging: Inline local printing local var
+  while IFS= read -r line; do
+    if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
+      var="${BASH_REMATCH[1]}"
+      printf "%s=%q\n" "$var" "${!var}"
+    fi
+  done < <(local -p 2>/dev/null)
+
+  echo "A: ${extracted_range}"
+
+  local i="${_brg_jnum}"
+  rm -rf "${_outdir}/1/30-contigger"
+  cp -pr "${_outdir}/1/05-flye/ptgaul-intra-base-length/$i/30-contigger" "${_outdir}/1"
+  echo $i >"${_outdir}/1/30-contigger/index.txt"
+
+  _polap_lib_conda-ensure_conda_env polap-dflye || exit 1
+
+  ${_polap_cmd} directional-flye-reads \
+    -o ${_outdir} \
+    -i "${_brg_jnum}" -j "${_brg_knum}"
+
+  # range from file
+  # -s "${extracted_range}"
+
+  # ${_polap_cmd} directional-flye-reads \
+  #   -o ${_brg_outdir}/o \
+  #   -i 1 -j 2
+  conda deactivate
+
 }
 
 run-direct_genus_species() {
@@ -1534,9 +1941,17 @@ help_genus_species() {
   local _brg_outdir="${1}"
 
   local subcmd1="${_brg_outdir}"
-  _subcmd1_clean="${subcmd1//-/_}"
-  declare -n ref="help_message_${_subcmd1_clean}"
-  echo "$ref"
+  local _subcmd1_clean="${subcmd1//-/_}"
+
+  local target_var="help_message_${_subcmd1_clean}"
+
+  if declare -p "$target_var" &>/dev/null; then
+    declare -n ref="$target_var"
+    echo "$ref"
+  else
+    echo "[ERROR] No such polap help or subcommand: $subcmd1" >&2
+  fi
+
 }
 
 setup-fmlrc2_genus_species() {
@@ -2210,16 +2625,7 @@ run-summary-data_genus_species() {
   local short_sra="${_short["$target_index"]}"
 
   # Activate a conda environment
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    echo "[INFO] Activating conda environment 'polap'..."
-    conda activate polap
-  fi
-
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-    echo "[ERROR] Failed to enter conda environment 'polap'"
-    return
-  fi
+  _polap_lib_conda-ensure_conda_env polap || exit 1
 
   # Files for memtracker
   local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
@@ -3671,6 +4077,9 @@ run_genus_species() {
   local first_arg="$1"
   local remaining_args=("${@:2}")
 
+  # Remove trailing slash from the first element
+  remaining_args[0]="${remaining_args[0]%/}"
+
   run-${first_arg}_genus_species "${remaining_args[@]}"
 }
 
@@ -3880,6 +4289,8 @@ install-dflye_genus_species() {
         echo "ERROR: Conda environment 'polap-dflye' already exists."
       else
         conda create -y --name polap-dflye goshng::dflye
+        conda activate polap-dflye
+        conda install -y flye=2.9.5
       fi
     else
       echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
@@ -4379,8 +4790,10 @@ polap-analysis-wga_genus_species_for() {
   local _brg_inum="${2:-0}"
   local _brg_adir="${3:-.}"
   local _brg_plastid="${4:-off}"
+  local _brg_test="${5:-off}"
   local _brg_title="polalp-analysis-wga"
 
+  local _brg_outdir="${_brg_outdir%/}"
   local target_index="${_brg_outdir}-${_brg_inum}"
   local _brg_outdir_i="${_brg_outdir}/${_brg_adir}/${_brg_inum}"
   local long_sra="${_long["$target_index"]}"
@@ -4395,16 +4808,20 @@ polap-analysis-wga_genus_species_for() {
 
   echo "[INFO] Starting polap analysis WGA pipeline on ${_brg_outdir}-${_brg_inum} at dir:${_brg_outdir}/${_brg_adir}"
 
-  # Start memory logger
-  _polap_lib_process-start_memtracker "${_memlog_file}" \
-    "${_polap_var_memtracker_time_interval}"
+  if [[ "${opt_f_flag}" == "true" ]]; then
+    # Start memory logger
+    _polap_lib_process-start_memtracker "${_memlog_file}" \
+      "${_polap_var_memtracker_time_interval}"
+  fi
 
   polap-analysis-data_genus_species "${_brg_outdir}"
-  polap-analysis-reduce_genus_species "${_brg_outdir}" "${_brg_inum}" "${_brg_adir}"
+  polap-analysis-reduce_genus_species "${_brg_outdir}" "${_brg_inum}" "${_brg_adir}" 0
   polap-analysis-assemble1_genus_species "${_brg_outdir}" "${_brg_inum}" "${_brg_adir}" "${_brg_plastid}"
 
-  # Summarize results after job (with previously defined summary function)
-  _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+  if [[ "${opt_f_flag}" == "true" ]]; then
+    # Summarize results after job (with previously defined summary function)
+    _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+  fi
 
   echo "[INFO] End polap analysis WGA pipeline on ${_brg_outdir}-${_brg_inum} at dir:${_brg_outdir}/${_brg_adir}"
 }
@@ -4414,6 +4831,8 @@ polap-analysis-wga_genus_species() {
   local _brg_inum="${2:-0}"
   local _brg_adir="${3:-.}"
   local _brg_plastid="${4:-off}"
+
+  local _brg_outdir="${_brg_outdir%/}"
 
   if [[ "${_brg_outdir}" == "all" ]]; then
     for _v1 in "${Sall[@]}"; do
@@ -4872,24 +5291,14 @@ polap-analysis-assemble2_genus_species() {
   rsync -azuq "${_brg_outdir_i}"/ "${_outdir}"/
 
   _polap_lib_conda-ensure_conda_env polap || exit 1
-  # source "$(conda info --base)/etc/profile.d/conda.sh"
-  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-  # 	echo "[INFO] Activating conda environment 'polap'..."
-  # 	conda activate polap
-  # fi
-  #
-  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-  # 	echo "[ERROR] Failed to enter conda environment 'polap'"
-  # 	return
-  # fi
 
   local _timing_txt="${_brg_outdir_i}/timing-${_brg_title}.txt"
   local _stdout_txt="${_brg_outdir_i}/stdout-${_brg_title}.txt"
   mkdir -p "${_brg_outdir_i}"
   local _memlog_file="${_brg_outdir_i}/memlog-${_brg_title}.csv"
   local _summary_file="${_brg_outdir_i}/summary-${_brg_title}.txt"
-  rm -rf "${_timing_txt}"
-  rm -rf "${_stdout_txt}"
+  rm -f "${_timing_txt}"
+  rm -f "${_stdout_txt}"
 
   echo "[INFO] Starting an organelle-genome assembly pipeline on ${_brg_outdir}-${_brg_inum}"
 
@@ -4910,11 +5319,6 @@ polap-analysis-assemble2_genus_species() {
     fi
   done
 
-  # Record the computer system info
-  # echo "hostname: $(hostname)" >>"${_timing_txt}"
-  # free -h >>"${_timing_txt}"
-  # lscpu >>"${_timing_txt}"
-
   # Summarize results after job (with previously defined summary function)
   _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
 
@@ -4931,6 +5335,7 @@ polap-analysis-assemble1_genus_species() {
   local _brg_inum="${2:-0}"
   local _brg_adir="${3:-.}"
   local _brg_plastid="${4:-off}"
+  local _brg_test="${5}"
   local _brg_title="polap-analysis-assemble1"
 
   local target_index="${_brg_outdir}-${_brg_inum}"
@@ -4967,9 +5372,11 @@ polap-analysis-assemble1_genus_species() {
 
   echo "[INFO] Starting a whole-genome assembly pipeline on ${_brg_outdir}-${_brg_inum}"
 
-  # Start memory logger
-  _polap_lib_process-start_memtracker "${_memlog_file}" \
-    "${_polap_var_memtracker_time_interval}"
+  if [[ "${opt_f_flag}" == "true" ]]; then
+    # Start memory logger
+    _polap_lib_process-start_memtracker "${_memlog_file}" \
+      "${_polap_var_memtracker_time_interval}"
+  fi
 
   command time -v "${_polap_cmd}" flye1 \
     -o "${_outdir}" \
@@ -5004,8 +5411,10 @@ polap-analysis-assemble1_genus_species() {
   free -h >>"${_timing_txt}"
   lscpu >>"${_timing_txt}"
 
-  # Summarize results after job (with previously defined summary function)
-  _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+  if [[ "${opt_f_flag}" == "true" ]]; then
+    # Summarize results after job (with previously defined summary function)
+    _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+  fi
 
   conda deactivate
 
@@ -5018,6 +5427,7 @@ polap-analysis-reduce_genus_species() {
   local _brg_inum="${2:-0}"
   local _brg_adir="${3:-.}"
   local _brg_coverage="${4:-0}"
+  local _brg_test="${5}"
   local _brg_title="polap-analysis-reduce"
 
   local target_index="${_brg_outdir}-${_brg_inum}"
@@ -5035,16 +5445,6 @@ polap-analysis-reduce_genus_species() {
   local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
 
   _polap_lib_conda-ensure_conda_env polap || exit 1
-  # source "$(conda info --base)/etc/profile.d/conda.sh"
-  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-  # 	# echo "[INFO] Activating conda environment 'polap'..."
-  # 	conda activate polap
-  # fi
-  #
-  # if [[ "${CONDA_DEFAULT_ENV:-}" != "polap" ]]; then
-  # 	echo "[ERROR] Failed to enter conda environment 'polap'"
-  # 	return
-  # fi
 
   local _timing_txt="${_brg_outdir_i}/timing-${_brg_title}.txt"
   local _stdout_txt="${_brg_outdir_i}/stdout-${_brg_title}.txt"
@@ -5058,9 +5458,11 @@ polap-analysis-reduce_genus_species() {
 
   echo "[INFO] Starting data reduction pipeline on ${_brg_outdir}-${_brg_inum} with ${_brg_coverage}x depth"
 
-  # Start memory logger
-  _polap_lib_process-start_memtracker "${_memlog_file}" \
-    "${_polap_var_memtracker_time_interval}"
+  if [[ "${opt_f_flag}" == "true" ]]; then
+    # Start memory logger
+    _polap_lib_process-start_memtracker "${_memlog_file}" \
+      "${_polap_var_memtracker_time_interval}"
+  fi
 
   # Run your command
   command time -v "${_polap_cmd}" assemble1 \
@@ -5074,8 +5476,10 @@ polap-analysis-reduce_genus_species() {
     >"${_stdout_txt}" \
     2>"${_timing_txt}"
 
-  # Summarize results after job (with previously defined summary function)
-  _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+  if [[ "${opt_f_flag}" == "true" ]]; then
+    # Summarize results after job (with previously defined summary function)
+    _polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+  fi
 
   conda deactivate
 
@@ -5818,6 +6222,12 @@ function _polap_lib_data-execute-common-subcommand {
     handled=1
     ;;
     ##### INSERT_COMMAND_HERE #####
+  run-direct-select-oga)
+    handled=1
+    ;;
+  run-direct-bandage-oga)
+    handled=1
+    ;;
   run-direct-oga)
     handled=1
     ;;
@@ -6345,10 +6755,32 @@ function _polap_lib_data-execute-common-subcommand {
       echo "${help_message_install_bolap}"
     fi
     ;;
-    ##### INSERT_CASE_HERE #####
+  ##### INSERT_CASE_HERE #####
+  run-direct-select-oga)
+    if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+      echo "Help: ${subcmd1} <outdir> [inum:0|N] [jnum:0] [adir:t2]"
+      echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+      _subcmd1_clean="${subcmd1//-/_}"
+      declare -n ref="help_message_${_subcmd1_clean}"
+      echo "$ref"
+      exit 0
+    fi
+    ${subcmd1}_genus_species "${cmd_args_ref[@]}"
+    ;;
+  run-direct-bandage-oga)
+    if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+      echo "Help: ${subcmd1} <outdir> [inum:0|N] [adir:t2] [bandage|off]"
+      echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+      _subcmd1_clean="${subcmd1//-/_}"
+      declare -n ref="help_message_${_subcmd1_clean}"
+      echo "$ref"
+      exit 0
+    fi
+    ${subcmd1}_genus_species "${cmd_args_ref[@]}"
+    ;;
   run-direct-oga)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-      echo "Help: ${subcmd1} <outdir> [inum:0|N]"
+      echo "Help: ${subcmd1} <outdir> [inum:0|N] [adir:t2]"
       echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
       _subcmd1_clean="${subcmd1//-/_}"
       declare -n ref="help_message_${_subcmd1_clean}"
@@ -6359,7 +6791,7 @@ function _polap_lib_data-execute-common-subcommand {
     ;;
   run-direct-wga)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-      echo "Help: ${subcmd1} <outdir> [inum:0|N]"
+      echo "Help: ${subcmd1} <outdir> [inum:0|N] [adir:t2]"
       echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
       _subcmd1_clean="${subcmd1//-/_}"
       declare -n ref="help_message_${_subcmd1_clean}"
@@ -6370,7 +6802,7 @@ function _polap_lib_data-execute-common-subcommand {
     ;;
   run-direct-flye)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-      echo "Help: ${subcmd1} <outdir> [inum:0|N]"
+      echo "Help: ${subcmd1} <outdir> [inum:0|N] [jnum:1|N] [knum:2|N] [adir:t2]"
       echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
       _subcmd1_clean="${subcmd1//-/_}"
       declare -n ref="help_message_${_subcmd1_clean}"
@@ -6381,7 +6813,7 @@ function _polap_lib_data-execute-common-subcommand {
     ;;
   run-direct-read)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-      echo "Help: ${subcmd1} <outdir> [inum:0|N]"
+      echo "Help: ${subcmd1} <outdir> [inum:0|N] [jnum:1|N] [knum:2|N] [adir:t2]"
       echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
       _subcmd1_clean="${subcmd1//-/_}"
       declare -n ref="help_message_${_subcmd1_clean}"
@@ -6392,7 +6824,7 @@ function _polap_lib_data-execute-common-subcommand {
     ;;
   run-direct-map)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-      echo "Help: ${subcmd1} <outdir> [inum:0|N]"
+      echo "Help: ${subcmd1} <outdir> [inum:0|N] [jnum:1|N] [knum:2|N] [adir:t2]"
       echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
       _subcmd1_clean="${subcmd1//-/_}"
       declare -n ref="help_message_${_subcmd1_clean}"
@@ -6403,7 +6835,7 @@ function _polap_lib_data-execute-common-subcommand {
     ;;
   run-direct-seed)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-      echo "Help: ${subcmd1} <outdir> [inum:0|N]"
+      echo "Help: ${subcmd1} <outdir> [inum:0|N] [jnum:1|N] [knum:2|N] [adir:t2]"
       echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
       _subcmd1_clean="${subcmd1//-/_}"
       declare -n ref="help_message_${_subcmd1_clean}"
@@ -6555,8 +6987,8 @@ function _polap_lib_data-execute-common-subcommand {
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
       echo "Help: ${subcmd1} [command]"
       echo "  $(basename ${0}) ${subcmd1} install"
-      _subcmd1_clean="${subcmd1//-/_}"
-      declare -n ref="help_message_${_subcmd1_clean}"
+      _subcmd1_clean="help_message_${subcmd1//-/_}"
+      declare -n ref="${_subcmd1_clean}"
       echo "$ref"
       exit 0
     fi
@@ -6959,7 +7391,7 @@ function _polap_lib_data-execute-common-subcommand {
     ;;
   polap-analysis-wga)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-      echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|string] [plastid:off|on]"
+      echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|string] [plastid:off|on] [test:off|on|test]"
       echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
       _subcmd1_clean="${subcmd1//-/_}"
       declare -n ref="help_message_${_subcmd1_clean}"
@@ -6969,7 +7401,8 @@ function _polap_lib_data-execute-common-subcommand {
     [[ "${_arg3}" == arg3 ]] && _arg3="0"
     [[ "${_arg4}" == arg4 ]] && _arg4="."
     [[ "${_arg5}" == arg5 ]] && _arg5="off"
-    ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
+    [[ "${_arg6}" == arg6 ]] && _arg6="off"
+    ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}"
     ;;
   nextdenovo-polish)
     if [[ "${_arg2}" == arg2 ]]; then
@@ -7065,7 +7498,7 @@ function _polap_lib_data-execute-common-subcommand {
     ;;
   polap-analysis-assemble1)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-      echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|string] [plastid:off|on]"
+      echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|string] [plastid:off|on] [test:off|on|test]"
       echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
       _subcmd1_clean="${subcmd1//-/_}"
       declare -n ref="help_message_${_subcmd1_clean}"
@@ -7079,7 +7512,7 @@ function _polap_lib_data-execute-common-subcommand {
     ;;
   polap-analysis-reduce)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-      echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|t1|string] [coverage:0|N]"
+      echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|t1|string] [coverage:0|N] [test:off|on|test]"
       echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
       _subcmd1_clean="${subcmd1//-/_}"
       declare -n ref="help_message_${_subcmd1_clean}"
@@ -7089,7 +7522,8 @@ function _polap_lib_data-execute-common-subcommand {
     [[ "${_arg3}" == arg3 ]] && _arg3="0"
     [[ "${_arg4}" == arg4 ]] && _arg4="."
     [[ "${_arg5}" == arg5 ]] && _arg5="0"
-    ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
+    [[ "${_arg6}" == arg6 ]] && _arg6="off"
+    ${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}"
     ;;
   rsync)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then

@@ -56,6 +56,11 @@ _polap_lib_process-start_memtracker() {
   local log_file="$1"
   local interval="${2:-60}"
 
+  # This function runs only if opt_f_flag is defined to be other than false.
+  if [[ "${opt_f_flag:-false}" == "false" ]]; then
+    return
+  fi
+
   # input: "/a/b/c/memlog-msbwt-node.csv"
   # output: msbwt-node
   local run_title="${log_file##*/}"
@@ -105,6 +110,12 @@ _polap_lib_process-end_memtracker() {
   local log_file="$1"
   local summary_base="${2:-memtrack-summary.txt}"
   local _arg_verbose="${3:-no_verbose}"
+
+  # This function runs only if opt_f_flag is defined to be other than false.
+  if [[ "${opt_f_flag:-false}" == "false" ]]; then
+    return
+  fi
+
   local timestamp
   timestamp=$(date +"%Y%m%d_%H%M")
   local summary_file="${summary_base}.${timestamp}.txt"

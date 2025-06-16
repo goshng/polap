@@ -93,6 +93,8 @@ polap-data-cflye is a tool for data analysis of subsampling-based plastid genome
 options:
   -h, --help          Show this help message and exit.
   -y                  Enable -y flag to say YES to any question.
+  -v                  Enable verbose mode.
+  -f (--no-f)         Enable -f flag to say YES to profiling (not tested yet).
   -c <arg>            Set value for -c option (default: off)
   -t <arg>            Set value for -t option (default: t1)
   -m <arg>            Set value for -m option figure folder (default: ${_brg_default_target_dir})
@@ -332,10 +334,16 @@ opt_t_arg="t1"
 opt_m_arg="off"
 opt_v_flag=false
 opt_y_flag=false
+# opt_f_flag=false not tested yet, so always true for the time being
+opt_f_flag=true
 opt_e_arg=""
 
 print_help() {
   echo "${help_message}"
+}
+
+print_version() {
+  echo "polap-data-cflye ${_polap_version}"
 }
 
 print_version_git_message() {
@@ -346,10 +354,6 @@ print_version_git_message() {
   /"message":/ && !msg++ { sub(/^[[:space:]]*"message": "/, ""); sub(/",?$/, ""); msg=$0 }
   END { print "Date: " date "\nMessage: " msg }
 '
-}
-
-print_version() {
-  echo "polap-data-cflye ${_polap_version}"
 }
 
 # Parse options
@@ -384,6 +388,12 @@ while [[ "${1-}" == -* ]]; do
     ;;
   -v)
     opt_v_flag=true
+    ;;
+  -f)
+    opt_f_flag=true
+    ;;
+  -no-f)
+    opt_f_flag=false
     ;;
   -e)
     shift
@@ -2148,9 +2158,9 @@ man-figure-sheet_genus_species() {
     man-figure-sheet_genus_species_for "${_args_full[@]}"
   fi
 
-  # page number: 64
+  # page number: 65
   if [[ -s "${_brg_csv}" ]]; then
-    man-figure-sheet-latex_genus_species "${_brg_csv}" "${_brg_txt}" 6 64
+    man-figure-sheet-latex_genus_species "${_brg_csv}" "${_brg_txt}" 6 65
   else
     echo "Error: no such file: ${_brg_csv}"
   fi

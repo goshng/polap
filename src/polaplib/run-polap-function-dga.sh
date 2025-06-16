@@ -29,8 +29,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
@@ -163,7 +163,12 @@ HEREDOC
 	_polap_log3_cmd mkdir -p ${_polap_var_oga_contig}
 
 	# Step 1: Convert GFA file to FASTA format using gfatools
-	gfatools gfa2fa "$assembly_graph" >${assembly_graph_edges_fasta} 2>${_polap_output_dest}
+	if [[ -s "${assembly_graph}" ]]; then
+		gfatools gfa2fa "$assembly_graph" >${assembly_graph_edges_fasta} 2>${_polap_output_dest}
+	else
+		_polap_log0 "[ERROR] no such file: ${assembly_graph}"
+		return
+	fi
 
 	# Step 2: Loop through each line in mt.contig.name-2 and concatenate the sequences
 	line_number=1
@@ -336,7 +341,7 @@ HEREDOC
 		return 0
 	fi
 
-	_polap_log0 "mapping long-read data on the seed contigs ..."
+	_polap_log0 "mapping long-read data on the directional seed contigs ..."
 	_polap_log1 "  assembly: ${_arg_inum} (source) -> ${_arg_jnum} (target) ..."
 	_polap_log1 "  input1: ${_polap_var_mtcontigname}"
 	_polap_log1 "  input2: ${_polap_var_ga_contigger_edges_fasta}"
@@ -844,6 +849,48 @@ HEREDOC
 	return 0
 }
 
+rel_symlink() {
+	# Usage: rel_symlink path/to/target path/to/link
+	if [[ $# -ne 2 ]]; then
+		echo "Usage: rel_symlink path/to/target path/to/link"
+		return 1
+	fi
+
+	local target="$1"
+	local link="$2"
+
+	local target_dir link_dir target_file relative_target
+
+	target_dir=$(cd "$(dirname "$target")" && pwd)
+	target_file=$(basename "$target")
+	link_dir=$(cd "$(dirname "$link")" && pwd)
+
+	# Compute relative path from link_dir to target_dir
+	relpath() {
+		local source="$1"
+		local target="$2"
+		local common_part="$source"
+		local result=""
+
+		while [[ "${target#"$common_part"}" == "$target" ]]; do
+			common_part=$(dirname "$common_part")
+			result="../$result"
+		done
+
+		local forward_part="${target#"$common_part"}"
+		forward_part="${forward_part#/}"
+		echo "${result}${forward_part}"
+	}
+
+	relative_target=$(relpath "$link_dir" "$target_dir")/$target_file
+
+	# Make sure the link's directory exists
+	mkdir -p "$(dirname "$link")"
+
+	# Create the symlink
+	ln -sf "$relative_target" "$link"
+}
+
 ################################################################################
 # This used to be test-reads, which performs all or too many steps in a funciton.
 # Using the subsample datasets, we run dflye on each of them.
@@ -903,6 +950,9 @@ HEREDOC
 	local _range_txt="${_polap_var_oga_contig}/${_pread_sel}.txt"
 	_polap_log2_cat "${_range_txt}"
 
+	# dev
+	# return
+
 	local CONTIG_LENGTH=$(<"${_polap_var_oga_contig}/contig1_total_length.txt")
 
 	# Read the file contents into an array
@@ -910,17 +960,20 @@ HEREDOC
 	read -a restored_array <"${_range_txt}"
 	local array_length=${#restored_array[@]}
 
-	_POLAP_RELEASE=0
-	if [[ "${_POLAP_RELEASE}" -eq 0 ]]; then
-		local _command1="command time -v $HOME/all/polap/Flye/bin/dflye"
-	else
-		local _command1="command time -v dflye"
-	fi
+	# dev
+	# array_length=2
 
 	# dflye runs
 	# Iterate over the array using an index
 	for ((i = ${_arg_start_index}; i < array_length; i++)); do
 		local _test_value="${restored_array[i]}"
+
+		_POLAP_RELEASE=1
+		if [[ "${_POLAP_RELEASE}" -eq 0 ]]; then
+			local _command1="command time -v $HOME/all/polap/Flye/bin/dflye"
+		else
+			local _command1="command time -v dflye"
+		fi
 
 		local _graph_final_gfa="${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
 		if [[ -s "${_graph_final_gfa}" ]]; then
@@ -950,11 +1003,15 @@ HEREDOC
 		    2>${_polap_var_oga_flye}/timing-dflye.txt"
 
 			if [[ "${_arg_flye}" == "on" ]]; then
+				# _polap_log0_pipe "${_command1}"
 				_polap_log3_pipe "${_command1}"
 			else
 				_polap_log0 "No flye run in test-reads"
 			fi
 		fi
+		# soft-link the gfa
+		local link2graph_final_gfa="${_polap_var_oga_flye}/${_pread_sel}/${i}-graph_final.gfa"
+		rel_symlink "${_graph_final_gfa}" "${link2graph_final_gfa}"
 	done
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -1522,7 +1579,7 @@ HEREDOC
 	# local output_fasta=${_directional_dir}/01-contig-contig1.fa
 	# local output_name=${_directional_dir}/01-contig-contig1.name.txt
 
-	_polap_log1 "  mapping long-read data on the seed contigs ..."
+	_polap_log1 "  mapping long-read data on the directional seed contigs ..."
 	_polap_log2 "    assembly: ${_arg_inum} (source) -> ${_arg_jnum} (target) ..."
 	_polap_log2 "    input1: ${_polap_var_mtcontigname}"
 	_polap_log2 "    input2: ${_polap_var_ga_contigger_edges_fasta}"

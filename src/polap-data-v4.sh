@@ -45,6 +45,7 @@ polap-data-dflye is a tool for data analysis of plant mitochondrial genome assem
 options:
   -h, --help          Show this help message and exit.
   -y                  Enable -y flag to say YES to any question.
+  -v                  Enable verbose mode.
   -f                  Enable -f flag to say YES to profiling.
   -c <arg>            Set value for -c option (default: off)
   -t <arg>            Set value for -t option (default: t1)
@@ -206,12 +207,6 @@ HEREDOC
   fi
 }
 
-_log_echo() {
-  if [[ -s "${_brg_outdir}/polap-data-v2.txt" ]]; then
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [$subcmd1] - $1" >>"${_brg_outdir}/polap-data-v2.txt"
-  fi
-}
-
 ################################################################################
 # main command arguments used before a subcommand
 #
@@ -219,6 +214,7 @@ _log_echo() {
 opt_c_arg="off"
 opt_t_arg="t1"
 opt_m_arg="off"
+opt_v_flag=false
 opt_y_flag=false
 opt_f_flag=false
 opt_e_arg=""
@@ -229,6 +225,16 @@ print_help() {
 
 print_version() {
   echo "polap-data-dflye ${_polap_version}"
+}
+
+print_version_git_message() {
+  # curl -s https://api.github.com/repos/goshng/polap/commits/${_polap_git_hash_version} |
+  wget -qO- https://api.github.com/repos/goshng/polap/commits/${_polap_git_hash_version} |
+    awk '
+  /"date":/ && !seen++ { sub(/^[[:space:]]*"date": "/, ""); sub(/".*/, ""); date=$0 }
+  /"message":/ && !msg++ { sub(/^[[:space:]]*"message": "/, ""); sub(/",?$/, ""); msg=$0 }
+  END { print "Date: " date "\nMessage: " msg }
+'
 }
 
 # Parse options
@@ -260,6 +266,9 @@ while [[ "${1-}" == -* ]]; do
     ;;
   -y)
     opt_y_flag=true
+    ;;
+  -v)
+    opt_v_flag=true
     ;;
   -f)
     opt_f_flag=true
@@ -326,30 +335,17 @@ fi
 
 ################################################################################
 # BEGIN: Help messages
-help_message_old=$(
+help_message_example=$(
   cat <<HEREDOC
-Polap version: ${_polap_version}
-Usage: $0 [-c file.csv] [-y] <subcommand> [species_folder] [[option] ...]
 
-Polap data analysis of directional mitochondrial genome assembly
-
-List of subcommands:
-  install-conda, setup-conda, install-polap, install-fmlrc, install-cflye
-  install-getorganelle, install-pmat, install-man
-  download-polap-github, patch-polap, bleeding-edge-polap
-  delete-polap-github, uninstall, test-polap, download-test-data, help, system
-  mkdir-all, rm-empty, rm, example-data, convert-data, sample-csv
-  sra, refs, getorganelle, ptgaul, msbwt,
-  local-batch, remote-batch, batch, archive, clean, report, get
-  seeds, map, reads, dflye, directional, archive, report,
-  maintable1, supptable1, suppfigure1, suppfigure3, suppfigure4
-  download-man, make-man
-
-How to set a custom CSV:
-csv_file=a.csv $0
-
-More help for subcommands:
-$(basename $0) help <subcommand>
+  polap-data-dflye run direct-wga Lolium_perenne
+  polap-data-dflye run direct-oga Lolium_perenne
+  polap-data-dflye run direct-bandage-oga Lolium_perenne
+  polap-data-dflye run direct-select-oga Lolium_perenne 0 2
+  polap-data-dflye run direct-seed Lolium_perenne 0 1 2
+  polap-data-dflye run direct-map Lolium_perenne 0 1 2
+  polap-data-dflye run direct-read Lolium_perenne 0 1 2
+  polap-data-dflye run direct-flye Lolium_perenne 0 1 2
 HEREDOC
 )
 
@@ -411,8 +407,7 @@ declare -A _min_read
 declare -A _range
 declare -A _inref
 declare -A _random_seed
-declare -A _dummy
-declare -A _status
+declare -A _downsample
 declare -A _dummy
 declare -A _status
 
@@ -430,7 +425,7 @@ read-a-tsv-file-into-associative-arrays() {
 
   # Read the TSV file (skip header)
   #
-  while IFS=$',' read -r species long short host inref min_read range random_seed; do
+  while IFS=$',' read -r species long short host inref min_read range random_seed down dummy status; do
     # Skip header line
     [[ "$species" == "species" ]] && continue
     [[ "$species" == \#* ]] && continue
@@ -447,8 +442,9 @@ read-a-tsv-file-into-associative-arrays() {
     _min_read["$species"]="$min_read"
     _range["$species"]="$range"
     _random_seed["$species"]="$random_seed"
-    # _dummy["$species"]="$dummy"
-    # _status["$species"]="$status"
+    _downsample["$species"]="$down"
+    _dummy["$species"]="$dummy"
+    _status["$species"]="$status"
   done <"$csv_file"
 
   # Create Sall with all species folder names
@@ -558,6 +554,15 @@ main_genus_species() {
 # whole-genome assembly
 # assemble1
 # mt.contig.name-1
+#
+# The first two steps are from polap v0.3.7.3
+# wga
+# oga
+# dga
+#
+# Lolium_perenne o/0 <- wga
+# Lolium_perenne o/1 <- oga
+# Lolium_perenne o/2 <- dga
 
 # Step 1
 # Create directional seed contigs:
@@ -691,6 +696,28 @@ select_genus_species() {
 # Or, we had a candidate with 39k of -w option.
 # The directional assembly was also done using 39k.
 #
+# NOTE: directional-flye-reads: used to be test-reads
+# what is directional-select-reads? -> We have only select and subsample.
+# directional-select-reads: still from test-reads.
+# test-reads is very complicated function.
+# directional-select-reads: only select and subsample
+# directional-flye-reads: called after directional-select-reads.
+# then
+# runs dflye_genus_species.
+#
+# NOTE: test-reads -> directional-reads -> then 4 functions:
+# directional-prepare-reads
+# directional-map-reads
+# directional-select-reads -> need range
+# directional-flye-reads -> need range
+# dflye_genus_species
+#
+# NOTE: assemble2 does not have -s option, which is used by test-reads.
+# _run_polap_select-reads just calls _run_polap_test-reads with a range of a single value.
+# we could have assemble-wrange instead of assemble3 or something like assemble2.
+# directional is like assemble2 but with dflye.
+# Conclusion:
+# we need one just like assemble2 but with _run_polap_test-reads not _run_polap_select-reads.
 flye_genus_species() {
   local _brg_outdir="${1:-all}"
   local _brg_inum="${2:-0}"
@@ -710,7 +737,8 @@ dflye_genus_species() {
 
   # mt_fastq=/home/goshng/all/polap/dflye1/Lolium_perenne/o/2/03-seeds/ptgaul/2.fq.gz
   # bin/dflye \
-  #   --nano-raw ${mt_fastq} \
+  #   --nano-raw
+  #   ${mt_fastq} \
   #   --debug \
   #   --stop-after contigger \
   #   --asm-coverage 30 \
@@ -723,6 +751,10 @@ dflye_genus_species() {
     -i 1 -j 2
 }
 
+# two main source files:
+# 1. run-polap-function-dga.sh <- act like oga
+# 2. run-polap-function-directional.sh <- act like assemble2
+#
 # the first step is a typical polap-assemble1 and assemble2 with seed contig selection.
 # now, we use the organelle genome assembly as a seed to apply this directional method.
 #
@@ -768,7 +800,15 @@ if [[ "$_POLAP_DEBUG" == "1" ]]; then
   done
 fi
 
-all_args=("$@")               # Save all arguments to an array
+all_args=("$@") # Save all arguments to an array
+# Remove the trailing slash from the first three elements of the all_args array
+# the 2nd and 3rd can be species folder with a tailing slash.
+# Lolium_perenne/ -> Lolium_perenne
+for i in {0..2}; do
+  if [[ -n "${all_args[i]}" ]]; then
+    all_args[i]="${all_args[i]%/}"
+  fi
+done
 cmd_args=("${all_args[@]:1}") # Slice from index 1 onward
 
 # Call common case first

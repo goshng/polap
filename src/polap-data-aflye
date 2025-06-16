@@ -45,6 +45,8 @@ Options:
   -c <arg>       Set value for -c option (default: off)
   -t <arg>       Set value for -t option (default: off)
   -y             Enable -y flag
+  -v                  Enable verbose mode.
+  -f                  Enable -f flag to say YES to profiling.
   -e <name>      Call <name>_genus_species function and exit
   -h, --help     Show this help message
 
@@ -238,7 +240,9 @@ HEREDOC
 # Default values for options
 opt_c_arg="off"
 opt_t_arg="off"
+opt_v_flag=false
 opt_y_flag=false
+opt_f_flag=false
 opt_e_arg=""
 
 print_help() {
@@ -266,6 +270,12 @@ while [[ "${1-}" == -* ]]; do
     ;;
   -y)
     opt_y_flag=true
+    ;;
+  -v)
+    opt_v_flag=true
+    ;;
+  -f)
+    opt_f_flag=true
     ;;
   -e)
     shift

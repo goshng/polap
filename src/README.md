@@ -1,3 +1,17 @@
+# 2025-06-15
+
+conda build?
+(bioconda) $ bioconda-utils build --packages dflye
+anaconda login (if needed)
+anaconda upload /home/goshng/miniconda3/envs/bioconda/conda-bld/linux-64
+
+# 2025-06-13
+
+To add one to polaplib/polap-lib-data.sh as a common subcommand to all polap-data-vX.sh:
+bash polap-data-menu.sh subcommand-name
+To add one to polap-data-v4.sh as a subcommand:
+bash polap-data-menu.sh polap-data-v4.sh subcommand-name
+
 # 2025-05-13
 
 Write a function for adding a subcommand

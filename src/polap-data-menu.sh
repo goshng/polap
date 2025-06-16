@@ -73,7 +73,7 @@ fi
 
 # Validate file exists and readable
 if [[ ! -r "$file" ]]; then
-  echo "❌ Error: File '$file' does not exist or is not readable." >&2
+  echo "Error: File '$file' does not exist or is not readable." >&2
   exit 1
 fi
 
@@ -86,7 +86,7 @@ for placeholder in "##### INSERT_HELP_HERE #####" \
   "##### INSERT_FUNCTION_HERE #####" \
   "##### INSERT_CASE_HERE #####"; do
   if ! grep -qF "$placeholder" "$file"; then
-    echo "❌ Error: Missing required placeholder in $file: $placeholder" >&2
+    echo "Error: Missing required placeholder in $file: $placeholder" >&2
     exit 1
   fi
 done
@@ -178,8 +178,8 @@ function print_command_block() {
 ' "$file.bak" >"$file"
 
 if [[ -s "$file" ]]; then
-  echo "✅ Inserted blocks for '${cmd}' into ${file}. Backup saved as ${file}.bak"
+  echo "Inserted blocks for '${cmd}' into ${file}. Backup saved as ${file}.bak"
 else
-  echo "❌ Output file is empty! Restoring backup..."
+  echo "Output file is empty! Restoring backup..."
   mv "$file.bak" "$file"
 fi

@@ -207,7 +207,8 @@ NA represents no assemblies in the subsampling-based method and no comparison av
 
 Table: Plastid genome assemblies for 23 plant species datasets using subsampled sequencing data with a maximum subsampling rate of 10% (Run Setting B).
 All datasets were downsampled to 10x genome coverage, and Stage 1 included 10 subsampling steps (N).
-Depending on the dataset, different maximum sampling rates (P) were used in Stage 1, and different replicate sizes (R) were applied in Stages 2 and 3.
+Abbreviations are as follows:
+maximum sampling rates (P) in Stage 1, and replicate sizes (R) in Stages 2 and 3.
 NA represents no assemblies in the subsampling-based method and no comparison available.
 {#tbl:benchmark-polap-some-0}
 
@@ -221,7 +222,8 @@ NA represents no assemblies in the subsampling-based method and no comparison av
 
 Table: Plastid genome assemblies for 23 plant species datasets using subsampled sequencing data with a maximum subsampling rate of 1%.
 All datasets were downsampled to 10x genome coverage, and Stage 1 included 10 subsampling steps (N).
-Depending on the dataset, different maximum sampling rates (P) were used in Stage 1, and different replicate sizes (R) were applied in Stages 2 and 3.
+Abbreviations are as follows:
+maximum sampling rates (P) in Stage 1, and replicate sizes (R) in Stages 2 and 3.
 NA represents no assemblies in the subsampling-based method and no comparison available.
 {#tbl:benchmark-polap-some-4}
 
@@ -233,7 +235,7 @@ NA represents no assemblies in the subsampling-based method and no comparison av
 
 \newpage
 
-Table: Three stages of subsampling-based plastid genome assembly for the Eucalyptus pauciflora dataset with Run Setting B.
+Table: Three stages of subsampling-based plastid genome assembly for the _Eucalyptus pauciflora_ dataset with Run Setting B.
 The configuration includes an increasing subsample size up to a maximum subsampling rate of 10%, a step size of 10 in Stage 1, 5 replicates in Stages 2 and 3, and a maximum memory limit of 16 GB.
 Abbreviations are as follows:
 iteration in each Stage (I), subsampling rate (Rate) and read-coverage threshold (Alpha);
@@ -253,7 +255,7 @@ NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the s
 
 \newpage
 
-Table: Three stages of subsampling-based plastid genome assembly for the Eucalyptus pauciflora dataset with Run Setting C.
+Table: Three stages of subsampling-based plastid genome assembly for the _Eucalyptus pauciflora_ dataset with Run Setting C.
 The configuration includes an increasing subsample size up to a maximum subsampling rate of 10%, a step size of 50 in Stage 1, 5 replicates in Stages 2 and 3, and a maximum memory limit of 16 GB.
 Abbreviations are as follows:
 iteration in each Stage (I), subsampling rate (Rate) and read-coverage threshold (Alpha);
@@ -267,32 +269,19 @@ NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the s
 
 !include figures/table-polap-disassemble-Eucalyptus_pauciflora-3.md
 
-<!--figureS1-->
-<!-- polap-data-cflye man figure-alpha Eucalyptus_pauciflora -->
-<!-- polap-data-cflye man figure-alpha Eucalyptus_pauciflora view # Figure S1 -->
-
 \newpage
-
-![Line plot of read-coverage thresholds versus subsample size index in Stage 1 of the subsampling-based assemblies for _Eucalyptus pauciflora_.](figures/alpha0.pdf){#fig:alpha0 width=100%}
-
-<!--figureS2-->
-<!-- polap-data-cflye man figure-delta Eucalyptus_pauciflora -->
-<!-- polap-data-cflye man figure-delta Eucalyptus_pauciflora view # Figure S2 -->
-
-\newpage
-
-![Line plot of increment size versus subsample size index in Stage 1 of the subsampling-based assemblies for _Eucalyptus pauciflora_.](figures/delta.pdf){#fig:delta width=100%}
 
 <!--figureS3-->
 <!-- polap-data-cflye man figure-benchmark some 2 time-nextdenovo -->
 <!-- polap-data-cflye man figure-benchmark some 2 time-nextdenovo view # Figure S3 -->
 
 ![Benchmark of `GetOrganelle`, `ptGAUL`, `PMAT`, `TIPPo`, `Oatk` and the method (Run Setting A) presented here in terms of data processing time.
-See @fig:time-some-2 for the same results, excluding the processing time of NextDenovo.
+See @fig:time-some-2 for the same results, excluding the processing time of `NextDenovo`.
 Abbreviations are as follows:
 Genome size estimation by `JellyFish` (G),
 Short-read polishing preparation (MSBWT),
 Short-read polishing (FMLRC),
+Long-read error-correction (NextDenovo),
 `Oatk` with `-c 30` (Oatk-30),
 `Oatk` with `-c 20` (Oatk-20),
 `TIPPo` with `-p onthq` (TIPPo-hq),
@@ -300,6 +289,22 @@ Short-read polishing (FMLRC),
 `PMAT` with `-fc 0.1` (PMAT-0.1), and
 `PMAT` with `-fc 1.0` (PMAT-1.0).
 ](figures/figure-time-nextdenovo-some-2.pdf){#fig:time-nextdenovo-some-2 width=100%}
+
+<!--figureS1-->
+<!-- polap-data-cflye man figure-alpha Eucalyptus_pauciflora -->
+<!-- polap-data-cflye man figure-alpha Eucalyptus_pauciflora view # Figure S1 -->
+
+\newpage
+
+![Line plot of read-coverage thresholds versus subsample size index in Stage 1 over different initial values of the read-coverage threshold of the subsampling-based assemblies for the _Eucalyptus pauciflora_ dataset.](figures/alpha0.pdf){#fig:alpha0 width=100%}
+
+<!--figureS2-->
+<!-- polap-data-cflye man figure-delta Eucalyptus_pauciflora -->
+<!-- polap-data-cflye man figure-delta Eucalyptus_pauciflora view # Figure S2 -->
+
+\newpage
+
+![Line plot of read-coverage thresholds versus subsample size index in Stage 1 over different different increment sizes of the subsampling-based assemblies for the _Eucalyptus pauciflora_ dataset.](figures/delta.pdf){#fig:delta width=100%}
 
 <!-- Supporting Material - plastid genome assemblies using the six pipelines -->
 
@@ -338,7 +343,7 @@ Description: Ubuntu 24.04 LTS
 **2. Install Miniconda**:
 Use the following script to download and install **[Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/)**. It uses the [instructions](https://docs.anaconda.com/miniconda/#quick-command-line-install) for the installation.
 Use either `git` or `wget` (along with `unzip` and `mv`) to prepare a folder named `polap` at the current directory.
-Replace the version number 0.4.3.7.9 with something recommended at [Polap's github website](http://github.com/goshng/polap).
+Replace, if necessary, the version number 0.4.3.7.9 with something recommended at [Polap's github website](http://github.com/goshng/polap).
 
 ```bash
 cd
@@ -480,7 +485,7 @@ The assembled plastid genome sequence should be `a/ptdna.0.fa`.
 
 **8. Check the accuracy of the plastid genome assembly**:
 We use the Polap disassemble command with _Eucalyptus pauciflora_ dataset and check its similarity with its known plastid genome sequence
-The assembled plastid genome sequence will be `o/ptdna.ref.0.fa`. The text file named `o/0/mafft/pident.txt` has the percent identity between the assembled ptDNA and the knomn reference.
+The assembled plastid genome sequence will be `a/ptdna.ref.0.fa`. The text file named `a/0/mafft/pident.txt` has the percent identity between the assembled ptDNA and the knomn reference.
 One could skip this step because it is not the main part of the subsampling-based method but a part for benchmarking.
 
 ```bash
@@ -513,7 +518,7 @@ cd
 cd all/polap/cflye1
 source ~/miniconda3/bin/activate
 conda activate polap
-# option 1: use some for all datasets
+# option 1: use some for all datasets: this could take very long time
 polap-data-cflye benchmark some
 # option 2: use a species folder name for a particular dataset
 polap-data-cflye benchmark Eucalyptus_pauciflora
@@ -522,6 +527,7 @@ for i in 3 {11..29}; do
   polap-data-cflye run polap-disassemble Eucalyptus_pauciflora $i
 done
 # option 3: download the archived results
+# https://figshare.com/ndownloader/articles/28740323?private_link=ec1cb394870c7727a2d4
 wget -O 28740323.zip https://figshare.com/ndownloader/articles/28740323?private_link=ec1cb394870c7727a2d4
 unzip 28740323.zip
 for i in *-a.tar.gz; do polap-data-cflye recover ${i%-a.tar.gz}; done
@@ -531,7 +537,7 @@ for i in *-a.tar.gz; do polap-data-cflye recover ${i%-a.tar.gz}; done
 We create the report in PDF format.
 
 ```bash
-polap-data-cflye man init
+polap-data-cflye -y man init
 for i in 0 1 2 4; do polap-data-cflye man table-benchmark some $i; done
 for i in {0..4}; do
   polap-data-cflye man table-polap-disassemble Eucalyptus_pauciflora $i

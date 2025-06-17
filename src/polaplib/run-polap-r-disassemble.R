@@ -16,6 +16,30 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# This script parses summary1.txt in the polap subcommand disassemble.
+# Subcommand disassemble consists of three stages; each stage has summary text
+# for the stage. The summary shows information about iterations.
+# One of the iterations is selected for the next stage or the final choice.
+# This script does this step. We use the length distribution to select one
+# of the iterations so that we choose one with the length nearest the mode of
+# the distribution.
+#
+# Example:
+# Rscript ./src/polaplib/run-polap-r-disassemble.R \
+#   --table input/summary1-3.txt \
+#   --out output/summary1-3-ordered.txt \
+#   --plot input/summary1-3-ordered.pdf
+# output: summary1-3-ordered.txt
+#
+# TEST-SCC: try this out with different summary1.txt.
+#
+# See Also:
+# run-polap-function-disassemble.sh
+#
+# Check: 2025-06-18
+################################################################################
+
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))
@@ -26,7 +50,6 @@ suppressPackageStartupMessages(library("patchwork"))
 
 debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
 
-# args = commandArgs(trailingOnly=TRUE)
 parser <- OptionParser()
 parser <- add_option(parser, c("-t", "--table"),
   action = "store",
@@ -55,9 +78,25 @@ if (is_null(args1$table)) {
   input_dir0 <- file.path("Juncus_roemerianus")
   input_dir0 <- file.path("Eucalyptus_pauciflora")
   input1 <- file.path(input_dir0, "0/disassemble/infer-1/3-check/summary1.txt")
-  output1 <- file.path(input_dir0, "out.txt")
-  output2 <- file.path(input_dir0, "out.pdf")
+  
+  input_dir0 <- file.path("input")
+  input_dir1 <- file.path("output")
+  input1 <- file.path(input_dir0, "summary1-0.txt")
+  output1 <- file.path(input_dir1, "summary1-0-ordered.txt")
+  output2 <- file.path(input_dir1, "summary1-0-ordered.pdf")
+  
+  input1 <- file.path(input_dir0, "summary1-1.txt")
+  output1 <- file.path(input_dir1, "summary1-1-ordered.txt")
+  output2 <- file.path(input_dir1, "summary1-1-ordered.pdf")
 
+  input1 <- file.path(input_dir0, "summary1-2.txt")
+  output1 <- file.path(input_dir1, "summary1-2-ordered.txt")
+  output2 <- file.path(input_dir1, "summary1-2-ordered.pdf")
+  
+  input1 <- file.path(input_dir0, "summary1-2-1.txt")
+  output1 <- file.path(input_dir1, "summary1-2-1-ordered.txt")
+  output2 <- file.path(input_dir1, "summary1-2-1-ordered.pdf")
+  
   args1 <- parse_args(parser, args = c(
     "--table", input1,
     "--out", output1,
@@ -89,9 +128,13 @@ if (args1$coverage) {
     filter(length > 0)
 }
 
+# No iteration or single iteration
 if (nrow(df) == 0) {
+  print(paste("Number of iterations:", round(nrow(df))))
   quit(save = "no")
 } else if (nrow(df) == 1) {
+  print(paste("Number of iterations:", round(nrow(df))))
+  print(df |> select(index, length))
   write_tsv(df, args1$out)
 
   message <- paste("#mode: NA")
@@ -109,9 +152,9 @@ if (nrow(df) == 0) {
   quit(save = "no")
 }
 
+# We have at least 2 iterations in the data with length > 0.
 
-
-# Define a function to remove outliers based on IQR (Interquartile Range)
+# Function to remove outliers based on IQR (Interquartile Range)
 remove_outliers <- function(x) {
   Q1 <- quantile(x, 0.25)
   Q3 <- quantile(x, 0.75)
@@ -119,54 +162,81 @@ remove_outliers <- function(x) {
   return(x >= (Q1 - 1.5 * IQR) & x <= (Q3 + 1.5 * IQR))
 }
 
-# Filter out outliers in the length column
+# Filter out outliers in assembly length because the mode could be weird
+# when we have outliers.
 df_no_outliers <- df %>% filter(remove_outliers(length))
 
-# Compute the density of the length
+if (nrow(df_no_outliers) == 0) {
+  print(paste("Number of iterations:", round(nrow(df_no_outliers))))
+  quit(save = "no")
+} else if (nrow(df_no_outliers) == 1) {
+  print(paste("Number of iterations:", round(nrow(df_no_outliers))))
+  print(df_no_outliers |> select(index, length))
+  write_tsv(df_no_outliers, args1$out)
+  
+  message <- paste("#mode: NA")
+  cat(message, file = args1$out, append = TRUE, sep = "\n")
+  message <- paste("#sd: NA")
+  cat(message, file = args1$out, append = TRUE, sep = "\n")
+  # 2025-06-05
+  # message <- paste("#index: 0")
+  message <- paste("#index: -1")
+  cat(message, file = args1$out, append = TRUE, sep = "\n")
+  # 2025-06-05
+  # message <- paste("#n: 0")
+  message <- paste("#n: 1")
+  cat(message, file = args1$out, append = TRUE, sep = "\n")
+  quit(save = "no")
+}
+
+# what if df_no_outliers has no or one element?
+# consider cases:
+# 0, 1, 2, 3, ...
+
+# Density of the lengths without outliers
 density_length <- density(df_no_outliers$length)
 
-# Find the length corresponding to the highest point in the density curve (mode)
+# Length nearest the mode of the length distribution
 mode_length <- density_length$x[which.max(density_length$y)]
 
-# Find the row with length nearest to Q3
-selected_row_nearest_mode <- df_no_outliers %>%
-  slice_min(abs(length - mode_length), n = 1)
+# Date: 2025-06-17
+# We comment this out because we get it after sorting by diff from the mode.
+# The iteration with length nearest the length mode
+#selected_row_nearest_mode <- df_no_outliers %>%
+#  slice_min(abs(length - mode_length), n = 1)
 
-# print(selected_row_nearest_mode)
+# We now have the data to print out as a result.
+# We need to consider whether the data has zero, 1, or more points.
+# Depending on the count, we need to save differently.
 
-# selected_row_nearest_mode <- df_no_outliers %>%
-#  filter(diff == 1)
-
-# df_no_outliers |> mutate(abs(length - mode_length))
-
-# filter(abs(length - mode_length) == min(abs(length - mode_length)))
-
-sd_length <- sd(df_no_outliers$length)
-n_length <- length(df_no_outliers$length)
-
-# Print the mode length
-print(paste("Length at the highest point in the density curve (mode):", round(mode_length)))
-print(paste("Length standard deviation:", round(sd_length)))
-print(paste("Row with the length nearest the highest point in the density curve (mode):", selected_row_nearest_mode$index))
-
-# Print the selected row
-print(selected_row_nearest_mode)
-
-# Add a column for the absolute difference between mode_length and length
+# Column diff for the absolute difference between mode_length and length
 df_no_outliers <- df_no_outliers %>%
   mutate(diff = round(abs(length - mode_length)))
 
 # Sort the rows by the absolute difference
 df_sorted <- df_no_outliers %>% arrange(diff)
 
+# Check?
+# We have a new row selected. This should be the same?
+# The first iteration at top of the df_sorted is the selected one.
 selected_row_nearest_mode <- df_sorted %>% slice(1)
 
+sd_length <- sd(df_no_outliers$length)
+n_length <- length(df_no_outliers$length)
+
+# Print the selected row
+# print(selected_row_nearest_mode)
+# Print the mode length, SD, and the index selected.
+print(paste("Number of iterations:", round(n_length)))
+print(paste("Length at the highest point in the density curve (mode):", round(mode_length)))
+print(paste("Length standard deviation:", round(sd_length)))
 print(paste("Row with the length nearest the highest point in the density curve (mode):", selected_row_nearest_mode$index))
 
 # Print the sorted data
-print(df_sorted)
+print(df_sorted |> select(index, length))
 
-# Save the sorted data to a new TSV file
+# Now, we save the result in summary1-ordered.txt.
+# Save the sorted data to a new TSV file: summary1-ordered.txt
 write_tsv(df_sorted, args1$out)
 
 message <- paste("#mode:", round(mode_length))
@@ -178,6 +248,7 @@ cat(message, file = args1$out, append = TRUE, sep = "\n")
 message <- paste("#n:", n_length)
 cat(message, file = args1$out, append = TRUE, sep = "\n")
 
+# We do not use this plotting much.
 if (args1$coverage || args1$scatter) {
   # Plot: Scatter plot of length vs. coverage
   p1 <- ggplot(df_no_outliers, aes(x = length, y = coverage)) +
@@ -221,21 +292,13 @@ p4 <- ggplot(df_no_outliers, aes(x = length)) +
   ) +
   theme_minimal()
 
-# Display the combined plot
-# print(combined_plot)
-
+# Save them in a PDF
 if (args1$coverage) {
-  # Combine the four plots into a single plot
   combined_plot <- (p1 | p2) / (p3 | p4)
-
-  # Save the combined plot as a PDF
   ggsave(args1$plot, combined_plot, width = 12, height = 10)
 } else if (args1$scatter) {
   ggsave(args1$plot, p1, width = 12, height = 10)
 } else {
-  # Combine the four plots into a single plot
   combined_plot <- (p2) / (p3)
-
-  # Save the combined plot as a PDF
   ggsave(args1$plot, combined_plot, width = 12, height = 10)
 }

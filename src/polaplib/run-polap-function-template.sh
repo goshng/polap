@@ -15,6 +15,11 @@
 ################################################################################
 
 ################################################################################
+# Functions for subcommand template ...
+# Describe what they are and what they do.
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
@@ -29,8 +34,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"

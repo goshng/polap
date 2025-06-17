@@ -16,6 +16,15 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# Combine MT/PT gene annotation and Flye's contig table to produce gene
+# annotation tables.
+# See Also:
+# run-polap-r-mtcontig.R
+#
+# Check: 2025-06-16
+################################################################################
+
 # "${_POLAPLIB_DIR}"/run-polap-mtcontig.R "${_arg_outdir}" \
 # 	"${_arg_outdir}"/50-annotation/mt.contig.name \
 # 	"${_arg_outdir}"/assembly_info_organelle_annotation_count.txt \

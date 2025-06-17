@@ -16,6 +16,22 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# Combine MT/PT gene annotation and Flye's edge table to produce gene
+# annotation tables. We used to use the contig table produced by Flye and
+# run-polap-r-mtcontig-contig.R was used for tha gene annotation table.
+# This script uses edges_stats.txt or edge table, which is converted from
+# the contig table so that edegs are considered for the depth and gene count.
+# This was more covenient because the Flye assembly graph uses edges not contigs
+# in the assembly graph when displayed using Bandage.
+# We now use this script rather than run-polap-r-mtcontig-contig.R.
+#
+# See Also:
+# run-polap-r-mtcontig-contig.R
+#
+# Check: 2025-06-16
+################################################################################
+
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))

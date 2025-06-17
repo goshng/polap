@@ -15,6 +15,19 @@
 ################################################################################
 
 ################################################################################
+# Polap uses msbwt and fmlrc for polishing a draft organelle genome sequence.
+# This script has such subcommands.
+#
+# TODO: We need to explore different error correction or polihsing tools.
+#
+# function _run_polap_prepare-polishing { # prepare the polishing using FMLRC
+# function _run_polap_prepare-polishing_v2 { # prepare the polishing using FMLRC
+# function _run_polap_polish { # polish organelle genome sequences using FMLRC
+# function _run_polap_polish_v2 { # polish organelle genome sequences using FMLRC
+################################################################################
+
+function _run_polap_prepare-polishing_sort_efficient { # prepare the polishing using FMLRC
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
@@ -29,8 +42,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"

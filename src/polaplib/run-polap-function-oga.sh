@@ -15,6 +15,27 @@
 ################################################################################
 
 ################################################################################
+# Functions for organelle-genome assembly
+# Polap executes Flye twice; one for the whole-genome assembly and another for
+# the organelle-genome assembly. This script has subcommands for
+# organelle-genome assembly. It also has other subcommands that were used
+# in the earlier versions.
+#
+# function _polap_oga_determine-long-read-file {
+# function _run_polap_prepare-seeds { # prepare seed contigs in a not usual way
+# function _run_polap_map-reads { # selects reads mapped on a genome assembly
+# function _run_polap_test-reads { # selects reads mapped on a genome assembly
+# function _run_polap_select-reads { # selects reads mapped on a genome assembly
+# function _run_polap_flye2 { # executes Flye for an organelle-genome assembly
+# function _run_polap_flye-polishing { # finish a Flye organelle-genome assembly upto flye-polishing step
+# function _run_polap_report-assembly { # report an organelle-genome assembly result
+# function _run_polap_x-v0.3.7-collect-reads() { # replaced by select-reads
+# function _run_polap_x-v0.2.6-select-reads() { # selects reads mapped on a genome assembly
+# function _run_polap_x-select-reads { # selects reads mapped on a genome assembly
+# function _run_polap_x-v0.2.6-flye2() { # executes Flye for an organelle-genome assembly
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
@@ -29,8 +50,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"

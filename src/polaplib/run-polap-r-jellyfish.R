@@ -15,6 +15,13 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# Determine the peak from the jellyfish_out histogram for a genome size estimate.
+# This is heavily used in most of the polap code.
+#
+# Check: 2025-06-16
+################################################################################
+
 debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
 
 args <- commandArgs(trailingOnly = TRUE)

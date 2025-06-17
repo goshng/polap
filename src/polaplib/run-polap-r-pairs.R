@@ -16,6 +16,18 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# This script selects reads using minimap2 alignments of the reads on the seed
+# contigs. It tries to use two main different approaches; one is due to ptGAUL,
+# another is devised by Polap. Polap's read selection is more stringent in a
+# way that it selects reads that are mapped on two seed contigs and those that
+# are mapped completely within a contig.
+# This has some benefit or better assembly for a smaller dataset; i.e., 10x.
+# If reads are enough, ptGAUL method seems to work great.
+#
+# Check: 2025-06-16
+################################################################################
+
 # name: select long reads
 #
 # synopsis:

@@ -15,6 +15,30 @@
 ################################################################################
 
 ################################################################################
+# Functions for selecting seed contigs that are used for filtering reads for
+# organelle-genome assembly.
+# I think that manual contig selection is still better than automatic for mtDNA.
+# This is under development. Most of the code are used for ptDNA seed selection.
+# This may work for some, but I do not recommend its use because it could
+# only select seeds that could have been selected by any user. It works for
+# some datasets, but it needs more testing.
+#
+# function _polap_seeds_get-depth-range-of {
+# function _polap_seeds_create-manual-depth-range {
+# function _polap_seeds_create-automatic-depth-range {
+# function _polap_seeds_preselect-contigs {
+# function _polap_seeds_depthfilter-gfa {
+# function _polap_seeds_prepare-cc {
+# function _polap_seeds_final-mtcontig {
+# function _polap_seeds_final-seeds-mtcontig {
+# function _polap_seeds_report-mtcontig {
+# function _run_polap_choose-seed { # select seed contigs
+# function _run_polap_seeds { # select seed contigs
+# function _run_polap_seeds-graph { # select seed contigs
+# function _run_polap_seeds-gene {
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
@@ -29,8 +53,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"

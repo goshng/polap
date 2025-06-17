@@ -15,6 +15,18 @@
 ################################################################################
 
 ################################################################################
+# Functions for the whole-genome assembly.
+#
+# function _polap_summary-generated-reads {
+# function _run_polap_summary-reads { # statisics of the read dataset
+# function _run_polap_total-length-long { # total size (bp) of long-read data
+# function _run_polap_total-length-short { # total size (bp) of short-read data
+# function _run_polap_find-genome-size { # estimate the whole genome size
+# function _run_polap_reduce-data { # reduce the long-read data, if too big
+# function _run_polap_flye1 { # execute Flye for a whole-genome assembly
+################################################################################
+
+################################################################################
 # Tip!
 # How to extract commands that were expected:
 # src/polap.sh reduce-data --redo -v -v -v 2>&1 | grep -E "^rm|^seqkit|^ln"
@@ -35,8 +47,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"

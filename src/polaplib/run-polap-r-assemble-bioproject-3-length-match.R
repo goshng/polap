@@ -16,6 +16,18 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# Read the BLSATN output to sum the length of subjects longer than 2kb and
+# 99% percent identity.
+# input columns:
+# qseqid qstart sseqid sstart sstrand length pident
+#
+# TODO: rename: remove run- from the name.
+#
+# See Also:
+# _run_polap_blast-mtdna : run-polap-function-mtdna.sh
+################################################################################
+
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))
 suppressPackageStartupMessages(library("tidyr"))

@@ -15,6 +15,35 @@
 # You should have received a copy of the GNU General Public License along with
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
+
+################################################################################
+# This script creates one of the two different figures used in polap's
+# subsampling-based approach.
+#
+# Plot 1.
+# Line plot of read-coverage thresholds versus subsample size index in Stage 1
+# over different initial values of the read-coverage threshold of
+# the subsampling-based assemblies for the _Eucalyptus pauciflora_ dataset.
+# Plot 2.
+# Line plot of read-coverage thresholds versus subsample size index in Stage 1
+# over different different increment sizes of the subsampling-based assemblies
+# for the _Eucalyptus pauciflora_ dataset.
+#
+# Example:
+# Rscript ./src/polaplib/run-polap-r-data-v2-alpha0.R \
+#   input/0.25.tsv input/0.50.tsv -l alpha0 -o output/alpha0.pdf
+# Rscript ./src/polaplib/run-polap-r-data-v2-alpha0.R \
+#   input/?.??.tsv -l delta -o output/alpha0.pdf
+#
+# See Also:
+# man-figure-alpha_genus_species
+# man-figure-delta_genus_species
+#
+# TODO: rename: polap-r-data-v2-alpha0.R
+#
+# Check: change the command-line processing
+################################################################################
+
 # Load libraries
 suppressPackageStartupMessages({
   library(ggplot2)

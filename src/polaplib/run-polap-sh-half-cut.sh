@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 ################################################################################
 # This file is part of polap.
 #
@@ -14,7 +15,20 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# Check if exactly 3 arguments are provided
+################################################################################
+# This script is used for circularizing a single contig.
+# Because polap's contig mapping needs at least two seed edges to select reads,
+# we cut a single contig into 2 pieces before mapping and selecting reads.
+#
+# See Also:
+# This script was used in run-polap-function-oga.
+#
+# TODO: rename: polap-bash-half-cut.sh
+#
+# Check: 2025-06-17
+################################################################################
+
+# only 3 arguments
 if [ "$#" -ne 3 ]; then
 	echo "Usage: $0 mtdir mtdir/contig.fa mt.contig.name-1"
   echo "  output1: mt.contig.name-1-backup"
@@ -24,11 +38,13 @@ if [ "$#" -ne 3 ]; then
 	exit 1
 fi
 
-# Assign positional arguments to variables
 _mtdir=$1
 _mtdir_contig_fa=$2
 _mt_contig_name=$3
 
+# The following code used to be in run-polap-function-oga.sh. To simplify the code in there,
+# we have this separate script that we execute in run-polap-function-oga.sh.
+# We use it is subcommand map-reads.
 cp "${_mtdir_contig_fa}" "${_mtdir_contig_fa}-backup"
 seqkit fx2tab --length --name "${_mtdir_contig_fa}" -o "${_mtdir}"/contig.fa.len >/dev/null 2>&1
 A=$(cut -f2 "${_mtdir}"/contig.fa.len)

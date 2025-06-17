@@ -15,6 +15,31 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# This script selects seed contigs using a gene annotation table.
+# We have multiple scripts with a similar name except for the last number.
+# Each script has a different scheme to select seed contigs.
+# Although we have option for plastid flag, this script is for mitochondrial
+# only. See polap-r-plastid-determine-depth-range.R for plastid seed selection.
+# See the code for detail.
+# This is created from the template: polap-r-determine-depth-range.R.
+#
+# input: 
+# assembly_info_organelle_annotation_count-all.txt
+#
+# output:
+# 2-depth.range.by.cdf.copy.number.txt
+# contig-annotation-cdf-table.txt
+#
+# TODO: rename: polap-r-determine-depth-range_5.R
+#
+# See Also:
+# polap-function-disassemble-seeds.sh
+# run-polap-function-seeds.sh
+#
+# Check: 2025-06-17
+################################################################################
+
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))

@@ -16,6 +16,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
 # name: converts BLAST output file to a BED format file.
 #
 # synopsis:
@@ -27,6 +28,9 @@
 # Create a tblastn output file: MTAABLAST
 # tblastn -query $MTAA -db $CONTIGDB -out $MTAABLAST -evalue 1e-30 \
 # 	-outfmt "6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle salltitles"
+#
+# Check: 2025-06-17
+################################################################################
 
 suppressPackageStartupMessages(library("dplyr"))
 

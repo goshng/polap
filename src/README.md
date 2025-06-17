@@ -1,3 +1,14 @@
+# Files need attention
+
+1. polaplib/run-polap-r-data-v2-alpha0.R - command-line processing: use argparser
+
+2. simplify run-polap-function-archive.sh: this would remove the followings:
+
+- polaplib/run-polap-r-contig2edge.R
+
+look for this to search for potentially deleted ones.
+TAG: SCC delete
+
 # Add a new subcommand to polap
 
 How to create a polap menu or subcommand:

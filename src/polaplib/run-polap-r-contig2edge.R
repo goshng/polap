@@ -16,6 +16,17 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# Parse the gene annotation table to extract edge names.
+# This script may be removed.
+#
+# See Also:
+# run-polap-function-archive.sh
+# Polap subcommand filter-gfa-with-edge uses this script.
+#
+# TODO: rename: polap-r-contig2edge.R
+################################################################################
+
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))

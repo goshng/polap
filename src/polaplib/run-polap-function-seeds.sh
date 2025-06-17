@@ -225,6 +225,9 @@ function _polap_seeds_preselect-contigs {
 }
 
 ################################################################################
+# step 3-1: creating GFA without sequence data
+# step 3-2: extracting sequence part of GFA
+# step 3-3: filtering GFA sequence part using depth range
 ################################################################################
 function _polap_seeds_depthfilter-gfa {
 	local _polap_output_dest="/dev/null"

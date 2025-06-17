@@ -16,6 +16,35 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# NOTE: this is the second of the two read-selection scripts.
+# This script selects reads using some of minimap2 output files.
+# We have multiple scripts that selects reads.
+# This is the 3rd one.
+#
+# 1. run-polap-pairs.R or polap-r-pairs.R -> the first version used in v0.2.6
+# 2. run-polap-r-pairs.R -> used in test-reads in oga
+# 3. run-polap-r-bridge.R -> used in test-reads in oga
+# 4. run-polap-r-select-reads-polap.R -> the 2nd version not used
+# 5. run-polap-r-select-reads-ptgaul.R -> a slim version of the 2nd used in dga
+# 6. run-polap-r-directional.R -> used by an older version of dga
+#    or _run_polap_original-directional-reads
+#
+# Subcommand test-reads uses this script.
+#
+# See Also:
+# run-polap-pairs.R
+# run-polap-r-pairs.R
+# run-polap-r-bridge.R
+# run-polap-r-select-reads-polap.R
+# run-polap-r-select-reads-ptgaul.R
+# run-polap-r-directional.R
+# run-polap-function-oga.sh
+# run-polap-function-dga.sh
+#
+# Check: 2025-06-17
+################################################################################
+
 # name: select long reads
 #
 # synopsis:

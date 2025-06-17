@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 ################################################################################
 # This file is part of polap.
 #
@@ -14,19 +15,32 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# Check if exactly 3 arguments are provided
+################################################################################
+# This script is used for converting minimap2's PAF to TAB file.
+#
+# See Also:
+# This script was used by map-read subcommand in run-polap-function-oga.
+#
+# TODO: rename: polap-bash-minimap2-paf2tab.sh
+#
+# Check: 2025-06-17
+################################################################################
+
+polaplib/run-polap-sh-minimap2-paf2tab.sh
+
+# only 3 arguments
 if [ "$#" -ne 3 ]; then
-	echo "Usage: $0 min_read_length paf_file tab_file"
-	exit 1
+  echo "Usage: $0 min_read_length paf_file tab_file"
+  exit 1
 fi
 
-# Assign positional arguments to variables
 _min_read_length=$1
 _paf=$2
 _tab=$3
 
-# Create the output file with the depth range
+# This filters PAF by the lengths of reads.
+# We use only the first 11 columns by excluding the last one.
 cut -f1-11 "${_paf}" |
-	awk -v minlength="${_min_read_length}" \
-	'{if ($2>=minlength) {print}}' \
-		>"${_tab}"
+  awk -v minlength="${_min_read_length}" \
+    '{if ($2>=minlength) {print}}' \
+    >"${_tab}"

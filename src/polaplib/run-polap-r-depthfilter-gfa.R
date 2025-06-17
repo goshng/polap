@@ -16,6 +16,63 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# Filter the assembly graphs in a gfa file by depths.
+#
+# This is used by seeds-graph and archive.
+# _polap_seeds_depthfilter-gfa
+# step 3-1: creating GFA without sequence data
+#   convert gfa to another gfa2 using gfatools view command.
+# step 3-2: extracting sequence part of GFA
+#   extract the sequence part of the gfa2 using grep ^S command.
+# step 3-3: filtering GFA sequence part using depth range
+#   use this script to extract sequences with the depth range
+#
+# Example:
+# Rscript ./src/polaplib/run-polap-r-depthfilter-gfa.R \
+#   --gfa output/3-gfa.seq.all.tsv \
+#   --lower-bound-depth 40 --upper-bound-depth 90 \
+#   --out output/3-gfa.seq.depthfiltered.txt.copy
+#
+# TEST: done in test/test.sh
+# input1: a gfa file
+# input2: a depth range TSV
+# depth_lower_bound	depth_upper_bound
+# 40 90
+#
+# Step 3-1
+# output/3-gfa.all.gfa
+# S       edge_1  *       LN:i:18273      dp:i:41
+# S       edge_2  *       LN:i:88015      dp:i:38
+# S       edge_3  *       LN:i:26202      dp:i:89
+# L       edge_1  +       edge_3  -       0M      L1:i:18273      L2:i:26202      RC:i:35
+# L       edge_1  -       edge_3  -       0M      L1:i:18273      L2:i:26202      RC:i:42
+# L       edge_2  +       edge_3  +       0M      L1:i:88015      L2:i:26202      RC:i:36
+# L       edge_2  -       edge_3  +       0M      L1:i:88015      L2:i:26202      RC:i:42
+# Step 3-2
+# output/3-gfa.seq.all.tsv
+# S       edge_1  *       LN:i:18273      dp:i:41
+# S       edge_2  *       LN:i:88015      dp:i:38
+# S       edge_3  *       LN:i:26202      dp:i:89
+# Step 3-3
+# output/3-gfa.seq.depthfiltered.txt
+# edge_1  41
+# edge_3  89
+#
+# See Also:
+# 1.
+# run-polap-function-seeds.sh
+# function _polap_seeds_depthfilter-gfa
+# function _run_polap_seeds-graph { # select seed contigs
+# 2.
+# run-polap-function-archive.sh
+# function _polap_archive_gfa-depth-filtered
+#
+# TODO: rename: polap-r-depthfilter-gfa.R
+#
+# Check: 2025-06-17
+################################################################################
+
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))

@@ -1,3 +1,12 @@
+# polaplib/run-polap-py-find-cc-with-seeds.py
+#
+# TODO: document
+#
+# This script parses gfa to extract plastid DNA.
+#
+# Used by:
+# function _run_polap_step-disassemble-seeds-graph {
+
 import argparse
 import networkx as nx
 

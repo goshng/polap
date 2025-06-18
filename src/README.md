@@ -1,3 +1,71 @@
+# polap_disassemble-seeds
+
+function \_disassemble-step12 {
+
+input files:
+local \_contigger_edges_gfa="${_outdir}/30-contigger/graph_final.gfa"
+	local _contigger_edges_fasta="${\_outdir}/30-contigger/graph_final.fasta"
+local \_ga_annotation_all="${\_outdir}/assembly_info_organelle_annotation_count-all.txt"
+
+output file:
+local \_mtcontigname="${\_outdir}/mt.contig.name"
+
+    		polap_disassemble-seeds "${_contigger_edges_gfa}" \
+    			"${_ga_annotation_all}" \
+    			"${_mtcontigname}"
+
+polap_disassemble-seeds() {
+
+    	_run_polap_step-disassemble-seeds-graph \
+    _polap_log3_pipe "python ${_POLAPLIB_DIR}/run-polap-py-unique-mtcontigs.py \
+
+function \_run_polap_step-disassemble-seeds-graph {
+
+    	_polap_log1 "  step 1: clean-up the mtcontigs folder: ${_mtcontigs}"
+    	_polap_log3_cmd rm -rf "${_mtcontigs}"
+    	_polap_log3_cmd mkdir -p "${_mtcontigs}"
+
+    	_polap_log1 "  step 2: determine the depth range using length CDF"
+    	_polap_disassemble_seeds_determine-depth-range \
+    		"${_ga_annotation_all}" \
+    		"${_knum}" \
+    		"${_mtcontigs_1_custom_depth_range}"
+
+    	_polap_log1 "  step 3: pre-select contigs based on organelle gene annotation"
+    	_polap_log2 "    input1: ${_ga_annotation_all}"
+    	_polap_log2 "    input2: ${_mtcontigs_depth_range_preselection}"
+    	_polap_log2 "    output: ${_mtcontigs_preselection}"
+    	_polap_disassemble_seeds_preselect-contigs \
+    		"${_ga_annotation_all}" \
+    		"${_mtcontigs_depth_range_preselection}" \
+    		"${_mtcontigs_preselection}"
+
+    	_polap_log1 "  step 4: filter GFA by the depth range"
+    	_polap_log2 "    input1: ${_ga_contigger_edges_gfa}"
+    	_polap_log2 "    input2: ${_mtcontigs_depth_range_preselection}"
+    	_polap_log2 "    output: ${_mtcontigs_gfa_depthfiltered_gfa}"
+    	_polap_disassemble_seeds_depthfilter-gfa \
+    		"${_ga_contigger_edges_gfa}" \
+    		"${_mtcontigs_depth_range_preselection}" \
+    		"${_mtcontigs_gfa_depthfiltered_gfa}"
+
+    	_polap_log1 "  step 5: find connected components with the preselected contigs"
+    	_polap_log2 "    input1: ${_mtcontigs_gfa_depthfiltered_gfa}"
+    	_polap_log3_pipe "python ${_POLAPLIB_DIR}/run-polap-py-find-cc-with-seeds.py \
+      --gfa ${_mtcontigs_gfa_depthfiltered_gfa} \
+    		--nodes ${_mtcontigs_preselection} \
+      --output ${_mtcontigs_gfa_depthfiltered_cc_seed}"
+
+\_polap_disassemble_seeds_depthfilter-gfa() {
+
+    _polap_log1 "    step 4-1: create GFA without sequence data using gfatools view"
+
+    _polap_log1 "    step 4-2: extracte sequence part of GFA: ${_mtcontigs_gfa_seq_part}"
+
+    _polap_log1 "    step 4-3: filter GFA sequence part using depth range"
+
+    _polap_log1 "    step 4-4: subsetting GFA using the depth-filtered GFA sequence part with gfatools view"
+
 # Files need attention
 
 1. polaplib/run-polap-r-data-v2-alpha0.R - command-line processing: use argparser

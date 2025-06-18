@@ -14,6 +14,16 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# polaplib/run-polap-py-find-cc.py
+#
+# TODO: document
+#
+# This script is used by subcommand seeds indirectly.
+#
+# Used by:
+# function _run_polap_seeds-graph { # select seed contigs
+#
+
 # Python script to print connected components in an undirected graph
 #
 # Links:

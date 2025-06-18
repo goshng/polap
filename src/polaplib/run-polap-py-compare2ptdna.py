@@ -1,3 +1,14 @@
+# polaplib/run-polap-py-compare2ptdna.py
+#
+# TODO: document
+#
+# This script compares two ptDNA sequences.
+#
+# Used by:
+# function _run_polap_compare2ptdna {
+# function _disassemble-step14 {
+# function _disassemble-step15 {
+# 
 import os
 import subprocess
 import pandas as pd

@@ -17,7 +17,36 @@
 
 # polaplib/run-polap-r-preselect-annotation.R
 
+################################################################################
+# This script selects edge numbers for ptDNA using gene annotation table.
+# It has been tested with mostly plastid DNA cases. 
+# It uses depths, gene density, MT/PT gene counts to select ptDNA edges.
+# The ptDNA assembly graph is much easier than mtDNA's.
+# 
+# input:
+# Contig Length Depth Copy MT PT Edge
+# edge_2 52072 10 0 0 0 2
+# edge_1 17832 58 1 0 10 1
+# edge_3 86737 50 1 31 39 3
+# edge_4 25690 104 2 10 13 4
+#
+# output:
+#
+# Example:
+# Rscript --vanilla run-polap-r-preselect-annotation.R 
+#   --table a/0/disassemble/1/1/2/assembly_info_organelle_annotation_count-all.txt 
+#   --depth-range 27,27 
+#   --compare-mt-pt 
+#   --out a/0/disassemble/1/1/2/51-mtcontigs/2/1-preselection.by.gene.density.txt 
+#   --gene-density 10 --plastid
+#
+# Used by:
+# function _polap_seeds_preselect-contigs {
+# _polap_disassemble_seeds_preselect-contigs() {
 # Module: seed contig selection
+#
+# Check: 2025-06-18
+################################################################################
 
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))
@@ -85,12 +114,27 @@ if (is_null(args1$table)) {
   input_dir0 <- file.path(".")
   input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
   output1 <- file.path(input_dir0, "1-annotation.txt")
+  
   args1 <- parse_args(parser, args = c(
     "--table", input1,
     "--depth-range", "50,100",
     "-c",
     "-g", 10,
     "-o", output1
+  ))
+  
+  input_dir0 <- file.path("input")
+  input_dir1 <- file.path("output")
+  input1 <- file.path(input_dir0, "run-polap-r-preselect-annotation.input1.txt")
+  output1 <- file.path(input_dir1, "run-polap-r-preselect-annotation.output1.txt")
+  
+  args1 <- parse_args(parser, args = c(
+    "--table", input1,
+    "--depth-range", "27,27",
+    "--compare-mt-pt",
+    "--plastid",
+    "--gene-density", 10,
+    "--out", output1
   ))
 }
 

@@ -1,3 +1,19 @@
+################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
 # polaplib/run-polap-py-compare2ptdna.py
 #
 # TODO: document
@@ -8,13 +24,14 @@
 # function _run_polap_compare2ptdna {
 # function _disassemble-step14 {
 # function _disassemble-step15 {
-# 
+#
 import os
 import subprocess
 import pandas as pd
 
 debug = os.getenv("_POLAP_DEBUG", "0")
 # print(f"[script.py] DEBUG = {debug}")
+
 
 def run_command(command):
     """Run a shell command and handle errors."""

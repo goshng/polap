@@ -17,7 +17,10 @@
 ################################################################################
 
 ################################################################################
-# Move it because it is used by seeds-graph.
+#
+# TODO: document it later
+#
+# Subcommand: seeds
 #
 # See Also:
 # polap-r-final-mtcontig.R

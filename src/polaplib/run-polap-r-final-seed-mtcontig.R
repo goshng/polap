@@ -18,11 +18,20 @@
 
 # polaplib/run-polap-r-final-seed-mtcontig.R
 
+# TODO: document it later
+#
+# Subcommand: seeds
+#
+# Used by:
+# function _polap_seeds_final-mtcontig {
+# _polap_disassemble_seeds_final-seeds-mtcontig() {
+#
 # See Also:
 # polap-r-final-seed-mtcontig.R
 # function _polap_disassemble_seeds_final-seeds-mtcontig : polap-function-disassemble-seeds.sh
 # function _polap_seeds_final-seeds-mtcontig : run-polap-function-seeds.sh
 # subcommand seeds uses this script indirectly.
+#
 
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))

@@ -17,6 +17,11 @@
 ################################################################################
 
 # polaplib/run-polap-r-prepare-cc.R
+
+#
+# TODO: document it later
+#
+# Subcommand: seeds
 #
 # Used by:
 # 1.

@@ -16,6 +16,14 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# polaplib/run-polap-r-cc2mtcontig.R
+
+# TODO: document it later
+#
+# Subcommand: seeds
+#
+# Used by:
+# function _run_polap_seeds-graph { # select seed contigs
 
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))

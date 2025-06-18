@@ -740,7 +740,8 @@ HEREDOC
 				if [ -s "${_arg_outdir}/${_arg_jnum}/mt.0.fasta" ] && [ "${_arg_redo}" = "off" ]; then
 					_polap_log2 "  skipping organelle-genome extraction -i ${_arg_jnum} ..."
 				else
-					_arg_inum="${i}" _run_polap_select-mtdna
+					_polap_log2 "  not implemented yet; skipping organelle-genome extraction -i ${_arg_jnum} ..."
+					# _arg_inum="${i}" _run_polap_select-mtdna
 				fi
 			else
 				_polap_log1 "LOG: $_polap_var_mtcontigname is empty for select-contig type $i ..."

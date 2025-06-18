@@ -16,6 +16,9 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# polaplib/run-polap-r-depthfilter-gfa.R
+# Check: 2025-06-17
+
 ################################################################################
 # Filter the assembly graphs in a gfa file by depths.
 #

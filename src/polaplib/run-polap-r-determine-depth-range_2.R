@@ -15,6 +15,9 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# polaplib/run-polap-r-determine-depth-range-2.R
+# Check: 2025-06-17
+
 ################################################################################
 # This script selects seed contigs using a gene annotation table.
 # We have multiple scripts with a similar name except for the last number.
@@ -24,7 +27,7 @@
 # See the code for detail.
 # This is created from the template: polap-r-determine-depth-range.R.
 #
-# input: 
+# input:
 # assembly_info_organelle_annotation_count-all.txt
 #
 # output:

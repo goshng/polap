@@ -16,6 +16,8 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# run-polap-r-assemble-bioproject-3-length-match.R
+
 ################################################################################
 # Read the BLSATN output to sum the length of subjects longer than 2kb and
 # 99% percent identity.
@@ -24,8 +26,13 @@
 #
 # TODO: rename: remove run- from the name.
 #
+# Used By:
+# function _run_polap_compare-mtdna {
+#
 # See Also:
 # _run_polap_blast-mtdna : run-polap-function-mtdna.sh
+#
+# Check: 2025-06-18
 ################################################################################
 
 suppressPackageStartupMessages(library("dplyr"))

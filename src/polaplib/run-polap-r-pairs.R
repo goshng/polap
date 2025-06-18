@@ -16,6 +16,9 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# polaplib/run-polap-r-pairs.R
+# Check: 2025-06-17
+
 ################################################################################
 # NOTE: this is the first of the two read-selection scripts.
 # This script selects reads using some of minimap2 output files.
@@ -31,6 +34,9 @@
 #    or _run_polap_original-directional-reads
 #
 # Subcommand test-reads uses this script.
+#
+# Used by:
+# function _run_polap_test-reads { # selects reads mapped on a genome assembly
 #
 # See Also:
 # run-polap-pairs.R

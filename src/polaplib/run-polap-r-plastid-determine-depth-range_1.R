@@ -15,17 +15,20 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# polaplib/run-polap-r-plastid-determine-depth-range_1.R
+# Check: 2025-06-17
+
 ################################################################################
 # This script selects plastid seed contigs using a gene annotation table.
 # We have multiple scripts with a similar name except for the last number.
 # Each script has a different scheme to select seed contigs.
-# Although we have option for mitochondrial flag, this script is 
+# Although we have option for mitochondrial flag, this script is
 # for plastid as implied by the filename.
 # See polap-r-determine-depth-range.R for mitochondrial seed selection.
 # See the code for detail.
 # This is created from the template: polap-r-plastid-determine-depth-range.R.
 #
-# input: 
+# input:
 # assembly_info_organelle_annotation_count-all.txt
 #
 # output:

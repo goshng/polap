@@ -16,6 +16,9 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# polaplib/run-polap-r-mtcontig.R
+# Check: 2025-06-16
+
 ################################################################################
 # Combine MT/PT gene annotation and Flye's edge table to produce gene
 # annotation tables. We used to use the contig table produced by Flye and
@@ -25,6 +28,10 @@
 # This was more covenient because the Flye assembly graph uses edges not contigs
 # in the assembly graph when displayed using Bandage.
 # We now use this script rather than run-polap-r-mtcontig-contig.R.
+#
+# Used by:
+# function _run_polap_count-gene { # count MT and PT genes using edges_stats.txt
+# polap_count-gene() {
 #
 # See Also:
 # run-polap-r-mtcontig-contig.R

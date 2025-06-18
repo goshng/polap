@@ -15,6 +15,9 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# polaplib/run-polap-r-determine-depth-range.R
+# Check: 2025-06-17
+
 ################################################################################
 # This is the main template for selecting seed contigs.
 #
@@ -25,7 +28,7 @@
 # See the code for detail.
 # This is created from the template: polap-r-determine-depth-range.R.
 #
-# input: 
+# input:
 # assembly_info_organelle_annotation_count-all.txt
 #
 # output:

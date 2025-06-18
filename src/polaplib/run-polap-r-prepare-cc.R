@@ -16,6 +16,15 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# polaplib/run-polap-r-prepare-cc.R
+#
+# Used by:
+# 1.
+# function _polap_seeds_prepare-cc {
+# function _run_polap_seeds-graph { # select seed contigs
+# 2.
+# _polap_disassemble_seeds_prepare-cc() {
+# not used
 
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))

@@ -16,6 +16,9 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# polaplib/run-polap-r-bridge.R
+# Check: 2025-06-17
+
 ################################################################################
 # NOTE: this is the second of the two read-selection scripts.
 # This script selects reads using some of minimap2 output files.

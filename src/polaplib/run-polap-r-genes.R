@@ -16,7 +16,13 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# polaplib/run-polap-r-genes.R
+# Check: 2025-06-17
+
 ################################################################################
+# This script is one of the earliest version in gene annotation table module.
+# To combine Flye's assembly graph information table and gene annotation, we
+#
 # name: converts BLAST output file to a BED format file.
 #
 # synopsis:
@@ -28,6 +34,10 @@
 # Create a tblastn output file: MTAABLAST
 # tblastn -query $MTAA -db $CONTIGDB -out $MTAABLAST -evalue 1e-30 \
 # 	-outfmt "6 qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle salltitles"
+#
+# Used by:
+# function _run_polap_blast-genome { # BLAST edge sequences on MT and PT genes
+# polap_blast-genome() { # BLAST edge sequences on MT and PT genes
 #
 # Check: 2025-06-17
 ################################################################################

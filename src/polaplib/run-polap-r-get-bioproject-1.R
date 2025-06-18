@@ -14,6 +14,21 @@
 # You should have received a copy of the GNU General Public License along with
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
+
+################################################################################
+# polaplib/run-polap-r-get-bioproject-1.R
+#
+# This script process BioProject information to find long-read data of different
+# platforms. We started with collecting long-read sequencing data.
+# Use this to extract BioProject information.
+#
+# Used by:
+# function _run_polap_get-bioproject { # get BioProject info from NCBI
+#
+# Check: 2025-06-18
+################################################################################
+
+
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))
 suppressPackageStartupMessages(library("tidyr"))

@@ -16,6 +16,25 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# Move it because it is used by seeds-graph.
+#
+# See Also:
+# polap-r-final-filter-mtcontig.R
+# _polap_seeds_final-mtcontig
+# _polap_seeds_prepare-cc
+# _run_polap_seeds-graph
+
+# Used by:
+# function _polap_seeds_final-mtcontig { :
+# function _polap_seeds_prepare-cc {
+# _run_polap_seeds-graph
+# _run_polap_seeds
+
+#
+# _polap_disassemble_seeds_final-mtcontig() { : polap-function-disassemble-seeds.sh
+# no more used or comment out
+
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))

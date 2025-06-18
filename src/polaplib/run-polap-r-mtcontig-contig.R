@@ -16,9 +16,18 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# Check: 2025-06-16
+# polaplib/run-polap-r-mtcontig-contig.R
+
 ################################################################################
 # Combine MT/PT gene annotation and Flye's contig table to produce gene
-# annotation tables.
+# annotation tables. This is the 1st version for creating gene annotation table.
+# Or, v0.2.6 used this before we use edge sequences not contigs for combining
+# Flye's assembly graph information and organelle gene counts.
+#
+# Used by:
+# function _run_polap_count-gene-contig { # v0.2.6: count MT and PT genes
+#
 # See Also:
 # run-polap-r-mtcontig.R
 #

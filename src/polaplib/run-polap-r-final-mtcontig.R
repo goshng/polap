@@ -16,6 +16,13 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+################################################################################
+# Move it because it is used by seeds-graph.
+#
+# See Also:
+# polap-r-final-mtcontig.R
+# _run_polap_seeds-graph
+
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))

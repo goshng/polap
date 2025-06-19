@@ -1,6 +1,9 @@
 # polap data files
 
-test
+# python and VScode
+
+https://stevenmortimer.com/setting-up-vs-code-for-python-development-like-rstudio/
+https://www.youtube.com/watch?v=PwGKhvqJCQM
 
 # polap data files for plant organelle gene annotation
 

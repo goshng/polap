@@ -18,6 +18,8 @@
 #
 # TODO: document
 #
+# Example:
+#
 # This script is used to finalize the mt.contig.name after selecting seeds.
 #
 # Used by:

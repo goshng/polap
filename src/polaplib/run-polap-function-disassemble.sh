@@ -976,11 +976,14 @@ function _disassemble-step14 {
       for _ptdna in "${_var_mtdna}"/circular_path_*_concatenated.fa; do
         j=$(_disassemble_extract_number_circular_path "${_ptdna}")
         _ptdir="${_var_mtdna}/${j}"
-        _polap_log3_pipe "python ${_POLAPLIB_DIR}/run-polap-py-compare2ptdna.py \
+        # _polap_log3_pipe "python ${_POLAPLIB_DIR}/run-polap-py-compare2ptdna.py \
+        _polap_log3_pipe "command time -v python ${_POLAPLIB_DIR}/run-polap-py-compare2ptdna.py \
     		      --seq1 ${_arg_disassemble_c} \
 	    	      --seq2 ${_ptdna} \
 		          --out ${_ptdir} \
-		          2>${_polap_output_dest}"
+  		        2>${_var_mtdna}/timing-step14-py-compare2ptdna.txt"
+		          # 2>${_polap_output_dest}"
+              # date: 2025-06-18
       done
       shopt -u nullglob # Restore default behavior
 
@@ -1077,11 +1080,14 @@ function _disassemble-step15 {
   else
     _summary_pident=0
     if [[ -s "${_ptdna}" ]]; then
-      _polap_log3_pipe "python ${_POLAPLIB_DIR}/run-polap-py-compare2ptdna.py \
+      # _polap_log3_pipe "python ${_POLAPLIB_DIR}/run-polap-py-compare2ptdna.py \
+      _polap_log3_pipe "command time -v python ${_POLAPLIB_DIR}/run-polap-py-compare2ptdna.py \
     		    --seq1 ${_arg_disassemble_c} \
 	    	    --seq2 ${_ptdna} \
 		        --out ${_ptdir} \
-		        2>$_polap_output_dest"
+  		      2>${_var_mtdna}/timing-step15-py-compare2ptdna.txt"
+		        # 2>$_polap_output_dest"
+            # date: 2025-06-18
       if [[ -s "${_var_mtdna}/b/pident.txt" ]]; then
         _summary_pident=$(<"${_var_mtdna}/b/pident.txt")
       fi

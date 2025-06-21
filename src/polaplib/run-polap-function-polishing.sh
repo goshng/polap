@@ -51,7 +51,7 @@ fi
 # NOTE: the following disassemble has its own polishing script, which is using
 # Version 1.
 # Look for these lines in run-polap-function-disassemble.sh
-# command time -v bash "${_POLAPLIB_DIR}"/polap-build-msbwt.sh \
+# command time -v bash "${_POLAPLIB_DIR}"/polap-bash-build-msbwt.sh \
 # command time -v fmlrc -p "${_arg_threads}" \
 # The two lines above are for subsampling-polishing.
 # The simple-polishing of disassemble uses _run_polap_polish the Version 1.

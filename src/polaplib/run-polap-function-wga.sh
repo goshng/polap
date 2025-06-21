@@ -16,6 +16,13 @@
 
 ################################################################################
 # Functions for the whole-genome assembly.
+# This script is sourced by the main polap script. It is one of the oldest parts
+# of polap. The functions in this script are used to run the whole-genome 
+# assembly such as summarizing the read dataset, estimating the genome size,
+# reducing the long-read data, and running Flye for a whole-genome assembly.
+# Some of functions are duplicated and they could be made more efficient.
+# However, they are kept as they are for now to avoid breaking the existing
+# functionality.
 #
 # function _polap_summary-generated-reads {
 # function _run_polap_summary-reads { # statisics of the read dataset

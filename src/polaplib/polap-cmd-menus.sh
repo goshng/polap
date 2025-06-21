@@ -20,9 +20,24 @@
 # We use the menu for listing subcommands avaiable. It is like a file version
 # of bash completion by creating empty files with names that are the same as
 # the subcommands.
+#
+# Subcommand:
+# list
+# make-menus
+# clean-menus
+#
+# Function:
+# function _run_polap_source-menus { # makes menu commands as empty files.
+# function _run_polap_make-menus { # makes menu commands as empty files.
+# function _run_polap_make-menus-all { # makes all menu commands as empty files including development version
+# function _run_polap_clean-menus { # deletes menu command empty files
+# function _run_polap_list { # List POLAP menus.
+# function _run_polap_menu { # Interactive menu interface
+#
 # See Also:
 # bash completion source files
 # polap source-menu -> will source polap-command-completion.sh
+#
 ################################################################################
 
 ################################################################################
@@ -40,8 +55,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
@@ -245,13 +260,16 @@ HEREDOC
 
 	case "${_arg_menu[1]}" in
 	all)
-		cat "${_POLAPLIB_DIR}"/*.sh |
-			grep "^function _run_polap" |
+		# cat "${_POLAPLIB_DIR}"/*.sh |
+		grep "^function _run_polap" "${_POLAPLIB_DIR}"/*.sh |
 			grep run_polap |
 			grep -v run_polap_x |
 			sed 's/function _run_polap_//' |
 			sed 's/ {//' |
-			sort >&3
+			cut -d: -f2 |
+			cut -d\# -f1 |
+			sort |
+			uniq >&3
 		;;
 	dev)
 		if [[ "${_arg_menu[2]}" = "outfile" ]]; then

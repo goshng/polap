@@ -1,3 +1,42 @@
+# About src folder
+
+We currently use `polap.sh` and `polap-data-v2.sh`. The others are not actively
+used for polap disassemble subcommand. However, we would use `polap-data-v1.sh`
+for the v0.3.7.3 polap. We also use `polap-data-menu.sh` to add subcommands to
+data analysis scripts such as `polap-data-v2.sh` and `polaplib/polap-lib-data.sh`.
+
+- bolap.sh -> Benchmarking script (not developed yet)
+- polap-batch-v0.sh -> template batch script
+- polap-batch-v2.sh -> a batch script (not used due to polap-data-v2.sh)
+- polap-data-menu.sh -> dev script to add a new subcommand to data analysis
+- polap-data-v0.sh -> data analysis template script
+- polap-data-v1.sh -> v0.3.7.3 data analysis
+- polap-data-v2.sh -> v0.4.3 data analysis
+- polap-data-v3.sh -> taxonomy module data analysis
+- polap-data-v4.sh -> directional module data analysis
+- polap.sh -> the main polap script
+
+# The polap bash shell script
+
+When polap starts its main `polap.sh` script. It performs the followings:
+
+- make global variables: `_POLAPLIB_DIR`, `_POLAP_DEBUG`, `_POLAP_RELEASE`, etc.
+- parse command-line by sourcing `polap-parsing.sh`
+- include polap library in polaplib folder
+- call help message if necessary
+- prepare the run by sourcing `polap-variables-main.sh`
+- prepare log files using `logit` function
+- print polap version, polap command, and all global variables
+- execute a polap subcommand if there is one, display subcommands otherwise
+- print the execution time and end the polap execution
+
+If there is a proper subcommand, then that polap subcommand is executed from
+some of polap-cmd-xxx.sh or run-polap-function-xxx.sh scripts.
+
+# Comments
+
+- polap-bash-figure-latex.sh
+
 # polap_disassemble-seeds
 
 function \_disassemble-step12 {

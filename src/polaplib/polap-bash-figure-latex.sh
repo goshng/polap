@@ -1,5 +1,21 @@
-#!/bin/bash
+#!/usr/bin/env bash
+################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
 
+################################################################################
 # Convert a CSV file and a text file to a latex file for creating a PDF file of
 # assembly graphs. Assembly graph png files are necessary before executing this
 # command. Such assembly graph png files can be generated using Bandage software.
@@ -9,6 +25,8 @@
 # Use <percent_of_textwidth> to adjust the size of assembly graph figure.
 #
 # Example:
+# polap-data-cflye man figure-sheet some 2 bandage # Requires latex
+#
 # input.csv (group, taxon, tool name, assembly graph png filename)
 # ---------
 # getorganelle,Anthoceros agrestis,GetOrganelle,./Test_species/t1/0/getorganelle/embplant_pt.K115.complete.graph1.selected_graph.png
@@ -17,6 +35,9 @@
 # text.txt
 # --------
 # Any text that can be used as a latex document.
+#
+# Check: 2025-06-20
+################################################################################
 
 csv_file="$1"
 text_file="$2"

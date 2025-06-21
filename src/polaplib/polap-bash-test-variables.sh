@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 ################################################################################
 # This file is part of polap.
 #
@@ -25,6 +25,8 @@
 # Example:
 # cd polap
 # bash src/polaplib/polap-bash-test-variables.sh
+#
+# Check: 2025-06-20
 ################################################################################
 
 _arg_outdir=_arg_outdir

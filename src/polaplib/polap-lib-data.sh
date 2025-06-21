@@ -2226,6 +2226,7 @@ export PATH="\$HOME/.cargo/bin:\$PATH"
 alias p1='bash $TEMPLATE_DIR/polap-data-v1.sh'
 alias p2='bash $TEMPLATE_DIR/polap-data-v2.sh'
 alias p='bash $TEMPLATE_DIR/polap-data-v2.sh'
+alias pl='bash $TEMPLATE_DIR/polap.sh'
 alias p4='bash $TEMPLATE_DIR/polap-data-v4.sh'
 $end_marker
 EOF

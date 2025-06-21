@@ -16,11 +16,26 @@
 
 ################################################################################
 # Assemble subcommands is the key subcommand of the polap.
-# 
+# It assembles the whole-genome and organelle-genome sequences.
+# We tested assemble1 and assemble2 functions only.
+# assemble-wrange is a copy of assemble2 with _run_polap_test-reads, which
+# is used in polap-data-dflye.
+# assemble is a wrapper for assemble1 and assemble2. It needs automatic seed
+# contig selection, which is not tested yet.
+#
+# Functions:
 # function _run_polap_assemble1 { # whole-genome genome assembly
 # function _run_polap_assemble2 { # organelle-genome assembly
 # function _run_polap_assemble-wrange { # organelle-genome assembly
 # function _run_polap_assemble { # whole-genome and then organelle-genome assembly
+#
+# TODO:
+#   - implement _run_polap_assemble-wrange
+#   - implement _run_polap_assemble
+#
+# See Also:
+#   polaplib/run-polap-function-directional.sh
+#   polaplib/polap-cmd-bioproject.sh
 ################################################################################
 
 ################################################################################

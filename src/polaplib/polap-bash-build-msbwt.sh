@@ -15,7 +15,7 @@
 ################################################################################
 # A bash script used in run-polap-function-disassemble.sh
 # It is used to prepare a MSBWT file before polishing.
-# command time -v bash "${_POLAPLIB_DIR}"/polap-build-msbwt.sh
+# command time -v bash "${_POLAPLIB_DIR}"/polap-bash-build-msbwt.sh
 # command time -v fmlrc -p "${_arg_threads}"
 
 _short_read1="${1}"

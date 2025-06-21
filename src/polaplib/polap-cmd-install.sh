@@ -16,6 +16,9 @@
 
 ################################################################################
 # Install FMLRC in polap-fmlrc conda environment.
+#
+# TODO:
+# We could use polap-lib-data.sh to get installation.
 ################################################################################
 
 ################################################################################
@@ -49,13 +52,15 @@ function _run_polap_install {
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	# Grouped file path declarations
-	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 
 	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
-# Install FMLRC in polap-fmlrc conda environment.
-Example: $(basename $0) ${_arg_menu[0]}
+Install FMLRC in polap-fmlrc conda environment.
+
+Example:
+$(basename $0) ${_arg_menu[0]} [fmlrc|cflye|bandage]
 HEREDOC
 	)
 
@@ -71,7 +76,45 @@ HEREDOC
 		return 0
 	fi
 
-	conda env create -f ${_POLAPLIB_DIR}/polap-conda-environment-fmlrc.yaml
+	if [[ "${_arg_menu[1]}" == "fmlrc" ]]; then
+
+		install-fmlrc_genus_species
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+		return 0
+	fi
+
+	if [[ "${_arg_menu[1]}" == "cflye" ]]; then
+
+		install-cflye_genus_species
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+		return 0
+	fi
+
+	if [[ "${_arg_menu[1]}" == "bandage" ]]; then
+
+		install-bandage_genus_species
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+		return 0
+	fi
+
+	if [[ "${_arg_menu[1]}" == "infile" ]]; then
+
+		conda env create -f ${_POLAPLIB_DIR}/polap-conda-environment-fmlrc.yaml
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+		return 0
+	fi
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

@@ -29,10 +29,13 @@
 # function _run_polap_flye2 { # executes Flye for an organelle-genome assembly
 # function _run_polap_flye-polishing { # finish a Flye organelle-genome assembly upto flye-polishing step
 # function _run_polap_report-assembly { # report an organelle-genome assembly result
+#
+# Note: deleted these or move to run-polap-function-oga-v0.2.6.sh
 # function _run_polap_x-v0.3.7-collect-reads() { # replaced by select-reads
 # function _run_polap_x-v0.2.6-select-reads() { # selects reads mapped on a genome assembly
 # function _run_polap_x-select-reads { # selects reads mapped on a genome assembly
 # function _run_polap_x-v0.2.6-flye2() { # executes Flye for an organelle-genome assembly
+#
 ################################################################################
 
 ################################################################################

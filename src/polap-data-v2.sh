@@ -2159,7 +2159,7 @@ man-figure-sheet_genus_species() {
 
   # page number: 65
   if [[ -s "${_brg_csv}" ]]; then
-    man-figure-sheet-latex_genus_species "${_brg_csv}" "${_brg_txt}" 6 65
+    man-figure-sheet-latex_genus_species "${_brg_csv}" "${_brg_txt}" 6 58
   else
     echo "Error: no such file: ${_brg_csv}"
   fi

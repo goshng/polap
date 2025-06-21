@@ -43,7 +43,7 @@ fi
 : "${_POLAP_RELEASE:=0}"
 
 source "${_POLAPLIB_DIR}/polap-constants.sh"
-source "${_POLAPLIB_DIR}/run-polap-function-log.sh"
+source "${_POLAPLIB_DIR}/polap-lib-log.sh"
 
 ################################################################################
 # try a command

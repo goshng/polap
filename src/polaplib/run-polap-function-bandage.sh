@@ -16,7 +16,14 @@
 
 ################################################################################
 # Bandage subcommand creates png figure files for the given assembly graphs.
-# function _run_polap_bandage
+# It uses the Bandage tool to generate images from assembly graphs.
+#
+# Functions:
+#   _run_polap_bandage
+#
+# Usage:
+#   polap bandage png input.gfa output.png [label|random]
+#
 # TEST-SCC: not yet.
 # TEST-DOC: not yet.
 ################################################################################
@@ -59,14 +66,17 @@ function _run_polap_bandage {
 		cat <<HEREDOC
 # Use Bandage command to generate a genome assembly graph
 #
-# Arguments:
-#
 # Inputs:
+#  input.gfa: Input assembly graph file in GFA format.
 #
 # Outputs:
+#  output.png: PNG image file generated from the assembly graph.
+#
+# Menu:
+#   png: Generate a PNG image from the assembly graph.
 #
 # See:
-Example: $(basename $0) ${_arg_menu[0]}
+Example: $(basename $0) ${_arg_menu[0]} png input.gfa output.png [label|random]
 HEREDOC
 	)
 

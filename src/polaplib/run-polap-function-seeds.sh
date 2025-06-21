@@ -32,9 +32,11 @@
 # function _polap_seeds_final-mtcontig {
 # function _polap_seeds_final-seeds-mtcontig {
 # function _polap_seeds_report-mtcontig {
-# function _run_polap_choose-seed { # select seed contigs
 # function _run_polap_seeds { # select seed contigs
 # function _run_polap_seeds-graph { # select seed contigs
+#
+# Note: these are moved out.
+# function _run_polap_choose-seed { # select seed contigs
 # function _run_polap_seeds-gene {
 ################################################################################
 

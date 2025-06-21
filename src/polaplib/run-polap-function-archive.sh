@@ -20,9 +20,18 @@
 # Instead of saving particular result files, we save them by size limit.
 # We also use a text file, which has file paths to save even if they are
 # greater than the size limit.
+#
+# Functions:
+# function _run_polap_archive-rsync-template { # archive a POLAP-cflye output folder for later use
+# function _run_polap_archive { # archive a POLAP output folder for later use
+# function _run_polap_cleanup { # cleanup an POLAP output folder
+# function _run_polap_init { # initialize an output folder
+# function _run_polap_log { # display the polap log
+#
 # See Also:
 # polaplib/polap-template-aflye-archive-files.txt
 # polaplib/polap-template-cflye-archive-files.txt
+#
 # TEST-SCC: not yet
 ################################################################################
 
@@ -218,7 +227,7 @@ HEREDOC
 }
 
 source "${_POLAPLIB_DIR}/run-polap-function-utilities.sh"
-source "${_POLAPLIB_DIR}/run-polap-function-menus.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-menus.sh"
 
 ################################################################################
 # Initializes polap analysis in a starting folder,
@@ -241,19 +250,23 @@ function _run_polap_init { # initialize an output folder
 
 	help_message=$(
 		cat <<HEREDOC
-# A polap analysis process is initiated in a specified starting folder
-# through the creation of an output folder.
-#
-# 1. Create an empty folder.
-# 2. Create empty menu files to facilitate effortless command inputting.
-# 3. Record all external software packages including their versions.
-#
-# Arguments:
-#   -o ${_arg_outdir}: the output folder
-# Inputs: none
-# Outputs:
-#   ${_arg_outdir}
-Example: $(basename "$0") ${_arg_menu[0]} -o ${_arg_outdir}
+A polap analysis process is initiated in a specified starting folder
+through the creation of an output folder.
+
+1. Create an empty folder.
+2. Create empty menu files to facilitate effortless command inputting.
+3. Record all external software packages including their versions.
+
+Arguments:
+  -o ${_arg_outdir}: the output folder
+
+Inputs: none
+
+Outputs:
+  ${_arg_outdir}
+
+Example:
+$(basename "$0") ${_arg_menu[0]} -o ${_arg_outdir}
 HEREDOC
 	)
 

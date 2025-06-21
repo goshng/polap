@@ -8,5 +8,6 @@
 \section*{Figure description}
 
 We used \texttt{GetOrganelle}, \texttt{ptGAUL}, \texttt{PMAT}, \texttt{TIPPo}, and \texttt{Oatk} to assemble plastid genomes using low-quality Oxford Nanopore long-read data.
+ChatGPT was used to generate the initial \LaTeX\ template file for displaying genome assembly graphs per species datasets, which were modified to prepare this appending PDF-format document.
 All of the figures were created using Bandage software (Wick et al. 2015).
 

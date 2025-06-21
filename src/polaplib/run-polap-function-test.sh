@@ -55,20 +55,22 @@ function _run_polap_test {
 	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
-# Test codes.
-#
-# Arguments:
-#   -i ${_arg_inum}: source Flye (usually whole-genome) assembly number
-#
-# Inputs:
-#   ${_polap_var_ga_annotation_all}
-#
-# Outputs:
-#   ${_polap_var_mtcontigname}
-#
-# See:
-#   run-polap-select-contigs-by-table-1.R for the description of --select-contig option
-Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>] [--select-contig <number>]
+Test codes.
+
+Arguments:
+  -i ${_arg_inum}: source Flye (usually whole-genome) assembly number
+
+Inputs:
+  ${_polap_var_ga_annotation_all}
+
+Outputs:
+  ${_polap_var_mtcontigname}
+
+See:
+  run-polap-select-contigs-by-table-1.R for the description of --select-contig option
+
+Example:
+$(basename $0) ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>] [--select-contig <number>]
 HEREDOC
 	)
 
@@ -173,6 +175,10 @@ HEREDOC
 		          2>$_polap_output_dest"
 		pident=$(<"${_var_mtdna}/b/pident.txt")
 		_polap_log0 "pident: ${pident}"
+	fi
+
+	if [[ "${_arg_menu[1]}" == "system" ]]; then
+		system_genus_species >&3
 	fi
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"

@@ -16,6 +16,10 @@
 
 ################################################################################
 # Do something about FASTQ files.
+#
+# Function:
+# function _run_polap_fastq {
+#
 # TODO: document the help message.
 ################################################################################
 
@@ -34,8 +38,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
@@ -55,23 +59,19 @@ function _run_polap_fastq {
 	# Print help message if requested
 	help_message=$(
 		cat <<HEREDOC
-# Deal with FASTQ sequence files.
-#
-# Arguments:
-#
-# Inputs:
-#
-# Outputs:
-#
-# Menu:
-# view
-# sample
-# subsample
-# subsample2
-#
-# See:
-Example: $(basename $0) ${_arg_menu[0]}
-$(basename $0) ${_arg_menu[0]} infile.fq outfile.fq.gz -c 10 -o o
+Deal with FASTQ sequence files.
+
+Menu:
+view
+sample
+subsample
+subsample2
+
+Example: 
+$(basename $0) ${_arg_menu[0]} view infile.fq
+$(basename $0) ${_arg_menu[0]} sample infile.fq outfile.fq <rate:0.1>
+$(basename $0) ${_arg_menu[0]} subsample infile.fq outfile.fq.gz -c 10 -o o
+$(basename $0) ${_arg_menu[0]} subsample2 s1.fq s2.fq s1.fq.gz s2.fq.gz -c 10 -o o
 HEREDOC
 	)
 

@@ -16,6 +16,36 @@
 
 ################################################################################
 # Annotate edge sequences.
+# It is one of the main part of polaplib and is used to annotate edge sequences.
+# This script provides functions to annotate edge sequences of a Flye genome.
+# It includes functions to create an edge version of contigs_stats.txt,
+# create a depth distribution, and annotate edge sequences with organelle genes.
+# It also provides a function to count genes annotated on a genome assembly.
+#
+# Functions:
+# function _run_polap_edges-stats { # create an edge version of contigs_stats.txt
+# function _run_polap_depth-distribution { # creates a depth distribution
+# function _run_polap_annotate { # annotate edge sequences in edges_stats.txt
+# function _run_polap_count-gene { # count MT and PT genes using edges_stats.txt
+# function _run_polap_blast-genome { # BLAST edge sequences on MT and PT genes
+#
+# Usage:
+#   source run-polap-function-annotate.sh
+#   _run_polap_edges-stats
+#   _run_polap_depth-distribution
+#   _run_polap_annotate
+#   _run_polap_count-gene
+#   _run_polap_blast-genome
+#
+# TODO:
+# We have almost exact copies of these functions wth _run_ prefix.
+# They are used in other module, such as disassemble. We need to simplify
+# the code and remove the duplication. So, we would have source file named
+# polap-lib-annotate.sh, which would contain these functions such as
+# polap_count-gene, polap_annotate, polap_edges-stats, etc.
+# The subcommand functions call these functions instead of having the
+# exact copies of the functions.
+#
 # See Also:
 # polaplib/run-polap-function-annotate-contig.sh
 ################################################################################
@@ -35,8 +65,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
@@ -342,31 +372,36 @@ function _run_polap_annotate { # annotate edge sequences in edges_stats.txt
 
 	help_message=$(
 		cat <<HEREDOC
-# Annotate a Flye genome assembly with organelle genes.
-#
-# Arguments:
-#   -i ${_arg_inum}: a Flye genome assembly number
-#   --contigger (default: on)
-#   --no-contigger (not implemented yet!)
-# Inputs:
-#   ${_arg_inum}
-# Outputs:
-#   ${_polap_var_ga_annotation_all}
-#   ${_polap_var_ga_annotation}
-#   ${_polap_var_ga_annotation_depth_table}
-#   ${_polap_var_ga_annotation_table}
-#   ${_polap_var_ga_pt_annotation_depth_table}
-# View:
-#   all      -> ${_polap_var_ga_annotation_all}
-#   mt       -> ${_polap_var_ga_annotation}
-#   table    -> ${_polap_var_ga_annotation_depth_table}
-#   no-depth -> ${_polap_var_ga_annotation_table}
-#   seed     -> ${_polap_var_ga_annotation_depth_table_seed_target}
-#   pt-table -> ${_polap_var_ga_pt_annotation_depth_table}
-Example: $(basename "$0") ${_arg_menu[0]} -i ${_arg_inum}
-Example: $(basename "$0") ${_arg_menu[0]} view table
-Example: $(basename "$0") ${_arg_menu[0]} view seed
-Example: $(basename "$0") ${_arg_menu[0]} view seed -o Spirodela_polyrhiza/o2 --table-format docx --outfile sp.docx
+Annotate a Flye genome assembly with organelle genes.
+
+Arguments:
+  -i ${_arg_inum}: a Flye genome assembly number
+  --contigger (default: on)
+  --no-contigger (not implemented yet!)
+
+Inputs:
+  ${_arg_inum}
+
+Outputs:
+  ${_polap_var_ga_annotation_all}
+  ${_polap_var_ga_annotation}
+  ${_polap_var_ga_annotation_depth_table}
+  ${_polap_var_ga_annotation_table}
+  ${_polap_var_ga_pt_annotation_depth_table}
+
+View:
+  all      -> ${_polap_var_ga_annotation_all}
+  mt       -> ${_polap_var_ga_annotation}
+  table    -> ${_polap_var_ga_annotation_depth_table}
+  no-depth -> ${_polap_var_ga_annotation_table}
+  seed     -> ${_polap_var_ga_annotation_depth_table_seed_target}
+  pt-table -> ${_polap_var_ga_pt_annotation_depth_table}
+
+Example:
+$(basename "$0") ${_arg_menu[0]} -i ${_arg_inum}
+$(basename "$0") ${_arg_menu[0]} view table
+$(basename "$0") ${_arg_menu[0]} view seed
+$(basename "$0") ${_arg_menu[0]} view seed -o Spirodela_polyrhiza/o2 --table-format docx --outfile sp.docx
 HEREDOC
 	)
 

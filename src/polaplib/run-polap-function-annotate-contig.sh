@@ -18,7 +18,9 @@
 # Annotate contigs not edge sequences.
 # See Also:
 # polaplib/run-polap-function-annotate.sh
+#
 # TODO: delete this script in the future.
+#
 # The edge sequence version in polaplib/run-polap-function-annotate.sh replaces
 # this script.
 ################################################################################

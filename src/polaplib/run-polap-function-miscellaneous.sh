@@ -16,9 +16,8 @@
 
 ################################################################################
 # Polap subcommands that are not hosted in any shell script.
+#
 # NOTE: They are for internal use only.
-# But, help messages could be documented.
-# TODO: document help messages.
 ################################################################################
 
 ################################################################################
@@ -737,7 +736,7 @@ function _polap_gfatools-gfa2fasta {
 function _run_polap_get-revision1 {
 	if [ "$_POLAP_DEBUG" -eq 1 ]; then set -x; fi
 
-	cp -p "${_POLAPLIB_DIR}/polap-revision1.sh" .
+	cp -p "${_POLAPLIB_DIR}/polap-bash-revision1.sh" .
 
 	if [ "$_POLAP_DEBUG" -eq 1 ]; then set +x; fi
 	return 0

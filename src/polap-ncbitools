@@ -48,6 +48,7 @@ usage:
     $(basename "$0") fetch fna NC_068626.1
     $(basename "$0") fetch tax NC_068626.1
     $(basename "$0") fetch sra SRR390728
+    $(basename "$0") fetch runinfo <bioproject ID>
 
 subcommand:
     help                  display this help
@@ -103,6 +104,14 @@ fetch__sra() {
 	# prefetch "$ACCN" --quiet --max-size 200g
 	vdb-validate "$ACCN" --quiet
 	fasterq-dump "$ACCN" --quiet
+}
+
+fetch__runinfo() {
+	local BIOPRJ=$1
+	shift
+	esearch -db bioproject -query "$BIOPRJ" |
+		elink -target sra |
+		efetch -format runinfo
 }
 
 fetch() {

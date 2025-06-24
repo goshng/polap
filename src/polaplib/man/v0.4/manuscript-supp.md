@@ -30,7 +30,8 @@ Abbreviations are as follows:
 iteration in each Stage (I), subsampling rate (Rate) and read-coverage threshold (Alpha);
 assembly metrics including the number of segments in the assembly (N),
 the total length of these segments (L), and
-the number of circular genome paths detected (C); and
+the number of circular genome paths detected (C); 
+memory usage in GB (memory) and
 the draft plastid genome assembly length (Length).
 Alpha at Stage 3 is the percent identity values between consecutive indices.
 NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the stage but just polishing of the draft genome sequences.
@@ -50,7 +51,7 @@ NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the s
 <!-- polap-data-cflye man figure-benchmark some 2 time -->
 <!-- polap-data-cflye man figure-benchmark some 2 time view -->
 
-![Benchmark of `GetOrganelle`, `ptGAUL`, `PMAT`, `TIPPo`, `Oatk` and the method (Run Setting A) presented here in terms of data processing time.
+![Benchmark of `GetOrganelle`, `ptGAUL`, `Oatk`, `TIPPo`, `PMAT` and the method (Run Setting A) presented here in terms of data processing time.
 See @fig:time-nextdenovo-some-2 for the same results, including the processing time of NextDenovo.
 Abbreviations are as follows:
 Genome size estimation by `JellyFish` (G),
@@ -68,7 +69,7 @@ Short-read polishing (FMLRC),
 <!-- polap-data-cflye man figure-benchmark some 2 memory -->
 <!-- polap-data-cflye man figure-benchmark some 2 memory view -->
 
-![Benchmark of `GetOrganelle`, `ptGAUL`, `PMAT`, `TIPPo`, `Oatk` and the method (Run Setting A) presented here in terms of peak memory usage.
+![Benchmark of `GetOrganelle`, `ptGAUL`, `Oatk`, `TIPPo`, `PMAT` and the method (Run Setting A) presented here in terms of peak memory usage.
 Abbreviations are as follows:
 Genome size estimation by `JellyFish` (G),
 Short-read polishing preparation (MSBWT),
@@ -241,7 +242,8 @@ Abbreviations are as follows:
 iteration in each Stage (I), subsampling rate (Rate) and read-coverage threshold (Alpha);
 assembly metrics including the number of segments in the assembly (N),
 the total length of these segments (L), and
-the number of circular genome paths detected (C); and
+the number of circular genome paths detected (C);
+memory usage in GB (memory) and
 the draft plastid genome assembly length (Length).
 Alpha at Stage 3 is the percent identity values between consecutive indices.
 NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the stage but just polishing of the draft genome sequences.
@@ -261,7 +263,8 @@ Abbreviations are as follows:
 iteration in each Stage (I), subsampling rate (Rate) and read-coverage threshold (Alpha);
 assembly metrics including the number of segments in the assembly (N),
 the total length of these segments (L), and
-the number of circular genome paths detected (C); and
+the number of circular genome paths detected (C);
+memory usage in GB (memory) and
 the draft plastid genome assembly length (Length).
 Alpha at Stage 3 is the percent identity values between consecutive indices.
 NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the stage but just polishing of the draft genome sequences.
@@ -275,7 +278,7 @@ NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the s
 <!-- polap-data-cflye man figure-benchmark some 2 time-nextdenovo -->
 <!-- polap-data-cflye man figure-benchmark some 2 time-nextdenovo view # Figure S3 -->
 
-![Benchmark of `GetOrganelle`, `ptGAUL`, `PMAT`, `TIPPo`, `Oatk` and the method (Run Setting A) presented here in terms of data processing time.
+![Benchmark of `GetOrganelle`, `ptGAUL`, `Oatk`, `TIPPo`, `PMAT` and the method (Run Setting A) presented here in terms of data processing time.
 See @fig:time-some-2 for the same results, excluding the processing time of `NextDenovo`.
 Abbreviations are as follows:
 Genome size estimation by `JellyFish` (G),
@@ -341,7 +344,7 @@ Description: Ubuntu 24.04 LTS
 ```
 
 **2. Install Miniconda**:
-Use the following script to download and install **[Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/)**. It uses the [instructions](https://docs.anaconda.com/miniconda/#quick-command-line-install) for the installation.
+Use the following script to download and install **[Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/)**. It uses the [instructions](https://docs.anaconda.com/miniconda/#quick-command-line-install) for the Miniconda installation available [https://docs.anaconda.com/miniconda/#quick-command-line-install](https://docs.anaconda.com/miniconda/#quick-command-line-install).
 Use either `git` or `wget` (along with `unzip` and `mv`) to prepare a folder named `polap` at the current directory.
 Replace, if necessary, the version number 0.4.3.7.9 with something recommended at [Polap's github website](http://github.com/goshng/polap).
 
@@ -370,7 +373,7 @@ bash polap/src/polap-data-cflye setup conda
 ```
 
 **3. Install Bioconda packages**:
-Install conda packages incluing `polap` and others in their own conda environments.
+Install conda packages including `polap` and others in their own conda environments.
 We execute `polap-data-cflye -y install polap` if we want the latest version of `polap`.
 
 ```bash
@@ -383,12 +386,15 @@ bash polap/src/polap-data-cflye setup pmat
 ```
 
 After the Bioconda package installation, log out and back into the terminal.
+To use the subsampling-based plastid assembly Pipeline, go to Step 7.
+Otherwise, go to the next step.
 
 **4. Test the benchmark script that creates the results in the manuscript**:
-Before executing the scripts for the results presented in the manuscript, we test the installation in three parts. Each part ensures that the actual analyses are performed as intended. First, we test the main data script that we used for the results presented in the manuscript. Second, we test Polap's command `assemble` using a simple test dataset. Third, we test Polap's command `disassemble` using the real dataset for _Eucalyptus pauciflora_.
+Before executing the scripts for the results presented in the manuscript, we test the installation in three parts. Each part ensures that the actual analyses are performed as intended. First, we test the main data script that we used for the results presented in the manuscript. Second, we test Polap's subcommand `assemble` using a simple test dataset. Third, we test Polap's subcommand `disassemble` using the real dataset for _Eucalyptus pauciflora_.
 This is the test of the first part.
 
 ```bash
+cd
 cd all/polap/cflye1
 source ~/miniconda3/bin/activate
 conda activate polap
@@ -459,7 +465,7 @@ polap polish
 diff mt.0.fa mt.1.fa
 ```
 
-If there is no screen output from the last `diff mt.0.fa mt.1.fa`, then the Polap's polishing step works fine. Move on to the testing of subsampling-based assembly.
+If there is no screen output from the last command: `diff mt.0.fa mt.1.fa`, then the Polap's polishing step works fine. Move on to the testing of subsampling-based assembly.
 
 **7. Plastid genome assembly with _Eucalyptus pauciflora_ dataset**:
 We could download the sequencing data files from the NCBI SRA database.
@@ -512,6 +518,7 @@ cat a/0/mafft/pident.txt
 **9. Batch script that creates the results in the manuscript**:
 We are ready to perform the subsampling-based plastid genome assemblies for the datasets.
 One could do the analyses for either all datasets or each dataset depending on available computing resources.
+One one can download the results available at Figshare: [https://figshare.com/s/ec1cb394870c7727a2d4](https://figshare.com/s/ec1cb394870c7727a2d4) or using the `wget` command to download them as a single zip file as shown below.
 
 ```bash
 cd

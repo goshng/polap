@@ -1,7 +1,7 @@
-species,_long,_short,_host,_inref,_min_read,_range,_random_seed,down,dummy,status
-Lolium_perenne-0,SRR13386519,SRR13386518,siepel,family,10000,36000:42000:3,101,50,dummy,done
-Lolium_perenne-1,SRR13386519,SRR13386518,siepel,family,10000,36000:42000:3,101,50,dummy,done
-Punica_granatum-0,SRR24893686,SRR24893685,marybeth,family,3000,3000:6000:2,103,50,dummy,done
-Macadamia_tetraphylla-0,SRR10424548,SRR10424549,vincent,genus,3000,3000:6000:2,105,50,dummy,done
-Test_species-0,l,s,vincent,genus,3000,3000:6000:2,105,50,dummy,done
-Spirodela_polyrhiza-0,SRR11472010,SRR11472009,siepel,family,3000,3000:6000:2,103,50,dummy,done
+species,coverage,dummy,genomesize,host,inref,long,min_read,plastid,random_seed,range,short,status
+Test_species-0,50,dummy,150000,vincent,genus,l,3000,false,105,3000:6000:2,s,done
+Lolium_perenne-0,50,dummy,0,siepel,family,SRR13386519,10000,false,101,36000:42000:3,SRR13386518,done
+Lolium_perenne-1,50,dummy,0,siepel,family,SRR13386519,10000,false,101,36000:42000:3,SRR13386518,done
+Spirodela_polyrhiza-0,50,dummy,0,siepel,family,SRR11472010,3000,false,103,3000:6000:2,SRR11472009,done
+Macadamia_tetraphylla-0,50,dummy,0,vincent,genus,SRR10424548,3000,false,105,3000:6000:2,SRR10424549,done
+Punica_granatum-0,50,dummy,0,marybeth,family,SRR24893686,3000,false,103,3000:6000:2,SRR24893685,done

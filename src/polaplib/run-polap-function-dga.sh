@@ -476,6 +476,7 @@ Outputs
 - ${_polap_var_oga_seeds}: mapped reads
 - ${_polap_var_oga_subsample}: subsample of the mapped reads
 - ${_polap_var_oga_flye}: assemblies
+- ${_polap_var_oga_dflye}: dflye assemblies
 - ${_polap_var_oga_summary}: summary
 - ${_polap_var_oga_plot}: plot or table using range in contig folder and summary
 
@@ -592,6 +593,7 @@ HEREDOC
     rm -rf "${_polap_var_oga_seeds}/${_pread_sel}"
     rm -rf "${_polap_var_oga_subsample}/${_pread_sel}"
     rm -rf "${_polap_var_oga_flye}/${_pread_sel}"
+    rm -rf "${_polap_var_oga_dflye}/${_pread_sel}"
     rm -rf "${_polap_var_oga_summary}/${_pread_sel}"
     rm -rf "${_polap_var_oga_plot}/${_pread_sel}"
   fi
@@ -601,6 +603,7 @@ HEREDOC
   _polap_log3_cmd mkdir -p "${_polap_var_oga_seeds}/${_pread_sel}"
   _polap_log3_cmd mkdir -p "${_polap_var_oga_subsample}/${_pread_sel}"
   _polap_log3_cmd mkdir -p "${_polap_var_oga_flye}/${_pread_sel}"
+  _polap_log3_cmd mkdir -p "${_polap_var_oga_dflye}/${_pread_sel}"
   _polap_log3_cmd mkdir -p "${_polap_var_oga_summary}/${_pread_sel}"
   _polap_log3_cmd mkdir -p "${_polap_var_oga_plot}/${_pread_sel}"
 
@@ -915,6 +918,9 @@ This tool executes dflye for the organelle-genome assemblies with directional re
 Inputs
 ------
 
+--directional for dflye
+--no-directional for flye
+
 - source assembly number: i
 - destination assembly number: j
 - --start-index <index>: to start at somewhere not start
@@ -925,7 +931,8 @@ Inputs
 Outputs
 -------
 
-- ${_polap_var_oga_flye}: assemblies
+- ${_polap_var_oga_flye}: flye assemblies
+- ${_polap_var_oga_dflye}: dflye assemblies
 
 HEREDOC
   )
@@ -934,7 +941,11 @@ HEREDOC
   [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
   [[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
-  _polap_log0 "execute dflye on directional read ..."
+  if [[ "${_arg_directional}" == "on" ]]; then
+    _polap_log0 "execute dflye on directional read ..."
+  else
+    _polap_log0 "execute flye on directional read ..."
+  fi
 
   ##############################################################################
   # Set the default submenu option for the main menu
@@ -960,6 +971,10 @@ HEREDOC
   read -a restored_array <"${_range_txt}"
   local array_length=${#restored_array[@]}
 
+  if [[ "${_arg_end_index}" -ne -1 ]]; then
+    array_length="${_arg_end_index}"
+  fi
+
   # dev
   # array_length=2
 
@@ -968,13 +983,24 @@ HEREDOC
   for ((i = ${_arg_start_index}; i < array_length; i++)); do
     local _test_value="${restored_array[i]}"
 
-    if [[ "${_POLAP_RELEASE}" -eq 0 ]]; then
-      local _command1="command time -v $HOME/all/polap/dFlye/bin/dflye"
+    if [[ "${_arg_directional}" == "on" ]]; then
+      if [[ "${_POLAP_RELEASE}" -eq 0 ]]; then
+        local _command1="command time -v $HOME/all/polap/dFlye/bin/dflye"
+      else
+        local _command1="command time -v dflye"
+      fi
     else
-      local _command1="command time -v dflye"
+      local _command1="command time -v flye"
     fi
 
-    local _graph_final_gfa="${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
+    if [[ "${_arg_directional}" == "on" ]]; then
+      local _graph_final_gfa="${_polap_var_oga_dflye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
+      local _out_dir="${_polap_var_oga_dflye}/${_pread_sel}/${i}"
+    else
+      local _graph_final_gfa="${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
+      local _out_dir="${_polap_var_oga_flye}/${_pread_sel}/${i}"
+    fi
+
     if [[ -s "${_graph_final_gfa}" ]]; then
       _polap_log0 "  found: ${_graph_final_gfa}"
     else
@@ -985,9 +1011,13 @@ HEREDOC
       _command1+=" \
         ${_arg_flye_data_type} \
         ${_subsample_fq} \
-		    --out-dir ${_polap_var_oga_flye}/${_pread_sel}/${i} \
-        --directional-reads \
+		    --out-dir ${_out_dir} \
 		    --threads ${_arg_threads}"
+
+      if [[ "${_arg_directional}" == "on" ]]; then
+        _command1+=" \
+          --directional-reads"
+      fi
 
       if [[ "${_arg_flye_asm_coverage}" -gt 0 ]]; then
         _command1+=" \
@@ -1008,8 +1038,13 @@ HEREDOC
       fi
     fi
     # soft-link the gfa
-    local link2graph_final_gfa="${_polap_var_oga_flye}/${_pread_sel}/${i}-graph_final.gfa"
-    ln -sf $(realpath "${_graph_final_gfa}") "${link2graph_final_gfa}"
+    if [[ "${_arg_directional}" == "on" ]]; then
+      local link2graph_final_gfa="${_polap_var_oga_dflye}/${_pread_sel}/${i}-graph_final.gfa"
+    else
+      local link2graph_final_gfa="${_polap_var_oga_flye}/${_pread_sel}/${i}-graph_final.gfa"
+    fi
+    ln -sf "${i}/30-contigger/graph_final.gfa" "${link2graph_final_gfa}"
+    # ln -sf $(realpath "${_graph_final_gfa}") "${link2graph_final_gfa}"
     # rel_symlink "${_graph_final_gfa}" "${link2graph_final_gfa}"
   done
 

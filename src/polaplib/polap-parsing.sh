@@ -107,7 +107,7 @@ _arg_inum="0"
 _arg_jnum="1"
 _arg_knum="1"
 _arg_start_index=0
-_arg_end_index=0
+_arg_end_index=-1
 _arg_select_contig="1"
 _arg_select_contig_numbers=(1 2 3 4 5 6)
 # _arg_select_read_range="3000,39000,7"
@@ -136,6 +136,7 @@ _arg_bridge_same_strand="off"
 _arg_coverage_check="on"
 _arg_resume="off"
 _arg_plastid="off"
+_arg_animal="off"
 _arg_clock="off"
 _arg_yes="off"
 _arg_timing="off"
@@ -395,6 +396,7 @@ Options:
     Note: refer to the menu "test-reads" for help.
 
   --start-index: used by test-reads
+  --end-index: used by test-reads
 
   --random-seed: 5-digit number (default automatically assigned)
     To ensure reproducibility, you can supply a random number seed 
@@ -1019,6 +1021,10 @@ parse_commandline() {
     --no-plastid | --plastid)
       _arg_plastid="on"
       test "${1:0:5}" = "--no-" && _arg_plastid="off"
+      ;;
+    --no-animal | --animal)
+      _arg_animal="on"
+      test "${1:0:5}" = "--no-" && _arg_animal="off"
       ;;
     --no-yes | --yes)
       _arg_yes="on"

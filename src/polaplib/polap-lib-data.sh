@@ -220,6 +220,34 @@ HEREDOC
 )
 
 ##### INSERT_HELP_HERE #####
+help_message_run_direct_dflye=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_download_bioproject=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_archive_run=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
+help_message_get_dflye=$(
+  cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
 help_message_config_add=$(
   cat <<HEREDOC
 
@@ -1233,6 +1261,80 @@ EOF
 }
 
 ##### INSERT_FUNCTION_HERE #####
+download-bioproject_genus_species() {
+  local _brg_outdir="${1}"
+
+  "${_polap_cmd}" get-bioproject \
+    -o "${_brg_outdir}" \
+    --bioproject "${_brg_outdir}"
+}
+
+archive-run_genus_species() {
+  local _brg_outdir="$1"
+  local _brg_sindex="${2:-0}"
+  local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+  local _timing_txt _stdout_txt _memlog_file _summary_file
+
+  _brg_outdir _brg_sindex _brg_adir _brg_title \
+    brg_common_setup \
+    _brg_target _brg_rundir _brg_outdir_i \
+    _timing_txt _stdout_txt _memlog_file _summary_file
+
+  echo "archiving ${_brg_rundir} in ${_brg_outdir_i} ..."
+  rsync -azuq --max-size=5M \
+    "${_brg_rundir}"/ \
+    "${_brg_outdir_i}"/
+  rsync -aq "${_brg_rundir}"/0/30-contigger/ \
+    "${_brg_outdir_i}"/0/30-contigger/
+}
+
+get-dflye_genus_species() {
+  local _brg_outdir="$1"
+  local _brg_sindex="${2:-0}"
+  local _brg_host="${3:-0}"
+  local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+  local _timing_txt _stdout_txt _memlog_file _summary_file
+
+  brg_common_setup \
+    _brg_outdir _brg_sindex _brg_adir _brg_title \
+    _brg_target _brg_rundir _brg_outdir_i \
+    _timing_txt _stdout_txt _memlog_file _summary_file
+
+  # local _brg_host="${_brg_sindex}"
+
+  if [[ "${_brg_outdir}" == "-h" || "${_brg_outdir}" == "--help" ]]; then
+    echo "$help_message_get_dflye"
+    return
+  fi
+
+  if [[ -z "${_brg_outdir}" ]]; then
+    echo "[ERROR] outdir is required."
+    return
+  fi
+
+  if [[ ! -d "${_brg_outdir}" ]]; then
+    echo "[ERROR] no such folder: ${_brg_outdir}"
+    return
+  fi
+
+  if [[ -z "${_brg_host}" ]]; then
+    echo "[ERROR] hostname is required".
+    return
+  fi
+
+  # rsync from the remote
+  echo Getting dflye1 results of ${_brg_outdir} from ${_brg_host} ...
+  rsync -azuq --max-size=5M \
+    "${_brg_host}:${PWD}/${_brg_outdir}"/ \
+    "${_brg_outdir}"/
+  rsync -azuq \
+    "${_brg_host}:${PWD}/${_brg_outdir_i}"/0/30-contigger/ \
+    "${_brg_outdir_i}"/0/30-contigger/
+  # copy and compress cns.fa
+  # rsync -azq "${_brg_host}:${PWD}/${_brg_outdir}/t1/0/cns.fa" "${_brg_outdir}/t1/0/"
+  # rsync -azq "${_brg_host}:${PWD}/${_brg_outdir}/t1/0/msbwt/comp_msbwt.npy" "${_brg_outdir}/t1/0/msbwt/"
+}
+
 config-add_genus_species() {
   local first_arg="$1"
   local second_arg="${2:-0}"
@@ -1247,9 +1349,9 @@ config_genus_species() {
   local remaining_args=("${@:2}")
 
   # Remove trailing slash from the first element
-  remaining_args[0]="${remaining_args[0]%/}"
+  # remaining_args[0]="${remaining_args[0]%/}"
 
-  config-${first_arg}_genus_species "${remaining_args[@]}"
+  config-${first_arg}_genus_species "${remaining_args[@]:-}"
 }
 
 config-view_genus_species() {
@@ -1366,6 +1468,8 @@ run-polap-prepare-data_genus_species() {
     echo "Error: ${_brg_target} because it is not in the CSV."
     return
   fi
+
+  mkdir -p "${_brg_rundir}"
 
   data-long_genus_species "${_brg_outdir}"
   data-short_genus_species "${_brg_outdir}"
@@ -1491,6 +1595,7 @@ run-direct-wga_genus_species() {
 run-direct-oga_genus_species() {
   local _brg_outdir="$1"
   local _brg_sindex="${2:-0}"
+  local _brg_inum="${3:-0}"
   local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
   local _timing_txt _stdout_txt _memlog_file _summary_file
 
@@ -1506,7 +1611,18 @@ run-direct-oga_genus_species() {
     return
   fi
 
-  local range="${_range["$_brg_target"]//:/,}"
+  local range0="${_range["$_brg_target"]//:/,}"
+  local range1="${_range1["$_brg_target"]//:/,}"
+  local range2="${_range2["$_brg_target"]//:/,}"
+  # if [[ "${_brg_inum}" == "0" ]]; then
+  #   local range="${ranger0}"
+  # elif [[ "${_brg_inum}" == "1" ]]; then
+  #   local range="${ranger1}"
+  # fi
+  # declare -n ref="ranger${_brg_inum}"
+  # local range="$ref"
+  local -n range="range${_brg_inum}"
+
   local min_read="${_min_read["$_brg_target"]}"
   local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
 
@@ -1521,10 +1637,34 @@ run-direct-oga_genus_species() {
   _polap_lib_process-start_memtracker "${_memlog_file}" \
     "${_polap_var_memtracker_time_interval}"
 
-  local _inum=0
+  local _inum="${_brg_inum}"
   for j in {1..9}; do
     _brg_jnum=$((_inum + j))
     if [[ -s "${_brg_rundir}/${_inum}/mt.contig.name-${_brg_jnum}" ]]; then
+
+      ############################################################
+      # the output dir should not exist.
+      #
+      if [[ -d "${_brg_rundir}/${_brg_jnum}" ]]; then
+        while true; do
+          read -r -p "Folder [${_brg_rundir}/${_brg_jnum}] already exists. Do you want to replace it? [y/n] " yn
+          case $yn in
+          [Yy]*)
+            rm -rf ${_brg_rundir}/${_brg_jnum}
+            echo "  folder ${_brg_rundir}/${_brg_jnum} is deleted."
+            break
+            ;;
+          [Nn]*)
+            echo "  folder ${_brg_rundir}/${_brg_jnum} is not deleted."
+            echo "  the subcommand is cancelled."
+            return
+            exit $EXIT_FAIL
+            ;;
+          *) echo "Please answer yes or no." ;;
+          esac
+        done
+      fi
+
       command time -v "${_polap_cmd}" assemble-wrange \
         -o "${_brg_rundir}" \
         -i "${_inum}" \
@@ -1689,7 +1829,11 @@ run-direct-read_genus_species() {
     return
   fi
 
-  local range="${_range["$_brg_target"]//:/,}"
+  local range0="${_range["$_brg_target"]//:/,}"
+  local range1="${_range1["$_brg_target"]//:/,}"
+  local range2="${_range2["$_brg_target"]//:/,}"
+  local -n range="range${_brg_inum}"
+
   local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
 
   _polap_lib_conda-ensure_conda_env polap || exit 1
@@ -1714,6 +1858,7 @@ run-direct-flye_genus_species() {
   local _brg_sindex="${2:-0}"
   local _brg_inum="${3:-1}"
   local _brg_jnum="${4:-2}"
+  local _brg_knum="${5:--1}"
   local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
   local _timing_txt _stdout_txt _memlog_file _summary_file
 
@@ -1729,22 +1874,88 @@ run-direct-flye_genus_species() {
     return
   fi
 
-  local range="${_range["$_brg_target"]//:/,}"
+  local range0="${_range["$_brg_target"]//:/,}"
+  local range1="${_range1["$_brg_target"]//:/,}"
+  local range2="${_range2["$_brg_target"]//:/,}"
+  local -n range="range${_brg_inum}"
+  local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+  echo "[INFO] Starting an organelle-genome assembly pipeline on ${_brg_outdir}-${_brg_sindex} on a range of omega values: ${range}"
+
+  _polap_lib_conda-ensure_conda_env polap || exit 1
+
+  if [[ "${_brg_knum}" == "-1" ]]; then
+    ${_polap_cmd} directional-flye-reads \
+      -o ${_brg_rundir} \
+      -i "${_brg_inum}" -j "${_brg_jnum}" \
+      --no-directional \
+      -s "${range}"
+  else
+    local _next_knum=$((_brg_knum + 1))
+    rm -rf "${_brg_rundir}/${_brg_jnum}/05-flye/ptgaul/${_brg_knum}"
+    ${_polap_cmd} directional-flye-reads \
+      -o ${_brg_rundir} \
+      -i "${_brg_inum}" -j "${_brg_jnum}" \
+      --no-directional \
+      -s "${range}" --start-index "${_brg_knum}" --end-index "${_next_knum}"
+  fi
+
+  conda deactivate
+}
+
+run-direct-dflye_genus_species() {
+  local _brg_outdir="$1"
+  local _brg_sindex="${2:-0}"
+  local _brg_inum="${3:-1}"
+  local _brg_jnum="${4:-2}"
+  local _brg_knum="${5:--1}"
+  local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+  local _timing_txt _stdout_txt _memlog_file _summary_file
+
+  brg_common_setup \
+    _brg_outdir _brg_sindex _brg_adir _brg_title \
+    _brg_target _brg_rundir _brg_outdir_i \
+    _timing_txt _stdout_txt _memlog_file _summary_file
+
+  if [[ -v _long["$_brg_target"] ]]; then
+    local long_sra="${_long["$_brg_target"]}"
+  else
+    echo "Error: ${_brg_target} because it is not in the CSV."
+    return
+  fi
+
+  local range0="${_range["$_brg_target"]//:/,}"
+  local range1="${_range1["$_brg_target"]//:/,}"
+  local range2="${_range2["$_brg_target"]//:/,}"
+  local -n range="range${_brg_inum}"
   local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
 
   echo "[INFO] Starting an organelle-genome assembly pipeline on ${_brg_outdir}-${_brg_sindex} on a range of omega values: ${range}"
 
   _polap_lib_conda-ensure_conda_env polap-dflye || exit 1
 
-  ${_polap_cmd} directional-flye-reads \
-    -o ${_brg_rundir} \
-    -i "${_brg_inum}" -j "${_brg_jnum}" \
-    -s "${range}"
+  if [[ "${_brg_knum}" == "-1" ]]; then
+    ${_polap_cmd} directional-flye-reads \
+      -o ${_brg_rundir} \
+      -i "${_brg_inum}" -j "${_brg_jnum}" \
+      --directional \
+      -s "${range}"
+  else
+    local _next_knum=$((_brg_knum + 1))
+    rm -rf "${_brg_rundir}/${_brg_jnum}/05-dflye/ptgaul/${_brg_knum}"
+    ${_polap_cmd} directional-flye-reads \
+      -o ${_brg_rundir} \
+      -i "${_brg_inum}" -j "${_brg_jnum}" \
+      --directional \
+      -s "${range}" --start-index "${_brg_knum}" --end-index "${_next_knum}"
+  fi
 
   conda deactivate
 }
 
 # Given a OGA and directional seeds to assemble mtDNA.
+# dflye has still bugs that is seg. fault from time to time.
+# we use just the directinal reads mapped.
 run-direct-dga_genus_species() {
   local _brg_outdir="$1"
   local _brg_sindex="${2:-0}"
@@ -1756,6 +1967,7 @@ run-direct-dga_genus_species() {
   run-direct-map_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_inum}" "${_brg_jnum}"
   run-direct-read_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_inum}" "${_brg_jnum}"
   run-direct-flye_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_inum}" "${_brg_jnum}"
+  # run-direct-dflye_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_inum}" "${_brg_jnum}"
 }
 
 install-latex_genus_species() {
@@ -2356,6 +2568,7 @@ setup-pmat_genus_species() {
 }
 
 setup-polap_genus_species() {
+  local _brg_outdir="${1:-na}"
   local bashrc="$HOME/.bashrc"
   # local bashrc="$PWD/bashrc.txt"
   local start_marker="# >>> polap initialize >>>"
@@ -2364,7 +2577,7 @@ setup-polap_genus_species() {
   # Customize this path if you move the scripts
   local TEMPLATE_DIR="polap/src"
 
-  if [[ "$1" == "--remove" ]]; then
+  if [[ "$_brg_outdir" == "--remove" ]]; then
     if grep -q "$start_marker" "$bashrc"; then
       sed -i "/$start_marker/,/$end_marker/d" "$bashrc"
       echo "[INFO] Removed polap initialize block from $bashrc" >&2
@@ -2382,6 +2595,7 @@ export PATH="\$HOME/bin/pmat/bin:\$PATH"
 export PATH="\$HOME/.cargo/bin:\$PATH"
 alias p1='bash $TEMPLATE_DIR/polap-data-v1.sh'
 alias p2='bash $TEMPLATE_DIR/polap-data-v2.sh'
+alias pl='bash $TEMPLATE_DIR/polap.sh'
 alias p='bash $TEMPLATE_DIR/polap-data-v2.sh'
 alias p4='bash $TEMPLATE_DIR/polap-data-v4.sh'
 $end_marker
@@ -4628,7 +4842,7 @@ setup_genus_species() {
     return
   fi
 
-  setup-${first_arg}_genus_species "${remaining_args[@]}"
+  setup-${first_arg}_genus_species "${remaining_args[@]:-}"
 }
 
 list_genus_species() {
@@ -6395,6 +6609,18 @@ function _polap_lib_data-execute-common-subcommand {
     handled=1
     ;;
     ##### INSERT_COMMAND_HERE #####
+  run-direct-dflye)
+    handled=1
+    ;;
+  download-bioproject)
+    handled=1
+    ;;
+  archive-run)
+    handled=1
+    ;;
+  get-dflye)
+    handled=1
+    ;;
   config-add)
     handled=1
     ;;
@@ -6947,6 +7173,50 @@ function _polap_lib_data-execute-common-subcommand {
     fi
     ;;
     ##### INSERT_CASE_HERE #####
+  run-direct-dflye)
+    if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+      echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N] [jnum:1|N] [knum:0|N]"
+      echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+      _subcmd1_clean="${subcmd1//-/_}"
+      declare -n ref="help_message_${_subcmd1_clean}"
+      echo "$ref"
+      exit 0
+    fi
+    ${subcmd1}_genus_species "${cmd_args_ref[@]}"
+    ;;
+  download-bioproject)
+    if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+      echo "Help: ${subcmd1} <bioproject accession ID>"
+      echo "  $(basename ${0}) ${subcmd1} PRJNA990649"
+      _subcmd1_clean="${subcmd1//-/_}"
+      declare -n ref="help_message_${_subcmd1_clean}"
+      echo "$ref"
+      exit 0
+    fi
+    ${subcmd1}_genus_species "${cmd_args_ref[@]}"
+    ;;
+  archive-run)
+    if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+      echo "Help: ${subcmd1} <outdir> [index:0|N]"
+      echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+      _subcmd1_clean="${subcmd1//-/_}"
+      declare -n ref="help_message_${_subcmd1_clean}"
+      echo "$ref"
+      exit 0
+    fi
+    ${subcmd1}_genus_species "${cmd_args_ref[@]}"
+    ;;
+  get-dflye)
+    if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+      echo "Help: ${subcmd1} <outdir> <index:0|N> <hostname>"
+      echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana hostname1"
+      _subcmd1_clean="${subcmd1//-/_}"
+      declare -n ref="help_message_${_subcmd1_clean}"
+      echo "$ref"
+      exit 0
+    fi
+    ${subcmd1}_genus_species "${cmd_args_ref[@]}"
+    ;;
   config-add)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
       echo "Help: ${subcmd1} <outdir> [inum:0|N]"
@@ -7051,7 +7321,7 @@ function _polap_lib_data-execute-common-subcommand {
     ;;
   run-direct-flye)
     if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-      echo "Help: ${subcmd1} <outdir> [inum:0|N] [jnum:1|N] [knum:2|N] [adir:t2]"
+      echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N] [jnum:1|N]"
       echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
       _subcmd1_clean="${subcmd1//-/_}"
       declare -n ref="help_message_${_subcmd1_clean}"

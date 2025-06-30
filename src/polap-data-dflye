@@ -60,7 +60,7 @@ options:
   -t <arg>            Set value for -t option (default: ${opt_t_arg})
   -m <arg>            Set value for -m option figure folder (default: ${_brg_default_target_dir})
   -e <ame>            Call <name>_genus_species function and exit.
-  --version           Show the conda version number and exit.
+  --version           Show the polap-data-dflye version number and exit.
 
 commands:
   The following commands are available for the script.
@@ -74,6 +74,7 @@ commands:
     remove (uninstall) Remove a list of tools.
     build (assemble)   Build plastid or mitochondrial genomes.
     download (mkdir)   Download data.
+    config             Config view, add, etc.
     benchmark          Benchmark GetOrganelle, ptGAUL, PMAT, TIPPo, and Oatk.
     clean (delete, rm) Remove unnecessary folders.
     get                Get results.
@@ -112,10 +113,7 @@ _POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
 
 # Target version is 0.4.4
 source "${_POLAPLIB_DIR}/polap-git-hash-version.sh"
-_polap_version=v0.5.0.2-"${_polap_git_hash_version}"
-if [ -z "${_polap_version+x}" ]; then
-  _polap_version="0.5.0.2"
-fi
+_polap_version=v0.5.2.1-"${_polap_git_hash_version}"
 
 source "${_POLAPLIB_DIR}/polap-lib-conda.sh"
 source "${_POLAPLIB_DIR}/polap-lib-timing.sh"
@@ -351,13 +349,20 @@ help_message_example=$(
   polap-data-dflye run direct-read Lolium_perenne 0 1 2
   polap-data-dflye run direct-flye Lolium_perenne 0 1 2
 
+  p4 download bioproject PRJNA990649
+
   p4 run direct-wga Test_species
-  p4 run direct-oga Test_species
-  p4 run direct-select-oga Test_species 0 1 1
-  p4 run direct-seed Test_species 0 1 2
+
+  p4 run direct-oga Test_species index:0 inum:0|1
+
+  p4 run direct-select-oga Test_species index:0 inum:1 next:19
+  
+  p4 run direct-seed Test_species 0 inum:1 jnum:2
   p4 run direct-map Test_species 0 1 2
   p4 run direct-read Test_species 0 1 2
   p4 run direct-flye Test_species 0 1 2
+
+  p4 run direct-oga Test_species index:0 inum:1 jnum:2
 HEREDOC
 )
 
@@ -395,6 +400,7 @@ help_message_directional=$(
   Test the code.
 HEREDOC
 )
+
 ##### INSERT_HELP_HERE #####
 help_message_main=$(
   cat <<HEREDOC
@@ -408,180 +414,10 @@ HEREDOC
 ################################################################################
 
 ################################################################################
-# A dynamic CSV setting for each analysis
-#
-# Usage:
-# _polap_data_csv="config.csv"
-# read_csv_config_dynamic
-# print_species_field_summary
-#
-# read_csv_config_dynamic
-# dump_parsed_config config_dump.sh
-#
-# source config_dump.sh
-# echo "${_long[Lolium_perenne-0]}"
-#
-# read_csv_config_dynamic() {
-#   local csv_file="${csv_file:-${PWD}/${_polap_data_csv}}"
-#   [[ -s "$csv_file" ]] || csv_file="${_POLAPLIB_DIR}/${_polap_data_csv}"
-#
-#   if [[ ! -f "$csv_file" ]]; then
-#     echo "[ERROR] CSV file not found: $csv_file" >&2
-#     return 1
-#   fi
-#
-#   # Read and clean header
-#   local -a headers cleaned_headers
-#   IFS=',' read -r -a headers < <(head -n1 "$csv_file")
-#   for col in "${headers[@]}"; do
-#     # printf "%s\n" "${cleaned_headers[@]}"
-#     # cleaned_headers+=("${col//[$'\r\n ']/}")
-#     col=$(echo "$col" | tr -d '[:space:]' | sed 's/^_//' | tr -cd '[:alnum:]_')
-#     cleaned_headers+=("$col")
-#   done
-#
-#   # Declare associative arrays for all columns
-#   for col in "${cleaned_headers[@]}"; do
-#     # echo "[DEBUG] declaring array: _$col" >&2
-#     declare -gA "_$col"
-#   done
-#
-#   # Parse and populate arrays
-#   while IFS=',' read -r -a fields; do
-#     local -A row
-#     for i in "${!cleaned_headers[@]}"; do
-#       row["${cleaned_headers[$i]}"]="${fields[$i]}"
-#     done
-#
-#     local species="${row[species]}"
-#     [[ -z "$species" || "$species" == \#* ]] && continue
-#
-#     _species["$species"]="$species" # <- ✅ Add this
-#
-#     for col in "${cleaned_headers[@]}"; do
-#       local value="${row[$col]}"
-#       eval "_${col}[\"$species\"]=\"\$value\""
-#     done
-#   done < <(tail -n +2 "$csv_file")
-#
-#   # Create list of unique base species before `-`
-#   mapfile -t Sall < <(
-#     for s in "${!_species[@]}"; do
-#       echo "${s%%-*}"
-#     done | sort -u
-#   )
-# }
-#
-# print_species_field_summary() {
-#   local -a fields
-#   fields=()
-#   for var in $(compgen -A variable | grep '^_' | grep -v '^_species$'); do
-#     if declare -p "$var" 2>/dev/null | grep -q 'declare \-A'; then
-#       fields+=("$var")
-#     fi
-#   done
-#
-#   if [[ ${#_species[@]} -eq 0 ]]; then
-#     echo "[WARNING] No species entries found. Only header is present?" >&2
-#     return
-#   fi
-#
-#   printf "%-20s" "Species"
-#   for f in "${fields[@]}"; do
-#     printf "%-12s" "${f#_}"
-#   done
-#   echo
-#
-#   for s in $(printf "%s\n" "${!_species[@]}" | sort); do
-#     printf "%-20s" "$s"
-#     for f in "${fields[@]}"; do
-#       if ! eval "[[ -v ${f}[\"$s\"] ]]"; then
-#         printf "%-12s" "❌"
-#       else
-#         printf "%-12s" "✔️"
-#       fi
-#     done
-#     echo
-#   done
-# }
-
-# END
-################################################################################
-
-############################################################
-# CSV setting for each analysis
-#
-# declare -A _taxon
-# declare -A _long
-# declare -A _short
-# declare -A _host
-# declare -A _ssh
-# declare -A _min_read
-# declare -A _range
-# declare -A _inref
-# declare -A _random_seed
-# declare -A _downsample
-# declare -A _dummy
-# declare -A _status
-# set +u
-
-# Read the config files
-read-a-tsv-file-into-associative-arrays() {
-  # Define input TSV file
-  if [ -z "${csv_file+x}" ]; then
-    csv_file="${PWD}/${_polap_data_csv}"
-  fi
-  if [[ ! -s "${csv_file}" ]]; then
-    csv_file="${_POLAPLIB_DIR}/${_polap_data_csv}"
-  fi
-
-  # Read the TSV file (skip header)
-  #
-  while IFS=$',' read -r species long short host inref min_read range random_seed down genomesize dummy status; do
-    # Skip header line
-    [[ "$species" == "species" ]] && continue
-    [[ "$species" == \#* ]] && continue
-
-    # Store in associative arrays
-    if [[ -z "${species:-}" ]]; then
-      continue
-    fi
-    # _taxon["$species"]="$taxon"
-    _long["$species"]="$long"
-    _short["$species"]="$short"
-    _host["$species"]="$host"
-    _inref["$species"]="$inref"
-    _min_read["$species"]="$min_read"
-    _range["$species"]="$range"
-    _random_seed["$species"]="$random_seed"
-    _downsample["$species"]="$down"
-    _dummy["$species"]="$dummy"
-    _status["$species"]="$status"
-  done <"$csv_file"
-
-  # Create Sall with all species folder names
-  mapfile -t Sall < <(
-    for key in "${!_long[@]}"; do
-      echo "${key%%-*}"
-    done | sort -u
-  )
-}
-
-# Old way
-# read-a-tsv-file-into-associative-arrays
-# New CSV config
-
+# Read CSV config
 read_csv_config_dynamic
 # print_species_field_summary --add-field=fruit=banana --fields=short,fruit --values
 # print_species_field_summary --add-field=fruit=banana --values
-
-# declare -p _species
-# declare -p _short
-# echo "${_short["Lolium_perenne-1"]}"
-# print_species_field_summary
-# dump_parsed_config config_dump.sh
-# source config_dump.sh
-# echo "${_short[Test_species-0]}"
 
 # Create all keys
 keys_array=($(for key in "${!_long[@]}"; do echo "$key"; done | sort))
@@ -608,19 +444,6 @@ _arg7=${7:-arg7}
 _arg8=${8:-arg8}
 _arg9=${9:-arg9}
 _arg10=${10:-arg10}
-
-# _polap_subcmd=(
-#   'test'
-#   'seeds'
-#   'map'
-#   'reads'
-#   'dflye'
-#   'directional'
-#   'archive'
-#   'report'
-#   'table1'
-#   'figure1'
-# )
 
 ################################################################################
 # Part of genus_species
@@ -922,6 +745,11 @@ directional_genus_species() {
     --min-read-length "${extracted_min_read}" \
     -i 1 -j 3
 }
+
+################################################################################
+# man-table
+# man-figure
+# man-latex
 
 ################################################################################
 # main cases

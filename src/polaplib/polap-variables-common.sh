@@ -171,6 +171,7 @@ local _polap_var_oga_reads="${_polap_var_oga}/02-reads"
 local _polap_var_oga_seeds="${_polap_var_oga}/03-seeds"
 local _polap_var_oga_subsample="${_polap_var_oga}/04-subsample"
 local _polap_var_oga_flye="${_polap_var_oga}/05-flye"
+local _polap_var_oga_dflye="${_polap_var_oga}/05-dflye"
 local _polap_var_oga_summary="${_polap_var_oga}/06-summary"
 local _polap_var_oga_plot="${_polap_var_oga}/07-plot"
 

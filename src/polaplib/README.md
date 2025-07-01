@@ -251,11 +251,11 @@ Note: we will rename run-polap-py-xxx.py as polap-py-xxx.py.
 - polap-py-find-cc-with-seeds.py
 - polap-py-find-plastid-gfa2fasta.py
 - polap-py-unique-mtcontigs.py
-- run-polap-py-compare2ptdna.py
-- run-polap-py-find-cc.py
-- run-polap-py-find-cc-with-seeds.py
-- run-polap-py-find-plastid-gfa2fasta.py
-- run-polap-py-unique-mtcontigs.py
+- polap-py-compare2ptdna.py
+- polap-py-find-cc.py
+- polap-py-find-cc-with-seeds.py
+- polap-py-find-plastid-gfa2fasta.py
+- polap-py-unique-mtcontigs.py
 
 ## v0.4 figures
 

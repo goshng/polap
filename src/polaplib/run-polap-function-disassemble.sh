@@ -948,7 +948,7 @@ function _disassemble-step13 {
 		#
 
 		_polap_log3_pipe "command time -v python \
-          ${_POLAPLIB_DIR}/run-polap-py-find-plastid-gfa2fasta.py \
+          ${_POLAPLIB_DIR}/polap-py-find-plastid-gfa2fasta.py \
 		        --gfa ${_contigger_edges_gfa} \
 		        --seed ${_mtcontigname} \
 		        --out ${_var_mtdna} \
@@ -1016,8 +1016,8 @@ function _disassemble-step14 {
 			for _ptdna in "${_var_mtdna}"/circular_path_*_concatenated.fa; do
 				j=$(_disassemble_extract_number_circular_path "${_ptdna}")
 				_ptdir="${_var_mtdna}/${j}"
-				# _polap_log3_pipe "python ${_POLAPLIB_DIR}/run-polap-py-compare2ptdna.py \
-				_polap_log3_pipe "command time -v python ${_POLAPLIB_DIR}/run-polap-py-compare2ptdna.py \
+				# _polap_log3_pipe "python ${_POLAPLIB_DIR}/polap-py-compare2ptdna.py \
+				_polap_log3_pipe "command time -v python ${_POLAPLIB_DIR}/polap-py-compare2ptdna.py \
     		      --seq1 ${_arg_disassemble_c} \
 	    	      --seq2 ${_ptdna} \
 		          --out ${_ptdir} \
@@ -1120,8 +1120,8 @@ function _disassemble-step15 {
 	else
 		_summary_pident=0
 		if [[ -s "${_ptdna}" ]]; then
-			# _polap_log3_pipe "python ${_POLAPLIB_DIR}/run-polap-py-compare2ptdna.py \
-			_polap_log3_pipe "command time -v python ${_POLAPLIB_DIR}/run-polap-py-compare2ptdna.py \
+			# _polap_log3_pipe "python ${_POLAPLIB_DIR}/polap-py-compare2ptdna.py \
+			_polap_log3_pipe "command time -v python ${_POLAPLIB_DIR}/polap-py-compare2ptdna.py \
     		    --seq1 ${_arg_disassemble_c} \
 	    	    --seq2 ${_ptdna} \
 		        --out ${_ptdir} \
@@ -2756,7 +2756,7 @@ HEREDOC
 				echo "$string" | tr ',' '\n' >"${_mtcontigname}"
 				# extract ptDNA from ptGAUL's result
 				_polap_log3_pipe "python \
-          ${_POLAPLIB_DIR}/run-polap-py-find-plastid-gfa2fasta.py \
+          ${_POLAPLIB_DIR}/polap-py-find-plastid-gfa2fasta.py \
 		        --gfa ${_contigger_edges_gfa} \
 		        --seed ${_mtcontigname} \
 		        --out ${_outdir} \
@@ -2803,13 +2803,13 @@ HEREDOC
 				# P	contig_1	edge_1+	*
 				# P	contig_2	edge_2+	*
 				#
-				bash ${_POLAPLIB_DIR}/run-polap-sh-extract-three-edges-of-ptdna.sh \
+				bash ${_POLAPLIB_DIR}/polap-bash-extract-three-edges-of-ptdna.sh \
 					"${_contigger_edges_gfa}" \
 					"${_mtcontigname}"
 				if [[ -s "${_mtcontigname}" ]]; then
 					# extract ptDNA from ptGAUL's result
 					_polap_log3_pipe "python \
-          ${_POLAPLIB_DIR}/run-polap-py-find-plastid-gfa2fasta.py \
+          ${_POLAPLIB_DIR}/polap-py-find-plastid-gfa2fasta.py \
 		        --gfa ${_contigger_edges_gfa} \
 		        --seed ${_mtcontigname} \
 		        --out ${_outdir} \
@@ -2857,7 +2857,7 @@ HEREDOC
 		if [[ "${_arg_menu[2]}" == "2" ]]; then
 			_polap_log0 "extract ptDNA: ${_arg_unpolished_fasta}"
 			_polap_log3_pipe "python \
-          ${_POLAPLIB_DIR}/run-polap-py-find-plastid-gfa2fasta.py \
+          ${_POLAPLIB_DIR}/polap-py-find-plastid-gfa2fasta.py \
 		        --gfa ${_contigger_edges_gfa} \
 		        --seed ${_mtcontigname} \
 		        --out ${_outdir} \

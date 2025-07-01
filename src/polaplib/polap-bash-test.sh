@@ -3,7 +3,7 @@
 _POLAPLIB_DIR=./src/polaplib
 
 test-bash-extract-three-edges-of-ptdna() {
-	bash "${_POLAPLIB_DIR}"/run-polap-sh-extract-three-edges-of-ptdna.sh input/assembly_graph.gfa output/extract-three-edges-of-ptdna.txt
+	bash "${_POLAPLIB_DIR}"/polap-bash-extract-three-edges-of-ptdna.sh input/assembly_graph.gfa output/extract-three-edges-of-ptdna.txt
 	diff output/extract-three-edges-of-ptdna.txt output_expected/extract-three-edges-of-ptdna.txt
 }
 
@@ -18,7 +18,7 @@ test-r-depth-distribution() {
 test-bash-create-depth-file() {
 	local _polap_var_mtcontigs=output
 	local _polap_var_mtcontigs_depth_range_graphfilter="${_polap_var_mtcontigs}/1-depth.range.txt"
-	bash "${_POLAPLIB_DIR}"/run-polap-sh-create-depth-file.sh 40 90 \
+	bash "${_POLAPLIB_DIR}"/polap-bash-create-depth-file.sh 40 90 \
 		"${_polap_var_mtcontigs_depth_range_graphfilter}"
 	echo output: "${_polap_var_mtcontigs_depth_range_graphfilter}"
 }

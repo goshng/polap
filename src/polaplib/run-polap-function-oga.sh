@@ -355,7 +355,7 @@ HEREDOC
 			_polap_log2 "    output2: (new) ${_polap_var_mtcontigname}"
 			_polap_log2 "    output3: ${_polap_var_oga_contig}/contig.fa-backup"
 			_polap_log2 "    output4: (new) ${_polap_var_oga_contig}/contig.fa"
-			_polap_log3_cmd bash "${_POLAPLIB_DIR}/run-polap-sh-half-cut.sh" "${_polap_var_oga_contig}" "${_polap_var_oga_contig}/contig.fa" "${_polap_var_mtcontigname}"
+			_polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-half-cut.sh" "${_polap_var_oga_contig}" "${_polap_var_oga_contig}/contig.fa" "${_polap_var_mtcontigname}"
 
 			# cp "${_polap_var_oga}/contig.fa" "${_polap_var_oga}/contig.fa-backup"
 			# seqkit fx2tab --length --name "${_polap_var_oga}"/contig.fa -o "${_polap_var_oga}"/contig.fa.len >/dev/null 2>&1
@@ -407,7 +407,7 @@ HEREDOC
 	_polap_log2 "    input1: ${_polap_var_oga_contig}/contig.paf"
 	_polap_log2 "    output: ${_polap_var_oga_contig}/contig.tab"
 	# cut -f1-11 "${_polap_var_oga}"/contig.paf | awk -v minlength="${_arg_min_read_length}" '{if ($2>=minlength) {print}}' >"${_polap_var_oga}"/contig.tab
-	_polap_log3_cmd bash "${_POLAPLIB_DIR}/run-polap-sh-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_polap_var_oga_contig}/contig.paf" "${_polap_var_oga_contig}/contig.tab"
+	_polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_polap_var_oga_contig}/contig.paf" "${_polap_var_oga_contig}/contig.tab"
 
 	_polap_log1 "NEXT: $(basename "$0") reads -o ${_arg_outdir} -i ${_arg_inum} -j ${_arg_jnum}"
 

@@ -14,7 +14,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# polaplib/run-polap-py-find-cc-with-seeds.py
+# polaplib/polap-py-find-cc-with-seeds.py
 
 ################################################################################
 # This script parses gfa to extract plastid DNA edges.

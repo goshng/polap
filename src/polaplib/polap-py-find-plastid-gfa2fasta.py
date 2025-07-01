@@ -14,7 +14,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# polaplib/run-polap-py-find-plastid-gfa2fasta.py
+# polaplib/polap-py-find-plastid-gfa2fasta.py
 
 ################################################################################
 # We extract DNA sequences of simple circles with at least one edge that

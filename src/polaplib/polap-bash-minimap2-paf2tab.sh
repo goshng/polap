@@ -26,8 +26,6 @@
 # Check: 2025-06-17
 ################################################################################
 
-polaplib/run-polap-sh-minimap2-paf2tab.sh
-
 # only 3 arguments
 if [ "$#" -ne 3 ]; then
   echo "Usage: $0 min_read_length paf_file tab_file"

@@ -68,16 +68,16 @@
 # Argbash is FREE SOFTWARE, see https://argbash.io for more info
 
 die() {
-	local _ret="${2:-1}"
-	test "${_PRINT_HELP:-no}" = yes && print_help >&2
-	echo "$1" >&2
-	exit "${_ret}"
+  local _ret="${2:-1}"
+  test "${_PRINT_HELP:-no}" = yes && print_help >&2
+  echo "$1" >&2
+  exit "${_ret}"
 }
 
 begins_with_short_option() {
-	local first_option all_short_options='loabpfmtcrxwijgMuvhs'
-	first_option="${1:0:1}"
-	test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
+  local first_option all_short_options='loabpfmtcrxwijgMuvhs'
+  first_option="${1:0:1}"
+  test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
 }
 
 # THE DEFAULTS INITIALIZATION - POSITIONALS
@@ -255,8 +255,8 @@ _polap_command_string=polap
 
 print_help() {
 
-	help_message=$(
-		cat <<HEREDOC
+  help_message=$(
+    cat <<HEREDOC
 POLAP - Plant organelle DNA long-read assembly pipeline.
 version ${_polap_version}
 
@@ -578,10 +578,10 @@ long-read file: l.fq
 short-read file: s1.fq, s2.fq
 Execute: polap init
 HEREDOC
-	)
+  )
 
-	# Display help message
-	echo "${help_message}"
+  # Display help message
+  echo "${help_message}"
 }
 
 # Example usage
@@ -592,28 +592,28 @@ HEREDOC
 # 10K -> 10k
 # 5x -> 0
 function _polap_jellyfish_convert_suffix() {
-	local var="$1"
+  local var="$1"
 
-	if [[ $var =~ ^[0-9]+[gGmMkK]$ ]]; then
-		local suffix="${var: -1}"
-		local number="${var:0:-1}"
+  if [[ $var =~ ^[0-9]+[gGmMkK]$ ]]; then
+    local suffix="${var: -1}"
+    local number="${var:0:-1}"
 
-		case "$suffix" in
-		g | G) suffix="G" ;;
-		m | M) suffix="M" ;;
-		k | K) suffix="k" ;;
-		esac
+    case "$suffix" in
+    g | G) suffix="G" ;;
+    m | M) suffix="M" ;;
+    k | K) suffix="k" ;;
+    esac
 
-		var="${number}${suffix}"
-	else
-		var="0"
-	fi
+    var="${number}${suffix}"
+  else
+    var="0"
+  fi
 
-	echo "$var"
+  echo "$var"
 }
 
 parse_commandline() {
-  source "${_POLAPLIB_DIR}/polap-version.sh" # '.' means 'source'
+  # source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
   _positionals_count=0
   while test $# -gt 0; do
     _key="$1"
@@ -1383,137 +1383,137 @@ parse_commandline() {
       _arg_taxonomy_rank_allgroup="${_key##--taxonomy-rank-allgroup=}"
       ;;
 
-		--taxonomy-sample-size-per-rank)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_taxonomy_sample_size_per_rank="$2"
-			shift
-			;;
-		--taxonomy-sample-size-per-rank=*)
-			_arg_taxonomy_sample_size_per_rank="${_key##--taxonomy-sample-size-per-rank=}"
-			;;
-		--taxonomy-min-aa)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_taxonomy_min_aa="$2"
-			shift
-			;;
-		--taxonomy-min-aa=*)
-			_arg_taxonomy_min_aa="${_key##--taxonomy-min-aa=}"
-			;;
-		--flye-pacbio-raw)
-			_arg_flye_data_type="--pacbio-raw"
-			_arg_minimap2_data_type="map-pb"
-			;;
-		--flye-pacbio-corr)
-			_arg_flye_data_type="--pacbio-corr"
-			_arg_minimap2_data_type="map-pb"
-			;;
-		--flye-pacbio-hifi)
-			_arg_flye_data_type="--pacbio-hifi"
-			_arg_minimap2_data_type="map-hifi"
-			;;
-		--flye-nano-raw)
-			_arg_flye_data_type="--nano-raw"
-			_arg_minimap2_data_type="map-ont"
-			;;
-		--flye-nano-corr)
-			_arg_flye_data_type="--nano-corr"
-			_arg_minimap2_data_type="map-ont"
-			;;
-		--flye-nano-fq)
-			_arg_flye_data_type="--nano-fq"
-			_arg_minimap2_data_type="map-ont"
-			;;
-		--outfile)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_outfile="$2"
-			shift
-			;;
-		--outfile=*)
-			_arg_outfile="${_key##--outfile=}"
-			;;
-		--table-format)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_table_format="$2"
-			shift
-			;;
-		--table-format=*)
-			_arg_table_format="${_key##--table-format=}"
-			;;
-		--log)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_log="$2"
-			_arg_log_is="on"
-			shift
-			;;
-		--log=*)
-			_arg_log="${_key##--log=}"
-			_arg_log_is="on"
-			;;
-		--template)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_template="$2"
-			shift
-			;;
-		--template=*)
-			_arg_template="${_key##--template=}"
-			;;
-		--no-redo | --redo)
-			_arg_redo="on"
-			test "${1:0:5}" = "--no-" && _arg_redo="off"
-			;;
-		--no-test | --test)
-			_arg_test="on"
-			test "${1:0:5}" = "--no-" && _arg_test="off"
-			if [[ "${_arg_test}" == "on" ]]; then
-				_arg_plastid="on"
-			fi
-			;;
-		--no-directional | --directional)
-			_arg_directional="on"
-			test "${1:0:5}" = "--no-" && _arg_directional="off"
-			;;
-		--version)
-			echo $0 ${_polap_version}
-			exit 0
-			;;
-		-q | --quiet)
-			_arg_verbose=0
-			;;
-		-v | --verbose)
-			_arg_verbose=$((_arg_verbose + 1))
-			;;
-		--help)
-			_arg_help="on"
-			test "${1:0:5}" = "--no-" && _arg_test="off"
-			;;
-		-h)
-			print_help
-			exit 0
-			;;
-		*)
-			_last_positional="$1"
-			_positionals+=("$_last_positional")
-			_positionals_count=$((_positionals_count + 1))
-			;;
-		esac
-		shift
-	done
+    --taxonomy-sample-size-per-rank)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_taxonomy_sample_size_per_rank="$2"
+      shift
+      ;;
+    --taxonomy-sample-size-per-rank=*)
+      _arg_taxonomy_sample_size_per_rank="${_key##--taxonomy-sample-size-per-rank=}"
+      ;;
+    --taxonomy-min-aa)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_taxonomy_min_aa="$2"
+      shift
+      ;;
+    --taxonomy-min-aa=*)
+      _arg_taxonomy_min_aa="${_key##--taxonomy-min-aa=}"
+      ;;
+    --flye-pacbio-raw)
+      _arg_flye_data_type="--pacbio-raw"
+      _arg_minimap2_data_type="map-pb"
+      ;;
+    --flye-pacbio-corr)
+      _arg_flye_data_type="--pacbio-corr"
+      _arg_minimap2_data_type="map-pb"
+      ;;
+    --flye-pacbio-hifi)
+      _arg_flye_data_type="--pacbio-hifi"
+      _arg_minimap2_data_type="map-hifi"
+      ;;
+    --flye-nano-raw)
+      _arg_flye_data_type="--nano-raw"
+      _arg_minimap2_data_type="map-ont"
+      ;;
+    --flye-nano-corr)
+      _arg_flye_data_type="--nano-corr"
+      _arg_minimap2_data_type="map-ont"
+      ;;
+    --flye-nano-fq)
+      _arg_flye_data_type="--nano-fq"
+      _arg_minimap2_data_type="map-ont"
+      ;;
+    --outfile)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_outfile="$2"
+      shift
+      ;;
+    --outfile=*)
+      _arg_outfile="${_key##--outfile=}"
+      ;;
+    --table-format)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_table_format="$2"
+      shift
+      ;;
+    --table-format=*)
+      _arg_table_format="${_key##--table-format=}"
+      ;;
+    --log)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_log="$2"
+      _arg_log_is="on"
+      shift
+      ;;
+    --log=*)
+      _arg_log="${_key##--log=}"
+      _arg_log_is="on"
+      ;;
+    --template)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_template="$2"
+      shift
+      ;;
+    --template=*)
+      _arg_template="${_key##--template=}"
+      ;;
+    --no-redo | --redo)
+      _arg_redo="on"
+      test "${1:0:5}" = "--no-" && _arg_redo="off"
+      ;;
+    --no-test | --test)
+      _arg_test="on"
+      test "${1:0:5}" = "--no-" && _arg_test="off"
+      if [[ "${_arg_test}" == "on" ]]; then
+        _arg_plastid="on"
+      fi
+      ;;
+    --no-directional | --directional)
+      _arg_directional="on"
+      test "${1:0:5}" = "--no-" && _arg_directional="off"
+      ;;
+    --version)
+      echo $0 ${_polap_version}
+      exit 0
+      ;;
+    -q | --quiet)
+      _arg_verbose=0
+      ;;
+    -v | --verbose)
+      _arg_verbose=$((_arg_verbose + 1))
+      ;;
+    --help)
+      _arg_help="on"
+      test "${1:0:5}" = "--no-" && _arg_test="off"
+      ;;
+    -h)
+      print_help
+      exit 0
+      ;;
+    *)
+      _last_positional="$1"
+      _positionals+=("$_last_positional")
+      _positionals_count=$((_positionals_count + 1))
+      ;;
+    esac
+    shift
+  done
 }
 
 handle_passed_args_count() {
-	test "${_positionals_count}" -le 6 || _PRINT_HELP=yes die "FATAL ERROR: There were spurious positional arguments --- we expect between 0 and 5, but got ${_positionals_count} (the last one was: '${_last_positional}')." 1
+  test "${_positionals_count}" -le 6 || _PRINT_HELP=yes die "FATAL ERROR: There were spurious positional arguments --- we expect between 0 and 5, but got ${_positionals_count} (the last one was: '${_last_positional}')." 1
 }
 
 assign_positional_args() {
-	local _positional_name _shift_for=$1
-	_positional_names="_arg_menu[0] _arg_menu[1] _arg_menu[2] _arg_menu[3] _arg_menu[4] _arg_menu[5]"
+  local _positional_name _shift_for=$1
+  _positional_names="_arg_menu[0] _arg_menu[1] _arg_menu[2] _arg_menu[3] _arg_menu[4] _arg_menu[5]"
 
-	shift "$_shift_for"
-	for _positional_name in ${_positional_names}; do
-		test $# -gt 0 || break
-		eval "$_positional_name=\${1}" || die "Error during argument parsing, possibly an Argbash bug." 1
-		shift
-	done
+  shift "$_shift_for"
+  for _positional_name in ${_positional_names}; do
+    test $# -gt 0 || break
+    eval "$_positional_name=\${1}" || die "Error during argument parsing, possibly an Argbash bug." 1
+    shift
+  done
 }
 
 parse_commandline "$@"
@@ -1524,8 +1524,8 @@ set -u
 
 # OTHER STUFF GENERATED BY Argbash
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
-	echo "Couldn't determine the script's running directory, which probably matters, bailing out" >&2
-	exit 2
+  echo "Couldn't determine the script's running directory, which probably matters, bailing out" >&2
+  exit 2
 }
 
 ### END OF CODE GENERATED BY Argbash (sortof) ### ])

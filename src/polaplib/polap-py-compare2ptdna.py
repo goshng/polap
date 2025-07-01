@@ -14,7 +14,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# polaplib/run-polap-py-compare2ptdna.py
+# polaplib/polap-py-compare2ptdna.py
 
 ################################################################################
 # We use BLAST to roughly align two very similar sequences if they are

@@ -95,7 +95,7 @@ source "${_POLAPLIB_DIR}/run-polap-function-annotate-contig.sh"
 
 # read selection and organelle-genome assembly
 source "${_POLAPLIB_DIR}/run-polap-function-oga.sh"
-# source "${_POLAPLIB_DIR}/run-polap-function-dga.sh"
+source "${_POLAPLIB_DIR}/run-polap-function-dga.sh"
 source "${_POLAPLIB_DIR}/run-polap-function-polishing.sh"
 
 # Template
@@ -118,7 +118,7 @@ source "${_POLAPLIB_DIR}/run-polap-function-archive.sh"
 # assemble
 source "${_POLAPLIB_DIR}/run-polap-function-assemble.sh"
 source "${_POLAPLIB_DIR}/run-polap-function-disassemble.sh"
-# source "${_POLAPLIB_DIR}/run-polap-function-directional.sh"
+source "${_POLAPLIB_DIR}/run-polap-function-directional.sh"
 
 # miscellaneous
 source "${_POLAPLIB_DIR}/run-polap-function-miscellaneous.sh"

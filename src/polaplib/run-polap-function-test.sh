@@ -168,7 +168,7 @@ HEREDOC
 		_ptdna="Juncus_roemerianus/disassemble/1/1/1/52-mtdna/ptdna.1.fa"
 		_ptdir="Juncus_roemerianus/disassemble/1/1/1/52-mtdna/b"
 		_var_mtdna="Juncus_roemerianus/disassemble/1/1/1/52-mtdna"
-		_polap_log3_pipe "python ${_POLAPLIB_DIR}/run-polap-py-compare2ptdna.py \
+		_polap_log3_pipe "python ${_POLAPLIB_DIR}/polap-py-compare2ptdna.py \
     		      --seq1 ${_arg_disassemble_c} \
 	    	      --seq2 ${_ptdna} \
 		          --out ${_ptdir} \

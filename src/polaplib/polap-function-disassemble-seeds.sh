@@ -144,7 +144,7 @@ function _polap_disassemble_seeds_create-manual-depth-range {
     readarray -t _numbers < <(grep -Eo '[0-9]+' "${_two_value_textfile}")
     _polap_log1 "    manual depth range: ${_numbers[0]}"
     _polap_log1 "    manual depth range: ${_numbers[0]} ~ ${_numbers[1]}"
-    _polap_log3_cmd bash "${_POLAPLIB_DIR}/run-polap-sh-create-depth-file.sh" "${_numbers[0]}" "${_numbers[1]}" "${_polap_var_mtcontigs_1_custom_depth_range}"
+    _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-create-depth-file.sh" "${_numbers[0]}" "${_numbers[1]}" "${_polap_var_mtcontigs_1_custom_depth_range}"
     _polap_log2_column "${_polap_var_mtcontigs_1_custom_depth_range}"
     _polap_log1 "    use this depth-range for both contig preselection and graph filtering"
     _polap_log3_cmd cp "${_polap_var_mtcontigs_1_custom_depth_range}" "${_polap_var_mtcontigs_2_custom_depth_range}"
@@ -157,7 +157,7 @@ function _polap_disassemble_seeds_create-manual-depth-range {
     _polap_log0 "    3. Selecting an appropriate upper limit can be achieved by setting it to three times the average."
     read -p "  Enter the lower bound of a depth range: " _num1
     read -p "  Enter the upper bound of a depth range: " _num2
-    _polap_log3_cmd bash "${_POLAPLIB_DIR}/run-polap-sh-create-depth-file.sh" "${_num1}" "${_num2}" "${_polap_var_mtcontigs_1_custom_depth_range}"
+    _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-create-depth-file.sh" "${_num1}" "${_num2}" "${_polap_var_mtcontigs_1_custom_depth_range}"
     _polap_log0 "    manual depth range: ${_num1} ~ ${_num2}"
     _polap_log2_column "${_polap_var_mtcontigs_1_custom_depth_range}"
     # 2. for the depth-range in the graph filtering
@@ -169,7 +169,7 @@ function _polap_disassemble_seeds_create-manual-depth-range {
       _polap_log0 "    3. Selecting an appropriate upper limit can be achieved by setting it to three times the average."
       read -p "  Enter the lower bound of a depth range: " _num1
       read -p "  Enter the upper bound of a depth range: " _num2
-      _polap_log3_cmd bash "${_POLAPLIB_DIR}/run-polap-sh-create-depth-file.sh" "${_num1}" "${_num2}" "${_polap_var_mtcontigs_2_custom_depth_range}"
+      _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-create-depth-file.sh" "${_num1}" "${_num2}" "${_polap_var_mtcontigs_2_custom_depth_range}"
       _polap_log0 "    manual depth range: ${_num1} ~ ${_num2}"
       _polap_log2_column "${_polap_var_mtcontigs_2_custom_depth_range}"
     else
@@ -568,7 +568,7 @@ polap_disassemble-seeds() {
   # TODO: rewrite the following in python code
   # mtcontigs_files: index and mtcontig file path per line
   # use
-  # run-polap-py-unique-mtcontigs.py
+  # polap-py-unique-mtcontigs.py
   #
   # python unique-mtcontig.py -i mtcontigs_files.txt -o tout/mtcontigs-set.txt -p tx/mtcontig
   #
@@ -613,7 +613,7 @@ polap_disassemble-seeds() {
   #
 
   local filtered_file="${_ga_mtcontigs}/filtered_files.tmp"
-  _polap_log3_pipe "python ${_POLAPLIB_DIR}/run-polap-py-unique-mtcontigs.py \
+  _polap_log3_pipe "python ${_POLAPLIB_DIR}/polap-py-unique-mtcontigs.py \
 		--input ${hash_file} \
 		--out ${filtered_file} \
     --prefix ${_mtcontigname} \
@@ -825,7 +825,7 @@ HEREDOC
   if _polap_contains_step 5 "${step_array[@]}"; then
     _polap_log1 "  step 5: find connected components with the preselected contigs"
     _polap_log2 "    input1: ${_mtcontigs_gfa_depthfiltered_gfa}"
-    _polap_log3_pipe "python ${_POLAPLIB_DIR}/run-polap-py-find-cc-with-seeds.py \
+    _polap_log3_pipe "python ${_POLAPLIB_DIR}/polap-py-find-cc-with-seeds.py \
       --gfa ${_mtcontigs_gfa_depthfiltered_gfa} \
 			--nodes ${_mtcontigs_preselection} \
       --output ${_mtcontigs_gfa_depthfiltered_cc_seed}"

@@ -14,7 +14,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# polaplib/run-polap-py-find-cc.py
+# polaplib/polap-py-find-cc.py
 #
 # TODO: document
 #

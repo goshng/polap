@@ -3,12 +3,15 @@
 See the files to improve the code later if necessary.
 
 - [ ] collect data for PacBio for plant organelle assembly 
-- [ ] collect animal mitochondrion assembly
+- [ ] analysis of animal mitochondrion assembly using cflye
 - [ ] polaplib/polap-cmd-bioproject.sh
 - [ ] polaplib/polap-build.sh
 - [ ] polaplib/run-polap-function-annotate.sh, polaplib/polap-lib-annotate.sh
 - [ ] polaplib/run-polap-function-assemble.sh
 - [x] polaplib/polap-cmd-install.sh
+- [ ] subcommand subtract -l l.fq -p polished-4-ptdna-sequences.fa -> new l.fq without ptdna reads
+- [ ] debug dflye
+- [ ] plant mtDNA version of cflye
 
 # 2025-03-28
 

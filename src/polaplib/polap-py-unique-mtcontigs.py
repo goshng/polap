@@ -14,7 +14,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# polaplib/run-polap-py-unique-mtcontigs.py
+# polaplib/polap-py-unique-mtcontigs.py
 
 ################################################################################
 # This script is very complicated script, which used to be written in

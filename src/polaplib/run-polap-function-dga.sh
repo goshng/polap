@@ -403,7 +403,7 @@ HEREDOC
   _polap_log1 "  converting PAF to TAB ..."
   _polap_log2 "    input1: ${_polap_var_oga_contig}/contig1.paf"
   _polap_log2 "    output: ${_polap_var_oga_contig}/contig1.tab"
-  _polap_log3_cmd bash "${_POLAPLIB_DIR}/run-polap-sh-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_polap_var_oga_contig}/contig1.paf" "${_polap_var_oga_contig}/contig1.tab"
+  _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_polap_var_oga_contig}/contig1.paf" "${_polap_var_oga_contig}/contig1.tab"
 
   _polap_log1 "  mapping long-read data on the seed contigs using minimap2 ..."
   _polap_log2 "    input1: ${_polap_var_oga_contig}/contig2.fa"
@@ -424,7 +424,7 @@ HEREDOC
   _polap_log1 "  converting PAF to TAB ..."
   _polap_log2 "    input1: ${_polap_var_oga_contig}/contig2.paf"
   _polap_log2 "    output: ${_polap_var_oga_contig}/contig2.tab"
-  _polap_log3_cmd bash "${_POLAPLIB_DIR}/run-polap-sh-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_polap_var_oga_contig}/contig2.paf" "${_polap_var_oga_contig}/contig2.tab"
+  _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_polap_var_oga_contig}/contig2.paf" "${_polap_var_oga_contig}/contig2.tab"
 
   _polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
   # Disable debugging if previously enabled
@@ -1144,7 +1144,7 @@ HEREDOC
     _polap_log2 "    input1: ${_polap_var_oga_contig}/contig.paf"
     _polap_log2 "    output: ${_polap_var_oga_contig}/contig.tab"
     # cut -f1-11 "${_polap_var_oga}"/contig.paf | awk -v minlength="${_arg_min_read_length}" '{if ($2>=minlength) {print}}' >"${_polap_var_oga}"/contig.tab
-    _polap_log3_cmd bash "${_POLAPLIB_DIR}/run-polap-sh-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_polap_var_oga_contig}/contig.paf" "${_polap_var_oga_contig}/contig.tab"
+    _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_polap_var_oga_contig}/contig.paf" "${_polap_var_oga_contig}/contig.tab"
 
   fi
 
@@ -1672,7 +1672,7 @@ HEREDOC
   _polap_log1 "  converting PAF to TAB ..."
   _polap_log2 "    input1: ${_directional_dir}/01-contig-contig1.paf"
   _polap_log2 "    output: ${_directional_dir}/01-contig-contig1.tab"
-  _polap_log3_cmd bash "${_POLAPLIB_DIR}/run-polap-sh-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_directional_dir}/01-contig-contig1.paf" "${_directional_dir}/01-contig-contig1.tab"
+  _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_directional_dir}/01-contig-contig1.paf" "${_directional_dir}/01-contig-contig1.tab"
 
   _polap_log1 "  mapping long-read data on the seed contigs using minimap2 ..."
   _polap_log2 "    input1: ${_directional_dir}/01-contig-contig2.fa"
@@ -1693,7 +1693,7 @@ HEREDOC
   _polap_log1 "  converting PAF to TAB ..."
   _polap_log2 "    input1: ${_directional_dir}/01-contig-contig2.paf"
   _polap_log2 "    output: ${_directional_dir}/01-contig-contig2.tab"
-  _polap_log3_cmd bash "${_POLAPLIB_DIR}/run-polap-sh-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_directional_dir}/01-contig-contig2.paf" "${_directional_dir}/01-contig-contig2.tab"
+  _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_directional_dir}/01-contig-contig2.paf" "${_directional_dir}/01-contig-contig2.tab"
 
   _polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
   # Disable debugging if previously enabled

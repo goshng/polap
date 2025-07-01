@@ -133,10 +133,10 @@ files=(polap
 	run-polap-function-test.sh
 	run-polap-function-utilities.sh
 	run-polap-function-wga.sh
-	run-polap-sh-create-depth-file.sh
-	run-polap-sh-half-cut.sh
-	run-polap-sh-minimap2-paf2tab.sh
-	run-polap-py-find-cc.py
+	polap-bash-create-depth-file.sh
+	polap-bash-half-cut.sh
+	polap-bash-minimap2-paf2tab.sh
+	polap-py-find-cc.py
 	run-polap-py-mtdna-find-cycle-with-node-revisits.py
 	run-polap-py-select-mtdna-2-nx-find-circular-path.py
 	run-polap-py-select-mtdna-2-nx-simple-cycles.py

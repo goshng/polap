@@ -210,7 +210,7 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 
 	local _ptdir="${_arg_outdir}"
-	_polap_log3_pipe "python ${_POLAPLIB_DIR}/run-polap-py-compare2ptdna.py \
+	_polap_log3_pipe "python ${_POLAPLIB_DIR}/polap-py-compare2ptdna.py \
     --seq1 ${_arg_short_read1} \
     --seq2 ${_arg_short_read2} \
 		--out ${_ptdir} \

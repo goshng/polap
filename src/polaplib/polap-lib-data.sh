@@ -1885,6 +1885,8 @@ run-direct-flye_genus_species() {
   _polap_lib_conda-ensure_conda_env polap || exit 1
 
   if [[ "${_brg_knum}" == "-1" ]]; then
+    rm -rf "${_brg_rundir}/${_brg_jnum}/05-flye/ptgaul"
+    mkdir -p "${_brg_rundir}/${_brg_jnum}/05-flye/ptgaul"
     ${_polap_cmd} directional-flye-reads \
       -o ${_brg_rundir} \
       -i "${_brg_inum}" -j "${_brg_jnum}" \
@@ -1935,6 +1937,8 @@ run-direct-dflye_genus_species() {
   _polap_lib_conda-ensure_conda_env polap-dflye || exit 1
 
   if [[ "${_brg_knum}" == "-1" ]]; then
+    rm -rf "${_brg_rundir}/${_brg_jnum}/05-dflye/ptgaul"
+    mkdir -p "${_brg_rundir}/${_brg_jnum}/05-dflye/ptgaul"
     ${_polap_cmd} directional-flye-reads \
       -o ${_brg_rundir} \
       -i "${_brg_inum}" -j "${_brg_jnum}" \

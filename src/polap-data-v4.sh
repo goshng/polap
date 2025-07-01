@@ -28,6 +28,15 @@ _media_dir="/media/h2/sra"
 _media1_dir="/media/h1/sra"
 _media2_dir="/media/h2/sra"
 
+# Default values for options
+opt_c_arg="off"
+opt_t_arg="t4"
+opt_m_arg="off"
+opt_v_flag=false
+opt_y_flag=false
+opt_f_flag=false
+opt_e_arg=""
+
 # Use man folder for a release-version
 # otherwise use a custom folder.
 if [[ -d "man" ]]; then
@@ -47,11 +56,11 @@ options:
   -y                  Enable -y flag to say YES to any question.
   -v                  Enable verbose mode.
   -f                  Enable -f flag to say YES to profiling.
-  -c <arg>            Set value for -c option (default: off)
-  -t <arg>            Set value for -t option (default: t1)
+  -c <arg>            Set value for -c option (default: ${opt_c_arg})
+  -t <arg>            Set value for -t option (default: ${opt_t_arg})
   -m <arg>            Set value for -m option figure folder (default: ${_brg_default_target_dir})
   -e <ame>            Call <name>_genus_species function and exit.
-  --version           Show the conda version number and exit.
+  --version           Show the polap-data-dflye version number and exit.
 
 commands:
   The following commands are available for the script.
@@ -65,6 +74,7 @@ commands:
     remove (uninstall) Remove a list of tools.
     build (assemble)   Build plastid or mitochondrial genomes.
     download (mkdir)   Download data.
+    config             Config view, add, etc.
     benchmark          Benchmark GetOrganelle, ptGAUL, PMAT, TIPPo, and Oatk.
     clean (delete, rm) Remove unnecessary folders.
     get                Get results.
@@ -103,10 +113,7 @@ _POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
 
 # Target version is 0.4.4
 source "${_POLAPLIB_DIR}/polap-git-hash-version.sh"
-_polap_version=v0.5.0.1-"${_polap_git_hash_version}"
-if [ -z "${_polap_version+x}" ]; then
-  _polap_version="0.5.0.1"
-fi
+_polap_version=v0.5.2.1-"${_polap_git_hash_version}"
 
 source "${_POLAPLIB_DIR}/polap-lib-conda.sh"
 source "${_POLAPLIB_DIR}/polap-lib-timing.sh"
@@ -117,6 +124,7 @@ source "${_POLAPLIB_DIR}/polap-lib-data.sh"
 source "${_POLAPLIB_DIR}/polap-lib-file.sh"
 source "${_POLAPLIB_DIR}/polap-lib-process.sh"
 source "${_POLAPLIB_DIR}/polap-lib-extract.sh"
+source "${_POLAPLIB_DIR}/polap-lib-csv.sh"
 source <(echo 'export PATH="$PWD/bin:$PATH"')
 source <(echo 'export QT_QPA_PLATFORM=minimal')
 # source <(echo 'export QT_QPA_PLATFORM=offscreen')
@@ -210,15 +218,6 @@ HEREDOC
 ################################################################################
 # main command arguments used before a subcommand
 #
-# Default values for options
-opt_c_arg="off"
-opt_t_arg="t1"
-opt_m_arg="off"
-opt_v_flag=false
-opt_y_flag=false
-opt_f_flag=false
-opt_e_arg=""
-
 print_help() {
   echo "${help_message}"
 }
@@ -291,6 +290,7 @@ while [[ "${1-}" == -* ]]; do
     ;;
   --version)
     print_version
+    print_version_git_message
     exit 0
     ;;
   -h | --help)
@@ -333,6 +333,8 @@ else
   _polap_cmd="${_polap_script_bin_dir}/polap.sh"
 fi
 
+_brg_adir="${opt_t_arg:-t4}"
+
 ################################################################################
 # BEGIN: Help messages
 help_message_example=$(
@@ -346,6 +348,21 @@ help_message_example=$(
   polap-data-dflye run direct-map Lolium_perenne 0 1 2
   polap-data-dflye run direct-read Lolium_perenne 0 1 2
   polap-data-dflye run direct-flye Lolium_perenne 0 1 2
+
+  p4 download bioproject PRJNA990649
+
+  p4 run direct-wga Test_species
+
+  p4 run direct-oga Test_species index:0 inum:0|1
+
+  p4 run direct-select-oga Test_species index:0 inum:1 next:19
+  
+  p4 run direct-seed Test_species 0 inum:1 jnum:2
+  p4 run direct-map Test_species 0 1 2
+  p4 run direct-read Test_species 0 1 2
+  p4 run direct-flye Test_species 0 1 2
+
+  p4 run direct-oga Test_species index:0 inum:1 jnum:2
 HEREDOC
 )
 
@@ -383,6 +400,7 @@ help_message_directional=$(
   Test the code.
 HEREDOC
 )
+
 ##### INSERT_HELP_HERE #####
 help_message_main=$(
   cat <<HEREDOC
@@ -395,67 +413,11 @@ HEREDOC
 # END: Help messages
 ################################################################################
 
-############################################################
-# CSV setting for each analysis
-#
-declare -A _taxon
-declare -A _long
-declare -A _short
-declare -A _host
-declare -A _ssh
-declare -A _min_read
-declare -A _range
-declare -A _inref
-declare -A _random_seed
-declare -A _downsample
-declare -A _dummy
-declare -A _status
-
-set +u
-
-# Read the config files
-read-a-tsv-file-into-associative-arrays() {
-  # Define input TSV file
-  if [ -z "${csv_file+x}" ]; then
-    csv_file="${PWD}/${_polap_data_csv}"
-  fi
-  if [[ ! -s "${csv_file}" ]]; then
-    csv_file="${_POLAPLIB_DIR}/${_polap_data_csv}"
-  fi
-
-  # Read the TSV file (skip header)
-  #
-  while IFS=$',' read -r species long short host inref min_read range random_seed down dummy status; do
-    # Skip header line
-    [[ "$species" == "species" ]] && continue
-    [[ "$species" == \#* ]] && continue
-
-    # Store in associative arrays
-    if [[ -z "${species:-}" ]]; then
-      continue
-    fi
-    # _taxon["$species"]="$taxon"
-    _long["$species"]="$long"
-    _short["$species"]="$short"
-    _host["$species"]="$host"
-    _inref["$species"]="$inref"
-    _min_read["$species"]="$min_read"
-    _range["$species"]="$range"
-    _random_seed["$species"]="$random_seed"
-    _downsample["$species"]="$down"
-    _dummy["$species"]="$dummy"
-    _status["$species"]="$status"
-  done <"$csv_file"
-
-  # Create Sall with all species folder names
-  mapfile -t Sall < <(
-    for key in "${!_long[@]}"; do
-      echo "${key%%-*}"
-    done | sort -u
-  )
-}
-
-read-a-tsv-file-into-associative-arrays
+################################################################################
+# Read CSV config
+read_csv_config_dynamic
+# print_species_field_summary --add-field=fruit=banana --fields=short,fruit --values
+# print_species_field_summary --add-field=fruit=banana --values
 
 # Create all keys
 keys_array=($(for key in "${!_long[@]}"; do echo "$key"; done | sort))
@@ -483,32 +445,30 @@ _arg8=${8:-arg8}
 _arg9=${9:-arg9}
 _arg10=${10:-arg10}
 
-# _polap_subcmd=(
-#   'test'
-#   'seeds'
-#   'map'
-#   'reads'
-#   'dflye'
-#   'directional'
-#   'archive'
-#   'report'
-#   'table1'
-#   'figure1'
-# )
-
 ################################################################################
 # Part of genus_species
 #
 test_genus_species_for() {
-  local _brg_outdir="${1}"
-  local _brg_inum="${2:-0}"
-  local key="${_brg_outdir}-${_brg_inum}"
+  local _brg_outdir="${1:-all}"
+  local _brg_sindex="${2:-0}"
+  local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+  local _timing_txt _stdout_txt _memlog_file _summary_file
 
-  local long_sra="${_long["$key"]}"
-  local short_sra="${_short["$key"]}"
+  brg_common_setup \
+    _brg_outdir _brg_sindex _brg_adir _brg_title \
+    _brg_target _brg_rundir _brg_outdir_i \
+    _timing_txt _stdout_txt _memlog_file _summary_file
 
-  echo "Key: $key"
-  if [[ "${_POLAP_RELEASE}" == "1" ]]; then
+  if [[ -v _long["$_brg_target"] ]]; then
+    local long_sra="${_long["$_brg_target"]}"
+  else
+    echo "Error: ${_brg_target} because it is not in the CSV."
+    return
+  fi
+  local short_sra="${_short["$_brg_target"]}"
+
+  echo "Key: $_brg_target"
+  if [[ "${_POLAP_RELEASE}" == "0" ]]; then
     echo "  long_sra: ${long_sra}"
     echo "  short_sra: ${short_sra}"
   fi
@@ -516,11 +476,18 @@ test_genus_species_for() {
 
 test_genus_species() {
   local _brg_outdir="${1:-all}"
-  local _brg_inum="${2:-0}"
+  local _brg_sindex="${2:-0}"
+  local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+  local _timing_txt _stdout_txt _memlog_file _summary_file
+
+  brg_common_setup \
+    _brg_outdir _brg_sindex _brg_adir _brg_title \
+    _brg_target _brg_rundir _brg_outdir_i \
+    _timing_txt _stdout_txt _memlog_file _summary_file
 
   if [[ "${_brg_outdir}" == "all" ]]; then
     for _v1 in "${Sall[@]}"; do
-      test_genus_species_for "${_v1}" "${_brg_inum}"
+      test_genus_species_for "${_v1}" "${_brg_sindex}"
     done
   elif [[ "${_brg_outdir}" == "each" ]]; then
     for key in "${Skeys[@]}"; do
@@ -780,6 +747,11 @@ directional_genus_species() {
 }
 
 ################################################################################
+# man-table
+# man-figure
+# man-latex
+
+################################################################################
 # main cases
 #
 # if [[ "${subcmd1}" == "help" ]]; then
@@ -805,8 +777,10 @@ all_args=("$@") # Save all arguments to an array
 # the 2nd and 3rd can be species folder with a tailing slash.
 # Lolium_perenne/ -> Lolium_perenne
 for i in {0..2}; do
-  if [[ -n "${all_args[i]}" ]]; then
-    all_args[i]="${all_args[i]%/}"
+  if [[ -v all_args[i] ]]; then        # check if element is set
+    if [[ -n "${all_args[i]}" ]]; then # check if it's not empty
+      all_args[i]="${all_args[i]%/}"   # remove trailing slash
+    fi
   fi
 done
 cmd_args=("${all_args[@]:1}") # Slice from index 1 onward
@@ -827,6 +801,14 @@ main)
     _subcmd1_clean="${subcmd1//-/_}"
     declare -n ref="help_message_${_subcmd1_clean}"
     echo "$ref"
+    exit 0
+  fi
+  ${subcmd1}_genus_species "${cmd_args[@]}"
+  ;;
+test)
+  if [[ "${_arg2}" == arg2 ]]; then
+    echo "Help: ${subcmd1} <outdir> [index:0|N]"
+    echo "  $(basename $0) ${subcmd1} all"
     exit 0
   fi
   ${subcmd1}_genus_species "${cmd_args[@]}"

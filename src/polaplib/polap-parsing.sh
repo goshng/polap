@@ -131,7 +131,7 @@ _arg_inum="0"
 _arg_jnum="1"
 _arg_knum="1"
 _arg_start_index=0
-_arg_end_index=0
+_arg_end_index=-1
 _arg_select_contig="1"
 _arg_select_contig_numbers=(1 2 3 4 5 6)
 # _arg_select_read_range="3000,39000,7"
@@ -160,6 +160,7 @@ _arg_bridge_same_strand="off"
 _arg_coverage_check="on"
 _arg_resume="off"
 _arg_plastid="off"
+_arg_animal="off"
 _arg_clock="off"
 _arg_yes="off"
 _arg_timing="off"
@@ -422,6 +423,7 @@ Options:
     Note: refer to the menu "test-reads" for help.
 
   --start-index: used by test-reads
+  --end-index: used by test-reads
 
   --random-seed: 5-digit number (default automatically assigned)
     To ensure reproducibility, you can supply a random number seed 
@@ -611,776 +613,775 @@ function _polap_jellyfish_convert_suffix() {
 }
 
 parse_commandline() {
-
-	# FIXME: delete this source polap-cmd-version.sh
-	source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
-
-	_positionals_count=0
-	while test $# -gt 0; do
-		_key="$1"
-		case "$_key" in
-		-l | --long-reads)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_long_reads="$2"
-			_arg_long_reads_is="on"
-			shift
-			;;
-		--long-reads=*)
-			_arg_long_reads="${_key##--long-reads=}"
-			_arg_long_reads_is="on"
-			;;
-		-l*)
-			_arg_long_reads="${_key##-l}"
-			_arg_long_reads_is="on"
-			;;
-		-o | --outdir)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_outdir="$2"
-			_arg_outdir="${_arg_outdir%/}"
-			_arg_logdir="${_arg_outdir}/log"
-			shift
-			;;
-		--outdir=*)
-			_arg_outdir="${_key##--outdir=}"
-			_arg_outdir="${_arg_outdir%/}"
-			_arg_logdir="${_arg_outdir}/log"
-			;;
-		-o*)
-			_arg_outdir="${_key##-o}"
-			_arg_outdir="${_arg_outdir%/}"
-			_arg_logdir="${_arg_outdir}/log"
-			;;
-		--anotherdir)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_anotherdir="$2"
-			_arg_anotherdir="${_arg_anotherdir%/}"
-			shift
-			;;
-		--anotherdir=*)
-			_arg_anotherdir="${_key##--anotherdir=}"
-			_arg_anotherdir="${_arg_anotherdir%/}"
-			;;
-		-a | --short-read1)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_short_read1="$2"
-			_arg_short_read1_is="on"
-			shift
-			;;
-		--short-read1=*)
-			_arg_short_read1="${_key##--short-read1=}"
-			_arg_short_read1_is="on"
-			;;
-		-a*)
-			_arg_short_read1="${_key##-a}"
-			_arg_short_read1_is="on"
-			;;
-		-b | --short-read2)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_short_read2="$2"
-			_arg_short_read2_is="on"
-			shift
-			;;
-		--short-read2=*)
-			_arg_short_read2="${_key##--short-read2=}"
-			_arg_short_read2_is="on"
-			;;
-		-b*)
-			_arg_short_read2="${_key##-b}"
-			_arg_short_read2_is="on"
-			;;
-		--sra)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_sra="$2"
-			shift
-			;;
-		--sra=*)
-			_arg_sra="${_key##--sra=}"
-			;;
-		--downsample)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_downsample="$2"
-			shift
-			;;
-		--downsample=*)
-			_arg_downsample="${_key##--downsample=}"
-			;;
-		-p | --unpolished-fasta)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_unpolished_fasta="$2"
-			shift
-			;;
-		--unpolished-fasta=*)
-			_arg_unpolished_fasta="${_key##--unpolished-fasta=}"
-			;;
-		-p*)
-			_arg_unpolished_fasta="${_key##-p}"
-			;;
-		-f | --final-assembly)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_final_assembly="$2"
-			shift
-			;;
-		--final-assembly=*)
-			_arg_final_assembly="${_key##--final-assembly=}"
-			;;
-		-f*)
-			_arg_final_assembly="${_key##-f}"
-			;;
-		-m | --min-read-length)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_min_read_length="$2"
-			shift
-			;;
-		--min-read-length=*)
-			_arg_min_read_length="${_key##--min-read-length=}"
-			;;
-		-m*)
-			_arg_min_read_length="${_key##-m}"
-			;;
-		-t | --threads)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_threads="$2"
-			shift
-			;;
-		--threads=*)
-			_arg_threads="${_key##--threads=}"
-			;;
-		-t*)
-			_arg_threads="${_key##-t}"
-			;;
-		--threads-fmlrc)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_threads_fmlrc="$2"
-			shift
-			;;
-		--threads-fmlrc=*)
-			_arg_threads_fmlrc="${_key##--threads-fmlrc=}"
-			;;
-		--flye-asm-coverage)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_flye_asm_coverage="$2"
-			shift
-			;;
-		--flye-asm-coverage=*)
-			_arg_flye_asm_coverage="${_key##--flye-asm-coverage=}"
-			;;
-		--no-flye-asm-coverage)
-			_arg_flye_asm_coverage="0"
-			shift
-			;;
-		-c | --coverage)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_coverage="$2"
-			shift
-			;;
-		--coverage=*)
-			_arg_coverage="${_key##--coverage=}"
-			;;
-		-c*)
-			_arg_coverage="${_key##-c}"
-			;;
-		--coverage-oga)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_coverage_oga="$2"
-			shift
-			;;
-		--coverage-oga=*)
-			_arg_coverage_oga="${_key##--coverage-oga=}"
-			;;
-		-r | --pair-min)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_pair_min="$2"
-			shift
-			;;
-		--pair-min=*)
-			_arg_pair_min="${_key##--pair-min=}"
-			;;
-		-r*)
-			_arg_pair_min="${_key##-r}"
-			;;
-		-x | --bridge-min)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_bridge_min="$2"
-			shift
-			;;
-		--bridge-min=*)
-			_arg_bridge_min="${_key##--bridge-min=}"
-			;;
-		-x*)
-			_arg_bridge_min="${_key##-x}"
-			;;
-		-w | --single-min)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_single_min="$2"
-			shift
-			;;
-		--single-min=*)
-			_arg_single_min="${_key##--single-min=}"
-			;;
-		-w*)
-			_arg_single_min="${_key##-w}"
-			;;
-		--rw)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_pair_min="$2"
-			_arg_single_min="$2"
-			_arg_bridge_min="0"
-			shift
-			;;
-		--rw=*)
-			_arg_pair_min="${_key##--rw=}"
-			_arg_single_min="${_key##--rw=}"
-			_arg_bridge_min="0"
-			;;
-		--max-seeds)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_max_seeds="$2"
-			shift
-			;;
-		--max-seeds=*)
-			_arg_max_seeds="${_key##--max-seeds=}"
-			;;
-		-i | --inum)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_inum="$2"
-			shift
-			;;
-		--inum=*)
-			_arg_inum="${_key##--inum=}"
-			;;
-		-i*)
-			_arg_inum="${_key##-i}"
-			;;
-		-j | --jnum)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_jnum="$2"
-			shift
-			;;
-		--jnum=*)
-			_arg_jnum="${_key##--jnum=}"
-			;;
-		-j*)
-			_arg_jnum="${_key##-j}"
-			;;
-		-k | --knum)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_knum="$2"
-			shift
-			;;
-		--knum=*)
-			_arg_knum="${_key##--knum=}"
-			;;
-		-k*)
-			_arg_knum="${_key##-k}"
-			;;
-		--start-index)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_start_index="$2"
-			shift
-			;;
-		--start-index=*)
-			_arg_start_index="${_key##--start-index=}"
-			;;
-		--end-index)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_end_index="$2"
-			shift
-			;;
-		--end-index=*)
-			_arg_end_index="${_key##--end-index=}"
-			;;
-		--select-contig)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_select_contig="$2"
-			shift
-			;;
-		--select-contig=*)
-			_arg_select_contig="${_key##--select-contig=}"
-			;;
-		--random-seed)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_random_seed="$2"
-			if ((_arg_random_seed <= 0)); then
-				_arg_random_seed=$RANDOM
-			fi
-			shift
-			;;
-		--random-seed=*)
-			_arg_random_seed="${_key##--random-seed=}"
-			if ((_arg_random_seed <= 0)); then
-				_arg_random_seed=$RANDOM
-			fi
-			;;
-		-g | --genomesize)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_genomesize="$2"
-			shift
-			;;
-		--genomesize=*)
-			_arg_genomesize="${_key##--genomesize=}"
-			;;
-		-g*)
-			_arg_genomesize="${_key##-g}"
-			;;
-		--archive)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_archive="$2"
-			_arg_archive_is="on"
-			shift
-			;;
-		--archive=*)
-			_arg_archive="${_key##--archive=}"
-			_arg_archive_is="on"
-			;;
-		--bioproject)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_bioproject="$2"
-			shift
-			;;
-		--bioproject=*)
-			_arg_bioproject="${_key##--bioproject=}"
-			;;
-		--species)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_species="$2"
-			_arg_species="${_arg_species//_/ }"
-			_arg_species="${_arg_species//\//}"
-			shift
-			;;
-		--species=*)
-			_arg_species="${_key##--species=}"
-			_arg_species="${_arg_species//_/ }"
-			_arg_species="${_arg_species//\//}"
-			;;
-		--accession)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_accession="$2"
-			shift
-			;;
-		--accession=*)
-			_arg_accession="${_key##--accession=}"
-			;;
-		--query)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_query="$2"
-			shift
-			;;
-		--query=*)
-			_arg_query="${_key##--query=}"
-			;;
-		--subject)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_subject="$2"
-			shift
-			;;
-		--subject=*)
-			_arg_subject="${_key##--subject=}"
-			;;
-		-s | --select-read-range)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_select_read_range="$2"
-			_arg_select_read_range_is="on"
-			shift
-			;;
-		--report-x)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_report_x="$2"
-			_arg_report_x_is="on"
-			shift
-			;;
-		--stopafter)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_stopafter="$2"
-			shift
-			;;
-		--no-reduction-reads | --reduction-reads)
-			_arg_reduction_reads="on"
-			test "${1:0:5}" = "--no-" && _arg_reduction_reads="off"
-			;;
-			# Add options of on and off
-		--no-markdown | --markdown)
-			_arg_markdown="on"
-			test "${1:0:5}" = "--no-" && _arg_markdown="off"
-			;;
-		--no-flye | --flye)
-			_arg_flye="on"
-			test "${1:0:5}" = "--no-" && _arg_flye="off"
-			;;
-		--no-contigger | --contigger)
-			_arg_contigger="on"
-			test "${1:0:5}" = "--no-" && _arg_contigger="off"
-			;;
-		--no-polish | --polish)
-			_arg_polish="on"
-			test "${1:0:5}" = "--no-" && _arg_polish="off"
-			;;
-		--no-dry | --dry)
-			_arg_dry="on"
-			test "${1:0:5}" = "--no-" && _arg_dry="off"
-			;;
-		--no-all-annotate | --all-annotate)
-			_arg_all_annotate="on"
-			test "${1:0:5}" = "--no-" && _arg_all_annotate="off"
-			;;
-		--no-log-stderr | --log-stderr)
-			_arg_log_stderr="on"
-			test "${1:0:5}" = "--no-" && _arg_log_stderr="off"
-			;;
-		--no-polap-reads | --polap-reads)
-			_arg_polap_reads="on"
-			test "${1:0:5}" = "--no-" && _arg_polap_reads="off"
-			;;
-		--no-bridge-same-strand | --bridge-same-strand)
-			_arg_bridge_same_strand="on"
-			test "${1:0:5}" = "--no-" && _arg_bridge_same_strand="off"
-			;;
-		--no-coverage-check | --coverage-check)
-			_arg_coverage_check="on"
-			test "${1:0:5}" = "--no-" && _arg_coverage_check="off"
-			;;
-		--no-clock | --clock)
-			_arg_clock="on"
-			test "${1:0:5}" = "--no-" && _arg_clock="off"
-			;;
-		--no-timing | --timing)
-			_arg_timing="on"
-			test "${1:0:5}" = "--no-" && _arg_timing="off"
-			;;
-		--no-plastid | --plastid)
-			_arg_plastid="on"
-			test "${1:0:5}" = "--no-" && _arg_plastid="off"
-			;;
-		--no-yes | --yes)
-			_arg_yes="on"
-			opt_y_flag="true"
-			test "${1:0:5}" = "--no-" && _arg_yes="off"
-			test "${1:0:5}" = "--no-" && opt_y_flag="false"
-			;;
-		--no-resume | --resume)
-			_arg_resume="on"
-			test "${1:0:5}" = "--no-" && _arg_resume="off"
-			;;
-		-u | --no-circularize | --circularize)
-			_arg_circularize="on"
-			test "${1:0:5}" = "--no-" && _arg_circularize="off"
-			;;
-		-u*)
-			_arg_circularize="on"
-			_next="${_key##-u}"
-			if test -n "$_next" -a "$_next" != "$_key"; then
-				{ begins_with_short_option "$_next" && shift && set -- "-u" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
-			fi
-			;;
-		--steps-include)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_steps_include="$2"
-			_arg_steps_is="on"
-			shift
-			;;
-		--steps-exclude)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_steps_exclude="$2"
-			_arg_steps_is="on"
-			shift
-			;;
-		--stages-include)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_stages_include="$2"
-			_arg_stages_is="on"
-			shift
-			;;
-		--stages-exclude)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_stages_exclude="$2"
-			_arg_stages_is="on"
-			shift
-			;;
-		--directional-i)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_directional_i="$2"
-			shift
-			;;
-		--directional-i=*)
-			_arg_directional_i="${_key##--directional-i=}"
-			;;
-		--jellyfish-s)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_jellyfish_s="$2"
-			_arg_jellyfish_s_is="on"
-			_arg_jellyfish_s=$(_polap_jellyfish_convert_suffix "${_arg_jellyfish_s}")
-			if ((_arg_jellyfish_s == 0)); then
-				die "-s option argument must be like 5g, 5m, 5k"
-			fi
-			shift
-			;;
-		--jellyfish-s=*)
-			_arg_jellyfish_s="${_key##--jellyfish-s=}"
-			_arg_jellyfish_s_is="on"
-			_arg_jellyfish_s=$(_polap_jellyfish_convert_suffix "${_arg_jellyfish_s}")
-			if ((_arg_jellyfish_s == 0)); then
-				die "-s option argument must be like 5g, 5m, 5k"
-			fi
-			;;
-		--disassemble-beta)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_beta="$2"
-			shift
-			;;
-		--disassemble-beta=*)
-			_arg_disassemble_beta="${_key##--disassemble-beta=}"
-			;;
-		--disassemble-s)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_s="$2"
-			shift
-			;;
-		--disassemble-s=*)
-			_arg_disassemble_s="${_key##--disassemble-s=}"
-			;;
-		--disassemble-s-max)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_s_max="$2"
-			shift
-			;;
-		--disassemble-s-max=*)
-			_arg_disassemble_s_max="${_key##--disassemble-s-max=}"
-			;;
-		--disassemble-a)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_a="$2"
-			shift
-			;;
-		--disassemble-a=*)
-			_arg_disassemble_a="${_key##--disassemble-a=}"
-			;;
-		--disassemble-b)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_b="$2"
-			_arg_disassemble_b_is="on"
-			shift
-			;;
-		--disassemble-b=*)
-			_arg_disassemble_b="${_key##--disassemble-b=}"
-			_arg_disassemble_b_is="on"
-			;;
-		--disassemble-c)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_c="$2"
-			_arg_disassemble_c_is="on"
-			# check if the fasta file exists.
-			if [[ ! -s "${_arg_disassemble_c}" ]]; then
-				die "ERROR: no such file: ${_arg_disassemble_c}"
-			fi
-			shift
-			;;
-		--disassemble-c=*)
-			_arg_disassemble_c="${_key##--disassemble-c=}"
-			_arg_disassemble_c_is="on"
-			# check if the fasta file exists.
-			if [[ ! -s "${_arg_disassemble_c}" ]]; then
-				die "ERROR: no such file: ${_arg_disassemble_c}"
-			fi
-			;;
-		--disassemble-i)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_i="$2"
-			shift
-			;;
-		--disassemble-i=*)
-			_arg_disassemble_i="${_key##--disassemble-i=}"
-			;;
-		--disassemble-j)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_j="$2"
-			shift
-			;;
-		--disassemble-j=*)
-			_arg_disassemble_j="${_key##--disassemble-j=}"
-			;;
-		--disassemble-p)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_p="$2"
-			_arg_disassemble_p_is="on"
-			shift
-			;;
-		--disassemble-p=*)
-			_arg_disassemble_p="${_key##--disassemble-p=}"
-			_arg_disassemble_p_is="on"
-			;;
-		--disassemble-q)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_q="$2"
-			_arg_disassemble_q_is="on"
-			shift
-			;;
-		--disassemble-q=*)
-			_arg_disassemble_q="${_key##--disassemble-q=}"
-			_arg_disassemble_q_is="on"
-			;;
-		--no-disassemble-align-reference | --disassemble-align-reference)
-			_arg_disassemble_align_reference="on"
-			test "${1:0:5}" = "--no-" && _arg_disassemble_align_reference="off"
-			;;
-		--no-disassemble-simple-polishing | --disassemble-simple-polishing)
-			_arg_disassemble_simple_polishing="on"
-			test "${1:0:5}" = "--no-" && _arg_disassemble_simple_polishing="off"
-			;;
-		--disassemble-n)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_n="$2"
-			_arg_disassemble_n_is="on"
-			shift
-			;;
-		--disassemble-n=*)
-			_arg_disassemble_n="${_key##--disassemble-n=}"
-			_arg_disassemble_n_is="on"
-			;;
-		--disassemble-r)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_r="$2"
-			shift
-			;;
-		--disassemble-r=*)
-			_arg_disassemble_r="${_key##--disassemble-r=}"
-			;;
-		--disassemble-m)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_m="$2"
-			shift
-			;;
-		--disassemble-m=*)
-			_arg_disassemble_m="${_key##--disassemble-m=}"
-			;;
-		--disassemble-alpha)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_alpha="$2"
-			shift
-			;;
-		--disassemble-alpha=*)
-			_arg_disassemble_alpha="${_key##--disassemble-alpha=}"
-			;;
-		--disassemble-delta)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_delta="$2"
-			shift
-			;;
-		--disassemble-delta=*)
-			_arg_disassemble_delta="${_key##--disassemble-delta=}"
-			;;
-		--disassemble-memory)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_memory="$2"
-			shift
-			;;
-		--disassemble-memory=*)
-			_arg_disassemble_memory="${_key##--disassemble-memory=}"
-			;;
-		--disassemble-stop-after)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_disassemble_stop_after="$2"
-			shift
-			;;
-		--disassemble-stop-after=*)
-			_arg_disassemble_stop_after="${_key##--disassemble-stop-after=}"
-			;;
-		--genomesize-a)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_genomesize_a="$2"
-			shift
-			;;
-		--genomesize-a=*)
-			_arg_genomesize_a="${_key##--genomesize-a=}"
-			;;
-		--genomesize-b)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_genomesize_b="$2"
-			_arg_genomesize_b_is="on"
-			shift
-			;;
-		--genomesize-b=*)
-			_arg_genomesize_b="${_key##--genomesize-b=}"
-			_arg_genomesize_b_is="on"
-			;;
-		--genomesize-n)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_genomesize_n="$2"
-			shift
-			;;
-		--genomesize-n=*)
-			_arg_genomesize_n="${_key##--genomesize-n=}"
-			;;
-		--max-filesize)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_max_filesize="$2"
-			shift
-			;;
-		--max-filesize=*)
-			_arg_max_filesize="${_key##--max-filesize=}"
-			;;
-		--taxonomy-genes)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_taxonomy_genes="$2"
-			shift
-			;;
-		--taxonomy-genes=*)
-			_arg_taxonomy_genes="${_key##--taxonomy-genes=}"
-			;;
-		--taxonomy-references)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_taxonomy_references="$2"
-			shift
-			;;
-		--taxonomy-references=*)
-			_arg_taxonomy_references="${_key##--taxonomy-references=}"
-			;;
-		--taxonomy-rank-ingroup)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_taxonomy_rank_ingroup="$2"
-			shift
-			;;
-		--taxonomy-rank-ingroup=*)
-			_arg_taxonomy_rank_ingroup="${_key##--taxonomy-rank-ingroup=}"
-			;;
-		--taxonomy-rank-ingroup-sample)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_taxonomy_rank_ingroup_sample="$2"
-			shift
-			;;
-		--taxonomy-rank-ingroup-sample=*)
-			_arg_taxonomy_rank_ingroup_sample="${_key##--taxonomy-rank-ingroup-sample=}"
-			;;
-		--taxonomy-ingroup-size)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_taxonomy_ingroup_size="$2"
-			shift
-			;;
-		--taxonomy-ingroup-size=*)
-			_arg_taxonomy_ingroup_size="${_key##--taxonomy-ingroup-size=}"
-			;;
-		--taxonomy-rank-outgroup-sample)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_taxonomy_rank_outgroup_sample="$2"
-			shift
-			;;
-		--taxonomy-rank-outgroup-sample=*)
-			_arg_taxonomy_rank_outgroup_sample="${_key##--taxonomy-rank-outgroup-sample=}"
-			;;
-		--taxonomy-outgroup-size)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_taxonomy_outgroup_size="$2"
-			shift
-			;;
-		--taxonomy-outgroup-size=*)
-			_arg_taxonomy_outgroup_size="${_key##--taxonomy-outgroup-size=}"
-			;;
-		--taxonomy-rank-allgroup)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_arg_taxonomy_rank_allgroup="$2"
-			shift
-			;;
-		--taxonomy-rank-allgroup=*)
-			_arg_taxonomy_rank_allgroup="${_key##--taxonomy-rank-allgroup=}"
-			;;
+  source "${_POLAPLIB_DIR}/polap-version.sh" # '.' means 'source'
+  _positionals_count=0
+  while test $# -gt 0; do
+    _key="$1"
+    case "$_key" in
+    -l | --long-reads)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_long_reads="$2"
+      _arg_long_reads_is="on"
+      shift
+      ;;
+    --long-reads=*)
+      _arg_long_reads="${_key##--long-reads=}"
+      _arg_long_reads_is="on"
+      ;;
+    -l*)
+      _arg_long_reads="${_key##-l}"
+      _arg_long_reads_is="on"
+      ;;
+    -o | --outdir)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_outdir="$2"
+      _arg_outdir="${_arg_outdir%/}"
+      _arg_logdir="${_arg_outdir}/log"
+      shift
+      ;;
+    --outdir=*)
+      _arg_outdir="${_key##--outdir=}"
+      _arg_outdir="${_arg_outdir%/}"
+      _arg_logdir="${_arg_outdir}/log"
+      ;;
+    -o*)
+      _arg_outdir="${_key##-o}"
+      _arg_outdir="${_arg_outdir%/}"
+      _arg_logdir="${_arg_outdir}/log"
+      ;;
+    --anotherdir)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_anotherdir="$2"
+      _arg_anotherdir="${_arg_anotherdir%/}"
+      shift
+      ;;
+    --anotherdir=*)
+      _arg_anotherdir="${_key##--anotherdir=}"
+      _arg_anotherdir="${_arg_anotherdir%/}"
+      ;;
+    -a | --short-read1)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_short_read1="$2"
+      _arg_short_read1_is="on"
+      shift
+      ;;
+    --short-read1=*)
+      _arg_short_read1="${_key##--short-read1=}"
+      _arg_short_read1_is="on"
+      ;;
+    -a*)
+      _arg_short_read1="${_key##-a}"
+      _arg_short_read1_is="on"
+      ;;
+    -b | --short-read2)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_short_read2="$2"
+      _arg_short_read2_is="on"
+      shift
+      ;;
+    --short-read2=*)
+      _arg_short_read2="${_key##--short-read2=}"
+      _arg_short_read2_is="on"
+      ;;
+    -b*)
+      _arg_short_read2="${_key##-b}"
+      _arg_short_read2_is="on"
+      ;;
+    --sra)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_sra="$2"
+      shift
+      ;;
+    --sra=*)
+      _arg_sra="${_key##--sra=}"
+      ;;
+    --downsample)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_downsample="$2"
+      shift
+      ;;
+    --downsample=*)
+      _arg_downsample="${_key##--downsample=}"
+      ;;
+    -p | --unpolished-fasta)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_unpolished_fasta="$2"
+      shift
+      ;;
+    --unpolished-fasta=*)
+      _arg_unpolished_fasta="${_key##--unpolished-fasta=}"
+      ;;
+    -p*)
+      _arg_unpolished_fasta="${_key##-p}"
+      ;;
+    -f | --final-assembly)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_final_assembly="$2"
+      shift
+      ;;
+    --final-assembly=*)
+      _arg_final_assembly="${_key##--final-assembly=}"
+      ;;
+    -f*)
+      _arg_final_assembly="${_key##-f}"
+      ;;
+    -m | --min-read-length)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_min_read_length="$2"
+      shift
+      ;;
+    --min-read-length=*)
+      _arg_min_read_length="${_key##--min-read-length=}"
+      ;;
+    -m*)
+      _arg_min_read_length="${_key##-m}"
+      ;;
+    -t | --threads)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_threads="$2"
+      shift
+      ;;
+    --threads=*)
+      _arg_threads="${_key##--threads=}"
+      ;;
+    -t*)
+      _arg_threads="${_key##-t}"
+      ;;
+    --threads-fmlrc)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_threads_fmlrc="$2"
+      shift
+      ;;
+    --threads-fmlrc=*)
+      _arg_threads_fmlrc="${_key##--threads-fmlrc=}"
+      ;;
+    --flye-asm-coverage)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_flye_asm_coverage="$2"
+      shift
+      ;;
+    --flye-asm-coverage=*)
+      _arg_flye_asm_coverage="${_key##--flye-asm-coverage=}"
+      ;;
+    --no-flye-asm-coverage)
+      _arg_flye_asm_coverage="0"
+      shift
+      ;;
+    -c | --coverage)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_coverage="$2"
+      shift
+      ;;
+    --coverage=*)
+      _arg_coverage="${_key##--coverage=}"
+      ;;
+    -c*)
+      _arg_coverage="${_key##-c}"
+      ;;
+    --coverage-oga)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_coverage_oga="$2"
+      shift
+      ;;
+    --coverage-oga=*)
+      _arg_coverage_oga="${_key##--coverage-oga=}"
+      ;;
+    -r | --pair-min)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_pair_min="$2"
+      shift
+      ;;
+    --pair-min=*)
+      _arg_pair_min="${_key##--pair-min=}"
+      ;;
+    -r*)
+      _arg_pair_min="${_key##-r}"
+      ;;
+    -x | --bridge-min)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_bridge_min="$2"
+      shift
+      ;;
+    --bridge-min=*)
+      _arg_bridge_min="${_key##--bridge-min=}"
+      ;;
+    -x*)
+      _arg_bridge_min="${_key##-x}"
+      ;;
+    -w | --single-min)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_single_min="$2"
+      shift
+      ;;
+    --single-min=*)
+      _arg_single_min="${_key##--single-min=}"
+      ;;
+    -w*)
+      _arg_single_min="${_key##-w}"
+      ;;
+    --rw)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_pair_min="$2"
+      _arg_single_min="$2"
+      _arg_bridge_min="0"
+      shift
+      ;;
+    --rw=*)
+      _arg_pair_min="${_key##--rw=}"
+      _arg_single_min="${_key##--rw=}"
+      _arg_bridge_min="0"
+      ;;
+    --max-seeds)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_max_seeds="$2"
+      shift
+      ;;
+    --max-seeds=*)
+      _arg_max_seeds="${_key##--max-seeds=}"
+      ;;
+    -i | --inum)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_inum="$2"
+      shift
+      ;;
+    --inum=*)
+      _arg_inum="${_key##--inum=}"
+      ;;
+    -i*)
+      _arg_inum="${_key##-i}"
+      ;;
+    -j | --jnum)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_jnum="$2"
+      shift
+      ;;
+    --jnum=*)
+      _arg_jnum="${_key##--jnum=}"
+      ;;
+    -j*)
+      _arg_jnum="${_key##-j}"
+      ;;
+    -k | --knum)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_knum="$2"
+      shift
+      ;;
+    --knum=*)
+      _arg_knum="${_key##--knum=}"
+      ;;
+    -k*)
+      _arg_knum="${_key##-k}"
+      ;;
+    --start-index)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_start_index="$2"
+      shift
+      ;;
+    --start-index=*)
+      _arg_start_index="${_key##--start-index=}"
+      ;;
+    --end-index)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_end_index="$2"
+      shift
+      ;;
+    --end-index=*)
+      _arg_end_index="${_key##--end-index=}"
+      ;;
+    --select-contig)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_select_contig="$2"
+      shift
+      ;;
+    --select-contig=*)
+      _arg_select_contig="${_key##--select-contig=}"
+      ;;
+    --random-seed)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_random_seed="$2"
+      if ((_arg_random_seed <= 0)); then
+        _arg_random_seed=$RANDOM
+      fi
+      shift
+      ;;
+    --random-seed=*)
+      _arg_random_seed="${_key##--random-seed=}"
+      if ((_arg_random_seed <= 0)); then
+        _arg_random_seed=$RANDOM
+      fi
+      ;;
+    -g | --genomesize)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_genomesize="$2"
+      shift
+      ;;
+    --genomesize=*)
+      _arg_genomesize="${_key##--genomesize=}"
+      ;;
+    -g*)
+      _arg_genomesize="${_key##-g}"
+      ;;
+    --archive)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_archive="$2"
+      _arg_archive_is="on"
+      shift
+      ;;
+    --archive=*)
+      _arg_archive="${_key##--archive=}"
+      _arg_archive_is="on"
+      ;;
+    --bioproject)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_bioproject="$2"
+      shift
+      ;;
+    --bioproject=*)
+      _arg_bioproject="${_key##--bioproject=}"
+      ;;
+    --species)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_species="$2"
+      _arg_species="${_arg_species//_/ }"
+      _arg_species="${_arg_species//\//}"
+      shift
+      ;;
+    --species=*)
+      _arg_species="${_key##--species=}"
+      _arg_species="${_arg_species//_/ }"
+      _arg_species="${_arg_species//\//}"
+      ;;
+    --accession)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_accession="$2"
+      shift
+      ;;
+    --accession=*)
+      _arg_accession="${_key##--accession=}"
+      ;;
+    --query)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_query="$2"
+      shift
+      ;;
+    --query=*)
+      _arg_query="${_key##--query=}"
+      ;;
+    --subject)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_subject="$2"
+      shift
+      ;;
+    --subject=*)
+      _arg_subject="${_key##--subject=}"
+      ;;
+    -s | --select-read-range)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_select_read_range="$2"
+      _arg_select_read_range_is="on"
+      shift
+      ;;
+    --report-x)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_report_x="$2"
+      _arg_report_x_is="on"
+      shift
+      ;;
+    --stopafter)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_stopafter="$2"
+      shift
+      ;;
+    --no-reduction-reads | --reduction-reads)
+      _arg_reduction_reads="on"
+      test "${1:0:5}" = "--no-" && _arg_reduction_reads="off"
+      ;;
+      # Add options of on and off
+    --no-markdown | --markdown)
+      _arg_markdown="on"
+      test "${1:0:5}" = "--no-" && _arg_markdown="off"
+      ;;
+    --no-flye | --flye)
+      _arg_flye="on"
+      test "${1:0:5}" = "--no-" && _arg_flye="off"
+      ;;
+    --no-contigger | --contigger)
+      _arg_contigger="on"
+      test "${1:0:5}" = "--no-" && _arg_contigger="off"
+      ;;
+    --no-polish | --polish)
+      _arg_polish="on"
+      test "${1:0:5}" = "--no-" && _arg_polish="off"
+      ;;
+    --no-dry | --dry)
+      _arg_dry="on"
+      test "${1:0:5}" = "--no-" && _arg_dry="off"
+      ;;
+    --no-all-annotate | --all-annotate)
+      _arg_all_annotate="on"
+      test "${1:0:5}" = "--no-" && _arg_all_annotate="off"
+      ;;
+    --no-log-stderr | --log-stderr)
+      _arg_log_stderr="on"
+      test "${1:0:5}" = "--no-" && _arg_log_stderr="off"
+      ;;
+    --no-polap-reads | --polap-reads)
+      _arg_polap_reads="on"
+      test "${1:0:5}" = "--no-" && _arg_polap_reads="off"
+      ;;
+    --no-bridge-same-strand | --bridge-same-strand)
+      _arg_bridge_same_strand="on"
+      test "${1:0:5}" = "--no-" && _arg_bridge_same_strand="off"
+      ;;
+    --no-coverage-check | --coverage-check)
+      _arg_coverage_check="on"
+      test "${1:0:5}" = "--no-" && _arg_coverage_check="off"
+      ;;
+    --no-clock | --clock)
+      _arg_clock="on"
+      test "${1:0:5}" = "--no-" && _arg_clock="off"
+      ;;
+    --no-timing | --timing)
+      _arg_timing="on"
+      test "${1:0:5}" = "--no-" && _arg_timing="off"
+      ;;
+    --no-plastid | --plastid)
+      _arg_plastid="on"
+      test "${1:0:5}" = "--no-" && _arg_plastid="off"
+      ;;
+    --no-animal | --animal)
+      _arg_animal="on"
+      test "${1:0:5}" = "--no-" && _arg_animal="off"
+      ;;
+    --no-yes | --yes)
+      _arg_yes="on"
+      test "${1:0:5}" = "--no-" && _arg_yes="off"
+      ;;
+    --no-resume | --resume)
+      _arg_resume="on"
+      test "${1:0:5}" = "--no-" && _arg_resume="off"
+      ;;
+    -u | --no-circularize | --circularize)
+      _arg_circularize="on"
+      test "${1:0:5}" = "--no-" && _arg_circularize="off"
+      ;;
+    -u*)
+      _arg_circularize="on"
+      _next="${_key##-u}"
+      if test -n "$_next" -a "$_next" != "$_key"; then
+        { begins_with_short_option "$_next" && shift && set -- "-u" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
+      fi
+      ;;
+    --steps-include)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_steps_include="$2"
+      _arg_steps_is="on"
+      shift
+      ;;
+    --steps-exclude)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_steps_exclude="$2"
+      _arg_steps_is="on"
+      shift
+      ;;
+    --stages-include)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_stages_include="$2"
+      _arg_stages_is="on"
+      shift
+      ;;
+    --stages-exclude)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_stages_exclude="$2"
+      _arg_stages_is="on"
+      shift
+      ;;
+    --directional-i)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_directional_i="$2"
+      shift
+      ;;
+    --directional-i=*)
+      _arg_directional_i="${_key##--directional-i=}"
+      ;;
+    --jellyfish-s)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_jellyfish_s="$2"
+      _arg_jellyfish_s_is="on"
+      _arg_jellyfish_s=$(_polap_jellyfish_convert_suffix "${_arg_jellyfish_s}")
+      if ((_arg_jellyfish_s == 0)); then
+        die "-s option argument must be like 5g, 5m, 5k"
+      fi
+      shift
+      ;;
+    --jellyfish-s=*)
+      _arg_jellyfish_s="${_key##--jellyfish-s=}"
+      _arg_jellyfish_s_is="on"
+      _arg_jellyfish_s=$(_polap_jellyfish_convert_suffix "${_arg_jellyfish_s}")
+      if ((_arg_jellyfish_s == 0)); then
+        die "-s option argument must be like 5g, 5m, 5k"
+      fi
+      ;;
+    --disassemble-beta)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_beta="$2"
+      shift
+      ;;
+    --disassemble-beta=*)
+      _arg_disassemble_beta="${_key##--disassemble-beta=}"
+      ;;
+    --disassemble-s)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_s="$2"
+      shift
+      ;;
+    --disassemble-s=*)
+      _arg_disassemble_s="${_key##--disassemble-s=}"
+      ;;
+    --disassemble-s-max)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_s_max="$2"
+      shift
+      ;;
+    --disassemble-s-max=*)
+      _arg_disassemble_s_max="${_key##--disassemble-s-max=}"
+      ;;
+    --disassemble-a)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_a="$2"
+      shift
+      ;;
+    --disassemble-a=*)
+      _arg_disassemble_a="${_key##--disassemble-a=}"
+      ;;
+    --disassemble-b)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_b="$2"
+      _arg_disassemble_b_is="on"
+      shift
+      ;;
+    --disassemble-b=*)
+      _arg_disassemble_b="${_key##--disassemble-b=}"
+      _arg_disassemble_b_is="on"
+      ;;
+    --disassemble-c)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_c="$2"
+      _arg_disassemble_c_is="on"
+      # check if the fasta file exists.
+      if [[ ! -s "${_arg_disassemble_c}" ]]; then
+        die "ERROR: no such file: ${_arg_disassemble_c}"
+      fi
+      shift
+      ;;
+    --disassemble-c=*)
+      _arg_disassemble_c="${_key##--disassemble-c=}"
+      _arg_disassemble_c_is="on"
+      # check if the fasta file exists.
+      if [[ ! -s "${_arg_disassemble_c}" ]]; then
+        die "ERROR: no such file: ${_arg_disassemble_c}"
+      fi
+      ;;
+    --disassemble-i)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_i="$2"
+      shift
+      ;;
+    --disassemble-i=*)
+      _arg_disassemble_i="${_key##--disassemble-i=}"
+      ;;
+    --disassemble-j)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_j="$2"
+      shift
+      ;;
+    --disassemble-j=*)
+      _arg_disassemble_j="${_key##--disassemble-j=}"
+      ;;
+    --disassemble-p)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_p="$2"
+      _arg_disassemble_p_is="on"
+      shift
+      ;;
+    --disassemble-p=*)
+      _arg_disassemble_p="${_key##--disassemble-p=}"
+      _arg_disassemble_p_is="on"
+      ;;
+    --disassemble-q)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_q="$2"
+      _arg_disassemble_q_is="on"
+      shift
+      ;;
+    --disassemble-q=*)
+      _arg_disassemble_q="${_key##--disassemble-q=}"
+      _arg_disassemble_q_is="on"
+      ;;
+    --no-disassemble-align-reference | --disassemble-align-reference)
+      _arg_disassemble_align_reference="on"
+      test "${1:0:5}" = "--no-" && _arg_disassemble_align_reference="off"
+      ;;
+    --no-disassemble-simple-polishing | --disassemble-simple-polishing)
+      _arg_disassemble_simple_polishing="on"
+      test "${1:0:5}" = "--no-" && _arg_disassemble_simple_polishing="off"
+      ;;
+    --disassemble-n)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_n="$2"
+      _arg_disassemble_n_is="on"
+      shift
+      ;;
+    --disassemble-n=*)
+      _arg_disassemble_n="${_key##--disassemble-n=}"
+      _arg_disassemble_n_is="on"
+      ;;
+    --disassemble-r)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_r="$2"
+      shift
+      ;;
+    --disassemble-r=*)
+      _arg_disassemble_r="${_key##--disassemble-r=}"
+      ;;
+    --disassemble-m)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_m="$2"
+      shift
+      ;;
+    --disassemble-m=*)
+      _arg_disassemble_m="${_key##--disassemble-m=}"
+      ;;
+    --disassemble-alpha)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_alpha="$2"
+      shift
+      ;;
+    --disassemble-alpha=*)
+      _arg_disassemble_alpha="${_key##--disassemble-alpha=}"
+      ;;
+    --disassemble-delta)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_delta="$2"
+      shift
+      ;;
+    --disassemble-delta=*)
+      _arg_disassemble_delta="${_key##--disassemble-delta=}"
+      ;;
+    --disassemble-memory)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_memory="$2"
+      shift
+      ;;
+    --disassemble-memory=*)
+      _arg_disassemble_memory="${_key##--disassemble-memory=}"
+      ;;
+    --disassemble-stop-after)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_disassemble_stop_after="$2"
+      shift
+      ;;
+    --disassemble-stop-after=*)
+      _arg_disassemble_stop_after="${_key##--disassemble-stop-after=}"
+      ;;
+    --genomesize-a)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_genomesize_a="$2"
+      shift
+      ;;
+    --genomesize-a=*)
+      _arg_genomesize_a="${_key##--genomesize-a=}"
+      ;;
+    --genomesize-b)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_genomesize_b="$2"
+      _arg_genomesize_b_is="on"
+      shift
+      ;;
+    --genomesize-b=*)
+      _arg_genomesize_b="${_key##--genomesize-b=}"
+      _arg_genomesize_b_is="on"
+      ;;
+    --genomesize-n)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_genomesize_n="$2"
+      shift
+      ;;
+    --genomesize-n=*)
+      _arg_genomesize_n="${_key##--genomesize-n=}"
+      ;;
+    --max-filesize)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_max_filesize="$2"
+      shift
+      ;;
+    --max-filesize=*)
+      _arg_max_filesize="${_key##--max-filesize=}"
+      ;;
+    --taxonomy-genes)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_taxonomy_genes="$2"
+      shift
+      ;;
+    --taxonomy-genes=*)
+      _arg_taxonomy_genes="${_key##--taxonomy-genes=}"
+      ;;
+    --taxonomy-references)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_taxonomy_references="$2"
+      shift
+      ;;
+    --taxonomy-references=*)
+      _arg_taxonomy_references="${_key##--taxonomy-references=}"
+      ;;
+    --taxonomy-rank-ingroup)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_taxonomy_rank_ingroup="$2"
+      shift
+      ;;
+    --taxonomy-rank-ingroup=*)
+      _arg_taxonomy_rank_ingroup="${_key##--taxonomy-rank-ingroup=}"
+      ;;
+    --taxonomy-rank-ingroup-sample)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_taxonomy_rank_ingroup_sample="$2"
+      shift
+      ;;
+    --taxonomy-rank-ingroup-sample=*)
+      _arg_taxonomy_rank_ingroup_sample="${_key##--taxonomy-rank-ingroup-sample=}"
+      ;;
+    --taxonomy-ingroup-size)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_taxonomy_ingroup_size="$2"
+      shift
+      ;;
+    --taxonomy-ingroup-size=*)
+      _arg_taxonomy_ingroup_size="${_key##--taxonomy-ingroup-size=}"
+      ;;
+    --taxonomy-rank-outgroup-sample)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_taxonomy_rank_outgroup_sample="$2"
+      shift
+      ;;
+    --taxonomy-rank-outgroup-sample=*)
+      _arg_taxonomy_rank_outgroup_sample="${_key##--taxonomy-rank-outgroup-sample=}"
+      ;;
+    --taxonomy-outgroup-size)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_taxonomy_outgroup_size="$2"
+      shift
+      ;;
+    --taxonomy-outgroup-size=*)
+      _arg_taxonomy_outgroup_size="${_key##--taxonomy-outgroup-size=}"
+      ;;
+    --taxonomy-rank-allgroup)
+      test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+      _arg_taxonomy_rank_allgroup="$2"
+      shift
+      ;;
+    --taxonomy-rank-allgroup=*)
+      _arg_taxonomy_rank_allgroup="${_key##--taxonomy-rank-allgroup=}"
+      ;;
 
 		--taxonomy-sample-size-per-rank)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

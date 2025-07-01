@@ -371,13 +371,12 @@ function _run_polap_total-length-short { # total size (bp) of short-read data
 
 	help_message=$(
 		cat <<HEREDOC
-Compute the total number of nucleotides of short-read data.
+Compute the total number of nucleotides of the first short-read data file.
 
 Inputs
 ------
 
 - short-read fastq data file: ${_arg_short_read1}
-- short-read fastq data file: ${_arg_short_read2}
 
 Outputs
 -------
@@ -389,6 +388,11 @@ Arguments
 
 -o ${_arg_outdir}
 -a ${_arg_short_read1}: a short-read fastq data file
+
+Note
+----
+
+We count nucleotides only in the first short-read FASTQ file.
 
 Usages
 ------
@@ -438,7 +442,7 @@ HEREDOC
 
 	local _TOTAL_LENGTH=$(<"${_polap_var_outdir_short_total_length}")
 	local _total_short_read=$(_polap_utility_convert_bp ${_TOTAL_LENGTH})
-	_polap_log0 "  total length of the short-read dataset (bases): ${_total_short_read}"
+	_polap_log0 "  total length of the short-read data file [${_arg_short_read1}] (bases): ${_total_short_read}"
 
 	_polap_log1 NEXT menu: find-genome-size
 

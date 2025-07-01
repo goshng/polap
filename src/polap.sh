@@ -45,7 +45,7 @@ _polap_script_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 }
 _POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
 source "${_POLAPLIB_DIR}/polap-git-hash-version.sh"
-_polap_version=v0.4.3.8-"${_polap_git_hash_version}"
+_polap_version=v0.5.2.1-"${_polap_git_hash_version}"
 . "${_POLAPLIB_DIR}/polap-parsing.sh" # '.' means 'source'
 _polap_output_dest="/dev/null"
 

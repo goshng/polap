@@ -30,7 +30,7 @@
 # function _run_polap_compare-mtdna {
 #
 # See Also:
-# _run_polap_blast-mtdna : run-polap-function-mtdna.sh
+# _run_polap_blast-mtdna : polap-cmd-mtdna.sh
 #
 # Check: 2025-06-18
 ################################################################################

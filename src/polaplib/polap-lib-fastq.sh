@@ -34,8 +34,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
@@ -118,4 +118,80 @@ _polap_lib_fastq-concatenate-fastq-files() {
 		fi
 	)
 
+}
+
+# return the type of pacbio fastq data type based on the average quality score
+# input1: fastq
+# output1: fastq.tsv
+# output2: fastq.txt
+_polap_lib_fastq-pacbio-type() {
+	local input_file1="$1" # First input file
+	local output_file="$2" # Output file (e.g., s1.fq)
+
+	# Check if the first input file exists
+	if [[ ! -f "$input_file1" ]]; then
+		die "ERROR: no such file: $input_file1"
+	fi
+
+	if [[ ! -s "${input_file1}".tsv ]]; then
+		seqkit head -n 10000 "${input_file1}" | seqkit stats -aT -o "${input_file1}.tsv"
+	fi
+
+	Rscript ${_POLAPLIB_DIR}/polap-r-fastq-pacbio-type.R \
+		--tsv "${input_file1}.tsv" \
+		-o "${output_file}"
+	# -o "${input_file1}.txt" 2>/dev/null
+
+}
+
+# infile outfile size
+_polap_lib_fastq-sample-to() {
+	local infile="${1}"
+	local outfile="${2}"
+	local max_size="${3}"
+
+	local sum_size=$(seqkit stats -T "${infile}" | awk 'NR==2 {print $5}')
+	_polap_log2 "sum_size: ${sum_size}"
+	max_size=$(_polap_lib_unit-convert_to_int ${max_size})
+	_polap_log2 "max_size: ${max_size}"
+	local rate=$(echo "scale=9; $max_size / $sum_size" | bc)
+	_polap_log2 "rate: ${rate}"
+
+	if [[ $(echo "$rate < 1" | bc) -eq 1 ]]; then
+		_polap_lib_random-get
+		local seed=${_polap_var_random_number}
+		seqkit sample \
+			-p "$rate" \
+			-s "${seed}" \
+			"${infile}" \
+			-o "${outfile}" \
+			2>/dev/null
+	else
+		# ln -fs $(basename "${infile}") "${outfile}"
+		# ln -fs "${infile}" "${outfile}"
+		_polap_lib_filepath-smart_ln_s2 "${infile}" "${outfile}"
+		_polap_log2 "No sampling because the rate is greater than 1."
+	fi
+}
+
+_polap_lib_fastq-sample() {
+	local infile="${1}"
+	local outfile="${2}"
+	local rate="${3}"
+
+	if [[ $(echo "$rate < 1" | bc) -eq 1 ]]; then
+		_polap_lib_random-get
+		local seed=${_polap_var_random_number}
+		seqkit sample \
+			-p "$rate" \
+			-s "${seed}" \
+			"${infile}" \
+			-o "${outfile}" \
+			2>/dev/null
+	else
+		# ln -fs $(basename "${infile}") "${outfile}"
+		# ln -fs "${infile}" "${outfile}"
+		_polap_lib_filepath-smart_ln_s2 "${infile}" "${outfile}"
+		_polap_log2 "No sampling because the rate is greater than 1."
+	fi
 }

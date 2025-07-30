@@ -42,8 +42,8 @@ _mtdir=$1
 _mtdir_contig_fa=$2
 _mt_contig_name=$3
 
-# The following code used to be in run-polap-function-oga.sh. To simplify the code in there,
-# we have this separate script that we execute in run-polap-function-oga.sh.
+# The following code used to be in polap-cmd-oga.sh. To simplify the code in there,
+# we have this separate script that we execute in polap-cmd-oga.sh.
 # We use it is subcommand map-reads.
 cp "${_mtdir_contig_fa}" "${_mtdir_contig_fa}-backup"
 seqkit fx2tab --length --name "${_mtdir_contig_fa}" -o "${_mtdir}"/contig.fa.len >/dev/null 2>&1

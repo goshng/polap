@@ -29,7 +29,7 @@
 #
 # See Also:
 # polap-function-disassemble-seeds.sh
-# run-polap-function-seeds.sh
+# polap-cmd-seeds.sh
 #
 # TODO: rename: polap-bash-create-depth-file.sh
 #

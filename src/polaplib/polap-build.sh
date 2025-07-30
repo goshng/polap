@@ -116,23 +116,23 @@ files=(polap
 	polap-variables-mtcontigs.sh
 	polap-version.sh
 	run-polap-function-annotate-contig.sh
-	run-polap-function-annotate.sh
-	run-polap-function-archive.sh
-	run-polap-function-assemble.sh
+	polap-cmd-annotate.sh
+	polap-cmd-archive.sh
+	polap-cmd-assemble.sh
 	run-polap-function-bioproject.sh
 	run-polap-function-errors.sh
 	run-polap-function-include.sh
 	run-polap-function-log.sh
 	run-polap-function-menus.sh
 	run-polap-function-miscellaneous.sh
-	run-polap-function-mtdna.sh
-	run-polap-function-oga.sh
-	run-polap-function-polishing.sh
-	run-polap-function-seeds.sh
+	polap-cmd-mtdna.sh
+	polap-cmd-oga.sh
+	polap-cmd-polishing.sh
+	polap-cmd-seeds.sh
 	run-polap-function-template.sh
 	run-polap-function-test.sh
 	run-polap-function-utilities.sh
-	run-polap-function-wga.sh
+	polap-cmd-wga.sh
 	polap-bash-create-depth-file.sh
 	polap-bash-half-cut.sh
 	polap-bash-minimap2-paf2tab.sh
@@ -161,7 +161,7 @@ files=(polap
 	run-polap-r-final-seed-mtcontig.R
 	run-polap-r-genes-bed4.R
 	run-polap-r-genes.R
-	run-polap-r-get-bioproject-1.R
+	polap-r-get-bioproject.R
 	run-polap-r-jellyfish.R
 	run-polap-r-mtcontig-contig.R
 	run-polap-r-mtcontig.R

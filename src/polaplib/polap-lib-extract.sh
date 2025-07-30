@@ -20,7 +20,7 @@
 # Much of the input files are handled by polap's test scripts including
 # polap-data-v2.sh or polap-data-cflye script.
 # Polap is a bash shell script, which creates output files that are used for
-# other bash functions of the script. 
+# other bash functions of the script.
 # TEST-SCC: net-yet
 ################################################################################
 
@@ -39,8 +39,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
@@ -322,183 +322,231 @@ _polap_lib_extract-fasta_numseq() {
 	return 0
 }
 
+_polap_lib_extract-gfa_numseq() {
+	local gfa="$1"
+
+	# Check if file exists
+	if [[ ! -f "$gfa" ]]; then
+		echo 0
+		return 0
+	fi
+
+	local TMPFILE=$(mktemp)
+
+	gfatools stat -l ${gfa} >${TMPFILE} 2>/dev/null
+
+	local _summary_gfa_number_segments=$(grep "Number of segments:" "${TMPFILE}" | awk '{print $4}')
+	local _summary_gfa_total_segment_length=$(grep "Total segment length:" "${TMPFILE}" | awk '{print $4}')
+	local _summary_gfa_number_links=$(grep "Number of links:" "${TMPFILE}" | awk '{print $4}')
+
+	# Fallback: count '>' lines with grep
+	echo "${_summary_gfa_number_segments}"
+	return 0
+}
+
+_polap_lib_extract-gfa_seqlen() {
+	local gfa="$1"
+
+	# Check if file exists
+	if [[ ! -f "$gfa" ]]; then
+		echo 0
+		return 0
+	fi
+
+	local TMPFILE=$(mktemp)
+
+	gfatools stat -l ${gfa} >${TMPFILE} 2>/dev/null
+
+	local _summary_gfa_number_segments=$(grep "Number of segments:" "${TMPFILE}" | awk '{print $4}')
+	local _summary_gfa_total_segment_length=$(grep "Total segment length:" "${TMPFILE}" | awk '{print $4}')
+	local _summary_gfa_number_links=$(grep "Number of links:" "${TMPFILE}" | awk '{print $4}')
+
+	# cat "${TMPFILE}" >1.txt
+
+	rm -f "${TMPFILE}"
+
+	# Fallback: count '>' lines with grep
+	echo "${_summary_gfa_total_segment_length}"
+	return 0
+}
+
 _polap_lib_extract-system_info() {
-  local info_file="$1"
-  local -n ref="$2"  # name reference to the associative array
+	local info_file="$1"
+	local -n ref="$2" # name reference to the associative array
 
-  # Define all expected keys
-  local keys=(
-    hostname kernel_version os_version cpu_model cpu_cores total_memory
-    system_uptime load_average filesystem_type mount_source storage_type
-    disk_filesystem disk_size disk_used disk_avail disk_use_percent disk_mount
-  )
+	# Define all expected keys
+	local keys=(
+		hostname kernel_version os_version cpu_model cpu_cores total_memory
+		system_uptime load_average filesystem_type mount_source storage_type
+		disk_filesystem disk_size disk_used disk_avail disk_use_percent disk_mount
+	)
 
-  # Initialize all values to "NA"
-  for key in "${keys[@]}"; do
-    ref["$key"]="NA"
-  done
+	# Initialize all values to "NA"
+	for key in "${keys[@]}"; do
+		ref["$key"]="NA"
+	done
 
-  # Exit early if file does not exist
-  if [[ ! -f "$info_file" ]]; then
-    # echo "[ERROR] File not found: $info_file" >&2
-    return
-  fi
+	# Exit early if file does not exist
+	if [[ ! -f "$info_file" ]]; then
+		# echo "[ERROR] File not found: $info_file" >&2
+		return
+	fi
 
-  while IFS= read -r line; do
-    case "$line" in
-      "Hostname:"*)            ref[hostname]="${line#Hostname: }" ;;
-      "Kernel Version:"*)      ref[kernel_version]="${line#Kernel Version: }" ;;
-      "OS Version:"*)          ref[os_version]="${line#OS Version: }" ;;
-      "CPU Model:"*)
-        model="${line#CPU Model: }"
-        ref[cpu_model]="${model#Intel(R) Xeon(R) CPU }"
-        ;;
-      "CPU Cores:"*)           ref[cpu_cores]="${line#CPU Cores: }" ;;
-      "Total Memory:"*)        ref[total_memory]="${line#Total Memory: }" ;;
-      "System Uptime:"*)       ref[system_uptime]="${line#System Uptime: }" ;;
-      "Load Average:"*)        ref[load_average]="${line#Load Average: }" ;;
-      "Filesystem Type"*)      ref[filesystem_type]="${line#Filesystem Type (current dir): }" ;;
-      "Mount Source:"*)        ref[mount_source]="${line#Mount Source: }" ;;
-      *"Storage Type"*)        ref[storage_type]="${line#*: }" ;;
-      "/dev/"*)
-        read -r fs size used avail use mounted <<<"$line"
-        ref[disk_filesystem]="$fs"
-        ref[disk_size]="$size"
-        ref[disk_used]="$used"
-        ref[disk_avail]="$avail"
-        ref[disk_use_percent]="$use"
-        ref[disk_mount]="$mounted"
-        ;;
-    esac
-  done < "$info_file"
+	while IFS= read -r line; do
+		case "$line" in
+		"Hostname:"*) ref[hostname]="${line#Hostname: }" ;;
+		"Kernel Version:"*) ref[kernel_version]="${line#Kernel Version: }" ;;
+		"OS Version:"*) ref[os_version]="${line#OS Version: }" ;;
+		"CPU Model:"*)
+			model="${line#CPU Model: }"
+			ref[cpu_model]="${model#Intel(R) Xeon(R) CPU }"
+			;;
+		"CPU Cores:"*) ref[cpu_cores]="${line#CPU Cores: }" ;;
+		"Total Memory:"*) ref[total_memory]="${line#Total Memory: }" ;;
+		"System Uptime:"*) ref[system_uptime]="${line#System Uptime: }" ;;
+		"Load Average:"*) ref[load_average]="${line#Load Average: }" ;;
+		"Filesystem Type"*) ref[filesystem_type]="${line#Filesystem Type (current dir): }" ;;
+		"Mount Source:"*) ref[mount_source]="${line#Mount Source: }" ;;
+		*"Storage Type"*) ref[storage_type]="${line#*: }" ;;
+		"/dev/"*)
+			read -r fs size used avail use mounted <<<"$line"
+			ref[disk_filesystem]="$fs"
+			ref[disk_size]="$size"
+			ref[disk_used]="$used"
+			ref[disk_avail]="$avail"
+			ref[disk_use_percent]="$use"
+			ref[disk_mount]="$mounted"
+			;;
+		esac
+	done <"$info_file"
 }
 
 _polap_lib_extract-params() {
-  local param_file="$1"
-  local -n ref="$2"  # name reference to the associative array
+	local param_file="$1"
+	local -n ref="$2" # name reference to the associative array
 
-  # Define all expected keys
-  local keys=(
-    I P N R A B M D Alpha Memory
-  )
+	# Define all expected keys
+	local keys=(
+		I P N R A B M D Alpha Memory
+	)
 
-  # Initialize all values to "NA"
-  for key in "${keys[@]}"; do
-    ref["$key"]="NA"
-  done
+	# Initialize all values to "NA"
+	for key in "${keys[@]}"; do
+		ref["$key"]="NA"
+	done
 
-  # Exit early if file does not exist
-  if [[ ! -f "$param_file" ]]; then
-    # echo "[ERROR] File not found: $info_file" >&2
-    return
-  fi
+	# Exit early if file does not exist
+	if [[ ! -f "$param_file" ]]; then
+		# echo "[ERROR] File not found: $info_file" >&2
+		return
+	fi
 
-  # Initialize default values
-  ref=(
-    [I]=-1
-    [P]=-1
-    [N]=-1
-    [R]=-1
-    [A]=-1
-    [B]=-1
-    [M]=-1
-    [D]=-1
-    [Alpha]=-1
-    [Memory]=-1
-  )
+	# Initialize default values
+	ref=(
+		[I]=-1
+		[P]=-1
+		[N]=-1
+		[R]=-1
+		[A]=-1
+		[B]=-1
+		[M]=-1
+		[D]=-1
+		[Alpha]=-1
+		[Memory]=-1
+	)
 
-  # Parse the parameter file
-  while IFS=": " read -r key value; do
-    case "$key" in
-    I|P|N|R|A|B|M|D|Alpha|Memory)
-      ref["$key"]="$value"
-      ;;
-    esac
-  done < "$param_file"
+	# Parse the parameter file
+	while IFS=": " read -r key value; do
+		case "$key" in
+		I | P | N | R | A | B | M | D | Alpha | Memory)
+			ref["$key"]="$value"
+			;;
+		esac
+	done <"$param_file"
 }
 
 # subsample disassemble result
 # parse summary1-ordered.txt
 _polap_lib_extract-summary1_ordered() {
-  local _summary1_ordered_txt="$1"
-  local -n ref="$2"  # name reference to the associative array
+	local _summary1_ordered_txt="$1"
+	local -n ref="$2" # name reference to the associative array
 
-  # Define all expected keys
-  local keys=(
-    n1 mode1 sd1 index1 second_line_index
-  )
+	# Define all expected keys
+	local keys=(
+		n1 mode1 sd1 index1 second_line_index
+	)
 
-  # Initialize all values to "NA"
-  for key in "${keys[@]}"; do
-    ref["$key"]="NA"
-  done
+	# Initialize all values to "NA"
+	for key in "${keys[@]}"; do
+		ref["$key"]="NA"
+	done
 
-  # Exit early if file does not exist
-  if [[ ! -f "$_summary1_ordered_txt" ]]; then
-    # echo "[ERROR] File not found: $info_file" >&2
-    return
-  fi
+	# Exit early if file does not exist
+	if [[ ! -f "$_summary1_ordered_txt" ]]; then
+		# echo "[ERROR] File not found: $info_file" >&2
+		return
+	fi
 
-  # Extract mode value
-  # Extract SD value
-  # Extract the first index value
-  ref[n1]=$(grep "^#n:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
-  ref[mode1]=$(grep "^#mode:" "$_summary1_ordered_txt" | awk '{print $2}')
-  ref[sd1]=$(grep "^#sd:" "$_summary1_ordered_txt" | awk '{print $2}')
-  ref[index1]=$(grep "^#index:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
+	# Extract mode value
+	# Extract SD value
+	# Extract the first index value
+	ref[n1]=$(grep "^#n:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
+	ref[mode1]=$(grep "^#mode:" "$_summary1_ordered_txt" | awk '{print $2}')
+	ref[sd1]=$(grep "^#sd:" "$_summary1_ordered_txt" | awk '{print $2}')
+	ref[index1]=$(grep "^#index:" "$_summary1_ordered_txt" | awk 'NR==1 {print $2}')
 
-  # NOTE: so which one is selected for the next stage?
-  # problem: the first sorted and the selected one are different.
-  # use either one of the two.
-  # Then, we should not check the following unnecessary step of checking.
-  # Use #index the first one and do not sort them.
-  # Or, sort them and use the first one. Problem is we are not sure which index
-  # is used.
-  local _output=$(awk -F'\t' 'NR==2 {print $1}' "${_summary1_ordered_txt}")
-  read -r _second_line_index <<<"$_output"
+	# NOTE: so which one is selected for the next stage?
+	# problem: the first sorted and the selected one are different.
+	# use either one of the two.
+	# Then, we should not check the following unnecessary step of checking.
+	# Use #index the first one and do not sort them.
+	# Or, sort them and use the first one. Problem is we are not sure which index
+	# is used.
+	local _output=$(awk -F'\t' 'NR==2 {print $1}' "${_summary1_ordered_txt}")
+	read -r _second_line_index <<<"$_output"
 	ref[second_line_index]="${_second_line_index}"
 
-  if [[ "${ref[index1]}" != "${_second_line_index}" ]]; then
-    echo "ERROR: #index: ${ref[index1]} vs. #2nd line index: ${_second_line_index}" >&2
-    echo "See ${_summary1_ordered_txt}" >&2
-    echo "------------------------------" >&2
-    cat "${_summary1_ordered_txt}" >&2
-    echo "------------------------------> skip it!" >&2
-    # exit 1
-  fi
+	if [[ "${ref[index1]}" != "${_second_line_index}" ]]; then
+		echo "ERROR: #index: ${ref[index1]} vs. #2nd line index: ${_second_line_index}" >&2
+		echo "See ${_summary1_ordered_txt}" >&2
+		echo "------------------------------" >&2
+		cat "${_summary1_ordered_txt}" >&2
+		echo "------------------------------> skip it!" >&2
+		# exit 1
+	fi
 }
 
 # subsample disassemble result
 # parse summary2-ordered.txt
 _polap_lib_extract-summary2_ordered() {
-  local _summary2_ordered_txt="$1"
-  local -n ref="$2"  # name reference to the associative array
+	local _summary2_ordered_txt="$1"
+	local -n ref="$2" # name reference to the associative array
 
-  # Define all expected keys
-  local keys=(
-    n2 index2 size rate alpha
-  )
+	# Define all expected keys
+	local keys=(
+		n2 index2 size rate alpha
+	)
 
-  # Initialize all values to "NA"
-  for key in "${keys[@]}"; do
-    ref["$key"]="NA"
-  done
+	# Initialize all values to "NA"
+	for key in "${keys[@]}"; do
+		ref["$key"]="NA"
+	done
 
-  # Exit early if file does not exist
-  if [[ ! -f "$_summary2_ordered_txt" ]]; then
-    # echo "[ERROR] File not found: $info_file" >&2
-    return
-  fi
+	# Exit early if file does not exist
+	if [[ ! -f "$_summary2_ordered_txt" ]]; then
+		# echo "[ERROR] File not found: $info_file" >&2
+		return
+	fi
 
-  ref[n2]=$(grep "^#n:" "$_summary2_ordered_txt" | awk 'NR==1 {print $2}')
-  local _output=$(awk -F'\t' 'NR==2 {print $1, $2, $4, $11}' "${_summary2_ordered_txt}")
-  local _index2
-  local _summary2_rate
-  local _summary2_size
-  local _summary2_alpha
-  read -r _index2 _summary2_size _summary2_rate _summary2_alpha <<<"$_output"
-  local _summary2_rate_decimal=$(printf "%.10f" "$_summary2_rate")
-  ref[rate]=$(echo "scale=4; $_summary2_rate_decimal / 1" | bc)
-  ref[size]=$(_polap_lib_unit-convert_bp "${_summary2_size}")
-  ref[alpha]=$(echo "scale=2; $_summary2_alpha / 1" | bc | awk '{printf "%.2f\n", $1}')
+	ref[n2]=$(grep "^#n:" "$_summary2_ordered_txt" | awk 'NR==1 {print $2}')
+	local _output=$(awk -F'\t' 'NR==2 {print $1, $2, $4, $11}' "${_summary2_ordered_txt}")
+	local _index2
+	local _summary2_rate
+	local _summary2_size
+	local _summary2_alpha
+	read -r _index2 _summary2_size _summary2_rate _summary2_alpha <<<"$_output"
+	local _summary2_rate_decimal=$(printf "%.10f" "$_summary2_rate")
+	ref[rate]=$(echo "scale=4; $_summary2_rate_decimal / 1" | bc)
+	ref[size]=$(_polap_lib_unit-convert_bp "${_summary2_size}")
+	ref[alpha]=$(echo "scale=2; $_summary2_alpha / 1" | bc | awk '{printf "%.2f\n", $1}')
 }

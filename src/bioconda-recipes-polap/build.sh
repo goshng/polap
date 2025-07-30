@@ -36,17 +36,17 @@ files=(polap
 	polap-version.sh
 	ptGAUL1.sh
 	run-polap-function-annotate-contig.sh
-	run-polap-function-annotate.sh
-	run-polap-function-archive.sh
-	run-polap-function-assemble.sh
-	run-polap-function-bandage.sh
+	polap-cmd-annotate.sh
+	polap-cmd-archive.sh
+	polap-cmd-assemble.sh
+	polap-cmd-bandage.sh
 	run-polap-function-benchmarking.sh
 	run-polap-function-bioproject.sh
 	run-polap-function-config.sh
 	run-polap-function-demo.sh
 	run-polap-function-dga.sh
 	run-polap-function-directional.sh
-	run-polap-function-disassemble.sh
+	polap-cmd-disassemble.sh
 	run-polap-function-errors.sh
 	run-polap-function-fasta.sh
 	run-polap-function-fastq.sh
@@ -55,17 +55,17 @@ files=(polap
 	run-polap-function-log.sh
 	run-polap-function-menus.sh
 	run-polap-function-miscellaneous.sh
-	run-polap-function-mtdna.sh
+	polap-cmd-mtdna.sh
 	run-polap-function-ncbixml.sh
-	run-polap-function-oga.sh
-	run-polap-function-polishing.sh
+	polap-cmd-oga.sh
+	polap-cmd-polishing.sh
 	run-polap-function-random.sh
-	run-polap-function-seeds.sh
+	polap-cmd-seeds.sh
 	run-polap-function-taxonomy.sh
 	run-polap-function-template.sh
 	run-polap-function-test.sh
 	run-polap-function-utilities.sh
-	run-polap-function-wga.sh
+	polap-cmd-wga.sh
 	run-polap-sh-create-depth-file.sh
 	run-polap-sh-extract-three-edges-of-ptdna.sh
 	run-polap-sh-half-cut.sh
@@ -104,7 +104,7 @@ files=(polap
 	run-polap-r-final-seed-mtcontig.R
 	run-polap-r-genes-bed4.R
 	run-polap-r-genes.R
-	run-polap-r-get-bioproject-1.R
+	polap-r-get-bioproject.R
 	run-polap-r-global-richness.R
 	run-polap-r-jellyfish.R
 	run-polap-r-mafft.R

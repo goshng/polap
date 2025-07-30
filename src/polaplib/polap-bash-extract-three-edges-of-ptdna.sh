@@ -17,7 +17,7 @@
 
 ################################################################################
 # This script extracts the three edges from the plastid genome assembly graph.
-# It is used in run-polap-function-disassemble.sh to extract them from ptGAUL
+# It is used in polap-cmd-disassemble.sh to extract them from ptGAUL
 # assembly graph.
 #
 # Example:
@@ -33,7 +33,7 @@
 # echo edge_4-,edge_3-,edge_5+,edge_3+,edge_4+,edge_3- | tr ',' '\n' | sed 's/[+-]//' | sort -u
 #
 # See Also:
-# run-polap-function-disassemble.sh
+# polap-cmd-disassemble.sh
 #
 # Look for lines:
 # extract three unique edges from the gfa for a ptDNA candidate

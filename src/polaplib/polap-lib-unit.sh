@@ -33,8 +33,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
@@ -63,5 +63,23 @@ function _polap_lib_unit-convert_bp {
 		echo "$(bc <<<"scale=1; $bp/1000") kbp"
 	else
 		echo "$bp bp"
+	fi
+}
+
+function _polap_lib_unit-convert_to_int {
+	local input="$1"
+	local number unit multiplier
+
+	if [[ "$input" =~ ^([0-9]+(\.[0-9]+)?)([kKmMgG])$ ]]; then
+		number="${BASH_REMATCH[1]}"
+		unit="${BASH_REMATCH[3]}"
+		case "${unit,,}" in
+		k) multiplier=1000 ;;
+		m) multiplier=1000000 ;;
+		g) multiplier=1000000000 ;;
+		esac
+		awk -v num="$number" -v mul="$multiplier" 'BEGIN { printf "%.0f\n", num * mul }'
+	else
+		echo "$input"
 	fi
 }

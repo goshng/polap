@@ -25,7 +25,7 @@
 # We have multiple scripts that selects reads.
 # This is the 2nd one.
 #
-# 1. run-polap-pairs.R or polap-r-pairs.R -> the first version used in v0.2.6
+# 1. run-polap-pairs.R -> the first version used in v0.2.6
 # 2. run-polap-r-pairs.R -> used in test-reads in oga
 # 3. run-polap-r-bridge.R -> used in test-reads in oga
 # 4. run-polap-r-select-reads-polap.R -> the 2nd version not used
@@ -45,7 +45,7 @@
 # run-polap-r-select-reads-polap.R
 # run-polap-r-select-reads-ptgaul.R
 # run-polap-r-directional.R
-# run-polap-function-oga.sh
+# polap-cmd-oga.sh
 # run-polap-function-dga.sh
 #
 # Check: 2025-06-17

@@ -334,11 +334,11 @@ polap's get-bioproject would download the runinfo of a BioProject ID.
 So, we need another subcommand to parse a runinfo to extract what we want.
 A BioProject could have multiple species data. So, parse a runinfo to
 list sequencing data per species. See, the get-bioproject subcommand and
-`run-polap-r-get-bioproject-1.R` script.
+`polap-r-get-bioproject.R` script.
 
 ## Pairwise alignments
 
-- polaplib/run-polap-function-mtdna.sh
+- polaplib/polap-cmd-mtdna.sh
 
 ## Demo
 
@@ -357,7 +357,7 @@ We use `list` subcommands to list them.
 The mtdna module has somewhat mixed features implemented in a single bash
 script.
 
-- run-polap-function-mtdna.sh
+- polap-cmd-mtdna.sh
 
 ## Other subcommands
 

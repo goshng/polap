@@ -1,0 +1,39 @@
+2025-02-12 Yukiteru Ono  <yono@k.u-tokyo.ac.jp>
+
+    Release Version 3.0.5.
+
+        The output file format is changed: FASTQ files and MAF files are
+	compressed with gzip, SAM files are changed to BAM files.
+
+
+2024-03-03 Yukiteru Ono  <yono@k.u-tokyo.ac.jp>
+
+    Release Version 3.0.4.
+
+        QSHMM-ONT-HQ.model (corrected) and ERRHMM-ONT-HQ.model (unchanged) are
+	back.
+
+
+2024-02-26 Yukiteru Ono  <yono@k.u-tokyo.ac.jp>
+
+    Release Version 3.0.3.
+
+        Temporarily removed QSHMM-ONT-HQ.model and ERRHMM-ONT-HQ.model.
+
+
+2024-02-16 Yukiteru Ono  <yono@k.u-tokyo.ac.jp>
+
+    Release Version 3.0.2.
+
+        Malloc error fixed.
+
+
+2023-11-22 Yukiteru Ono  <yono@k.u-tokyo.ac.jp>
+
+    Release Version 3.0.1.
+
+        --length-sd enabled for multi-pass sequencing in WGS simulation.
+
+        Newly added QSHMM-ONT-HQ.model and ERRHMM-ONT-HQ.model.
+	OSHMM-ONT-HQ.model and ERRHMM-ONT-HQ.model are recommended when
+	simulating a read set with an average accuracy of 90% or higher.

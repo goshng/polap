@@ -109,7 +109,7 @@ function \_run_polap_step-disassemble-seeds-graph {
 
 1. polaplib/run-polap-r-data-v2-alpha0.R - command-line processing: use argparser
 
-2. simplify run-polap-function-archive.sh: this would remove the followings:
+2. simplify polap-cmd-archive.sh: this would remove the followings:
 
 - polaplib/run-polap-r-contig2edge.R
 

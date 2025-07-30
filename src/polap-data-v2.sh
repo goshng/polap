@@ -860,7 +860,7 @@ help_message_benchmark_command=$(
   run getorganelle <outdir> [inum]
   run msbwt <outdir> [inum]
   run ptgaul <outdir> [inum]
-  run extract-ptdna-ptgau <outdir> [inum]
+  run extract-ptdna-ptgaul <outdir> [inum]
   run estimate-genomesize <outdir> [inum]
   run nextdenovo-polish <outdir> [inum]
   run oatk <outdir> [inum]
@@ -2158,12 +2158,12 @@ man-figure-sheet_genus_species() {
 		man-figure-sheet_genus_species_for "${_args_full[@]}"
 	fi
 
-  # page number: 65
-  if [[ -s "${_brg_csv}" ]]; then
-    man-figure-sheet-latex_genus_species "${_brg_csv}" "${_brg_txt}" 6 58
-  else
-    echo "Error: no such file: ${_brg_csv}"
-  fi
+	# page number: 65
+	if [[ -s "${_brg_csv}" ]]; then
+		man-figure-sheet-latex_genus_species "${_brg_csv}" "${_brg_txt}" 6 58
+	else
+		echo "Error: no such file: ${_brg_csv}"
+	fi
 
 	if [[ -d "${_brg_default_target_dir}" ]]; then
 		cp -p "${_brg_csv}.pdf" "${_brg_default_target_dir}"
@@ -3215,9 +3215,6 @@ common_handled=$?
 
 # Main case statement
 case "$subcmd1" in
-system)
-	${subcmd1}_genus_species
-	;;
 copy-figures)
 	${subcmd1}_genus_species
 	;;

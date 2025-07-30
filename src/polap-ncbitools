@@ -102,8 +102,8 @@ fetch__sra() {
 	shift
 	prefetch "$ACCN" --quiet --max-size u
 	# prefetch "$ACCN" --quiet --max-size 200g
-	vdb-validate "$ACCN" --quiet
-	fasterq-dump "$ACCN" --quiet
+	vdb-validate "$ACCN" --quiet 2>/dev/null
+	fasterq-dump "$ACCN" --quiet 2>/dev/null
 }
 
 fetch__runinfo() {

@@ -15,7 +15,7 @@
 ################################################################################
 
 ################################################################################
-# dflye version of run-polap-function-oga.sh
+# dflye version of polap-cmd-oga.sh
 # We may have to stop using it because dFlye is not working yet.
 ################################################################################
 
@@ -752,105 +752,6 @@ HEREDOC
     fi
   done
 
-  return 0
-
-  # dflye runs
-  # Iterate over the array using an index
-  for ((i = ${_arg_start_index}; i < array_length; i++)); do
-    local _test_value="${restored_array[i]}"
-
-    if [[ -s "${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa" ]]; then
-      _polap_log0 "  found: ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa, so skipping ..."
-    else
-      _polap_log1 "  dflye assembly for ${_pread_sel}"
-      _polap_log2 "    input1: ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
-      _polap_log2 "    output: ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
-      local _command1="dflye \
-        ${_arg_flye_data_type} \
-        ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz \
-		    --out-dir ${_polap_var_oga_flye}/${_pread_sel}/${i} \
-        --directional-reads \
-		    --threads ${_arg_threads}"
-
-      if [[ "${_arg_flye_asm_coverage}" -gt 0 ]]; then
-        _command1+=" \
-		      --asm-coverage ${_arg_flye_asm_coverage} \
-		      --genome-size $CONTIG_LENGTH"
-      fi
-
-      if [[ "${_arg_menu[2]}" == "polishing" ]]; then
-        _command1+=" \
-		      --resume"
-      else
-        _command1+=" \
-		      --stop-after contigger"
-      fi
-
-      _command1+=" \
-		    2>${_polap_output_dest}"
-
-      if [[ "${_arg_flye}" == "on" ]]; then
-        _polap_log3_pipe "${_command1}"
-      else
-        _polap_log0 "No flye run in test-reads"
-      fi
-    fi
-  done
-
-  return 0
-
-  # Read the file contents into an array
-  read -a restored_array <"${_polap_var_oga_contig}/${_pread_sel}.txt"
-  local array_length=${#restored_array[@]}
-  # Iterate over the array using an index
-  for ((i = ${_arg_start_index}; i < array_length; i++)); do
-    local _test_value="${restored_array[i]}"
-
-    _arg_single_min="${restored_array[i]}"
-    _arg_pair_min="${restored_array[i]}"
-    _arg_bridge_min="0"
-
-    # summary of the assembly
-    # 1. count fragments
-    # 2. count bases
-    # 3. average depth
-    if [[ -s "${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa" ]]; then
-      _polap_log1 "  summary for ${_pread_sel}"
-      _polap_log2 "    input1: ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
-      _polap_log2 "    output: ${_polap_var_oga_summary}/${_pread_sel}/${i}.fragments"
-      _polap_log2 "    output: ${_polap_var_oga_summary}/${_pread_sel}/${i}.bases"
-      _polap_log0 "  output: ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
-
-      ln -s $(realpath "${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa") ${_polap_var_oga_flye}/${_pread_sel}/${i}-graph_final.gfa
-
-      _polap_log3_pipe "gfatools view \
-        -S ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa \
-		    2>${_polap_output_dest} \
-        >${_polap_var_oga_summary}/${_pread_sel}/${i}.gfa"
-
-      # Count the number of sequence fragments
-      _polap_log3_pipe "gfatools view \
-        -S ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa \
-		    2>${_polap_output_dest} |
-        grep '^S' | wc -l >${_polap_var_oga_summary}/${_pread_sel}/${i}.fragments"
-
-      # Calculate the total number of bases in the sequence fragments
-      _polap_log3_pipe "gfatools view \
-        -S ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa \
-		    2>${_polap_output_dest} |
-        grep '^S' | grep -o 'LN:i:[0-9]*' | awk -F: '{sum += \$3} END {print sum}' \
-        >${_polap_var_oga_summary}/${_pread_sel}/${i}.bases"
-
-      # Calculate the average depth
-      cat "${_polap_var_oga_summary}/${_pread_sel}/${i}.gfa" |
-        awk '/dp:i:/ {match($0, /dp:i:([0-9]+)/, arr); if (arr[1] != "") {sum += arr[1]; count++}} END {if (count > 0) print sum / count}' \
-          >"${_polap_var_oga_summary}/${_pread_sel}/${i}.depth"
-
-    else
-      _polap_log1 "No such graph: ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
-    fi
-  done
-
   _polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
   # Disable debugging if previously enabled
   [ "$_POLAP_DEBUG" -eq 1 ] && set +x
@@ -959,7 +860,11 @@ HEREDOC
   local _pread_sel="ptgaul"
   local _read_names="ptgaul"
 
-  _polap_log1 "  input1: ${_polap_var_oga_subsample}"
+  if [[ "${_arg_coverage_check}" == "on" ]]; then
+    _polap_log1 "  input1: ${_polap_var_oga_subsample}"
+  else
+    _polap_log1 "  input1: ${_polap_var_oga_seeds}"
+  fi
 
   ##############################################################################
   # use the range file
@@ -1009,8 +914,16 @@ HEREDOC
     if [[ -s "${_graph_final_gfa}" ]]; then
       _polap_log0 "  found: ${_graph_final_gfa}"
     else
-      local _subsample_fq="${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
-      _polap_log1 "  dflye assembly for ${_pread_sel}"
+      if [[ "${_arg_coverage_check}" == "on" ]]; then
+        local _subsample_fq="${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
+      else
+        local _subsample_fq="${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz"
+      fi
+      if [[ "${_arg_directional}" == "on" ]]; then
+        _polap_log1 "  dflye assembly for ${_pread_sel}"
+      else
+        _polap_log1 "  flye assembly for ${_pread_sel}"
+      fi
       _polap_log2 "    input1: ${_subsample_fq}"
       _polap_log2 "    output: ${_graph_final_gfa}"
       _command1+=" \

@@ -42,7 +42,7 @@
 # run-polap-r-select-reads-polap.R
 # run-polap-r-select-reads-ptgaul.R
 # run-polap-r-directional.R
-# run-polap-function-oga.sh
+# polap-cmd-oga.sh
 # run-polap-function-dga.sh
 #
 # Check: 2025-06-17

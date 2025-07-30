@@ -1,17 +1,32 @@
+# ideas
+
+- [ ] pacbio hifi and cflye-more-modified may work for a faster organelle genome assembly - disassemble for pacbio hifi not for CLR or raw.
+
 # TODO
 
 See the files to improve the code later if necessary.
 
-- [ ] collect data for PacBio for plant organelle assembly 
+- [ ] polap inspect command for determine the sequence data type
+- [v] polap subtract command for remove ptdna-origin data
+- [x] collect data for PacBio for plant organelle assembly
+- [x] implement polap v1 (assemble) for PacBio
+- [ ] implement polap v2 (disassemble) for PacBio
+
 - [ ] analysis of animal mitochondrion assembly using cflye
+- [ ] polap annotate on a single sequence to count MT/PT genes
+- [ ] run this in bflye command, a version of cflye.
+
 - [ ] polaplib/polap-cmd-bioproject.sh
 - [ ] polaplib/polap-build.sh
-- [ ] polaplib/run-polap-function-annotate.sh, polaplib/polap-lib-annotate.sh
-- [ ] polaplib/run-polap-function-assemble.sh
-- [x] polaplib/polap-cmd-install.sh
-- [ ] subcommand subtract -l l.fq -p polished-4-ptdna-sequences.fa -> new l.fq without ptdna reads
+- [ ] polaplib/polap-cmd-annotate.sh, polaplib/polap-lib-annotate.sh
+- [ ] polaplib/polap-cmd-assemble.sh
+- [x] subcommand subtract -l l.fq -p polished-4-ptdna-sequences.fa -> new l.fq without ptdna reads
 - [ ] debug dflye
 - [ ] plant mtDNA version of cflye
+
+# 2025-07-02
+
+- [x] polaplib/polap-cmd-install.sh
 
 # 2025-03-28
 
@@ -19,7 +34,7 @@ run-polap-py-find-plastid-gfa2fasta.py and its relatives -filtering-edges.py
 It uses too much memory for finding too many circular paths: about 20 GB.
 I wonder if this could be the 20 GB memory for our procedure.
 I added hard-code like this in python and bash as well to avoid too much memory.
-_fixed_upper_bound_number_segments = 30
+\_fixed_upper_bound_number_segments = 30
 
 # 2025-03-15
 
@@ -29,12 +44,13 @@ use polaplib
 # 2025-03-14
 
 # qt5
+
 https://github.com/NVlabs/instant-ngp/discussions/300
 sudo apt-get install qt5-default
 sudo apt-get install qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools
 sudo apt install libxcb-cursor0
 export QT_QPA_PLATFORM=offscreen
-
+export QT_QPA_PLATFORM=minimal
 
 # 2024-11-22
 
@@ -51,12 +67,13 @@ why geseq annotation?
 # 2024-10-31
 
 variable change
-CONTIG_LENGTH -> _CONTIG_LENGTH
+CONTIG_LENGTH -> \_CONTIG_LENGTH
 
 Example: test
 Example: Anthoceros angustus
 
 Salix_dunni: single contig case -> no combined data
+
 1. cut half and use two contigs
 2. use the single contigs
 
@@ -65,12 +82,12 @@ connect two contigs that are far apart
 
 # 2024-10-30
 
-install: 
+install:
 
 spliting input lk.fq.gz
 rw options
 
-asm-coverage = 0.6 x coverage? 
+asm-coverage = 0.6 x coverage?
 asm-coverage : unknown 30x 50x 70x 90x
 subsampling might be a good approach
 
@@ -78,10 +95,13 @@ test reduce-data - nk.fq.gz created without using n.fq
 annotation table column names - proper names
 
 ## done
+
 return 0 at the end of function to use: tset -e option
 
 # 2024-10-23
+
 # test
+
 -u option
 
 # prev
@@ -90,7 +110,7 @@ bioprojects.log.passed
 
 bioproject ID
 
-taxonomy order family species mtDNA accession long SRA short SRA  assembled length  length coverage   Type
+taxonomy order family species mtDNA accession long SRA short SRA assembled length length coverage Type
 
 # select contig
 
@@ -100,4 +120,3 @@ mt & pt
 depth cut 5 steps
 
 esearch -db taxonomy -query "taxon_name" | efetch -format docsum | xtract -pattern DocumentSummary -element TaxId
-

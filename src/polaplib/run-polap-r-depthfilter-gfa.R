@@ -64,11 +64,11 @@
 #
 # See Also:
 # 1.
-# run-polap-function-seeds.sh
+# polap-cmd-seeds.sh
 # function _polap_seeds_depthfilter-gfa
 # function _run_polap_seeds-graph { # select seed contigs
 # 2.
-# run-polap-function-archive.sh
+# polap-cmd-archive.sh
 # function _polap_archive_gfa-depth-filtered
 #
 # TODO: rename: polap-r-depthfilter-gfa.R

@@ -24,7 +24,7 @@ test-bash-create-depth-file() {
 }
 
 # Test: run-polap-r-depthfilter-gfa.R
-# run-polap-function-seeds.sh
+# polap-cmd-seeds.sh
 # function _polap_seeds_depthfilter-gfa
 # function _run_polap_seeds-graph { # select seed contigs
 test-r-depthfilter-gfa() {

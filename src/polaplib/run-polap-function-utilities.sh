@@ -264,64 +264,6 @@ check_minimap2_version() {
 }
 
 ###############################################################################
-# Logs all commands
-###############################################################################
-function _log_command_versions {
-	local commands=(
-		# main
-		"bc"
-		"seqkit"
-		"minimap2"
-		"flye"
-		"makeblastdb"
-		"tblastn"
-		"bedtools"
-		"prefetch"
-		"jellyfish"
-		"csvtk"
-		# fmlrc polishing
-		"msbwt"
-		"ropebwt2"
-		"fmlrc"
-		# sratools
-		"prefetch"
-		"vdb-validate"
-		"fasterq-dump"
-		# ncbitools
-		"makeblastdb"
-		"tblastn"
-		"prefetch"
-	)
-
-	_polap_log1 "------------------------"
-	_polap_log1 "conda environment: polap"
-	_polap_log1 "------------------------"
-	_polap_log1 "version: minimap2: $(minimap2 --version)"
-	_polap_log1 "version: flye: $(flye --version)"
-	_polap_log1 "version: bedtools: $(bedtools --version)"
-	_polap_log1 "version: jellyfish: $(jellyfish --version)"
-	_polap_log1 "version: tblastn: $(tblastn -version | head -1)"
-	_polap_log1 "version: makeblastdb: $(makeblastdb -version | head -1)"
-	_polap_log1 "version: fasterq-dump: $(fasterq-dump --version | tail -2 | head -1)"
-	_polap_log1 "version: vdb-validate: $(vdb-validate --version | tail -2 | head -1)"
-	_polap_log1 "version: prefetch: $(prefetch --version | tail -2 | head -1)"
-	_polap_log1 "version: seqkit: $(seqkit version)"
-	_polap_log1 "version: csvtk: $(csvtk version)"
-	_polap_log1 "version: bc: $(bc --version | head -1)"
-	_polap_log1 "version: gfatools: $(gfatools version | tail -1)"
-	_polap_log1 "version: progressiveMauve: $(progressiveMauve --version 2>&1)"
-
-	_polap_log1 "------------------------------"
-	_polap_log1 "conda environment: polap-fmlrc"
-	_polap_log1 "------------------------------"
-	source $HOME/miniconda3/bin/activate polap-fmlrc
-	_polap_log1 "version: msbwt: $(msbwt --version 2>&1)"
-	_polap_log1 "version: fmlrc: $(fmlrc -v)"
-	_polap_log1 "version: ropebwt2: $(ropebwt2 2>&1 | head -2 | tail -1)"
-	conda deactivate
-}
-
-###############################################################################
 # Function to prompt for confirmation
 ###############################################################################
 function confirm {

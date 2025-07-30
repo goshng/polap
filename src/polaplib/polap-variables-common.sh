@@ -23,8 +23,8 @@
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
@@ -46,6 +46,7 @@ local _polap_var_ga_contigger="${_polap_var_ga}/30-contigger"
 local _polap_var_ga_contigger="${_polap_var_ga}/30-contigger"
 local _polap_var_ann="${_polap_var_ga}/50-annotation"
 local _polap_var_mtcontigname="${_polap_var_ga}/mt.contig.name-${_arg_jnum}"
+local _polap_var_ptcontigname="${_polap_var_ga}/pt.contig.name-${_arg_jnum}"
 local _polap_var_oga="${_polap_var_outdir}/${_arg_jnum}"
 local _polap_var_oga_contigger="${_polap_var_oga}/30-contigger"
 # local _polap_var_oga="${_polap_var_ga}"

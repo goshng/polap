@@ -1,3 +1,24 @@
+# 2025-07-22
+
+bioinfodb error -> create a new conda environment
+conda create -n polap-bioc bioconductor-genbankr bioconductor-iranges bioconductor-biostrings r-optparse cd-hit
+
+
+# 2025-07-18
+
+polap-data-hifi uninstall polap
+polap-data-hifi install polap
+conda activate polap
+conda install -y r-pracma r-patchwork r-rmarkdown r-ellipse r-sp r-robustbase r-mass bioconductor-genomeinfodb r-uwot r-ggforce r-r.utils r-biocmanager genomescope2 bbmap pbsim3
+
+## trouble-shooting
+
+problem:
+/home/goshng/miniconda3/envs/polap/etc/conda/activate.d/aster_activate.sh: line 1: LD_LIBRARY_PATH: unbound variable
+
+solution:
+add :- after LD_LIBRARY_PATH in the first 2 lines in the aster_activate.sh
+
 # 2025-05-25
 mkdir -p all/polap/cflye1
 cd all/polap/cflye1

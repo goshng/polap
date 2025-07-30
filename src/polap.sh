@@ -44,8 +44,8 @@ _polap_script_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 	exit 2
 }
 _POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
-source "${_POLAPLIB_DIR}/polap-git-hash-version.sh"
-_polap_version=v0.5.2.1-"${_polap_git_hash_version}"
+source "${_POLAPLIB_DIR}/polap-lib-version.sh"
+
 . "${_POLAPLIB_DIR}/polap-parsing.sh" # '.' means 'source'
 _polap_output_dest="/dev/null"
 
@@ -64,6 +64,7 @@ _polap_output_dest="/dev/null"
 
 source "${_POLAPLIB_DIR}/polap-constants.sh"
 source "${_POLAPLIB_DIR}/polap-lib-debug.sh"
+source "${_POLAPLIB_DIR}/polap-lib-string.sh"
 source "${_POLAPLIB_DIR}/polap-lib-steps.sh"
 source "${_POLAPLIB_DIR}/polap-lib-errors.sh"
 source "${_POLAPLIB_DIR}/run-polap-function-utilities.sh"
@@ -78,25 +79,39 @@ source "${_POLAPLIB_DIR}/polap-lib-number.sh"
 source "${_POLAPLIB_DIR}/polap-lib-ncbi.sh"
 source "${_POLAPLIB_DIR}/polap-lib-random.sh"
 source "${_POLAPLIB_DIR}/polap-lib-process.sh"
+source "${_POLAPLIB_DIR}/polap-lib-wga.sh"
+source "${_POLAPLIB_DIR}/polap-lib-oga.sh"
+source "${_POLAPLIB_DIR}/polap-lib-man.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-assemble-rate.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-seed.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-pt.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-mt.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-annotate-read.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-seed-read.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-simulate.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-count.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-filter.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-blast.sh"
 source "${_POLAPLIB_DIR}/polap-cmd-menus.sh"
 source "${_POLAPLIB_DIR}/polap-function-set-variables.sh"
-source "${_POLAPLIB_DIR}/run-polap-function-fastq.sh"
-# source "${_POLAPLIB_DIR}/run-polap-function-fasta.sh"
+
+source "${_POLAPLIB_DIR}/polap-cmd-fastq.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-subtract.sh"
 source "${_POLAPLIB_DIR}/polap-cmd-random.sh"
-source "${_POLAPLIB_DIR}/run-polap-function-bandage.sh"
-source "${_POLAPLIB_DIR}/run-polap-function-wga.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-bandage.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-wga.sh"
 # source "${_POLAPLIB_DIR}/run-polap-function-nextdenovo.sh"
 
 source "${_POLAPLIB_DIR}/polap-function-disassemble-seeds.sh"
 
 # organelle-genome annotation
-source "${_POLAPLIB_DIR}/run-polap-function-annotate.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-annotate.sh"
 source "${_POLAPLIB_DIR}/run-polap-function-annotate-contig.sh"
 
 # read selection and organelle-genome assembly
-source "${_POLAPLIB_DIR}/run-polap-function-oga.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-oga.sh"
 source "${_POLAPLIB_DIR}/run-polap-function-dga.sh"
-source "${_POLAPLIB_DIR}/run-polap-function-polishing.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-polishing.sh"
 
 # Template
 source "${_POLAPLIB_DIR}/run-polap-function-template.sh"
@@ -105,25 +120,25 @@ source "${_POLAPLIB_DIR}/run-polap-function-template.sh"
 source "${_POLAPLIB_DIR}/polap-cmd-bioproject.sh"
 
 # contig selection
-source "${_POLAPLIB_DIR}/run-polap-function-seeds.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-seeds.sh"
 
 # mtDNA or ptDNA selection
 # mtDNA annotation and plotting
 # NCBI: mtDNA
-source "${_POLAPLIB_DIR}/run-polap-function-mtdna.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-mtdna.sh"
 
 # report, archive, and cleanup
-source "${_POLAPLIB_DIR}/run-polap-function-archive.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-archive.sh"
 
 # assemble
-source "${_POLAPLIB_DIR}/run-polap-function-assemble.sh"
-source "${_POLAPLIB_DIR}/run-polap-function-disassemble.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-assemble.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-disassemble.sh"
 source "${_POLAPLIB_DIR}/run-polap-function-directional.sh"
 
 # miscellaneous
 source "${_POLAPLIB_DIR}/run-polap-function-miscellaneous.sh"
 
-source "${_POLAPLIB_DIR}/run-polap-function-test.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-test.sh"
 # source "${_POLAPLIB_DIR}/run-polap-function-taxonomy.sh"
 
 source "${_POLAPLIB_DIR}/polap-cmd-install.sh"
@@ -168,6 +183,11 @@ echo "CMD: $CMD"
 for var in $(compgen -v _arg_); do
 	echo "$var=${!var}"
 done
+
+# Options
+if [[ -n "${_arg_genomesize}" ]]; then
+	_arg_genomesize=$(_polap_lib_unit-convert_to_int ${_arg_genomesize})
+fi
 
 # Call a subcommand function
 if declare -f "_run_polap_${_arg_menu[0]}" >/dev/null 2>&1; then

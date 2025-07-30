@@ -15,7 +15,7 @@
 ################################################################################
 
 ################################################################################
-# dflye version of run-polap-function-assemble.sh
+# dflye version of polap-cmd-assemble.sh
 # We may have to stop using it because dFlye is not working yet.
 ################################################################################
 

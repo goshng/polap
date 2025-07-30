@@ -33,7 +33,7 @@
 # output: assembly_info_organelle_annotation_count-all.txt.pdf
 #
 # See Also:
-# run-polap-function-annotate.sh
+# polap-cmd-annotate.sh
 # function _run_polap_depth-distribution
 #
 # References:

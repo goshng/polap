@@ -15,6 +15,11 @@
 ################################################################################
 
 ################################################################################
+# Functions for subcommand template ...
+# Describe what they are and what they do.
+################################################################################
+
+################################################################################
 # Ensure that the current script is sourced only once
 source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
@@ -47,28 +52,45 @@ function _run_polap_template {
 	# Grouped file path declarations
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
 
-	# Print help message if requested
 	help_message=$(
-		cat <<HEREDOC
-# Template for an external shell script
-#
-# Arguments:
-#   -i ${_arg_inum}: source Flye (usually whole-genome) assembly number
-#
-# Inputs:
-#   ${_polap_var_ga_annotation_all}
-#
-# Outputs:
-#   ${_polap_var_mtcontigname}
-#
-# See:
-#   run-polap-select-contigs-by-table-1.R for the description of --select-contig option
-Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>] [--select-contig <number>]
-HEREDOC
+		cat <<'EOF'
+Name:
+  polap annotate-read - annotate rougly reads with organelle genes
+
+Synopsis:
+  polap annotate-read [options]
+
+Description:
+  polap annotate-read uses plastid and organelle genes to annotate reads
+  using minimap2.
+
+Options:
+  -l FASTQ
+    reads data file
+
+Examples:
+  Get organelle genome sequences:
+    polap annotate-read -l l.fq
+
+TODO:
+  Dev.
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
+		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
+		man "$manfile" >&3
+		rm -f "$manfile"
+		return
+	fi
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
@@ -83,8 +105,8 @@ HEREDOC
 	echo "verbose level: ${_arg_verbose}" >&2
 	echoall "command: $0"
 	echoall "function: $FUNCNAME"
-	echoall "menu2: ${_arg_menu[1]}"
-	echoall "menu3: ${_arg_menu[2]}"
+	echoall "menu2: [$1]"
+	echoall "menu3: [$2]"
 	echoerr "LOG: echoerr"
 	echoall "LOG: echoall"
 
@@ -99,7 +121,7 @@ HEREDOC
 	_polap_log2_file "log2.file: inside detail input/output"
 	_polap_log3_file "log3.file: all input/output"
 
-	_polap_log0 "var: ${_polap_var_mtcontigname}"
+	_polap_log0 "var: ${_polap_var_apple}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

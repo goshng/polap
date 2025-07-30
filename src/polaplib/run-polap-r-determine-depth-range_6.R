@@ -38,7 +38,7 @@
 #
 # See Also:
 # polap-function-disassemble-seeds.sh
-# run-polap-function-seeds.sh
+# polap-cmd-seeds.sh
 #
 # Check: 2025-06-17
 ################################################################################

@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License along with
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
-# A bash script used in run-polap-function-disassemble.sh
+# A bash script used in polap-cmd-disassemble.sh
 # It is used to prepare a MSBWT file before polishing.
 # command time -v bash "${_POLAPLIB_DIR}"/polap-bash-build-msbwt.sh
 # command time -v fmlrc -p "${_arg_threads}"

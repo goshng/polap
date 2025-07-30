@@ -24,8 +24,8 @@ source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
+	set -u
+	return 0
 fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
@@ -33,8 +33,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
@@ -43,68 +43,105 @@ fi
 # arg2: destination folder
 # arg3: maximum size of files for rsync or copying
 _polap_lib_file-rsync() {
-  local input1="$1"
-  local output="$2"
-  local _max_size="${3:-3M}"
+	local input1="$1"
+	local output="$2"
+	local _max_size="${3:-3M}"
 
-  input1="${input1%/}"
-  output="${output%/}"
-  if [[ -d "${output}" ]]; then
-    _polap_log0 "ERROR: folder already exists: ${output}"
-  else
-    rsync -aq --max-size=${_max_size} "${input1}/" "${output}/"
-  fi
+	input1="${input1%/}"
+	output="${output%/}"
+	if [[ -d "${output}" ]]; then
+		_polap_log0 "ERROR: folder already exists: ${output}"
+	else
+		rsync -aq --max-size=${_max_size} "${input1}/" "${output}/"
+	fi
 }
 
 # Example usage:
 # archive-folder "Afolder" "Bfolder" "template.txt"
 _polap_lib_file-archive-folder() {
-  local src_dir="$1"
-  local dest_dir="$2"
-  local template_file="$3"
+	local src_dir="$1"
+	local dest_dir="$2"
+	local template_file="$3"
 
-  if [[ ! -d "$src_dir" ]]; then
-    _polap_log0 "Error: Source directory '$src_dir' does not exist."
-    return 1
-  fi
+	if [[ ! -d "$src_dir" ]]; then
+		_polap_log0 "Error: Source directory '$src_dir' does not exist."
+		return 1
+	fi
 
-  if [[ ! -f "$template_file" ]]; then
-    _polap_log0 "Error: Template file '$template_file' does not exist."
-    return 1
-  fi
+	if [[ ! -f "$template_file" ]]; then
+		_polap_log0 "Error: Template file '$template_file' does not exist."
+		return 1
+	fi
 
-  mkdir -p "$dest_dir"
+	mkdir -p "$dest_dir"
 
-  while IFS= read -r file; do
-    if [[ "$file" == *"#"* ]]; then
-      continue
-    fi
-    src_path="$src_dir/$file"
-    dest_path="$dest_dir/$file"
-    dest_folder="$(dirname "$dest_path")"
+	while IFS= read -r file; do
+		if [[ "$file" == *"#"* ]]; then
+			continue
+		fi
+		src_path="$src_dir/$file"
+		dest_path="$dest_dir/$file"
+		dest_folder="$(dirname "$dest_path")"
 
-    if [[ -f "$src_path" ]]; then
-      mkdir -p "$dest_folder"
-      cp -p "$src_path" "$dest_path"
-    else
-      echo "Warning: File '$src_path' does not exist, skipping."
-    fi
-  done <"$template_file"
+		if [[ -f "$src_path" ]]; then
+			mkdir -p "$dest_folder"
+			cp -p "$src_path" "$dest_path"
+		else
+			echo "Warning: File '$src_path' does not exist, skipping."
+		fi
+	done <"$template_file"
 
-  # Create a tar.gz archive of the destination directory
-  tar -czf "${dest_dir}.tar.gz" -C "$(dirname "$dest_dir")" "$(basename "$dest_dir")"
+	# Create a tar.gz archive of the destination directory
+	tar -czf "${dest_dir}.tar.gz" -C "$(dirname "$dest_dir")" "$(basename "$dest_dir")"
 
-  _polap_log1 "Archive created: ${dest_dir}.tar.gz"
+	_polap_log1 "Archive created: ${dest_dir}.tar.gz"
 
-  # Delete the destination directory after archiving
-  # rm -rf "$dest_dir"
-  # echo "Deleted temporary directory: $dest_dir"
+	# Delete the destination directory after archiving
+	# rm -rf "$dest_dir"
+	# echo "Deleted temporary directory: $dest_dir"
 }
 
 # if _polap_lib_file-is_at_least_1MB "${_brg_outdir_i}/ont.asm.ec.fq"; then
 #   echo "found: ${_brg_outdir_i}/ont.asm.ec.fq"
 # else
 _polap_lib_file-is_at_least_1MB() {
-  local file="$1"
-  [[ -f "$file" && $(stat -c%s "$file") -ge 1048576 ]]
+	local file="$1"
+	[[ -f "$file" && $(stat -c%s "$file") -ge 1048576 ]]
+}
+
+# from disassemble.sh
+#
+# unzip a gzipped file leaving the input as is.
+# do not unzip if the input is not a gzipped file.
+#
+# unzipped_file=$(_polap_gunzip_file "${_short_read1}")
+# _rstatus="$?"
+# if [[ "$_rstatus" -eq 0 ]]; then
+#   _polap_log2 "  unzipped file: $unzipped_file"
+#   _short_read1="$unzipped_file"
+# fi
+_polap_lib_file-gunzip() {
+	local input_file="$1"
+
+	# Check if the input file exists
+	if [[ ! -f "$input_file" ]]; then
+		die "Error: File '$input_file' not found."
+	fi
+
+	# Check if the file is gzipped
+	if file "$input_file" | grep -q "gzip compressed data"; then
+		# Extract the file name without the .gz extension
+		local output_file="${input_file%.gz}"
+
+		# Unzip the file and keep the original
+		if gunzip -c "$input_file" >"$output_file"; then
+			echo "$output_file"
+			return 0
+		else
+			die "ERROR: failed to unzip '$input_file'."
+		fi
+	else
+		_polap_log3 "    file '$input_file' is not gzipped."
+		return 1
+	fi
 }

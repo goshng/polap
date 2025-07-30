@@ -34,8 +34,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
@@ -118,4 +118,45 @@ _polap_lib_make_relative_symlink() {
 	}
 
 	echo "Symlink created: $linkpath -> $rel_target"
+}
+
+_polap_lib_filepath-smart_ln_s() {
+	local src="$1"
+	local tgt="$2"
+	local src_abs tgt_abs src_dir tgt_dir
+
+	src_abs=$(realpath -m "$src")
+	tgt_abs=$(realpath -m "$tgt")
+
+	src_dir=$(dirname "$src_abs")
+	tgt_dir=$(dirname "$tgt_abs")
+
+	# When source and target are in the same directory
+	if [[ "$src_dir" == "$tgt_dir" ]]; then
+		ln -fs "$(basename "$src")" "$tgt"
+	else
+		# Try to compute relative path from target to source
+		rel_src=$(realpath --relative-to="$tgt_dir" "$src_abs")
+		ln -fs "$rel_src" "$tgt"
+	fi
+}
+
+_polap_lib_filepath-smart_ln_s2() {
+	local src="$1"
+	local tgt="$2"
+	local src_abs src_dir tgt_dir rel_src
+
+	src_abs=$(realpath -m "$src") || return 1
+	src_dir=$(dirname "$src_abs")
+
+	tgt_dir=$(realpath -m "$(dirname "$tgt")") || return 1
+
+	# When source and target are in the same directory
+	if [[ "$src_dir" == "$tgt_dir" ]]; then
+		ln -fs "$(basename "$src")" "$tgt"
+	else
+		# Compute relative path from target dir to source
+		rel_src=$(realpath --relative-to="$tgt_dir" "$src_abs")
+		ln -fs "$rel_src" "$tgt"
+	fi
 }

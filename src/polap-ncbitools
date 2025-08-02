@@ -28,7 +28,7 @@ set -e
 
 function version {
 	cat <<EOM
-$(basename "$0") version 0.1
+$(basename "$0") version 0.2
 EOM
 }
 
@@ -48,6 +48,7 @@ usage:
     $(basename "$0") fetch fna NC_068626.1
     $(basename "$0") fetch tax NC_068626.1
     $(basename "$0") fetch sra SRR390728
+    $(basename "$0") fetch srainfo SRR390728
     $(basename "$0") fetch runinfo <bioproject ID>
 
 subcommand:
@@ -104,6 +105,25 @@ fetch__sra() {
 	# prefetch "$ACCN" --quiet --max-size 200g
 	vdb-validate "$ACCN" --quiet 2>/dev/null
 	fasterq-dump "$ACCN" --quiet 2>/dev/null
+}
+
+sra_run_size() {
+	local run
+	for run in "$@"; do
+		esearch -db sra -query "$run" |
+			efetch -format runinfo |
+			awk -F',' -v run="$run" 'NR==1 { for (i=1; i<=NF; i++) h[$i]=i }
+        $h["Run"] == run {
+          printf "%s\tbases: %s\tavgLength: %s\tsize_MB: %s\n", $h["Run"], $h["bases"], $h["avgLength"], $h["size_MB"]
+        }'
+	done
+}
+
+fetch__srainfo() {
+	local ACCN=$1
+	shift
+
+	sra_run_size "$ACCN"
 }
 
 fetch__runinfo() {

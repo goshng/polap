@@ -472,8 +472,10 @@ _polap_filter-reads-by-reference() {
 	RETAIN_IDS="${OUTPUT_PREFIX}/retained.txt"
 	SUMMARY="${OUTPUT_PREFIX}/ref-summary.tsv"
 	PLOT="${OUTPUT_PREFIX}/ref-summary.pdf"
-	FASTQ_REMOVED="${OUTPUT_PREFIX}/ref-chloroplast_like.fastq.gz"
-	FASTQ_FILTERED="${OUTPUT_PREFIX}/ref-filtered.fastq.gz"
+	FASTQ_REMOVED="${OUTPUT_PREFIX}/ref-chloroplast_like.fastq"
+	FASTQ_FILTERED="${OUTPUT_PREFIX}/ref-filtered.fastq"
+
+	_polap_lib_conda-ensure_conda_env polap-graphaligner || exit 1
 
 	# === Step 1: Align reads with GraphAligner
 	echo "📌 Aligning with GraphAligner..."
@@ -485,6 +487,8 @@ _polap_filter-reads-by-reference() {
 		--precise-clipping 0.9 \
 		-x vg
 
+	conda deactivate
+
 	# --seeds-mxm-length 19 \
 	# --bandwidth 15 \
 
@@ -495,20 +499,22 @@ _polap_filter-reads-by-reference() {
 
 	# === Step 3: Extract FASTQ subsets
 	echo "✂️ Splitting FASTQ..."
-	seqkit grep -n -f "$REJECT_IDS" "$MITO_READS" | gzip -c >"$FASTQ_REMOVED"
-	seqkit grep -n -f "$RETAIN_IDS" "$MITO_READS" | gzip -c >"$FASTQ_FILTERED"
+	seqkit grep -f "$REJECT_IDS" "$MITO_READS" >"$FASTQ_REMOVED"
+	seqkit grep -f "$RETAIN_IDS" "$MITO_READS" >"$FASTQ_FILTERED"
+	# seqkit grep -n -f "$REJECT_IDS" "$MITO_READS" | gzip -c >"$FASTQ_REMOVED"
+	# seqkit grep -n -f "$RETAIN_IDS" "$MITO_READS" | gzip -c >"$FASTQ_FILTERED"
 
 	# === Step 4: Plot with R
-	echo "📊 Generating plots..."
-	Rscript --vanialla "${_POLAPLIB_DIR}"/polap-r-plot-graphaligner-summary.R \
-		"$SUMMARY" "$PLOT"
+	# echo "📊 Generating plots..."
+	# Rscript --vanialla "${_POLAPLIB_DIR}"/polap-r-plot-graphaligner-summary.R \
+	# 	"$SUMMARY" "$PLOT"
 
 	# === Summary
 	_polap_log0 "✅ Finished filtering mitochondrial reads:"
 	_polap_log0 "- Filtered reads: $FASTQ_FILTERED"
 	_polap_log0 "- Removed reads: $FASTQ_REMOVED"
-	_polap_log0 "- Summary table: $SUMMARY"
-	_polap_log0 "- Summary plot:  $PLOT"
+	# _polap_log0 "- Summary table: $SUMMARY"
+	# _polap_log0 "- Summary plot:  $PLOT"
 
 }
 

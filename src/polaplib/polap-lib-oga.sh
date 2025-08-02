@@ -60,6 +60,17 @@ function _polap_lib_oga-estimate-read-sampling-rate {
 	local _source_long_reads_fq=""
 	_polap_oga_determine-long-read-file _source_long_reads_fq
 
+	# TODO: remove pt reads from the input if not --plastid
+	# if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+	# 	if [[ "${_arg_plastid}" == "off" ]]; then
+	# 		if [[ -s "${_arg_reference}" ]]; then
+	# 			_polap_filter-reads-by-reference
+	# 			local FASTQ_FILTERED="${_arg_outdir}/kmer/ref-filtered.fastq"
+	# 			_source_long_reads_fq="${FASTQ_FILTERED}"
+	# 		fi
+	# 	fi
+	# fi
+
 	local size_source_lfq="${_polap_var_oga_contig}"/l.txt
 	if [[ ! -s "${size_source_lfq}" ]]; then
 		_polap_lib_fastq-total-length-of "${_source_long_reads_fq}" "${size_source_lfq}"
@@ -160,6 +171,12 @@ function _polap_lib_oga-estimate-read-sampling-rate {
 			rate_lfq=$(echo "scale=9; ${rate_lfq}/2" | bc)
 		elif (($(echo "$_rate > 0.5" | bc -l))); then
 			rate_lfq=$(echo "scale=9; ${rate_lfq}*2" | bc)
+
+			if (($(echo "${rate_lfq} >= 2.0" | bc -l))); then
+				echo "1.0" >"${_polap_var_oga_contig}/rate_lfq.txt"
+				echo ${i} >"${_polap_var_oga_contig}/index.txt"
+				return
+			fi
 		else
 			echo "${rate_lfq}" >"${_polap_var_oga_contig}/rate_lfq.txt"
 			echo ${i} >"${_polap_var_oga_contig}/index.txt"

@@ -35,7 +35,7 @@
 # Example:
 # polap edges-stats
 # polap edges-stats view
-# Rscript ./src/polaplib/run-polap-r-edges-stats.R \
+# Rscript ./src/polaplib/polap-r-edges-stats.R \
 #   --gfa output/3-gfa.seq.part.tsv \
 #   --out output/edges_stats.txt
 #

@@ -583,7 +583,7 @@ HEREDOC
 			${_polap_var_outdir_jellyfish_out}"
 		_polap_log2_file "${_polap_var_outdir_jellyfish_out_histo}"
 
-		_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-jellyfish.R \
+		_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-jellyfish.R \
 			${_polap_var_outdir_jellyfish_out_histo} \
 			${_polap_var_outdir_genome_size}"
 		# Check the exit status
@@ -728,7 +728,7 @@ HEREDOC
 
 		#############################################################
 		# pacbio-hifi
-		# _polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-jellyfish.R \
+		# _polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-jellyfish.R \
 		# 	${_polap_var_outdir_jellyfish_out_histo} \
 		# 	${_polap_var_outdir_genome_size}"
 		#
@@ -967,6 +967,7 @@ HEREDOC
 					_polap_log1 "  random seed for reducing the whole-genome assembly long-read data: ${_random_seed}"
 					# _polap_log3 "seqkit sample -p ${_RATE} ${_arg_long_reads} -o ${nfq_file}"
 					# seqkit sample -p "${_RATE}" "${_arg_long_reads}" -o "${nfq_file}" >${_polap_output_dest} 2>&1
+		          	rm -f "${_polap_var_outdir_nk_fq_gz}"
 					_polap_log3_pipe "seqkit sample \
             -p ${_RATE} \
             -s ${_random_seed} \

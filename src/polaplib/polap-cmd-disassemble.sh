@@ -60,7 +60,7 @@
 #
 # See Also:
 # polap-function-disassemble-seeds.sh -> polap-lib-disassemble.sh
-# run-polap-r-disassemble.R -> polap-r-disassemble.R
+# polap-r-disassemble.R -> polap-r-disassemble.R
 # polap-r-disassemble-man-benchmark-boxplots.R
 ################################################################################
 
@@ -262,7 +262,7 @@ _polap_find-genome-size() {
 			cut -d: -f6 "${_outdir_genome_size}.genomescope2.txt" |
 				tail -n 1 >"${_outdir_genome_size}"
 		else
-			_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-jellyfish.R \
+			_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-jellyfish.R \
 					${_outdir_jellyfish_out_histo} \
 					${_outdir_genome_size}"
 			# Check the exit status
@@ -398,13 +398,13 @@ function _disassemble_report1 {
 	_polap_log1_head "${d}"
 	d1="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-ordered.txt"
 	d2="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-ordered.pdf"
-	_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-disassemble.R \
+	_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
         --table ${s} \
         --out ${d1} \
         --plot ${d2}"
 	_rstatus="$?"
 	if [[ "$_rstatus" -ne 0 ]]; then
-		_polap_log0 "ERROR: run-polap-r-disassemble.R on ${s}"
+		_polap_log0 "ERROR: polap-r-disassemble.R on ${s}"
 	fi
 }
 
@@ -445,13 +445,13 @@ function _disassemble_report2 {
 	_polap_log1_head "${d}"
 	d1="${_disassemble_dir}/${_arg_disassemble_i}/2/summary1-ordered.txt"
 	d2="${_disassemble_dir}/${_arg_disassemble_i}/2/summary1-ordered.pdf"
-	_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-disassemble.R \
+	_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
         --table ${s} \
         --out ${d1} \
         --plot ${d2}"
 	_rstatus="$?"
 	if [[ "$_rstatus" -ne 0 ]]; then
-		_polap_log0 "ERROR: run-polap-r-disassemble.R on ${s}"
+		_polap_log0 "ERROR: polap-r-disassemble.R on ${s}"
 	fi
 }
 
@@ -469,7 +469,7 @@ function _disassemble_report3y {
 		_polap_log1_head "${d}"
 		d1="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1y-ordered.txt"
 		d2="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1y-ordered.pdf"
-		_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-disassemble.R \
+		_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
         --table ${s} \
         --out ${d1} \
         --plot ${d2} 2>/dev/null"
@@ -493,7 +493,7 @@ function _disassemble_report3 {
 		_polap_log1_head "${d}"
 		d1="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1-ordered.txt"
 		d2="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1-ordered.pdf"
-		_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-disassemble.R \
+		_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
 		      --table ${s} \
 		      --out ${d1} \
 		      --plot ${d2} 2>/dev/null"
@@ -1217,6 +1217,7 @@ function _disassemble-redownsample {
 	_polap_log0 "sampling_rate: ${redown[sampling_rate]}"
 
 	# cmd
+	rm -f "${redown[output1]}"
 	seqkit sample \
 		-p "${redown[sampling_rate]}" \
 		-s "${redown[random_seed]}" \
@@ -1433,7 +1434,7 @@ function _disassemble-stage0 {
 				_polap_lib_random-get
 				_seed=${_polap_var_random_number}
 				echo "random seed: ${_seed}" >>"${_arg_outdir}/${_arg_inum}/lx.txt"
-
+				rm -f "${_outfile}"
 				seqkit sample \
 					-p "${_rate}" \
 					-s "${_seed}" \
@@ -1652,14 +1653,14 @@ function _disassemble-stage2 {
 				_disassemble_report1 true
 			fi
 			#
-			# _polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-disassemble.R \
+			# _polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
 			#      --table ${_disassemble_i_stage}/summary1.txt \
 			#      --out ${_disassemble_i_stage}/summary1-ordered.txt \
 			#      --plot ${_disassemble_i_stage}/summary1-ordered.pdf \
 			#      2>${_polap_output_dest}"
 			# _rstatus="$?"
 			# if [[ "$_rstatus" -ne 0 ]]; then
-			# 	_polap_log0 "ERROR: run-polap-r-disassemble.R on ${_disassemble_i_stage}/summary1.txt"
+			# 	_polap_log0 "ERROR: polap-r-disassemble.R on ${_disassemble_i_stage}/summary1.txt"
 			# fi
 		else
 			die "ERROR: no such file stage1 summary: ${_summary1_txt}"
@@ -1795,7 +1796,7 @@ function _disassemble-stage3 {
 		fi
 		#
 		# _polap_log1 "  draw the length distribution of the ptDNA sequences in stage 2"
-		# _polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-disassemble.R \
+		# _polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
 		#       --table ${_disassemble_i_stage}/summary1.txt \
 		#       --out ${_disassemble_i_stage}/summary1-ordered.txt \
 		#       --plot ${_disassemble_i_stage}/summary1-ordered.pdf \
@@ -2639,7 +2640,7 @@ HEREDOC
 			s0="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1.txt"
 			d1="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-scatter.txt"
 			d2="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-scatter.pdf"
-			_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-disassemble.R \
+			_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
         --table ${s0} \
         --out ${d1} \
         --plot ${d2} \
@@ -2653,13 +2654,13 @@ HEREDOC
 					i=$(basename "${i%/}")
 					if [[ -s "${_disassemble_dir}/${i}/summary1.txt" ]]; then
 						if [[ "${_arg_menu[2]}" == "coverage" ]]; then
-							_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-disassemble.R \
+							_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
         --table ${_disassemble_dir}/${i}/summary1.txt \
         --out ${_disassemble_dir}/${i}/summary1-ordered.txt \
         --plot ${_disassemble_dir}/${i}/summary1-ordered.pdf \
 			  --coverage"
 						else
-							_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-disassemble.R \
+							_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
         --table ${_disassemble_dir}/${i}/summary1.txt \
         --out ${_disassemble_dir}/${i}/summary1-ordered.txt \
         --plot ${_disassemble_dir}/${i}/summary1-ordered.pdf"
@@ -3667,6 +3668,7 @@ HEREDOC
 			_polap_log3 "    input2: sampling rate: ${_summary_long_rate_sample}"
 			_polap_log3 "    input3: random seed: ${_summary_long_sample_seed}"
 			_polap_log2 "    output: ${_long_read}"
+			rm -f "${_long_read}"
 			_polap_log3_pipe "seqkit sample \
             -p ${_summary_long_rate_sample} \
             -s ${_summary_long_sample_seed} \
@@ -3702,6 +3704,7 @@ HEREDOC
 				_summary_short_sample_seed=${_polap_var_random_number}
 				_polap_log3 "    input1: sampling rate: ${_summary_short_rate_sample}"
 				_polap_log3 "    input2: random seed: ${_summary_short_sample_seed}"
+				rm -f "${_short_read1}"
 				_polap_log3_pipe "seqkit sample \
             -p ${_summary_short_rate_sample} \
             -s ${_summary_short_sample_seed} \
@@ -4096,6 +4099,7 @@ HEREDOC
 			_polap_log2 "    input2: random seed: ${_summary_short_sample_seed}"
 			_polap_log2 "    input3: short read data: ${_ga_input_short_reads}"
 			_polap_log2 "    output: ${_short_read1}"
+			rm -f "${_short_read1}"
 			_polap_log3_pipe "seqkit sample \
           -p ${_summary_short_rate_sample} \
           -s ${_summary_short_sample_seed} \

@@ -633,7 +633,7 @@ HEREDOC
 		_polap_log1 "  selecting read names for ${_pread_sel}"
 		_polap_log2 "    input1: ${output_file}"
 		_polap_log2 "    output: ${_polap_var_oga_plot}/${_pread_sel}/summary.pdf"
-		_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-test-reads-bar-graph.R \
+		_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-test-reads-bar-graph.R \
 			-i ${output_file} \
 			--out ${_polap_var_oga_plot}/${_pread_sel}-summary.pdf \
 			>${_polap_output_dest} 2>&1"
@@ -683,12 +683,12 @@ HEREDOC
 		_polap_log2 "    input1: ${output_file}"
 		_polap_log2 "    output: ${_polap_var_oga_plot}/${_pread_sel}/summary.pdf"
 		if [[ "${_arg_report_x_is}" == "off" ]]; then
-			_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-test-reads-bar-graph.R \
+			_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-test-reads-bar-graph.R \
 			-i ${output_file} \
 			--out ${_polap_var_oga_plot}/${_pread_sel}-summary.pdf \
 			>${_polap_output_dest} 2>&1"
 		else
-			_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-test-reads-bar-graph.R \
+			_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-test-reads-bar-graph.R \
 			-i ${output_file} \
 			-s ${_arg_report_x} \
 			--out ${_polap_var_oga_plot}/${_pread_sel}-summary.pdf \
@@ -876,7 +876,7 @@ HEREDOC
 		_polap_log2 "    input2: ${_polap_var_oga_contig}/contig.tab"
 		_polap_log2 "    output: ${_polap_var_oga_reads}/${_pread_sel}/${i}/${_read_names}.names"
 		if [[ "${_arg_bridge_same_strand}" == "off" ]]; then
-			_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-pairs.R \
+			_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-pairs.R \
 	    -m ${_polap_var_mtcontigname} \
 		  -t ${_polap_var_oga_contig}/contig.tab \
 		  --out ${_polap_var_oga_reads}/${_pread_sel}/${i} \
@@ -886,7 +886,7 @@ HEREDOC
       --all \
 		  >${_polap_output_dest} 2>&1"
 		else
-			_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-bridge.R \
+			_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-bridge.R \
         --use-strand \
 	    -m ${_polap_var_mtcontigname} \
 		  -t ${_polap_var_oga_contig}/contig.tab \
@@ -948,6 +948,7 @@ HEREDOC
 				local _random_seed=${_polap_var_random_number}
 				# local _random_seed=11
 				_polap_log1 "    random seed for reducing long reads mapped on potential seed contigs: ${_random_seed}"
+				rm -f ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz
 				_polap_log3_pipe "seqkit sample \
           -p ${_rate} \
           -s ${_random_seed} \

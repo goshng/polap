@@ -16,7 +16,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# polaplib/run-polap-r-cc2mtcontig.R
+# polaplib/polap-r-cc2mtcontig.R
 
 # TODO: document it later
 #

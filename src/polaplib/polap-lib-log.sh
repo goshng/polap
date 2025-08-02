@@ -37,8 +37,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
@@ -307,6 +307,33 @@ function _polap_log3_pipe {
 	verbose_echo_trim 0 "$@"
 	verbose_echo_trim 4 "$@" >&3
 	eval "$@"
+}
+
+function _polap_log3_pipe_command {
+	local cmd
+
+	if [[ -t 0 ]]; then
+		# stdin is a terminal → called with arguments like: _polap_log3_pipe_command ls -l
+		cmd="$*"
+	else
+		# stdin is a pipe → called with heredoc: _polap_log3_pipe_command <<'EOF' ... EOF
+		cmd="$(cat)"
+	fi
+
+	verbose_echo_trim 0 "$cmd"
+	verbose_echo_trim 4 "$cmd" >&3
+
+	eval "$cmd"
+}
+
+function _polap_log3_cmdout {
+	local cmd=("$@")
+	local full_cmd="${cmd[*]} >${_polap_output_dest} 2>&1"
+
+	verbose_echo_trim 0 "$full_cmd"
+	verbose_echo_trim 4 "$full_cmd" >&3
+
+	"${cmd[@]}" >"${_polap_output_dest}" 2>&1
 }
 
 function _polap_log0_log {

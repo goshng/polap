@@ -242,6 +242,16 @@ help_message_run_polap_annotate_check=$(
 HEREDOC
 )
 
+help_message_run_polap_readassemble=$(
+	cat <<HEREDOC
+
+  Assemble organelle genomes by annotating and selecting long-reads.
+
+  This is the main run function for assembling plant organelle genomes
+  using ONT reads.
+HEREDOC
+)
+
 help_message_run_polap_readassemble_pt=$(
 	cat <<HEREDOC
 
@@ -249,10 +259,23 @@ help_message_run_polap_readassemble_pt=$(
 HEREDOC
 )
 
+help_message_run_polap_readassemble_nt=$(
+	cat <<HEREDOC
+
+  Assemble mtDNA by annotating and selecting long-reads.
+
+  This is the main run function for assembling plant mitochondrial genome
+  using ONT reads.
+HEREDOC
+)
+
 help_message_run_polap_readassemble_mt=$(
 	cat <<HEREDOC
 
   Assemble mtDNA by annotating and selecting long-reads.
+
+  This is the main run function for assembling plant mitochondrial genome
+  using ONT reads.
 HEREDOC
 )
 
@@ -263,7 +286,7 @@ help_message_sync=$(
 HEREDOC
 )
 
-help_message_run_assemble_ont_pt=$(
+help_message_run_readassemble_ont_pt=$(
 	cat <<HEREDOC
 
   Assemble reads selected by plastid gene annotation.
@@ -275,7 +298,7 @@ help_message_run_assemble_ont_pt=$(
 HEREDOC
 )
 
-help_message_run_assemble_ont_mt=$(
+help_message_run_readassemble_ont_mt=$(
 	cat <<HEREDOC
 
   Assemble reads selected by mitochondrial gene annotation.
@@ -287,13 +310,30 @@ help_message_run_assemble_ont_mt=$(
 HEREDOC
 )
 
-help_message_run_annotate_ont=$(
+help_message_readassemble_annotate_pt=$(
+	cat <<HEREDOC
+
+  Annotate ONT reads with organelle genes.
+
+  output: o/annotate-read/pt
+HEREDOC
+)
+
+help_message_readassemble_annotate_mt=$(
 	cat <<HEREDOC
 
   Annotate ONT reads with organelle genes.
 
   output: o/annotate-read/mt
-  output: o/annotate-read/pt
+HEREDOC
+)
+
+help_message_readassemble_annotate_nt=$(
+	cat <<HEREDOC
+
+  Annotate ONT reads with organelle genes.
+
+  output: o/annotate-read/mt
 HEREDOC
 )
 
@@ -1523,7 +1563,7 @@ run-polap-readassemble-pt-check_genus_species() {
 	fi
 
 	# data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_coverage}"
-	# run-annotate-ont_genus_species "${_brg_outdir}" "${_brg_sindex}"
+	# readassemble-annotate-ont_genus_species "${_brg_outdir}" "${_brg_sindex}"
 	# run-assemble-ont_genus_species "${_brg_outdir}" "${_brg_sindex}"
 	#
 	# # Save some results
@@ -1534,9 +1574,54 @@ run-polap-readassemble-pt-check_genus_species() {
 	# rm -rf "${_brg_rundir}"
 }
 
+# input: _brg_sindex
+# output: _brg_coverage
+#
+lib-polap-readassemble-brg-coverage() {
+	if [[ "${_brg_sindex}" == "0" ]]; then
+		_brg_coverage="10g"
+	elif [[ "${_brg_sindex}" == "1" ]]; then
+		_brg_coverage="1g"
+	elif [[ "${_brg_sindex}" == "2" ]]; then
+		_brg_coverage="200m"
+	else
+		_brg_coverage="50m"
+	fi
+}
+
+run-polap-readassemble_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+
+	run-polap-readassemble-mt_genus_species "${_brg_outdir}" "${_brg_sindex}" iterate
+	run-polap-readassemble-nt_genus_species "${_brg_outdir}" "${_brg_sindex}" iterate
+	run-polap-readassemble-pt_genus_species "${_brg_outdir}" "${_brg_sindex}"
+}
+
+# variables
+#
+# _brg_adir=t5
+# _brg_inum=0
+# _brg_outdir=Ophrys_lutea
+# _brg_outdir_i=Ophrys_lutea/t5/0
+# _brg_outdir_t=Ophrys_lutea/t5
+# _brg_rundir=Ophrys_lutea-0
+# _brg_runtitledir=Ophrys_lutea-0-polap-readassemble-mt
+# _brg_sindex=0
+# _brg_target=Ophrys_lutea-0
+# _brg_title=polap-readassemble-mt
+# _brg_titledir=Ophrys_lutea/t5/0/polap-readassemble-mt
+# _memlog_file=Ophrys_lutea/t5/0/memlog-polap-readassemble-mt.csv
+# _stdout_txt=Ophrys_lutea/t5/0/stdout-polap-readassemble-mt.txt
+# _summary_file=Ophrys_lutea/t5/0/summary-polap-readassemble-mt.txt
+# _timing_txt=Ophrys_lutea/t5/0/timing-polap-readassemble-mt.txt
+# long_sra=ERR5167480
+#
+# 2025-08-01
 run-polap-readassemble-mt_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
+	local _brg_iterate="${3:-no-iterate}"
 
 	local _brg_inum=0
 	local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
@@ -1559,28 +1644,84 @@ run-polap-readassemble-mt_genus_species() {
 		return
 	fi
 
+	local _brg_coverage="50m"
+	lib-polap-readassemble-brg-coverage
+
 	if [[ ! -s "${long_sra}".fastq ]]; then
 		data-long_genus_species "${_brg_outdir}"
 	fi
 
-	if [[ "${_brg_sindex}" == "0" ]]; then
-		_brg_coverage="10g"
-	elif [[ "${_brg_sindex}" == "1" ]]; then
-		_brg_coverage="1g"
-	elif [[ "${_brg_sindex}" == "2" ]]; then
-		_brg_coverage="200m"
-	fi
-
 	data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_coverage}"
-	run-annotate-ont_genus_species "${_brg_outdir}" "${_brg_sindex}"
-	run-assemble-ont-mt_genus_species "${_brg_outdir}" "${_brg_sindex}"
+	readassemble-annotate-mt_genus_species "${_brg_outdir}" "${_brg_sindex}"
+	if [[ "${_brg_iterate}" == "no-iterate" ]]; then
+		readassemble-ont-mt_genus_species "${_brg_outdir}" "${_brg_sindex}"
+	else
+		readassemble-ont-mt-iterate_genus_species "${_brg_outdir}" "${_brg_sindex}"
+	fi
 
 	# Save some results
 	rsync -azuq --max-size=5M \
-		"${_brg_rundir}"/annotate-read/ \
+		"${_brg_rundir}"/annotate-read-mt/ \
 		"${_brg_titledir}"/
 
-	rm -rf "${_brg_rundir}"
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		sync_genus_species "${_brg_outdir}" "${_brg_sindex}" --main-push
+	fi
+
+	# rm -rf "${_brg_rundir}"
+}
+
+run-polap-readassemble-nt_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+	local _brg_iterate="${3:-no-iterate}"
+
+	local _brg_inum=0
+	local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+	local _timing_txt _stdout_txt _memlog_file _summary_file
+
+	brg_common_setup \
+		_brg_outdir _brg_sindex _brg_adir _brg_title \
+		_brg_target _brg_rundir _brg_outdir_i \
+		_timing_txt _stdout_txt _memlog_file _summary_file
+
+	# Extra folders
+	local _brg_outdir_t="${_brg_outdir}/${opt_t_arg}"
+	local _brg_titledir="${_brg_outdir_i}/${_brg_title}"
+	local _brg_runtitledir="${_brg_rundir}-${_brg_title}"
+
+	if [[ -v _long["$_brg_target"] ]]; then
+		local long_sra="${_long["$_brg_target"]}"
+	else
+		echo "Error: ${_brg_target} because it is not in the CSV."
+		return
+	fi
+
+	local _brg_coverage="50m"
+	lib-polap-readassemble-brg-coverage
+
+	if [[ ! -s "${long_sra}".fastq ]]; then
+		data-long_genus_species "${_brg_outdir}"
+	fi
+
+	data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_coverage}"
+	readassemble-annotate-nt_genus_species "${_brg_outdir}" "${_brg_sindex}"
+	if [[ "${_brg_iterate}" == "no-iterate" ]]; then
+		readassemble-ont-nt_genus_species "${_brg_outdir}" "${_brg_sindex}"
+	else
+		readassemble-ont-nt-iterate_genus_species "${_brg_outdir}" "${_brg_sindex}"
+	fi
+
+	# Save some results
+	rsync -azuq --max-size=5M \
+		"${_brg_rundir}"/annotate-read-nt/ \
+		"${_brg_titledir}"/
+
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		sync_genus_species "${_brg_outdir}" "${_brg_sindex}" --main-push
+	fi
+
+	# rm -rf "${_brg_rundir}"
 }
 
 run-polap-readassemble-pt_genus_species() {
@@ -1621,13 +1762,17 @@ run-polap-readassemble-pt_genus_species() {
 	fi
 
 	data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_coverage}"
-	run-annotate-ont-pt_genus_species "${_brg_outdir}" "${_brg_sindex}"
-	run-assemble-ont-pt_genus_species "${_brg_outdir}" "${_brg_sindex}"
+	readassemble-annotate-pt_genus_species "${_brg_outdir}" "${_brg_sindex}"
+	readassemble-ont-pt_genus_species "${_brg_outdir}" "${_brg_sindex}"
 
 	# Save some results
 	rsync -azuq --max-size=5M \
-		"${_brg_rundir}"/annotate-pt-read/ \
+		"${_brg_rundir}"/annotate-read-pt/ \
 		"${_brg_titledir}"/
+
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		sync_genus_species "${_brg_outdir}" "${_brg_sindex}" --main-push
+	fi
 
 	rm -rf "${_brg_rundir}"
 }
@@ -1670,12 +1815,12 @@ run-polap-readassemble-aninmal-mt_genus_species() {
 	fi
 
 	data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_coverage}"
-	run-annotate-ont-mt_genus_species "${_brg_outdir}" "${_brg_sindex}"
-	run-assemble-ont-animal-mt_genus_species "${_brg_outdir}" "${_brg_sindex}"
+	readassemble-annotate-mt_genus_species "${_brg_outdir}" "${_brg_sindex}"
+	readassemble-ont-animal-mt_genus_species "${_brg_outdir}" "${_brg_sindex}"
 
 	# Save some results
 	rsync -azuq --max-size=5M \
-		"${_brg_rundir}"/annotate-read/ \
+		"${_brg_rundir}"/annotate-read-mt/ \
 		"${_brg_titledir}"/
 
 	rm -rf "${_brg_rundir}"
@@ -1717,6 +1862,7 @@ sync_genus_species() {
 	local folder_name="$(basename "$folder")"
 	local local_path="${local_dir}/${folder_name}"
 	local remote_path="${remote_host}:${local_path}"
+	local main_path="${_local_host}:${local_path}"
 
 	# Prepare rsync options
 	local rsync_opts=(-az --info=progress2 --no-inc-recursive)
@@ -1731,6 +1877,7 @@ sync_genus_species() {
 	# to transfer small datasets
 	local local_outdir="${local_dir}/${_brg_outdir}"
 	local remote_outdir="${remote_host}:${local_outdir}"
+	local main_outdir="${_local_host}:${local_outdir}"
 	ssh "$remote_host" "mkdir -p '$local_outdir'"
 	local rsync_opts2=(-az --info=progress2 --no-inc-recursive)
 	rsync_opts2+=(--max-size="${maxsize}")
@@ -1754,6 +1901,11 @@ sync_genus_species() {
 		echo "Pushing to $remote_host..."
 		rsync "${rsync_opts[@]}" "$local_path/" "$remote_path/"
 		;;
+	--main-push)
+		echo "Pushing from $local_path to $_local_host:$local_path..."
+		rsync "${rsync_opts[@]}" "$local_path/" "$main_path/"
+		rsync "${rsync_opts2[@]}" "$_brg_outdir/" "$main_outdir/"
+		;;
 	*)
 		echo "❌ Unknown direction: $direction"
 		echo "Usage: $0 <folder> [index:0] [--pull|--push|--both] [5M] [--dry-run]"
@@ -1764,7 +1916,7 @@ sync_genus_species() {
 	echo "Done."
 }
 
-run-assemble-ont-pt_genus_species() {
+readassemble-ont-pt_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 
@@ -1811,7 +1963,7 @@ run-assemble-ont-pt_genus_species() {
 	local resolved_fastq=$(<"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt")
 	echo "  - FASTQ: $resolved_fastq"
 
-	local annotatedir="${_brg_rundir}"/annotate-pt-read
+	local annotatedir="${_brg_rundir}"/annotate-read-pt
 
 	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
 		${_polap_cmd} flye1 --pacbio-hifi \
@@ -1912,8 +2064,7 @@ run-assemble-ont-pt_genus_species() {
 	_polap_lib_timing-get_system_info >>"${_timing_txt}"
 }
 
-# called by run-annotate
-run-assemble-ont-mt_genus_species() {
+readassemble-ont-mt_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 
@@ -1940,7 +2091,6 @@ run-assemble-ont-mt_genus_species() {
 	rm -f "${_timing_txt}"
 	rm -f "${_stdout_txt}"
 
-	echo "="
 	echo "------------------------------------------------------------------------------"
 	echo "[INFO] Seed a DNA annotate organelle-genome assembly pipeline on ${_brg_outdir}-${_brg_sindex}"
 	echo "  - platform: ${platform}"
@@ -1961,7 +2111,7 @@ run-assemble-ont-mt_genus_species() {
 	local resolved_fastq=$(<"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt")
 	echo "  we use FASTQ file ready: $resolved_fastq"
 
-	local annotatedir="${_brg_rundir}"/annotate-mt-read
+	local annotatedir="${_brg_rundir}"/annotate-read-mt
 
 	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
 		${_polap_cmd} flye1 --pacbio-hifi \
@@ -1969,56 +2119,482 @@ run-assemble-ont-mt_genus_species() {
 			-g $genomesize \
 			-o "${_brg_rundir}"
 	elif [[ "${platform}" == "ONT" ]]; then
+		_log_echo "Do: assemble using seed reads and contigs for mtDNA: ${_brg_rundir}"
 
-		# FIXME: mtDNA assembly
-		echo "assemble using seed reads and contigs for mtDNA"
+		if [[ -s "${annotatedir}/mt/assembly_graph.gfa" ]]; then
+			_log_echo "found and use: ${annotatedir}/mt/assembly_graph.gfa"
+			_log_echo "skip: assemble-annotated-read"
+		else
+			${_polap_cmd} assemble-annotated-read \
+				-l "${resolved_fastq}" \
+				-o "${_brg_rundir}"
+		fi
 
-		${_polap_cmd} assemble-annotated-read \
-			-l "${resolved_fastq}" \
-			-o "${_brg_rundir}"
+		if [[ -s "${annotatedir}/mt/assembly_graph.gfa" ]]; then
+			${_polap_cmd} mt \
+				--infile "${annotatedir}/mt/assembly_graph.gfa" \
+				-o "${annotatedir}/mt/mtdna"
 
-		${_polap_cmd} mt \
-			--infile "${annotatedir}/mt/assembly_graph.gfa" \
-			-o "${annotatedir}/mt/mtdna"
+			${_polap_cmd} bandage png \
+				"${annotatedir}/mt/assembly_graph.gfa" \
+				"${annotatedir}/mt/assembly_graph.png"
 
-		${_polap_cmd} bandage png \
-			"${annotatedir}/mt/assembly_graph.gfa" \
-			"${annotatedir}/mt/assembly_graph.png"
+			ln -sf "mt/assembly_graph.gfa" \
+				"${annotatedir}/mt.0.gfa"
 
-		ln -sf "mt/assembly_graph.gfa" \
-			"${annotatedir}/mt.0.gfa"
+			ln -sf "mt/assembly_graph.png" \
+				"${annotatedir}/mt.0.png"
 
-		ln -sf "mt/assembly_graph.png" \
-			"${annotatedir}/mt.0.png"
+			# NOTE: annotate for seeding
+			# select connected components of the MT contigs only
+			${_polap_cmd} annotate \
+				--quiet \
+				-o "${annotatedir}" \
+				-i mt
 
-		# NOTE: annotate for seeding
-		# select connected components of the MT contigs only
-		${_polap_cmd} annotate \
-			--quiet \
-			-o "${annotatedir}" \
-			-i mt
+			# NOTE: mito seed
+			${_polap_cmd} seed-mito \
+				-o "${annotatedir}" \
+				-i mt -j mt1
+		else
+			_log_echo "No MT assembly 0"
+		fi
 
-		# NOTE: mito seed
-		${_polap_cmd} seed-mito \
-			-o "${annotatedir}" \
-			-i mt -j mt1
-
+		# -l "${resolved_fastq}" \
 		${_polap_cmd} assemble-rate \
 			-o "${annotatedir}" \
-			-l "${resolved_fastq}" \
-			-i mt -j mt1 -w 4000
+			-l "${annotatedir}"/mt.fq \
+			-i mt -j mt1 -w 3000
 
-		${_polap_cmd} bandage png \
-			"${annotatedir}/mt1/assembly_graph.gfa" \
-			"${annotatedir}/mt1/assembly_graph.png"
+		if [[ -s "${annotatedir}/mt1/assembly_graph.gfa" ]]; then
+			${_polap_cmd} bandage png \
+				"${annotatedir}/mt1/assembly_graph.gfa" \
+				"${annotatedir}/mt1/assembly_graph.png"
 
-		ln -sf "mt1/assembly_graph.gfa" \
-			"${annotatedir}/mt.1.gfa"
+			ln -sf "mt1/assembly_graph.gfa" \
+				"${annotatedir}/mt.1.gfa"
 
-		ln -sf "mt1/assembly_graph.png" \
-			"${annotatedir}/mt.1.png"
+			ln -sf "mt1/assembly_graph.png" \
+				"${annotatedir}/mt.1.png"
 
-		echo mtDNA assembly: "${annotatedir}/mt.1.gfa"
+			echo mtDNA assembly: "${annotatedir}/mt.1.gfa"
+		else
+			_log_echo "No MT assembly 1"
+		fi
+
+	fi
+
+	conda deactivate
+
+	# Summarize results after job (with previously defined summary function)
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+}
+
+# iterate the seed and assemble
+readassemble-ont-mt-iterate_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+
+	local _brg_inum=0
+	local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+	local _timing_txt _stdout_txt _memlog_file _summary_file
+
+	brg_common_setup \
+		_brg_outdir _brg_sindex _brg_adir _brg_title \
+		_brg_target _brg_rundir _brg_outdir_i \
+		_timing_txt _stdout_txt _memlog_file _summary_file
+
+	if [[ -v _long["$_brg_target"] ]]; then
+		local long_sra="${_long["$_brg_target"]}"
+	else
+		echo "Error: ${_brg_target} because it is not in the CSV."
+		return
+	fi
+
+	# local dimred="${_dimred["$_brg_target"]}"
+	local platform="${_platform["$_brg_target"]}"
+	local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+	rm -f "${_timing_txt}"
+	rm -f "${_stdout_txt}"
+
+	echo "------------------------------------------------------------------------------"
+	echo "[INFO] Seed a DNA annotate organelle-genome assembly pipeline on ${_brg_outdir}-${_brg_sindex}"
+	echo "  - platform: ${platform}"
+
+	mkdir -p "${_brg_rundir}"
+
+	# prepare data:
+	# version 1 and 2: from local
+	# version 3: from -1.00x data
+	data-long_genus_species "${_brg_outdir}" "${_brg_sindex}"
+
+	# Start memory logger
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	local resolved_fastq=$(<"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt")
+	echo "  we use FASTQ file ready: $resolved_fastq"
+
+	local annotatedir="${_brg_rundir}"/annotate-read-mt
+
+	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
+		${_polap_cmd} flye1 --pacbio-hifi \
+			-l "${_brg_rundir}"/lk.fq.gz \
+			-g $genomesize \
+			-o "${_brg_rundir}"
+	elif [[ "${platform}" == "ONT" ]]; then
+		_log_echo "Do: assemble using seed reads and contigs for mtDNA: ${_brg_rundir}"
+
+		if [[ -s "${annotatedir}/mt/assembly_graph.gfa" ]]; then
+			_log_echo "found and use: ${annotatedir}/mt/assembly_graph.gfa"
+			_log_echo "skip: assemble-annotated-read"
+		else
+			${_polap_cmd} assemble-annotated-read \
+				-l "${resolved_fastq}" \
+				-o "${_brg_rundir}"
+		fi
+
+		if [[ -s "${annotatedir}/mt/assembly_graph.gfa" ]]; then
+			${_polap_cmd} mt \
+				--infile "${annotatedir}/mt/assembly_graph.gfa" \
+				-o "${annotatedir}/mt/mtdna"
+
+			${_polap_cmd} bandage png \
+				"${annotatedir}/mt/assembly_graph.gfa" \
+				"${annotatedir}/mt/assembly_graph.png"
+
+			ln -sf "mt/assembly_graph.gfa" \
+				"${annotatedir}/mt.0.gfa"
+
+			ln -sf "mt/assembly_graph.png" \
+				"${annotatedir}/mt.0.png"
+
+		else
+			_log_echo "No MT assembly 0"
+		fi
+
+		ln -s mt "${annotatedir}"/mt0
+
+		local i
+		for i in {0..5}; do
+			local j=$((i + 1))
+
+			# NOTE: annotate for seeding
+			# select connected components of the MT contigs only
+			${_polap_cmd} annotate \
+				--quiet \
+				-o "${annotatedir}" \
+				-i mt$i
+
+			# NOTE: mito seed
+			${_polap_cmd} seed-mito \
+				-o "${annotatedir}" \
+				-i mt$i -j mt$j
+
+			if [[ ! -s "${annotatedir}/mt$i/mt.contig.name-mt$j" ]]; then
+				_log_echo "No MT seed for mt$j"
+				break
+			fi
+
+			# -l "${resolved_fastq}" \
+			${_polap_cmd} assemble-rate \
+				-o "${annotatedir}" \
+				-l "${annotatedir}"/mt.fq \
+				-i mt$i -j mt$j -w 3000
+
+			if [[ -s "${annotatedir}/mt$j/assembly_graph.gfa" ]]; then
+				${_polap_cmd} bandage png \
+					"${annotatedir}/mt$j/assembly_graph.gfa" \
+					"${annotatedir}/mt$j/assembly_graph.png"
+
+				ln -sf "mt$j/assembly_graph.gfa" \
+					"${annotatedir}/mt.$j.gfa"
+
+				ln -sf "mt$j/assembly_graph.png" \
+					"${annotatedir}/mt.$j.png"
+
+				echo mtDNA assembly: "${annotatedir}/mt.$j.gfa"
+			else
+				_log_echo "No MT assembly $j"
+			fi
+
+		done
+
+	fi
+
+	conda deactivate
+
+	# Summarize results after job (with previously defined summary function)
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+}
+
+readassemble-ont-nt_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+
+	local _brg_inum=0
+	local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+	local _timing_txt _stdout_txt _memlog_file _summary_file
+
+	brg_common_setup \
+		_brg_outdir _brg_sindex _brg_adir _brg_title \
+		_brg_target _brg_rundir _brg_outdir_i \
+		_timing_txt _stdout_txt _memlog_file _summary_file
+
+	if [[ -v _long["$_brg_target"] ]]; then
+		local long_sra="${_long["$_brg_target"]}"
+	else
+		echo "Error: ${_brg_target} because it is not in the CSV."
+		return
+	fi
+
+	# local dimred="${_dimred["$_brg_target"]}"
+	local platform="${_platform["$_brg_target"]}"
+	local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+	rm -f "${_timing_txt}"
+	rm -f "${_stdout_txt}"
+
+	echo "------------------------------------------------------------------------------"
+	echo "[INFO] Seed a DNA annotate organelle-genome assembly pipeline on ${_brg_outdir}-${_brg_sindex}"
+	echo "  - platform: ${platform}"
+
+	mkdir -p "${_brg_rundir}"
+
+	# prepare data:
+	# version 1 and 2: from local
+	# version 3: from -1.00x data
+	data-long_genus_species "${_brg_outdir}" "${_brg_sindex}"
+
+	# Start memory logger
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	local resolved_fastq=$(<"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt")
+	echo "  we use FASTQ file ready: $resolved_fastq"
+
+	local annotatedir="${_brg_rundir}"/annotate-read-nt
+
+	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
+		${_polap_cmd} flye1 --pacbio-hifi \
+			-l "${_brg_rundir}"/lk.fq.gz \
+			-g $genomesize \
+			-o "${_brg_rundir}"
+	elif [[ "${platform}" == "ONT" ]]; then
+		_log_echo "Do: assemble using seed reads and contigs for mtDNA: ${_brg_rundir}"
+
+		if [[ -s "${annotatedir}/mt/assembly_graph.gfa" ]]; then
+			_log_echo "found and use: ${annotatedir}/mt/assembly_graph.gfa"
+			_log_echo "skip: assemble-annotated-read"
+		else
+			# ${_polap_cmd} assemble-annotated-read \
+			${_polap_cmd} assemble-annotated-read-nt \
+				-l "${resolved_fastq}" \
+				-o "${_brg_rundir}"
+		fi
+
+		if [[ -s "${annotatedir}/mt/assembly_graph.gfa" ]]; then
+			${_polap_cmd} mt \
+				--infile "${annotatedir}/mt/assembly_graph.gfa" \
+				-o "${annotatedir}/mt/mtdna"
+
+			${_polap_cmd} bandage png \
+				"${annotatedir}/mt/assembly_graph.gfa" \
+				"${annotatedir}/mt/assembly_graph.png"
+
+			ln -sf "mt/assembly_graph.gfa" \
+				"${annotatedir}/mt.0.gfa"
+
+			ln -sf "mt/assembly_graph.png" \
+				"${annotatedir}/mt.0.png"
+
+			# NOTE: annotate for seeding
+			# select connected components of the MT contigs only
+			${_polap_cmd} annotate \
+				--quiet \
+				-o "${annotatedir}" \
+				-i mt
+
+			# NOTE: mito seed
+			${_polap_cmd} seed-mito \
+				-o "${annotatedir}" \
+				-i mt -j mt1
+		else
+			_log_echo "No MT assembly 0"
+		fi
+
+		# -l "${resolved_fastq}" \
+		${_polap_cmd} assemble-rate \
+			-o "${annotatedir}" \
+			-l "${annotatedir}"/mt.fq \
+			-i mt -j mt1 -w 3000
+
+		if [[ -s "${annotatedir}/mt1/assembly_graph.gfa" ]]; then
+			${_polap_cmd} bandage png \
+				"${annotatedir}/mt1/assembly_graph.gfa" \
+				"${annotatedir}/mt1/assembly_graph.png"
+
+			ln -sf "mt1/assembly_graph.gfa" \
+				"${annotatedir}/mt.1.gfa"
+
+			ln -sf "mt1/assembly_graph.png" \
+				"${annotatedir}/mt.1.png"
+
+			echo mtDNA assembly: "${annotatedir}/mt.1.gfa"
+		else
+			_log_echo "No MT assembly 1"
+		fi
+
+	fi
+
+	conda deactivate
+
+	# Summarize results after job (with previously defined summary function)
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+}
+
+# iterate the seed and assemble
+readassemble-ont-nt-iterate_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+
+	local _brg_inum=0
+	local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+	local _timing_txt _stdout_txt _memlog_file _summary_file
+
+	brg_common_setup \
+		_brg_outdir _brg_sindex _brg_adir _brg_title \
+		_brg_target _brg_rundir _brg_outdir_i \
+		_timing_txt _stdout_txt _memlog_file _summary_file
+
+	if [[ -v _long["$_brg_target"] ]]; then
+		local long_sra="${_long["$_brg_target"]}"
+	else
+		echo "Error: ${_brg_target} because it is not in the CSV."
+		return
+	fi
+
+	# local dimred="${_dimred["$_brg_target"]}"
+	local platform="${_platform["$_brg_target"]}"
+	local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+	rm -f "${_timing_txt}"
+	rm -f "${_stdout_txt}"
+
+	echo "------------------------------------------------------------------------------"
+	echo "[INFO] Seed a DNA annotate organelle-genome assembly pipeline on ${_brg_outdir}-${_brg_sindex}"
+	echo "  - platform: ${platform}"
+
+	mkdir -p "${_brg_rundir}"
+
+	# prepare data:
+	# version 1 and 2: from local
+	# version 3: from -1.00x data
+	data-long_genus_species "${_brg_outdir}" "${_brg_sindex}"
+
+	# Start memory logger
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	local resolved_fastq=$(<"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt")
+	echo "  we use FASTQ file ready: $resolved_fastq"
+
+	local annotatedir="${_brg_rundir}"/annotate-read-nt
+
+	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
+		${_polap_cmd} flye1 --pacbio-hifi \
+			-l "${_brg_rundir}"/lk.fq.gz \
+			-g $genomesize \
+			-o "${_brg_rundir}"
+	elif [[ "${platform}" == "ONT" ]]; then
+		_log_echo "Do: assemble using seed reads and contigs for mtDNA: ${_brg_rundir}"
+
+		if [[ -s "${annotatedir}/mt/assembly_graph.gfa" ]]; then
+			_log_echo "found and use: ${annotatedir}/mt/assembly_graph.gfa"
+			_log_echo "skip: assemble-annotated-read"
+		else
+			# ${_polap_cmd} assemble-annotated-read \
+			${_polap_cmd} assemble-annotated-read-nt \
+				-l "${resolved_fastq}" \
+				-o "${_brg_rundir}"
+		fi
+
+		if [[ -s "${annotatedir}/mt/assembly_graph.gfa" ]]; then
+			${_polap_cmd} mt \
+				--infile "${annotatedir}/mt/assembly_graph.gfa" \
+				-o "${annotatedir}/mt/mtdna"
+
+			${_polap_cmd} bandage png \
+				"${annotatedir}/mt/assembly_graph.gfa" \
+				"${annotatedir}/mt/assembly_graph.png"
+
+			ln -sf "mt/assembly_graph.gfa" \
+				"${annotatedir}/mt.0.gfa"
+
+			ln -sf "mt/assembly_graph.png" \
+				"${annotatedir}/mt.0.png"
+
+		else
+			_log_echo "No MT assembly 0"
+		fi
+
+		ln -s mt "${annotatedir}"/mt0
+
+		local i
+		for i in {0..2}; do
+			local j=$((i + 1))
+
+			# NOTE: annotate for seeding
+			# select connected components of the MT contigs only
+			${_polap_cmd} annotate \
+				--quiet \
+				-o "${annotatedir}" \
+				-i mt$i
+
+			# NOTE: mito seed
+			${_polap_cmd} seed-mito \
+				-o "${annotatedir}" \
+				-i mt$i -j mt$j
+
+			if [[ ! -s "${annotatedir}/mt$i/mt.contig.name-mt$j" ]]; then
+				_log_echo "No MT seed for mt$j"
+				break
+			fi
+
+			# -l "${resolved_fastq}" \
+			${_polap_cmd} assemble-rate \
+				-o "${annotatedir}" \
+				-l "${annotatedir}"/mt.fq \
+				-i mt$i -j mt$j -w 3000
+
+			if [[ -s "${annotatedir}/mt$j/assembly_graph.gfa" ]]; then
+				${_polap_cmd} bandage png \
+					"${annotatedir}/mt$j/assembly_graph.gfa" \
+					"${annotatedir}/mt$j/assembly_graph.png"
+
+				ln -sf "mt$j/assembly_graph.gfa" \
+					"${annotatedir}/mt.$j.gfa"
+
+				ln -sf "mt$j/assembly_graph.png" \
+					"${annotatedir}/mt.$j.png"
+
+				echo mtDNA assembly: "${annotatedir}/mt.$j.gfa"
+			else
+				_log_echo "No MT assembly $j"
+			fi
+
+		done
+
 	fi
 
 	conda deactivate
@@ -2030,7 +2606,7 @@ run-assemble-ont-mt_genus_species() {
 
 # animal mtDNA assembly
 # copy of run-assemble-ont-pt
-run-assemble-ont-animal-mt_genus_species() {
+readassemble-ont-animal-mt_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 
@@ -2078,7 +2654,7 @@ run-assemble-ont-animal-mt_genus_species() {
 	local resolved_fastq=$(<"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt")
 	echo "  we use FASTQ file ready: $resolved_fastq"
 
-	local annotatedir="${_brg_rundir}"/annotate-mt-read
+	local annotatedir="${_brg_rundir}"/annotate-read-mt
 
 	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
 		${_polap_cmd} flye1 --pacbio-hifi \
@@ -2163,7 +2739,7 @@ run-assemble-ont-animal-mt_genus_species() {
 	_polap_lib_timing-get_system_info >>"${_timing_txt}"
 }
 
-run-annotate-ont-pt_genus_species() {
+readassemble-annotate-pt_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 
@@ -2210,7 +2786,7 @@ run-annotate-ont-pt_genus_species() {
 	local resolved_fastq=$(<"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt")
 	echo "  - FASTQ: $resolved_fastq"
 
-	rm -rf "${_brg_rundir}/annotate-pt-read"
+	rm -rf "${_brg_rundir}/annotate-read-pt"
 
 	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
 		echo "not tested"
@@ -2220,7 +2796,7 @@ run-annotate-ont-pt_genus_species() {
 			-g $genomesize \
 			-o "${_brg_rundir}"
 	elif [[ "${platform}" == "ONT" ]]; then
-		${_polap_cmd} annotate-pt-read \
+		${_polap_cmd} annotate-read-pt \
 			-l "${resolved_fastq}" \
 			--annotate-read-min-mapq 1 \
 			--annotate-read-min-identity 0.15 \
@@ -2234,7 +2810,7 @@ run-annotate-ont-pt_genus_species() {
 	_polap_lib_timing-get_system_info >>"${_timing_txt}"
 }
 
-run-annotate-ont-mt_genus_species() {
+readassemble-annotate-mt_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 
@@ -2261,9 +2837,8 @@ run-annotate-ont-mt_genus_species() {
 	rm -f "${_timing_txt}"
 	rm -f "${_stdout_txt}"
 
-	echo "="
 	echo "------------------------------------------------------------------------------"
-	echo "[INFO] Start a DNA annotate organelle-genome assembly pipeline on ${_brg_outdir}-${_brg_sindex}"
+	echo "[INFO] Annotate ONT reads on ${_brg_outdir}-${_brg_sindex}"
 	echo "  - platform: ${platform}"
 
 	mkdir -p "${_brg_rundir}"
@@ -2282,8 +2857,8 @@ run-annotate-ont-mt_genus_species() {
 	local resolved_fastq=$(<"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt")
 	echo "  we use FASTQ file: $resolved_fastq"
 
-	echo "  delete and start with an empty folder: ${_brg_rundir}/annotate-mt-read"
-	rm -rf "${_brg_rundir}/annotate-mt-read"
+	echo "  delete and start with an empty folder: ${_brg_rundir}/annotate-read-mt"
+	rm -rf "${_brg_rundir}/annotate-read-mt"
 
 	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
 		echo "not tested"
@@ -2293,7 +2868,79 @@ run-annotate-ont-mt_genus_species() {
 			-g $genomesize \
 			-o "${_brg_rundir}"
 	elif [[ "${platform}" == "ONT" ]]; then
-		${_polap_cmd} annotate-mt-read \
+		${_polap_cmd} annotate-read-mt \
+			-l "${resolved_fastq}" \
+			--annotate-read-min-mapq 1 \
+			--annotate-read-min-identity 0.15 \
+			-o "${_brg_rundir}"
+	fi
+
+	conda deactivate
+
+	# Summarize results after job (with previously defined summary function)
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+}
+
+readassemble-annotate-nt_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+
+	local _brg_inum=0
+	local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+	local _timing_txt _stdout_txt _memlog_file _summary_file
+
+	brg_common_setup \
+		_brg_outdir _brg_sindex _brg_adir _brg_title \
+		_brg_target _brg_rundir _brg_outdir_i \
+		_timing_txt _stdout_txt _memlog_file _summary_file
+
+	if [[ -v _long["$_brg_target"] ]]; then
+		local long_sra="${_long["$_brg_target"]}"
+	else
+		echo "Error: ${_brg_target} because it is not in the CSV."
+		return
+	fi
+
+	# local dimred="${_dimred["$_brg_target"]}"
+	local platform="${_platform["$_brg_target"]}"
+	local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+
+	rm -f "${_timing_txt}"
+	rm -f "${_stdout_txt}"
+
+	echo "------------------------------------------------------------------------------"
+	echo "[INFO] Annotate ONT reads on ${_brg_outdir}-${_brg_sindex}"
+	echo "  - platform: ${platform}"
+
+	mkdir -p "${_brg_rundir}"
+
+	# prepare data:
+	# version 1 and 2: from local
+	# version 3: from -1.00x data
+	data-long_genus_species "${_brg_outdir}" "${_brg_sindex}"
+
+	# Start memory logger
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	local resolved_fastq=$(<"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt")
+	echo "  we use FASTQ file: $resolved_fastq"
+
+	echo "  delete and start with an empty folder: ${_brg_rundir}/annotate-read-nt"
+	rm -rf "${_brg_rundir}/annotate-read-nt"
+
+	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
+		echo "not tested"
+		exit 1
+		${_polap_cmd} flye1 --pacbio-hifi \
+			-l "${_brg_rundir}"/lk.fq.gz \
+			-g $genomesize \
+			-o "${_brg_rundir}"
+	elif [[ "${platform}" == "ONT" ]]; then
+		${_polap_cmd} annotate-read-nt \
 			-l "${resolved_fastq}" \
 			--annotate-read-min-mapq 1 \
 			--annotate-read-min-identity 0.15 \
@@ -9492,6 +10139,12 @@ function _polap_lib_data-execute-common-subcommand {
 		handled=1
 		;;
 		##### INSERT_COMMAND_HERE #####
+	run-polap-readassemble)
+		handled=1
+		;;
+	run-polap-readassemble-nt)
+		handled=1
+		;;
 	run-polap-readassemble-mt)
 		handled=1
 		;;
@@ -9507,13 +10160,28 @@ function _polap_lib_data-execute-common-subcommand {
 	sync)
 		handled=1
 		;;
-	run-assemble-ont-pt)
+	readassemble-ont-pt)
 		handled=1
 		;;
-	run-assemble-ont-mt)
+	readassemble-ont-mt)
 		handled=1
 		;;
-	run-annotate-ont)
+	readassemble-ont-mt-iterate)
+		handled=1
+		;;
+	readassemble-ont-nt)
+		handled=1
+		;;
+	readassemble-ont-nt-iterate)
+		handled=1
+		;;
+	readassemble-annotate-pt)
+		handled=1
+		;;
+	readassemble-annotate-mt)
+		handled=1
+		;;
+	readassemble-annotate-nt)
 		handled=1
 		;;
 	run-pca-oga)
@@ -9682,6 +10350,9 @@ function _polap_lib_data-execute-common-subcommand {
 		handled=1
 		;;
 	help)
+		handled=1
+		;;
+	h*)
 		handled=1
 		;;
 	setup-fmlrc2)
@@ -10178,6 +10849,28 @@ function _polap_lib_data-execute-common-subcommand {
 		fi
 		${subcmd1}_genus_species "${cmd_args_ref[@]}"
 		;;
+	run-polap-readassemble)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [index:0|N]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
+	run-polap-readassemble-nt)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [index:0|N]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
 	run-polap-readassemble-mt)
 		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
 			echo "Help: ${subcmd1} <outdir> [index:0|N]"
@@ -10211,7 +10904,7 @@ function _polap_lib_data-execute-common-subcommand {
 		fi
 		${subcmd1}_genus_species "${cmd_args_ref[@]}"
 		;;
-	run-assemble-ont-pt)
+	readassemble-ont-pt)
 		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
 			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
 			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
@@ -10222,7 +10915,7 @@ function _polap_lib_data-execute-common-subcommand {
 		fi
 		${subcmd1}_genus_species "${cmd_args_ref[@]}"
 		;;
-	run-assemble-ont-mt)
+	readassemble-ont-mt)
 		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
 			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
 			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
@@ -10233,7 +10926,62 @@ function _polap_lib_data-execute-common-subcommand {
 		fi
 		${subcmd1}_genus_species "${cmd_args_ref[@]}"
 		;;
-	run-annotate-ont)
+	readassemble-ont-mt-iterate)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
+	readassemble-ont-nt)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
+	readassemble-ont-nt-iterate)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
+	readassemble-annotate-pt)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
+	readassemble-annotate-mt)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
+	readassemble-annotate-nt)
 		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
 			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
 			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
@@ -10807,7 +11555,8 @@ function _polap_lib_data-execute-common-subcommand {
 	print-help-all)
 		${subcmd1}_genus_species "${cmd_args_ref[@]}"
 		;;
-	help)
+	help | h*)
+		subcmd1="help"
 		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
 			echo "Help: ${subcmd1} [command]"
 			echo "  $(basename ${0}) ${subcmd1} example"

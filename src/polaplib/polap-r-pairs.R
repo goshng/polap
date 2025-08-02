@@ -16,32 +16,51 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+# polaplib/polap-r-pairs.R
+# Check: 2025-06-17
+
 ################################################################################
+# NOTE: this is the first of the two read-selection scripts.
 # This script selects reads using some of minimap2 output files.
 # We have multiple scripts that selects reads.
-# This is the 5th one.
+# This is the 2nd one.
 #
 # 1. run-polap-pairs.R -> the first version used in v0.2.6
-# 2. run-polap-r-pairs.R -> used in test-reads in oga
-# 3. run-polap-r-bridge.R -> used in test-reads in oga
+# 2. polap-r-pairs.R -> used in test-reads in oga
+# 3. polap-r-bridge.R -> used in test-reads in oga
 # 4. run-polap-r-select-reads-polap.R -> the 2nd version not used
 # 5. run-polap-r-select-reads-ptgaul.R -> a slim version of the 2nd used in dga
-# 6. run-polap-r-directional.R -> used by an older version of dga
+# 6. polap-r-directional.R -> used by an older version of dga
 #    or _run_polap_original-directional-reads
 #
-# This used to be used in dga and it is not used in the latest dga.
+# Subcommand test-reads uses this script.
+#
+# Used by:
+# function _run_polap_test-reads { # selects reads mapped on a genome assembly
 #
 # See Also:
 # run-polap-pairs.R
-# run-polap-r-pairs.R
-# run-polap-r-bridge.R
+# polap-r-pairs.R
+# polap-r-bridge.R
 # run-polap-r-select-reads-polap.R
 # run-polap-r-select-reads-ptgaul.R
-# run-polap-r-directional.R
+# polap-r-directional.R
 # polap-cmd-oga.sh
 # run-polap-function-dga.sh
 #
-# NOTE: move with directional module.
+# Check: 2025-06-17
+################################################################################
+
+################################################################################
+# This script selects reads using minimap2 alignments of the reads on the seed
+# contigs. It tries to use two main different approaches; one is due to ptGAUL,
+# another is devised by Polap. Polap's read selection is more stringent in a
+# way that it selects reads that are mapped on two seed contigs and those that
+# are mapped completely within a contig.
+# This has some benefit or better assembly for a smaller dataset; i.e., 10x.
+# If reads are enough, ptGAUL method seems to work great.
+#
+# Check: 2025-06-16
 ################################################################################
 
 # name: select long reads
@@ -71,19 +90,19 @@
 # 	run-polap-pairs.R mt.contig.name-1 contig.tab ${MTSEEDSDIR} $PAIR_MIN $BRIDGE_MIN $SINGLE_MIN
 # 	run-polap-pairs.R mt.contig.name-1 contig.tab ${MTSEEDSDIR} $PAIR_MIN $BRIDGE_MIN
 
-suppressWarnings(suppressPackageStartupMessages(library("optparse")))
-suppressWarnings(suppressPackageStartupMessages(library("dplyr")))
-suppressWarnings(suppressPackageStartupMessages(library("readr")))
-suppressWarnings(suppressPackageStartupMessages(library("purrr")))
-suppressWarnings(suppressPackageStartupMessages(library("tidyr")))
-suppressWarnings(suppressPackageStartupMessages(library("ggplot2")))
+suppressPackageStartupMessages(library("optparse"))
+suppressPackageStartupMessages(library("dplyr"))
+suppressPackageStartupMessages(library("readr"))
+suppressPackageStartupMessages(library("purrr"))
+suppressPackageStartupMessages(library("tidyr"))
+suppressPackageStartupMessages(library("ggplot2"))
 
 debug <- Sys.getenv("_POLAP_DEBUG", unset = "0")
 
 parser <- OptionParser()
 parser <- add_option(parser, c("-t", "--table"),
   action = "store",
-  help = "input minimap2 PAF-like tabular format file",
+  help = "minimap2 PAF",
   metavar = "<FILE>"
 )
 parser <- add_option(parser, c("-m", "--mtcontigname"),
@@ -130,14 +149,6 @@ parser <- add_option(parser, c("--inter-base-ratio"),
   default = 0.7,
   help = "Minimum of V10/V11",
   metavar = "number"
-)
-parser <- add_option(parser, c("--use-strand"),
-  action = "store_true",
-  default = FALSE, help = "will create ptgaul.names"
-)
-parser <- add_option(parser, c("--use-reverse"),
-  action = "store_true",
-  default = FALSE, help = "will use the reads mapped on the reverse complement"
 )
 parser <- add_option(parser, c("--create-ptgaul"),
   action = "store_true",
@@ -199,8 +210,6 @@ if (is_null(args1$table)) {
     "-w", 10000,
     "-x", 10000,
     "--all",
-    "--use-strand",
-    "--use-reverse",
     "--intra-base-ratio", 0.7,
     "--intra-read-ratio", 0.7,
     "--inter-base-ratio", 0.7
@@ -247,12 +256,6 @@ data <- read_tsv(args1$table,
     "base"
   )
 )
-
-if (args1$`use-strand`) {
-  data <- data |>
-    filter(strand == "+")
-}
-
 mtdir <- args1$out
 pair_min <- as.numeric(args1$`pair-min`)
 brigde_min <- as.numeric(args1$`bridge-min`)
@@ -260,7 +263,6 @@ single_min <- as.numeric(args1$`single-min`)
 a <- as.numeric(args1$`intra-read-ratio`)
 b <- as.numeric(args1$`intra-base-ratio`)
 c <- as.numeric(args1$`inter-base-ratio`)
-
 ptgaul_option_base <- paste("ptgaul",
   a,
   b,
@@ -271,7 +273,6 @@ ptgaul_option_base <- paste("ptgaul",
   sep = "-"
 )
 ptgaul_option_base <- paste0(ptgaul_option_base, ".names")
-ptgaul_option_base <- "ptgaul.names"
 
 single_option_base <- paste("single",
   a,
@@ -333,7 +334,6 @@ if (args1$`create-ptgaul` || args1$all) {
     )
   ptgaul_option_file <- file.path(mtdir, ptgaul_option_base)
   print(ptgaul_file)
-  print(ptgaul_option_file)
   file.copy(ptgaul_file, ptgaul_option_file)
   # file.copy(ptgaul_file, ptgaul_option_file, showWarnings = FALSE)
 }

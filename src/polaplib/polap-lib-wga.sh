@@ -128,7 +128,7 @@ _polap_lib_wga-find-genome-size() {
 			cut -d: -f6 "${_outdir_genome_size}.genomescope2.txt" |
 				tail -n 1 >"${_outdir_genome_size}"
 		else
-			_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-jellyfish.R \
+			_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-jellyfish.R \
 					${_outdir_jellyfish_out_histo} \
 					${_outdir_genome_size}"
 			# Check the exit status

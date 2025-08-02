@@ -17,7 +17,7 @@
 ################################################################################
 
 # Check: 2025-06-16
-# polaplib/run-polap-r-mtcontig-contig.R
+# polaplib/polap-r-mtcontig-contig.R
 
 ################################################################################
 # Combine MT/PT gene annotation and Flye's contig table to produce gene
@@ -29,7 +29,7 @@
 # function _run_polap_count-gene-contig { # v0.2.6: count MT and PT genes
 #
 # See Also:
-# run-polap-r-mtcontig.R
+# polap-r-mtcontig.R
 #
 # Check: 2025-06-16
 ################################################################################

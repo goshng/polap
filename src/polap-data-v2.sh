@@ -1528,7 +1528,7 @@ man-figure-delta_genus_species() {
 		# cp -p "${_summary1_txt}" "${_summary1_txt_dir}"
 	done
 
-	Rscript ${_POLAPLIB_DIR}/run-polap-r-data-v2-alpha0.R ?.??.tsv -l delta -o "${_suppfigure_file}"
+	Rscript ${_POLAPLIB_DIR}/polap-r-data-v2-alpha0.R ?.??.tsv -l delta -o "${_suppfigure_file}"
 
 	conda deactivate
 
@@ -1583,7 +1583,7 @@ man-figure-alpha_genus_species() {
 		# cp -p "${_summary1_txt}" "${_summary1_txt_dir}"
 	done
 
-	Rscript ${_POLAPLIB_DIR}/run-polap-r-data-v2-alpha0.R ?.??.tsv -l alpha0 -o "${_suppfigure_file}"
+	Rscript ${_POLAPLIB_DIR}/polap-r-data-v2-alpha0.R ?.??.tsv -l alpha0 -o "${_suppfigure_file}"
 
 	conda deactivate
 

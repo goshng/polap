@@ -15,18 +15,18 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# polaplib/run-polap-r-determine-depth-range.R
+# polaplib/polap-r-plastid-determine-depth-range_2.R
 # Check: 2025-06-17
 
 ################################################################################
-# This is the main template for selecting seed contigs.
-#
+# This script selects plastid seed contigs using a gene annotation table.
 # We have multiple scripts with a similar name except for the last number.
 # Each script has a different scheme to select seed contigs.
-# Although we have option for plastid flag, this script is for mitochondrial
-# only. See polap-r-plastid-determine-depth-range.R for plastid seed selection.
+# Although we have option for mitochondrial flag, this script is
+# for plastid as implied by the filename.
+# See polap-r-determine-depth-range.R for mitochondrial seed selection.
 # See the code for detail.
-# This is created from the template: polap-r-determine-depth-range.R.
+# This is created from the template: polap-r-plastid-determine-depth-range.R.
 #
 # input:
 # assembly_info_organelle_annotation_count-all.txt
@@ -35,7 +35,7 @@
 # 2-depth.range.by.cdf.copy.number.txt
 # contig-annotation-cdf-table.txt
 #
-# TODO: rename: polap-r-determine-depth-range.R
+# TODO: rename: polap-r-plastid-determine-depth-range_2.R
 #
 # See Also:
 # polap-function-disassemble-seeds.sh
@@ -80,10 +80,10 @@ args1 <- parse_args(parser)
 
 if (is_null(args1$table)) {
   input_dir0 <- file.path(".")
-  input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
-  output1 <- file.path(input_dir0, "2-depth.range.by.cdf.copy.number.txt")
+  input1 <- file.path(input_dir0, "jvalidus/disassemble/11/assembly_info_organelle_annotation_count-all.txt")
+  output1 <- file.path(input_dir0, "custom.depth.range-1.txt")
   output2 <- file.path(input_dir0, "contig-annotation-cdf-table.txt")
-  args1 <- parse_args(parser, args = c("--table", input1, "-o", output1, "-c", output2))
+  args1 <- parse_args(parser, args = c("--plastid", "--table", input1, "-o", output1, "-c", output2))
 }
 
 # Steps;
@@ -117,7 +117,7 @@ pt_lower_bound <- x0 |>
   filter(PT > MT) |>
   arrange(desc(PT)) |>
   slice_head(n = 3) |>
-  summarise(max_depth = max(Depth, na.rm = TRUE) * 0.9) |>
+  summarise(max_depth = max(Depth, na.rm = TRUE) / 5) |>
   pull(max_depth)
 
 # Sort the data by the 'Copy' column in decreasing order
@@ -129,7 +129,7 @@ cutoff_data <- x0 |>
     pseudo_PT = if_else(PT == 0, PT + 1, PT)
   ) |>
   # Calculate the cumulative sum of the 'Length' column
-  filter(Depth < pt_lower_bound) |>
+  filter(Depth > pt_lower_bound) |>
   mutate(dispersion_MT = as.integer(Length / pseudo_MT)) |>
   mutate(dispersion_PT = as.integer(Length / pseudo_PT)) |>
   select(-pseudo_MT, -pseudo_PT) |>
@@ -138,7 +138,7 @@ cutoff_data <- x0 |>
   # Cut off rows at the given cumulative length of 3,000,000
   filter(MT > 0 | PT > 0) |>
   mutate(cumulative_length = cumsum(Length)) |>
-  filter(cumulative_length <= 3e+6)
+  filter(cumulative_length <= 1e+6)
 
 # MT selection: x0 -> cutoff_data -> xt
 # gene density cutoff: 1 in 100 kb
@@ -152,11 +152,20 @@ if (args1$mitochondrial == TRUE) {
 } else {
   xt <- cutoff_data |>
     filter(
-      PT > MT,
-      Depth > pt_lower_bound,
-      Copy > 0
+      PT >= MT,
+      Depth > pt_lower_bound
     )
+
+  # Promblem: Copy > 0
+  # xt <- cutoff_data |>
+  #   filter(
+  #     PT >= MT,
+  #     Depth > pt_lower_bound,
+  #     Copy > 0
+  #   )
 }
+
+
 
 # remove large copy number contig so that SD is less than MEAN.
 mean1 <- mean(xt$Depth)
@@ -190,10 +199,7 @@ lbound <- function(x) {
 if (nrow(xt) > 1) {
   xt |>
     summarise(
-      # 2024-10-19
-      # depth_lower_bound = round(max(min(Depth), mean(Depth) - sd(Depth) * 3) / 3), # CHECK # FIXME
-      # depth_upper_bound = round(min(max(Depth), mean(Depth) + sd(Depth) * 3) * 3),
-      depth_lower_bound = lbound(Depth), # CHECK # FIXME
+      depth_lower_bound = lbound(Depth),
       depth_upper_bound = round(min(
         max(Depth), mean(Depth) + sd(Depth) * 2
       ) * 3),

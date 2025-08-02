@@ -9,7 +9,7 @@ test-bash-extract-three-edges-of-ptdna() {
 
 test-r-depth-distribution() {
 	# activate polap conda environment
-	Rscript "${_POLAPLIB_DIR}"/run-polap-r-depth-distribution.R \
+	Rscript "${_POLAPLIB_DIR}"/polap-r-depth-distribution.R \
 		-t input/assembly_info_organelle_annotation_count-all.txt \
 		-o output/assembly_info_organelle_annotation_count-all.txt.pdf
 	echo open output/assembly_info_organelle_annotation_count-all.txt.pdf
@@ -23,7 +23,7 @@ test-bash-create-depth-file() {
 	echo output: "${_polap_var_mtcontigs_depth_range_graphfilter}"
 }
 
-# Test: run-polap-r-depthfilter-gfa.R
+# Test: polap-r-depthfilter-gfa.R
 # polap-cmd-seeds.sh
 # function _polap_seeds_depthfilter-gfa
 # function _run_polap_seeds-graph { # select seed contigs
@@ -48,17 +48,17 @@ test-r-depthfilter-gfa() {
 	echo output1: ${_polap_var_mtcontigs_gfa_all}
 	grep ^S ${_polap_var_mtcontigs_gfa_all} >${_polap_var_mtcontigs_gfa_seq_part}
 	echo output2: ${_polap_var_mtcontigs_gfa_seq_part}
-	Rscript ${_POLAPLIB_DIR}/run-polap-r-depthfilter-gfa.R \
+	Rscript ${_POLAPLIB_DIR}/polap-r-depthfilter-gfa.R \
 		--gfa ${_polap_var_mtcontigs_gfa_seq_part} \
 		--depth ${_polap_var_mtcontigs_depth_range_graphfilter} \
 		--out ${_polap_var_mtcontigs_gfa_seq_filtered}
 	echo output3: ${_polap_var_mtcontigs_gfa_seq_filtered}
-	Rscript ${_POLAPLIB_DIR}/run-polap-r-depthfilter-gfa.R \
+	Rscript ${_POLAPLIB_DIR}/polap-r-depthfilter-gfa.R \
 		--gfa ${_polap_var_mtcontigs_gfa_seq_part} \
 		--lower-bound-depth 40 \
 		--upper-bound-depth 90 \
 		--out ${_polap_var_mtcontigs_gfa_seq_filtered}.copy
-	echo Rscript ${_POLAPLIB_DIR}/run-polap-r-depthfilter-gfa.R \
+	echo Rscript ${_POLAPLIB_DIR}/polap-r-depthfilter-gfa.R \
 		--gfa ${_polap_var_mtcontigs_gfa_seq_part} \
 		--lower-bound-depth 40 \
 		--upper-bound-depth 90 \
@@ -69,7 +69,7 @@ test-r-depthfilter-gfa() {
 test-polap-r-data-v2-alpha0() {
 	# Plot for delta
 	local _suppfigure_file="output/delta.pdf"
-	Rscript ${_POLAPLIB_DIR}/run-polap-r-data-v2-alpha0.R \
+	Rscript ${_POLAPLIB_DIR}/polap-r-data-v2-alpha0.R \
 		input/?.??.tsv \
 		-l delta \
 		-o "${_suppfigure_file}"
@@ -77,7 +77,7 @@ test-polap-r-data-v2-alpha0() {
 
 	# Plot for alpha0
 	local _suppfigure_file="output/alpha0.pdf"
-	Rscript ${_POLAPLIB_DIR}/run-polap-r-data-v2-alpha0.R \
+	Rscript ${_POLAPLIB_DIR}/polap-r-data-v2-alpha0.R \
 		input/?.??.tsv \
 		-l alpha0 \
 		-o "${_suppfigure_file}"
@@ -99,7 +99,7 @@ test-polap-r-edges-stats() {
 		-S ${_polap_var_ga_contigger_edges_gfa} \
 		>${_polap_var_ga_gfa_all}
 	grep ^S ${_polap_var_ga_gfa_all} >${_polap_var_ga_gfa_seq_part}
-	Rscript ${_POLAPLIB_DIR}/run-polap-r-edges-stats.R \
+	Rscript ${_POLAPLIB_DIR}/polap-r-edges-stats.R \
 		--gfa ${_polap_var_ga_gfa_seq_part} \
 		--out ${_polap_var_ga_contigger_edges_stats}
 }
@@ -116,7 +116,7 @@ test-polap-r-disassemble() {
 
 	for i in "${A[@]}"; do
 		local j="${i%.txt}"
-		Rscript ${_POLAPLIB_DIR}/run-polap-r-disassemble.R \
+		Rscript ${_POLAPLIB_DIR}/polap-r-disassemble.R \
 			--table input/$i \
 			--out output/$j-ordered.txt \
 			--plot input/$j-ordered.pdf
@@ -128,42 +128,42 @@ test-polap-r-preselect-annotation() {
 
 	# a -> a437
 	i=2
-	Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-preselect-annotation.R \
+	Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-preselect-annotation.R \
 		--table input/run-polap-r-preselect-annotation.input$i.txt --depth-range 27,27 --compare-mt-pt \
 		--out output/run-polap-r-preselect-annotation.output$i.txt --gene-density 10 --plastid
 
 	i=3
-	Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-preselect-annotation.R \
+	Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-preselect-annotation.R \
 		--table input/run-polap-r-preselect-annotation.input$i.txt --depth-range 37,37 --compare-mt-pt \
 		--out output/run-polap-r-preselect-annotation.output$i.txt --gene-density 10 --plastid
 
 	i=4
-	Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-preselect-annotation.R \
+	Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-preselect-annotation.R \
 		--table input/run-polap-r-preselect-annotation.input$i.txt --depth-range 51,312 --compare-mt-pt \
 		--out output/run-polap-r-preselect-annotation.output$i.txt --gene-density 10 --plastid
 
 	i=5
-	Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-preselect-annotation.R \
+	Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-preselect-annotation.R \
 		--table input/run-polap-r-preselect-annotation.input$i.txt --depth-range 58,384 --compare-mt-pt \
 		--out output/run-polap-r-preselect-annotation.output$i.txt --gene-density 10 --plastid
 
 	i=6
-	Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-preselect-annotation.R \
+	Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-preselect-annotation.R \
 		--table input/run-polap-r-preselect-annotation.input$i.txt --depth-range 73,420 --compare-mt-pt \
 		--out output/run-polap-r-preselect-annotation.output$i.txt --gene-density 10 --plastid
 
 	i=7
-	Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-preselect-annotation.R \
+	Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-preselect-annotation.R \
 		--table input/run-polap-r-preselect-annotation.input$i.txt --depth-range 78,486 --compare-mt-pt \
 		--out output/run-polap-r-preselect-annotation.output$i.txt --gene-density 10 --plastid
 
 	i=8
-	Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-preselect-annotation.R \
+	Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-preselect-annotation.R \
 		--table input/run-polap-r-preselect-annotation.input$i.txt --depth-range 111,555 --compare-mt-pt \
 		--out output/run-polap-r-preselect-annotation.output$i.txt --gene-density 10 --plastid
 
 	i=9
-	Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-preselect-annotation.R \
+	Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-preselect-annotation.R \
 		--table input/run-polap-r-preselect-annotation.input$i.txt --depth-range 107,630 --compare-mt-pt \
 		--out output/run-polap-r-preselect-annotation.output$i.txt --gene-density 10 --plastid
 

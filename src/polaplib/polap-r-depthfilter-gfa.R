@@ -16,7 +16,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# polaplib/run-polap-r-depthfilter-gfa.R
+# polaplib/polap-r-depthfilter-gfa.R
 # Check: 2025-06-17
 
 ################################################################################
@@ -32,7 +32,7 @@
 #   use this script to extract sequences with the depth range
 #
 # Example:
-# Rscript ./src/polaplib/run-polap-r-depthfilter-gfa.R \
+# Rscript ./src/polaplib/polap-r-depthfilter-gfa.R \
 #   --gfa output/3-gfa.seq.all.tsv \
 #   --lower-bound-depth 40 --upper-bound-depth 90 \
 #   --out output/3-gfa.seq.depthfiltered.txt.copy

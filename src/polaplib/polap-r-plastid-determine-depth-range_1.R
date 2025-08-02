@@ -15,7 +15,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# polaplib/run-polap-r-plastid-determine-depth-range_2.R
+# polaplib/polap-r-plastid-determine-depth-range_1.R
 # Check: 2025-06-17
 
 ################################################################################
@@ -35,7 +35,7 @@
 # 2-depth.range.by.cdf.copy.number.txt
 # contig-annotation-cdf-table.txt
 #
-# TODO: rename: polap-r-plastid-determine-depth-range_2.R
+# TODO: rename: polap-r-plastid-determine-depth-range_1.R
 #
 # See Also:
 # polap-function-disassemble-seeds.sh
@@ -80,8 +80,8 @@ args1 <- parse_args(parser)
 
 if (is_null(args1$table)) {
   input_dir0 <- file.path(".")
-  input1 <- file.path(input_dir0, "jvalidus/disassemble/11/assembly_info_organelle_annotation_count-all.txt")
-  output1 <- file.path(input_dir0, "custom.depth.range-1.txt")
+  input1 <- file.path(input_dir0, "assembly_info_organelle_annotation_count-all.txt")
+  output1 <- file.path(input_dir0, "2-depth.range.by.cdf.copy.number.txt")
   output2 <- file.path(input_dir0, "contig-annotation-cdf-table.txt")
   args1 <- parse_args(parser, args = c("--plastid", "--table", input1, "-o", output1, "-c", output2))
 }
@@ -117,7 +117,7 @@ pt_lower_bound <- x0 |>
   filter(PT > MT) |>
   arrange(desc(PT)) |>
   slice_head(n = 3) |>
-  summarise(max_depth = max(Depth, na.rm = TRUE) / 5) |>
+  summarise(max_depth = max(Depth, na.rm = TRUE) * 0.5) |>
   pull(max_depth)
 
 # Sort the data by the 'Copy' column in decreasing order
@@ -152,20 +152,11 @@ if (args1$mitochondrial == TRUE) {
 } else {
   xt <- cutoff_data |>
     filter(
-      PT >= MT,
-      Depth > pt_lower_bound
+      PT > MT,
+      Depth > pt_lower_bound,
+      Copy > 0
     )
-
-  # Promblem: Copy > 0
-  # xt <- cutoff_data |>
-  #   filter(
-  #     PT >= MT,
-  #     Depth > pt_lower_bound,
-  #     Copy > 0
-  #   )
 }
-
-
 
 # remove large copy number contig so that SD is less than MEAN.
 mean1 <- mean(xt$Depth)

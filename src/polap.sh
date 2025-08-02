@@ -95,6 +95,7 @@ source "${_POLAPLIB_DIR}/polap-cmd-blast.sh"
 source "${_POLAPLIB_DIR}/polap-cmd-menus.sh"
 source "${_POLAPLIB_DIR}/polap-function-set-variables.sh"
 
+source "${_POLAPLIB_DIR}/polap-cmd-fasta.sh"
 source "${_POLAPLIB_DIR}/polap-cmd-fastq.sh"
 source "${_POLAPLIB_DIR}/polap-cmd-subtract.sh"
 source "${_POLAPLIB_DIR}/polap-cmd-random.sh"

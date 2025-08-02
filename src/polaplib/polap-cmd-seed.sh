@@ -215,6 +215,10 @@ EOF
 		--mtcontig "${_polap_var_mtcontigname}" \
 		"${_polap_var_ga_contigger_edges_gfa}"
 
+	if [[ ! -s "${_polap_var_mtcontigname}" ]]; then
+		echo "${start_contig}" >>"${_polap_var_mtcontigname}"
+	fi
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
@@ -299,39 +303,51 @@ EOF
 	# local start_contig=$(awk 'NR>1 {print $1}' "${_polap_var_ga_annotation_depth_table}")
 	# _polap_log0 "${start_contig}"
 
-	mkdir -p "${_polap_var_oga_contig}"
-	local mtcontigname="${_polap_var_oga_contig}/mt.contig.name.txt"
-	local mtcontignameall="${_polap_var_oga_contig}/mt.contig.name.all.txt"
-	local mtcontignameset="${_polap_var_oga_contig}/mt.contig.name.set.txt"
-	>"${mtcontignameall}"
+	mkdir -p "${_polap_var_ga_contig}"
+	local mtcontigname="${_polap_var_ga_contig}/mt.contig.name.txt"
+	local mtcontignameall="${_polap_var_ga_contig}/mt.contig.name.all.txt"
+	local mtcontignameset="${_polap_var_ga_contig}/mt.contig.name.set.txt"
+	rm -f "${mtcontignameall}"
 	while read -r start_contig; do
-		python "${_POLAPLIB_DIR}"/polap-py-find-mito-gfa.py \
+		rm -f "${mtcontigname}"
+		_polap_log3_cmd python "${_POLAPLIB_DIR}"/polap-py-find-mito-gfa.py \
 			--seed "${start_contig}" \
 			--mtcontig "${mtcontigname}" \
 			"${_polap_var_ga_contigger_edges_gfa}"
-		cat "${mtcontigname}" >>"${mtcontignameall}"
+		if [[ -s "${mtcontigname}" ]]; then
+			cat "${mtcontigname}" >>"${mtcontignameall}"
+		else
+			echo "${start_contig}" >>"${mtcontignameall}"
+		fi
 	done < <(awk 'NR>1 {print $1}' "${_polap_var_ga_annotation_depth_table}")
-	sort "${mtcontignameall}" | uniq >"${mtcontignameset}"
+	if [[ -s "${mtcontignameall}" ]]; then
+		sort "${mtcontignameall}" | uniq >"${mtcontignameset}"
+	else
+		_polap_log0 "No mitochondrial contigs found in the gfa file."
+		return 1
+	fi
 	_polap_log0 "mtcontigname set: ${mtcontignameset}"
 
 	# pt
-	local ptcontigname="${_polap_var_oga_contig}/pt.contig.name.txt"
-	local ptcontignameall="${_polap_var_oga_contig}/pt.contig.name.all.txt"
-	>"${ptcontignameall}"
-	while read -r start_contig; do
-		python "${_POLAPLIB_DIR}"/polap-py-find-mito-gfa.py \
-			--seed "${start_contig}" \
-			--mtcontig "${ptcontigname}" \
-			"${_polap_var_ga_contigger_edges_gfa}"
-		cat "${ptcontigname}" >>"${ptcontignameall}"
-	done < <(awk 'NR==2 {print $1}' "${_polap_var_ga_pt_annotation_depth_table}")
-	sort "${ptcontignameall}" | uniq >"${_polap_var_ptcontigname}"
-	_polap_log0 "ptcontigname: ${_polap_var_ptcontigname}"
+	# local ptcontigname="${_polap_var_oga_contig}/pt.contig.name.txt"
+	# local ptcontignameall="${_polap_var_oga_contig}/pt.contig.name.all.txt"
+	# >"${ptcontignameall}"
+	# while read -r start_contig; do
+	# 	python "${_POLAPLIB_DIR}"/polap-py-find-mito-gfa.py \
+	# 		--seed "${start_contig}" \
+	# 		--mtcontig "${ptcontigname}" \
+	# 		"${_polap_var_ga_contigger_edges_gfa}"
+	# 	cat "${ptcontigname}" >>"${ptcontignameall}"
+	# done < <(awk 'NR==2 {print $1}' "${_polap_var_ga_pt_annotation_depth_table}")
+	# sort "${ptcontignameall}" | uniq >"${_polap_var_ptcontigname}"
+	# _polap_log0 "ptcontigname: ${_polap_var_ptcontigname}"
+	#
+	# # mt - pt contig name
+	# grep -Fxv -f "${_polap_var_ptcontigname}" "${mtcontignameset}" >"${_polap_var_mtcontigname}"
+	#
+	# _polap_log0 "mtcontigname (mtcontignameset - ptcontigname): ${_polap_var_mtcontigname}"
 
-	# mt - pt contig name
-	grep -Fxv -f "${_polap_var_ptcontigname}" "${mtcontignameset}" >"${_polap_var_mtcontigname}"
-
-	_polap_log0 "mtcontigname (mtcontignameset - ptcontigname): ${_polap_var_mtcontigname}"
+	cp -p "${mtcontignameset}" "${_polap_var_mtcontigname}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

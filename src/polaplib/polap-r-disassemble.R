@@ -26,7 +26,7 @@
 # the distribution.
 #
 # Example:
-# Rscript ./src/polaplib/run-polap-r-disassemble.R \
+# Rscript ./src/polaplib/polap-r-disassemble.R \
 #   --table input/summary1-3.txt \
 #   --out output/summary1-3-ordered.txt \
 #   --plot input/summary1-3-ordered.pdf
@@ -78,13 +78,13 @@ if (is_null(args1$table)) {
   input_dir0 <- file.path("Juncus_roemerianus")
   input_dir0 <- file.path("Eucalyptus_pauciflora")
   input1 <- file.path(input_dir0, "0/disassemble/infer-1/3-check/summary1.txt")
-  
+
   input_dir0 <- file.path("input")
   input_dir1 <- file.path("output")
   input1 <- file.path(input_dir0, "summary1-0.txt")
   output1 <- file.path(input_dir1, "summary1-0-ordered.txt")
   output2 <- file.path(input_dir1, "summary1-0-ordered.pdf")
-  
+
   input1 <- file.path(input_dir0, "summary1-1.txt")
   output1 <- file.path(input_dir1, "summary1-1-ordered.txt")
   output2 <- file.path(input_dir1, "summary1-1-ordered.pdf")
@@ -92,11 +92,11 @@ if (is_null(args1$table)) {
   input1 <- file.path(input_dir0, "summary1-2.txt")
   output1 <- file.path(input_dir1, "summary1-2-ordered.txt")
   output2 <- file.path(input_dir1, "summary1-2-ordered.pdf")
-  
+
   input1 <- file.path(input_dir0, "summary1-2-1.txt")
   output1 <- file.path(input_dir1, "summary1-2-1-ordered.txt")
   output2 <- file.path(input_dir1, "summary1-2-1-ordered.pdf")
-  
+
   args1 <- parse_args(parser, args = c(
     "--table", input1,
     "--out", output1,
@@ -173,7 +173,7 @@ if (nrow(df_no_outliers) == 0) {
   print(paste("Number of iterations:", round(nrow(df_no_outliers))))
   print(df_no_outliers |> select(index, length))
   write_tsv(df_no_outliers, args1$out)
-  
+
   message <- paste("#mode: NA")
   cat(message, file = args1$out, append = TRUE, sep = "\n")
   message <- paste("#sd: NA")
@@ -202,7 +202,7 @@ mode_length <- density_length$x[which.max(density_length$y)]
 # Date: 2025-06-17
 # We comment this out because we get it after sorting by diff from the mode.
 # The iteration with length nearest the length mode
-#selected_row_nearest_mode <- df_no_outliers %>%
+# selected_row_nearest_mode <- df_no_outliers %>%
 #  slice_min(abs(length - mode_length), n = 1)
 
 # We now have the data to print out as a result.

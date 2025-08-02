@@ -734,6 +734,7 @@ HEREDOC
           local _random_seed=${_polap_var_random_number}
           # local _random_seed=11
           _polap_log1 "    random seed for reducing long reads mapped on potential seed contigs: ${_random_seed}"
+          rm -f "${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
           _polap_log3_pipe "seqkit sample \
             -p ${_rate} \
             -s ${_random_seed} \
@@ -1066,7 +1067,7 @@ HEREDOC
     mkdir -p ${_polap_var_oga_seeds}/${_pread_sel}/${i}
     mkdir -p ${_polap_var_oga_subsample}/${_pread_sel}/${i}
 
-    _polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-directional.R \
+    _polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-directional.R \
         --use-strand \
 	    -m ${_polap_var_mtcontigname} \
 		  -t ${_polap_var_oga_contig}/contig.tab \
@@ -1109,6 +1110,7 @@ HEREDOC
         local _random_seed=${_polap_var_random_number}
         # local _random_seed=11
         _polap_log1 "    random seed for reducing long reads mapped on potential seed contigs: ${_random_seed}"
+        rm -f "${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
         _polap_log3_pipe "seqkit sample \
           -p ${_rate} \
           -s ${_random_seed} \
@@ -1728,6 +1730,7 @@ function _polap_directional-subsample {
         local _random_seed=${_polap_var_random_number}
         # local _random_seed=11
         _polap_log1 "    random seed for reducing long reads mapped on potential seed contigs: ${_random_seed}"
+        rm -f "${_directional_dir_i}/04-subsample.fq.gz"
         _polap_log3_pipe "seqkit sample \
             -p ${_rate} \
             -s ${_random_seed} \

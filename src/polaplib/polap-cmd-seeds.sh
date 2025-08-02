@@ -151,14 +151,14 @@ function _polap_seeds_create-automatic-depth-range {
 
 	if [[ "${_arg_plastid}" == "on" ]]; then
 		_polap_log2 "  using plastid depth range ..."
-		local _command1="Rscript ${_POLAPLIB_DIR}/run-polap-r-plastid-determine-depth-range_${_type}.R \
+		local _command1="Rscript ${_POLAPLIB_DIR}/polap-r-plastid-determine-depth-range_${_type}.R \
 				-t ${_polap_var_ga_annotation_all} \
 				-c ${_polap_var_ga_annotation_cdf_table} \
 				-o ${_polap_var_mtcontigs_1_custom_depth_range} \
         --plastid \
 				2>$_polap_output_dest"
 	else
-		local _command1="Rscript ${_POLAPLIB_DIR}/run-polap-r-determine-depth-range_${_type}.R \
+		local _command1="Rscript ${_POLAPLIB_DIR}/polap-r-determine-depth-range_${_type}.R \
 				-t ${_polap_var_ga_annotation_all} \
 				-c ${_polap_var_ga_annotation_cdf_table} \
 				-o ${_polap_var_mtcontigs_1_custom_depth_range} \
@@ -204,7 +204,7 @@ function _polap_seeds_preselect-contigs {
 	_polap_log2 "    input1: ${_polap_var_mtcontigs_depth_range_preselection}"
 	_polap_log2 "    input2: ${_polap_var_ga_annotation_all}"
 	_polap_log2 "    output: ${_polap_var_mtcontigs_preselection}"
-	local _command1="Rscript ${_POLAPLIB_DIR}/run-polap-r-preselect-annotation.R  \
+	local _command1="Rscript ${_POLAPLIB_DIR}/polap-r-preselect-annotation.R  \
 		--out ${_polap_var_mtcontigs_preselection} \
 		--table ${_polap_var_ga_annotation_all} \
 		--depth-range ${depth_lower},${depth_upper} \
@@ -268,7 +268,7 @@ function _polap_seeds_depthfilter-gfa {
 	_polap_log2 "        depth range: $depth_lower ~ $depth_upper"
 	_polap_log2 "      output: ${_polap_var_mtcontigs_gfa_seq_filtered}"
 	if [[ -s "${_polap_var_mtcontigs_depth_range_graphfilter}" ]]; then
-		_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-depthfilter-gfa.R \
+		_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-depthfilter-gfa.R \
 			--gfa ${_polap_var_mtcontigs_gfa_seq_part} \
 			--depth ${_polap_var_mtcontigs_depth_range_graphfilter} \
 			--out ${_polap_var_mtcontigs_gfa_seq_filtered} \
@@ -349,7 +349,7 @@ function _polap_seeds_prepare-cc {
 	_polap_log2 "      output2: ${_polap_var_mtcontigs_links_order}"
 	_polap_log2 "      output3: ${_polap_var_mtcontigs_links_contig}"
 	_polap_log2 "      output4: ${_polap_var_mtcontigs_links_contig_na}"
-	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-prepare-cc.R \
+	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-prepare-cc.R \
 		--edge ${_preselection} \
 		--gfa ${_polap_var_mtcontigs_links_tsv} \
 		--out ${_polap_var_mtcontigs_links} \
@@ -386,7 +386,7 @@ function _polap_seeds_final-mtcontig {
 	_polap_log2 "    input1: ${_polap_var_ga_annotation_all}"
 	_polap_log2 "    input2: ${_polap_var_mtcontigs_7mtcontigname}"
 	_polap_log2 "    output1: ${_polap_var_mtcontig_table}"
-	local _command1="Rscript ${_POLAPLIB_DIR}/run-polap-r-final-filter-mtcontig.R \
+	local _command1="Rscript ${_POLAPLIB_DIR}/polap-r-final-filter-mtcontig.R \
 		-t ${_polap_var_ga_annotation_all} \
 		-m ${_polap_var_mtcontigs_7mtcontigname} \
     -o ${_polap_var_mtcontig_table} \
@@ -403,7 +403,7 @@ function _polap_seeds_final-mtcontig {
 	# _polap_log2 "    input2: ${_polap_var_ga_annotation_depth_table}"
 	# _polap_log2 "    input3: ${_polap_var_mtcontigs_7mtcontigname}"
 	# _polap_log2 "    output1: ${_polap_var_mtcontigs_annotation_table_seed}"
-	# local _command1="Rscript ${_POLAPLIB_DIR}/run-polap-r-final-seed-mtcontig.R \
+	# local _command1="Rscript ${_POLAPLIB_DIR}/polap-r-final-seed-mtcontig.R \
 	# 	-t ${_polap_var_ga_annotation_all} \
 	# 	-a ${_polap_var_ga_annotation_depth_table} \
 	# 	-m ${_polap_var_mtcontigs_7mtcontigname} \
@@ -424,7 +424,7 @@ function _polap_seeds_final-seeds-mtcontig {
 	_polap_log2 "    input2: ${_polap_var_ga_annotation_depth_table}"
 	_polap_log2 "    input3: ${_mt_contig_name}"
 	_polap_log2 "    output1: ${_annotation_table_seed_target}"
-	local _command1="Rscript ${_POLAPLIB_DIR}/run-polap-r-final-seed-mtcontig.R \
+	local _command1="Rscript ${_POLAPLIB_DIR}/polap-r-final-seed-mtcontig.R \
 		-t ${_polap_var_ga_annotation_all} \
 		-a ${_polap_var_ga_annotation_depth_table} \
 		-m ${_mt_contig_name} \
@@ -690,7 +690,7 @@ function _run_polap_seeds-graph { # select seed contigs
 # TODO:
 # 1. document automatic depth-range in step 1
 # 2. document preselection in step 2
-# 3. document run-polap-r-final-mtcontig.R in step 8
+# 3. document polap-r-final-mtcontig.R in step 8
 #
 # 1: determine the depth-range either manually or automatically
 #   Determining the depth range can be done either by manual adjustment or 
@@ -1001,7 +1001,7 @@ HEREDOC
 	_polap_log2 "    input1: ${_polap_var_mtcontigs_links_seed}"
 	_polap_log2 "    input2: ${_polap_var_mtcontigs_links_order}"
 	_polap_log2 "    output: ${_polap_var_mtcontigs_links_mtcontig}"
-	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-cc2mtcontig.R \
+	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-cc2mtcontig.R \
 		--seed ${_polap_var_mtcontigs_links_seed} \
 		--order ${_polap_var_mtcontigs_links_order} \
 		--out ${_polap_var_mtcontigs_links_mtcontig} \

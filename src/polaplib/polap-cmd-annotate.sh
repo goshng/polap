@@ -172,7 +172,7 @@ HEREDOC
 	if [ -s "${_polap_var_ga_contigger_edges_stats}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log1 "    found: ${_polap_var_ga_contigger_edges_stats}, so skipping ..."
 	else
-		_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-edges-stats.R \
+		_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-edges-stats.R \
 		--gfa ${_polap_var_ga_gfa_seq_part} \
 		--out ${_polap_var_ga_contigger_edges_stats} \
 		2>$_polap_output_dest"
@@ -233,7 +233,7 @@ HEREDOC
 		return 0
 	fi
 
-	Rscript "${_POLAPLIB_DIR}"/run-polap-r-depth-distribution.R \
+	Rscript "${_POLAPLIB_DIR}"/polap-r-depth-distribution.R \
 		-t "${_polap_var_ga_annotation_all}" \
 		-o "${_polap_var_ga_annotation_all}".pdf \
 		2>"$_polap_output_dest"
@@ -293,7 +293,7 @@ polap_edges-stats() {
 	_polap_log2 "  filtering GFA sequence part using depth range"
 	_polap_log2 "    input1: ${_gfa_seq_part}"
 	_polap_log2 "    output1: ${_contigger_edges_stats}"
-	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-edges-stats.R \
+	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-edges-stats.R \
 		--gfa ${_gfa_seq_part} \
 		--out ${_contigger_edges_stats} \
 		2>$_polap_output_dest"
@@ -604,7 +604,7 @@ polap_count-gene() {
 	_polap_log2 "    output3: ${_ga_annotation_table}"
 	_polap_log2 "    output4: ${_ga_annotation_depth_table}"
 	_polap_log2 "    output5: ${_ga_pt_annotation_depth_table}"
-	local _command1="Rscript ${_POLAPLIB_DIR}/run-polap-r-mtcontig.R \
+	local _command1="Rscript ${_POLAPLIB_DIR}/polap-r-mtcontig.R \
 		--flyeout-edges-stats ${_ga_contigger_edges_stats} \
     --mt-gene-count ${_ann_MTGENECOUNT} \
     --pt-gene-count ${_ann_PTGENECOUNT} \
@@ -708,7 +708,7 @@ HEREDOC
 	_polap_log2 "    output3: ${_polap_var_ga_annotation_table}"
 	_polap_log2 "    output4: ${_polap_var_ga_annotation_depth_table}"
 	_polap_log2 "    output5: ${_polap_var_ga_pt_annotation_depth_table}"
-	local _command1="Rscript ${_POLAPLIB_DIR}/run-polap-r-mtcontig.R \
+	local _command1="Rscript ${_POLAPLIB_DIR}/polap-r-mtcontig.R \
 		--flyeout-edges-stats ${_polap_var_ga_contigger_edges_stats} \
     --mt-gene-count ${_polap_var_ann_MTGENECOUNT} \
     --pt-gene-count ${_polap_var_ann_PTGENECOUNT} \
@@ -861,7 +861,7 @@ polap_blast-genome() { # BLAST edge sequences on MT and PT genes
 	_polap_log2 "  converting BLAST result in BED format for removing redundancy"
 	_polap_log2 "    input1: ${_ann_MTAABLAST}"
 	_polap_log2 "    output1: ${_ann_MTAABLASTBED}"
-	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-genes.R \
+	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-genes.R \
 		${_ann_MTAABLAST} \
 		${_ann_MTAABLASTBED} \
 		>${_polap_output_dest} 2>&1"
@@ -963,7 +963,7 @@ polap_blast-genome() { # BLAST edge sequences on MT and PT genes
 	_polap_log2 "  converting BLAST result in BED format for removing redundancy"
 	_polap_log2 "    input1: ${_ann_PTAABLAST}"
 	_polap_log2 "    output1: ${_ann_PTAABLASTBED}"
-	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-genes.R \
+	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-genes.R \
 		${_ann_PTAABLAST} \
 		${_ann_PTAABLASTBED} \
 		>${_polap_output_dest} 2>&1"
@@ -1206,7 +1206,7 @@ HEREDOC
 	_polap_log2 "  converting BLAST result in BED format for removing redundancy"
 	_polap_log2 "    input1: ${_polap_var_ann_MTAABLAST}"
 	_polap_log2 "    output1: ${_polap_var_ann_MTAABLASTBED}"
-	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-genes.R \
+	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-genes.R \
 		${_polap_var_ann_MTAABLAST} \
 		${_polap_var_ann_MTAABLASTBED} \
 		>${_polap_output_dest} 2>&1"
@@ -1265,7 +1265,7 @@ HEREDOC
 	_polap_log2 "  converting BLAST result in BED format for removing redundancy"
 	_polap_log2 "    input1: ${_polap_var_ann_PTAABLAST}"
 	_polap_log2 "    output1: ${_polap_var_ann_PTAABLASTBED}"
-	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/run-polap-r-genes.R \
+	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-genes.R \
 		${_polap_var_ann_PTAABLAST} \
 		${_polap_var_ann_PTAABLASTBED} \
 		>${_polap_output_dest} 2>&1"
@@ -1319,7 +1319,7 @@ HEREDOC
 	# 	-num_threads "${_arg_threads}" \
 	# 	>${_polap_output_dest} 2>&1
 	#
-	# Rscript "${_POLAPLIB_DIR}"/run-polap-r-genes.R \
+	# Rscript "${_POLAPLIB_DIR}"/polap-r-genes.R \
 	# 	"${_polap_var_ann_PTAABLAST}" \
 	# 	"${_polap_var_ann_PTAABLASTBED}" \
 	# 	>${_polap_output_dest} 2>&1

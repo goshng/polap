@@ -160,12 +160,19 @@ _polap_lib_fastq-sample-to() {
 	if [[ $(echo "$rate < 1" | bc) -eq 1 ]]; then
 		_polap_lib_random-get
 		local seed=${_polap_var_random_number}
-		seqkit sample \
-			-p "$rate" \
-			-s "${seed}" \
-			"${infile}" \
-			-o "${outfile}" \
-			2>/dev/null
+		_polap_log2 "sampling using seqkit sample with rate: ${rate}, max_size: ${max_size} and seed: ${seed} for ${infile} -> ${outfile}"
+		if [[ -s "${infile}" ]]; then
+			rm -f "${outfile}"
+			seqkit sample \
+				-p "$rate" \
+				-s "${seed}" \
+				"${infile}" \
+				-o "${outfile}" \
+				2>/dev/null
+		else
+			_polap_log0 "ERROR: no such file: ${infile}"
+			exit 1
+		fi
 	else
 		# ln -fs $(basename "${infile}") "${outfile}"
 		# ln -fs "${infile}" "${outfile}"
@@ -182,16 +189,23 @@ _polap_lib_fastq-sample() {
 	if [[ $(echo "$rate < 1" | bc) -eq 1 ]]; then
 		_polap_lib_random-get
 		local seed=${_polap_var_random_number}
-		seqkit sample \
-			-p "$rate" \
-			-s "${seed}" \
-			"${infile}" \
-			-o "${outfile}" \
-			2>/dev/null
+		_polap_log2 "sampling using seqkit sample with rate: ${rate} and seed: ${seed} for ${infile} -> ${outfile}"
+		if [[ -s "${infile}" ]]; then
+			rm -f "${outfile}"
+			seqkit sample \
+				-p "$rate" \
+				-s "${seed}" \
+				"${infile}" \
+				-o "${outfile}" \
+				2>/dev/null
+		else
+			_polap_log0 "ERROR: no such file: ${infile}"
+			exit 1
+		fi
 	else
 		# ln -fs $(basename "${infile}") "${outfile}"
 		# ln -fs "${infile}" "${outfile}"
 		_polap_lib_filepath-smart_ln_s2 "${infile}" "${outfile}"
-		_polap_log2 "No sampling because the rate is greater than 1."
+		_polap_log2 "No sampling because the rate is greater than 1: for ${infile} -> ${outfile}"
 	fi
 }

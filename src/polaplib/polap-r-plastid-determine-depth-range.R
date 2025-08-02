@@ -15,7 +15,9 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# polaplib/run-polap-r-plastid-determine-depth-range.R
+# delete this file if you do not need it.
+
+# polaplib/polap-r-plastid-determine-depth-range.R
 # Check: 2025-06-17
 
 ################################################################################

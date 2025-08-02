@@ -150,7 +150,7 @@ HEREDOC
 		-num_threads "${_arg_threads}" \
 		>${_polap_output_dest} 2>&1
 
-	Rscript "${_POLAPLIB_DIR}"/run-polap-r-genes.R \
+	Rscript "${_POLAPLIB_DIR}"/polap-r-genes.R \
 		"${_polap_var_ann_MTAABLAST}" \
 		"${_polap_var_ann_MTAABLASTBED}" \
 		>${_polap_output_dest} 2>&1
@@ -191,7 +191,7 @@ HEREDOC
 		-num_threads "${_arg_threads}" \
 		>${_polap_output_dest} 2>&1
 
-	Rscript "${_POLAPLIB_DIR}"/run-polap-r-genes.R \
+	Rscript "${_POLAPLIB_DIR}"/polap-r-genes.R \
 		"${_polap_var_ann_PTAABLAST}" \
 		"${_polap_var_ann_PTAABLASTBED}" \
 		>${_polap_output_dest} 2>&1
@@ -292,7 +292,7 @@ HEREDOC
 	_polap_log0 "  input2: ${_polap_var_ann_MTGENECOUNT}"
 	_polap_log0 "  input3: ${_polap_var_ann_PTGENECOUNT}"
 
-	Rscript "${_POLAPLIB_DIR}"/run-polap-r-mtcontig-contig.R \
+	Rscript "${_POLAPLIB_DIR}"/polap-r-mtcontig-contig.R \
 		"${_polap_var_ga}" \
 		"${_polap_var_ga}"/mt.contig.name \
 		"${_polap_var_ga_annotation}" \

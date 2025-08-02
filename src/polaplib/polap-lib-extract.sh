@@ -302,6 +302,24 @@ _polap_lib_extract-fasta_seqlen() {
 	return 0
 }
 
+_polap_lib_extract-fasta_id() {
+	local fasta="$1"
+
+	# If file does not exist, print length 0 and return
+	if [[ ! -f "$fasta" ]]; then
+		echo "NA"
+		return 0
+	fi
+
+	# If seqkit is available and succeeds
+	if command -v seqkit >/dev/null 2>&1; then
+		echo $(seqkit seq -ni "$fasta")
+		return 0
+	fi
+
+	echo "NA"
+}
+
 _polap_lib_extract-fasta_numseq() {
 	local fasta="$1"
 

@@ -490,7 +490,7 @@ _polap_filter-reads-by-reference() {
 
 	# === Step 2: Parse and filter with Python
 	echo "🧠 Parsing SAM with pysam..."
-	python "${_POLAPLIB_DIR}"/polap-r-parse-graphaligner-gaf.py \
+	python "${_POLAPLIB_DIR}"/polap-py-parse-graphaligner-gaf.py \
 		"$SAM" "$REJECT_IDS" "$RETAIN_IDS" "$SUMMARY" "$ID_THRESH" "$CLIP_THRESH"
 
 	# === Step 3: Extract FASTQ subsets
@@ -559,7 +559,7 @@ _polap_filter-ont-reads-by-reference() {
 
 	# === Step 2: Parse and filter with Python
 	echo "🧠 Parsing SAM with pysam..."
-	python "${_POLAPLIB_DIR}"/polap-r-parse-graphaligner-gaf.py \
+	python "${_POLAPLIB_DIR}"/polap-py-parse-graphaligner-gaf.py \
 		"$SAM" "$REJECT_IDS" "$RETAIN_IDS" "$SUMMARY" "$ID_THRESH" "$CLIP_THRESH"
 
 	# === Step 3: Extract FASTQ subsets

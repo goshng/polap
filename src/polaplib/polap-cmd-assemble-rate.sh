@@ -169,3 +169,123 @@ EOF
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
+
+function _run_polap_assemble-rate-remove-ptdna {
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Grouped file path declarations
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
+
+	help_message=$(
+		cat <<'EOF'
+Name:
+  polap assemble-rate-remove-ptdna - find a data sampling rate for a good sampling rate of mapped reads
+
+Synopsis:
+  polap assemble-rate-remove-ptdna [options]
+
+Description:
+  polap assemble-rate does assemble organelle genomes by finding a sampling
+  rate of input long-read data so that mapped reads are about 50x the seed
+  contig size.
+  Seed conitgs are very similar to a target genome; e.g., plastid genome
+  assemble graph. When reads mapped on the seed contigs are over 50x the seed
+  contig size, we sample reads so that reads are upto 50x times the seed contig
+  size so that Flye genome assembly can be efficient for time and memory.
+  However, 50x sampling reads can result in too small rate if mapped reads are
+  way too much because of too much input long-read data. If the sampling rate of
+  mapped reads is too small or less then 0.01, the randomness can lead to
+  improper sampling, which results in worse genome assembly than the seed.
+  In short, even though we assemble a good plastid-like graph for a seed,
+  the second assembly from the seed can be a incomplete plastid graph because
+  of too small sampling rate. Therefore, Input long-read data need to be
+  reduced or subsampled before we map them on the seed contig so
+  that sampling rate of mapped read is not too small.
+  We start with 1 Gb of the input long-read data.
+  Let p be a sampling rate of mapped reads. If p is less than 0.1, we reduce
+  the input long-read by the rate of 0.1/p. If p is greater than 0.5,
+  we increase it by two-fold if there are data available.
+  We repeat this adjustemnt of subsampling rate of the input data so that
+  p be between 0.1 and 0.5.
+
+Options:
+  -l FASTQ
+    reads data file
+
+  -i STR
+    index of the source Flye assembly
+
+  -j STR
+    index of the destination Flye assembly
+
+  -w INT
+    minimum mapping length for read selection
+
+  -t INT
+    the number of CPU cores
+
+  -c INT
+    maximum coverage of reads 
+	
+	-p FASTA
+		plastid genome sequence file
+
+Examples:
+  Get organelle genome sequences:
+    polap annotate-read-remove-ptdna -l l.fq
+
+TODO:
+  Dev.
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# Display help message
+	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
+		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
+		man "$manfile" >&3
+		rm -f "$manfile"
+		return
+	fi
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+		return 0
+		exit $EXIT_SUCCESS
+	fi
+
+	if ! _polap_gfatools-gfa2fasta; then
+		_polap_error_message $?
+	fi
+
+	check_file_existence "${_polap_var_mtcontigname}"
+	check_file_existence "${_polap_var_ga_contigger_edges_fasta}"
+
+	# not used
+	# _polap_lib_oga-map-reads-remove-ptdna
+
+	_polap_lib_oga-estimate-read-sampling-rate-remove-ptdna
+
+	_polap_lib_oga-flye-select-reads
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+	return 0
+}

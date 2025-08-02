@@ -30,9 +30,9 @@
 # for the _Eucalyptus pauciflora_ dataset.
 #
 # Example:
-# Rscript ./src/polaplib/run-polap-r-data-v2-alpha0.R \
+# Rscript ./src/polaplib/polap-r-data-v2-alpha0.R \
 #   input/0.25.tsv input/0.50.tsv -l alpha0 -o output/alpha0.pdf
-# Rscript ./src/polaplib/run-polap-r-data-v2-alpha0.R \
+# Rscript ./src/polaplib/polap-r-data-v2-alpha0.R \
 #   input/?.??.tsv -l delta -o output/alpha0.pdf
 #
 # See Also:

@@ -310,7 +310,7 @@ HEREDOC
 	_polap_log2_file "${_polap_var_compare_oga_blastn3}"
 
 	# Analyze the length of the match using an R script
-	"${_POLAPLIB_DIR}"/run-polap-r-assemble-bioproject-3-length-match.R \
+	"${_POLAPLIB_DIR}"/polap-r-assemble-bioproject-3-length-match.R \
 		"${_polap_var_compare_oga_blastn3}" \
 		"${_polap_var_compare_oga_blastn3_length}" \
 		2>"$_polap_output_dest"

@@ -99,6 +99,7 @@ HEREDOC
 		local _rate="${_arg_menu[4]}"
 		_polap_lib_random-get
 		local _seed=${_polap_var_random_number}
+		rm -f "${_outfile}"
 
 		seqkit sample \
 			-p "${_rate}" \

@@ -197,14 +197,14 @@ _polap_disassemble_seeds_create-automatic-depth-range() {
 
   if [[ "${_arg_plastid}" == "on" ]]; then
     _polap_log2 "  using plastid depth range ..."
-    local _command1="Rscript ${_POLAPLIB_DIR}/run-polap-r-plastid-determine-depth-range_${_type}.R \
+    local _command1="Rscript ${_POLAPLIB_DIR}/polap-r-plastid-determine-depth-range_${_type}.R \
 				-t ${_ga_annotation_all} \
 				-c ${_ga_annotation_cdf_table} \
 				-o ${_mtcontigs_1_custom_depth_range} \
         --plastid \
 				2>$_polap_output_dest"
   else
-    local _command1="Rscript ${_POLAPLIB_DIR}/run-polap-r-determine-depth-range_${_type}.R \
+    local _command1="Rscript ${_POLAPLIB_DIR}/polap-r-determine-depth-range_${_type}.R \
 				-t ${_ga_annotation_all} \
 				-c ${_ga_annotation_cdf_table} \
 				-o ${_mtcontigs_1_custom_depth_range} \
@@ -243,7 +243,7 @@ _polap_disassemble_seeds_determine-depth-range() {
   if [[ "${_arg_plastid}" == "on" ]]; then
     _polap_log1 "  use plastid depth range selection"
     local _command1="Rscript --vanilla \
-      ${_POLAPLIB_DIR}/run-polap-r-plastid-determine-depth-range_${_knum}.R \
+      ${_POLAPLIB_DIR}/polap-r-plastid-determine-depth-range_${_knum}.R \
 			-t ${_ga_annotation_all} \
 			-c ${_ga_annotation_cdf_table} \
 			-o ${_mtcontigs_1_custom_depth_range} \
@@ -252,7 +252,7 @@ _polap_disassemble_seeds_determine-depth-range() {
   elif [[ "${_arg_animal}" == "on" ]]; then
     _polap_log1 "  use animal mitochondrial depth range selection"
     local _command1="Rscript --vanilla \
-      ${_POLAPLIB_DIR}/run-polap-r-determine-depth-range-animal_${_knum}.R \
+      ${_POLAPLIB_DIR}/polap-r-determine-depth-range-animal_${_knum}.R \
 			-t ${_ga_annotation_all} \
 			-c ${_ga_annotation_cdf_table} \
 			-o ${_mtcontigs_1_custom_depth_range} \
@@ -261,7 +261,7 @@ _polap_disassemble_seeds_determine-depth-range() {
   else
     _polap_log1 "  use mitochondrial depth range selection"
     local _command1="Rscript --vanilla \
-      ${_POLAPLIB_DIR}/run-polap-r-determine-depth-range_${_knum}.R \
+      ${_POLAPLIB_DIR}/polap-r-determine-depth-range_${_knum}.R \
 			-t ${_ga_annotation_all} \
 			-c ${_ga_annotation_cdf_table} \
 			-o ${_mtcontigs_1_custom_depth_range} \
@@ -302,7 +302,7 @@ _polap_disassemble_seeds_preselect-contigs() {
   local depth_lower=${depths[0]}
   local depth_upper=${depths[1]}
 
-  _polap_log3 "  Rscript run-polap-r-preselect-annotation.R"
+  _polap_log3 "  Rscript polap-r-preselect-annotation.R"
   _polap_log3 "    input1: ${_ga_annotation_all}"
   _polap_log3 "    input2: depth range: $depth_lower ~ $depth_upper"
   _polap_log3 "    minimum gene density for mtDNA: 10 per 1 Mb"
@@ -310,7 +310,7 @@ _polap_disassemble_seeds_preselect-contigs() {
   _polap_log3 "    gene count comparison: MT > PT"
   _polap_log3 "    output: ${_mtcontigs_preselection}"
   local _command1="Rscript --vanilla \
-    ${_POLAPLIB_DIR}/run-polap-r-preselect-annotation.R  \
+    ${_POLAPLIB_DIR}/polap-r-preselect-annotation.R  \
 		--table ${_ga_annotation_all} \
 		--depth-range ${depth_lower},${depth_upper} \
 		--compare-mt-pt \
@@ -390,7 +390,7 @@ _polap_disassemble_seeds_depthfilter-gfa() {
   _polap_log2 "        depth range: $depth_lower ~ $depth_upper"
   _polap_log2 "      output: ${_mtcontigs_gfa_seq_filtered}"
   _polap_log3_pipe "Rscript --vanilla \
-    ${_POLAPLIB_DIR}/run-polap-r-depthfilter-gfa.R \
+    ${_POLAPLIB_DIR}/polap-r-depthfilter-gfa.R \
     --gfa ${_mtcontigs_gfa_seq_part} \
 		--depth ${_mtcontigs_depth_range_graphfilter} \
 		--out ${_mtcontigs_gfa_seq_filtered} \

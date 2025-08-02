@@ -16,7 +16,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# run-polap-r-assemble-bioproject-3-length-match.R
+# polap-r-assemble-bioproject-3-length-match.R
 
 ################################################################################
 # Read the BLSATN output to sum the length of subjects longer than 2kb and

@@ -81,50 +81,50 @@ files=(polap
 	run-polap-py-unique-mtcontigs.py
 	polap-data-v2.R
 	run-polap-pairs.R
-	run-polap-r-assemble-bioproject-3-length-match.R
+	polap-r-assemble-bioproject-3-length-match.R
 	run-polap-r-blast-mtdna-1-determine-gene.R
-	run-polap-r-bridge.R
-	run-polap-r-cc2mtcontig.R
+	polap-r-bridge.R
+	polap-r-cc2mtcontig.R
 	run-polap-r-contig2edge.R
-	run-polap-r-depth-distribution.R
-	run-polap-r-depthfilter-gfa.R
-	run-polap-r-determine-depth-range_1.R
-	run-polap-r-determine-depth-range_2.R
-	run-polap-r-determine-depth-range_3.R
-	run-polap-r-determine-depth-range_4.R
-	run-polap-r-determine-depth-range_5.R
-	run-polap-r-determine-depth-range_6.R
-	run-polap-r-determine-depth-range.R
-	run-polap-r-directional.R
-	run-polap-r-disassemble.R
+	polap-r-depth-distribution.R
+	polap-r-depthfilter-gfa.R
+	polap-r-determine-depth-range_1.R
+	polap-r-determine-depth-range_2.R
+	polap-r-determine-depth-range_3.R
+	polap-r-determine-depth-range_4.R
+	polap-r-determine-depth-range_5.R
+	polap-r-determine-depth-range_6.R
+	polap-r-determine-depth-range.R
+	polap-r-directional.R
+	polap-r-disassemble.R
 	run-polap-r-disassemble-stats.R
-	run-polap-r-edges-stats.R
-	run-polap-r-final-filter-mtcontig.R
-	run-polap-r-final-mtcontig.R
-	run-polap-r-final-seed-mtcontig.R
+	polap-r-edges-stats.R
+	polap-r-final-filter-mtcontig.R
+	polap-r-final-mtcontig.R
+	polap-r-final-seed-mtcontig.R
 	run-polap-r-genes-bed4.R
-	run-polap-r-genes.R
+	polap-r-genes.R
 	polap-r-get-bioproject.R
 	run-polap-r-global-richness.R
-	run-polap-r-jellyfish.R
-	run-polap-r-mafft.R
-	run-polap-r-mtcontig-contig.R
-	run-polap-r-mtcontig.R
+	polap-r-jellyfish.R
+	polap-r-mafft.R
+	polap-r-mtcontig-contig.R
+	polap-r-mtcontig.R
 	run-polap-r-orthofinder.R
-	run-polap-r-pairs.R
-	run-polap-r-plastid-determine-depth-range_1.R
-	run-polap-r-plastid-determine-depth-range_2.R
-	run-polap-r-plastid-determine-depth-range_6.R
-	run-polap-r-plastid-determine-depth-range.R
+	polap-r-pairs.R
+	polap-r-plastid-determine-depth-range_1.R
+	polap-r-plastid-determine-depth-range_2.R
+	polap-r-plastid-determine-depth-range_6.R
+	polap-r-plastid-determine-depth-range.R
 	run-polap-r-plot-mtdna.R
-	run-polap-r-prepare-cc.R
-	run-polap-r-preselect-annotation.R
+	polap-r-prepare-cc.R
+	polap-r-preselect-annotation.R
 	run-polap-r-select-mtdna-1-nx-gfa-links.R
 	run-polap-r-select-reads-polap.R
 	run-polap-r-select-reads-ptgaul.R
 	run-polap-r-taxonomy.R
 	run-polap-r-template.R
-	run-polap-r-test-reads-bar-graph.R
+	polap-r-test-reads-bar-graph.R
 	polap.sh)
 
 for i in "${files[@]}"; do

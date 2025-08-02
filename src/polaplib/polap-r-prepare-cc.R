@@ -16,7 +16,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# polaplib/run-polap-r-prepare-cc.R
+# polaplib/polap-r-prepare-cc.R
 
 #
 # TODO: document it later

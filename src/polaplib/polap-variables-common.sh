@@ -175,6 +175,7 @@ local _polap_var_compare_oga_blastn3_length="${_polap_var_compare}/3-blastn3.len
 local _polap_var_compare_oga_blastn3="${_polap_var_compare}/3-blastn3.txt"
 
 # seeds
+local _polap_var_ga_contig="${_polap_var_ga}/01-contig"
 local _polap_var_oga_contig="${_polap_var_oga}/01-contig"
 local _polap_var_oga_reads="${_polap_var_oga}/02-reads"
 local _polap_var_oga_seeds="${_polap_var_oga}/03-seeds"

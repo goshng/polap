@@ -122,9 +122,11 @@ df |>
   arrange(MT <= PT) |>
   write.table(file = output1, sep = "\t", row.names = FALSE, quote = FALSE)
 
+# arrange(desc(PT)) |>
+# arrange(MT < PT) |>
+# filter(MT > PT) |>
 df |>
-  arrange(desc(PT)) |>
-  arrange(MT <= PT) |>
+  arrange(desc(MT - PT)) |>
   filter(MT > PT) |>
   write.table(file = output4, sep = "\t", row.names = FALSE, quote = FALSE)
 

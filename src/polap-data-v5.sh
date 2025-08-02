@@ -28,6 +28,10 @@ _media_dir="/media/h2/sra"
 _media1_dir="/media/h1/sra"
 _media2_dir="/media/h2/sra"
 
+if [[ "${_local_host}" != $(hostname) ]]; then
+	cd .. && rsync -aq ${_local_host}:$PWD/github/ github/ && cd hifi1
+fi
+
 # TODO:
 # [ ] A manual for proper understanding and execution of tasks.
 
@@ -50,9 +54,9 @@ fi
 
 help_message=$(
 	cat <<HEREDOC
-usage: polap-data-hifi [-h] [-y] [-c CSV] [--version] COMMAND [-h] ...
+usage: polap-data-read [-h] [-y] [-c CSV] [--version] COMMAND [-h] ...
 
-polap-data-hifi is a tool for data analysis of plant plastid genome assembly
+polap-data-read is a tool for data analysis of plant plastid genome assembly
 by annotating long reads with organelle genome sequences and selecting those
 originating from organelle genomes.
 
@@ -247,7 +251,7 @@ print_help() {
 
 print_version() {
 	_polap_lib_version
-	echo "polap-data-hifi ${_polap_version}"
+	echo "polap-data-read ${_polap_version}"
 }
 
 print_version_git_message() {
@@ -364,7 +368,7 @@ _brg_adir="${opt_t_arg:-t5}"
 x_help_message_example=$(
 	cat <<HEREDOC
 
-  polap-data-hifi run hifi-oga Lolium_perenne
+  polap-data-read run hifi-oga Lolium_perenne
 
   pl blast-pt -l DRR503528.fastq
 
@@ -426,12 +430,17 @@ help_message_example=$(
   man:
   p5 man table-benchmark some 0 
   p5 man figure-sheet some 0 mt bandage
+
+  p5 help example-pca
+  p5 help example-mt
+  p5 help example-nt
+  p5 help example-pt
 HEREDOC
 )
 
 help_message_example_pca=$(
 	cat <<HEREDOC
-  polap-data-hifi run hifi-oga Lolium_perenne
+  polap-data-read run hifi-oga Lolium_perenne
 
   ONT case:
   p5 data-long Vitis_vinifera [0]
@@ -445,8 +454,30 @@ HEREDOC
 
 help_message_example_mt=$(
 	cat <<HEREDOC
+  p5 run-polap-readassemble-mt Vitis_vinifera [0] [no-iterate|iterate]
+
   p5 data-downsample-long Vitis_vinifera 0 1000
-  p5 run-annotate-ont-pt Vitis_vinifera [0]
+  p5 readassemble-annotate-mt Vitis_vinifera [0]
+  p5 run-assemble-ont-mt Vitis_vinifera [0]
+HEREDOC
+)
+
+help_message_example_nt=$(
+	cat <<HEREDOC
+  p5 run-polap-readassemble-nt Vitis_vinifera [0] [no-iterate|iterate]
+
+  p5 data-downsample-long Vitis_vinifera 0 1000
+  p5 readassemble-annotate-nt Vitis_vinifera [0]
+  p5 run-assemble-ont-nt Vitis_vinifera [0]
+HEREDOC
+)
+
+help_message_example_pt=$(
+	cat <<HEREDOC
+  p5 run-polap-readassemble-pt Vitis_vinifera [0]
+
+  p5 data-downsample-long Vitis_vinifera 0 1000
+  p5 readassemble-annotate-pt Vitis_vinifera [0]
   p5 run-assemble-ont-pt Vitis_vinifera [0]
 HEREDOC
 )
@@ -1225,11 +1256,14 @@ man-figure-sheet_genus_species_for() {
 	# Polap
 	# need to figure out where the gfa is.
 	_brg_polap_gfa_number=0
-	local _run_title="polap-annotate"
+	local _run_title="polap-readassemble-pt"
 	local _brg_rundir="${_brg_outdir_i}/${_run_title}"
 	local _gfa_infer="${_brg_rundir}/pt.${_brg_polap_gfa_number}.gfa"
 	local _png_infer="${_brg_rundir}/pt.${_brg_polap_gfa_number}.png"
+
 	if [[ "${_brg_type}" != "pt" ]]; then
+		_run_title="polap-readassemble-mt"
+		_brg_rundir="${_brg_outdir_i}/${_run_title}"
 		_gfa_infer="${_brg_rundir}/mt.${_brg_polap_gfa_number}.gfa"
 		_png_infer="${_brg_rundir}/mt.${_brg_polap_gfa_number}.png"
 	fi
@@ -1246,11 +1280,14 @@ man-figure-sheet_genus_species_for() {
 	# Polap
 	# need to figure out where the gfa is.
 	_brg_polap_gfa_number=1
-	local _run_title="polap-annotate"
+	local _run_title="polap-readassemble-pt"
 	local _brg_rundir="${_brg_outdir_i}/${_run_title}"
 	local _gfa_infer="${_brg_rundir}/pt.${_brg_polap_gfa_number}.gfa"
 	local _png_infer="${_brg_rundir}/pt.${_brg_polap_gfa_number}.png"
+
 	if [[ "${_brg_type}" != "pt" ]]; then
+		_run_title="polap-readassemble-mt"
+		_brg_rundir="${_brg_outdir_i}/${_run_title}"
 		_gfa_infer="${_brg_rundir}/mt.${_brg_polap_gfa_number}.gfa"
 		_png_infer="${_brg_rundir}/mt.${_brg_polap_gfa_number}.png"
 	fi
@@ -1681,7 +1718,7 @@ benchmark-command_genus_species_for() {
 		return
 	fi
 
-	_log_echo "START (${_brg_outdir}): polap annotating and assembling for banchmarking analysis"
+	_log_echo "START (${_brg_outdir}-${_brg_inum}): polap annotating and assembling for banchmarking analysis"
 
 	# Prepare the input data
 	polap-analysis-data_genus_species "${_brg_outdir}"
@@ -1717,7 +1754,7 @@ benchmark-command_genus_species_for() {
 			_log_echo "Success: reference ptDNA"
 		else
 			_log_echo "Fail: reference ptDNA"
-			exit 1
+			echo 0 >"${_brg_rundir}/ptdna-reference.fa"
 		fi
 	fi
 
@@ -1770,75 +1807,85 @@ benchmark-command_genus_species_for() {
 		fi
 	fi
 
-	# Execute ptGAUL
-	# check: ptgaul/flye_cpONT/assembly_graph.gfa
-	local _run_title="ptgaul"
-	local _brg_rundir="${_brg_outdir_0}/${_run_title}"
-	if [[ -s "${_brg_rundir}/flye_cpONT/assembly_graph.gfa" ]]; then
-		_log_echo "Found: ptGAUL assembly"
+	local ptdna_ref=$(<"${_brg_outdir_0}/ncbi-ptdna/ptdna-reference.fa")
+	if [[ "${ptdna_ref}" == "0" ]]; then
+		_log_echo "No ptDNA reference for ptGAUL"
 	else
-		run-ptgaul_genus_species "${_brg_outdir}" "${_brg_inum_0}"
+		# Execute ptGAUL
+		# check: ptgaul/flye_cpONT/assembly_graph.gfa
+		local _run_title="ptgaul"
+		local _brg_rundir="${_brg_outdir_0}/${_run_title}"
 		if [[ -s "${_brg_rundir}/flye_cpONT/assembly_graph.gfa" ]]; then
-			_log_echo "Success: ptGAUL assembly"
+			_log_echo "Found: ptGAUL assembly"
 		else
-			_log_echo "Fail: ptGAUL assembly"
-			exit 1
-		fi
-	fi
-
-	# Extract ptDNA from ptGAUL
-	# check: ptgaul/flye_cpONT/ptdna/circular_path_1_concatenated.fa
-	local _run_title="ptgaul"
-	local _brg_rundir="${_brg_outdir_0}/${_run_title}/flye_cpONT/ptdna"
-	if [[ -s "${_brg_rundir}/circular_path_1_concatenated.fa" ]]; then
-		_log_echo "Found: ptGAUL extracted ptDNA"
-	else
-		run-extract-ptdna-ptgaul_genus_species "${_brg_outdir}" "${_brg_inum_0}"
-		if [[ -s "${_brg_rundir}/circular_path_1_concatenated.fa" ]]; then
-			_log_echo "Success: ptGAUL extracted ptDNA"
-		else
-			_log_echo "Fail: ptGAUL extracted ptDNA"
-			_log_echo "${help_message_extract_ptdna_ptgaul}"
-			exit 1
-		fi
-	fi
-
-	# Polish ptDNA from ptGAUL
-	local _run_title="ptgaul"
-	local _brg_rundir="${_brg_outdir_0}/${_run_title}"
-	if [[ -s "${_brg_outdir_0}/ptdna-ptgaul.fa" ]]; then
-		_log_echo "Found: ptGAUL polished genome"
-	else
-		run-polish-ptdna-ptgaul_genus_species "${_brg_outdir}" "${_brg_inum_0}"
-		if [[ -s "${_brg_outdir_0}/ptdna-ptgaul.fa" ]]; then
-			_log_echo "Success: ptGAUL polished genome"
-		else
-			_log_echo "Fail: ptGAUL polished genome"
-			_log_echo "${help_message_polish_ptdna_ptgaul}"
-			exit 1
-		fi
-	fi
-
-	# Execute ptGAUL for mtDNA
-	# check: mtgaul/flye_cpONT/assembly_graph.gfa
-	local _run_title="mtgaul"
-	local _brg_rundir="${_brg_outdir_0}/${_run_title}"
-	local mtdna_reference="${_brg_outdir_0}/ncbi-mtdna/mtdna-reference.fa"
-	if [[ $(stat -c%s "$mtdna_reference") -gt 100 && $(<"$mtdna_reference") != "0" ]]; then
-		if [[ -s "${_brg_rundir}/flye_cpONT/assembly_graph.gfa" ]]; then
-			_log_echo "Found: ptGAUL's mtDNA assembly"
-		else
-			run-mtgaul_genus_species "${_brg_outdir}" "${_brg_inum_0}"
+			run-ptgaul_genus_species "${_brg_outdir}" "${_brg_inum_0}"
 			if [[ -s "${_brg_rundir}/flye_cpONT/assembly_graph.gfa" ]]; then
-				_log_echo "Success: ptGAUL's mtDNA assembly"
+				_log_echo "Success: ptGAUL assembly"
 			else
-				_log_echo "Fail: ptGAUL's mtDNA assembly"
-				echo "No such file: ${_brg_rundir}/flye_cpONT/assembly_graph.gfa"
-				echo 0 >"${_brg_rundir}/flye_cpONT/assembly_graph.gfa"
+				_log_echo "Fail: ptGAUL assembly"
+				exit 1
 			fi
 		fi
+
+		# Extract ptDNA from ptGAUL
+		# check: ptgaul/flye_cpONT/ptdna/circular_path_1_concatenated.fa
+		local _run_title="ptgaul"
+		local _brg_rundir="${_brg_outdir_0}/${_run_title}/flye_cpONT/ptdna"
+		if [[ -s "${_brg_rundir}/circular_path_1_concatenated.fa" ]]; then
+			_log_echo "Found: ptGAUL extracted ptDNA"
+		else
+			run-extract-ptdna-ptgaul_genus_species "${_brg_outdir}" "${_brg_inum_0}"
+			if [[ -s "${_brg_rundir}/circular_path_1_concatenated.fa" ]]; then
+				_log_echo "Success: ptGAUL extracted ptDNA"
+			else
+				_log_echo "Fail: ptGAUL extracted ptDNA"
+				_log_echo "${help_message_extract_ptdna_ptgaul}"
+				exit 1
+			fi
+		fi
+
+		# Polish ptDNA from ptGAUL
+		local _run_title="ptgaul"
+		local _brg_rundir="${_brg_outdir_0}/${_run_title}"
+		if [[ -s "${_brg_outdir_0}/ptdna-ptgaul.fa" ]]; then
+			_log_echo "Found: ptGAUL polished genome"
+		else
+			run-polish-ptdna-ptgaul_genus_species "${_brg_outdir}" "${_brg_inum_0}"
+			if [[ -s "${_brg_outdir_0}/ptdna-ptgaul.fa" ]]; then
+				_log_echo "Success: ptGAUL polished genome"
+			else
+				_log_echo "Fail: ptGAUL polished genome"
+				_log_echo "${help_message_polish_ptdna_ptgaul}"
+				exit 1
+			fi
+		fi
+	fi
+
+	local mtdna_ref=$(<"${_brg_outdir_0}/ncbi-mtdna/mtdna-reference.fa")
+	if [[ "${mtdna_ref}" == "0" ]]; then
+		_log_echo "No mtDNA reference for ptGAUL"
 	else
-		_log_echo "Fail: mtDNA reference is not proper."
+		# Execute ptGAUL for mtDNA
+		# check: mtgaul/flye_cpONT/assembly_graph.gfa
+		local _run_title="mtgaul"
+		local _brg_rundir="${_brg_outdir_0}/${_run_title}"
+		local mtdna_reference="${_brg_outdir_0}/ncbi-mtdna/mtdna-reference.fa"
+		if [[ $(stat -c%s "$mtdna_reference") -gt 100 && $(<"$mtdna_reference") != "0" ]]; then
+			if [[ -s "${_brg_rundir}/flye_cpONT/assembly_graph.gfa" ]]; then
+				_log_echo "Found: ptGAUL's mtDNA assembly"
+			else
+				run-mtgaul_genus_species "${_brg_outdir}" "${_brg_inum_0}"
+				if [[ -s "${_brg_rundir}/flye_cpONT/assembly_graph.gfa" ]]; then
+					_log_echo "Success: ptGAUL's mtDNA assembly"
+				else
+					_log_echo "Fail: ptGAUL's mtDNA assembly"
+					echo "No such file: ${_brg_rundir}/flye_cpONT/assembly_graph.gfa"
+					echo 0 >"${_brg_rundir}/flye_cpONT/assembly_graph.gfa"
+				fi
+			fi
+		else
+			_log_echo "Fail: mtDNA reference is not proper."
+		fi
 	fi
 
 	# run-estimate-genomesize
@@ -2140,14 +2187,20 @@ man-table-benchmark_genus_species_header() {
 		_total_hours_polap_assemble_ont_pt # new
 		_known_ptdna                       # new
 		_known_mtdna
-		_ptdna_seq_length_ptgaul   # new
-		_ptdna_num_seq_ptgaul      # new
-		_mtdna_seq_length_ptgaul   # new
-		_mtdna_num_seq_ptgaul      # new
-		_ptdna_seq_length_annotate # new
-		_ptdna_num_seq_annotate    # new
-		_mtdna_seq_length_annotate # new
-		_mtdna_num_seq_annotate    # new
+		_ptdna_seq_length_ptgaul      # new
+		_ptdna_num_seq_ptgaul         # new
+		_mtdna_seq_length_ptgaul      # new
+		_mtdna_num_seq_ptgaul         # new
+		_ptdna_seq_length_annotate    # new
+		_ptdna_num_seq_annotate       # new
+		_mtdna_seq_length_annotate    # new
+		_mtdna_num_seq_annotate       # new
+		_mtdna_seq_length_annotate_nt # new
+		_mtdna_num_seq_annotate_nt    # new
+		_ncbi_ptdna_seq_length        # new
+		_ncbi_ptdna_seq_id            # new
+		_ncbi_mtdna_seq_length        # new
+		_ncbi_mtdna_seq_id            # new
 		_config_hostname
 		_system_hostname
 		_system_os_version
@@ -2363,9 +2416,9 @@ man-table-benchmark_genus_species_for() {
 			"${_brg_outdir_0}/ncbi-mtdna/00-bioproject/2-mtdna.accession"
 	)
 
-	local _ptdna_ptgaul="${_brg_outdir_0}/ptgaul/flye_cpONT/assembly_graph.gfa"
+	local _ptdna_ptgaul="${_brg_outdir_0}/ptgaul/flye_cpONT/ptdna/pt.1.fa"
 	# local _ptdna_ptgaul="${_brg_outdir_0}/ptdna-ptgaul.gfa"
-	local _ptdna_seq_length_ptgaul=$(_polap_lib_extract-gfa_seqlen "${_ptdna_ptgaul}")
+	local _ptdna_seq_length_ptgaul=$(_polap_lib_extract-fasta_seqlen "${_ptdna_ptgaul}")
 	local _ptdna_num_seq_ptgaul=$(_polap_lib_extract-gfa_numseq "${_ptdna_ptgaul}")
 
 	# gfa not fasta
@@ -2374,13 +2427,26 @@ man-table-benchmark_genus_species_for() {
 	local _mtdna_seq_length_ptgaul=$(_polap_lib_extract-gfa_seqlen "${_mtdna_ptgaul}")
 	local _mtdna_num_seq_ptgaul=$(_polap_lib_extract-gfa_numseq "${_mtdna_ptgaul}")
 
-	local _ptdna_annotate="${_brg_outdir_i}/polap-readassemble-pt/pt.1.gfa"
-	local _ptdna_seq_length_annotate=$(_polap_lib_extract-gfa_seqlen "${_ptdna_annotate}")
+	local _ptdna_annotate="${_brg_outdir_i}/polap-readassemble-pt/pt.1.fa"
+	local _ptdna_seq_length_annotate=$(_polap_lib_extract-fasta_seqlen "${_ptdna_annotate}")
 	local _ptdna_num_seq_annotate=$(_polap_lib_extract-gfa_numseq "${_ptdna_annotate}")
 
 	local _mtdna_annotate="${_brg_outdir_i}/polap-readassemble-mt/mt.1.gfa"
 	local _mtdna_seq_length_annotate=$(_polap_lib_extract-gfa_seqlen "${_mtdna_annotate}")
 	local _mtdna_num_seq_annotate=$(_polap_lib_extract-gfa_numseq "${_mtdna_annotate}")
+
+	local _mtdna_annotate="${_brg_outdir_i}/polap-readassemble-nt/mt.1.gfa"
+	local _mtdna_seq_length_annotate_nt=$(_polap_lib_extract-gfa_seqlen "${_mtdna_annotate}")
+	local _mtdna_num_seq_annotate_nt=$(_polap_lib_extract-gfa_numseq "${_mtdna_annotate}")
+
+	# ncbi
+	local _ncbi_ptdna="${_brg_outdir_i}/ncbi-ptdna/ptdna-reference.fa"
+	local _ncbi_ptdna_seq_length=$(_polap_lib_extract-fasta_seqlen "${_ncbi_ptdna}")
+	local _ncbi_ptdna_seq_id=$(_polap_lib_extract-fasta_id "${_ncbi_ptdna}")
+
+	local _ncbi_mtdna="${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa"
+	local _ncbi_mtdna_seq_length=$(_polap_lib_extract-fasta_seqlen "${_ncbi_mtdna}")
+	local _ncbi_mtdna_seq_id=$(_polap_lib_extract-fasta_id "${_ncbi_mtdna}")
 
 	# Get system info
 	local _timing_summary_data_txt="${_brg_outdir_0}/timing-summary-data.txt"
@@ -2434,6 +2500,12 @@ man-table-benchmark_genus_species_for() {
 		"${_ptdna_num_seq_annotate}"
 		"${_mtdna_seq_length_annotate}"
 		"${_mtdna_num_seq_annotate}"
+		"${_mtdna_seq_length_annotate_nt}"
+		"${_mtdna_num_seq_annotate_nt}"
+		"${_ncbi_ptdna_seq_length}"
+		"${_ncbi_ptdna_seq_id}"
+		"${_ncbi_mtdna_seq_length}"
+		"${_ncbi_mtdna_seq_id}"
 		"${_config_hostname}"
 		"${sysinfo[hostname]}"
 		"${sysinfo[os_version]}"
@@ -2594,12 +2666,8 @@ man-table-benchmark_genus_species() {
 
 	# Table S3. table for polap disassemble 5 % - n=r=5
 	if [[ "${_brg_type}" == "polap" || "${_brg_type}" == "benchmark" ]]; then
-		# csvtk -t cut -f _species_italic,_long_coverage,_short_coverage,_target_coverage,_P,_N,_R,_Alpha,_seq_length_ptgaul,_seq_length_subsample,_mafft_pident "${table_tsv}" |
-		#   csvtk -t rename -f 1-11 -n Species,"Long Coverage","Short Coverage","Downsample Depth",P,N,R,Alpha,"Length ptGAUL","Length Polap","Percent identity" |
-		#   csvtk -t csv2md -a right -o "${table_md_polap}"
-
-		csvtk -t cut -f _species_italic,_ptdna_seq_length_ptgaul,_ptdna_seq_length_annotate,_mtdna_num_seq_ptgaul,_mtdna_seq_length_annotate "${table_tsv}" |
-			csvtk -t rename -f 1-5 -n Species,"Length (ptGAUL ptDNA)","Length (Polap ptDNA)","Length (ptGAUL mtDNA)","Length (Polap mtDNA)" |
+		csvtk -t cut -f _species_italic,_ncbi_ptdna_seq_id,_ncbi_ptdna_seq_length,_ptdna_seq_length_ptgaul,_ptdna_seq_length_annotate,_ncbi_mtdna_seq_id,_ncbi_mtdna_seq_length,_mtdna_seq_length_ptgaul,_mtdna_seq_length_annotate,_mtdna_seq_length_annotate_nt "${table_tsv}" |
+			csvtk -t rename -f 1-10 -n Species,Accession1,NCBI1,"ptGAUL ptDNA","Polap ptDNA",Accession2,NCBI2,"ptGAUL mtDNA","Polap mtDNA","Polap mtDNA2" |
 			csvtk -t csv2md -a right -o "${table_md_polap}"
 
 		echo "Polap vs. ptGAUL: ${table_md_polap}"

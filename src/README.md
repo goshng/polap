@@ -107,7 +107,7 @@ function \_run_polap_step-disassemble-seeds-graph {
 
 # Files need attention
 
-1. polaplib/run-polap-r-data-v2-alpha0.R - command-line processing: use argparser
+1. polaplib/polap-r-data-v2-alpha0.R - command-line processing: use argparser
 
 2. simplify polap-cmd-archive.sh: this would remove the followings:
 
@@ -186,7 +186,7 @@ Polap has proven to be an invaluable tool for my research in developing the orga
 I require renaming the existing file names to ensure consistency and clarity throughout the system.
 
 - run-polap-function-directional.sh -> polap-subcmd-directional.sh
-- run-polap-r-data-v2-alpha0.R -> polap-r-data-v2-alpha0.R
+- polap-r-data-v2-alpha0.R -> polap-r-data-v2-alpha0.R
 - run-polap-py-xyz.py -> polap-py-xyz.py
 - polap-lib-timing.sh: keep it that way.
 - polap-data-v2.sh: keep it that way.

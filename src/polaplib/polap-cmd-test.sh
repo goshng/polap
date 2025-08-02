@@ -148,7 +148,7 @@ HEREDOC
 		_arg_disassemble_i=1
 		_disassemble_i="${_disassemble_dir}/${_arg_disassemble_i}"
 		_disassemble_i_stage="${_disassemble_i}/1"
-		_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/run-polap-r-disassemble.R \
+		_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
       --table ${_disassemble_i_stage}/summary1.txt \
       --out ${_disassemble_i_stage}/summary1-ordered.txt \
       --plot ${_disassemble_i_stage}/summary1-ordered.pdf \
@@ -185,6 +185,12 @@ HEREDOC
 		local inum_next=$(_polap_lib_string-increment_label "${_arg_inum}")
 		_polap_log0 "j: ${_arg_inum}"
 		_polap_log0 "next i: ${inum_next}"
+	fi
+
+	if [[ "${_arg_menu[1]}" == "link" ]]; then
+		local infile="${_arg_menu[2]}"
+		local outfile="${_arg_menu[3]}"
+		_polap_lib_filepath-smart_ln_s2 "${infile}" "${outfile}"
 	fi
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"

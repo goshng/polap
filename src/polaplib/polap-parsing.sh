@@ -261,6 +261,8 @@ _arg_minimap2_data_type="map-ont"
 _arg_data_type="nano-raw"
 _arg_annotate_read_min_mapq="1"
 _arg_annotate_read_min_identity="0.1"
+# cmd: assemble-rate-remove-ptdna
+_arg_remove_plastid_min_identity="0.5"
 
 _arg_x_min=""
 _arg_x_max=""
@@ -1582,6 +1584,14 @@ parse_commandline() {
 			;;
 		--blast-pt=*)
 			_arg_blast_pt="${_key##--blast-pt=}"
+			;;
+		--remove-plastid-min-identity)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_remove_plastid_min_identity="$2"
+			shift
+			;;
+		--remove-plastid-min-identity=*)
+			_arg_remove_plastid_min_identity="${_key##--remove-plastid-min-identity=}"
 			;;
 		--version)
 			_polap_lib_version

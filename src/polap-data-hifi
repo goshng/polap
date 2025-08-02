@@ -446,7 +446,7 @@ HEREDOC
 help_message_example_mt=$(
 	cat <<HEREDOC
   p5 data-downsample-long Vitis_vinifera 0 1000
-  p5 run-annotate-ont-pt Vitis_vinifera [0]
+  p5 readassemble-annotate-pt Vitis_vinifera [0]
   p5 run-assemble-ont-pt Vitis_vinifera [0]
 HEREDOC
 )

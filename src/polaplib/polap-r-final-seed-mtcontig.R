@@ -16,7 +16,7 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-# polaplib/run-polap-r-final-seed-mtcontig.R
+# polaplib/polap-r-final-seed-mtcontig.R
 
 # TODO: document it later
 #

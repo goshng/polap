@@ -58,6 +58,11 @@ POLAP - Plant organelle DNA long-read assembly pipeline.
 version ${_polap_version}
 
 ------
+v0.5.2
+------
+- Add readassemble subcommand for ptDNA/mtDNA assembly
+
+------
 v0.4.3
 ------
 - Add disassemble subcommand for ptDNA assembly

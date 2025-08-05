@@ -454,7 +454,7 @@ HEREDOC
 
 help_message_example_mt=$(
 	cat <<HEREDOC
-  p5 run-polap-readassemble-mt Vitis_vinifera [0] [no-iterate|iterate]
+  p5 run-polap-readassemble-mt Vitis_vinifera [0] [iterate|no-iterate]
 
   p5 data-downsample-long Vitis_vinifera 0 1000
   p5 readassemble-annotate-mt Vitis_vinifera [0]
@@ -464,7 +464,7 @@ HEREDOC
 
 help_message_example_nt=$(
 	cat <<HEREDOC
-  p5 run-polap-readassemble-nt Vitis_vinifera [0] [no-iterate|iterate]
+  p5 run-polap-readassemble-nt Vitis_vinifera [0] [iterate|no-iterate]
 
   p5 data-downsample-long Vitis_vinifera 0 1000
   p5 readassemble-annotate-nt Vitis_vinifera [0]
@@ -474,7 +474,7 @@ HEREDOC
 
 help_message_example_pt=$(
 	cat <<HEREDOC
-  p5 run-polap-readassemble-pt Vitis_vinifera [0]
+  p5 run-polap-readassemble-pt Vitis_vinifera [0] [iterate|no-iterate]
 
   p5 data-downsample-long Vitis_vinifera 0 1000
   p5 readassemble-annotate-pt Vitis_vinifera [0]

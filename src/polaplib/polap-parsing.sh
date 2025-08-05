@@ -169,6 +169,7 @@ _arg_coverage_check="on"
 _arg_resume="off"
 _arg_plastid="off"
 _arg_animal="off"
+_arg_noncoding="on"
 _arg_clock="off"
 _arg_yes="off"
 _arg_timing="off"
@@ -1123,6 +1124,10 @@ parse_commandline() {
 		--no-animal | --animal)
 			_arg_animal="on"
 			test "${1:0:5}" = "--no-" && _arg_animal="off"
+			;;
+		--no-noncoding | --noncoding)
+			_arg_noncoding="on"
+			test "${1:0:5}" = "--no-" && _arg_noncoding="off"
 			;;
 		--no-yes | --yes)
 			_arg_yes="on"

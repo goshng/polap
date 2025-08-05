@@ -315,33 +315,6 @@ EOF
 		_polap_log0 "No minimap2 results!"
 	fi
 
-	# _polap_log2 "map reads on mitochondrial noncoding regions using minimap2"
-	# # v0.5.2.3
-	# # -k13 -w5 -m20 -p0.6 -N20 \
-	# _polap_log3_pipe "minimap2 -cx \
-	#      ${_arg_minimap2_data_type} \
-	#      ${NTAA} \
-	#      ${_arg_long_reads} \
-	#      -t ${_arg_threads} \
-	#      -o ${annotatedir}/nt.paf \
-	#      >${_polap_output_dest} 2>&1"
-	#
-	# _polap_log2 "create the annotation table for mito noncoding and pt genes"
-	# if [[ -s "${annotatedir}"/nt.paf ]] &&
-	# 	[[ -s "${annotatedir}"/pt.paf ]]; then
-	# 	_polap_log3_pipe_command Rscript --vanilla \
-	# 		"${_POLAPLIB_DIR}/polap-r-reads.R" \
-	# 		--mt "${annotatedir}"/nt.paf \
-	# 		--pt "${annotatedir}"/pt.paf \
-	# 		--output "${annotatedir}"/at \
-	# 		--min-mapq "${_arg_annotate_read_min_mapq}" \
-	# 		--min-identity "${_arg_annotate_read_min_identity}" \
-	# 		--min-pt 1 \
-	# 		>"${_polap_output_dest}" 2>&1
-	# else
-	# 	_polap_log0 "No minimap2 results!"
-	# fi
-
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

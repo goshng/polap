@@ -158,7 +158,25 @@ EOF
 	# _polap_lib_oga-select-reads
 	_polap_lib_oga-estimate-read-sampling-rate
 	# _polap_lib_oga-select-reads-with-sampling-rate
-	_polap_lib_oga-flye-select-reads
+
+	# remove NUMT/NUPT using rkmerrc
+	# if [[ "${_arg_data_type}" == "pacbio-hifi" ]] && [[ "${_arg_plastid}" == "off" ]]; then
+	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+		local _pread_sel="ptgaul-reads"
+		local index=$(<"${_polap_var_oga_contig}/index.txt")
+		local fq="${_polap_var_oga_seeds}/${_pread_sel}/${index}.fq"
+		gunzip "${fq}.gz"
+		local PREFIX="${_arg_outdir}/kmer/rmkc"
+		local CLEANED="$PREFIX.cleaned.fastq.gz"
+		_polap_log0 "rmkc on ${fq}"
+		_polap_filter-reads-by-rmkc "${fq}"
+		_polap_log0 "rmkc produces ${CLEANED}"
+		_polap_lib_oga-flye-select-reads "${CLEANED}"
+	else
+		_polap_lib_oga-flye-select-reads
+	fi
+
+	# _polap_lib_oga-flye-select-reads
 
 	# test-reads without flye
 	# check the sampling rate

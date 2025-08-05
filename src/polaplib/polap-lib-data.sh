@@ -234,6 +234,13 @@ HEREDOC
 )
 
 ##### INSERT_HELP_HERE #####
+help_message_get_conf_long_sra_id=$(
+	cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
 help_message_run_polap_annotate_check=$(
 	cat <<HEREDOC
 
@@ -1527,6 +1534,24 @@ EOF
 }
 
 ##### INSERT_FUNCTION_HERE #####
+get-conf-long-sra-id_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+
+	local _brg_inum=0
+	local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+	local _timing_txt _stdout_txt _memlog_file _summary_file
+
+	brg_common_setup \
+		_brg_outdir _brg_sindex _brg_adir _brg_title \
+		_brg_target _brg_rundir _brg_outdir_i \
+		_timing_txt _stdout_txt _memlog_file _summary_file
+
+	if [[ -v _long["$_brg_target"] ]]; then
+		local long_sra="${_long["$_brg_target"]}"
+		echo "${long_sra}"
+	fi
+}
 
 # input: _brg_sindex
 # output: _brg_coverage
@@ -1547,9 +1572,14 @@ run-polap-readassemble_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 
+	_brg_outdir="${_brg_outdir%/}"
+
 	run-polap-readassemble-mt_genus_species "${_brg_outdir}" "${_brg_sindex}" iterate
 	run-polap-readassemble-nt_genus_species "${_brg_outdir}" "${_brg_sindex}" iterate
 	run-polap-readassemble-pt_genus_species "${_brg_outdir}" "${_brg_sindex}" iterate
+
+	local _brg_rundir="${_brg_outdir}-${_brg_sindex}"
+	rm -rf "${_brg_rundir}"
 }
 
 # variables
@@ -2101,6 +2131,9 @@ readassemble-ont-pt-iterate_genus_species() {
 			"${annotatedir}/pt/assembly_graph.gfa" \
 			"${annotatedir}/pt/assembly_graph.png"
 
+		ln -sf "pt/ptdna/pt.0.fa" \
+			"${annotatedir}/pt.0.fa"
+
 		ln -sf "pt/assembly_graph.gfa" \
 			"${annotatedir}/pt.0.gfa"
 
@@ -2114,7 +2147,7 @@ readassemble-ont-pt-iterate_genus_species() {
 	ln -s pt "${annotatedir}"/pt0
 
 	local i
-	for i in {0..5}; do
+	for i in {0..1}; do
 		local j=$((i + 1))
 
 		# NOTE: annotate for seeding
@@ -2144,9 +2177,16 @@ readassemble-ont-pt-iterate_genus_species() {
 			-i pt$i -j pt$j -w 1500
 
 		if [[ -s "${annotatedir}/pt$j/assembly_graph.gfa" ]]; then
+			${_polap_cmd} pt \
+				--infile "${annotatedir}/pt$j/assembly_graph.gfa" \
+				-o "${annotatedir}/pt$j/ptdna"
+
 			${_polap_cmd} bandage png \
 				"${annotatedir}/pt$j/assembly_graph.gfa" \
 				"${annotatedir}/pt$j/assembly_graph.png"
+
+			ln -sf "pt$j/ptdna/pt.0.fa" \
+				"${annotatedir}/pt.$j.fa"
 
 			ln -sf "pt$j/assembly_graph.gfa" \
 				"${annotatedir}/pt.$j.gfa"
@@ -2249,21 +2289,30 @@ readassemble-ont-mt_genus_species() {
 
 		ln -sf "mt/assembly_graph.png" \
 			"${annotatedir}/mt.0.png"
-
-		# NOTE: annotate for seeding
-		# select connected components of the MT contigs only
-		${_polap_cmd} annotate \
-			--quiet \
-			-o "${annotatedir}" \
-			-i mt
-
-		# NOTE: mito seed
-		${_polap_cmd} seed-mito \
-			-o "${annotatedir}" \
-			-i mt -j mt1
 	else
 		_log_echo "No MT assembly 0"
 	fi
+
+	if [[ "${option_data_type}" == "--pacbio-hifi" ]]; then
+		${_polap_cmd} filter reference hifi \
+			"${option_data_type}" \
+			-o "${annotatedir}" \
+			-l "${resolved_fastq}" \
+			--reference "${annotatedir_pt}"/pt.2.gfa
+		local resolved_fastq="${annotatedir}/kmer/ref-filtered.fastq"
+	fi
+
+	# NOTE: annotate for seeding
+	# select connected components of the MT contigs only
+	${_polap_cmd} annotate \
+		--quiet \
+		-o "${annotatedir}" \
+		-i mt
+
+	# NOTE: mito seed
+	${_polap_cmd} seed-mito \
+		-o "${annotatedir}" \
+		-i mt -j mt1
 
 	# -l "${resolved_fastq}" \
 	${_polap_cmd} assemble-rate \
@@ -2380,6 +2429,15 @@ readassemble-ont-mt-iterate_genus_species() {
 
 	else
 		_log_echo "No MT assembly 0"
+	fi
+
+	if [[ "${option_data_type}" == "--pacbio-hifi" ]]; then
+		${_polap_cmd} filter reference hifi \
+			"${option_data_type}" \
+			-o "${annotatedir}" \
+			-l "${resolved_fastq}" \
+			--reference "${annotatedir_pt}"/pt.2.gfa
+		local resolved_fastq="${annotatedir}/kmer/ref-filtered.fastq"
 	fi
 
 	ln -s mt "${annotatedir}"/mt0
@@ -2523,21 +2581,30 @@ readassemble-ont-nt_genus_species() {
 
 		ln -sf "mt/assembly_graph.png" \
 			"${annotatedir}/mt.0.png"
-
-		# NOTE: annotate for seeding
-		# select connected components of the MT contigs only
-		${_polap_cmd} annotate \
-			--quiet \
-			-o "${annotatedir}" \
-			-i mt
-
-		# NOTE: mito seed
-		${_polap_cmd} seed-mito \
-			-o "${annotatedir}" \
-			-i mt -j mt1
 	else
 		_log_echo "No MT assembly 0"
 	fi
+
+	if [[ "${option_data_type}" == "--pacbio-hifi" ]]; then
+		${_polap_cmd} filter reference hifi \
+			"${option_data_type}" \
+			-o "${annotatedir}" \
+			-l "${resolved_fastq}" \
+			--reference "${annotatedir_pt}"/pt.2.gfa
+		local resolved_fastq="${annotatedir}/kmer/ref-filtered.fastq"
+	fi
+
+	# NOTE: annotate for seeding
+	# select connected components of the MT contigs only
+	${_polap_cmd} annotate \
+		--quiet \
+		-o "${annotatedir}" \
+		-i mt
+
+	# NOTE: mito seed
+	${_polap_cmd} seed-mito \
+		-o "${annotatedir}" \
+		-i mt -j mt1
 
 	# -l "${resolved_fastq}" \
 	# -l "${annotatedir}"/mt.fq \
@@ -2546,7 +2613,7 @@ readassemble-ont-nt_genus_species() {
 			"${option_data_type}" \
 			-o "${annotatedir}" \
 			-l "${resolved_fastq}" \
-			--reference "${annotatedir_pt}"/pt.3.gfa \
+			--reference "${annotatedir_pt}"/pt.2.gfa \
 			-i mt -j mt1 -w 3000
 	elif [[ "${platform}" == "ONT" ]]; then
 		${_polap_cmd} assemble-rate \
@@ -2673,24 +2740,17 @@ readassemble-ont-nt-iterate_genus_species() {
 	ln -s mt "${annotatedir}"/mt0
 
 	# TODO: remove pt reads from the input if not --plastid
-	if [[ "${option_data_type}" == "pacbio-hifi" ]]; then
-		if [[ -s "${_arg_reference}" ]]; then
-
-			# _polap_filter-reads-by-reference
-			# local FASTQ_FILTERED="${_arg_outdir}/kmer/ref-filtered.fastq"
-			# _source_long_reads_fq="${FASTQ_FILTERED}"
-
-			${_polap_cmd} filter reference hifi \
-				"${option_data_type}" \
-				-o "${annotatedir}" \
-				-l "${resolved_fastq}" \
-				--reference "${annotatedir_pt}"/pt.3.gfa
-			local resolved_fastq="${annotatedir}/kmer/ref-filtered.fastq"
-		fi
+	if [[ "${option_data_type}" == "--pacbio-hifi" ]]; then
+		${_polap_cmd} filter reference hifi \
+			"${option_data_type}" \
+			-o "${annotatedir}" \
+			-l "${resolved_fastq}" \
+			--reference "${annotatedir_pt}"/pt.2.gfa
+		local resolved_fastq="${annotatedir}/kmer/ref-filtered.fastq"
 	fi
 
 	local i
-	for i in {0..2}; do
+	for i in {0..5}; do
 		local j=$((i + 1))
 
 		# NOTE: annotate for seeding
@@ -2717,7 +2777,7 @@ readassemble-ont-nt-iterate_genus_species() {
 				"${option_data_type}" \
 				-o "${annotatedir}" \
 				-l "${resolved_fastq}" \
-				--reference "${annotatedir_pt}"/pt.3.gfa \
+				--reference "${annotatedir_pt}"/pt.2.gfa \
 				-i mt$i -j mt$j -w 3000
 		elif [[ "${platform}" == "ONT" ]]; then
 			${_polap_cmd} assemble-rate \
@@ -10398,7 +10458,10 @@ function _polap_lib_data-execute-common-subcommand {
 		list-subcommands)
 		handled=1
 		;;
-		##### INSERT_COMMAND_HERE #####
+	##### INSERT_COMMAND_HERE #####
+	get-conf-long-sra-id)
+		handled=1
+		;;
 	run-polap-readassemble)
 		handled=1
 		;;
@@ -11101,6 +11164,17 @@ function _polap_lib_data-execute-common-subcommand {
 		fi
 		;;
 		##### INSERT_CASE_HERE #####
+	get-conf-long-sra-id)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir>"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
 	run-polap-readassemble)
 		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
 			echo "Help: ${subcmd1} <outdir> [index:0|N]"

@@ -588,6 +588,7 @@ _polap_filter-ont-reads-by-reference() {
 }
 
 _polap_filter-reads-by-rmkc() {
+	local READS="${1:-${_arg_long_reads}}"
 
 	# === Defaults ===
 	MEM="100M"
@@ -597,7 +598,7 @@ _polap_filter-reads-by-rmkc() {
 	K=21
 
 	# Input variables
-	READS="${_arg_long_reads}"
+	# READS="${_arg_long_reads}"
 
 	PREFIX="${_arg_outdir}/kmer/rmkc"
 

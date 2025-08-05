@@ -495,6 +495,8 @@ function _polap_lib_oga-select-reads-with-sampling-rate {
 }
 
 function _polap_lib_oga-flye-select-reads {
+	local fq="${1:-nofq}"
+
 	# polap-cmd-oga: test-reads
 	local _pread_sel="ptgaul-reads"
 	local _read_names="ptgaul"
@@ -516,12 +518,16 @@ function _polap_lib_oga-flye-select-reads {
 		_polap_log1 "  flye assembly for ${_pread_sel}"
 		_polap_log2 "    input1: ${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz"
 		_polap_log2 "    output: ${_polap_var_oga}"
+		if [[ "${fq}" == "nofq" ]]; then
+			fq="${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz"
+		fi
+
 		# if [[ "${_arg_plastid}" == "on" ]]; then
 		# 	CONTIG_LENGTH=$((CONTIG_LENGTH * 3))
 		# fi
 		local _command1="flye \
       ${_arg_flye_data_type} \
-      ${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz \
+      ${fq} \
 		  --out-dir ${_polap_var_oga} \
 		  --threads ${_arg_threads}"
 		if [[ "${_arg_flye_asm_coverage}" -gt 0 ]]; then

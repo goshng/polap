@@ -72,6 +72,125 @@ fi
 : "${_POLAP_RELEASE:=0}"
 
 ################################################################################
+# creates a depth distribution
+################################################################################
+function _run_polap_depth-distribution { # creates a depth distribution
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Grouped file path declarations
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
+
+	# Print help message if requested
+	help_message=$(
+		cat <<HEREDOC
+# Draw depth distributions of an annotation table.
+#
+# Arguments:
+#   -i ${_arg_inum}: source Flye (usually whole-genome) assembly number
+# Inputs:
+#   ${_polap_var_ga_annotation_all}
+# Outputs:
+#   ${_polap_var_ga_annotation_all}.pdf
+Example: $(basename $0) ${_arg_menu[0]}
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		_polap_log0_file "${_polap_var_ga_annotation_all}".pdf
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+		return 0
+	fi
+
+	Rscript "${_POLAPLIB_DIR}"/polap-r-depth-distribution.R \
+		-t "${_polap_var_ga_annotation_all}" \
+		-o "${_polap_var_ga_annotation_all}".pdf \
+		2>"$_polap_output_dest"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+# source
+# from polap-cmd-annotate.sh
+# from function _run_polap_edges-stats
+#
+# input1: a gfa file
+# output: edges_stats.txt
+#
+# FIXME: the skipping makes trouble in resuming
+polap_edges-stats() {
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Grouped file path declarations
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
+
+	local _contigger_edges_gfa="$1"
+	local _contigger_edges_stats="$2"
+	local _contigger=$(dirname "$1")
+
+	_polap_log1 "  create edges_stats.txt from graph_final.gfa ..."
+	_polap_log2 "    input: ${_contigger_edges_gfa}"
+
+	if [[ ! -s "${_contigger_edges_gfa}" ]]; then
+		_polap_log0 "ERROR: no such file: ${_contigger_edges_gfa}"
+		return $RETURN_FAIL
+	fi
+
+	local _gfa_all="${_contigger}/3-gfa.all.gfa"
+	local _gfa_seq_part="${_contigger}/3-gfa.seq.part.tsv"
+
+	_polap_log3_pipe "gfatools view \
+		  -S ${_contigger_edges_gfa} \
+		  >${_gfa_all} \
+		  2>$_polap_output_dest"
+
+	_polap_log2 "  extracting sequence part of GFA: ${_gfa_seq_part}"
+	_polap_log2 "    input: ${_gfa_all}"
+	_polap_log2 "    output: ${_gfa_seq_part}"
+	_polap_log3_pipe "grep ^S ${_gfa_all} >${_gfa_seq_part}"
+
+	# Filter edges in GFA using depths.
+	_polap_log2 "  filtering GFA sequence part using depth range"
+	_polap_log2 "    input1: ${_gfa_seq_part}"
+	_polap_log2 "    output1: ${_contigger_edges_stats}"
+	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-edges-stats.R \
+		--gfa ${_gfa_seq_part} \
+		--out ${_contigger_edges_stats} \
+		2>$_polap_output_dest"
+
+	if [[ -s "${_contigger_edges_stats}" ]]; then
+		_polap_log3_column "${_contigger_edges_stats}"
+	else
+		_polap_log2 "ERROR: no such file: ${_contigger_edges_stats}"
+	fi
+
+	# Disable debugging if previously enabled
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+################################################################################
 # Create an edge version of contigs_stats.txt.
 #
 # Flye provides contigs_stats where you find depths and mulitiplicity values
@@ -191,125 +310,6 @@ HEREDOC
 	return 0
 }
 
-################################################################################
-# creates a depth distribution
-################################################################################
-function _run_polap_depth-distribution { # creates a depth distribution
-	# Enable debugging if _POLAP_DEBUG is set
-	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
-	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
-
-	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
-	local _polap_output_dest="/dev/null"
-	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
-
-	# Grouped file path declarations
-	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
-
-	# Print help message if requested
-	help_message=$(
-		cat <<HEREDOC
-# Draw depth distributions of an annotation table.
-#
-# Arguments:
-#   -i ${_arg_inum}: source Flye (usually whole-genome) assembly number
-# Inputs:
-#   ${_polap_var_ga_annotation_all}
-# Outputs:
-#   ${_polap_var_ga_annotation_all}.pdf
-Example: $(basename $0) ${_arg_menu[0]}
-HEREDOC
-	)
-
-	# Display help message
-	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
-
-	# Display the content of output files
-	if [[ "${_arg_menu[1]}" == "view" ]]; then
-		_polap_log0_file "${_polap_var_ga_annotation_all}".pdf
-		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-		# Disable debugging if previously enabled
-		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
-		return 0
-	fi
-
-	Rscript "${_POLAPLIB_DIR}"/polap-r-depth-distribution.R \
-		-t "${_polap_var_ga_annotation_all}" \
-		-o "${_polap_var_ga_annotation_all}".pdf \
-		2>"$_polap_output_dest"
-
-	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-	# Disable debugging if previously enabled
-	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
-	return 0
-}
-
-# source
-# from polap-cmd-annotate.sh
-# from function _run_polap_edges-stats
-#
-# input1: a gfa file
-# output: edges_stats.txt
-#
-# FIXME: the skipping makes trouble in resuming
-polap_edges-stats() {
-	# Enable debugging if _POLAP_DEBUG is set
-	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
-	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
-
-	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
-	local _polap_output_dest="/dev/null"
-	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
-
-	# Grouped file path declarations
-	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
-
-	local _contigger_edges_gfa="$1"
-	local _contigger_edges_stats="$2"
-	local _contigger=$(dirname "$1")
-
-	_polap_log1 "  create edges_stats.txt from graph_final.gfa ..."
-	_polap_log2 "    input: ${_contigger_edges_gfa}"
-
-	if [[ ! -s "${_contigger_edges_gfa}" ]]; then
-		_polap_log0 "ERROR: no such file: ${_contigger_edges_gfa}"
-		return $RETURN_FAIL
-	fi
-
-	local _gfa_all="${_contigger}/3-gfa.all.gfa"
-	local _gfa_seq_part="${_contigger}/3-gfa.seq.part.tsv"
-
-	_polap_log3_pipe "gfatools view \
-		  -S ${_contigger_edges_gfa} \
-		  >${_gfa_all} \
-		  2>$_polap_output_dest"
-
-	_polap_log2 "  extracting sequence part of GFA: ${_gfa_seq_part}"
-	_polap_log2 "    input: ${_gfa_all}"
-	_polap_log2 "    output: ${_gfa_seq_part}"
-	_polap_log3_pipe "grep ^S ${_gfa_all} >${_gfa_seq_part}"
-
-	# Filter edges in GFA using depths.
-	_polap_log2 "  filtering GFA sequence part using depth range"
-	_polap_log2 "    input1: ${_gfa_seq_part}"
-	_polap_log2 "    output1: ${_contigger_edges_stats}"
-	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-edges-stats.R \
-		--gfa ${_gfa_seq_part} \
-		--out ${_contigger_edges_stats} \
-		2>$_polap_output_dest"
-
-	if [[ -s "${_contigger_edges_stats}" ]]; then
-		_polap_log3_column "${_contigger_edges_stats}"
-	else
-		_polap_log2 "ERROR: no such file: ${_contigger_edges_stats}"
-	fi
-
-	# Disable debugging if previously enabled
-	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
-	return 0
-}
-
 # used by disassemble menu
 polap_annotate() {
 	# Enable debugging if _POLAP_DEBUG is set
@@ -355,6 +355,7 @@ polap_annotate() {
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
+
 ################################################################################
 # Annotates edge sequences of a flye genome assembly.
 ################################################################################

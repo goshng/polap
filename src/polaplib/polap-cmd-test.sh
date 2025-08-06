@@ -193,6 +193,31 @@ HEREDOC
 		_polap_lib_filepath-smart_ln_s2 "${infile}" "${outfile}"
 	fi
 
+	if [[ "${_arg_menu[1]}" == "var" ]]; then
+		local annotatedir="annotate-read-mt"
+		local resolved_fastq="resolved.fastq"
+		_polap_lib_test-variable-scope \
+			-o "${annotatedir}" \
+			-l "${resolved_fastq}" \
+			--reference "${annotatedir}"/pt.2.gfa
+		_polap_log0 "top-level outdir: ${_arg_outdir}"
+		_polap_log0 "top-level lfq: ${_arg_long_reads}"
+	fi
+
+	if [[ "${_arg_menu[1]}" == "polap-common-var" ]]; then
+		local annotatedir="annotate-read-mt"
+		local resolved_fastq="resolved.fastq"
+		_polap_lib_test-polap-common-variable \
+			-o "${annotatedir}" \
+			-l "${resolved_fastq}" \
+			-i 5 -j 7 \
+			--reference "${annotatedir}"/pt.2.gfa
+		_polap_log0 "top-level outdir: ${_arg_outdir}"
+		_polap_log0 "top-level lfq: ${_arg_long_reads}"
+		_polap_log0 "top-level i: ${_arg_inum}"
+		_polap_log0 "top-level j: ${_arg_jnum}"
+	fi
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

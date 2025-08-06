@@ -49,6 +49,7 @@ usage:
     $(basename "$0") fetch tax NC_068626.1
     $(basename "$0") fetch sra SRR390728
     $(basename "$0") fetch srainfo SRR390728
+    $(basename "$0") fetch srainfo-print SRR390728
     $(basename "$0") fetch runinfo <bioproject ID>
 
 subcommand:
@@ -112,10 +113,13 @@ sra_run_size() {
 	for run in "$@"; do
 		esearch -db sra -query "$run" |
 			efetch -format runinfo |
-			awk -F',' -v run="$run" 'NR==1 { for (i=1; i<=NF; i++) h[$i]=i }
-        $h["Run"] == run {
-          printf "%s\tbases: %s\tavgLength: %s\tsize_MB: %s\n", $h["Run"], $h["bases"], $h["avgLength"], $h["size_MB"]
-        }'
+			awk -F',' -v run="$run" 'NR==1 {
+    for (i=1; i<=NF; i++) h[$i]=i
+  }
+  $h["Run"] == run {
+    printf "%s\tbases: %s\tavgLength: %s\tsize_MB: %s\tPlatform: %s\tModel: %s\n", \
+           $h["Run"], $h["bases"], $h["avgLength"], $h["size_MB"], $h["Platform"], $h["Model"]
+  }'
 	done
 }
 
@@ -124,6 +128,27 @@ fetch__srainfo() {
 	shift
 
 	sra_run_size "$ACCN"
+}
+
+sra_runinfo_print_tsv() {
+	local runs=("$@")
+
+	# Print header from the first run
+	esearch -db sra -query "${runs[0]}" | efetch -format runinfo | head -n 1 | tr ',' '\t'
+
+	# Print each matching row in TSV format
+	for run in "${runs[@]}"; do
+		esearch -db sra -query "$run" | efetch -format runinfo |
+			awk -F',' -v run="$run" 'NR==1 { for (i=1; i<=NF; i++) h[$i]=i }
+        $h["Run"] == run { print }' | tr ',' '\t'
+	done
+}
+
+fetch__srainfo-print() {
+	local ACCN=$1
+	shift
+
+	sra_runinfo_print_tsv "$ACCN"
 }
 
 fetch__runinfo() {

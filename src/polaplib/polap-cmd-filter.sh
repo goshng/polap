@@ -454,69 +454,6 @@ _polap_filter-reads-by-umap() {
 	# flye --pacbio-hifi selected_reads.fq -t 56 --asm-coverage 30 -g 1000000 --out-dir pt
 }
 
-_polap_filter-reads-by-reference() {
-
-	# === Inputs ===
-	MITO_READS="${_arg_long_reads}"     # e.g., mito_reads.fastq.gz
-	CHLORO_GRAPH="${_arg_reference}"    # e.g., chloroplast.gfa
-	OUTPUT_PREFIX="${_arg_outdir}/kmer" # e.g., filtered_output
-	THREADS="${_arg_threads}"
-	ID_THRESH="${5:-0.95}"
-	CLIP_THRESH="${6:-100}"
-
-	# === Working paths ===
-	# WORKDIR=$(mktemp -d)
-	mkdir -p "${OUTPUT_PREFIX}"
-	SAM="${OUTPUT_PREFIX}/aligned.gaf"
-	REJECT_IDS="${OUTPUT_PREFIX}/rejected.txt"
-	RETAIN_IDS="${OUTPUT_PREFIX}/retained.txt"
-	SUMMARY="${OUTPUT_PREFIX}/ref-summary.tsv"
-	PLOT="${OUTPUT_PREFIX}/ref-summary.pdf"
-	FASTQ_REMOVED="${OUTPUT_PREFIX}/ref-chloroplast_like.fastq"
-	FASTQ_FILTERED="${OUTPUT_PREFIX}/ref-filtered.fastq"
-
-	_polap_lib_conda-ensure_conda_env polap-graphaligner || exit 1
-
-	# === Step 1: Align reads with GraphAligner
-	echo "📌 Aligning with GraphAligner..."
-	GraphAligner \
-		-g "$CHLORO_GRAPH" \
-		-f "$MITO_READS" \
-		-a "$SAM" \
-		-t "$THREADS" \
-		--precise-clipping 0.9 \
-		-x vg
-
-	conda deactivate
-
-	# --seeds-mxm-length 19 \
-	# --bandwidth 15 \
-
-	# === Step 2: Parse and filter with Python
-	echo "🧠 Parsing SAM with pysam..."
-	python "${_POLAPLIB_DIR}"/polap-py-parse-graphaligner-gaf.py \
-		"$SAM" "$REJECT_IDS" "$RETAIN_IDS" "$SUMMARY" "$ID_THRESH" "$CLIP_THRESH"
-
-	# === Step 3: Extract FASTQ subsets
-	echo "✂️ Splitting FASTQ..."
-	seqkit grep -f "$REJECT_IDS" "$MITO_READS" >"$FASTQ_REMOVED"
-	seqkit grep -f "$RETAIN_IDS" "$MITO_READS" >"$FASTQ_FILTERED"
-	# seqkit grep -n -f "$REJECT_IDS" "$MITO_READS" | gzip -c >"$FASTQ_REMOVED"
-	# seqkit grep -n -f "$RETAIN_IDS" "$MITO_READS" | gzip -c >"$FASTQ_FILTERED"
-
-	# === Step 4: Plot with R
-	# echo "📊 Generating plots..."
-	# Rscript --vanialla "${_POLAPLIB_DIR}"/polap-r-plot-graphaligner-summary.R \
-	# 	"$SUMMARY" "$PLOT"
-
-	# === Summary
-	_polap_log0 "✅ Finished filtering mitochondrial reads:"
-	_polap_log0 "- Filtered reads: $FASTQ_FILTERED"
-	_polap_log0 "- Removed reads: $FASTQ_REMOVED"
-	# _polap_log0 "- Summary table: $SUMMARY"
-	# _polap_log0 "- Summary plot:  $PLOT"
-
-}
 
 _polap_filter-ont-reads-by-reference() {
 

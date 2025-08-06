@@ -73,6 +73,9 @@ Options:
   --animal
     assemble animal mtDNA
 
+  --nano-raw [default]
+  --pacbio-hifi
+
 Examples:
   Assemble plant mitochondrial sequences:
     polap readassemble -l l.fq
@@ -113,8 +116,10 @@ EOF
 	# 3. animial mitochondrial
 	if [[ "${_arg_plastid}" == "on" ]]; then
 		_polap_log1 "Read-assemble ptDNA"
+		_polap_readassemble-pt
 	elif [[ "${_arg_animal}" == "on" ]]; then
 		_polap_log1 "Read-assemble animal mtDNA"
+		_polap_readassemble-mt
 	else
 		if [[ "${_arg_noncoding}" == "on" ]]; then
 			_polap_log1 "Read-assemble plant mtDNA with mitochondrial noncoding regions"
@@ -133,5 +138,14 @@ EOF
 _polap_readassemble-nt() {
 	_polap_lib_readassemble-annotate-read-nt
 	_polap_lib_readassemble-assemble-annotated-read-nt
-	_polap_lib_readassemble-annotate-nt2
+}
+
+_polap_readassemble-pt() {
+	_polap_lib_readassemble-annotate-read-pt
+	_polap_lib_readassemble-assemble-annotated-read-pt
+}
+
+_polap_readassemble-mt() {
+	_polap_lib_readassemble-annotate-read-mt
+	_polap_lib_readassemble-assemble-annotated-read-mt
 }

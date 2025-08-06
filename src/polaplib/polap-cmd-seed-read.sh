@@ -40,7 +40,7 @@ fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
-function _run_polap_template {
+function _run_polap_seed-plastid-fixed-form {
 	# Enable debugging if _POLAP_DEBUG is set
 	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -52,28 +52,52 @@ function _run_polap_template {
 	# Grouped file path declarations
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
 
-	# Print help message if requested
 	help_message=$(
-		cat <<HEREDOC
-# Template for an external shell script
-#
-# Arguments:
-#   -i ${_arg_inum}: source Flye (usually whole-genome) assembly number
-#
-# Inputs:
-#   ${_polap_var_ga_annotation_all}
-#
-# Outputs:
-#   ${_polap_var_mtcontigname}
-#
-# See:
-#   run-polap-select-contigs-by-table-1.R for the description of --select-contig option
-Example: $(basename $0) ${_arg_menu[0]} [-i|--inum <arg>] [-j|--jnum <arg>] [--select-contig <number>]
-HEREDOC
+		cat <<'EOF'
+Name:
+  polap seed-plastid-fixed-form - select plastid seed of LSC-IR-SSC or one ring
+
+Synopsis:
+  polap seed-plastid-fixed-form [options]
+
+Description:
+  polap seed-plastid uses a gfa to select plastid contigs.
+  Annotate the gfa with organelle genes to select one starting plastid contig.
+  Select contigs that are connected by tha starting plastid contig.
+
+Options:
+  -o DIR
+    Polap output directory
+
+  -i STR
+    Polap source assembly name
+
+  -j STR
+    Polap destination assembly name
+
+Examples:
+  Get organelle genome sequences:
+    polap annotate-read -l l.fq
+
+TODO:
+  Dev.
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
+		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
+		man "$manfile" >&3
+		rm -f "$manfile"
+		return
+	fi
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
@@ -85,26 +109,245 @@ HEREDOC
 		exit $EXIT_SUCCESS
 	fi
 
-	echo "verbose level: ${_arg_verbose}" >&2
-	echoall "command: $0"
-	echoall "function: $FUNCNAME"
-	echoall "menu2: [$1]"
-	echoall "menu3: [$2]"
-	echoerr "LOG: echoerr"
-	echoall "LOG: echoall"
+	# reannotate
 
-	echoerr "LOG: echoerr"
-	verbose_echo 0 "Log level   - screen        polap.log file" 1>&2
-	_polap_log0 "Log level 0 - nothing        minimal log - --quiet"
-	_polap_log1 "Log level 1 - minimal        step info and main io files"
-	_polap_log2 "Log level 2 - main io files  inside of function: file input/output --verbose"
-	_polap_log3 "Log level 3 - files inside   all log or details of file contents --verbose --verbose"
-	_polap_log0_file "log0.file: main assembly input/output"
-	_polap_log1_file "log1.file: step main input/output"
-	_polap_log2_file "log2.file: inside detail input/output"
-	_polap_log3_file "log3.file: all input/output"
+	# _polap_log0 "${_polap_var_mtcontigname}"
+	# _polap_log0 "${_polap_var_ga_pt_annotation_depth_table}"
+	# _polap_log0 "${_polap_var_wga_contigger_edges_gfa}"
+	# _polap_log0 "${_polap_var_ga_contigger_edges_gfa}"
+	# _polap_log0 "${_polap_var_oga_contigger_edges_gfa}"
 
-	_polap_log0 "var: ${_polap_var_apple}"
+	local start_contig=$(awk 'NR==2 {print $1}' "${_polap_var_ga_pt_annotation_depth_table}")
+
+	python "${_POLAPLIB_DIR}"/polap-py-find-plastid-gfa.py \
+		--seed "${start_contig}" \
+		--mtcontig "${_polap_var_mtcontigname}" \
+		--fasta "${_polap_var_ga_contigger}/ptdna.fa" \
+		"${_polap_var_ga_contigger_edges_gfa}"
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+function _run_polap_seed-plastid {
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Grouped file path declarations
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
+
+	help_message=$(
+		cat <<'EOF'
+Name:
+  polap seed-plastid - select plastid seed
+
+Synopsis:
+  polap seed-plastid [options]
+
+Description:
+  polap seed-plastid uses a gfa to select plastid contigs.
+  Annotate the gfa with organelle genes to select one starting plastid contig.
+  Select contigs that are connected by tha starting plastid contig.
+
+Options:
+  -o DIR
+    Polap output directory
+
+  -i STR
+    Polap source assembly name
+
+  -j STR
+    Polap destination assembly name
+
+Examples:
+  Get organelle genome sequences:
+    polap annotate-read -l l.fq
+
+TODO:
+  Dev.
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# Display help message
+	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
+		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
+		man "$manfile" >&3
+		rm -f "$manfile"
+		return
+	fi
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+		return 0
+		exit $EXIT_SUCCESS
+	fi
+
+	# reannotate
+
+	# _polap_log0 "${_polap_var_mtcontigname}"
+	# _polap_log0 "${_polap_var_ga_pt_annotation_depth_table}"
+	# _polap_log0 "${_polap_var_wga_contigger_edges_gfa}"
+	# _polap_log0 "${_polap_var_ga_contigger_edges_gfa}"
+	# _polap_log0 "${_polap_var_oga_contigger_edges_gfa}"
+
+	local start_contig=$(awk 'NR==2 {print $1}' "${_polap_var_ga_pt_annotation_depth_table}")
+
+	python "${_POLAPLIB_DIR}"/polap-py-find-mito-gfa.py \
+		--seed "${start_contig}" \
+		--mtcontig "${_polap_var_mtcontigname}" \
+		"${_polap_var_ga_contigger_edges_gfa}"
+
+	if [[ ! -s "${_polap_var_mtcontigname}" ]]; then
+		echo "${start_contig}" >>"${_polap_var_mtcontigname}"
+	fi
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+function _run_polap_seed-mito {
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Grouped file path declarations
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
+
+	help_message=$(
+		cat <<'EOF'
+Name:
+  polap seed-mito - select mitochondrial seed
+
+Synopsis:
+  polap seed-plastid [options]
+
+Description:
+  polap seed-mito uses a gfa to select mitochondrial contigs.
+  Annotate the gfa with organelle genes to select starting mitochondrial contigs.
+  Select contigs that are connected by tha starting plastid contigs.
+
+Options:
+  -o DIR
+    Polap output directory
+
+  -i STR
+    Polap source assembly name
+
+  -j STR
+    Polap destination assembly name
+
+Examples:
+  Get organelle genome sequences:
+    polap annotate-read -l l.fq
+
+TODO:
+  Dev.
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# Display help message
+	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
+		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
+		man "$manfile" >&3
+		rm -f "$manfile"
+		return
+	fi
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+		return 0
+		exit $EXIT_SUCCESS
+	fi
+
+	# _polap_log0 "${_polap_var_mtcontigname}"
+	# _polap_log0 "${_polap_var_ga_pt_annotation_depth_table}"
+	# _polap_log0 "${_polap_var_wga_contigger_edges_gfa}"
+	# _polap_log0 "${_polap_var_ga_contigger_edges_gfa}"
+	# _polap_log0 "${_polap_var_oga_contigger_edges_gfa}"
+
+	# local start_contig=$(awk 'NR>1 {print $1}' "${_polap_var_ga_annotation_depth_table}")
+	# _polap_log0 "${start_contig}"
+
+	mkdir -p "${_polap_var_ga_contig}"
+	local mtcontigname="${_polap_var_ga_contig}/mt.contig.name.txt"
+	local mtcontignameall="${_polap_var_ga_contig}/mt.contig.name.all.txt"
+	local mtcontignameset="${_polap_var_ga_contig}/mt.contig.name.set.txt"
+	rm -f "${mtcontignameall}"
+	while read -r start_contig; do
+		rm -f "${mtcontigname}"
+		_polap_log3_cmd python "${_POLAPLIB_DIR}"/polap-py-find-mito-gfa.py \
+			--seed "${start_contig}" \
+			--mtcontig "${mtcontigname}" \
+			"${_polap_var_ga_contigger_edges_gfa}"
+		if [[ -s "${mtcontigname}" ]]; then
+			cat "${mtcontigname}" >>"${mtcontignameall}"
+		else
+			echo "${start_contig}" >>"${mtcontignameall}"
+		fi
+	done < <(awk 'NR>1 {print $1}' "${_polap_var_ga_annotation_depth_table}")
+	if [[ -s "${mtcontignameall}" ]]; then
+		sort "${mtcontignameall}" | uniq >"${mtcontignameset}"
+	else
+		_polap_log0 "No mitochondrial contigs found in the gfa file."
+		return 1
+	fi
+	_polap_log0 "mtcontigname set: ${mtcontignameset}"
+
+	# pt
+	# local ptcontigname="${_polap_var_oga_contig}/pt.contig.name.txt"
+	# local ptcontignameall="${_polap_var_oga_contig}/pt.contig.name.all.txt"
+	# >"${ptcontignameall}"
+	# while read -r start_contig; do
+	# 	python "${_POLAPLIB_DIR}"/polap-py-find-mito-gfa.py \
+	# 		--seed "${start_contig}" \
+	# 		--mtcontig "${ptcontigname}" \
+	# 		"${_polap_var_ga_contigger_edges_gfa}"
+	# 	cat "${ptcontigname}" >>"${ptcontignameall}"
+	# done < <(awk 'NR==2 {print $1}' "${_polap_var_ga_pt_annotation_depth_table}")
+	# sort "${ptcontignameall}" | uniq >"${_polap_var_ptcontigname}"
+	# _polap_log0 "ptcontigname: ${_polap_var_ptcontigname}"
+	#
+	# # mt - pt contig name
+	# grep -Fxv -f "${_polap_var_ptcontigname}" "${mtcontignameset}" >"${_polap_var_mtcontigname}"
+	#
+	# _polap_log0 "mtcontigname (mtcontignameset - ptcontigname): ${_polap_var_mtcontigname}"
+
+	cp -p "${mtcontignameset}" "${_polap_var_mtcontigname}"
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

@@ -197,13 +197,29 @@ function _polap_log0_only {
 
 # --quiet level
 # log only to the log file
+#
+# function _polap_log0 {
+# 	verbose_echo 0 "$@"
+# 	# verbose_echo 1 "$@" 1>&2
+# 	if [[ "${_arg_log_stderr}" = "off" ]]; then
+# 		verbose_echo 1 "$@" >&3
+# 	else
+# 		verbose_echo 1 "$@" >&2
+# 	fi
+# }
+#
 function _polap_log0 {
-	verbose_echo 0 "$@"
-	# verbose_echo 1 "$@" 1>&2
+	local func="${FUNCNAME[1]}"
+	local file="$(basename ${BASH_SOURCE[1]})"
+	local line="${BASH_LINENO[0]}"
+	local tag="[$func@$file:$line]"
+
+	verbose_echo 0 "${tag} $@"
+
 	if [[ "${_arg_log_stderr}" = "off" ]]; then
-		verbose_echo 1 "$@" >&3
+		verbose_echo 1 "${tag} $@" >&3
 	else
-		verbose_echo 1 "$@" >&2
+		verbose_echo 1 "${tag} $@" >&2
 	fi
 }
 

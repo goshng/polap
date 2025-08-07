@@ -153,6 +153,7 @@ _polap_lib_annotate-count-gene() { # count MT and PT genes using edges_stats.txt
 		--out-annotation-table ${_polap_var_ga_annotation_table} \
 		--out-annotation-depth-table ${_polap_var_ga_annotation_depth_table} \
 		--out-pt-annotation-depth-table ${_polap_var_ga_pt_annotation_depth_table} \
+		--fixed \
 		--contigger"
 	if [[ "${_arg_plastid}" = "on" ]]; then
 		_command1+=" \
@@ -220,7 +221,7 @@ _polap_lib_annotate-blast-genome() {
 			_polap_log3 "    extracting edge contig sequence from the gfa"
 			_polap_log3_pipe "gfatools gfa2fa \
 		    ${_polap_var_ga_contigger_edges_gfa} \
-		    >${_polap_var_ga_contigger_edges_fasta}"
+		    >${_polap_var_ga_contigger_edges_fasta} 2>${_polap_output_dest}"
 			_polap_log3_cmd cp "${_polap_var_ga_contigger_edges_fasta}" "${_polap_var_ann_CONTIGFILE}"
 		else
 			_polap_log0 "ERROR: no such file: ${_polap_var_ga_contigger_edges_gfa}"

@@ -320,12 +320,20 @@ stopifnot(pair_min >= 0, brigde_min >= 0, single_min >= 0)
 # 1. ptGAUL: we use ptGAUL for the case of single edge reference
 if (args1$`create-ptgaul` || args1$all) {
   ptgaul_file <- file.path(mtdir, args1$outptgaul)
+  ptgaul_file_length <- file.path(mtdir, paste0(args1$outptgaul, ".length.txt"))
   ptgaul_mapped_reads <- data |>
     filter(match / base > args1$`intra-base-ratio`, base > single_min) |>
-    select(rname) |>
-    distinct(rname)
+    select(rname, rlen) |>
+    distinct(rname, .keep_all = TRUE)
+  # select(rname) |>
+  # distinct(rname)
+
+  # Sum the lengths
+  total_length <- sum(ptgaul_mapped_reads$rlen)
+  writeLines(as.character(total_length), ptgaul_file_length)
 
   ptgaul_mapped_reads |>
+    select(rname) |>
     write.table(
       ptgaul_file,
       row.names = FALSE,

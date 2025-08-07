@@ -56,37 +56,30 @@ function _run_polap_readassemble {
 		cat <<'EOF'
 Name:
   polap readassemble - annotate reads before organelle genome assembly
-
 Synopsis:
   polap readassemble [options]
-
 Description:
   polap readassemble uses organelle genes to annotate reads before organelle genome assembly.
-
 Options:
   -l FASTQ
     long reads data file
-
   --plastid
     assembly mtDNA instead of mtDNA
-
   --animal
     assemble animal mtDNA
-
   --nano-raw [default]
   --pacbio-hifi
-
 Examples:
   Assemble plant mitochondrial sequences:
     polap readassemble -l l.fq
 
+  Assemble plastid sequences:
+    polap readassemble -l l.fq --plastid
 TODO:
   Dev.
-
 Copyright:
   Copyright © 2025 Sang Chul Choi
   Free Software Foundation (1998–2018)
-
 Author:
   Sang Chul Choi
 EOF
@@ -107,7 +100,6 @@ EOF
 		# Disable debugging if previously enabled
 		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
-		exit $EXIT_SUCCESS
 	fi
 
 	# Three cases
@@ -126,6 +118,7 @@ EOF
 			_polap_readassemble-nt
 		else
 			_polap_log1 "Read-assemble plant mtDNA without mitochondrial noncoding regions"
+			_polap_readassemble-mt
 		fi
 	fi
 
@@ -148,4 +141,5 @@ _polap_readassemble-pt() {
 _polap_readassemble-mt() {
 	_polap_lib_readassemble-annotate-read-mt
 	_polap_lib_readassemble-assemble-annotated-read-mt
+	# if not assemble
 }

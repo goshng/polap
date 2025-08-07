@@ -614,6 +614,7 @@ polap_count-gene() {
 		--out-annotation-table ${_ga_annotation_table} \
 		--out-annotation-depth-table ${_ga_annotation_depth_table} \
 		--out-pt-annotation-depth-table ${_ga_pt_annotation_depth_table} \
+		--fixed \
 		--contigger"
 	if [[ "${_arg_plastid}" = "on" ]]; then
 		_command1+=" \
@@ -718,6 +719,7 @@ HEREDOC
 		--out-annotation-table ${_polap_var_ga_annotation_table} \
 		--out-annotation-depth-table ${_polap_var_ga_annotation_depth_table} \
 		--out-pt-annotation-depth-table ${_polap_var_ga_pt_annotation_depth_table} \
+		--fixed \
 		--contigger"
 	if [[ "${_arg_plastid}" = "on" ]]; then
 		_command1+=" \

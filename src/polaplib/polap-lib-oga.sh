@@ -40,6 +40,10 @@ fi
 : "${_POLAP_RELEASE:=0}"
 
 ################################################################################
+# Part 1
+# adjust data downsampling rate
+#
+################################################################################
 # Function to convert base pairs to the highest appropriate unit
 # Example usage
 # bp=31846726397
@@ -642,4 +646,129 @@ function _polap_lib_oga-select-reads {
 
 		#
 	}
+}
+
+################################################################################
+# Part 2
+# we adjust w option.
+function _polap_lib_oga-estimate-omega {
+	# polap-cmd-oga: test-reads
+	local _pread_sel="ptgaul-reads"
+	local _read_names="ptgaul"
+
+	local _lower_bound_subsampling_rate=0.1
+	local _upper_bound_subsampling_rate=0.5
+	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+		_lower_bound_subsampling_rate=0.02
+		_upper_bound_subsampling_rate=0.50
+	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+		_lower_bound_subsampling_rate=0.10
+		_upper_bound_subsampling_rate=0.50
+	fi
+
+	_polap_utility_get_contig_length \
+		"${_polap_var_oga_contig}/contig.fa" \
+		"${_polap_var_oga_contig}/contig_total_length.txt"
+	local CONTIG_LENGTH=$(<"${_polap_var_oga_contig}/contig_total_length.txt")
+	_polap_log2_cat "${_polap_var_oga_contig}/contig_total_length.txt"
+
+	_polap_log1 "  determines which long-read data to use ..."
+	local _source_long_reads_fq=""
+	_polap_oga_determine-long-read-file _source_long_reads_fq
+
+	_polap_log2 "  creating folders for read selection type: ${_pread_sel}"
+	_polap_log3_cmd mkdir -p "${_polap_var_oga_reads}/${_pread_sel}"
+	_polap_log3_cmd mkdir -p "${_polap_var_oga_seeds}/${_pread_sel}"
+	_polap_log3_cmd mkdir -p "${_polap_var_oga_subsample}/${_pread_sel}"
+
+	# _polap_log1 "  mapping long-read data on the seed contigs using minimap2 ..."
+	# _polap_log2 "    input1: ${_polap_var_oga_contig}/contig.fa"
+	# _polap_log2 "    input2: ${_source_long_reads_fq}"
+	# _polap_log2 "    output: ${_polap_var_oga_contig}/contig.paf"
+	# # -p 0.5 -N 1 --secondary=no
+	# # -p 0.5 -N 1 \
+	# _polap_log3_pipe "minimap2 -cx \
+	#      ${_arg_minimap2_data_type} \
+	#      ${_polap_var_oga_contig}/contig.fa \
+	#      ${_source_long_reads_fq} \
+	#      -t ${_arg_threads} \
+	#      -o ${_polap_var_oga_contig}/contig.paf \
+	#      >${_polap_output_dest} 2>&1"
+	#
+	# _polap_log1 "  converting PAF to TAB ..."
+	# _polap_log2 "    input1: ${_polap_var_oga_contig}/contig.paf"
+	# _polap_log2 "    output: ${_polap_var_oga_contig}/contig.tab"
+	# _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-minimap2-paf2tab.sh" "${_arg_min_read_length}" "${_polap_var_oga_contig}/contig.paf" "${_polap_var_oga_contig}/contig.tab"
+	#
+	local omega="3000"
+
+	local i=0
+	for ((i = 0; i < 150; i++)); do
+		_polap_log3_cmd mkdir -p "${_polap_var_oga_reads}/${_pread_sel}/${i}"
+
+		# adjust omega
+		#
+		# -w ${_arg_single_min} \
+		_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-pairs.R \
+	    -m ${_polap_var_mtcontigname} \
+		  -t ${_polap_var_oga_contig}/contig.tab \
+		  --out ${_polap_var_oga_reads}/${_pread_sel}/${i} \
+      -w ${omega} \
+		  -r ${_arg_pair_min} \
+		  -x ${_arg_bridge_min} \
+      --all \
+		  >${_polap_output_dest} 2>&1"
+
+		_polap_log2 "    input2: ${_polap_var_oga_reads}/${_pread_sel}/${i}/${_read_names}.names.length.txt"
+		_polap_log2_cat "${_polap_var_oga_reads}/${_pread_sel}/${i}/${_read_names}.names.length.txt"
+		local _seeds_length=$(<"${_polap_var_oga_reads}/${_pread_sel}/${i}/${_read_names}.names.length.txt")
+
+		# _polap_log1 "  selecting long reads for ${_pread_sel}"
+		# _polap_log2 "    input1: ${_source_long_reads_fq}"
+		# _polap_log2 "    input2: ${_polap_var_oga_reads}/${_pread_sel}/${i}/${_read_names}.names"
+		# _polap_log2 "    output: ${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz"
+		#
+		# _polap_log3_pipe "seqtk subseq \
+		#     ${_source_long_reads_fq} \
+		#     ${_polap_var_oga_reads}/${_pread_sel}/${i}/${_read_names}.names |\
+		#     gzip >${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz"
+		#
+		# _polap_log1 "  sampling reads ..."
+		# _polap_log2 "    input1: ${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz"
+		# local _contig_length_bp=$(_polap_utility_convert_bp ${CONTIG_LENGTH})
+		# _polap_log2 "    input2 (seed contig size): ${_contig_length_bp}"
+		# _polap_utility_get_contig_length \
+		# 	"${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz" \
+		# 	"${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.len"
+		# local _seeds_length=$(<"${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.len")
+		# _polap_log2_cat "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.len"
+
+		local _seeds_length_bp=$(_polap_utility_convert_bp ${_seeds_length})
+		_polap_log2 "    result1 (total size of reads mapped contigs): ${_seeds_length_bp}"
+		local _expected_organelle_coverage=$((_seeds_length / CONTIG_LENGTH))
+		_polap_log2 "    result2 (expected organelle coverage): ${_expected_organelle_coverage}x"
+
+		# sampling rate
+		local _rate=$(echo "scale=9; ${_arg_coverage_oga}/$_expected_organelle_coverage" | bc)
+
+		_polap_log0 "omega: ${omega}: rate (0.1 ~ 0.5): ${_rate}"
+
+		if (($(echo "$_rate < 0.1" | bc -l))); then
+			omega=$(echo "scale=9; ${omega} + 1000" | bc)
+		elif (($(echo "$_rate > 0.5" | bc -l))); then
+			omega=$(echo "scale=9; ${omega} - 1000" | bc)
+		else
+			echo "${omega}" >"${_polap_var_oga_contig}/omega.txt"
+			echo ${i} >"${_polap_var_oga_contig}/index.txt"
+			_arg_single_min="${omega}"
+			_polap_log3_pipe "seqtk subseq \
+		    ${_source_long_reads_fq} \
+		    ${_polap_var_oga_reads}/${_pread_sel}/${i}/${_read_names}.names |\
+		    gzip >${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz"
+			return
+		fi
+
+	done
+
+	echa 149 >"${_polap_var_oga_contig}/index.txt"
 }

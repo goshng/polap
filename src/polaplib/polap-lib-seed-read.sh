@@ -45,8 +45,8 @@ _polap_lib_seed-plastid() {
 	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 
-	# local start_contig=$(awk 'NR==2 {print $1}' "${_polap_var_ga_pt_annotation_depth_table}")
-	local start_contig=$(awk 'NR==2 {print $1}' "${_polap_var_ga_annotation_depth_table}")
+	local start_contig=$(awk 'NR==2 {print $1}' "${_polap_var_ga_pt_annotation_depth_table}")
+	# local start_contig=$(awk 'NR==2 {print $1}' "${_polap_var_ga_annotation_depth_table}")
 
 	python "${_POLAPLIB_DIR}"/polap-py-find-mito-gfa.py \
 		--seed "${start_contig}" \

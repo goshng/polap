@@ -58,6 +58,10 @@ parser <- add_option(parser, c("-p", "--plastid"),
   action = "store_false",
   dest = "mitochondrial", help = "Plastid genome assembly"
 )
+parser <- add_option(parser, c("-x", "--fixed"),
+  action = "store_true",
+  default = FALSE, help = "Always Mitochondrial genome assembly"
+)
 parser <- add_option(parser, c("--flyeout-edges-stats"),
   action = "store",
   help = "Input1 30-contigger/edges_stats.txt"
@@ -186,7 +190,7 @@ z %>%
   rename(Contig = V1, Length = V2, Depth = V3, Copy = V6, MT = mt, PT = pt, Edge = V9) %>%
   write.table(args1$`out-annotation`, row.names = F, quote = F)
 
-if (args1$mitochondrial == TRUE) {
+if (args1$mitochondrial == TRUE || args1$fixed == TRUE) {
   z %>%
     arrange(mt <= pt) %>%
     relocate(V9, .after = last_col()) %>%

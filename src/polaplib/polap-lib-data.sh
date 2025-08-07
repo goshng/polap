@@ -249,8 +249,47 @@ help_message_run_polap_annotate_check=$(
 HEREDOC
 )
 
+help_message_run_readassemble=$(
+	cat <<HEREDOC
+
+  Assemble organelle genomes by annotating and selecting long-reads.
+
+  This is the main run function for assembling plant organelle genomes
+  using ONT reads.
+HEREDOC
+)
+
+help_message_run_readassemble_pt=$(
+	cat <<HEREDOC
+
+  Assemble ptDNA by annotating and selecting long-reads.
+HEREDOC
+)
+
+help_message_run_readassemble_nt=$(
+	cat <<HEREDOC
+
+  Assemble mtDNA by annotating and selecting long-reads.
+
+  This is the main run function for assembling plant mitochondrial genome
+  using ONT reads.
+HEREDOC
+)
+
+help_message_run_readassemble_mt=$(
+	cat <<HEREDOC
+
+  Assemble mtDNA by annotating and selecting long-reads.
+
+  This is the main run function for assembling plant mitochondrial genome
+  using ONT reads.
+HEREDOC
+)
+
 help_message_run_polap_readassemble=$(
 	cat <<HEREDOC
+
+  use polap-readassemble command.
 
   Assemble organelle genomes by annotating and selecting long-reads.
 
@@ -262,22 +301,16 @@ HEREDOC
 help_message_run_polap_readassemble_pt=$(
 	cat <<HEREDOC
 
+  use polap-readassemble command.
+
   Assemble ptDNA by annotating and selecting long-reads.
-HEREDOC
-)
-
-help_message_run_polap_readassemble_nt=$(
-	cat <<HEREDOC
-
-  Assemble mtDNA by annotating and selecting long-reads.
-
-  This is the main run function for assembling plant mitochondrial genome
-  using ONT reads.
 HEREDOC
 )
 
 help_message_run_polap_readassemble_mt=$(
 	cat <<HEREDOC
+
+  use polap-readassemble command.
 
   Assemble mtDNA by annotating and selecting long-reads.
 
@@ -1534,6 +1567,120 @@ EOF
 }
 
 ##### INSERT_FUNCTION_HERE #####
+run-polap-readassemble-animal-mt_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+
+	run-polap-readassemble_genus_species "${_brg_outdir}" "${_brg_sindex}" "animal"
+}
+
+run-polap-readassemble-mt_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+
+	run-polap-readassemble_genus_species "${_brg_outdir}" "${_brg_sindex}" "mt"
+}
+
+run-polap-readassemble-pt_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+
+	run-polap-readassemble_genus_species "${_brg_outdir}" "${_brg_sindex}" "pt"
+}
+
+run-polap-readassemble_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+	local _brg_type="${3:-pt}"
+
+	local _brg_inum=0
+	local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+	local _timing_txt _stdout_txt _memlog_file _summary_file
+
+	brg_common_setup \
+		_brg_outdir _brg_sindex _brg_adir _brg_title \
+		_brg_target _brg_rundir _brg_outdir_i \
+		_timing_txt _stdout_txt _memlog_file _summary_file
+
+	# Extra folders
+	local _brg_outdir_t="${_brg_outdir}/${opt_t_arg}"
+	local _brg_titledir="${_brg_outdir_i}/${_brg_title}-1-${_brg_type}"
+	local _brg_runtitledir="${_brg_rundir}-${_brg_title}-1-${_brg_type}"
+
+	if [[ -v _long["$_brg_target"] ]]; then
+		local long_sra="${_long["$_brg_target"]}"
+	else
+		echo "Error: ${_brg_target} because it is not in the CSV."
+		return
+	fi
+
+	local _brg_coverage="50m"
+
+	local platform="${_platform["$_brg_target"]}"
+	local option_data_type="--nano-raw"
+	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
+		option_data_type="--pacbio-hifi"
+		lib-polap-readassemble-hifi-brg-coverage
+	elif [[ "${platform}" == "ONT" ]]; then
+		lib-polap-readassemble-brg-coverage
+	fi
+
+	_log_echo "Do: assemble ${_brg_type}DNA using seed reads of coverage (${_brg_coverage}) with ${option_data_type}: ${_brg_rundir}"
+
+	if [[ ! -s "${long_sra}".fastq ]]; then
+		data-long_genus_species "${_brg_outdir}"
+	fi
+
+	data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_coverage}"
+
+	# local resolved_fastq=$(<"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt")
+	local resolved_fastq="${long_sra}.fastq"
+	echo "  - FASTQ: $resolved_fastq"
+
+	# Start memory logger
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	if [[ "${_brg_type}" == "pt" ]]; then
+		${_polap_cmd} readassemble \
+			"${option_data_type}" \
+			--plastid \
+			-l "${resolved_fastq}" \
+			-o "${_brg_rundir}"
+	elif [[ "${_brg_type}" == "animal" ]]; then
+		${_polap_cmd} readassemble \
+			"${option_data_type}" \
+			--animal \
+			-l "${resolved_fastq}" \
+			-o "${_brg_rundir}"
+	else
+		# plant mt
+		${_polap_cmd} readassemble \
+			"${option_data_type}" \
+			-l "${resolved_fastq}" \
+			-o "${_brg_rundir}"
+	fi
+
+	conda deactivate
+
+	# Summarize results after job (with previously defined summary function)
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+	# Save some results
+	rsync -azuq --max-size=5M \
+		"${_brg_rundir}"/annotate-read-pt/ \
+		"${_brg_titledir}"/
+
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		sync_genus_species "${_brg_outdir}" "${_brg_sindex}" --main-push
+	fi
+
+	# rm -rf "${_brg_rundir}"
+}
+
 get-conf-long-sra-id_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
@@ -1568,15 +1715,27 @@ lib-polap-readassemble-brg-coverage() {
 	fi
 }
 
-run-polap-readassemble_genus_species() {
+lib-polap-readassemble-hifi-brg-coverage() {
+	if [[ "${_brg_sindex}" == "0" ]]; then
+		_brg_coverage="10"
+	elif [[ "${_brg_sindex}" == "1" ]]; then
+		_brg_coverage="1"
+	elif [[ "${_brg_sindex}" == "2" ]]; then
+		_brg_coverage="0.2"
+	else
+		_brg_coverage="0.05"
+	fi
+}
+
+run-readassemble_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 
 	_brg_outdir="${_brg_outdir%/}"
 
-	run-polap-readassemble-mt_genus_species "${_brg_outdir}" "${_brg_sindex}" iterate
-	run-polap-readassemble-nt_genus_species "${_brg_outdir}" "${_brg_sindex}" iterate
-	run-polap-readassemble-pt_genus_species "${_brg_outdir}" "${_brg_sindex}" iterate
+	run-readassemble-mt_genus_species "${_brg_outdir}" "${_brg_sindex}" iterate
+	run-readassemble-nt_genus_species "${_brg_outdir}" "${_brg_sindex}" iterate
+	run-readassemble-pt_genus_species "${_brg_outdir}" "${_brg_sindex}" iterate
 
 	local _brg_rundir="${_brg_outdir}-${_brg_sindex}"
 	rm -rf "${_brg_rundir}"
@@ -1602,7 +1761,7 @@ run-polap-readassemble_genus_species() {
 # long_sra=ERR5167480
 #
 # 2025-08-01
-run-polap-readassemble-mt_genus_species() {
+run-readassemble-mt_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 	local _brg_iterate="${3:-iterate}"
@@ -1655,7 +1814,7 @@ run-polap-readassemble-mt_genus_species() {
 	# rm -rf "${_brg_rundir}"
 }
 
-run-polap-readassemble-nt_genus_species() {
+run-readassemble-nt_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 	local _brg_iterate="${3:-iterate}"
@@ -1712,7 +1871,7 @@ run-polap-readassemble-nt_genus_species() {
 	# rm -rf "${_brg_rundir}"
 }
 
-run-polap-readassemble-pt_genus_species() {
+run-readassemble-pt_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 	local _brg_iterate="${3:-iterate}"
@@ -1765,7 +1924,7 @@ run-polap-readassemble-pt_genus_species() {
 	# rm -rf "${_brg_rundir}"
 }
 
-run-polap-readassemble-aninmal-mt_genus_species() {
+run-readassemble-aninmal-mt_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 
@@ -2298,7 +2457,7 @@ readassemble-ont-mt_genus_species() {
 			"${option_data_type}" \
 			-o "${annotatedir}" \
 			-l "${resolved_fastq}" \
-			--reference "${annotatedir_pt}"/pt.2.gfa
+			--reference "${annotatedir_pt}"/pt.3.gfa
 		local resolved_fastq="${annotatedir}/kmer/ref-filtered.fastq"
 	fi
 
@@ -2436,7 +2595,7 @@ readassemble-ont-mt-iterate_genus_species() {
 			"${option_data_type}" \
 			-o "${annotatedir}" \
 			-l "${resolved_fastq}" \
-			--reference "${annotatedir_pt}"/pt.2.gfa
+			--reference "${annotatedir_pt}"/pt.3.gfa
 		local resolved_fastq="${annotatedir}/kmer/ref-filtered.fastq"
 	fi
 
@@ -2590,7 +2749,7 @@ readassemble-ont-nt_genus_species() {
 			"${option_data_type}" \
 			-o "${annotatedir}" \
 			-l "${resolved_fastq}" \
-			--reference "${annotatedir_pt}"/pt.2.gfa
+			--reference "${annotatedir_pt}"/pt.3.gfa
 		local resolved_fastq="${annotatedir}/kmer/ref-filtered.fastq"
 	fi
 
@@ -2613,7 +2772,7 @@ readassemble-ont-nt_genus_species() {
 			"${option_data_type}" \
 			-o "${annotatedir}" \
 			-l "${resolved_fastq}" \
-			--reference "${annotatedir_pt}"/pt.2.gfa \
+			--reference "${annotatedir_pt}"/pt.3.gfa \
 			-i mt -j mt1 -w 3000
 	elif [[ "${platform}" == "ONT" ]]; then
 		${_polap_cmd} assemble-rate \
@@ -2745,7 +2904,7 @@ readassemble-ont-nt-iterate_genus_species() {
 			"${option_data_type}" \
 			-o "${annotatedir}" \
 			-l "${resolved_fastq}" \
-			--reference "${annotatedir_pt}"/pt.2.gfa
+			--reference "${annotatedir_pt}"/pt.3.gfa
 		local resolved_fastq="${annotatedir}/kmer/ref-filtered.fastq"
 	fi
 
@@ -2777,7 +2936,7 @@ readassemble-ont-nt-iterate_genus_species() {
 				"${option_data_type}" \
 				-o "${annotatedir}" \
 				-l "${resolved_fastq}" \
-				--reference "${annotatedir_pt}"/pt.2.gfa \
+				--reference "${annotatedir_pt}"/pt.3.gfa \
 				-i mt$i -j mt$j -w 3000
 		elif [[ "${platform}" == "ONT" ]]; then
 			${_polap_cmd} assemble-rate \
@@ -9944,7 +10103,8 @@ check_and_prepare_fastq() {
 	local dirs=("$PWD" "$media_dir" "$media1_dir")
 
 	# 1. Try local working directory
-	for ext in ".fastq" "-*.fq" ".fq.gz" ".fastq.gz"; do
+	# for ext in ".fastq" "-*.fq" ".fq.gz" ".fastq.gz"; do
+	for ext in ".fastq" ".fq" ".fq.gz" ".fastq.gz"; do
 		match=$(ls ${long_sra}${ext} 2>/dev/null | head -n 1)
 		if [[ -s "$match" ]]; then
 			result="$match"
@@ -10024,7 +10184,8 @@ check_and_prepare_fastq() {
 	conda deactivate
 
 	# 1. Try local working directory
-	for ext in ".fastq" "-*.fq" ".fq.gz" ".fastq.gz"; do
+	# for ext in ".fastq" "-*.fq" ".fq.gz" ".fastq.gz"; do
+	for ext in ".fastq" ".fq" ".fq.gz" ".fastq.gz"; do
 		match=$(ls ${long_sra}${ext} 2>/dev/null | head -n 1)
 		if [[ -s "$match" ]]; then
 			result="$match"
@@ -10217,11 +10378,49 @@ estimate-genomesize_genus_species() {
 		_genome_size=$(<"${_brg_outdir}"/o/short_expected_genome_size.txt)
 	elif [[ -s "${_brg_outdir}"/short_expected_genome_size.txt ]]; then
 		_genome_size=$(<"${_brg_outdir}"/short_expected_genome_size.txt)
+	elif [[ -s "${_brg_outdir}/${opt_t_arg}/0/short_expected_genome_size.txt" ]]; then
+		_genome_size=$(<"${_brg_outdir}/${opt_t_arg}/0/short_expected_genome_size.txt")
 	else
+
+		"${_polap_cmd}" find-genome-size-for-pacbio -o "${_brg_outdir}" -l "${_brg_long}"
+
 		${_polap_cmd} find-genome-size \
 			-a ${short_sra}_1.fastq \
 			-b ${short_sra}_2.fastq \
 			-o "${_brg_outdir}"
+		if [[ -s "${_brg_outdir}"/short_expected_genome_size.txt ]]; then
+			_genome_size=$(<"${_brg_outdir}"/short_expected_genome_size.txt)
+		fi
+	fi
+	_genome_size=${_genome_size%%.*}
+	echo "${_genome_size}"
+}
+
+estimate-genomesize-platform_genus_species() {
+	local _brg_outdir="${1:-all}"
+	local _brg_inum="${2:-0}"
+
+	local target_index="${_brg_outdir}-${_brg_inum}"
+	local long_sra="${_long["$target_index"]}"
+	local short_sra="${_short["$target_index"]}"
+	local platform="${_platform["$_brg_target"]}"
+
+	local _genome_size="0"
+	if [[ -s "${_brg_outdir}"/o/short_expected_genome_size.txt ]]; then
+		_genome_size=$(<"${_brg_outdir}"/o/short_expected_genome_size.txt)
+	elif [[ -s "${_brg_outdir}"/short_expected_genome_size.txt ]]; then
+		_genome_size=$(<"${_brg_outdir}"/short_expected_genome_size.txt)
+	elif [[ -s "${_brg_outdir}/${opt_t_arg}/0/short_expected_genome_size.txt" ]]; then
+		_genome_size=$(<"${_brg_outdir}/${opt_t_arg}/0/short_expected_genome_size.txt")
+	else
+		if [[ "${platform}" == "PACBIO_SMRT" ]]; then
+			"${_polap_cmd}" find-genome-size-for-pacbio -o "${_brg_outdir}" -l "${_brg_long}"
+		elif [[ "${platform}" == "ONT" ]]; then
+			${_polap_cmd} find-genome-size \
+				-a ${short_sra}_1.fastq \
+				-b ${short_sra}_2.fastq \
+				-o "${_brg_outdir}"
+		fi
 		if [[ -s "${_brg_outdir}"/short_expected_genome_size.txt ]]; then
 			_genome_size=$(<"${_brg_outdir}"/short_expected_genome_size.txt)
 		fi
@@ -10242,8 +10441,8 @@ data-downsample-long_genus_species() {
 	local random_seed="${_random_seed["$target_index"]}"
 	if [[ "${_brg_random_seed}" != "-1" ]]; then
 		random_seed="${_brg_random_seed}"
+		local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
 	fi
-	local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
 
 	local _dry=""
 	if [[ "${_brg_dry}" == "on" ]]; then
@@ -10271,11 +10470,21 @@ data-downsample-long_genus_species() {
 	if [[ "$CONDA_DEFAULT_ENV" == "polap" ]]; then
 
 		# Step 2. Estimate the genome size
-		local _genome_size=$(
-			estimate-genomesize_genus_species \
-				"${_brg_outdir}" \
-				"${_brg_inum}" | tail -1
-		)
+		local _genome_size="0"
+		if [[ -v _platform["$_brg_target"] ]]; then
+			_genome_size=$(
+				estimate-genomesize-platform_genus_species \
+					"${_brg_outdir}" \
+					"${_brg_inum}" | tail -1
+			)
+		else
+			_genome_size=$(
+				estimate-genomesize_genus_species \
+					"${_brg_outdir}" \
+					"${_brg_inum}" | tail -1
+			)
+		fi
+
 		# echo "Genome size estimate: $(_polap_lib_unit-convert_bp ${_genome_size})"
 
 		# coverage: 0.1x -> genome size 0.1
@@ -10298,7 +10507,7 @@ data-downsample-long_genus_species() {
 			# echo "output: ${long_sra}.fastq"
 			# echo "genome size: ${_genome_size}"
 			# echo "sampling rate: ${_brg_coverage}x"
-			${_polap_cmd} fastq subsample -v ${_dry} \
+			${_polap_cmd} fastq subsample --redo -v ${_dry} \
 				"${_brg_outdir}/tmp/${long_sra}.fastq" \
 				"${long_sra}.fastq" \
 				-c "${_brg_coverage}" \
@@ -10458,20 +10667,32 @@ function _polap_lib_data-execute-common-subcommand {
 		list-subcommands)
 		handled=1
 		;;
-	##### INSERT_COMMAND_HERE #####
-	get-conf-long-sra-id)
-		handled=1
-		;;
-	run-polap-readassemble)
-		handled=1
-		;;
-	run-polap-readassemble-nt)
+		##### INSERT_COMMAND_HERE #####
+	run-polap-readassemble-animal-mt)
 		handled=1
 		;;
 	run-polap-readassemble-mt)
 		handled=1
 		;;
 	run-polap-readassemble-pt)
+		handled=1
+		;;
+	run-polap-readassemble)
+		handled=1
+		;;
+	get-conf-long-sra-id)
+		handled=1
+		;;
+	run-readassemble)
+		handled=1
+		;;
+	run-readassemble-nt)
+		handled=1
+		;;
+	run-readassemble-mt)
+		handled=1
+		;;
+	run-readassemble-pt)
 		handled=1
 		;;
 	system)
@@ -11164,29 +11385,7 @@ function _polap_lib_data-execute-common-subcommand {
 		fi
 		;;
 		##### INSERT_CASE_HERE #####
-	get-conf-long-sra-id)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap-readassemble)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap-readassemble-nt)
+	run-polap-readassemble-animal-mt)
 		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
 			echo "Help: ${subcmd1} <outdir> [index:0|N]"
 			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
@@ -11209,6 +11408,72 @@ function _polap_lib_data-execute-common-subcommand {
 		${subcmd1}_genus_species "${cmd_args_ref[@]}"
 		;;
 	run-polap-readassemble-pt)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [index:0|N]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
+	run-polap-readassemble)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [index:0|N] [pt|mt|animal]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
+	get-conf-long-sra-id)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir>"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
+	run-readassemble)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [index:0|N]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
+	run-readassemble-nt)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [index:0|N]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
+	run-readassemble-mt)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [index:0|N]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
+	run-readassemble-pt)
 		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
 			echo "Help: ${subcmd1} <outdir> [index:0|N]"
 			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"

@@ -82,3 +82,46 @@ _polap_lib_assemble-rate() {
 
 	return 0
 }
+
+# assemble after adjusting the read data downsampling rate so that
+# the subsampling rate is between 0.1 and 0.5.
+#
+_polap_lib_assemble-omega() {
+
+	# we can use all polap_var_ variables.
+	# They are determined by output, i, and j.
+	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
+
+	if ! _polap_gfatools-gfa2fasta; then
+		_polap_error_message $?
+	fi
+
+	check_file_existence "${_polap_var_mtcontigname}"
+	check_file_existence "${_polap_var_ga_contigger_edges_fasta}"
+
+	_run_polap_map-reads
+
+	_polap_lib_oga-estimate-omega
+
+	# remove NUMT/NUPT using rkmerrc
+	# if [[ "${_arg_data_type}" == "pacbio-hifi" ]] && [[ "${_arg_plastid}" == "off" ]]; then
+	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+		local _pread_sel="ptgaul-reads"
+		local index=$(<"${_polap_var_oga_contig}/index.txt")
+		local fq="${_polap_var_oga_seeds}/${_pread_sel}/${index}.fq"
+		gunzip "${fq}.gz"
+		local PREFIX="${_arg_outdir}/kmer/rmkc"
+		local CLEANED="$PREFIX.cleaned.fastq.gz"
+		_polap_log0 "rmkc on ${fq}"
+		_polap_filter-reads-by-rmkc "${fq}"
+		_polap_log0 "rmkc produces ${CLEANED}"
+		_polap_lib_oga-flye-select-reads "${CLEANED}"
+	else
+		# _polap_lib_oga-flye-select-reads
+		_arg_redo="on"
+		_run_polap_assemble2
+	fi
+
+	return 0
+}

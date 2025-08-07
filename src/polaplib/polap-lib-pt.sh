@@ -62,11 +62,14 @@ function _polap_lib_pt-extract-dna {
 	_polap_log3_cmd cp "${gfa}" "${ptdir}/30-contigger/graph_final.gfa"
 	local _contigger_edges_gfa="${ptdir}/30-contigger/graph_final.gfa"
 	local _ga_annotation_all="${ptdir}/assembly_info_organelle_annotation_count-all.txt"
-	polap_annotate "${_contigger_edges_gfa}" "${_ga_annotation_all}"
+	_polap_lib_annotate \
+		-o "${outdir}" \
+		-i "ptdna"
+	# polap_annotate "${_contigger_edges_gfa}" "${_ga_annotation_all}"
 
 	# prepare mt.contig.name
-	# local _ga_pt_annotation_depth_table="${ptdir}/pt-contig-annotation-depth-table.txt"
-	local _ga_pt_annotation_depth_table="${ptdir}/contig-annotation-depth-table.txt"
+	local _ga_pt_annotation_depth_table="${ptdir}/pt-contig-annotation-depth-table.txt"
+	# local _ga_pt_annotation_depth_table="${ptdir}/contig-annotation-depth-table.txt"
 	awk 'NR==2 {print $1}' "${_ga_pt_annotation_depth_table}" >"${mtcontigname}"
 
 	# extract ptdna

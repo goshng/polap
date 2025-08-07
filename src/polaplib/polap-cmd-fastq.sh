@@ -122,7 +122,7 @@ HEREDOC
 		local _seed
 
 		_polap_log0 "subsample the long-read data using a given target coverage: ${_arg_coverage}x"
-		if [[ ! -s "${_arg_outdir}/l.fq.txt" ]]; then
+		if [[ ! -s "${_arg_outdir}/l.fq.txt" ]] || [[ "${_arg_redo}" == "on" ]]; then
 			_polap_lib_fastq-total-length-of "${_infile}" "${_arg_outdir}/l.fq.txt"
 		fi
 		local _l=$(<"${_arg_outdir}/l.fq.txt")

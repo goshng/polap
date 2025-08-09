@@ -51,6 +51,7 @@ _polap_lib_annotate() {
 	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 
+	_polap_log1 "  annotate ${_arg_outdir}/${_arg_inum} using amino acid sequences"
 	_polap_lib_annotate-edges-stats \
 		-o "${_arg_outdir}" -i "${_arg_inum}" -j "${_arg_jnum}"
 	_polap_lib_annotate-blast-genome \
@@ -67,7 +68,7 @@ _polap_lib_annotate-edges-stats() {
 	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 
-	_polap_log0 "creating edges_stats.txt from graph_final.gfa ..."
+	_polap_log1 "  creating edges_stats.txt from graph_final.gfa ..."
 	_polap_log1 "  creating GFA without sequence data: ${_polap_var_ga_gfa_all}"
 	_polap_log2 "    input: ${_polap_var_ga_contigger_edges_gfa}"
 	_polap_log2 "    output: ${_polap_var_ga_gfa_all}"
@@ -86,9 +87,9 @@ _polap_lib_annotate-edges-stats() {
 		  2>$_polap_output_dest"
 	fi
 
-	_polap_log1 "  extracting sequence part of GFA: ${_polap_var_ga_gfa_seq_part}"
-	_polap_log2 "    input: ${_polap_var_ga_gfa_all}"
-	_polap_log2 "    output: ${_polap_var_ga_gfa_seq_part}"
+	_polap_log2 "    extracting sequence part of GFA: ${_polap_var_ga_gfa_seq_part}"
+	_polap_log3 "      input: ${_polap_var_ga_gfa_all}"
+	_polap_log3 "      output: ${_polap_var_ga_gfa_seq_part}"
 	if [ -s "${_polap_var_ga_gfa_seq_part}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log1 "    found: ${_polap_var_ga_gfa_seq_part}, so skipping ..."
 	else
@@ -96,9 +97,9 @@ _polap_lib_annotate-edges-stats() {
 	fi
 
 	# Filter edges in GFA using depths.
-	_polap_log1 "  filtering GFA sequence part using depth range"
-	_polap_log2 "    input1: ${_polap_var_ga_gfa_seq_part}"
-	_polap_log2 "    output1: ${_polap_var_ga_contigger_edges_stats}"
+	_polap_log2 "    filtering GFA sequence part using depth range"
+	_polap_log3 "      input1: ${_polap_var_ga_gfa_seq_part}"
+	_polap_log3 "      output1: ${_polap_var_ga_contigger_edges_stats}"
 	if [ -s "${_polap_var_ga_contigger_edges_stats}" ] && [ "${_arg_redo}" = "off" ]; then
 		_polap_log1 "    found: ${_polap_var_ga_contigger_edges_stats}, so skipping ..."
 	else
@@ -124,7 +125,7 @@ _polap_lib_annotate-count-gene() { # count MT and PT genes using edges_stats.txt
 	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 
-	_polap_log0 "counting mitochondrial and plastid genes on the assembly number ${_arg_inum} ..."
+	_polap_log1 "  counting mitochondrial and plastid genes on the assembly number ${_arg_inum} ..."
 
 	# Checks the output files earlier than the input.
 	if [[ -s "${_polap_var_ga_annotation_all}" ]] &&
@@ -135,15 +136,15 @@ _polap_lib_annotate-count-gene() { # count MT and PT genes using edges_stats.txt
 		return 0
 	fi
 
-	_polap_log1 "  creating annotation tables"
-	_polap_log2 "    input1: ${_polap_var_ga_contigger_edges_stats}"
-	_polap_log2 "    input2: ${_polap_var_ann_MTGENECOUNT}"
-	_polap_log2 "    input3: ${_polap_var_ann_PTGENECOUNT}"
-	_polap_log2 "    output1: ${_polap_var_ga_annotation}"
-	_polap_log2 "    output2: ${_polap_var_ga_annotation_all}"
-	_polap_log2 "    output3: ${_polap_var_ga_annotation_table}"
-	_polap_log2 "    output4: ${_polap_var_ga_annotation_depth_table}"
-	_polap_log2 "    output5: ${_polap_var_ga_pt_annotation_depth_table}"
+	_polap_log2 "    creating annotation tables"
+	_polap_log3 "      input1: ${_polap_var_ga_contigger_edges_stats}"
+	_polap_log3 "      input2: ${_polap_var_ann_MTGENECOUNT}"
+	_polap_log3 "      input3: ${_polap_var_ann_PTGENECOUNT}"
+	_polap_log3 "      output1: ${_polap_var_ga_annotation}"
+	_polap_log3 "      output2: ${_polap_var_ga_annotation_all}"
+	_polap_log3 "      output3: ${_polap_var_ga_annotation_table}"
+	_polap_log3 "      output4: ${_polap_var_ga_annotation_depth_table}"
+	_polap_log3 "      output5: ${_polap_var_ga_pt_annotation_depth_table}"
 	local _command1="Rscript ${_POLAPLIB_DIR}/polap-r-mtcontig.R \
 		--flyeout-edges-stats ${_polap_var_ga_contigger_edges_stats} \
     --mt-gene-count ${_polap_var_ann_MTGENECOUNT} \
@@ -180,9 +181,9 @@ _polap_lib_annotate-blast-genome() {
 	local MTAA="${_POLAPLIB_DIR}"/polap-mt.1.c70.3.faa
 	local PTAA="${_POLAPLIB_DIR}"/polap-pt.2.c70.3.faa
 
-	_polap_log0 "blasting edge contigs with mitochondrial and plastid genes on the assembly number ${_arg_inum} ..."
-	_polap_log1 "  input1: ${_polap_var_ga_contigger_edges_stats}"
-	_polap_log1 "  input2: ${_polap_var_ga_contigger_edges_fasta}"
+	_polap_log1 "  blasting edge contigs with mitochondrial and plastid genes on the assembly number ${_arg_inum} ..."
+	_polap_log2 "    input1: ${_polap_var_ga_contigger_edges_stats}"
+	_polap_log2 "    input2: ${_polap_var_ga_contigger_edges_fasta}"
 
 	# Checks the output files earlier than the input.
 	if [[ -s "${_polap_var_ann_MTGENECOUNT}" ]] &&
@@ -201,14 +202,14 @@ _polap_lib_annotate-blast-genome() {
 		exit $EXIT_ERROR
 	fi
 
-	_polap_log2 "  deleting and recreating the folder: ${_polap_var_ann}"
+	_polap_log2 "    deleting and recreating the folder: ${_polap_var_ann}"
 	_polap_log3_cmd rm -rf "${_polap_var_ann}"
 	_polap_log3_cmd mkdir -p "${_polap_var_ann}"
 
 	#src/run-polap-select.R o/30-contigger/edges_stats.txt o/50-annotation/contig.name
-	_polap_log2 "  contig sequence names in file: ${_polap_var_ann_CONTIGNAME}"
-	_polap_log2 "    input: ${_polap_var_ga_contigger_edges_stats}"
-	_polap_log2 "    output: ${_polap_var_ann_CONTIGFILE}"
+	_polap_log2 "    contig sequence names in file: ${_polap_var_ann_CONTIGNAME}"
+	_polap_log3 "      input: ${_polap_var_ga_contigger_edges_stats}"
+	_polap_log3 "      output: ${_polap_var_ann_CONTIGFILE}"
 	_polap_log3_pipe "grep -v '#' ${_polap_var_ga_contigger_edges_stats} |
 		cut -f 1 >${_polap_var_ann_CONTIGNAME}"
 
@@ -229,21 +230,21 @@ _polap_lib_annotate-blast-genome() {
 		fi
 	fi
 
-	_polap_log2 "  making BLASTDB of the contig sequences: ${_polap_var_ann_CONTIGDB}"
-	_polap_log2 "    input: ${_polap_var_ann_CONTIGFILE}"
-	_polap_log2 "    output: ${_polap_var_ann_CONTIGDB}"
+	_polap_log2 "    making BLASTDB of the contig sequences: ${_polap_var_ann_CONTIGDB}"
+	_polap_log3 "      input: ${_polap_var_ann_CONTIGFILE}"
+	_polap_log3 "      output: ${_polap_var_ann_CONTIGDB}"
 	_polap_log3_pipe "makeblastdb -dbtype nucl \
 		-in ${_polap_var_ann_CONTIGFILE} \
 		-out ${_polap_var_ann_CONTIGDB} \
 		2>${_polap_output_dest}"
 
 	# Mitochondrial gene annotation and counts
-	_polap_log2 "  BLAST of the mitochondrial proteins against ${_polap_var_ann_CONTIGDB}"
-	_polap_log2 "    input query: ${MTAA}"
-	_polap_log2 "    input BLAST DB: ${_polap_var_ann_CONTIGDB}"
-	_polap_log2 "    evalue cutoff: 1e-30"
-	_polap_log2 "    number of CPUs: ${_arg_threads}"
-	_polap_log3 "    executing the tblastn ... be patient!"
+	_polap_log2 "    BLAST of the mitochondrial proteins against ${_polap_var_ann_CONTIGDB}"
+	_polap_log3 "      input query: ${MTAA}"
+	_polap_log3 "      input BLAST DB: ${_polap_var_ann_CONTIGDB}"
+	_polap_log3 "      evalue cutoff: 1e-30"
+	_polap_log3 "      number of CPUs: ${_arg_threads}"
+	_polap_log3 "      executing the tblastn ... be patient!"
 	_polap_log3_pipe "tblastn -query ${MTAA} \
 		-db ${_polap_var_ann_CONTIGDB} \
 		-out ${_polap_var_ann_MTAABLAST} \
@@ -252,17 +253,17 @@ _polap_lib_annotate-blast-genome() {
 		-num_threads ${_arg_threads} \
 		>${_polap_output_dest} 2>&1"
 
-	_polap_log2 "  converting BLAST result in BED format for removing redundancy"
-	_polap_log2 "    input1: ${_polap_var_ann_MTAABLAST}"
-	_polap_log2 "    output1: ${_polap_var_ann_MTAABLASTBED}"
+	_polap_log2 "    converting BLAST result in BED format for removing redundancy"
+	_polap_log3 "      input1: ${_polap_var_ann_MTAABLAST}"
+	_polap_log3 "      output1: ${_polap_var_ann_MTAABLASTBED}"
 	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-genes.R \
 		${_polap_var_ann_MTAABLAST} \
 		${_polap_var_ann_MTAABLASTBED} \
 		>${_polap_output_dest} 2>&1"
 
-	_polap_log2 "  sorting BED format BLAST result"
-	_polap_log2 "    input1: ${_polap_var_ann_MTAABLASTBED}"
-	_polap_log2 "    output1: ${_polap_var_ann_MTAABLAST}.sorted.bed"
+	_polap_log2 "    sorting BED format BLAST result"
+	_polap_log3 "      input1: ${_polap_var_ann_MTAABLASTBED}"
+	_polap_log3 "      output1: ${_polap_var_ann_MTAABLAST}.sorted.bed"
 	_polap_log3_pipe "sort -k1,1 -k2,2n \
 		${_polap_var_ann_MTAABLASTBED} \
 		>${_polap_var_ann_MTAABLAST}.sorted.bed 2>${_polap_output_dest}"
@@ -270,12 +271,12 @@ _polap_lib_annotate-blast-genome() {
 		_polap_log0 "  -> no mitochondrial genes"
 	fi
 
-	_polap_log2 "  creating folder: ${_polap_var_ann_MTAABED}"
+	_polap_log2 "    creating folder: ${_polap_var_ann_MTAABED}"
 	_polap_log3_cmd mkdir "${_polap_var_ann_MTAABED}"
 
-	_polap_log2 "  counting mitochondrial genes in the contigs ..."
-	_polap_log2 "    input1: ${_polap_var_ann_MTAABLAST}.sorted.bed"
-	_polap_log2 "    output1: ${_polap_var_ann_MTGENECOUNT}"
+	_polap_log2 "    counting mitochondrial genes in the contigs ..."
+	_polap_log3 "      input1: ${_polap_var_ann_MTAABLAST}.sorted.bed"
+	_polap_log3 "      output1: ${_polap_var_ann_MTGENECOUNT}"
 	_polap_log3_cmd rm -f "${_polap_var_ann_MTGENECOUNT_TMP}"
 	while IFS= read -r contig; do
 		_polap_log3_pipe "grep -w ${contig} ${_polap_var_ann_MTAABLAST}.sorted.bed \
@@ -287,9 +288,9 @@ _polap_lib_annotate-blast-genome() {
 	done <"${_polap_var_ann_CONTIGNAME}"
 	_polap_log3_pipe "sort -k2 -rn ${_polap_var_ann_MTGENECOUNT_TMP} >${_polap_var_ann_MTGENECOUNT}"
 
-	_polap_log2 "  compressing the BLAST results of mitochondrial gene annotation"
-	_polap_log2 "    input: ${_polap_var_ann_MTAABED}"
-	_polap_log2 "    output: ${_polap_var_ann_MTAABED}.tar.gz"
+	_polap_log2 "    compressing the BLAST results of mitochondrial gene annotation"
+	_polap_log3 "      input: ${_polap_var_ann_MTAABED}"
+	_polap_log3 "      output: ${_polap_var_ann_MTAABED}.tar.gz"
 	_polap_log3_cmd tar zcf "${_polap_var_ann_MTAABED}".tar.gz "${_polap_var_ann_MTAABED}"
 	_polap_log2 "  deleting folder: ${_polap_var_ann_MTAABLASTBED}"
 	_polap_log3_cmd rm -rf "${_polap_var_ann_MTAABED}"
@@ -297,12 +298,12 @@ _polap_lib_annotate-blast-genome() {
 	_polap_log1 "  output1: ${_polap_var_ann_MTGENECOUNT}"
 
 	# Plastid gene annotation and counts
-	_polap_log2 "  BLAST of the plastid proteins against ${_polap_var_ann_CONTIGDB}"
-	_polap_log2 "    input query: ${PTAA}"
-	_polap_log2 "    input BLAST DB: ${_polap_var_ann_CONTIGDB}"
-	_polap_log2 "    evalue cutoff: 1e-30"
-	_polap_log2 "    number of CPUs: ${_arg_threads}"
-	_polap_log3 "    executing the tblastn ... be patient!"
+	_polap_log2 "    BLAST of the plastid proteins against ${_polap_var_ann_CONTIGDB}"
+	_polap_log3 "      input query: ${PTAA}"
+	_polap_log3 "      input BLAST DB: ${_polap_var_ann_CONTIGDB}"
+	_polap_log3 "      evalue cutoff: 1e-30"
+	_polap_log3 "      number of CPUs: ${_arg_threads}"
+	_polap_log3 "      executing the tblastn ... be patient!"
 	_polap_log3_pipe "tblastn -query ${PTAA} \
 		-db ${_polap_var_ann_CONTIGDB} \
 		-out ${_polap_var_ann_PTAABLAST} \
@@ -311,17 +312,17 @@ _polap_lib_annotate-blast-genome() {
 		-num_threads ${_arg_threads} \
 		>${_polap_output_dest} 2>&1"
 
-	_polap_log2 "  converting BLAST result in BED format for removing redundancy"
-	_polap_log2 "    input1: ${_polap_var_ann_PTAABLAST}"
-	_polap_log2 "    output1: ${_polap_var_ann_PTAABLASTBED}"
+	_polap_log2 "    converting BLAST result in BED format for removing redundancy"
+	_polap_log3 "      input1: ${_polap_var_ann_PTAABLAST}"
+	_polap_log3 "      output1: ${_polap_var_ann_PTAABLASTBED}"
 	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-genes.R \
 		${_polap_var_ann_PTAABLAST} \
 		${_polap_var_ann_PTAABLASTBED} \
 		>${_polap_output_dest} 2>&1"
 
-	_polap_log2 "  sorting BED format BLAST result"
-	_polap_log2 "    input1: ${_polap_var_ann_PTAABLASTBED}"
-	_polap_log2 "    output1: ${_polap_var_ann_PTAABLAST}.sorted.bed"
+	_polap_log2 "    sorting BED format BLAST result"
+	_polap_log3 "      input1: ${_polap_var_ann_PTAABLASTBED}"
+	_polap_log3 "      output1: ${_polap_var_ann_PTAABLAST}.sorted.bed"
 	_polap_log3_pipe "sort -k1,1 -k2,2n \
 		${_polap_var_ann_PTAABLASTBED} \
 		>${_polap_var_ann_PTAABLAST}.sorted.bed 2>${_polap_output_dest}"
@@ -329,12 +330,12 @@ _polap_lib_annotate-blast-genome() {
 		_polap_log0 "  -> no plastid genes"
 	fi
 
-	_polap_log2 "  creating folder: ${_polap_var_ann_PTAABED}"
+	_polap_log2 "    creating folder: ${_polap_var_ann_PTAABED}"
 	_polap_log3_cmd mkdir "${_polap_var_ann_PTAABED}"
 
-	_polap_log2 "  counting mitochondrial genes in the contigs ..."
-	_polap_log2 "    input1: ${_polap_var_ann_PTAABLAST}.sorted.bed"
-	_polap_log2 "    output1: ${_polap_var_ann_PTGENECOUNT}"
+	_polap_log2 "    counting mitochondrial genes in the contigs ..."
+	_polap_log3 "      input1: ${_polap_var_ann_PTAABLAST}.sorted.bed"
+	_polap_log3 "      output1: ${_polap_var_ann_PTGENECOUNT}"
 	_polap_log3_cmd rm -f "${_polap_var_ann_PTGENECOUNT_TMP}"
 	while IFS= read -r contig; do
 		_polap_log3_pipe "grep -w ${contig} ${_polap_var_ann_PTAABLAST}.sorted.bed \
@@ -346,9 +347,9 @@ _polap_lib_annotate-blast-genome() {
 	done <"${_polap_var_ann_CONTIGNAME}"
 	_polap_log3_pipe "sort -k2 -rn ${_polap_var_ann_PTGENECOUNT_TMP} >${_polap_var_ann_PTGENECOUNT}"
 
-	_polap_log2 "  compressing the BLAST results of mitochondrial gene annotation"
-	_polap_log2 "    input: ${_polap_var_ann_PTAABED}"
-	_polap_log2 "    output: ${_polap_var_ann_PTAABED}.tar.gz"
+	_polap_log2 "    compressing the BLAST results of mitochondrial gene annotation"
+	_polap_log3 "      input: ${_polap_var_ann_PTAABED}"
+	_polap_log3 "      output: ${_polap_var_ann_PTAABED}.tar.gz"
 	_polap_log3_cmd tar zcf "${_polap_var_ann_PTAABED}".tar.gz "${_polap_var_ann_PTAABED}"
 	_polap_log2 "  deleting folder: ${_polap_var_ann_PTAABLASTBED}"
 	_polap_log3_cmd rm -rf "${_polap_var_ann_PTAABED}"

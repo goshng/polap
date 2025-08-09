@@ -162,8 +162,7 @@ function _polap_lib_oga-estimate-read-sampling-rate {
 		# sampling rate
 		local _rate=$(echo "scale=9; ${_arg_coverage_oga}/$_expected_organelle_coverage" | bc)
 
-		_polap_log0 "rate_lfq (<1.0): ${rate_lfq}"
-		_polap_log0 "rate (0.1 ~ 0.5): ${_rate}"
+		_polap_log0 "input long-read downsampling rate (<1.0): ${rate_lfq}: subsampling rate (0.1 ~ 0.5): ${_rate}"
 
 		if (($(echo "${rate_lfq} > 1.0" | bc -l))); then
 			echo "1.0" >"${_polap_var_oga_contig}/rate_lfq.txt"
@@ -758,6 +757,18 @@ function _polap_lib_oga-estimate-omega {
 		elif (($(echo "$_rate > 0.5" | bc -l))); then
 			omega=$(echo "scale=9; ${omega} - 1000" | bc)
 		else
+			echo "${omega}" >"${_polap_var_oga_contig}/omega.txt"
+			echo ${i} >"${_polap_var_oga_contig}/index.txt"
+			_arg_single_min="${omega}"
+			_polap_log3_pipe "seqtk subseq \
+		    ${_source_long_reads_fq} \
+		    ${_polap_var_oga_reads}/${_pread_sel}/${i}/${_read_names}.names |\
+		    gzip >${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz"
+			return
+		fi
+
+		if (($(echo "$omega < 3000" | bc -l))); then
+			omega=3000
 			echo "${omega}" >"${_polap_var_oga_contig}/omega.txt"
 			echo ${i} >"${_polap_var_oga_contig}/index.txt"
 			_arg_single_min="${omega}"

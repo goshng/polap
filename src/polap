@@ -210,10 +210,94 @@ if declare -f "_run_polap_${_arg_menu[0]}" >/dev/null 2>&1; then
 		_polap_error_message $?
 	fi
 else
-	_polap_log0 "Menu: assemble, prepare-polishing, polish"
-	_polap_log0 "  assemble1, total-length-long, find-genome-size, reduce-data, flye1, annotate"
-	_polap_log0 "  assemble2, select-seeds, map-reads, test-reads, select-reads, flye2"
-	_polap_log0 "ERROR: no such menu of $1"
+	# Check arguments as files
+	for _menu_item in "${_arg_menu[@]}"; do
+
+		seqtype=$(_polap_lib_fastq-check-type "${_menu_item}")
+
+		case "$seqtype" in
+		illumina)
+			_polap_log1 "Detected Illumina short-read"
+			if [[ "${_arg_short_read1_is}" == "on" ]]; then
+				_arg_short_read2="${_menu_item}"
+				_arg_short_read2_is="on"
+			fi
+			_arg_short_read1="${_menu_item}"
+			_arg_short_read1_is="on"
+			;;
+		pacbio-hifi)
+			_polap_log1 "Detected PacBio HiFi read"
+			_arg_long_reads="${_menu_item}"
+			_arg_long_reads_is="on"
+			;;
+		nano-raw)
+			_polap_log1 "Detected Nanopore raw read"
+			_arg_long_reads="${_menu_item}"
+			_arg_long_reads_is="on"
+			;;
+		unknown)
+			_polap_log1 "Could not determine sequencing type: pacbio-clr, nano-hq"
+			;;
+		esac
+	done
+
+	if [[ -s "${_arg_long_reads}" ]]; then
+		seqtype=$(_polap_lib_fastq-check-type "${_arg_long_reads}")
+		if [[ "${seqtype}" == "nano-raw" ]]; then
+			_polap_log0 "ONT long-read: ${_arg_long_reads}"
+			_arg_data_type="nano-raw"
+			_arg_flye_data_type="--nano-raw"
+			_arg_minimap2_data_type="map-ont"
+		elif [[ "${seqtype}" == "pacbio-hifi" ]]; then
+			_polap_log0 "PacBio HiFi long-read: ${_arg_long_reads}"
+			_arg_data_type="pacbio-hifi"
+			_arg_flye_data_type="--pacbio-hifi"
+			_arg_minimap2_data_type="map-hifi"
+		else
+			_polap_log0 "ERROR: no long-read data"
+		fi
+	fi
+
+	if [[ -s "${_arg_short_read1}" ]]; then
+		seqtype=$(_polap_lib_fastq-check-type "${_arg_short_read1}")
+		if [[ "${seqtype}" == "illumina" ]]; then
+			_polap_log0 "Short-read 1: ${_arg_short_read1}"
+		else
+			_polap_log0 "ERROR: no short-read data: ${_arg_short_read1}"
+		fi
+	else
+		_polap_log1 "no short-read data"
+	fi
+
+	if [[ -s "${_arg_short_read2}" ]]; then
+		seqtype=$(_polap_lib_fastq-check-type "${_arg_short_read2}")
+		if [[ "${seqtype}" == "illumina" ]]; then
+			_polap_log0 "Short-read 2: ${_arg_short_read2}"
+		else
+			_polap_log0 "ERROR: no short-read data: ${_arg_short_read2}"
+		fi
+	else
+		_polap_log1 "no short-read data"
+	fi
+
+	if [[ -s "${_arg_long_reads}" ]]; then
+		_polap_log1 "Execute polap command"
+		if [[ "${_arg_plastid}" == "on" ]]; then
+			_run_polap_readassemble
+		else
+			_arg_plastid="on"
+			_run_polap_readassemble
+			_arg_plastid="off"
+			_arg_noncoding="on"
+			_run_polap_readassemble
+		fi
+	else
+		_polap_log0 "-----------------------------------"
+		_polap_log0 "Menu: assemble, prepare-polishing, polish"
+		_polap_log0 "  assemble1, total-length-long, find-genome-size, reduce-data, flye1, annotate"
+		_polap_log0 "  assemble2, select-seeds, map-reads, test-reads, select-reads, flye2"
+		_polap_log0 "ERROR: no such menu of $1"
+	fi
 fi
 
 [[ "${_arg_clock}" == "on" ]] && date +"%Y-%m-%d %H:%M:%S" >&3

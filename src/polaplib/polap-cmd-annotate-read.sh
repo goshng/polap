@@ -615,6 +615,8 @@ EOF
 			echo "Flye 2.9.6 is required. Aborting."
 			exit 1
 		fi
+		# Go to: readassemble-ont-pt_genus_species() { at polap-lib-data.sh
+		# Go to: readassemble-ont-pt-iterate_genus_species() { at polap-lib-data.sh
 	else
 		# for mitochondrial genome assembly
 
@@ -676,6 +678,8 @@ EOF
 				echo "Flye 2.9.6 is required. Aborting."
 				exit 1
 			fi
+		# Go to: readassemble-ont-mt_genus_species() { at polap-lib-data.sh
+		# Go to: readassemble-ont-mt-iterate_genus_species() { at polap-lib-data.sh
 		else
 			# for animal mitochondrial genome assembly
 			Rscript --vanilla "${_POLAPLIB_DIR}"/polap-r-filter-organelle-reads.R \
@@ -884,6 +888,7 @@ EOF
 			_polap_log1 "mt.id (mt0 + at): $(cat "${annotatedir}"/mt.id.txt | wc -l)"
 
 			# tail -n +2 "${mt_table}" | cut -f1 >"${annotatedir}"/mt.id.txt
+			rm -f "${annotatedir}"/mt.fq
 			seqtk subseq "${_arg_long_reads}" "${annotatedir}"/mt.id.txt >"${annotatedir}"/mt.fq
 
 			# subsample the data so that mt.fq is less than 100Mb
@@ -906,6 +911,8 @@ EOF
 				echo "Flye 2.9.6 is required. Aborting."
 				exit 1
 			fi
+		# Go to: readassemble-ont-nt_genus_species() { at polap-lib-data.sh
+		# Go to: readassemble-ont-nt-iterate_genus_species() { at polap-lib-data.sh
 		else
 			# for animal mitochondrial genome assembly
 			Rscript --vanilla "${_POLAPLIB_DIR}"/polap-r-filter-organelle-reads.R \

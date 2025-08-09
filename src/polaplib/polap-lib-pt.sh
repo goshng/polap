@@ -82,7 +82,7 @@ function _polap_lib_pt-extract-dna {
 
 	if [[ -s "${ptdir}/circular_path_1_concatenated.fa" ]]; then
 		cp "${_ptdna_extracted_fasta}" "${_ptdna_fasta}"
-		_polap_log0 "output: ${_ptdna_fasta}"
+		_polap_log1 "ptDNA extracted: ${_ptdna_fasta}"
 
 		# NOTE: we could use this instead.
 		#
@@ -95,6 +95,6 @@ function _polap_lib_pt-extract-dna {
 			--fasta "${outdir}/pt2.0.fa" \
 			"${gfa}"
 	else
-		_polap_log0 "output: no ptDNA"
+		_polap_log0 "no ptDNA is extracted from the graph."
 	fi
 }

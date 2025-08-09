@@ -47,6 +47,8 @@ fi
 ################################################################################
 _polap_lib_assemble-rate() {
 
+	_polap_log0 "Assemble using seed contigs by adjusting data sampling"
+
 	# we can use all polap_var_ variables.
 	# They are determined by output, i, and j.
 	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
@@ -66,6 +68,7 @@ _polap_lib_assemble-rate() {
 	# remove NUMT/NUPT using rkmerrc
 	# if [[ "${_arg_data_type}" == "pacbio-hifi" ]] && [[ "${_arg_plastid}" == "off" ]]; then
 	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+		_polap_log0 "  use TIPPo's rmkc method to remove unusual PacBio HiFi reads before assembly"
 		local _pread_sel="ptgaul-reads"
 		local index=$(<"${_polap_var_oga_contig}/index.txt")
 		local fq="${_polap_var_oga_seeds}/${_pread_sel}/${index}.fq"
@@ -88,6 +91,8 @@ _polap_lib_assemble-rate() {
 #
 _polap_lib_assemble-omega() {
 
+	_polap_log0 "Assemble using seed contigs by adjusting omega"
+
 	# we can use all polap_var_ variables.
 	# They are determined by output, i, and j.
 	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
@@ -107,6 +112,7 @@ _polap_lib_assemble-omega() {
 	# remove NUMT/NUPT using rkmerrc
 	# if [[ "${_arg_data_type}" == "pacbio-hifi" ]] && [[ "${_arg_plastid}" == "off" ]]; then
 	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+		_polap_log0 "  use TIPPo's rmkc method to remove unusual PacBio HiFi reads before assembly"
 		local _pread_sel="ptgaul-reads"
 		local index=$(<"${_polap_var_oga_contig}/index.txt")
 		local fq="${_polap_var_oga_seeds}/${_pread_sel}/${index}.fq"

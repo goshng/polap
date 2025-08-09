@@ -90,6 +90,7 @@ _arg_long_reads_is="off"
 # the default out directory o is created in polap-variables-main.sh
 # o/log, o/tmp, and the polap.log are handled in polap-variables-main.sh
 _arg_outdir="o"
+_arg_prefix=""
 _arg_logdir="${_arg_outdir}/log"
 _arg_anotherdir="o"
 _arg_archive="a"
@@ -673,6 +674,11 @@ parse_commandline() {
 			_arg_outdir="${_key##-o}"
 			_arg_outdir="${_arg_outdir%/}"
 			_arg_logdir="${_arg_outdir}/log"
+			;;
+		--prefix)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_prefix="$2"
+			shift
 			;;
 		--anotherdir)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

@@ -65,7 +65,6 @@ _polap_lib_readassemble-annotate-read-pt() {
 
 	local MTAA="${_POLAPLIB_DIR}"/polap-mt.1.c70.3.fna
 	local PTAA="${_POLAPLIB_DIR}"/polap-pt.2.c70.3.fna
-	# local NTAA="${_POLAPLIB_DIR}"/polap-mt.noncds.3k.c80.fna
 
 	_polap_log2 "    map reads on mitochondrial genes using minimap2"
 	_polap_log3_cmdout minimap2 -cx \
@@ -98,7 +97,7 @@ _polap_lib_readassemble-annotate-read-pt() {
 		--output "${annotatedir}" \
 		--min-mapq ${_arg_annotate_read_min_mapq} \
 		--min-identity ${_arg_annotate_read_min_identity}
-
+	# --min-pt 1
 }
 
 # input: _arg_long_reads
@@ -129,16 +128,20 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 	# flye v2.9.6
 	if _polap_lib_version-check_flye_version; then
 		rm -rf "${annotatedir}"/pt
-		_polap_log0 "flye 2.9.6 assembly on ptDNA"
-		flye "${_arg_flye_data_type}" "${annotatedir}"/pt0.fq -t "${_arg_threads}" \
-			--out-dir "${annotatedir}"/pt 2>"${_polap_output_dest}"
+		_polap_log0 "flye 2.9.6 assembly of ptDNA using selected reads: ${annotatedir}/pt0.fq"
+		flye "${_arg_flye_data_type}" \
+			"${annotatedir}"/pt0.fq \
+			-t "${_arg_threads}" \
+			--out-dir "${annotatedir}"/pt \
+			2>"${_polap_output_dest}"
 		if [[ -s "${annotatedir}"/pt/assembly_graph.gfa ]]; then
-			_polap_log1 "output: PT assembly: ${annotatedir}/pt/assembly_graph.gfa"
+			_polap_log2 "    output: PT assembly: ${annotatedir}/pt/assembly_graph.gfa"
 		else
 			_polap_log0 "output: no PT assembly"
+			return
 		fi
 	else
-		echo "Flye 2.9.6 is required. Aborting."
+		_polap_log0 "ERROR: Flye 2.9.6 is required. Aborting."
 		exit 1
 	fi
 	#
@@ -167,7 +170,8 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 			"${annotatedir}/pt.0.png"
 
 	else
-		_log_echo "No pt assembly 0"
+		_polap_log0 "No ptDNA assembly stage 0"
+		return
 	fi
 
 	ln -s pt "${annotatedir}"/pt0
@@ -188,14 +192,15 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 			-i pt$i -j pt$j
 
 		if [[ ! -s "${annotatedir}/pt$i/mt.contig.name-pt$j" ]]; then
-			_log_echo "No pt seed for pt$j"
-			break
+			_polap_log0 "No ptDNA seed for pt$j"
+			return
 		fi
 
 		_polap_lib_assemble-rate \
 			-o "${annotatedir}" \
 			-l "${_arg_long_reads}" \
-			-i pt$i -j pt$j -w 1500
+			-w 1500 \
+			-i pt$i -j pt$j
 
 		if [[ -s "${annotatedir}/pt$j/assembly_graph.gfa" ]]; then
 			_polap_lib_pt-extract-dna \
@@ -215,11 +220,10 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 			ln -sf "pt$j/assembly_graph.png" \
 				"${annotatedir}/pt.$j.png"
 
-			_polap_log0 "ptDNA assembly: ${annotatedir}/pt.$j.gfa"
+			_polap_log1 "ptDNA assembly: ${annotatedir}/pt.$j.gfa"
 		else
-			_polap_log0 "No pt assembly $j"
+			_polap_log0 "No ptDNA assembly stage $j"
 		fi
-
 	done
 	#
 	# END: function readassemble-ont-pt-iterate_genus_species
@@ -243,11 +247,18 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 			-w 1500 \
 			-i pt$i -j pt$j
 	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
-		_polap_lib_assemble-omega \
+		_polap_lib_assemble-rate \
 			-o "${annotatedir}" \
 			-l "${_arg_long_reads}" \
+			-w 1500 \
 			-i pt$i -j pt$j
 	fi
+
+	_polap_lib_annotate \
+		-o "${annotatedir}" \
+		-i pt$j
+
+	_polap_log0_column "${annotatedir}/pt$j/pt-contig-annotation-depth-table.txt"
 
 	# link gfa, fa, png.
 	if [[ -s "${annotatedir}/pt$j/assembly_graph.gfa" ]]; then
@@ -268,25 +279,25 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 		ln -sf "pt$j/assembly_graph.png" \
 			"${annotatedir}/pt.$j.png"
 
-		_polap_log0 "ptDNA assembly: ${annotatedir}/pt.$j.gfa"
+		_polap_log1 "ptDNA assembly: ${annotatedir}/pt.$j.gfa"
 	else
-		_polap_log0 "No pt assembly $j"
+		_polap_log0 "No ptDNA assembly stage $j"
 	fi
 
 	# final link
-	ln -sf "${annotatedir}/pt.$j.fa" \
+	ln -sf "annotate-read-pt/pt.$j.fa" \
 		"${_arg_outdir}/pt.0.fa"
 
-	ln -sf "${annotatedir}/pt.$j.gfa" \
+	ln -sf "annotate-read-pt/pt.$j.gfa" \
 		"${_arg_outdir}/pt.0.gfa"
 
-	ln -sf "${annotatedir}/pt.$j.png" \
+	ln -sf "annotate-read-pt/pt.$j.png" \
 		"${_arg_outdir}/pt.0.png"
 }
 
-# animal mtDNA
+# same as pt case
 _polap_lib_readassemble-annotate-read-mt() {
-	local type="${1:-pt}"
+	local type="${1:-mt}"
 
 	local annotatedir="${_arg_outdir}/annotate-read-${type}"
 	local pt_table mt_table at_table all_table
@@ -330,18 +341,25 @@ _polap_lib_readassemble-annotate-read-mt() {
 		--pt "${annotatedir}"/pt.paf \
 		--output "${annotatedir}" \
 		--min-mapq ${_arg_annotate_read_min_mapq} \
-		--min-identity ${_arg_annotate_read_min_identity}
+		--min-identity ${_arg_annotate_read_min_identity} \
+		--min-pt 1
 
 }
 
 # input: _arg_long_reads
 _polap_lib_readassemble-assemble-annotated-read-mt() {
 
-	local annotatedir="${_arg_outdir}"/annotate-read-pt
+	local annotatedir="${_arg_outdir}"/annotate-read-mt
+	local annotatedir_pt="${_arg_outdir}"/annotate-read-pt
 
 	local pt_table mt_table at_table all_table
 	_polap_lib_readassemble-common-variables \
 		annotatedir pt_table mt_table at_table all_table
+
+	if [[ ! -s "${mt_table}" ]]; then
+		_polap_log0 "ERROR: no mt table: ${mt_table}"
+		return 1
+	fi
 
 	#######################################################################
 	# BEGIN: function _run_polap_assemble-annotated-read
@@ -349,27 +367,32 @@ _polap_lib_readassemble-assemble-annotated-read-mt() {
 	# for animal mitochondrial genome assembly
 	Rscript --vanilla "${_POLAPLIB_DIR}"/polap-r-filter-organelle-reads.R \
 		--table "${mt_table}" \
-		--length 1e+6 \
+		--length 1e+8 \
 		--output "${annotatedir}"/mt0.id.txt
 
 	# tail -n +2 "${mt_table}" | cut -f1 >"${annotatedir}"/mt.id.txt
+	rm -f "${annotatedir}"/mt.fq
 	seqtk subseq "${_arg_long_reads}" "${annotatedir}"/mt0.id.txt >"${annotatedir}"/mt.fq
 
 	# subsample the data so that mt.fq is less than 100Mb
 	rm -f "${annotatedir}"/mt0.fq
 	_polap_lib_fastq-sample-to \
-		"${annotatedir}"/mt.fq "${annotatedir}"/mt0.fq "1m"
+		"${annotatedir}"/mt.fq "${annotatedir}"/mt0.fq "100m"
 
 	# flye v2.9.6
 	if _polap_lib_version-check_flye_version; then
 		rm -rf "${annotatedir}"/mt
-		_polap_log0 "flye 2.9.6 assembly on mtDNA"
-		flye "${_arg_flye_data_type}" "${annotatedir}"/mt0.fq -t "${_arg_threads}" \
-			--out-dir "${annotatedir}"/mt 2>"${_polap_output_dest}"
+		_polap_log0 "flye 2.9.6 assembly of ptDNA using selected reads: ${annotatedir}/mt0.fq"
+		flye "${_arg_flye_data_type}" \
+			"${annotatedir}"/mt0.fq \
+			-t "${_arg_threads}" \
+			--out-dir "${annotatedir}"/mt \
+			2>"${_polap_output_dest}"
 		if [[ -s "${annotatedir}"/mt/assembly_graph.gfa ]]; then
-			_polap_log1 "output: MT assembly: ${annotatedir}/mt/assembly_graph.gfa"
+			_polap_log2 "    output: MT assembly: ${annotatedir}/mt/assembly_graph.gfa"
 		else
 			_polap_log0 "output: no MT assembly"
+			return
 		fi
 	else
 		echo "Flye 2.9.6 is required. Aborting."
@@ -402,13 +425,29 @@ _polap_lib_readassemble-assemble-annotated-read-mt() {
 			"${annotatedir}/mt.0.png"
 
 	else
-		_log_echo "No mt assembly 0"
+		_polap_log0 "No mtDNA assembly stage 0"
 	fi
 
-	ln -s mt "${annotatedir}"/mt0
+	# use mt as mt0
+	ln -sf mt "${annotatedir}"/mt0
+
+	# polap command: filter reference hifi
+	local resolved_fastq="${_arg_long_reads}"
+	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+		if [[ -s "${_arg_outdir}/pt.0.gfa" ]]; then
+			_polap_log3 "      polap command filter hifi data by ptDNA reference"
+			_polap_lib_filter-reads-by-reference \
+				-o "${annotatedir}" \
+				-l "${_arg_long_reads}" \
+				--reference "${_arg_outdir}"/pt.0.gfa
+			resolved_fastq="${annotatedir}/kmer/ref-filtered.fastq"
+		else
+			_polap_log0 "No ptDNA for filtering: ${_arg_outdir}/pt.0.gfa"
+		fi
+	fi
 
 	local i
-	for i in {0..1}; do
+	for ((i = 0; i < 6; i++)); do
 		local j=$((i + 1))
 
 		# NOTE: annotate for seeding
@@ -418,19 +457,29 @@ _polap_lib_readassemble-assemble-annotated-read-mt() {
 			-i mt$i
 
 		# NOTE: mito seed
-		_polap_lib_seed-plastid \
+		_polap_lib_seed-mito \
 			-o "${annotatedir}" \
 			-i mt$i -j mt$j
 
 		if [[ ! -s "${annotatedir}/mt$i/mt.contig.name-mt$j" ]]; then
-			_log_echo "No mt seed for mt$j"
+			_polap_log0 "No mt seed for mt$j"
 			break
 		fi
 
-		_polap_lib_assemble-rate \
-			-o "${annotatedir}" \
-			-l "${_arg_long_reads}" \
-			-i mt$i -j mt$j -w 1500
+		# polap command: assemble-rate
+		if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+			_polap_log1 "use then input long reads filtered to remove reads from ptDNA for mtDNA assembly"
+			_polap_lib_assemble-rate \
+				-o "${annotatedir}" \
+				-l "${resolved_fastq}" \
+				-i mt$i -j mt$j -w 3000
+		elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+			_polap_log1 "use the only selected long reads using organelle gene annotation for mtDNA assembly"
+			_polap_lib_assemble-rate \
+				-o "${annotatedir}" \
+				-l "${annotatedir}"/mt.fq \
+				-i mt$i -j mt$j -w 3000
+		fi
 
 		if [[ -s "${annotatedir}/mt$j/assembly_graph.gfa" ]]; then
 			_polap_lib_mt-extract-dna \
@@ -459,6 +508,74 @@ _polap_lib_readassemble-assemble-annotated-read-mt() {
 	#
 	# END: function readassemble-ont-pt-iterate_genus_species
 	#######################################################################
+
+	# use the generated reference to assemble a mitochondrial genome.
+	local j=$((i + 1))
+	# polap command: annotate
+	_polap_lib_annotate \
+		-o "${annotatedir}" \
+		-i mt$i
+
+	# polap command: seed-mito
+	_polap_lib_seed-mito \
+		-o "${annotatedir}" \
+		-i mt$i -j mt$j
+
+	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+		# --reference "${annotatedir_pt}"/pt.3.gfa \
+		_polap_log1 "use then input long reads filtered to remove reads from ptDNA for mtDNA assembly"
+		_polap_lib_assemble-rate \
+			-o "${annotatedir}" \
+			-l "${resolved_fastq}" \
+			-i mt$i -j mt$j -w 3000
+	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+		# -l "${_arg_long_reads}" \
+		# -l "${annotatedir}"/mt.fq \
+		_polap_log1 "use then input long reads with an adjusted omega for the final stage mtDNA assembly"
+		_polap_lib_assemble-omega \
+			-o "${annotatedir}" \
+			-l "${_arg_long_reads}" \
+			-i mt$i -j mt$j
+	fi
+
+	_polap_lib_annotate \
+		-o "${annotatedir}" \
+		-i mt$j
+
+	_polap_log0_column "${annotatedir}/mt$j/contig-annotation-depth-table.txt"
+
+	if [[ -s "${annotatedir}/mt$j/assembly_graph.gfa" ]]; then
+		_polap_lib_bandage \
+			"${annotatedir}/mt$j/assembly_graph.gfa" \
+			"${annotatedir}/mt$j/assembly_graph.png"
+
+		ln -sf "mt$j/assembly_graph.gfa" \
+			"${annotatedir}/mt.$j.gfa"
+
+		ln -sf "mt$j/assembly_graph.png" \
+			"${annotatedir}/mt.$j.png"
+
+		_polap_log0 "mtDNA assembly: ${annotatedir}/mt.$j.gfa"
+	else
+		_polap_log0 "No MT assembly $j"
+	fi
+
+	# extract mtDNA sequence if you can
+	#
+
+	# final link
+	i=$((j - 1))
+	ln -sf "annotate-read-mt/mt.$i.gfa" \
+		"${_arg_outdir}/mt.0.gfa"
+
+	ln -sf "annotate-read-mt/mt.$i.png" \
+		"${_arg_outdir}/mt.0.png"
+
+	ln -sf "annotate-read-mt/mt.$j.gfa" \
+		"${_arg_outdir}/mt.1.gfa"
+
+	ln -sf "annotate-read-mt/mt.$j.png" \
+		"${_arg_outdir}/mt.1.png"
 }
 
 ################################################################################
@@ -509,30 +626,36 @@ _polap_lib_readassemble-assemble-annotated-read-nt() {
 		--table "${pt_table}" \
 		--length 3e+9 \
 		--output "${annotatedir}"/pt0mt.id.txt
-	_polap_log1 "pt0mt.id: $(cat "${annotatedir}"/pt0mt.id.txt | wc -l)"
+	_polap_log1 "  pt0mt.id: $(cat "${annotatedir}"/pt0mt.id.txt | wc -l)"
 
 	Rscript --vanilla "${_POLAPLIB_DIR}"/polap-r-filter-organelle-reads.R \
 		--table "${mt_table}" \
 		--length 1e+9 \
 		--output "${annotatedir}"/mt0.id.txt
-	_polap_log1 "mt0.id: $(cat "${annotatedir}"/mt0.id.txt | wc -l)"
+	_polap_log1 "  mt0.id: $(cat "${annotatedir}"/mt0.id.txt | wc -l)"
 
 	Rscript --vanilla "${_POLAPLIB_DIR}"/polap-r-filter-organelle-reads.R \
 		--table "${at_table}" \
 		--length 1e+9 \
 		--output "${annotatedir}"/at0.id.txt
-	_polap_log1 "at0.id: $(cat "${annotatedir}"/at0.id.txt | wc -l)"
+	_polap_log1 "  at0.id: $(cat "${annotatedir}"/at0.id.txt | wc -l)"
 
 	# subtract pt.id.txt from at0.id.txt
 	grep -vFf "${annotatedir}"/pt0mt.id.txt "${annotatedir}"/at0.id.txt \
 		>"${annotatedir}"/at.id.txt
-	_polap_log1 "at.id (at0 - pt0mt): $(cat "${annotatedir}"/at.id.txt | wc -l)"
+	_polap_log1 "  at.id (at0 - pt0mt): $(cat "${annotatedir}"/at.id.txt | wc -l)"
 
-	cat "${annotatedir}"/mt0.id.txt "${annotatedir}"/at.id.txt |
-		sort | uniq >"${annotatedir}"/mt.id.txt
+	if [[ "${_arg_noncoding}" == "on" ]]; then
+		cat "${annotatedir}"/mt0.id.txt "${annotatedir}"/at.id.txt |
+			sort | uniq >"${annotatedir}"/mt.id.txt
+	else
+		cat "${annotatedir}"/mt0.id.txt |
+			sort | uniq >"${annotatedir}"/mt.id.txt
+	fi
 	_polap_log1 "mt.id (mt0 + at): $(cat "${annotatedir}"/mt.id.txt | wc -l)"
 
 	# tail -n +2 "${mt_table}" | cut -f1 >"${annotatedir}"/mt.id.txt
+	rm -f "${annotatedir}"/mt.fq
 	seqtk subseq "${_arg_long_reads}" "${annotatedir}"/mt.id.txt >"${annotatedir}"/mt.fq
 
 	# subsample the data so that mt.fq is less than 100Mb
@@ -543,13 +666,17 @@ _polap_lib_readassemble-assemble-annotated-read-nt() {
 	# flye v2.9.6
 	if _polap_lib_version-check_flye_version; then
 		rm -rf "${annotatedir}"/mt
-		_polap_log0 "flye 2.9.6 assembly on mtDNA"
-		flye "${_arg_flye_data_type}" "${annotatedir}"/mt0.fq -t "${_arg_threads}" \
-			--out-dir "${annotatedir}"/mt 2>"${_polap_output_dest}"
+		_polap_log0 "flye 2.9.6 assembly of ntDNA using selected reads: ${annotatedir}/mt0.fq"
+		flye "${_arg_flye_data_type}" \
+			"${annotatedir}"/mt0.fq \
+			-t "${_arg_threads}" \
+			--out-dir "${annotatedir}"/mt \
+			2>"${_polap_output_dest}"
 		if [[ -s "${annotatedir}"/mt/assembly_graph.gfa ]]; then
-			_polap_log1 "output: MT assembly: ${annotatedir}/mt/assembly_graph.gfa"
+			_polap_log2 "    output: MT assembly: ${annotatedir}/mt/assembly_graph.gfa"
 		else
 			_polap_log0 "output: no MT assembly"
+			return
 		fi
 	else
 		echo "Flye 2.9.6 is required. Aborting."
@@ -581,12 +708,16 @@ _polap_lib_readassemble-assemble-annotated-read-nt() {
 	# polap command: filter reference hifi
 	local resolved_fastq="${_arg_long_reads}"
 	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
-		_polap_log3 "      polap command filter hifi data by ptDNA reference"
-		_polap_lib_filter-reads-by-reference \
-			-o "${annotatedir}" \
-			-l "${_arg_long_reads}" \
-			--reference "${annotatedir_pt}"/pt.3.gfa
-		resolved_fastq="${annotatedir}/kmer/ref-filtered.fastq"
+		if [[ -s "${_arg_outdir}/pt.0.gfa" ]]; then
+			_polap_log3 "      polap command filter hifi data by ptDNA reference"
+			_polap_lib_filter-reads-by-reference \
+				-o "${annotatedir}" \
+				-l "${_arg_long_reads}" \
+				--reference "${_arg_outdir}"/pt.0.gfa
+			resolved_fastq="${annotatedir}/kmer/ref-filtered.fastq"
+		else
+			_polap_log0 "No ptDNA for filtering: ${_arg_outdir}/pt.0.gfa"
+		fi
 	fi
 
 	# repeat several times
@@ -596,7 +727,7 @@ _polap_lib_readassemble-assemble-annotated-read-nt() {
 	# polap command: mt
 	# polap command: bandage png
 	local i
-	for ((i = 0; i < 2; i++)); do
+	for ((i = 0; i < 6; i++)); do
 		local j=$((i + 1))
 		# polap command: annotate
 		_polap_lib_annotate \
@@ -610,12 +741,13 @@ _polap_lib_readassemble-assemble-annotated-read-nt() {
 
 		# polap command: assemble-rate
 		if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+			_polap_log1 "use then input long reads filtered to remove reads from ptDNA for mtDNA assembly"
 			_polap_lib_assemble-rate \
 				-o "${annotatedir}" \
 				-l "${resolved_fastq}" \
-				--reference "${annotatedir_pt}"/pt.3.gfa \
 				-i mt$i -j mt$j -w 3000
 		elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+			_polap_log1 "use the only selected long reads using organelle gene annotation for mtDNA assembly"
 			_polap_lib_assemble-rate \
 				-o "${annotatedir}" \
 				-l "${annotatedir}"/mt.fq \
@@ -657,16 +789,28 @@ _polap_lib_readassemble-assemble-annotated-read-nt() {
 
 	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
 		# --reference "${annotatedir_pt}"/pt.3.gfa \
+		_polap_log1 "use then input long reads filtered to remove reads from ptDNA for mtDNA assembly"
 		_polap_lib_assemble-rate \
 			-o "${annotatedir}" \
 			-l "${resolved_fastq}" \
 			-i mt$i -j mt$j -w 3000
 	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+		# -l "${_arg_long_reads}" \
+		# _polap_log1 "use the only selected long reads using organelle gene annotation for mtDNA assembly"
+		#
+		# -l "${annotatedir}"/mt.fq \
+		_polap_log1 "use then input long reads with an adjusted omega for the final stage mtDNA assembly"
 		_polap_lib_assemble-omega \
 			-o "${annotatedir}" \
 			-l "${_arg_long_reads}" \
 			-i mt$i -j mt$j
 	fi
+
+	_polap_lib_annotate \
+		-o "${annotatedir}" \
+		-i mt$j
+
+	_polap_log0_column "${annotatedir}/mt$j/contig-annotation-depth-table.txt"
 
 	if [[ -s "${annotatedir}/mt$j/assembly_graph.gfa" ]]; then
 		_polap_lib_bandage \
@@ -684,14 +828,17 @@ _polap_lib_readassemble-assemble-annotated-read-nt() {
 		_polap_log0 "No MT assembly $j"
 	fi
 
-	# extract mtDNA sequence if you can
-	#
-
 	# final link
-	ln -sf "${annotatedir}/mt.$j.gfa" \
-		"${_arg_outdir}/mt.0.gfa"
+	i=$((j - 1))
+	ln -sf "annotate-read-nt/mt.$i.gfa" \
+		"${_arg_outdir}/nt.0.gfa"
 
-	ln -sf "${annotatedir}/mt.$j.png" \
-		"${_arg_outdir}/mt.0.png"
+	ln -sf "annotate-read-nt/mt.$i.png" \
+		"${_arg_outdir}/nt.0.png"
 
+	ln -sf "annotate-read-nt/mt.$j.gfa" \
+		"${_arg_outdir}/nt.1.gfa"
+
+	ln -sf "annotate-read-nt/mt.$j.png" \
+		"${_arg_outdir}/nt.1.png"
 }

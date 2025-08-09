@@ -145,7 +145,7 @@ HEREDOC
 		_polap_lib_random-get
 		_seed=${_polap_var_random_number}
 
-		_polap_log1 "  arg1: ${_arg_species}"
+		# _polap_log1 "  arg1: ${_arg_species}"
 		_polap_log1 "  input1: ${_infile}"
 		_polap_log1 "  output1: ${_outfile}"
 		_polap_log1 "  random seed: ${_seed}"

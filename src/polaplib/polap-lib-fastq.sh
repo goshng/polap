@@ -209,3 +209,41 @@ _polap_lib_fastq-sample() {
 		_polap_log2 "No sampling because the rate is greater than 1: for ${infile} -> ${outfile}"
 	fi
 }
+
+# Use the first 25 sequences to determine the sequencing data type
+# illumina: average length < 500
+# pacbio-hifi: length >= 500 and Q30 greater than 90.
+# nano-raw: length >= 500 and Q30 greater than 30.
+_polap_lib_fastq-check-type() {
+	local file="$1"
+	if [[ ! -f "$file" ]]; then
+		# echo "Error: File not found: $file" >&2
+		echo "unknown"
+		return 1
+	fi
+
+	# Use head to avoid reading the full file
+	local stats
+	stats=$(head -n 100 "$file" | seqkit stats -Ta 2>/dev/null | awk 'NR==2')
+
+	if [[ -z "$stats" ]]; then
+		echo "Error: seqkit stats failed on $file" >&2
+		echo "unknown"
+		return 1
+	fi
+
+	local avg_len q30
+	avg_len=$(echo "$stats" | awk '{print $7}')
+	q30=$(echo "$stats" | awk '{print $15}')
+	avgqual=$(echo "$stats" | awk '{print $16}')
+
+	if (($(echo "$avg_len < 500" | bc -l))); then
+		echo "illumina"
+	elif (($(echo "$avg_len >= 500 && $q30 > 90 && $avgqual > 20" | bc -l))); then
+		echo "pacbio-hifi"
+	elif (($(echo "$avg_len >= 500 && $q30 < 50 && $avgqual < 20" | bc -l))); then
+		echo "nano-raw"
+	else
+		echo "unknown"
+	fi
+}

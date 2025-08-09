@@ -94,7 +94,7 @@ _polap_lib_seed-mito() {
 		_polap_log0 "No mitochondrial contigs found in the gfa file."
 		return 1
 	fi
-	_polap_log0 "mtcontigname set: ${mtcontignameset}"
+	_polap_log1 "mtcontigname set: ${mtcontignameset}"
 
 	cp -p "${mtcontignameset}" "${_polap_var_mtcontigname}"
 }

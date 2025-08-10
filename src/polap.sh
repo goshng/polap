@@ -144,6 +144,7 @@ source "${_POLAPLIB_DIR}/polap-cmd-archive.sh"
 # assemble
 source "${_POLAPLIB_DIR}/polap-cmd-assemble.sh"
 source "${_POLAPLIB_DIR}/polap-cmd-disassemble.sh"
+source "${_POLAPLIB_DIR}/polap-cmd-disassemble-hifi.sh"
 source "${_POLAPLIB_DIR}/run-polap-function-directional.sh"
 
 # miscellaneous

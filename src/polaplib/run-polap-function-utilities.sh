@@ -77,7 +77,7 @@ function _polap_utility_convert_bp {
 # Example usage
 # bp=$(convert_unit_to_bp 1gb)
 ################################################################################
-function _polap_utility_convert_unit_to_bp {
+function delete_polap_utility_convert_unit_to_bp {
 	local input="$1"
 	local number unit
 
@@ -98,6 +98,38 @@ function _polap_utility_convert_unit_to_bp {
 	mbp | mb | m) echo "$(bc <<<"$number * 1000000")" ;;
 	kbp | kb | k) echo "$(bc <<<"$number * 1000")" ;;
 	bp | b) echo "$number" ;;
+	*)
+		echo "Error: Invalid unit '$unit'" >&2
+		return 1
+		;;
+	esac
+}
+
+function _polap_utility_convert_unit_to_bp {
+	local input="$1"
+	local number unit
+
+	# Separate the numeric part and the unit
+	number=$(echo "$input" | grep -oE '^[0-9]+(\.[0-9]+)?')
+	unit=$(echo "$input" | grep -oE '[a-zA-Z]+$' | tr '[:upper:]' '[:lower:]')
+
+	# Handle the case where no unit is provided
+	if [[ -z "$unit" ]]; then
+		echo "${number%.*}" # remove fractional part
+		return 0
+	fi
+
+	# Helper: multiply, strip fractional part
+	_convert() {
+		bc <<<"$1" | sed 's/\..*$//'
+	}
+
+	case "$unit" in
+	tbp | tb | t) _convert "$number * 1000000000000" ;;
+	gbp | gb | g) _convert "$number * 1000000000" ;;
+	mbp | mb | m) _convert "$number * 1000000" ;;
+	kbp | kb | k) _convert "$number * 1000" ;;
+	bp | b) echo "${number%.*}" ;;
 	*)
 		echo "Error: Invalid unit '$unit'" >&2
 		return 1

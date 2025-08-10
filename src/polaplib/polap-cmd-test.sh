@@ -187,6 +187,13 @@ HEREDOC
 		_polap_log0 "next i: ${inum_next}"
 	fi
 
+	if [[ "${_arg_menu[1]}" == "unit" ]]; then
+		local _a=1.54m
+		_polap_log0 "_a before: ${_a}"
+		local _a=$(_polap_utility_convert_unit_to_bp "${_a}")
+		_polap_log0 "_a converted: ${_a}"
+	fi
+
 	if [[ "${_arg_menu[1]}" == "link" ]]; then
 		local infile="${_arg_menu[2]}"
 		local outfile="${_arg_menu[3]}"

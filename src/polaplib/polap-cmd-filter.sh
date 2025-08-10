@@ -146,6 +146,10 @@ Examples:
     polap filter reference -l o/reads.fq --reference ref-plastid.gfa
 	    -> o/ref-filtered.fastq.gz
 
+  Subtract ptDNA HiFi reads:
+    polap filter reference hifi -l o/reads.fq --reference ref-plastid.gfa
+	    -> o/ref-filtered.fastq.gz
+
   Select ptDNA gfa:
     use bandage to filter by depth
     automatically select ptDNA
@@ -453,7 +457,6 @@ _polap_filter-reads-by-umap() {
 
 	# flye --pacbio-hifi selected_reads.fq -t 56 --asm-coverage 30 -g 1000000 --out-dir pt
 }
-
 
 _polap_filter-ont-reads-by-reference() {
 

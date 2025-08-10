@@ -234,6 +234,13 @@ HEREDOC
 )
 
 ##### INSERT_HELP_HERE #####
+help_message_run_polap_disassemble_hifi=$(
+	cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
 help_message_get_conf_long_sra_id=$(
 	cat <<HEREDOC
 
@@ -1567,6 +1574,211 @@ EOF
 }
 
 ##### INSERT_FUNCTION_HERE #####
+run-polap-disassemble-hifi_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+	local _brg_type="${3:-nt}"
+
+	local _brg_inum=0
+	local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+	local _timing_txt _stdout_txt _memlog_file _summary_file
+
+	brg_common_setup \
+		_brg_outdir _brg_sindex _brg_adir _brg_title \
+		_brg_target _brg_rundir _brg_outdir_i \
+		_timing_txt _stdout_txt _memlog_file _summary_file
+
+	# Extra folders
+	local _brg_outdir_t="${_brg_outdir}/${opt_t_arg}"
+	local _brg_titledir="${_brg_outdir_i}/${_brg_title}-${_brg_type}"
+	local _brg_runtitledir="${_brg_rundir}-${_brg_title}-${_brg_type}"
+
+	if [[ -v _long["$_brg_target"] ]]; then
+		local long_sra="${_long["$_brg_target"]}"
+	else
+		echo "Error: ${_brg_target} because it is not in the CSV."
+		return
+	fi
+
+	local _brg_coverage="50m"
+
+	local platform="${_platform["$_brg_target"]}"
+	local option_data_type="--nano-raw"
+
+	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
+		option_data_type="--pacbio-hifi"
+		if [[ "${_brg_type}" == "pt" ]]; then
+			lib-polap-readassemble-hifi-pt-brg-coverage
+		else
+			lib-polap-readassemble-hifi-brg-coverage
+		fi
+	elif [[ "${platform}" == "ONT" ]]; then
+		lib-polap-readassemble-brg-coverage
+	fi
+
+	_log_echo "Do: disassemble ${_brg_type}DNA using seed reads of coverage (${_brg_coverage}) with ${option_data_type}: ${_brg_rundir}"
+
+	if [[ ! -s "${long_sra}".fastq ]]; then
+		data-long_genus_species "${_brg_outdir}"
+	fi
+
+	rm -rf "${_brg_rundir}"
+	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
+		if [[ ! -s "${_brg_outdir}/short_expected_genome_size.txt" ]]; then
+			write-genomesize-10x "${_brg_outdir}"
+		fi
+		mkdir -p "${_brg_rundir}"
+		cp "${_brg_outdir}/short_expected_genome_size.txt" "${_brg_rundir}"
+	fi
+
+	data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_coverage}"
+
+	# local resolved_fastq=$(<"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt")
+	local resolved_fastq="${long_sra}.fastq"
+	# echo "  - FASTQ: $resolved_fastq"
+
+	# Start memory logger
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	if [[ "${_brg_type}" == "pt" ]]; then
+		_log_echo "Not Tested Yet!"
+		return
+		${_polap_cmd} disassemble \
+			"${option_data_type}" \
+			--plastid \
+			-l "${resolved_fastq}" \
+			-o "${_brg_rundir}"
+	elif [[ "${_brg_type}" == "animal" ]]; then
+		_log_echo "Not Tested Yet!"
+		return
+		${_polap_cmd} disassemble \
+			"${option_data_type}" \
+			--animal \
+			-l "${resolved_fastq}" \
+			-o "${_brg_rundir}"
+	else
+		# elif [[ "${_brg_type}" == "mt" ]]; then
+		if [[ "${_local_host}" != "$(hostname)" ]]; then
+			mkdir -p "${_brg_rundir}"
+			scp "${_local_host}:$PWD/${_brg_rundir}/pt.0.gfa" "${_brg_rundir}/"
+			# sync_genus_species "${_brg_outdir}" "${_brg_sindex}" --pull
+		fi
+		# else
+
+		# assemble ptDNA first
+		if [[ ! -s "${_brg_rundir}/pt.0.gfa" ]]; then
+			${_polap_cmd} readassemble \
+				"${option_data_type}" \
+				--plastid \
+				-l "${resolved_fastq}" \
+				-o "${_brg_rundir}"
+		fi
+
+		if [[ -s "${_brg_rundir}/pt.0.gfa" ]]; then
+
+			# filter by ptDNA reference
+			if [[ ! -s "${_brg_rundir}/kmer/ref-filtered.fastq" ]]; then
+				_log_echo "filter by ptDNA reference"
+				${_polap_cmd} filter reference hifi \
+					-l "${resolved_fastq}" \
+					--reference "${_brg_rundir}/pt.0.gfa" \
+					-o "${_brg_rundir}"
+			fi
+
+			# plant mt
+			local n=15
+			${_polap_cmd} disassemble-hifi \
+				"${option_data_type}" \
+				-l "${_brg_rundir}/kmer/ref-filtered.fastq" \
+				--disassemble-a 100m \
+				--disassemble-b 1500m \
+				--disassemble-m 1.5m \
+				--disassemble-memory 100 \
+				--disassemble-n $n \
+				--disassemble-stop-after stage1 \
+				-o "${_brg_rundir}"
+
+			# check the last index or select one index for seed contigs
+			n=$(find "${_brg_rundir}/0/disassemble/1/1" -maxdepth 1 -type d -printf "%f\n" |
+				grep -E '^[0-9]+$' |
+				sort -n |
+				tail -n 1)
+
+			n=$((n + 1))
+
+			# create seed contigs
+			${_polap_cmd} seed-mito \
+				-o "${_brg_rundir}/0/disassemble/1/1" \
+				-i $((n - 1)) -j $n
+
+			for ((i = 1; i < 5; i++)); do
+				cp "${_brg_rundir}/0/disassemble/1/1/$((n - 1))/mt.contig.name-$n" \
+					"${_brg_rundir}/0/disassemble/1/1/$((n - 1))/mt.contig.name-$((n + i))"
+			done
+
+			${_polap_cmd} assemble-rate \
+				"${option_data_type}" \
+				-o "${_brg_rundir}/0/disassemble/1/1" \
+				-l "${resolved_fastq}" \
+				-i $((n - 1)) -j $n -w 3000
+			ln -s "0/disassemble/1/1/$n/assembly_graph.gfa" \
+				"${_brg_rundir}/nt.2.gfa"
+
+			${_polap_cmd} assemble-omega \
+				"${option_data_type}" \
+				-o "${_brg_rundir}/0/disassemble/1/1" \
+				-l "${resolved_fastq}" \
+				-i $((n - 1)) -j $((n + 1))
+			ln -s "0/disassemble/1/1/$((n + 1))/assembly_graph.gfa" \
+				"${_brg_rundir}/nt.3.gfa"
+
+			# use the filtered data only
+			resolved_fastq="${_brg_rundir}/kmer/ref-filtered.fastq"
+
+			${_polap_cmd} assemble-rate \
+				"${option_data_type}" \
+				-o "${_brg_rundir}/0/disassemble/1/1" \
+				-l "${resolved_fastq}" \
+				-i $((n - 1)) -j $((n + 2)) -w 3000
+			ln -s "0/disassemble/1/1/$((n + 2))/assembly_graph.gfa" \
+				"${_brg_rundir}/nt.4.gfa"
+
+			${_polap_cmd} assemble-omega \
+				"${option_data_type}" \
+				-o "${_brg_rundir}/0/disassemble/1/1" \
+				-l "${resolved_fastq}" \
+				-i $((n - 1)) -j $((n + 3))
+			ln -s "0/disassemble/1/1/$((n + 3))/assembly_graph.gfa" \
+				"${_brg_rundir}/nt.5.gfa"
+
+		else
+			_log_echo "No ptDNA to filter!"
+		fi
+	fi
+
+	conda deactivate
+
+	# Summarize results after job (with previously defined summary function)
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+	# Save some results
+	rsync -azuq --max-size=5M \
+		"${_brg_rundir}/annotate-read-${_brg_type}"/ \
+		"${_brg_titledir}"/
+
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		sync_genus_species "${_brg_outdir}" "${_brg_sindex}" --main-push
+		if [[ "${_brg_type}" == "nt" ]]; then
+			rm -rf "${_brg_rundir}" "${_brg_outdir}"
+			rm -f "${long_sra}.fastq" "${long_sra}-10x.fastq.tar.gz"
+		fi
+	fi
+}
+
 run-polap-readassemble-animal-mt_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
@@ -10212,6 +10424,7 @@ check_and_prepare_fastq() {
 					scp "$remote_host:$remote_match" .
 				fi
 				if [[ "$remote_match" == *.tar.gz ]]; then
+					echo "  decompressing ..."
 					tar -zxf $(basename "$remote_match")
 				fi
 				result=$(basename "$remote_match")
@@ -10730,7 +10943,10 @@ function _polap_lib_data-execute-common-subcommand {
 		list-subcommands)
 		handled=1
 		;;
-		##### INSERT_COMMAND_HERE #####
+	##### INSERT_COMMAND_HERE #####
+	run-polap-disassemble-hifi)
+		handled=1
+		;;
 	run-polap-readassemble-animal-mt)
 		handled=1
 		;;
@@ -11448,6 +11664,17 @@ function _polap_lib_data-execute-common-subcommand {
 		fi
 		;;
 		##### INSERT_CASE_HERE #####
+	run-polap-disassemble-hifi)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
 	run-polap-readassemble-animal-mt)
 		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
 			echo "Help: ${subcmd1} <outdir> [index:0|N]"

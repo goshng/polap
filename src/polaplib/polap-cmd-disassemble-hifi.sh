@@ -15,54 +15,58 @@
 ################################################################################
 
 ################################################################################
-# Polap subcommand, disassemble, assembles ptDNAs using a sampling approach.
-# This is the main module of polap subcommand, disassemble, which has many
+# Polap subcommand, disassemble-hifi, assembles ptDNAs using a sampling approach.
+# This is the main module of polap subcommand, disassemble-hifi, which has many
 # functions.
 #
 # Subcommands:
-# function _run_polap_disassemble {
-# function _run_polap_step-disassemble {
-# function _run_polap_polish-disassemble {
-# function _run_polap_step-disassemble-archive-cfile {
+# function _run_polap_disassemble-hifi {
+# function _run_polap_step-disassemble-hifi {
+# function _run_polap_polish-disassemble-hifi {
+# function _run_polap_step-disassemble-hifi-archive-cfile {
 #
 # Function:
-# function _polap_disassemble-cflye {
-# function _run_polap_step-disassemble-archive-cfile {
-# function _disassemble_report1 {
-# function _disassemble_report2 {
-# function _disassemble_report3y {
-# function _disassemble_report3 {
+# function _polap_disassemble-hifi-cflye {
+# function _run_polap_step-disassemble-hifi-archive-cfile {
+# function _disassemble-hifi_report1 {
+# function _disassemble-hifi_report2 {
+# function _disassemble-hifi_report3y {
+# function _disassemble-hifi_report3 {
 # function _polap_lib_table-cflye-main-summary-header {
 # function _polap_lib_table-cflye-main-summary-content {
 # function _polap_lib_table-cflye-polish-summary-header {
 # function _polap_lib_table-cflye-polish-summary-content {
-# function _disassemble-step1 {
-# function _disassemble-step2 {
-# function _disassemble-step3 {
-# function _disassemble-step8 {
-# function _disassemble-step9 {
-# function _disassemble-step10 {
-# function _disassemble-step11 {
-# function _disassemble-step12 {
-# function _disassemble-step13 {
-# function _disassemble-step14 {
-# function _disassemble-step15 {
-# function _disassemble-step16 {
-# function _disassemble-redownsample {
-# function _disassemble-stage0 {
-# function _disassemble-stage1 {
-# function _disassemble-stage2 {
-# function _disassemble-stage3 {
-# function _run_polap_disassemble {
-# function _run_polap_step-disassemble {
+# function _disassemble-hifi-step1 {
+# function _disassemble-hifi-step2 {
+# function _disassemble-hifi-step3 {
+# function _disassemble-hifi-step8 {
+# function _disassemble-hifi-step9 {
+# function _disassemble-hifi-step10 {
+# function _disassemble-hifi-step11 {
+# function _disassemble-hifi-step12 {
+# function _disassemble-hifi-step13 {
+# function _disassemble-hifi-step14 {
+# function _disassemble-hifi-step15 {
+# function _disassemble-hifi-step16 {
+# function _disassemble-hifi-redownsample {
+# function _disassemble-hifi-stage0 {
+# function _disassemble-hifi-stage1 {
+# function _disassemble-hifi-stage2 {
+# function _disassemble-hifi-stage3 {
+# function _run_polap_disassemble-hifi {
+# function _run_polap_step-disassemble-hifi {
 # function _polap_mafft-compare-two {
-# function _run_polap_polish-disassemble {
+# function _run_polap_polish-disassemble-hifi {
 #
 # See Also:
-# polap-function-disassemble-seeds.sh -> polap-lib-disassemble.sh
-# polap-r-disassemble.R -> polap-r-disassemble.R
-# polap-r-disassemble-man-benchmark-boxplots.R
+# polap-function-disassemble-hifi-seeds.sh -> polap-lib-disassemble-hifi.sh
+# polap-r-disassemble-hifi.R -> polap-r-disassemble-hifi.R
+# polap-r-disassemble-hifi-man-benchmark-boxplots.R
 ################################################################################
+
+# Edit
+# polap-r-disassemble-hifi.R
+# polap-function-disassemble-hifi-seeds.sh
 
 ################################################################################
 # Ensure that the current script is sourced only once
@@ -86,7 +90,7 @@ fi
 : "${_POLAP_RELEASE:=0}"
 
 # Function to extract the number from the filename
-_disassemble_extract_number_circular_path() {
+_disassemble-hifi_extract_number_circular_path() {
 	local filename="$1"
 	# Extract the base name (remove leading paths)
 	local basename=$(basename "$filename")
@@ -116,7 +120,7 @@ _disassemble_extract_number_circular_path() {
 # _alpha=$(_disassemble_adjust_alpha_by_delta "$_alpha" "$_delta" "decrease")
 # echo "Updated _alpha (after revert): $_alpha"
 # Function to adjust a value of _alpha
-_disassemble_adjust_alpha_by_delta() {
+_disassemble-hifi_adjust_alpha_by_delta() {
 	local _alpha=$1     # Current value of _alpha (float)
 	local _delta=$2     # Delta value (float)
 	local _direction=$3 # Direction: "increase" or "decrease"
@@ -288,9 +292,9 @@ _polap_find-genome-size() {
 	return 0
 }
 
-# _run_polap_step-disassemble-cflye <out> <long.fq> <genomesize> <alpha> <resume:on>
+# _run_polap_step-disassemble-hifi-cflye <out> <long.fq> <genomesize> <alpha> <resume:on>
 #
-function _polap_disassemble-cflye {
+function _polap_disassemble-hifi-cflye {
 	local out="${1}"
 	local long_read="${2}"
 	local expected_genome_size="${3}"
@@ -349,7 +353,7 @@ function _polap_disassemble-cflye {
 	return 0
 }
 
-function _run_polap_step-disassemble-archive-cfile {
+function _run_polap_step-disassemble-hifi-archive-cfile {
 	local cfile="${1}"
 
 	if [[ -s "${cfile}" ]]; then
@@ -361,7 +365,7 @@ function _run_polap_step-disassemble-archive-cfile {
 	return 0
 }
 
-function _disassemble_report1 {
+function _disassemble-hifi_report1 {
 	local _case_infer="${1:-0}"
 	local s
 	local s2
@@ -398,17 +402,17 @@ function _disassemble_report1 {
 	_polap_log1_head "${d}"
 	d1="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-ordered.txt"
 	d2="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-ordered.pdf"
-	_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
+	_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble-hifi.R \
         --table ${s} \
         --out ${d1} \
         --plot ${d2}"
 	_rstatus="$?"
 	if [[ "$_rstatus" -ne 0 ]]; then
-		_polap_log0 "ERROR: polap-r-disassemble.R on ${s}"
+		_polap_log0 "ERROR: polap-r-disassemble-hifi.R on ${s}"
 	fi
 }
 
-function _disassemble_report2 {
+function _disassemble-hifi_report2 {
 	local _case_infer="${1:-0}"
 	local s
 	local s2
@@ -445,17 +449,17 @@ function _disassemble_report2 {
 	_polap_log1_head "${d}"
 	d1="${_disassemble_dir}/${_arg_disassemble_i}/2/summary1-ordered.txt"
 	d2="${_disassemble_dir}/${_arg_disassemble_i}/2/summary1-ordered.pdf"
-	_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
+	_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble-hifi.R \
         --table ${s} \
         --out ${d1} \
         --plot ${d2}"
 	_rstatus="$?"
 	if [[ "$_rstatus" -ne 0 ]]; then
-		_polap_log0 "ERROR: polap-r-disassemble.R on ${s}"
+		_polap_log0 "ERROR: polap-r-disassemble-hifi.R on ${s}"
 	fi
 }
 
-function _disassemble_report3y {
+function _disassemble-hifi_report3y {
 	s="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1.txt"
 	d="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1y.md"
 	if [[ -s "${s}" ]]; then
@@ -469,7 +473,7 @@ function _disassemble_report3y {
 		_polap_log1_head "${d}"
 		d1="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1y-ordered.txt"
 		d2="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1y-ordered.pdf"
-		_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
+		_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble-hifi.R \
         --table ${s} \
         --out ${d1} \
         --plot ${d2} 2>/dev/null"
@@ -478,7 +482,7 @@ function _disassemble_report3y {
 }
 
 # rewrite the stage 3 results
-function _disassemble_report3 {
+function _disassemble-hifi_report3 {
 	local _brg_stage="${1:-3}"
 	s="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1.txt"
 	d="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1.md"
@@ -493,7 +497,7 @@ function _disassemble_report3 {
 		_polap_log1_head "${d}"
 		d1="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1-ordered.txt"
 		d2="${_disassemble_dir}/${_arg_disassemble_i}/${_brg_stage}/summary1-ordered.pdf"
-		_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
+		_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble-hifi.R \
 		      --table ${s} \
 		      --out ${d1} \
 		      --plot ${d2} 2>/dev/null"
@@ -501,7 +505,7 @@ function _disassemble_report3 {
 	return 0
 }
 
-_disassemble_find_folder_with_max_coverage() {
+_disassemble-hifi_find_folder_with_max_coverage() {
 	local _var_mtdna="${1}"
 	local max_value=-1
 	local max_folder=""
@@ -512,7 +516,7 @@ _disassemble_find_folder_with_max_coverage() {
 
 	shopt -s nullglob # Enable nullglob so that the loop gets no elements if no match
 	for _ptdna in "${_var_mtdna}"/circular_path_*_concatenated.fa; do
-		j=$(_disassemble_extract_number_circular_path "${_ptdna}")
+		j=$(_disassemble-hifi_extract_number_circular_path "${_ptdna}")
 		if [[ -f "${_var_mtdna}/${j}/coverage1.txt" ]]; then
 			local value=$(<"${_var_mtdna}/${j}/coverage1.txt")
 			if (($(echo "$value > $max_value" | bc -l))); then
@@ -664,7 +668,7 @@ function _polap_lib_table-cflye-polish-summary-content {
 # count the number of bases of a fastq and save the number in a text file
 # arg1: long-read fastq
 # arg2: long_total_length.txt
-function _disassemble-step1 {
+function _disassemble-hifi-step1 {
 	local _input="$1"
 	local _output="$2"
 
@@ -686,7 +690,7 @@ function _disassemble-step1 {
 # arg1: output concatenated fastq
 # arg2: input short-read fastq 1
 # arg3: input short-read fastq 2
-function _disassemble-step2 {
+function _disassemble-hifi-step2 {
 	local _input_short_reads="${1}"
 	local _input1_short_read="$2"
 	local _input2_short_read="$3"
@@ -711,7 +715,7 @@ function _disassemble-step2 {
 
 # count bases of a short-read sequencing fastq file
 # arg1: a short-read fastq file
-function _disassemble-step3 {
+function _disassemble-hifi-step3 {
 	local _input="$1"
 	local _output="$2"
 
@@ -732,7 +736,7 @@ function _disassemble-step3 {
 	fi
 }
 
-function _disassemble-step8 {
+function _disassemble-hifi-step8 {
 	local _outdir="${1}"
 	local _long_read="${2}"
 	local _summary_genome_size="${3}"
@@ -749,7 +753,7 @@ function _disassemble-step8 {
 		_polap_log2 "  found: ${_outdir}/00-assembly, and cflye must have been tried so skipping it."
 	else
 		# cflye assemble stage
-		_polap_disassemble-cflye \
+		_polap_disassemble-hifi-cflye \
 			"${_outdir}" "${_long_read}" "${_summary_genome_size}" "${_alpha}"
 	fi
 
@@ -804,7 +808,7 @@ function _disassemble-step8 {
 	echo "${arr[@]}"
 }
 
-function _disassemble-step9 {
+function _disassemble-hifi-step9 {
 	local _outdir="${1}"
 	local _alpha="${2}"
 	local _outdir_draft_assembly_size="${_outdir}/draft_assembly_size.txt"
@@ -823,12 +827,12 @@ function _disassemble-step9 {
 
 	# adjust alpha
 	if ((_arg_disassemble_m < _draft_assembly_size)); then
-		_alpha=$(_disassemble_adjust_alpha_by_delta "${_alpha}" \
+		_alpha=$(_disassemble-hifi_adjust_alpha_by_delta "${_alpha}" \
 			"${_arg_disassemble_delta}" \
 			"increase")
 		_polap_log2 "      alpha increased: ${_alpha}"
 	else
-		_alpha=$(_disassemble_adjust_alpha_by_delta "${_alpha}" \
+		_alpha=$(_disassemble-hifi_adjust_alpha_by_delta "${_alpha}" \
 			"${_arg_disassemble_delta}" \
 			"decrease")
 		_polap_log2 "      alpha decrease (if not negative): ${_alpha}"
@@ -840,7 +844,7 @@ function _disassemble-step9 {
 	echo "${arr[@]}"
 }
 
-function _disassemble-step10 {
+function _disassemble-hifi-step10 {
 	local _outdir="${1}"
 	local _contigger_edges_gfa="${_outdir}/30-contigger/graph_final.gfa"
 	local _contigger_edges_fasta="${_outdir}/30-contigger/graph_final.fasta"
@@ -873,7 +877,7 @@ function _disassemble-step10 {
 	echo "${arr[@]}"
 }
 
-function _disassemble-step11 {
+function _disassemble-hifi-step11 {
 	local _outdir="${1}"
 
 	local _contigger_edges_gfa="${_outdir}/30-contigger/graph_final.gfa"
@@ -898,7 +902,7 @@ function _disassemble-step11 {
 	fi
 }
 
-function _disassemble-step12 {
+function _disassemble-hifi-step12 {
 	local _outdir="${1}"
 
 	local _contigger_edges_gfa="${_outdir}/30-contigger/graph_final.gfa"
@@ -913,7 +917,7 @@ function _disassemble-step12 {
 		if [[ -s "${_mtcontigname}" ]]; then
 			_polap_log2 "    found: ${_mtcontigname}, so skipping seeds ..."
 		else
-			polap_disassemble-seeds "${_contigger_edges_gfa}" \
+			polap_disassemble-hifi-seeds "${_contigger_edges_gfa}" \
 				"${_ga_annotation_all}" \
 				"${_mtcontigname}"
 		fi
@@ -932,7 +936,7 @@ function _disassemble-step12 {
 # -1 if no gfa
 # -2 if too many segments
 # some numbers if properly
-function _disassemble-step13 {
+function _disassemble-hifi-step13 {
 	local _outdir="${1}"
 	local _summary_num_circular_paths=-1
 	local _summary_num_circular_nodes=-1
@@ -998,7 +1002,7 @@ function _disassemble-step13 {
 	echo "${arr[@]}"
 }
 
-function _disassemble-step14 {
+function _disassemble-hifi-step14 {
 	local _var_mtdna="${1}"
 	local _circular_path_fasta="${_var_mtdna}/circular_path_1_concatenated.fa"
 	local _arg_unpolished_fasta="${_var_mtdna}/ptdna.0.fa"
@@ -1031,7 +1035,7 @@ function _disassemble-step14 {
 			# 14-1. compute the coverage for each candidate
 			shopt -s nullglob # Enable nullglob so that the loop gets no elements if no match
 			for _ptdna in "${_var_mtdna}"/circular_path_*_concatenated.fa; do
-				j=$(_disassemble_extract_number_circular_path "${_ptdna}")
+				j=$(_disassemble-hifi_extract_number_circular_path "${_ptdna}")
 				_ptdir="${_var_mtdna}/${j}"
 				# _polap_log3_pipe "python ${_POLAPLIB_DIR}/polap-py-compare2ptdna.py \
 				_polap_log3_pipe "command time -v python ${_POLAPLIB_DIR}/polap-py-compare2ptdna.py \
@@ -1045,7 +1049,7 @@ function _disassemble-step14 {
 			shopt -u nullglob # Restore default behavior
 
 			# 14-2. find the one with the max coverage
-			_folder_with_max_coverage=$(_disassemble_find_folder_with_max_coverage "${_var_mtdna}")
+			_folder_with_max_coverage=$(_disassemble-hifi_find_folder_with_max_coverage "${_var_mtdna}")
 			if [[ $? -eq 0 ]]; then
 				# Calculate absolute difference using bc
 				_summary_coverage_ref=$(<"${_var_mtdna}/${_folder_with_max_coverage}/coverage1.txt")
@@ -1123,7 +1127,7 @@ function _disassemble-step14 {
 	# )
 }
 
-function _disassemble-step15 {
+function _disassemble-hifi-step15 {
 	local var_mtdna="${1}"
 	local _summary_pident
 	local _ptdna="${_var_mtdna}/ptdna.1.fa"
@@ -1155,11 +1159,11 @@ function _disassemble-step15 {
 	echo "${_summary_pident}"
 }
 
-# local _a=($(_disassemble-step16 "${_var_mtdna}"))
+# local _a=($(_disassemble-hifi-step16 "${_var_mtdna}"))
 # _nseq="${_a[0]}"
 # _summary_gc="${_a[1]}"
 # _summary_length="${_a[2]}"
-function _disassemble-step16 {
+function _disassemble-hifi-step16 {
 	local var_mtdna="${1}"
 	local _nseq
 	local _summary_gc
@@ -1200,7 +1204,7 @@ function _disassemble-step16 {
 	echo "${arr[@]}"
 }
 
-function _disassemble-redownsample {
+function _disassemble-hifi-redownsample {
 
 	local input_file date input1 output1 long_read_bp genome_size
 	local long_read_coverage target_coverage sampling_rate random_seed
@@ -1208,7 +1212,7 @@ function _disassemble-redownsample {
 	input_file="${_ga_outdir}/lx.txt" # change if your input comes from a different file
 
 	local -A redown # this array is local to this function
-	_disassemble_parse_redownsample "$input_file" redown
+	_disassemble-hifi_parse_redownsample "$input_file" redown
 
 	# Use the array locally
 	_polap_log0 "Input1: ${redown[input1]}"
@@ -1225,7 +1229,7 @@ function _disassemble-redownsample {
 		-o "${redown[output1]}" 2>${_polap_output_dest}
 
 	input_file="${_ga_outdir}/sx.txt" # change if your input comes from a different file
-	_disassemble_parse_redownsample "$input_file" redown
+	_disassemble-hifi_parse_redownsample "$input_file" redown
 	_polap_log0 "input1: ${redown[input1]}"
 	_polap_log0 "input2: ${redown[input2]}"
 	_polap_log0 "output1: ${redown[output1]}"
@@ -1250,7 +1254,7 @@ function _disassemble-redownsample {
 		>"${_ga_outdir}/s.fq"
 }
 
-_disassemble_parse_redownsample() {
+_disassemble-hifi_parse_redownsample() {
 	local input_file="$1"
 	local -n result="$2" # name-ref to caller's associative array
 
@@ -1329,7 +1333,7 @@ _disassemble_parse_redownsample() {
 #
 # created and deleted:
 # o/s.fq
-function _disassemble-stage0 {
+function _disassemble-hifi-stage0 {
 	_polap_log1 "  subsample the input total read data using a given target coverage: ${_arg_downsample}x"
 
 	local _polap_output_dest="/dev/null"
@@ -1360,7 +1364,7 @@ function _disassemble-stage0 {
 	# if [[ -s "${_outdir_genome_size}" ]]; then
 	# 	_polap_log2 "    found: genome size: ${_outdir_genome_size}"
 	# else
-	# 	_disassemble-step2 "${_total_input_short_reads}" "${_infile1}" "${_infile2}"
+	# 	_disassemble-hifi-step2 "${_total_input_short_reads}" "${_infile1}" "${_infile2}"
 	# fi
 
 	# estimate the genome size using the input short-read data
@@ -1375,7 +1379,7 @@ function _disassemble-stage0 {
 					"${_arg_long_reads}" \
 					"${_arg_outdir}"
 			else
-				_disassemble-step2 "${_total_input_short_reads}" "${_infile1}" "${_infile2}"
+				_disassemble-hifi-step2 "${_total_input_short_reads}" "${_infile1}" "${_infile2}"
 				_polap_find-genome-size \
 					"${_total_input_short_reads}" \
 					"${_arg_outdir}"
@@ -1446,7 +1450,8 @@ function _disassemble-stage0 {
 			_polap_log2 "    sampling rate is not less than 1: ${_rate}"
 			_polap_log2 "    no subsampling of input: ${_infile}"
 			_polap_log1 "    no subsampling: ${_outfile}"
-			ln -s "$PWD/${_infile}" "${_outfile}"
+			_polap_lib_filepath-smart_ln_s2 "${_infile}" "${_outfile}"
+			# ln -s "$PWD/${_infile}" "${_outfile}"
 		fi
 	fi
 
@@ -1547,7 +1552,7 @@ function _disassemble-stage0 {
 			ln -s "$PWD/${_infile2}" "${_outfile2}"
 		fi
 		_polap_log1 "   concatenate the two downsampled short-read data files"
-		_disassemble-step2 "${_ga_input_short_reads}" "${_outfile1}" "${_outfile2}"
+		_disassemble-hifi-step2 "${_ga_input_short_reads}" "${_outfile1}" "${_outfile2}"
 		check_file_existence "${_ga_input_short_reads}"
 		# _polap_log2 "     clean-up the two downsampled short-read data files"
 		# _polap_log3_cmd rm -f "${_outfile1}" "${_outfile2}"
@@ -1563,7 +1568,7 @@ function _disassemble-stage0 {
 }
 
 # stage 1
-function _disassemble-stage1 {
+function _disassemble-hifi-stage1 {
 	_disassemble_i_stage="${_disassemble_i}/1"
 
 	_polap_log1 "    determine the case ..."
@@ -1598,22 +1603,23 @@ function _disassemble-stage1 {
 			fi
 		elif [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
 			if [[ -z "${_arg_steps_include}" ]]; then
-				_arg_steps_include="1-16"
+				# _arg_steps_include="1-16"
+				_arg_steps_include="1,4,5,7,8,9,10,11"
 			fi
 		else
 			_polap_log0 "    no short-read data specified, so use a range of genome sizes"
 			die "ERROR: not implemented yet!"
 		fi
 		_polap_log3_cmd mkdir -p "${_disassemble_i}/1"
-		_disassemble_make_params_stage1 "${_disassemble_i}/1/params.txt"
-		_run_polap_step-disassemble 1
+		_disassemble-hifi_make_params_stage1 "${_disassemble_i}/1/params.txt"
+		_run_polap_step-disassemble-hifi 1
 		_rstatus="$?"
 		[[ "$_rstatus" -ne 0 ]] && return "$_rstatus"
 	else
 		# --disassemble-s -> only one sample or single s
 		_polap_log1 "    --disassemble-s -> no iteration or no stage 1"
 		_arg_steps_include="1,3"
-		_run_polap_step-disassemble 1
+		_run_polap_step-disassemble-hifi 1
 		local _ga_outdir="${_arg_outdir}/${_arg_inum}"
 		local _ga_long_total_length=$(<"${_ga_outdir}/long_total_length.txt")
 		if [[ -z "${_arg_disassemble_s}" ]]; then
@@ -1633,7 +1639,7 @@ function _disassemble-stage1 {
 }
 
 # stage 2
-function _disassemble-stage2 {
+function _disassemble-hifi-stage2 {
 	# select the size and alpha using stage 1
 	_disassemble_i_stage="${_disassemble_i}/1"
 	_selected_index_stage1="${_disassemble_i}/1/selected-index.txt"
@@ -1647,20 +1653,20 @@ function _disassemble-stage2 {
 			if [[ "${_arg_disassemble_align_reference}" == "off" ]] &&
 				[[ "${_arg_disassemble_c_is}" == "on" ]]; then
 				# case: compare
-				_disassemble_report1
+				_disassemble-hifi_report1
 			else
 				# case: check or infer
-				_disassemble_report1 true
+				_disassemble-hifi_report1 true
 			fi
 			#
-			# _polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
+			# _polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble-hifi.R \
 			#      --table ${_disassemble_i_stage}/summary1.txt \
 			#      --out ${_disassemble_i_stage}/summary1-ordered.txt \
 			#      --plot ${_disassemble_i_stage}/summary1-ordered.pdf \
 			#      2>${_polap_output_dest}"
 			# _rstatus="$?"
 			# if [[ "$_rstatus" -ne 0 ]]; then
-			# 	_polap_log0 "ERROR: polap-r-disassemble.R on ${_disassemble_i_stage}/summary1.txt"
+			# 	_polap_log0 "ERROR: polap-r-disassemble-hifi.R on ${_disassemble_i_stage}/summary1.txt"
 			# fi
 		else
 			die "ERROR: no such file stage1 summary: ${_summary1_txt}"
@@ -1766,14 +1772,14 @@ function _disassemble-stage2 {
 	fi
 
 	_polap_log3_cmd mkdir -p "${_disassemble_i}/2"
-	_disassemble_make_params_stage2 "${_disassemble_i}/2/params.txt"
-	_run_polap_step-disassemble 2
+	_disassemble-hifi_make_params_stage2 "${_disassemble_i}/2/params.txt"
+	_run_polap_step-disassemble-hifi 2
 	_rstatus="$?"
 	[[ "$_rstatus" -ne 0 ]] && return "$_rstatus"
 }
 
 # stage 3
-function _disassemble-stage3 {
+function _disassemble-hifi-stage3 {
 	# stage 3
 
 	_disassemble_i_stage="${_disassemble_i}/2"
@@ -1789,10 +1795,10 @@ function _disassemble-stage3 {
 		if [[ "${_arg_disassemble_align_reference}" == "off" ]] &&
 			[[ "${_arg_disassemble_c_is}" == "on" ]]; then
 			# case: compare
-			_disassemble_report2
+			_disassemble-hifi_report2
 		else
 			# case: check or infer
-			_disassemble_report2 true
+			_disassemble-hifi_report2 true
 		fi
 		#
 		# _polap_log1 "  draw the length distribution of the ptDNA sequences in stage 2"
@@ -1939,18 +1945,18 @@ function _disassemble-stage3 {
 		_polap_log2 "    input1: ${_circular_path_fasta}"
 
 		# FIXME: disassemble example cannot call itself because of this
-		# running in a subshell. Output from _disassemble-step14 gets out to
+		# running in a subshell. Output from _disassemble-hifi-step14 gets out to
 		# the three return values.
 		# Use other way to get the 3 return values not using echo at the end of
 		# the function.
 		#
 		# Code 1:
-		# local _a=($(_disassemble-step14 "${_var_mtdna}"))
+		# local _a=($(_disassemble-hifi-step14 "${_var_mtdna}"))
 		#
 		# Code 2:
-		# local _a # return of function: _disassemble-step14
-		# _disassemble-step14 "${_var_mtdna}"
-		local _a=($(_disassemble-step14 "${_var_mtdna}" | tail -n 1))
+		# local _a # return of function: _disassemble-hifi-step14
+		# _disassemble-hifi-step14 "${_var_mtdna}"
+		local _a=($(_disassemble-hifi-step14 "${_var_mtdna}" | tail -n 1))
 		_summary_coverage_ref="${_a[0]}"
 		_summary_coverage_target="${_a[1]}"
 		_summary_j_candidate="${_a[2]}"
@@ -2003,7 +2009,7 @@ function _disassemble-stage3 {
 		_polap_log1 "  simple-polishing: ${_arg_disassemble_simple_polishing}"
 
 		if [[ -s "${_arg_unpolished_fasta}" ]]; then
-			_run_polap_polish-disassemble
+			_run_polap_polish-disassemble-hifi
 		else
 			_polap_log0 "WARNING: no such file: ${_disassemble_i}/pt.0.fa"
 		fi
@@ -2011,7 +2017,7 @@ function _disassemble-stage3 {
 		# step 6
 		_disassemble_i_stage="${_disassemble_i}/3"
 
-		_disassemble_report3
+		_disassemble-hifi_report3
 
 		_summary1_ordered="${_disassemble_dir}/${_arg_disassemble_i}/3/summary1-ordered.txt"
 
@@ -2060,7 +2066,7 @@ function _disassemble-stage3 {
 	fi
 }
 
-_disassemble_make_params_txt() {
+_disassemble-hifi_make_params_txt() {
 	local _disassemble_params_file="${1}"
 
 	rm -f "${_disassemble_params_file}"
@@ -2076,7 +2082,7 @@ _disassemble_make_params_txt() {
 	printf "%s: %s\n" "Memory" "${_arg_disassemble_memory}" >>"${_disassemble_params_file}"
 }
 
-_disassemble_make_params_stage1() {
+_disassemble-hifi_make_params_stage1() {
 	local _disassemble_params_file="${1}"
 
 	rm -f "${_disassemble_params_file}"
@@ -2094,7 +2100,7 @@ _disassemble_make_params_stage1() {
 	printf "%s: %s\n" "Memory" "${_arg_disassemble_memory}" >>"${_disassemble_params_file}"
 }
 
-_disassemble_make_params_stage2() {
+_disassemble-hifi_make_params_stage2() {
 	local _disassemble_params_file="${1}"
 
 	rm -f "${_disassemble_params_file}"
@@ -2110,7 +2116,7 @@ _disassemble_make_params_stage2() {
 	printf "%s: %s\n" "B" "${_arg_disassemble_b}" >>"${_disassemble_params_file}"
 }
 
-_disassemble_make_params_stage3() {
+_disassemble-hifi_make_params_stage3() {
 	local _disassemble_params_file="${1}"
 
 	rm -f "${_disassemble_params_file}"
@@ -2297,7 +2303,7 @@ _disassemble_make_params_stage3() {
 # the iterative workflow, yielding a high-quality plastid genome assembly.
 #
 ################################################################################
-function _run_polap_disassemble {
+function _run_polap_disassemble-hifi {
 	# Enable debugging if _POLAP_DEBUG is set
 	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_/Menu_/)"
@@ -2351,16 +2357,6 @@ function _run_polap_disassemble {
 	local _disassemble_dir="${_ga_outdir}/disassemble"
 	local _ga_input_short_reads="${_ga_outdir}/s.fq"
 
-	# if ! run_check_flye; then
-	# 	_polap_log0 "Suggestion: (polap) $ conda install goshng::cflye"
-	# 	exit $EXIT_ERROR
-	# fi
-
-	# plastid genome is assembled; not for mitochondrial genome assembly
-	_arg_plastid="on"
-
-	# convert --disassemble-a and --disassemble-b
-
 	# base unit conversion to a regular positive number: 1k -> 1000
 	_arg_disassemble_s=$(_polap_utility_convert_unit_to_bp "${_arg_disassemble_s}")
 	_arg_disassemble_a=$(_polap_utility_convert_unit_to_bp "${_arg_disassemble_a}")
@@ -2378,6 +2374,51 @@ function _run_polap_disassemble {
 	fi
 
 	help_message=$(
+		cat <<'EOF'
+Name:
+  polap disassemble-hifi - assemble orgonalle genome from HiFi reads by sampling reads
+
+Synopsis:
+  polap disassemble-hifi [options]
+
+Description:
+  polap disassemble-hifi samples HiFi reads and assembles organelle genomes using the sampled reads. The assembly is done by the cflye program, which is a modified version of Flye that is optimized for organelle genomes. The assembly is done in three stages:
+
+	1. Disassemble HiFi reads into disjointigs.
+
+	2. Assemble disjointigs into a circular genome.
+
+	3. Polish the circular genome using short reads.
+
+Options:
+  -l FASTQ
+    reads data file
+
+Examples:
+  Assemble plastid genome from HiFi reads:
+    polap annotate-read -l l.fq
+
+TODO:
+  Dev.
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# Display help message
+	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
+		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
+		man "$manfile" >&3
+		rm -f "$manfile"
+		return
+	fi
+
+	x_help_message=$(
 		cat <<HEREDOC
 Plastid genome assembly by subsampling long-read data without references
 
@@ -2466,7 +2507,7 @@ NUMBER=2
 cp -s SRR7153095.fastq l.fq
 cp -s SRR7161123_1.fastq s1.fq
 cp -s SRR7161123_2.fastq s2.fq
-$(basename "$0") disassemble
+$(basename "$0") disassemble-hifi
 
 NUMBER=3
 --------
@@ -2475,7 +2516,7 @@ cp o/00-bioproject/2-mtdna.fasta o/ptdna-reference.fa
 
 NUMBER=4
 --------
-$(basename "$0") disassemble --disassemble-i 1 --stages-include 3 \
+$(basename "$0") disassemble-hifi --disassemble-i 1 --stages-include 3 \
   -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq \
   --disassemble-align-reference --disassemble-c o/ptdna-reference.fa
 
@@ -2489,13 +2530,13 @@ cat o/0/mafft/pident.txt
 
 NUMBER=6
 --------
-$(basename "$0") disassemble --disassemble-i 2 \
+$(basename "$0") disassemble-hifi --disassemble-i 2 \
   -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq \
   --disassemble-align-reference --disassemble-c o/ptdna-reference.fa
 
 NUMBER=7
 --------
-$(basename "$0") disassemble --disassemble-i 3 \
+$(basename "$0") disassemble-hifi --disassemble-i 3 \
   -l SRR7153095.fastq -a SRR7161123_1.fastq -b SRR7161123_2.fastq \
   --disassemble-c o/ptdna-reference.fa
 
@@ -2528,27 +2569,28 @@ cp -pr o-ptgaul/result_3000 o/ptgaul
 
 More menu examples
 ------------------
-$(basename "$0") disassemble view
-$(basename "$0") disassemble view 0
-$(basename "$0") disassemble view x
-$(basename "$0") disassemble view best 0
-$(basename "$0") disassemble view best x
-$(basename "$0") disassemble report
-$(basename "$0") disassemble report coverage <- with known ptDNA
-$(basename "$0") disassemble best 0 46
-$(basename "$0") disassemble best x 2
-$(basename "$0") disassemble archive
-$(basename "$0") disassemble archive polishing <- backup msbwt as well
-$(basename "$0") disassemble polishing
+$(basename "$0") disassemble-hifi view
+$(basename "$0") disassemble-hifi view 0
+$(basename "$0") disassemble-hifi view x
+$(basename "$0") disassemble-hifi view best 0
+$(basename "$0") disassemble-hifi view best x
+$(basename "$0") disassemble-hifi report
+$(basename "$0") disassemble-hifi report coverage <- with known ptDNA
+$(basename "$0") disassemble-hifi best 0 46
+$(basename "$0") disassemble-hifi best x 2
+$(basename "$0") disassemble-hifi archive
+$(basename "$0") disassemble-hifi archive polishing <- backup msbwt as well
+$(basename "$0") disassemble-hifi polishing
 HEREDOC
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return 0
 	[[ ${_arg_menu[1]} == "dev" ]] && _polap_echo0 "${dev_message}" && return 0
+
+	# menu: redo equivalent to --redo
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
-	# Display the content of output files
+	# menu: view
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
 
 		_disassemble_i="${_disassemble_dir}/${_arg_disassemble_i}"
@@ -2611,27 +2653,27 @@ HEREDOC
 		# report 1 --disassemble-i 3
 		if [[ "${_arg_menu[2]}" == "1" ]]; then
 			if [[ "${_arg_menu[3]}" == "thirdfile" ]]; then
-				_disassemble_report1
+				_disassemble-hifi_report1
 			else
-				_disassemble_report1 true
+				_disassemble-hifi_report1 true
 			fi
 		fi
 
 		# report 2 --disassemble-i 3
 		if [[ "${_arg_menu[2]}" == "2" ]]; then
 			if [[ "${_arg_menu[3]}" == "thirdfile" ]]; then
-				_disassemble_report2
+				_disassemble-hifi_report2
 			else
-				_disassemble_report2 true
+				_disassemble-hifi_report2 true
 			fi
 		fi
 
 		if [[ "${_arg_menu[2]}" == "3" ]]; then
-			_disassemble_report3
+			_disassemble-hifi_report3
 		fi
 
 		if [[ "${_arg_menu[2]}" == "3x" ]]; then
-			_disassemble_report3x "${_arg_menu[3]}"
+			_disassemble-hifi_report3x "${_arg_menu[3]}"
 		fi
 
 		# report 3 --disassemble-i 3
@@ -2640,7 +2682,7 @@ HEREDOC
 			s0="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1.txt"
 			d1="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-scatter.txt"
 			d2="${_disassemble_dir}/${_arg_disassemble_i}/1/summary1-scatter.pdf"
-			_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
+			_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble-hifi.R \
         --table ${s0} \
         --out ${d1} \
         --plot ${d2} \
@@ -2654,13 +2696,13 @@ HEREDOC
 					i=$(basename "${i%/}")
 					if [[ -s "${_disassemble_dir}/${i}/summary1.txt" ]]; then
 						if [[ "${_arg_menu[2]}" == "coverage" ]]; then
-							_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
+							_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble-hifi.R \
         --table ${_disassemble_dir}/${i}/summary1.txt \
         --out ${_disassemble_dir}/${i}/summary1-ordered.txt \
         --plot ${_disassemble_dir}/${i}/summary1-ordered.pdf \
 			  --coverage"
 						else
-							_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble.R \
+							_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-disassemble-hifi.R \
         --table ${_disassemble_dir}/${i}/summary1.txt \
         --out ${_disassemble_dir}/${i}/summary1-ordered.txt \
         --plot ${_disassemble_dir}/${i}/summary1-ordered.pdf"
@@ -2731,9 +2773,10 @@ HEREDOC
 		return 0
 	fi
 
+	# menu: downsample
 	if [[ "${_arg_menu[1]}" == "downsample" ]]; then
 
-		_disassemble-stage0
+		_disassemble-hifi-stage0
 
 		# Disable debugging if previously enabled
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -2743,7 +2786,7 @@ HEREDOC
 
 	if [[ "${_arg_menu[1]}" == "redownsample" ]]; then
 
-		_disassemble-redownsample
+		_disassemble-hifi-redownsample
 
 		# read lx.txt
 		# read sx.txt
@@ -2867,8 +2910,8 @@ HEREDOC
 					_polap_log0 "check: ${_contigger_edges_gfa}"
 					_polap_log0 "create: ${_mtcontigname} with e.g., edge_1 that is originated from the ptDNA."
 					_polap_log0 "then execute:disassemble ptgaul 2"
-					_polap_log0 "polap disassemble ptgaul 2 -o ${_arg_outdir}"
-					_polap_log0 "polap disassemble ptgaul 3 -o ${_arg_outdir}"
+					_polap_log0 "polap disassemble-hifi ptgaul 2 -o ${_arg_outdir}"
+					_polap_log0 "polap disassemble-hifi ptgaul 3 -o ${_arg_outdir}"
 				fi
 			fi
 		fi
@@ -2923,7 +2966,7 @@ HEREDOC
 	# menu: polish
 	if [[ "${_arg_menu[1]}" == "polish" ]]; then
 
-		_run_polap_polish-disassemble
+		_run_polap_polish-disassemble-hifi
 
 		# Disable debugging if previously enabled
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -2947,7 +2990,7 @@ HEREDOC
 			cp -s SRR7153095.fastq l.fq
 			cp -s SRR7161123_1.fastq s1.fq
 			cp -s SRR7161123_2.fastq s2.fq
-			"$0" disassemble \
+			"$0" disassemble-hifi \
 				-l SRR7153095.fastq \
 				-a SRR7161123_1.fastq \
 				-b SRR7161123_2.fastq
@@ -2962,10 +3005,10 @@ HEREDOC
 
 		if [[ "${_arg_menu[2]}" == "4" ]]; then
 			# subshell problem
-			# local _a=($(_disassemble-step14 "${_var_mtdna}"))
+			# local _a=($(_disassemble-hifi-step14 "${_var_mtdna}"))
 			_polap_log0 "Assembling the plastid genome and check it with the reference ..."
 			_polap_log0 "  execute the following:"
-			"$0" disassemble \
+			"$0" disassemble-hifi \
 				--stages-include 3 \
 				--disassemble-i 1 \
 				-l SRR7153095.fastq \
@@ -2988,10 +3031,10 @@ HEREDOC
 
 		if [[ "${_arg_menu[2]}" == "6" ]]; then
 			# subshell problem
-			# local _a=($(_disassemble-step14 "${_var_mtdna}"))
+			# local _a=($(_disassemble-hifi-step14 "${_var_mtdna}"))
 			_polap_log0 "Assembling the plastid genome and check it with the reference ..."
 			_polap_log0 "  execute the following:"
-			"$0" disassemble \
+			"$0" disassemble-hifi \
 				--disassemble-i 2 \
 				-l SRR7153095.fastq \
 				-a SRR7161123_1.fastq \
@@ -3003,7 +3046,7 @@ HEREDOC
 		if [[ "${_arg_menu[2]}" == "7" ]]; then
 			_polap_log0 "Assembling the plastid genome and comparing it with the ptGAUL assembly ..."
 			_polap_log0 "  execute the following:"
-			"$0" disassemble \
+			"$0" disassemble-hifi \
 				--disassemble-i 3 \
 				-l SRR7153095.fastq \
 				-a SRR7161123_1.fastq \
@@ -3027,7 +3070,7 @@ HEREDOC
 				-b SRR7161123_2.fastq
 
 			_polap_log0 "Polishing the ptGAUL draft sequence ..."
-			"$0" disassemble ptgaul
+			"$0" disassemble-hifi ptgaul
 		fi
 
 		# Disable debugging if previously enabled
@@ -3043,6 +3086,7 @@ HEREDOC
 	fi
 	conda deactivate
 
+	########################################################################
 	# main
 
 	# save the user provided options
@@ -3123,20 +3167,28 @@ HEREDOC
 	_polap_log1 "  input1: long-read: ${_arg_long_reads}"
 	_polap_log1 "  input2: short-read1: ${_arg_short_read1}"
 	_polap_log1 "  input3: short-read2: ${_arg_short_read2}"
+
 	[[ -s "${_arg_long_reads}" ]] || return ${_POLAP_ERR_CMD_OPTION_LONGREAD}
-	[[ -s "${_arg_short_read1}" ]] || return ${_POLAP_ERR_CMD_OPTION_SHORTREAD}
-	[[ -s "${_arg_short_read2}" ]] || return ${_POLAP_ERR_CMD_OPTION_SHORTREAD}
+
+	if [[ "${_arg_data_type}" != "pacbio-hifi" ]]; then
+		[[ -s "${_arg_short_read1}" ]] || return ${_POLAP_ERR_CMD_OPTION_SHORTREAD}
+		[[ -s "${_arg_short_read2}" ]] || return ${_POLAP_ERR_CMD_OPTION_SHORTREAD}
+	fi
+
 	if [[ "${_arg_long_reads_is}" == "off" ]]; then
 		_polap_log0 "WARNING: we use the default long-read: ${_arg_long_reads}"
 		_polap_log0 "  you do not use -l option for a long-read FASTQ file"
 	fi
-	if [[ "${_arg_short_read1_is}" == "off" ]]; then
-		_polap_log0 "WARNING: we use the default short-read1: ${_arg_short_read1}"
-		_polap_log0 "  you do not use -a option for a short-read FASTQ file"
-	fi
-	if [[ "${_arg_short_read2_is}" == "off" ]]; then
-		_polap_log0 "WARNING: we use the default short-read2: ${_arg_short_read2}"
-		_polap_log0 "  you do not use -b option for a short-read FASTQ file"
+
+	if [[ "${_arg_data_type}" != "pacbio-hifi" ]]; then
+		if [[ "${_arg_short_read1_is}" == "off" ]]; then
+			_polap_log0 "WARNING: we use the default short-read1: ${_arg_short_read1}"
+			_polap_log0 "  you do not use -a option for a short-read FASTQ file"
+		fi
+		if [[ "${_arg_short_read2_is}" == "off" ]]; then
+			_polap_log0 "WARNING: we use the default short-read2: ${_arg_short_read2}"
+			_polap_log0 "  you do not use -b option for a short-read FASTQ file"
+		fi
 	fi
 
 	# if [[ "${_arg_short_read1_is}" == "off" ]]; then
@@ -3174,7 +3226,7 @@ HEREDOC
 		_polap_log3_cmd mkdir -p "${_disassemble_i}"
 		_polap_log1 "  output: ${_disassemble_i}"
 
-		_disassemble-stage0
+		_disassemble-hifi-stage0
 	fi
 
 	# short-read polishing preparation
@@ -3190,10 +3242,20 @@ HEREDOC
 
 		# output: o/disassemble/i/params.txt
 		_disassemble_params_file="${_disassemble_i}/params.txt"
-		_disassemble_make_params_txt "${_disassemble_params_file}"
+		_disassemble-hifi_make_params_txt "${_disassemble_params_file}"
 
-		_disassemble-stage1
+		_disassemble-hifi-stage1
 	fi
+
+	# debug local variables
+	# for debugging: Inline local printing local var
+	# while IFS= read -r line; do
+	# 	if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
+	# 		var="${BASH_REMATCH[1]}"
+	# 		printf "%s=%q\n" "$var" "${!var}"
+	# 	fi
+	# done < <(local -p 2>/dev/null)
+	# return
 
 	if [[ -n "${_arg_disassemble_stop_after}" ]]; then
 		if [[ "${_arg_disassemble_stop_after}" == "stage1" ]]; then
@@ -3205,7 +3267,7 @@ HEREDOC
 	#
 	if _polap_contains_step 2 "${_stage_array[@]}"; then
 		_polap_log1 "  stage 2: assemble with subsample-replicate: run type: ${_run_type}"
-		_disassemble-stage2
+		_disassemble-hifi-stage2
 	fi
 
 	if [[ -n "${_arg_disassemble_stop_after}" ]]; then
@@ -3220,7 +3282,7 @@ HEREDOC
 		else
 			_polap_log1 "  stage 3: assemble with simple-polishing: run type: ${_run_type}"
 		fi
-		_disassemble-stage3
+		_disassemble-hifi-stage3
 
 		# link the output
 		local _s="${_disassemble_i}/pt.subsample-polishing.1.fa"
@@ -3258,12 +3320,13 @@ HEREDOC
 	return 0
 }
 
-function _run_polap_step-disassemble {
+# this is the workhorse function for the disassemble-hifi polap command
+function _run_polap_step-disassemble-hifi {
 	# Enable debugging if _POLAP_DEBUG is set
 	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
-	_arg_plastid="on"
+	# _arg_plastid="on"
 	local _msg_level=2
 	local i
 	local j
@@ -3338,6 +3401,7 @@ function _run_polap_step-disassemble {
 	local _step_array
 
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
+	# replace seeds.sh with something else
 	source "${_POLAPLIB_DIR}/polap-function-disassemble-seeds.sh"
 
 	help_message=$(
@@ -3434,7 +3498,7 @@ HEREDOC
 	_long_read=${_disassemble_dir}/l.fq.gz
 	_summary1_file="${_disassemble_dir}/summary1.txt"
 
-	_polap_log1 "  assemble a plastid genome without reference"
+	_polap_log1 "  assemble an organelle genome without reference"
 
 	if [[ "${_arg1}" -eq 1 ]] || [[ "${_arg1}" -eq 2 ]]; then
 		_polap_log2 "    disassemble stage ${_arg1}."
@@ -3519,7 +3583,7 @@ HEREDOC
 		if [[ -s "${_ga_outdir}/long_total_length.txt" ]]; then
 			_polap_log2 "    found: ${_ga_outdir}/long_total_length.txt"
 		else
-			_disassemble-step1 "${ga_long_reads}" "${_ga_outdir}/long_total_length.txt"
+			_disassemble-hifi-step1 "${ga_long_reads}" "${_ga_outdir}/long_total_length.txt"
 		fi
 	fi
 	check_file_existence "${_ga_outdir}/long_total_length.txt"
@@ -3545,7 +3609,7 @@ HEREDOC
 	# 		fi
 	# 	else
 	# 		die "ERROR: we must have ${_ga_input_short_reads} in stage 0."
-	# 		_disassemble-step2 "${_ga_input_short_reads}" "${ga_short_read1}" "${ga_short_read2}"
+	# 		_disassemble-hifi-step2 "${_ga_input_short_reads}" "${ga_short_read1}" "${ga_short_read2}"
 	# 		# delete each short reads to save the disk space
 	# 		_polap_log3_cmd rm -f "${ga_short_read1}" "${ga_short_read2}"
 	# 	fi
@@ -3620,7 +3684,6 @@ HEREDOC
 		local _summary_sampling_datasize="${sampling_datasize}"
 		local _summary_i="${i}"
 		if [[ "${_is_stop}" == "on" ]]; then
-			_polap_log0 "  break during the iteration: check the cflye's peak memory: end: index $i: sample size: $_sampling_datasize_bp alpha: $_summary_pre_alpha cflye peak memory (GB): ${_summary_peak_ram_size_gb}"
 			break
 		fi
 
@@ -3747,7 +3810,7 @@ HEREDOC
 			_polap_log2 "    input2: genome size: ${_summary_genome_size}"
 			_polap_log2 "    input3: alpha: ${_alpha}"
 			_polap_log2 "    outdir: ${_outdir}"
-			local _a=($(_disassemble-step8 \
+			local _a=($(_disassemble-hifi-step8 \
 				"${_outdir}" \
 				"${_long_read}" \
 				"${_summary_genome_size}" \
@@ -3762,7 +3825,7 @@ HEREDOC
 		if _polap_contains_step 9 "${_step_array[@]}"; then
 			_polap_log1 "  step 9: adjust the alpha"
 			_polap_log2 "    input1: ${_outdir}/00-assembly/draft_assembly.fasta"
-			local _a=($(_disassemble-step9 "${_outdir}" "${_alpha}" | tail -n 1))
+			local _a=($(_disassemble-hifi-step9 "${_outdir}" "${_alpha}" | tail -n 1))
 			_alpha="${_a[0]}"
 			_summary_draft_assembly_size="${_a[1]}"
 			_polap_log2 "    output1: ${_summary_pre_alpha} -> ${_alpha}"
@@ -3780,7 +3843,7 @@ HEREDOC
 			_polap_log1 "  step 10: summary statistics of gfa assembly graph"
 			_polap_log2 "    input1: ${_contigger_edges_gfa}"
 			_polap_log2 "    output: ${_outdir}/graph_final.txt"
-			local _a=($(_disassemble-step10 "${_outdir}" | tail -n 1))
+			local _a=($(_disassemble-hifi-step10 "${_outdir}" | tail -n 1))
 			_summary_gfa_number_segments="${_a[0]}"
 			_summary_gfa_number_links="${_a[1]}"
 			_summary_gfa_total_segment_length="${_a[2]}"
@@ -3795,7 +3858,7 @@ HEREDOC
 			_polap_log1 "  step 11: annotate to find the contig with more plastid genes than mitochondrial"
 			_polap_log2 "    input1: ${_contigger_edges_gfa}"
 			_polap_log2 "    output: ${_ga_annotation_all}"
-			_disassemble-step11 "${_outdir}"
+			_disassemble-hifi-step11 "${_outdir}"
 		fi
 
 		# 12. seeds
@@ -3804,7 +3867,7 @@ HEREDOC
 			_polap_log1 "  step 12: seeds"
 			_polap_log2 "    input1: ${_contigger_edges_gfa}"
 			_polap_log2 "    output: ${_mtcontigname}"
-			_disassemble-step12 "${_outdir}"
+			_disassemble-hifi-step12 "${_outdir}"
 		fi
 
 		# 13. Extract ptDNA sequences
@@ -3818,7 +3881,7 @@ HEREDOC
 			_polap_log2 "    input1: ${_contigger_edges_gfa}"
 			_polap_log2 "    input2: ${_mtcontigname}"
 			_polap_log2 "    outdir: ${_var_mtdna}"
-			local _a=($(_disassemble-step13 "${_outdir}" | tail -n 1))
+			local _a=($(_disassemble-hifi-step13 "${_outdir}" | tail -n 1))
 			_summary_num_circular_paths="${_a[0]}"
 			_summary_num_circular_nodes="${_a[1]}"
 			_polap_log2 "    output1: ${_summary_num_circular_paths}"
@@ -3845,7 +3908,7 @@ HEREDOC
 			# INFO: tail -n 1 is necessary because we need to take the last
 			# return value not something else that might have been printed out
 			# in the function.
-			local _a=($(_disassemble-step14 "${_var_mtdna}" | tail -n 1))
+			local _a=($(_disassemble-hifi-step14 "${_var_mtdna}" | tail -n 1))
 			_summary_coverage_ref="${_a[0]}"
 			_summary_coverage_target="${_a[1]}"
 			_summary_j_candidate="${_a[2]}"
@@ -3864,7 +3927,7 @@ HEREDOC
 			_polap_log1 "  step 15: percent identity comparison"
 			_polap_log2 "    output: ${_var_mtdna}/b/pident.txt"
 			_polap_log2 "    output: ${_var_mtdna}/b/blast_results_2.txt"
-			_summary_pident=$(_disassemble-step15 "${_var_mtdna}" | tail -n 1)
+			_summary_pident=$(_disassemble-hifi-step15 "${_var_mtdna}" | tail -n 1)
 		fi
 
 		# ptDNA summary
@@ -3878,7 +3941,7 @@ HEREDOC
 			_polap_log2 "    input2: ${_var_mtdna}/ptdna.1.fa"
 
 			# put in a bash function
-			local _a=($(_disassemble-step16 "${_var_mtdna}" | tail -n 1))
+			local _a=($(_disassemble-hifi-step16 "${_var_mtdna}" | tail -n 1))
 			_nseq="${_a[0]}"
 			_summary_gc="${_a[1]}"
 			_summary_length="${_a[2]}"
@@ -3945,7 +4008,7 @@ function _polap_mafft-compare-two {
 	echo "$pident_mafft" >"${_out1}/pident.txt"
 }
 
-function _run_polap_polish-disassemble {
+function _run_polap_polish-disassemble-hifi {
 	# Enable debugging if _POLAP_DEBUG is set
 	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -3953,7 +4016,7 @@ function _run_polap_polish-disassemble {
 	local _index_table
 
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
-	source "${_POLAPLIB_DIR}/polap-function-disassemble-seeds.sh"
+	source "${_POLAPLIB_DIR}/polap-function-disassemble-hifi-seeds.sh"
 
 	help_message=$(
 		cat <<HEREDOC

@@ -51,6 +51,16 @@ _polap_lib_assemble-rate() {
 
 	# we can use all polap_var_ variables.
 	# They are determined by output, i, and j.
+	# command-line options are determined by polap-variables-option.sh
+	#
+	# local variables:
+	# _arg_outdir
+	# _arg_long_reads
+	# _arg_inum
+	# _arg_jnum
+	# _arg_single_min
+	# _arg_reference
+	# _arg_type
 	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 
@@ -73,10 +83,11 @@ _polap_lib_assemble-rate() {
 		local index=$(<"${_polap_var_oga_contig}/index.txt")
 		local fq="${_polap_var_oga_seeds}/${_pread_sel}/${index}.fq"
 		gunzip "${fq}.gz"
-		local PREFIX="${_arg_outdir}/kmer/rmkc"
+		# local PREFIX="${_arg_outdir}/kmer/rmkc"
+		local PREFIX="${_polap_var_oga_seeds}/${_pread_sel}/${index}/kmer/rmkc"
 		local CLEANED="$PREFIX.cleaned.fastq.gz"
 		_polap_log0 "rmkc on ${fq}"
-		_polap_filter-reads-by-rmkc "${fq}"
+		_polap_lib_filter-reads-by-rmkc -l "${fq}" -o "${_polap_var_oga_seeds}/${_pread_sel}/${index}"
 		_polap_log0 "rmkc produces ${CLEANED}"
 		_polap_lib_oga-flye-select-reads "${CLEANED}"
 	else
@@ -95,6 +106,15 @@ _polap_lib_assemble-omega() {
 
 	# we can use all polap_var_ variables.
 	# They are determined by output, i, and j.
+	#
+	# local variables:
+	# _arg_outdir
+	# _arg_long_reads
+	# _arg_inum
+	# _arg_jnum
+	# _arg_single_min
+	# _arg_reference
+	# _arg_type
 	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 
@@ -117,10 +137,16 @@ _polap_lib_assemble-omega() {
 		local index=$(<"${_polap_var_oga_contig}/index.txt")
 		local fq="${_polap_var_oga_seeds}/${_pread_sel}/${index}.fq"
 		gunzip "${fq}.gz"
-		local PREFIX="${_arg_outdir}/kmer/rmkc"
+		# local PREFIX="${_arg_outdir}/kmer/rmkc"
+		# local CLEANED="$PREFIX.cleaned.fastq.gz"
+		# _polap_log0 "rmkc on ${fq}"
+		# _polap_filter-reads-by-rmkc "${fq}"
+		# _polap_log0 "rmkc produces ${CLEANED}"
+		# _polap_lib_oga-flye-select-reads "${CLEANED}"
+		local PREFIX="${_polap_var_oga_seeds}/${_pread_sel}/${index}/kmer/rmkc"
 		local CLEANED="$PREFIX.cleaned.fastq.gz"
 		_polap_log0 "rmkc on ${fq}"
-		_polap_filter-reads-by-rmkc "${fq}"
+		_polap_lib_filter-reads-by-rmkc -l "${fq}" -o "${_polap_var_oga_seeds}/${_pread_sel}/${index}"
 		_polap_log0 "rmkc produces ${CLEANED}"
 		_polap_lib_oga-flye-select-reads "${CLEANED}"
 	else

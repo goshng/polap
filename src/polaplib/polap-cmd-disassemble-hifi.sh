@@ -3738,6 +3738,7 @@ HEREDOC
             -s ${_summary_long_sample_seed} \
             ${ga_long_reads} \
             -o ${_long_read} 2>${_polap_output_dest}"
+			# cp "${_long_read}" "${_disassemble_dir}/l-${_summary_i}.fq.gz"
 
 			# WARNING: the actual sample size is not equal to the sampling datasize.
 			# We might remove the sampling datasize or note that it is intended to be

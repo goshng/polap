@@ -417,7 +417,7 @@ or assemble
 HEREDOC
 )
 
-help_message_example=$(
+help_message_development=$(
 	cat <<HEREDOC
   local:
   p5 benchmark-copy Vitis_vinifera
@@ -435,6 +435,19 @@ help_message_example=$(
   p5 help example-mt
   p5 help example-nt
   p5 help example-pt
+HEREDOC
+)
+
+help_message_example=$(
+	cat <<HEREDOC
+  for assembling ptDNA using ONT or HiFi data
+  p5 run-polap-readassemble Vitis_vinifera [0] pt [no]
+
+  for assembling mtDNA using ONT (testing) or HiFi data
+  p5 run-polap-readassemble Vitis_vinifera [0] mt [no]
+
+  for assembling mtDNA using ONT data
+  p5 run-polap-readassemble Vitis_vinifera [0] nt [no]
 HEREDOC
 )
 

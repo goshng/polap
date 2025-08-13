@@ -559,6 +559,22 @@ HEREDOC
 		return $RETURN_SUCCESS
 	fi
 
+	if [[ "${_arg_menu[1]}" = "head" ]]; then
+		local n="${_arg_menu[2]}"
+		# Prompt the user for input
+		# _polap_log0_cat "${_polap_var_mtcontigname}"
+		if [[ "$n" == "a" ]]; then
+			tail -n +2 "${_polap_var_ga_annotation_depth_table}" |
+				cut -d" " -f 1 >"${_polap_var_mtcontigname}"
+		else
+			tail -n +2 "${_polap_var_ga_annotation_depth_table}" |
+				head -n $n | cut -d" " -f 1 >"${_polap_var_mtcontigname}"
+		fi
+
+		_polap_log0_cat "${_polap_var_mtcontigname}"
+		return $RETURN_SUCCESS
+	fi
+
 	# We initiate the process of selecting seed contigs.
 	_polap_log0 "selecting seed contigs using the assembly graph: ${_arg_inum} (source) -> ${_arg_jnum} (target) ..."
 	_polap_log1 "  input1: ${_polap_var_ga_contigger_edges_gfa}"

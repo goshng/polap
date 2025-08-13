@@ -234,6 +234,13 @@ HEREDOC
 )
 
 ##### INSERT_HELP_HERE #####
+help_message_do_mv=$(
+	cat <<HEREDOC
+
+  menu title
+HEREDOC
+)
+
 help_message_run_polap_disassemble_hifi=$(
 	cat <<HEREDOC
 
@@ -1574,6 +1581,48 @@ EOF
 }
 
 ##### INSERT_FUNCTION_HERE #####
+do-mv_genus_species_for() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+	local _brg_type="${3:-nt}"
+
+	local _brg_inum=0
+	local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
+	local _timing_txt _stdout_txt _memlog_file _summary_file
+
+	brg_common_setup \
+		_brg_outdir _brg_sindex _brg_adir _brg_title \
+		_brg_target _brg_rundir _brg_outdir_i \
+		_timing_txt _stdout_txt _memlog_file _summary_file
+
+	if [[ ! -d "${_brg_rundir}" ]]; then
+		if [[ -d "${_brg_outdir}" ]]; then
+			# echo rm -rf "${_brg_outdir}"
+			mv "${_brg_outdir}" other-data2/
+		fi
+		# echo mv "${_brg_outdir}" other-data/
+		# echo mv "${_brg_rundir}" other-data/
+	# else
+	# 	echo "No such folder: ${_brg_rundir}"
+	fi
+}
+
+do-mv_genus_species() {
+	local _brg_outdir="${1:-each}"
+
+	if [[ "${_brg_outdir}" == "all" ]]; then
+		for _v1 in "${Sall[@]}"; do
+			do-mv_genus_species_for "${_v1}" "${@:2}"
+		done
+	elif [[ "${_brg_outdir}" == "each" ]]; then
+		for _v1 in "${Skeys[@]}"; do
+			do-mv_genus_species_for "${_v1}" "${@:2}"
+		done
+	else
+		echo do-mv_genus_species_for "$@"
+	fi
+}
+
 run-polap-disassemble-hifi_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
@@ -1665,6 +1714,8 @@ run-polap-disassemble-hifi_genus_species() {
 			mkdir -p "${_brg_rundir}"
 			scp "${_local_host}:$PWD/${_brg_rundir}/pt.0.gfa" "${_brg_rundir}/"
 			# sync_genus_species "${_brg_outdir}" "${_brg_sindex}" --pull
+		else
+			cp "$HOME/all/polap/hifi1/${_brg_rundir}/pt.0.gfa" "${_brg_rundir}/"
 		fi
 		# else
 
@@ -1687,15 +1738,19 @@ run-polap-disassemble-hifi_genus_species() {
 					--reference "${_brg_rundir}/pt.0.gfa" \
 					-o "${_brg_rundir}"
 			fi
+			local p=$(<"${_brg_rundir}/kmer/chloroplast-ratio.txt")
+			_log_echo "chloroplast-raito: $p"
 
 			# plant mt
-			local n=15
+			# --disassemble-a 100m \
+			# --disassemble-b 1500m \
+			# --disassemble-m 1.5m \
+			local n=10
 			${_polap_cmd} disassemble-hifi \
 				"${option_data_type}" \
 				-l "${_brg_rundir}/kmer/ref-filtered.fastq" \
-				--disassemble-a 100m \
-				--disassemble-b 1500m \
-				--disassemble-m 1.5m \
+				--disassemble-p $p \
+				--disassemble-m 1m \
 				--disassemble-memory 100 \
 				--disassemble-n $n \
 				--disassemble-stop-after stage1 \
@@ -1811,6 +1866,7 @@ run-polap-readassemble_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 	local _brg_type="${3:-pt}"
+	local _brg_downsample="${4:-downsample}"
 
 	local _brg_inum=0
 	local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
@@ -1860,7 +1916,9 @@ run-polap-readassemble_genus_species() {
 		fi
 	fi
 
-	data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_coverage}"
+	if [[ "${_brg_downsample}" == "downsample" ]]; then
+		data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_coverage}"
+	fi
 
 	# local resolved_fastq=$(<"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt")
 	local resolved_fastq="${long_sra}.fastq"
@@ -1890,8 +1948,17 @@ run-polap-readassemble_genus_species() {
 			"${option_data_type}" \
 			-l "${resolved_fastq}" \
 			-o "${_brg_rundir}"
+	elif [[ "${_brg_type}" == "nt-no-noncoding" ]]; then
+		# plant mt
+		${_polap_cmd} readassemble \
+			"${option_data_type}" \
+			--no-noncoding \
+			-l "${resolved_fastq}" \
+			-o "${_brg_rundir}"
 	else
 		# plant mt
+		# use hifi100k.sh and ont100k.sh
+		# assemble ptDNA first
 		${_polap_cmd} readassemble \
 			"${option_data_type}" \
 			--no-noncoding \
@@ -10943,7 +11010,10 @@ function _polap_lib_data-execute-common-subcommand {
 		list-subcommands)
 		handled=1
 		;;
-	##### INSERT_COMMAND_HERE #####
+		##### INSERT_COMMAND_HERE #####
+	do-mv)
+		handled=1
+		;;
 	run-polap-disassemble-hifi)
 		handled=1
 		;;
@@ -11664,6 +11734,17 @@ function _polap_lib_data-execute-common-subcommand {
 		fi
 		;;
 		##### INSERT_CASE_HERE #####
+	do-mv)
+		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
+			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
+			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
+			_subcmd1_clean="${subcmd1//-/_}"
+			declare -n ref="help_message_${_subcmd1_clean}"
+			echo "$ref"
+			exit 0
+		fi
+		${subcmd1}_genus_species "${cmd_args_ref[@]}"
+		;;
 	run-polap-disassemble-hifi)
 		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
 			echo "Help: ${subcmd1} <outdir> [inum:0|N]"

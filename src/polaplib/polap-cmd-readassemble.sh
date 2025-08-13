@@ -111,14 +111,23 @@ EOF
 		_polap_readassemble-pt
 	elif [[ "${_arg_animal}" == "on" ]]; then
 		_polap_log1 "Read-assemble animal mtDNA"
-		_polap_readassemble-mt
+		_polap_readassemble-mt-animal
 	else
 		if [[ "${_arg_noncoding}" == "on" ]]; then
 			_polap_log1 "Read-assemble plant mtDNA with mitochondrial noncoding regions"
 			_polap_readassemble-nt
 		else
 			_polap_log1 "Read-assemble plant mtDNA without mitochondrial noncoding regions"
+			# _polap_log0 "Before: _polap_readassemble-mt"
+			# _polap_log0 "  -o ${_arg_outdir}"
+			# _polap_log0 "  -i ${_arg_inum}"
+			# _polap_log0 "  -j ${_arg_jnum}"
 			_polap_readassemble-mt
+			# _polap_log0 "After: _polap_readassemble-mt"
+			# _polap_log0 "  -o ${_arg_outdir}"
+			# _polap_log0 "  -i ${_arg_inum}"
+			# _polap_log0 "  -j ${_arg_jnum}"
+
 		fi
 	fi
 
@@ -129,6 +138,10 @@ EOF
 }
 
 _polap_readassemble-nt() {
+	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+		_polap_log0 "Not Yet implemented!"
+		return
+	fi
 	_polap_lib_readassemble-annotate-read-nt
 	_polap_lib_readassemble-assemble-annotated-read-nt
 }
@@ -138,8 +151,85 @@ _polap_readassemble-pt() {
 	_polap_lib_readassemble-assemble-annotated-read-pt
 }
 
-_polap_readassemble-mt() {
+# 2025-08-13
+# I want to add a version for hifi100k.sh and ont100k.sh
+# I leave this as is.
+_polap_readassemble-mt-v1() {
 	_polap_lib_readassemble-annotate-read-mt
 	_polap_lib_readassemble-assemble-annotated-read-mt
 	# if not assemble
+}
+
+# We use hifi100k and ont100k.
+# Tested only for hifi100k
+_polap_readassemble-mt() {
+	local type="mt"
+	local annotatedir="${_arg_outdir}/annotate-read-${type}"
+
+	# Step 1
+	# assemble pt first
+	# we delete annotate-read-TYPE dir inside this function
+	#
+	# _polap_lib_readassemble-annotate-read-pt mt
+	# _polap_lib_readassemble-assemble-annotated-read-pt mt
+
+	# Step 2
+	# filter out ptDNA-origin reads
+	# input: the long-read data
+	# output: ${annotatedir}/kmer/ref-filtered.fastq
+	#
+	# _polap_lib_filter-reads-by-reference \
+	# 	-o "${annotatedir}" \
+	# 	-l "${_arg_long_reads}" \
+	# 	--reference "${_arg_outdir}/${type}-pt.0.gfa"
+
+	local MTAA="${_POLAPLIB_DIR}"/polap-mt.1.c70.3.fna
+	# Step 3
+	# create 100k
+	#
+	# if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+	# 	bash "${_POLAPLIB_DIR}/polap-bash-hifi100k.sh" \
+	# 		-r "${annotatedir}/kmer/ref-filtered.fastq.gz" \
+	# 		-g "${MTAA}" \
+	# 		-o "${annotatedir}/kmer/100k" \
+	# 		-t "${_arg_readassemble_t}" \
+	# 		-N "${_arg_readassemble_n}" \
+	# 		-T "${_arg_threads}"
+	# elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+	# 	bash "${_POLAPLIB_DIR}/polap-bash-ont100k.sh" \
+	# 		-r "${annotatedir}/kmer/ref-filtered.fastq.gz" \
+	# 		-g "${MTAA}" \
+	# 		-o "${annotatedir}/kmer/100k" \
+	# 		-t "${_arg_readassemble_t}" \
+	# 		-N "${_arg_readassemble_n}" \
+	# 		-T "${_arg_threads}"
+	# else
+	# 	_polap_log0 "ERROR: no such data type available: ${_arg_data_type}"
+	# 	return
+	# fi
+
+	# Step 4
+	# Convert the seed contig fasta to gfa and mt.contig.name files.
+	#
+	mkdir -p "${annotatedir}/mt/30-contigger"
+	bash "${_POLAPLIB_DIR}/polap-bash-fa2gfa.sh" \
+		-o "${annotatedir}/mt/30-contigger/graph_final.gfa" \
+		"${annotatedir}/kmer/100k/greedy_100k.fasta"
+	#
+	bash "${_POLAPLIB_DIR}/polap-bash-fa2mtcontigname.sh" \
+		-o "${annotatedir}/mt/mt.contig.name-mt0" \
+		"${annotatedir}/kmer/100k/greedy_100k.fasta"
+
+	gfatools gfa2fa \
+		"${annotatedir}/mt/30-contigger/graph_final.gfa" \
+		>"${annotatedir}/mt/30-contigger/graph_final.fasta" \
+		2>${_polap_output_dest}
+
+	# Step 5
+	_arg_long_reads="${annotatedir}/kmer/ref-filtered.fastq.gz"
+	_polap_lib_readassemble-assemble-annotated-read-mt-100k
+}
+
+_polap_readassemble-mt-animal() {
+	_polap_log0 "Not Yet implemented!"
 }

@@ -83,7 +83,14 @@ function _polap_lib_oga-estimate-read-sampling-rate {
 
 	local subsample_lfq="${_polap_var_oga_contig}"/l.subsample.fq
 	if [[ ! -s "${subsample_lfq}" ]]; then
-		_polap_lib_fastq-sample-to "${_source_long_reads_fq}" "${subsample_lfq}" 1g
+		# the initial sample size
+		# 1g for ptDNA
+		# 5g for mtDNA
+		if [[ "${_arg_type}" == "pt" ]]; then
+			_polap_lib_fastq-sample-to "${_source_long_reads_fq}" "${subsample_lfq}" 1g
+		else
+			_polap_lib_fastq-sample-to "${_source_long_reads_fq}" "${subsample_lfq}" 5g
+		fi
 	fi
 
 	local size_subsample_lfq="${_polap_var_oga_contig}"/l.subsample.txt

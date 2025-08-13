@@ -87,11 +87,18 @@ _polap_lib_wga-find-genome-size() {
 			_polap_log3_file "${_outdir_jellyfish_out}"
 		else
 			unzipped_file=$(_polap_lib_file-gunzip "${_short_read1}")
+			# local comp_size=$(stat -c%s "${_short_read1}")
 			_rstatus="$?"
 			if [[ "$_rstatus" -eq 0 ]]; then
 				_polap_log3 "    unzipped file: $unzipped_file"
 				_short_read1="$unzipped_file"
 			fi
+			# File sizes in bytes
+			# local orig_size=$(stat -c%s "${unzipped_file}")
+
+			# Compute compression ratio: original / compressed
+			# local ratio=$(echo "scale=2; $orig_size / $comp_size" | bc)
+			# echo "${ratio}" >"${_outdir}/ratio-l-fq-gz.txt"
 
 			if [[ -s "${_short_read1}" ]]; then
 				_polap_log3_pipe "command time -v jellyfish count \

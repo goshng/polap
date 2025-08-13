@@ -754,7 +754,7 @@ HEREDOC
 	local _EXPECTED_GENOME_SIZE=$(<"${_polap_var_outdir_genome_size}")
 	local _EXPECTED_GENOME_SIZE=${_EXPECTED_GENOME_SIZE%.*}
 	local _expected_genome_size_bp=$(_polap_utility_convert_bp ${_EXPECTED_GENOME_SIZE})
-	_polap_log0 "  expected genome size using short-read data (bases): ${_expected_genome_size_bp}"
+	_polap_log0 "  expected genome size using PacBio HiFi long-read data (bases): ${_expected_genome_size_bp}"
 
 	_polap_log1 NEXT: $(basename "$0") reduce-data -o "${_arg_outdir}" -l "${_arg_long_reads}" [-m "${_arg_min_read_length}"]
 
@@ -967,7 +967,7 @@ HEREDOC
 					_polap_log1 "  random seed for reducing the whole-genome assembly long-read data: ${_random_seed}"
 					# _polap_log3 "seqkit sample -p ${_RATE} ${_arg_long_reads} -o ${nfq_file}"
 					# seqkit sample -p "${_RATE}" "${_arg_long_reads}" -o "${nfq_file}" >${_polap_output_dest} 2>&1
-		          	rm -f "${_polap_var_outdir_nk_fq_gz}"
+					rm -f "${_polap_var_outdir_nk_fq_gz}"
 					_polap_log3_pipe "seqkit sample \
             -p ${_RATE} \
             -s ${_random_seed} \

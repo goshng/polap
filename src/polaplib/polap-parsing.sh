@@ -254,6 +254,12 @@ _arg_dissemble_a=1 #
 _arg_directional_a=1
 _arg_directional_i=1
 
+# for menu readassemble
+# 50 for ont or nano
+# 100 for pacbio
+_arg_readassemble_n=50
+_arg_readassemble_t=100000
+
 # flye options
 _arg_data_type="nano-raw"
 _arg_flye_data_type="--nano-raw"
@@ -793,6 +799,22 @@ parse_commandline() {
 			;;
 		--threads-fmlrc=*)
 			_arg_threads_fmlrc="${_key##--threads-fmlrc=}"
+			;;
+		--readassemble-n)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_readassemble_n="$2"
+			shift
+			;;
+		--readassemble-n=*)
+			_arg_readassemble_n="${_key##--readassemble-n=}"
+			;;
+		--readassemble-t)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_readassemble_t="$2"
+			shift
+			;;
+		--readassemble-t=*)
+			_arg_readassemble_t="${_key##--readassemble-t=}"
 			;;
 		--flye-asm-coverage)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -1485,31 +1507,37 @@ parse_commandline() {
 			_arg_data_type="pacbio-raw"
 			_arg_flye_data_type="--pacbio-raw"
 			_arg_minimap2_data_type="map-pb"
+			_arg_readassemble_n=100
 			;;
 		--pacbio-corr)
 			_arg_data_type="pacbio-corr"
 			_arg_flye_data_type="--pacbio-corr"
 			_arg_minimap2_data_type="map-pb"
+			_arg_readassemble_n=100
 			;;
 		--pacbio-hifi)
 			_arg_data_type="pacbio-hifi"
 			_arg_flye_data_type="--pacbio-hifi"
 			_arg_minimap2_data_type="map-hifi"
+			_arg_readassemble_n=100
 			;;
 		--nano-raw)
 			_arg_data_type="nano-raw"
 			_arg_flye_data_type="--nano-raw"
 			_arg_minimap2_data_type="map-ont"
+			_arg_readassemble_n=50
 			;;
 		--nano-corr)
 			_arg_data_type="nano-corr"
 			_arg_flye_data_type="--nano-corr"
 			_arg_minimap2_data_type="map-ont"
+			_arg_readassemble_n=50
 			;;
 		--nano-hq)
 			_arg_data_type="nano-hq"
 			_arg_flye_data_type="--nano-hq"
 			_arg_minimap2_data_type="map-ont"
+			_arg_readassemble_n=50
 			;;
 		--infile)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

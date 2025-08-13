@@ -510,8 +510,8 @@ _polap_filter-ont-reads-by-reference() {
 
 	# === Step 3: Extract FASTQ subsets
 	echo "✂️ Splitting FASTQ..."
-	seqkit grep -n -f "$REJECT_IDS" "$MITO_READS" | gzip -c >"$FASTQ_REMOVED"
-	seqkit grep -n -f "$RETAIN_IDS" "$MITO_READS" | gzip -c >"$FASTQ_FILTERED"
+	seqkit grep -f "$REJECT_IDS" "$MITO_READS" | gzip -c >"$FASTQ_REMOVED"
+	seqkit grep -f "$RETAIN_IDS" "$MITO_READS" | gzip -c >"$FASTQ_FILTERED"
 
 	# === Step 4: Plot with R
 	echo "📊 Generating plots..."
@@ -527,8 +527,11 @@ _polap_filter-ont-reads-by-reference() {
 
 }
 
+# NOTE: use _polap_lib_filter-reads-by-rmkc at polap-lib-filter.sh
 _polap_filter-reads-by-rmkc() {
 	local READS="${1:-${_arg_long_reads}}"
+
+	_polap_log0 "[Deprecated function: use _polap_lib_filter-reads-by-rmkc at polap-lib-filter.sh]"
 
 	# === Defaults ===
 	MEM="100M"

@@ -266,36 +266,39 @@ HEREDOC
 		return $RETURN_FAIL
 	fi
 
-	if [ -s "${_polap_var_ga_gfa_all}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log1 "    found: ${_polap_var_ga_gfa_all}, so skipping ..."
-	else
-		_polap_log3_pipe "gfatools view \
+	# 2025-08-12
+	# Always, rerun the following without checking the output files.
+
+	# if [ -s "${_polap_var_ga_gfa_all}" ] && [ "${_arg_redo}" = "off" ]; then
+	# 	_polap_log1 "    found: ${_polap_var_ga_gfa_all}, so skipping ..."
+	# else
+	_polap_log3_pipe "gfatools view \
 		  -S ${_polap_var_ga_contigger_edges_gfa} \
 		  >${_polap_var_ga_gfa_all} \
 		  2>$_polap_output_dest"
-	fi
+	# fi
 
 	_polap_log1 "  extracting sequence part of GFA: ${_polap_var_ga_gfa_seq_part}"
 	_polap_log2 "    input: ${_polap_var_ga_gfa_all}"
 	_polap_log2 "    output: ${_polap_var_ga_gfa_seq_part}"
-	if [ -s "${_polap_var_ga_gfa_seq_part}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log1 "    found: ${_polap_var_ga_gfa_seq_part}, so skipping ..."
-	else
-		_polap_log3_pipe "grep ^S ${_polap_var_ga_gfa_all} >${_polap_var_ga_gfa_seq_part}"
-	fi
+	# if [ -s "${_polap_var_ga_gfa_seq_part}" ] && [ "${_arg_redo}" = "off" ]; then
+	# 	_polap_log1 "    found: ${_polap_var_ga_gfa_seq_part}, so skipping ..."
+	# else
+	_polap_log3_pipe "grep ^S ${_polap_var_ga_gfa_all} >${_polap_var_ga_gfa_seq_part}"
+	# fi
 
 	# Filter edges in GFA using depths.
 	_polap_log1 "  filtering GFA sequence part using depth range"
 	_polap_log2 "    input1: ${_polap_var_ga_gfa_seq_part}"
 	_polap_log2 "    output1: ${_polap_var_ga_contigger_edges_stats}"
-	if [ -s "${_polap_var_ga_contigger_edges_stats}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log1 "    found: ${_polap_var_ga_contigger_edges_stats}, so skipping ..."
-	else
-		_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-edges-stats.R \
+	# if [ -s "${_polap_var_ga_contigger_edges_stats}" ] && [ "${_arg_redo}" = "off" ]; then
+	# 	_polap_log1 "    found: ${_polap_var_ga_contigger_edges_stats}, so skipping ..."
+	# else
+	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-edges-stats.R \
 		--gfa ${_polap_var_ga_gfa_seq_part} \
 		--out ${_polap_var_ga_contigger_edges_stats} \
 		2>$_polap_output_dest"
-	fi
+	# fi
 
 	if [[ -s "${_polap_var_ga_contigger_edges_stats}" ]]; then
 		_polap_log2_column "${_polap_var_ga_contigger_edges_stats}"

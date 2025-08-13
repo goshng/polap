@@ -35,6 +35,7 @@ local _arg_inum="0"
 local _arg_jnum="1"
 local _arg_single_min="3000"
 local _arg_reference=""
+local _arg_type="pt"
 
 # Argument parsing
 while [[ $# -gt 0 ]]; do
@@ -57,6 +58,10 @@ while [[ $# -gt 0 ]]; do
 		;;
 	-w)
 		_arg_single_min="$2"
+		shift 2
+		;;
+	-t)
+		_arg_type="$2"
 		shift 2
 		;;
 	--reference)

@@ -311,46 +311,56 @@ _polap_lib_readassemble-annotate-read-mt() {
 	_polap_lib_readassemble-common-variables \
 		annotatedir pt_table mt_table at_table all_table
 
-	rm -rf "${annotatedir}"
-	mkdir -p "${annotatedir}/at"
+	# rm -rf "${annotatedir}"
+	# mkdir -p "${annotatedir}/at"
 
 	local MTAA="${_POLAPLIB_DIR}"/polap-mt.1.c70.3.fna
 	local PTAA="${_POLAPLIB_DIR}"/polap-pt.2.c70.3.fna
 	# local NTAA="${_POLAPLIB_DIR}"/polap-mt.noncds.3k.c80.fna
 
-	_polap_log2 "    map reads on mitochondrial genes using minimap2"
-	_polap_log3_cmdout minimap2 -cx \
-		"${_arg_minimap2_data_type}" \
-		"${MTAA}" \
-		"${_arg_long_reads}" \
-		-t ${_arg_threads} \
-		-o "${annotatedir}"/mt.paf
 	if [[ ! -s "${annotatedir}"/mt.paf ]]; then
-		_polap_log0 "ERROR: No minimap2 results: ${annotatedir}/mt.paf"
-		return
+		_polap_log2 "    map reads on mitochondrial genes using minimap2"
+		_polap_log3_cmdout minimap2 -cx \
+			"${_arg_minimap2_data_type}" \
+			"${MTAA}" \
+			"${_arg_long_reads}" \
+			-t ${_arg_threads} \
+			-o "${annotatedir}"/mt.paf
+		if [[ ! -s "${annotatedir}"/mt.paf ]]; then
+			_polap_log0 "ERROR: No minimap2 results: ${annotatedir}/mt.paf"
+			return
+		fi
 	fi
 
-	_polap_log2 "    map reads on plastid genes using minimap2"
-	_polap_log3_cmdout minimap2 -cx \
-		"${_arg_minimap2_data_type}" \
-		"${PTAA}" \
-		"${_arg_long_reads}" \
-		-t ${_arg_threads} \
-		-o "${annotatedir}"/pt.paf
 	if [[ ! -s "${annotatedir}"/pt.paf ]]; then
-		_polap_log0 "ERROR: No minimap2 results: ${annotatedir}/pt.paf"
-		return
+		_polap_log2 "    map reads on plastid genes using minimap2"
+		_polap_log3_cmdout minimap2 -cx \
+			"${_arg_minimap2_data_type}" \
+			"${PTAA}" \
+			"${_arg_long_reads}" \
+			-t ${_arg_threads} \
+			-o "${annotatedir}"/pt.paf
+		if [[ ! -s "${annotatedir}"/pt.paf ]]; then
+			_polap_log0 "ERROR: No minimap2 results: ${annotatedir}/pt.paf"
+			return
+		fi
 	fi
 
-	_polap_log2 "    create the annotation table for mt and pt genes"
-	_polap_log3_cmdout Rscript --vanilla "${_POLAPLIB_DIR}"/polap-r-reads.R \
-		--mt "${annotatedir}"/mt.paf \
-		--pt "${annotatedir}"/pt.paf \
-		--output "${annotatedir}" \
-		--min-mapq ${_arg_annotate_read_min_mapq} \
-		--min-identity ${_arg_annotate_read_min_identity} \
-		--min-pt 1
+	if [[ ! -s "${annotatedir}"/mt0.id.txt ]]; then
+		_polap_log2 "    create the annotation table for mt and pt genes"
 
+		_polap_log3_cmdout Rscript --vanilla "${_POLAPLIB_DIR}"/polap-r-reads.R \
+			--mt "${annotatedir}"/mt.paf \
+			--pt "${annotatedir}"/pt.paf \
+			--output "${annotatedir}" \
+			--min-mapq ${_arg_annotate_read_min_mapq} \
+			--min-identity ${_arg_annotate_read_min_identity} \
+			--min-pt 1
+	fi
+
+	_polap_lib_lines-skip1 "${mt_table}" | cut -f1 >"${annotatedir}"/mt0.id.txt
+	rm -f "${annotatedir}"/mt.fq
+	seqtk subseq "${_arg_long_reads}" "${annotatedir}"/mt0.id.txt >"${annotatedir}"/mt.fq
 }
 
 # 2025-08-13
@@ -437,12 +447,12 @@ _polap_lib_readassemble-assemble-annotated-read-mt-100k() {
 			-i mt$i
 
 		# NOTE: mito seed
-		_polap_lib_seed-mito \
+		_polap_lib_seed-mito-2 \
 			-o "${annotatedir}" \
 			-i mt$i -j mt$j
 
 		if [[ ! -s "${annotatedir}/mt$i/mt.contig.name-mt$j" ]]; then
-			_polap_log0 "No mt seed for mt$j"
+			_polap_log0 "No mt seed for mt$j at ${annotatedir}/mt$i: ${annotatedir}/mt$i/mt.contig.name-mt$j"
 			break
 		fi
 
@@ -500,7 +510,7 @@ _polap_lib_readassemble-assemble-annotated-read-mt-100k() {
 		-i mt$i
 
 	# polap command: seed-mito
-	_polap_lib_seed-mito \
+	_polap_lib_seed-mito-2 \
 		-o "${annotatedir}" \
 		-i mt$i -j mt$j
 

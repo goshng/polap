@@ -60,6 +60,8 @@ _polap_lib_annotate() {
 		-o "${_arg_outdir}" -i "${_arg_inum}" -j "${_arg_jnum}"
 }
 
+# 2025-08-14
+# Always redo or we do not use any previous output files.
 # input: gfa
 _polap_lib_annotate-edges-stats() {
 
@@ -78,36 +80,36 @@ _polap_lib_annotate-edges-stats() {
 		return $RETURN_FAIL
 	fi
 
-	if [ -s "${_polap_var_ga_gfa_all}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log1 "    found: ${_polap_var_ga_gfa_all}, so skipping ..."
-	else
-		_polap_log3_pipe "gfatools view \
+	# if [ -s "${_polap_var_ga_gfa_all}" ] && [ "${_arg_redo}" = "off" ]; then
+	# 	_polap_log1 "    found: ${_polap_var_ga_gfa_all}, so skipping ..."
+	# else
+	_polap_log3_pipe "gfatools view \
 		  -S ${_polap_var_ga_contigger_edges_gfa} \
 		  >${_polap_var_ga_gfa_all} \
 		  2>$_polap_output_dest"
-	fi
+	# fi
 
 	_polap_log2 "    extracting sequence part of GFA: ${_polap_var_ga_gfa_seq_part}"
 	_polap_log3 "      input: ${_polap_var_ga_gfa_all}"
 	_polap_log3 "      output: ${_polap_var_ga_gfa_seq_part}"
-	if [ -s "${_polap_var_ga_gfa_seq_part}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log1 "    found: ${_polap_var_ga_gfa_seq_part}, so skipping ..."
-	else
-		_polap_log3_pipe "grep ^S ${_polap_var_ga_gfa_all} >${_polap_var_ga_gfa_seq_part}"
-	fi
+	# if [ -s "${_polap_var_ga_gfa_seq_part}" ] && [ "${_arg_redo}" = "off" ]; then
+	# 	_polap_log1 "    found: ${_polap_var_ga_gfa_seq_part}, so skipping ..."
+	# else
+	_polap_log3_pipe "grep ^S ${_polap_var_ga_gfa_all} >${_polap_var_ga_gfa_seq_part}"
+	# fi
 
 	# Filter edges in GFA using depths.
 	_polap_log2 "    filtering GFA sequence part using depth range"
 	_polap_log3 "      input1: ${_polap_var_ga_gfa_seq_part}"
 	_polap_log3 "      output1: ${_polap_var_ga_contigger_edges_stats}"
-	if [ -s "${_polap_var_ga_contigger_edges_stats}" ] && [ "${_arg_redo}" = "off" ]; then
-		_polap_log1 "    found: ${_polap_var_ga_contigger_edges_stats}, so skipping ..."
-	else
-		_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-edges-stats.R \
+	# if [ -s "${_polap_var_ga_contigger_edges_stats}" ] && [ "${_arg_redo}" = "off" ]; then
+	# 	_polap_log1 "    found: ${_polap_var_ga_contigger_edges_stats}, so skipping ..."
+	# else
+	_polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-edges-stats.R \
 		--gfa ${_polap_var_ga_gfa_seq_part} \
 		--out ${_polap_var_ga_contigger_edges_stats} \
 		2>$_polap_output_dest"
-	fi
+	# fi
 
 	if [[ -s "${_polap_var_ga_contigger_edges_stats}" ]]; then
 		_polap_log2_column "${_polap_var_ga_contigger_edges_stats}"
@@ -118,6 +120,8 @@ _polap_lib_annotate-edges-stats() {
 	return 0
 }
 
+# 2025-08-14
+# Always redo or we do not use any previous output files.
 _polap_lib_annotate-count-gene() { # count MT and PT genes using edges_stats.txt
 
 	# we can use all polap_var_ variables.
@@ -128,13 +132,13 @@ _polap_lib_annotate-count-gene() { # count MT and PT genes using edges_stats.txt
 	_polap_log1 "  counting mitochondrial and plastid genes on the assembly number ${_arg_inum} ..."
 
 	# Checks the output files earlier than the input.
-	if [[ -s "${_polap_var_ga_annotation_all}" ]] &&
-		[[ "${_arg_redo}" = "off" ]]; then
-		_polap_log0 "  found1: ${_polap_var_ga_annotation_all}, so skipping the blast genome ..."
-		# Disable debugging if previously enabled
-		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
-		return 0
-	fi
+	# if [[ -s "${_polap_var_ga_annotation_all}" ]] &&
+	# 	[[ "${_arg_redo}" = "off" ]]; then
+	# 	_polap_log0 "  found1: ${_polap_var_ga_annotation_all}, so skipping the blast genome ..."
+	# 	# Disable debugging if previously enabled
+	# 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+	# 	return 0
+	# fi
 
 	_polap_log2 "    creating annotation tables"
 	_polap_log3 "      input1: ${_polap_var_ga_contigger_edges_stats}"
@@ -171,6 +175,8 @@ _polap_lib_annotate-count-gene() { # count MT and PT genes using edges_stats.txt
 	return 0
 }
 
+# 2025-08-14
+# Always redo or we do not use any previous output files.
 _polap_lib_annotate-blast-genome() {
 
 	# we can use all polap_var_ variables.
@@ -186,16 +192,16 @@ _polap_lib_annotate-blast-genome() {
 	_polap_log2 "    input2: ${_polap_var_ga_contigger_edges_fasta}"
 
 	# Checks the output files earlier than the input.
-	if [[ -s "${_polap_var_ann_MTGENECOUNT}" ]] &&
-		[[ -s "${_polap_var_ann_PTGENECOUNT}" ]] &&
-		[[ "${_arg_redo}" = "off" ]]; then
-		_polap_log0 "  found1: ${_polap_var_ann_MTGENECOUNT}"
-		_polap_log0 "  found2: ${_polap_var_ann_PTGENECOUNT}"
-		_polap_log0 "  so skipping the blast genome ..."
-		# Disable debugging if previously enabled
-		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
-		return 0
-	fi
+	# if [[ -s "${_polap_var_ann_MTGENECOUNT}" ]] &&
+	# 	[[ -s "${_polap_var_ann_PTGENECOUNT}" ]] &&
+	# 	[[ "${_arg_redo}" = "off" ]]; then
+	# 	_polap_log0 "  found1: ${_polap_var_ann_MTGENECOUNT}"
+	# 	_polap_log0 "  found2: ${_polap_var_ann_PTGENECOUNT}"
+	# 	_polap_log0 "  so skipping the blast genome ..."
+	# 	# Disable debugging if previously enabled
+	# 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+	# 	return 0
+	# fi
 
 	if [ ! -s "${_polap_var_ga_contigger_edges_stats}" ]; then
 		_polap_log0 "ERROR: no edges_stats.txt file: ${_polap_var_ga_contigger_edges_stats}"
@@ -214,21 +220,21 @@ _polap_lib_annotate-blast-genome() {
 		cut -f 1 >${_polap_var_ann_CONTIGNAME}"
 
 	_polap_log2 "  preparing edge contig sequence file: ${_polap_var_ann_CONTIGFILE}"
-	if [[ -s "${_polap_var_ga_contigger_edges_fasta}" ]]; then
-		_polap_log3 "    copying edge contig sequence file"
-		_polap_log3_cmd cp "${_polap_var_ga_contigger_edges_fasta}" "${_polap_var_ann_CONTIGFILE}"
-	else
-		if [[ -s "${_polap_var_ga_contigger_edges_gfa}" ]]; then
-			_polap_log3 "    extracting edge contig sequence from the gfa"
-			_polap_log3_pipe "gfatools gfa2fa \
+	# if [[ -s "${_polap_var_ga_contigger_edges_fasta}" ]]; then
+	# 	_polap_log3 "    copying edge contig sequence file"
+	# 	_polap_log3_cmd cp "${_polap_var_ga_contigger_edges_fasta}" "${_polap_var_ann_CONTIGFILE}"
+	# else
+	if [[ -s "${_polap_var_ga_contigger_edges_gfa}" ]]; then
+		_polap_log3 "    extracting edge contig sequence from the gfa"
+		_polap_log3_pipe "gfatools gfa2fa \
 		    ${_polap_var_ga_contigger_edges_gfa} \
 		    >${_polap_var_ga_contigger_edges_fasta} 2>${_polap_output_dest}"
-			_polap_log3_cmd cp "${_polap_var_ga_contigger_edges_fasta}" "${_polap_var_ann_CONTIGFILE}"
-		else
-			_polap_log0 "ERROR: no such file: ${_polap_var_ga_contigger_edges_gfa}"
-			return $RETURN_FAIL
-		fi
+		_polap_log3_cmd cp "${_polap_var_ga_contigger_edges_fasta}" "${_polap_var_ann_CONTIGFILE}"
+	else
+		_polap_log0 "ERROR: no such file: ${_polap_var_ga_contigger_edges_gfa}"
+		return $RETURN_FAIL
 	fi
+	# fi
 
 	_polap_log2 "    making BLASTDB of the contig sequences: ${_polap_var_ann_CONTIGDB}"
 	_polap_log3 "      input: ${_polap_var_ann_CONTIGFILE}"

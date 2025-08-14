@@ -159,14 +159,14 @@ _polap_filter-reads-by-reference() {
 		: "${MIN_ALN_LEN:=800}" # HiFi: shorter good matches OK
 		;;
 	nano-hq)
-		: "${ID_THRESH:=0.86}" # Q20/SUP ~98–99% raw ⇒ filtered identity ~0.86–0.9 is safe for pt removal
+		: "${ID_THRESH:=0.84}" # Q20/SUP ~98–99% raw ⇒ filtered identity ~0.86–0.9 is safe for pt removal
 		: "${CLIP_THRESH:=250}"
 		: "${MIN_ALN_LEN:=1000}"
 		;;
 	nano-raw)
-		: "${ID_THRESH:=0.82}" # older ONT basecalls: be looser to avoid false negatives
-		: "${CLIP_THRESH:=350}"
-		: "${MIN_ALN_LEN:=1200}"
+		: "${ID_THRESH:=0.80}" # older ONT basecalls: be looser to avoid false negatives
+		: "${CLIP_THRESH:=400}"
+		: "${MIN_ALN_LEN:=2000}"
 		;;
 	*)
 		echo "Unknown --platform '${PLATFORM}'. Use: hifi | ont-q20 | ont-raw" >&2

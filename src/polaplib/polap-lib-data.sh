@@ -1962,6 +1962,7 @@ run-polap-readassemble_genus_species() {
 		${_polap_cmd} readassemble \
 			"${option_data_type}" \
 			--no-noncoding \
+			--readassemble-n 100 \
 			-l "${resolved_fastq}" \
 			-o "${_brg_rundir}"
 	fi

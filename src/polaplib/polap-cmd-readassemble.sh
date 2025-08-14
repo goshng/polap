@@ -166,47 +166,61 @@ _polap_readassemble-mt() {
 	local type="mt"
 	local annotatedir="${_arg_outdir}/annotate-read-${type}"
 
+	local pt_table mt_table at_table all_table
+	_polap_lib_readassemble-common-variables \
+		annotatedir pt_table mt_table at_table all_table
+
 	# Step 1
 	# assemble pt first
 	# we delete annotate-read-TYPE dir inside this function
 	#
-	# _polap_lib_readassemble-annotate-read-pt mt
-	# _polap_lib_readassemble-assemble-annotated-read-pt mt
+	_polap_lib_readassemble-annotate-read-pt mt
+	_polap_lib_readassemble-assemble-annotated-read-pt mt
+
+	# _polap_lib_lines-skip1 "${mt_table}" | cut -f1 >"${annotatedir}"/mt0.id.txt
+	# rm -f "${annotatedir}"/mt.fq
+	# seqtk subseq "${_arg_long_reads}" "${annotatedir}"/mt0.id.txt >"${annotatedir}"/mt.fq
 
 	# Step 2
 	# filter out ptDNA-origin reads
 	# input: the long-read data
 	# output: ${annotatedir}/kmer/ref-filtered.fastq
 	#
-	# _polap_lib_filter-reads-by-reference \
-	# 	-o "${annotatedir}" \
-	# 	-l "${_arg_long_reads}" \
-	# 	--reference "${_arg_outdir}/${type}-pt.0.gfa"
+	# -l "${_arg_long_reads}" \
+	# -l "${annotatedir}/mt.fq" \
+	#
+	_polap_lib_filter-reads-by-reference \
+		-o "${annotatedir}" \
+		-l "${_arg_long_reads}" \
+		--reference "${_arg_outdir}/${type}-pt.0.gfa"
+
+	# Step 2-1
+	# select reads with more MT genes than PT genes.
 
 	local MTAA="${_POLAPLIB_DIR}"/polap-mt.1.c70.3.fna
 	# Step 3
 	# create 100k
 	#
-	# if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
-	# 	bash "${_POLAPLIB_DIR}/polap-bash-hifi100k.sh" \
-	# 		-r "${annotatedir}/kmer/ref-filtered.fastq.gz" \
-	# 		-g "${MTAA}" \
-	# 		-o "${annotatedir}/kmer/100k" \
-	# 		-t "${_arg_readassemble_t}" \
-	# 		-N "${_arg_readassemble_n}" \
-	# 		-T "${_arg_threads}"
-	# elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
-	# 	bash "${_POLAPLIB_DIR}/polap-bash-ont100k.sh" \
-	# 		-r "${annotatedir}/kmer/ref-filtered.fastq.gz" \
-	# 		-g "${MTAA}" \
-	# 		-o "${annotatedir}/kmer/100k" \
-	# 		-t "${_arg_readassemble_t}" \
-	# 		-N "${_arg_readassemble_n}" \
-	# 		-T "${_arg_threads}"
-	# else
-	# 	_polap_log0 "ERROR: no such data type available: ${_arg_data_type}"
-	# 	return
-	# fi
+	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+		bash "${_POLAPLIB_DIR}/polap-bash-hifi100k.sh" \
+			-r "${annotatedir}/kmer/ref-filtered.fastq.gz" \
+			-g "${MTAA}" \
+			-o "${annotatedir}/kmer/100k" \
+			-t "${_arg_readassemble_t}" \
+			-N "${_arg_readassemble_n}" \
+			-T "${_arg_threads}"
+	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+		bash "${_POLAPLIB_DIR}/polap-bash-ont100k.sh" \
+			-r "${annotatedir}/kmer/ref-filtered.fastq.gz" \
+			-g "${MTAA}" \
+			-o "${annotatedir}/kmer/100k" \
+			-t "${_arg_readassemble_t}" \
+			-N "${_arg_readassemble_n}" \
+			-T "${_arg_threads}"
+	else
+		_polap_log0 "ERROR: no such data type available: ${_arg_data_type}"
+		return
+	fi
 
 	# Step 4
 	# Convert the seed contig fasta to gfa and mt.contig.name files.
@@ -217,13 +231,27 @@ _polap_readassemble-mt() {
 		"${annotatedir}/kmer/100k/greedy_100k.fasta"
 	#
 	bash "${_POLAPLIB_DIR}/polap-bash-fa2mtcontigname.sh" \
-		-o "${annotatedir}/mt/mt.contig.name-mt0" \
+		-o "${annotatedir}/mt/mt.contig.name-mt" \
 		"${annotatedir}/kmer/100k/greedy_100k.fasta"
+
+	# head -n "${_arg_readassemble_n}" \
+	# 	"${annotatedir}/mt/mt.contig.name-mt" \
+	# 	>"${annotatedir}/mt/mt.contig.name-mt0"
 
 	gfatools gfa2fa \
 		"${annotatedir}/mt/30-contigger/graph_final.gfa" \
 		>"${annotatedir}/mt/30-contigger/graph_final.fasta" \
 		2>${_polap_output_dest}
+
+	# Step 5
+	# select unitigs with more MT vs. PT genes.
+	#
+	_polap_lib_annotate \
+		-o "${annotatedir}" \
+		-i "mt"
+
+	_polap_lib_lines-skip1 "${annotatedir}/mt/contig-annotation-depth-table.txt" |
+		cut -d' ' -f1 >"${annotatedir}/mt/mt.contig.name-mt0"
 
 	# Step 5
 	_arg_long_reads="${annotatedir}/kmer/ref-filtered.fastq.gz"

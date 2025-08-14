@@ -583,10 +583,14 @@ HEREDOC
 	rm -f "${_polap_var_ga}"/mt.contig.name-*
 
 	# Create the array based on the value of _arg_plastid
+	local knum_array=()
 	if [[ "$_arg_plastid" == "on" ]]; then
-		local knum_array=(1 6)
+		knum_array=(1 6)
 	else
-		local knum_array=({1..6}) # This creates an array of 1 through 6
+		knum_array=({1..6}) # This creates an array of 1 through 6
+	fi
+	if [[ -n "${_arg_seeds_scheme}" ]]; then
+		IFS=',' read -r -a knum_array <<<"${_arg_seeds_scheme}"
 	fi
 
 	# 1. file_hashed.tmp
@@ -598,6 +602,7 @@ HEREDOC
 	# Create a temporary file to store hashes and file paths
 	local hash_file="${_polap_var_ga_mtcontigs}/file_hashes.tmp"
 	>"$hash_file" # Ensure the file is empty
+	local i
 	for i in "${knum_array[@]}"; do
 		_arg_knum=$i
 		source "${_POLAPLIB_DIR}/polap-variables-mtcontigs.sh"
@@ -632,6 +637,11 @@ HEREDOC
 
 	# Initialize index counter
 	local index=${_arg_jnum}
+	if [[ "$index" =~ ^[0-9]+$ ]]; then
+		_polap_log1 "seed j index is a number."
+	else
+		index=1
+	fi
 
 	# Loop through each unique file
 	while IFS=" " read -r line_count file; do

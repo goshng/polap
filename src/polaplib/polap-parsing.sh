@@ -133,6 +133,7 @@ _arg_bridge_min="0"
 _arg_blast_evalue="30"
 _arg_nucleotide="off"
 _arg_max_seeds="35" # Lolium perenne: over 30 less than 35
+_arg_seeds_scheme=""
 _arg_inum="0"
 _arg_jnum="1"
 _arg_knum="1"
@@ -1071,6 +1072,14 @@ parse_commandline() {
 		--subject=*)
 			_arg_subject="${_key##--subject=}"
 			;;
+		--seeds-scheme)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_seeds_scheme="$2"
+			shift
+			;;
+		--seeds-scheme=*)
+			_arg_seeds_scheme="${_key##--seeds-scheme=}"
+			;;
 		-s | --select-read-range)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_select_read_range="$2"
@@ -1507,37 +1516,31 @@ parse_commandline() {
 			_arg_data_type="pacbio-raw"
 			_arg_flye_data_type="--pacbio-raw"
 			_arg_minimap2_data_type="map-pb"
-			_arg_readassemble_n=100
 			;;
 		--pacbio-corr)
 			_arg_data_type="pacbio-corr"
 			_arg_flye_data_type="--pacbio-corr"
 			_arg_minimap2_data_type="map-pb"
-			_arg_readassemble_n=100
 			;;
 		--pacbio-hifi)
 			_arg_data_type="pacbio-hifi"
 			_arg_flye_data_type="--pacbio-hifi"
 			_arg_minimap2_data_type="map-hifi"
-			_arg_readassemble_n=100
 			;;
 		--nano-raw)
 			_arg_data_type="nano-raw"
 			_arg_flye_data_type="--nano-raw"
 			_arg_minimap2_data_type="map-ont"
-			_arg_readassemble_n=50
 			;;
 		--nano-corr)
 			_arg_data_type="nano-corr"
 			_arg_flye_data_type="--nano-corr"
 			_arg_minimap2_data_type="map-ont"
-			_arg_readassemble_n=50
 			;;
 		--nano-hq)
 			_arg_data_type="nano-hq"
 			_arg_flye_data_type="--nano-hq"
 			_arg_minimap2_data_type="map-ont"
-			_arg_readassemble_n=50
 			;;
 		--infile)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

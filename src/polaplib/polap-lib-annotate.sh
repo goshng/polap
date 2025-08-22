@@ -45,6 +45,19 @@ fi
 # bp=31846726397
 # convert_bp $bp
 ################################################################################
+_polap_lib_annotate-prepare() {
+	# we can use all polap_var_ variables.
+	# They are determined by output, i, and j.
+	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
+
+	# local _polap_var_ga_contigger="${_polap_var_ga}/30-contigger"
+	# local _polap_var_ga_contigger_edges_gfa="${_polap_var_ga_contigger}/graph_final.gfa"
+
+	mkdir -p "${_polap_var_ga_contigger}"
+	cp "${_arg_gfa}" "${_polap_var_ga_contigger_edges_gfa}"
+}
+
 _polap_lib_annotate() {
 	# we can use all polap_var_ variables.
 	# They are determined by output, i, and j.

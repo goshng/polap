@@ -764,6 +764,164 @@ HEREDOC
 	return 0
 }
 
+function _run_polap_find-genome-size-for-pbclr { # estimate the whole genome size
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+
+	# Set paths for bioproject data
+	_polap_set-variables-short-read
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
+	source "${_POLAPLIB_DIR}/run-polap-function-utilities.sh"
+
+	help_message=$(
+		cat <<HEREDOC
+Estimate the whole genome size applying the PacBio long-read dataset to JellyFish.
+
+Arguments:
+  -l ${_arg_long_reads}: a long-read fastq data file
+
+Inputs:
+  ${_arg_long_reads}: a long-read fastq data file
+
+Outputs:
+  ${_polap_var_outdir_genome_size}
+
+Example:
+$(basename "$0") ${_arg_menu[0]} -l <file>
+HEREDOC
+	)
+
+	# Display help message
+	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+		if [ -s "${_polap_var_outdir_genome_size}" ]; then
+			_polap_log0_file "${_polap_var_outdir_genome_size}"
+			_polap_log0_cat "${_polap_var_outdir_genome_size}"
+		else
+			_polap_log0 "No genome size estimate from a short-read dataset"
+		fi
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+		return 0
+		exit $EXIT_SUCCESS
+	fi
+
+	_polap_log0 "estimate the genome size using PacBio CLR long-read data [${_arg_long_reads}]"
+
+	if [[ -d "${_arg_outdir}" ]]; then
+		_polap_log2 "  output folder: ${_arg_outdir}"
+	else
+		_polap_log3 mkdir -p "${_arg_outdir}"
+		mkdir -p "${_arg_outdir}"
+	fi
+	check_file_existence "${_arg_long_reads}"
+
+	_polap_log1 "  input1: ${_arg_long_reads}"
+
+	# See https://bioinformatics.uconn.edu/genome-size-estimation-tutorial/
+	if [ -s "${_polap_var_outdir_genome_size}" ] && [ "${_arg_redo}" = "off" ]; then
+		_polap_log1 "  found: ${_polap_var_outdir_genome_size}, so skipping the genome size estimation using the long-read data ..."
+		_polap_log1_file "${_polap_var_outdir_genome_size}"
+	else
+		if [ -s "${_polap_var_outdir_jellyfish_out}" ] && [ "${_arg_redo}" = "off" ]; then
+			_polap_log1 "  found: ${_polap_var_outdir_jellyfish_out}, so skipping the JellyFish count step using the long-read data ..."
+			_polap_log1_file "${_polap_var_outdir_jellyfish_out}"
+		else
+
+			local sizedir="${_arg_outdir}/genomesize"
+			mkdir -p "${sizedir}"
+			seqkit seq -m 1000 "${_arg_long_reads}" -o "${sizedir}/l.min1k.fq"
+
+			# deps
+			# conda install -c bioconda ntcard genomescope2 seqkit
+
+			# inputs: one or more FASTQ/FA/.. files (gz ok). Put them in reads.lst (one path per line).
+			# optional: drop sub-1kb reads to reduce error k-mers
+
+			# run ntCard at two k values (CLR-friendly)
+			# ntcard -k31 -t32 -p "${sizedir}/ntc31" "${sizedir}/l.min1k.fq"
+			ntcard -k41 -t32 -p "${sizedir}/ntc41" "${sizedir}/l.min1k.fq"
+
+			# awk '($1 ~ /^[0-9]+$/) && ($2 ~ /^[0-9]+$/) {print $1"\t"$2}' "${sizedir}/ntc31_k31.hist" |
+			# 	sort -k1,1n >"${sizedir}/k31.clean.hist"
+			awk '($1 ~ /^[0-9]+$/) && ($2 ~ /^[0-9]+$/) {print $1"\t"$2}' "${sizedir}/ntc41_k41.hist" |
+				sort -k1,1n >"${sizedir}/k41.clean.hist"
+
+			# GenomeScope2 fits (diploid by default; change -p if needed)
+			# mkdir -p "${sizedir}/gscope_k31"
+			# genomescope2 -i "${sizedir}/k31.clean.hist" -o "${sizedir}/gscope_k31" -k 31 -p 1 \
+			# 	>"${sizedir}/genomescope2.k31.txt"
+			mkdir -p "${sizedir}/gscope_k41"
+			genomescope2 -i "${sizedir}/k41.clean.hist" -o "${sizedir}/gscope_k41" -k 41 -p 1 \
+				>"${sizedir}/genomescope2.k41.txt"
+
+			cut -d: -f6 "${sizedir}/genomescope2.k41.txt" |
+				tail -n 1 >"${_polap_var_outdir_genome_size}"
+
+			rm -f "${sizedir}/l.min1k.fq"
+			rm -rf "${sizedir}"
+
+			# quick peek at genome-size lines (varies slightly by GS2 version; these usually work)
+			# grep -E 'genome|haploid|len' "${sizedir}/gscope_k31/summary.txt"
+			# grep -E 'genome|haploid|len' "${sizedir}/gscope_k41/summary.txt"
+
+			#
+			#conda install -c bioconda flye minimap2 samtools mosdepth
+			# flye --pacbio-raw "${sizedir}/l.min1k.fq" -o "${sizedir}/flye_out" -t 32
+			#
+			# local asm="${sizedir}/flye_out/assembly.fasta"
+			# minimap2 -t 32 -x map-pb "$asm" "${sizedir}/l.min1k.fq" |
+			# 	samtools sort -@16 -o "${sizedir}/clr.bam"
+			# samtools index "${sizedir}/clr.bam"
+			# # mosdepth summary (one line per contig with mean depth)
+			# mosdepth -t 32 --no-per-base "${sizedir}/depth" "${sizedir}/clr.bam"
+			# # output: depth.summary.txt  (TSV with header: chrom length bases mean min max)
+			# bash "${_POLAPLIB_DIR}/scripts/estimate-genome-size-cov.sh" \
+			# 	-d "${sizedir}/depth.mosdepth.summary.txt" \
+			# 	-r "${sizedir}/l.min1k.fq" \
+			# 	-o "${sizedir}/o"
+
+		fi
+
+		# _polap_log3_pipe "genomescope2 \
+		# 	-i ${_polap_var_outdir_jellyfish_out_histo} \
+		#     -k 31 \
+		# 	-o ${_polap_var_outdir_jellyfish_out}.dir \
+		# >${_polap_var_outdir_genome_size}.genomescope2.txt"
+
+		# Check the exit status
+		# cut -d: -f6 "${_polap_var_outdir_genome_size}.genomescope2.txt" |
+		# 	tail -n 1 >"${_polap_var_outdir_genome_size}"
+		#
+		# pacbio-hifi
+		#############################################################
+	fi
+	_polap_log1 "  output: ${_polap_var_outdir_genome_size}"
+	_polap_log2_cat "${_polap_var_outdir_genome_size}"
+
+	local _EXPECTED_GENOME_SIZE=$(<"${_polap_var_outdir_genome_size}")
+	local _EXPECTED_GENOME_SIZE=${_EXPECTED_GENOME_SIZE%.*}
+	local _expected_genome_size_bp=$(_polap_utility_convert_bp ${_EXPECTED_GENOME_SIZE})
+	_polap_log0 "  expected genome size using PacBio HiFi long-read data (bases): ${_expected_genome_size_bp}"
+
+	_polap_log1 NEXT: $(basename "$0") reduce-data -o "${_arg_outdir}" -l "${_arg_long_reads}" [-m "${_arg_min_read_length}"]
+
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
 ################################################################################
 # Steps:
 # 1. Firstly, generate a long-read DNA sequence of ${_arg_min_read_length}

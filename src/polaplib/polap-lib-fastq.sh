@@ -160,7 +160,15 @@ _polap_lib_fastq-sample-to() {
 	if [[ $(echo "$rate < 1" | bc) -eq 1 ]]; then
 		_polap_lib_random-get
 		local seed=${_polap_var_random_number}
+
+		_polap_log1 "  input1: ${infile}"
+		_polap_log1 "  output1: ${outfile}"
+		_polap_log1 "  random seed: ${seed}"
+		_polap_log1 "  long-read: ${max_size} (bp)"
+		_polap_log1 "  sampling rate: ${rate}"
+
 		_polap_log2 "sampling using seqkit sample with rate: ${rate}, max_size: ${max_size} and seed: ${seed} for ${infile} -> ${outfile}"
+
 		if [[ -s "${infile}" ]]; then
 			rm -f "${outfile}"
 			seqkit sample \
@@ -246,4 +254,58 @@ _polap_lib_fastq-check-type() {
 	else
 		echo "unknown"
 	fi
+}
+
+_polap_lib_fastq-sample-to-coverage() {
+	local infile="${1}"
+	local outfile="${2}"
+	local coverage="${3}"
+	local genomesize="${4}"
+
+	_polap_log1 "subsample the long-read data using a given target coverage: ${coverage}x"
+	_polap_lib_fastq-total-length-of "${infile}" "${_arg_outdir}/l.fq.txt"
+	local _l=$(<"${_arg_outdir}/l.fq.txt")
+	local _v="${genomesize}"
+
+	local _genome_coverage=$(echo "scale=5; ${_l} / ${_v}" | bc)
+	local _rate=$(echo "scale=5; ${coverage} / ${_genome_coverage}" | bc)
+
+	_polap_lib_random-get
+	local _seed=${_polap_var_random_number}
+
+	_polap_log1 "  input1: ${infile}"
+	_polap_log1 "  output1: ${outfile}"
+	_polap_log1 "  random seed: ${_seed}"
+	_polap_log1 "  long-read: ${_l} (bp)"
+	_polap_log1 "  genome size: ${_v} (bp)"
+	_polap_log1 "  long-read genome coverage: ${_genome_coverage}x"
+	_polap_log1 "  target coverage: ${coverage}x"
+	_polap_log1 "  sampling rate: ${_rate}"
+
+	local result=$(echo "$_rate < 1" | bc)
+
+	if [ "$result" -eq 1 ]; then
+		# echo "The rate value is less than 1"
+		if [[ "${_arg_dry}" == "off" ]]; then
+			rm -f "${outfile}"
+			seqkit sample \
+				-p "${_rate}" \
+				-s "${_seed}" \
+				"${infile}" \
+				-o ${outfile} 2>${_polap_output_dest}
+			# gzip "${_outfile}"
+		fi
+
+	else
+		# echo "The value is not less than 1"
+		_polap_log1 "  sampling rate is not less than 1: ${_rate}"
+		_polap_log1 "  no subsampling of input: ${infile}"
+		_polap_log0 "  no subsampling: ${outfile}"
+		rm -f "${outfile}"
+		# ln -s "$(realpath ${_infile})" "$(realpath -m ${_outfile})"
+		_polap_lib_filepath-smart_ln_s2 "${infile}" "${outfile}"
+		# _polap_lib_make_relative_symlink "${_infile}" "${_outfile}"
+	fi
+
+	return 0
 }

@@ -47,7 +47,7 @@ fi
 ################################################################################
 _polap_lib_assemble-rate() {
 
-	_polap_log0 "Assemble using seed contigs by adjusting data sampling"
+	_polap_log1 "Assemble using seed contigs by adjusting data sampling"
 
 	# we can use all polap_var_ variables.
 	# They are determined by output, i, and j.
@@ -78,7 +78,7 @@ _polap_lib_assemble-rate() {
 	# remove NUMT/NUPT using rkmerrc
 	# if [[ "${_arg_data_type}" == "pacbio-hifi" ]] && [[ "${_arg_plastid}" == "off" ]]; then
 	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
-		_polap_log0 "  use TIPPo's rmkc method to remove unusual PacBio HiFi reads before assembly"
+		_polap_log1 "  use TIPPo's rmkc method to remove unusual PacBio HiFi reads before assembly"
 		local _pread_sel="ptgaul-reads"
 		local index=$(<"${_polap_var_oga_contig}/index.txt")
 		local fq="${_polap_var_oga_seeds}/${_pread_sel}/${index}.fq"
@@ -86,9 +86,9 @@ _polap_lib_assemble-rate() {
 		# local PREFIX="${_arg_outdir}/kmer/rmkc"
 		local PREFIX="${_polap_var_oga_seeds}/${_pread_sel}/${index}/kmer/rmkc"
 		local CLEANED="$PREFIX.cleaned.fastq.gz"
-		_polap_log0 "rmkc on ${fq}"
+		_polap_log1 "rmkc on ${fq}"
 		_polap_lib_filter-reads-by-rmkc -l "${fq}" -o "${_polap_var_oga_seeds}/${_pread_sel}/${index}"
-		_polap_log0 "rmkc produces ${CLEANED}"
+		_polap_log1 "rmkc produces ${CLEANED}"
 		_polap_lib_oga-flye-select-reads "${CLEANED}"
 	else
 		_polap_lib_oga-flye-select-reads

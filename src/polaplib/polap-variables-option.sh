@@ -36,6 +36,7 @@ local _arg_jnum="1"
 local _arg_single_min="3000"
 local _arg_reference=""
 local _arg_type="pt"
+local _arg_gfa="assemble_graph.gfa"
 
 # Argument parsing
 while [[ $# -gt 0 ]]; do
@@ -66,6 +67,10 @@ while [[ $# -gt 0 ]]; do
 		;;
 	--reference)
 		_arg_reference="$2"
+		shift 2
+		;;
+	--gfa)
+		_arg_gfa="$2"
 		shift 2
 		;;
 	-h | --help)

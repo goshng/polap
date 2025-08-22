@@ -274,7 +274,7 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
-	_polap_log0 "mapping long-read data on the seed contigs ..."
+	_polap_log1 "mapping long-read data on the seed contigs ..."
 	_polap_log1 "  assembly: ${_arg_inum} (source) -> ${_arg_jnum} (target) ..."
 	_polap_log1 "  input1: ${_polap_var_mtcontigname}"
 	_polap_log1 "  input2: ${_polap_var_ga_contigger_edges_fasta}"
@@ -394,13 +394,23 @@ HEREDOC
 	if [[ -s "${_polap_var_oga_contig}"/contig.paf ]] && [[ "${_arg_redo}" = "off" ]]; then
 		_polap_log1 "  found: ${_polap_var_oga_reads}/contig.paf, skipping the minimap2 mapping step ..."
 	else
-		_polap_log3_pipe "minimap2 -cx \
+		if [[ "${_arg_data_type}" == "pacbio-raw" ]]; then
+			minimap2 -cx \
+				${_arg_minimap2_data_type} \
+				${_polap_var_oga_contig}/contig.fa \
+				${_source_long_reads_fq} \
+				-t ${_arg_threads} \
+				-o ${_polap_var_oga_contig}/contig.paf \
+				>${_polap_output_dest} 2>&1
+		else
+			_polap_log3_pipe "minimap2 -cx \
       ${_arg_minimap2_data_type} \
       ${_polap_var_oga_contig}/contig.fa \
       ${_source_long_reads_fq} \
       -t ${_arg_threads} \
       -o ${_polap_var_oga_contig}/contig.paf \
       >${_polap_output_dest} 2>&1"
+		fi
 	fi
 
 	_polap_log1 "  converting PAF to TAB ..."

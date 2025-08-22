@@ -416,9 +416,9 @@ HEREDOC
 	fi
 
 	if [[ "${_arg_plastid}" == "off" ]]; then
-		_polap_log0 "getting the mitochondrial organelle-genome sequence of a plant species ..."
+		_polap_log1 "getting the mitochondrial organelle-genome sequence of a plant species ..."
 	else
-		_polap_log0 "getting the plastid organelle-genome sequence of a plant species ..."
+		_polap_log1 "getting the plastid organelle-genome sequence of a plant species ..."
 	fi
 
 	# Determine species name
@@ -519,7 +519,7 @@ HEREDOC
 		_polap_log0 "NCBI accession: ${accession}"
 	else
 		echo "no mtDNA" >"${_polap_var_project_mtdna_fasta2_accession}"
-		_polap_log0 "No mtDNA sequence found for the species: ${SPECIES}"
+		_polap_log0 "No organelle genome sequence found for the species: ${SPECIES}"
 		rm -f \
 			"${_polap_var_project_mtdna_fasta1_stats}" \
 			"${_polap_var_project_mtdna_fasta1}" \

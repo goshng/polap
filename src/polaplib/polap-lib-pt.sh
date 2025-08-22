@@ -95,6 +95,6 @@ function _polap_lib_pt-extract-dna {
 			--fasta "${outdir}/pt2.0.fa" \
 			"${gfa}"
 	else
-		_polap_log0 "no ptDNA is extracted from the graph."
+		_polap_log1 "no ptDNA is extracted from the graph."
 	fi
 }

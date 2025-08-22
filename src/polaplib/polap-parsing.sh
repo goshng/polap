@@ -188,7 +188,7 @@ _arg_disassemble_b_is="off"   #
 # _arg_disassemble_b_short="off" # deprecate: not using it; use the same short-read sample size
 # we use the same rate not the actual sampling size for the short-read data
 # just as we use the long-read sampling rate.
-_arg_downsample="10"        # 10x downsample
+_arg_downsample="10"        # 10x downsample or 1g bases
 _arg_disassemble_p=5        # 5% of the sample size
 _arg_disassemble_n=10       # the number cycles
 _arg_disassemble_r=5        # the number of replicates
@@ -258,7 +258,7 @@ _arg_directional_i=1
 # for menu readassemble
 # 50 for ont or nano
 # 100 for pacbio
-_arg_readassemble_n=50
+_arg_readassemble_n=100
 _arg_readassemble_t=100000
 
 # flye options
@@ -1515,7 +1515,7 @@ parse_commandline() {
 		--pacbio-raw)
 			_arg_data_type="pacbio-raw"
 			_arg_flye_data_type="--pacbio-raw"
-			_arg_minimap2_data_type="map-pb"
+			_arg_minimap2_data_type="map-pb -k15 -w5 -p 0.5 -N 10"
 			;;
 		--pacbio-corr)
 			_arg_data_type="pacbio-corr"

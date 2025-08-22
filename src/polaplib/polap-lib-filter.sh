@@ -399,7 +399,7 @@ cat(sprintf('mkc = %.2f\\n', mkc));"
 	local LKC=$(awk -v mkc="$MKC" 'BEGIN { printf "%.2f", 0.3 * mkc }')
 	local HKC=$(awk -v mkc="$MKC" 'BEGIN { printf "%.2f", 5.0 * mkc }')
 
-	_polap_log0 "mkc = $MKC | lkc = $LKC | hkc = $HKC"
+	_polap_log1 "mkc = $MKC | lkc = $LKC | hkc = $HKC"
 
 	# === Step 5: Filter nuclear outliers
 	_polap_log1 "[5/5] Filtering out nuclear-like reads..."

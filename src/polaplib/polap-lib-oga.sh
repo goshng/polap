@@ -169,7 +169,7 @@ function _polap_lib_oga-estimate-read-sampling-rate {
 		# sampling rate
 		local _rate=$(echo "scale=9; ${_arg_coverage_oga}/$_expected_organelle_coverage" | bc)
 
-		_polap_log0 "input long-read downsampling rate (<1.0): ${rate_lfq}: subsampling rate (0.1 ~ 0.5): ${_rate}"
+		_polap_log1 "input long-read downsampling rate (<1.0): ${rate_lfq}: subsampling rate (0.1 ~ 0.5): ${_rate}"
 
 		if (($(echo "${rate_lfq} > 1.0" | bc -l))); then
 			echo "1.0" >"${_polap_var_oga_contig}/rate_lfq.txt"

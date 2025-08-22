@@ -138,15 +138,53 @@ EOF
 }
 
 _polap_readassemble-nt() {
-	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
-		_polap_log0 "Not Yet implemented!"
-		return
-	fi
+	# if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+	# 	_polap_log0 "Not Yet implemented!"
+	# 	return
+	# fi
 	_polap_lib_readassemble-annotate-read-nt
 	_polap_lib_readassemble-assemble-annotated-read-nt
 }
 
+_polap_readassemble-pt-v1() {
+	# downsampling
+	# number of bases
+	_polap_lib_readassemble-annotate-read-pt
+	_polap_lib_readassemble-assemble-annotated-read-pt
+}
+
 _polap_readassemble-pt() {
+	# downsampling
+	# number of bases
+	if [[ "${_arg_data_type}" == "pacbio-hifi" ]] ||
+		[[ "${_arg_data_type}" == "pacbio-raw" ]]; then
+		# check the genome size
+		# FIXME: estimate it if not exists.
+		# Take the value in the short_expected_genme_size.txt
+		local genomesize=$(_polap_lib_genomesize)
+
+		if [[ "${_arg_downsample}" =~ [gGkKmM]$ ]]; then
+			_polap_log0 "use --downsample 3 for HiFi reads"
+			return
+		fi
+		_polap_lib_fastq-sample-to-coverage \
+			"${_arg_long_reads}" \
+			"${_arg_outdir}/ld.fq" \
+			"${_arg_downsample}" \
+			"${genomesize}"
+	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+		if [[ ! "${_arg_downsample}" =~ [gGkKmM]$ ]]; then
+			_polap_log0 "use --downsample 1g for ONT reads"
+			return
+		fi
+		_polap_lib_fastq-sample-to \
+			"${_arg_long_reads}" \
+			"${_arg_outdir}/ld.fq" \
+			"${_arg_downsample}"
+	fi
+
+	_arg_long_reads="${_arg_outdir}/ld.fq"
+
 	_polap_lib_readassemble-annotate-read-pt
 	_polap_lib_readassemble-assemble-annotated-read-pt
 }
@@ -166,16 +204,41 @@ _polap_readassemble-mt() {
 	local type="mt"
 	local annotatedir="${_arg_outdir}/annotate-read-${type}"
 
+	rm -rf "$annotatedir"
+
 	local pt_table mt_table at_table all_table
 	_polap_lib_readassemble-common-variables \
 		annotatedir pt_table mt_table at_table all_table
+
+	local hifi1dir="$HOME/all/polap/hifi1"
+	local speciesdir="${_arg_outdir%-*}"
 
 	# Step 1
 	# assemble pt first
 	# we delete annotate-read-TYPE dir inside this function
 	#
-	_polap_lib_readassemble-annotate-read-pt mt
-	_polap_lib_readassemble-assemble-annotated-read-pt mt
+	if [[ ! -s "${_arg_outdir}/${type}-pt.0.fa" ]]; then
+		if [[ -s "${_arg_outdir}/pt-pt.0.gfa" ]]; then
+			ln -fs "pt-pt.0.gfa" "${_arg_outdir}/${type}-pt.0.gfa"
+			ln -fs "pt-pt.0.fa" "${_arg_outdir}/${type}-pt.0.fa"
+		fi
+		if [[ -s "${_arg_outdir}/annotate-read-pt/pt.0.fa" ]]; then
+			ln -fs "annotate-read-pt/pt.0.gfa" "${_arg_outdir}/${type}-pt.0.gfa"
+			ln -fs "annotate-read-pt/pt.0.fa" "${_arg_outdir}/${type}-pt.0.fa"
+		fi
+		if [[ -s "$hifi1dir/${speciesdir}/t5/0/polap-readassemble-1-pt/pt.0.fa" ]]; then
+			ln -fs $(realpath "${hifi1dir}/${speciesdir}/t5/0/polap-readassemble-1-pt/pt.0.gfa") \
+				"${_arg_outdir}/${type}-pt.0.gfa"
+			ln -fs $(realpath "${hifi1dir}/${speciesdir}/t5/0/polap-readassemble-1-pt/pt.0.fa") \
+				"${_arg_outdir}/${type}-pt.0.fa"
+		fi
+	fi
+	# ln -fs "pt-pt.0.fa" "${_arg_outdir}/${type}-pt.0.fa"
+
+	if [[ ! -s "${_arg_outdir}/${type}-pt.0.gfa" ]]; then
+		_polap_lib_readassemble-annotate-read-pt mt
+		_polap_lib_readassemble-assemble-annotated-read-pt mt
+	fi
 
 	# _polap_lib_lines-skip1 "${mt_table}" | cut -f1 >"${annotatedir}"/mt0.id.txt
 	# rm -f "${annotatedir}"/mt.fq
@@ -189,10 +252,30 @@ _polap_readassemble-mt() {
 	# -l "${_arg_long_reads}" \
 	# -l "${annotatedir}/mt.fq" \
 	#
-	_polap_lib_filter-reads-by-reference \
-		-o "${annotatedir}" \
-		-l "${_arg_long_reads}" \
-		--reference "${_arg_outdir}/${type}-pt.0.gfa"
+
+	# "${annotatedir}/kmer/ref-filtered.fastq.gz" |
+	if [[ "${_arg_data_type}" == "nano-raw" ]]; then
+		mkdir -p "${annotatedir}/kmer"
+
+		minimap2 -t 8 -x map-ont --secondary=no \
+			"${_arg_outdir}/${type}-pt.0.fa" \
+			"${_arg_long_reads}" >"${annotatedir}/kmer/ptdna-origin.paf"
+		awk -v MINLEN=1000 -v MINID=0.3 \
+			-f "${_POLAPLIB_DIR}/polap-awk-filter-paf-by-identity-len.awk" \
+			"${annotatedir}/kmer/ptdna-origin.paf" \
+			>"${annotatedir}/kmer/ptdna-origin.txt"
+
+		seqkit grep -v -f "${annotatedir}/kmer/ptdna-origin.txt" \
+			"${_arg_long_reads}" -o "${annotatedir}/kmer/ref-filtered.fastq.gz"
+	elif [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+		_polap_lib_filter-reads-by-reference \
+			-o "${annotatedir}" \
+			-l "${_arg_long_reads}" \
+			--reference "${_arg_outdir}/${type}-pt.0.gfa"
+
+		# ln -sf "ref-filtered.fastq.gz" \
+		# 	"${annotatedir}/kmer/ref-filtered2.fastq.gz"
+	fi
 
 	# Step 2-1
 	# select reads with more MT genes than PT genes.
@@ -210,6 +293,7 @@ _polap_readassemble-mt() {
 			-N "${_arg_readassemble_n}" \
 			-T "${_arg_threads}"
 	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+		# echo "nano-raw"
 		bash "${_POLAPLIB_DIR}/polap-bash-ont100k.sh" \
 			-r "${annotatedir}/kmer/ref-filtered.fastq.gz" \
 			-g "${MTAA}" \
@@ -245,7 +329,16 @@ _polap_readassemble-mt() {
 
 	# Step 5
 	# select unitigs with more MT vs. PT genes.
+	# FIXME: use DNA sequences not AA sequences.
 	#
+	# if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+	# 	_polap_lib_annotate \
+	# 		-o "${annotatedir}" \
+	# 		-i "mt"
+	# elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+	# 	_arg_long_reads="${annotatedir}/mt/30-contigger/graph_final.fasta"
+	# 	_polap_lib_readassemble-annotate-read-pt xt
+	# fi
 	_polap_lib_annotate \
 		-o "${annotatedir}" \
 		-i "mt"

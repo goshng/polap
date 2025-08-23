@@ -4884,11 +4884,10 @@ run-download-sra-clr_genus_species() {
 
 	# Clean-up
 	rm -f "${long_sra}.fastq"
-	rm -f "${long_sra}-${_sample_coverage}x.fastq.tar.gz"
+	rm -f "${long_sra}.2k.fastq.tar.gz"
 
 	rm -rf "${_brg_rundir}"
 	rm -rf "${_brg_outdir}"
-	rm -f "${long_sra}-${_sample_coverage}"x.fq
 }
 
 run-download-sra-hifi_genus_species() {

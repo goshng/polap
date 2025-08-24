@@ -18,8 +18,10 @@ message("length(args): ", length(args))
 message("xmin: ", xmin)
 message("xmax: ", xmax)
 
-library(ggplot2)
-library(pracma) # for findpeaks
+suppressPackageStartupMessages({
+  library(ggplot2)
+  library(pracma) # for findpeaks
+})
 
 # Load histogram
 histo <- read.table(histo_file, col.names = c("Multiplicity", "Count"))

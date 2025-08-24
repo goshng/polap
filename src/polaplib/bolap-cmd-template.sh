@@ -40,28 +40,22 @@ fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
-function _run_polap_polish-ont {
-	# Enable debugging if _POLAP_DEBUG is set
-	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
-	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+function _run_bolap_template {
+	local _brg_outdir="${_brg_menu[1]}"
+	local _brg_sindex="${_brg_menu[2]:-0}"
 
-	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
-	local _polap_output_dest="/dev/null"
-	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
-
-	# Grouped file path declarations
-	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
-
+	local bolap_cmd="${FUNCNAME##*_}"
 	help_message=$(
 		cat <<EOF
 Name:
-  polap polish - polishes assembly using either long-read or short-read data.
+  bolap ${bolap_cmd} - annotate rougly reads with organelle genes
 
 Synopsis:
-  polap polish [options]
+  bolap ${bolap_cmd} [options]
 
 Description:
-  polap polish uses tools to polish sequences in fasta format using long-read or short-read data.
+  bolap ${bolap_cmd} uses plastid and organelle genes to annotate reads
+  using minimap2.
 
 Options:
   -l FASTQ
@@ -69,10 +63,10 @@ Options:
 
 Examples:
   Get organelle genome sequences:
-    polap polish-ont -l l.fq -p pt.unpolished.fa -f pt.polished.fa
+    bolap ${bolap_cmd} -l l.fq
 
 TODO:
-  racon conda installation does not work. Install it from the source.
+  Dev.
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -84,32 +78,26 @@ EOF
 	)
 
 	# Display help message
-	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
-		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
-		man "$manfile" >&3
+	if [[ ${_brg_menu[1]} == "help" || "${_brg_help}" == "on" ]]; then
+		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_brg_menu[0]}")
+		man "$manfile"
 		rm -f "$manfile"
 		return
 	fi
 
-	# Display the content of output files
-	if [[ "${_arg_menu[1]}" == "view" ]]; then
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
 
-		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Display the content of output files
+	if [[ "${_brg_menu[1]}" == "view" ]]; then
+
 		# Disable debugging if previously enabled
 		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
 		exit $EXIT_SUCCESS
 	fi
 
-	bash "${_POLAPLIB_DIR}/polap-bash-polish-ptdna-ont.sh" \
-		--threads "${_arg_threads}" \
-		--outdir "${_arg_outdir}/polish-ont" \
-		"${_arg_unpolished_fasta}" \
-		"${_arg_long_reads}"
+	_log_echo "outdir: ${_bolap_outdir}"
 
-	cp "${_arg_outdir}/polish-ont/pt.best.fa" "${_arg_final_assembly}"
-
-	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0

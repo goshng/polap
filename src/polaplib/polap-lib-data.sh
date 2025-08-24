@@ -6437,7 +6437,12 @@ update_genus_species() {
 
 	local item="${args[0]}"
 	local rest=("${args[@]:1}")
-	update-${item}_genus_species ${rest[@]}
+
+	if declare -F update-${item}_genus_species >/dev/null; then
+		update-${item}_genus_species ${rest[@]}
+	else
+		echo "$help_message_update"
+	fi
 }
 
 get-cflye_genus_species() {
@@ -9035,9 +9040,16 @@ run_genus_species() {
 	local remaining_args=("${@:2}")
 
 	# Remove trailing slash from the first element
-	remaining_args[0]="${remaining_args[0]%/}"
+	if [[ -n "${remaining_args[0]}" ]]; then
+		remaining_args[0]="${remaining_args[0]%/}"
+	fi
 
 	run-${first_arg}_genus_species "${remaining_args[@]}"
+	if declare -F run-${first_arg}_genus_species >/dev/null; then
+		run-${first_arg}_genus_species "${remaining_args[@]}"
+	else
+		echo "$help_message_setup"
+	fi
 }
 
 run-getorganelle_genus_species() {
@@ -9415,7 +9427,11 @@ setup_genus_species() {
 		return
 	fi
 
-	setup-${first_arg}_genus_species "${remaining_args[@]:-}"
+	if declare -F setup-${first_arg}_genus_species >/dev/null; then
+		setup-${first_arg}_genus_species "${remaining_args[@]:-}"
+	else
+		echo "$help_message_setup"
+	fi
 }
 
 list_genus_species() {
@@ -9440,10 +9456,14 @@ list_genus_species() {
 install_genus_species() {
 	local args=("$@")
 
+	_log_echo "1"
+	echo "2"
+
 	if has_help "${args[@]}"; then
 		echo "$help_message_install"
 		return
 	fi
+	echo "3"
 
 	for item in "${args[@]}"; do
 		local tool="${item%%=*}"

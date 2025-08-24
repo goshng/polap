@@ -52,16 +52,17 @@ function _run_polap_template {
 	# Grouped file path declarations
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
 
+  local polap_cmd="${FUNCNAME##*_}"
 	help_message=$(
-		cat <<'EOF'
+		cat <<EOF
 Name:
-  polap annotate-read - annotate rougly reads with organelle genes
+  polap ${polap_cmd} - annotate rougly reads with organelle genes
 
 Synopsis:
-  polap annotate-read [options]
+  polap ${polap_cmd} [options]
 
 Description:
-  polap annotate-read uses plastid and organelle genes to annotate reads
+  polap ${polap_cmd} uses plastid and organelle genes to annotate reads
   using minimap2.
 
 Options:
@@ -70,7 +71,7 @@ Options:
 
 Examples:
   Get organelle genome sequences:
-    polap annotate-read -l l.fq
+    polap ${polap_cmd} -l l.fq
 
 TODO:
   Dev.

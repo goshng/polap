@@ -198,30 +198,53 @@ function _polap_log0_only {
 # --quiet level
 # log only to the log file
 #
-# function _polap_log0 {
-# 	verbose_echo 0 "$@"
-# 	# verbose_echo 1 "$@" 1>&2
-# 	if [[ "${_arg_log_stderr}" = "off" ]]; then
-# 		verbose_echo 1 "$@" >&3
-# 	else
-# 		verbose_echo 1 "$@" >&2
-# 	fi
-# }
-#
-function _polap_log0 {
-	local func="${FUNCNAME[1]}"
-	local file="$(basename ${BASH_SOURCE[1]})"
-	local line="${BASH_LINENO[0]}"
-	local tag="[$func@$file:$line]"
+if [[ "${_POLAP_RELEASE}" == "1" ]]; then
+	function _polap_log0 {
+		verbose_echo 0 "$@"
+		# verbose_echo 1 "$@" 1>&2
+		if [[ "${_arg_log_stderr}" = "off" ]]; then
+			verbose_echo 1 "$@" >&3
+		else
+			verbose_echo 1 "$@" >&2
+		fi
+	}
+else
+	function _polap_log0 {
+		local func="${FUNCNAME[1]}"
+		local file="$(basename ${BASH_SOURCE[1]})"
+		local line="${BASH_LINENO[0]}"
+		local tag="[$func@$file:$line]"
 
-	verbose_echo 0 "${tag} $@"
+		verbose_echo 0 "${tag} $@"
 
-	if [[ "${_arg_log_stderr}" = "off" ]]; then
-		verbose_echo 1 "${tag} $@" >&3
-	else
-		verbose_echo 1 "${tag} $@" >&2
-	fi
-}
+		if [[ "${_arg_log_stderr}" = "off" ]]; then
+			verbose_echo 1 "${tag} $@" >&3
+		else
+			verbose_echo 1 "${tag} $@" >&2
+		fi
+	}
+fi
+
+if [[ "${_POLAP_DEBUG}" == "1" ]]; then
+	function _polap_log0_dev {
+		local func="${FUNCNAME[1]}"
+		local file="$(basename ${BASH_SOURCE[1]})"
+		local line="${BASH_LINENO[0]}"
+		local tag="[$func@$file:$line]"
+
+		verbose_echo 0 "${tag} $@"
+
+		if [[ "${_arg_log_stderr}" = "off" ]]; then
+			verbose_echo 1 "${tag} $@" >&3
+		else
+			verbose_echo 1 "${tag} $@" >&2
+		fi
+	}
+else
+	function _polap_log0_dev {
+		:
+	}
+fi
 
 # log level 1 to the log file
 # log level 0 to the screen

@@ -40,7 +40,7 @@ fi
 : "${_POLAP_RELEASE:=0}"
 
 source "${_POLAPLIB_DIR}/polap-git-hash-version.sh"
-_polap_version=v0.5.2.9-"${_polap_git_hash_version}"
+_polap_version=v0.5.3.0-"${_polap_git_hash_version}"
 
 ################################################################################
 # Function to convert base pairs to the highest appropriate unit

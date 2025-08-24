@@ -190,27 +190,44 @@ function _run_polap_prepare-polishing { # prepare the polishing using FMLRC
   _polap_set-variables-short-read
   source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
 
-  help_message=$(
-    cat <<HEREDOC
-# Prepares the polishing using FMLRC.
-# Arguments:
-#   -a ${_arg_short_read1}
-#   -b ${_arg_short_read2}
-#   or
-#   --bioproject ${_arg_bioproject}
-# Inputs:
-#   ${_arg_short_read1}
-#   ${_arg_short_read2}
-# Outputs:
-#   ${_arg_outdir}/msbwt/comp_msbwt.npy
-# Precondition:
-#   get-bioproject --bioproject ${_arg_bioproject}
-Example: $(basename "$0") ${_arg_menu[0]} -a ${_arg_short_read1} [-b ${_arg_short_read2}]
-HEREDOC
-  )
+	help_message=$(
+		cat <<EOF
+Name:
+  polap prepare-polishing - prepares the polishing using FMLRC.
 
-  # Display help message
-  [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+Synopsis:
+  polap prepare-polishing [options]
+
+Description:
+  polap prepare-polishing uses FMLRC to prepare the polishing of sequences in FASTQ format using short-read data.
+
+Options:
+  -a FASTQ
+    short-read data file 1 [default: ${_arg_short_read1}]
+
+  -b FASTQ
+    short-read data file 2 [default: ${_arg_short_read2}]
+
+Examples:
+  Prepare for short-read polishing:
+    polap prepare-polishing -a s1.fq -b s2.fq -o outdir
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# Display help message
+	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
+		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
+		man "$manfile" >&3
+		rm -f "$manfile"
+		return
+	fi
 
   # Display the content of output files
   if [[ "${_arg_menu[1]}" == "view" ]]; then
@@ -528,6 +545,7 @@ function _run_polap_polish { # polish organelle genome sequences using FMLRC
   # Enable debugging if _POLAP_DEBUG is set
   [ "$_POLAP_DEBUG" -eq 1 ] && set -x
   _polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
+  local polap_cmd="${FUNCNAME##*_}"
 
   # Set verbosity level: stderr if verbose >= 2, otherwise discard output
   local _polap_output_dest="/dev/null"
@@ -535,24 +553,50 @@ function _run_polap_polish { # polish organelle genome sequences using FMLRC
 
   source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 
-  help_message=$(
-    cat <<HEREDOC
-# Polish a draft sequence using FMLRC.
-#
-# Arguments:
-#   -p ${_arg_unpolished_fasta}: a long-read draft genome assembly
-#   -f ${_arg_final_assembly}: a final genome assembly sequence name
-# Inputs:
-#   ${_polap_var_outdir_msbwt}
-#   ${_arg_unpolished_fasta}
-# Outputs:
-#   ${_arg_final_assembly}
-Example: $(basename "$0") ${_arg_menu[0]} -p ${_arg_unpolished_fasta} -f ${_arg_final_assembly}
-HEREDOC
-  )
+	help_message=$(
+		cat <<EOF
+Name:
+  polap ${polap_cmd} - polish a draft sequence
 
-  # Display help message
-  [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+Synopsis:
+  polap ${polap_cmd} [options]
+
+Description:
+  polap ${polap_cmd} uses either short-read data or long-read data to polish a draft genome assembly sequence in FASTA format.
+
+Options:
+  -p FASTA [default: ${_arg_unpolished_fasta}]
+    draft genome assembly sequence file
+
+  -f FASTA [default: ${_arg_final_assembly}]
+    final genome assembly sequence file
+
+  -l FASTQ
+    reads data file
+
+Examples:
+  Get organelle genome sequences:
+    polap ${polap_cmd} -a s1.fq -b s2.fq -p mt.0.fasta -f mt.1.fa
+
+See Also:
+  polap prepare-polishing - prepares the polishing using FMLRC.
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# Display help message
+	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
+		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
+		man "$manfile" >&3
+		rm -f "$manfile"
+		return
+	fi
 
   # Initialize Conda
   _polap_lib_conda-ensure_conda_env polap-fmlrc || exit 1

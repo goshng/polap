@@ -18,7 +18,7 @@
 # polap and polap-data-cflye are release-versions with _POLAP_RELEASE to be 1.
 : "${_POLAP_DEBUG:=0}"
 export _POLAP_DEBUG
-: "${_POLAP_RELEASE:=1}"
+: "${_POLAP_RELEASE:=0}"
 export _POLAP_RELEASE
 
 # Data directories: we download data from the NCBI SRA database
@@ -52,48 +52,6 @@ if [[ -d "man" ]]; then
 else
 	_brg_default_target_dir="$HOME/all/manuscript/polap-v${_polap_data_version}/figures"
 fi
-
-help_message=$(
-	cat <<HEREDOC
-usage: polap-data-read [-h] [-y] [-c CSV] [--version] COMMAND [-h] ...
-
-polap-data-read is a tool for data analysis of plant plastid genome assembly
-by annotating long reads with organelle genome sequences and selecting those
-originating from organelle genomes.
-
-options:
-  -h, --help          Show this help message and exit.
-  -y                  Enable -y flag to say YES to any question.
-  -v                  Enable verbose mode.
-  -f                  Enable -f flag to say YES to profiling.
-  -c <arg>            Set value for -c option (default: ${opt_c_arg})
-  -t <arg>            Set value for -t option (default: ${opt_t_arg})
-  -m <arg>            Set value for -m option figure folder (default: ${_brg_default_target_dir})
-  -e <ame>            Call <name>_genus_species function and exit.
-  --version           Show the polap-data-dflye version number and exit.
-
-commands:
-  The following commands are available for the script.
-
-  COMMAND
-    install            Install a list of tools to some conda environments.
-    setup              Setup installed tools.
-    update             Update tools.
-    list (search)      List tools.
-    run                Run an executable in a conda environment.
-    remove (uninstall) Remove a list of tools.
-    build (assemble)   Build plastid or mitochondrial genomes.
-    download (mkdir)   Download data.
-    config             Config view, add, etc.
-    benchmark          Benchmark GetOrganelle, ptGAUL, PMAT, TIPPo, and Oatk.
-    clean (delete, rm) Remove unnecessary folders.
-    get                Get results.
-    archive            Archive results.
-    man                Generate reports.
-    help               Print help message for commands and others.
-    print-help-all     List all help messages.
-HEREDOC
-)
 
 # Tesing groups of datasets
 declare -a Sall
@@ -256,7 +214,7 @@ _polap_script_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 	echo "Couldn't determine the script's running directory, which probably matters, bailing out" >&2
 	exit 2
 }
-_POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
+# _POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
 
 # include bash libraries
 source "${_POLAPLIB_DIR}/polap-lib-version.sh"
@@ -279,26 +237,9 @@ source <(echo 'export QT_QPA_PLATFORM=minimal')
 # NOTE: globaly defined in polap-lib-data.sh
 #
 # _polap_data_csv="$(basename "$0" .sh).csv"
+_polap_data_csv="$(basename ${BASH_SOURCE[0]%.sh}.csv)"
 # _polap_data_data="$(basename "$0" .sh).data"
 # _polap_data_txt="$(basename "$0" .sh).txt"
-
-# delete this
-#
-# has_prefix() {
-#     local prefix="$1"
-#     shift
-#     local lc_prefix="${prefix,,}"  # lowercase prefix
-
-#     for arg in "$@"; do
-#         local lc_arg="${arg,,}"  # lowercase argument
-#         case "$lc_arg" in
-#             "$lc_prefix"*|-"$lc_prefix"*|--"$lc_prefix"*)
-#                 return 0
-#                 ;;
-#         esac
-#     done
-#     return 1
-# }
 
 setup-csv_genus_species() {
 	local args=("$@")
@@ -501,9 +442,9 @@ HEREDOC
 ################################################################################
 # main command arguments used before a subcommand
 #
-print_help() {
-	echo "${help_message}"
-}
+# print_help() {
+# 	echo "${help_message}"
+# }
 
 print_version() {
 	# _polap_lib_version
@@ -520,92 +461,12 @@ print_version_git_message() {
 '
 }
 
-# Parse options
-while [[ "${1-}" == -* ]]; do
-	case "$1" in
-	-c)
-		shift
-		if [[ -z "${1-}" || "${1-}" == -* ]]; then
-			echo "Error: -c requires an argument"
-			exit 1
-		fi
-		opt_c_arg="$1"
-		;;
-	-t)
-		shift
-		if [[ -z "${1-}" || "${1-}" == -* ]]; then
-			echo "Error: -t requires an argument"
-			exit 1
-		fi
-		opt_t_arg="$1"
-		;;
-	-m)
-		shift
-		if [[ -z "${1-}" || "${1-}" == -* ]]; then
-			echo "Error: -t requires an argument"
-			exit 1
-		fi
-		opt_m_arg="$1"
-		;;
-	-y)
-		opt_y_flag=true
-		;;
-	-v)
-		opt_v_flag=true
-		;;
-	-f)
-		opt_f_flag=true
-		;;
-	-e)
-		shift
-		if [[ -z "${1-}" || "${1-}" == -* ]]; then
-			echo "Error: -e requires an argument"
-			exit 1
-		fi
-		opt_e_arg="$1"
-		func_name="${opt_e_arg}_genus_species"
-		if declare -f "$func_name" >/dev/null; then
-			"$func_name"
-			exit 0
-		else
-			echo "Error: function '$func_name' not found"
-			exit 1
-		fi
-		;;
-	--version)
-		print_version
-		print_version_git_message
-		exit 0
-		;;
-	-h | --help)
-		print_help
-		exit 0
-		;;
-	--) # End of options
-		shift
-		break
-		;;
-	-*)
-		echo "Unknown option: $1"
-		exit 1
-		;;
-	esac
-	shift || break
-done
-
 if [[ "${opt_m_arg}" != "off" ]]; then
 	_brg_default_target_dir="${opt_m_arg}"
 fi
 
 if [[ "${opt_c_arg}" != "off" ]]; then
 	csv_file="${opt_c_arg}"
-fi
-
-# Input parameter
-subcmd1="${1:-help}"
-
-if [[ "${subcmd1}" == "search" ]]; then
-	subcmd1="list"
 fi
 
 # TODO: depending on _POLAP_RELEASE, we could use polap
@@ -1121,28 +982,6 @@ read_csv_config_dynamic
 # Create all keys
 keys_array=($(for key in "${!_long[@]}"; do echo "$key"; done | sort))
 Skeys=("${keys_array[@]}")
-
-# Command arguments
-_arg1=${1:-arg1}
-# Check if the species folder is provided
-if [[ "${_arg1}" == "arg1" ]]; then
-	echo "${help_message}"
-	exit 1
-fi
-
-_arg2=${2:-arg2}
-if [[ "${_arg2}" != "arg2" ]]; then
-	_arg2="${2%/}"
-fi
-
-_arg3=${3:-arg3}
-_arg4=${4:-arg4}
-_arg5=${5:-arg5}
-_arg6=${6:-arg6}
-_arg7=${7:-arg7}
-_arg8=${8:-arg8}
-_arg9=${9:-arg9}
-_arg10=${10:-arg10}
 
 ################################################################################
 # Part of genus_species
@@ -3110,271 +2949,3 @@ archive_genus_species() {
 
 # END: manuscript
 ################################################################################
-
-################################################################################
-# main cases
-#
-# if [[ "${subcmd1}" == "help" ]]; then
-#   if [[ "${_arg2}" == "arg2" ]]; then
-#     subcmd1="help"
-#   else
-#     subcmd1="${_arg2}"
-#     _arg2="arg2"
-#   fi
-# fi
-
-if [[ "$_POLAP_DEBUG" == "1" ]]; then
-	echo "option -y: ${opt_y_flag}"
-	echo "option -c: ${opt_c_arg}"
-	echo "option -t: ${opt_t_arg}"
-	for item in "$@"; do
-		echo "A: $item"
-	done
-fi
-
-all_args=("$@") # Save all arguments to an array
-# Remove the trailing slash from the first three elements of the all_args array
-# the 2nd and 3rd can be species folder with a tailing slash.
-# Lolium_perenne/ -> Lolium_perenne
-for i in {0..2}; do
-	if [[ -v all_args[i] ]]; then       # check if element is set
-		if [[ -n "${all_args[i]}" ]]; then # check if it's not empty
-			all_args[i]="${all_args[i]%/}"    # remove trailing slash
-		fi
-	fi
-done
-cmd_args=("${all_args[@]:1}") # Slice from index 1 onward
-
-# Call common case first
-common_handled=1
-# _polap_lib_data-execute-common-subcommand "$subcmd1" "${_arg2}" "${_arg3}" "$opt_y_flag"
-_polap_lib_data-execute-common-subcommand "$subcmd1" "$opt_y_flag" cmd_args
-common_handled=$?
-
-# Main case statement
-case "$subcmd1" in
-##### INSERT_CASE_HERE #####
-main)
-	if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-		echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-		echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	${subcmd1}_genus_species "${cmd_args[@]}"
-	;;
-test)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir:some> [index:0|N]"
-		echo "  $(basename $0) ${subcmd1} some"
-		exit 0
-	fi
-	${subcmd1}_genus_species "${cmd_args[@]}"
-	;;
-example-data)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <data:${_polap_data_data}>"
-		echo "  $(basename $0) ${subcmd1} 1.data"
-		exit 0
-	fi
-	_polap_lib_data-${subcmd1} "${_arg2}"
-	;;
-seed)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir|all> <inum:N>"
-		echo "  $(basename $0) ${subcmd1} all"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	[[ "${_arg3}" == arg3 ]] && _arg3=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-	;;
-map)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir|all> <inum:N>"
-		echo "  $(basename $0) ${subcmd1} all"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	[[ "${_arg3}" == arg3 ]] && _arg3=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-	;;
-select)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir|all> <inum:N>"
-		echo "  $(basename $0) ${subcmd1} all"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	[[ "${_arg3}" == arg3 ]] && _arg3=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-	;;
-flye)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir|all> <inum:N>"
-		echo "  $(basename $0) ${subcmd1} all"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	[[ "${_arg3}" == arg3 ]] && _arg3=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-	;;
-dflye)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir|all> <inum:N>"
-		echo "  $(basename $0) ${subcmd1} all"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	[[ "${_arg3}" == arg3 ]] && _arg3=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-	;;
-directional)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir|all> <inum:N>"
-		echo "  $(basename $0) ${subcmd1} all"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	[[ "${_arg3}" == arg3 ]] && _arg3=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-	;;
-	################################################################################
-	# BEGIN: manuscript
-	#
-man-figure-sheet)
-	if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-		echo "Help: ${subcmd1} <outdir> [inum:0|N] [bandage|no-bandage] [csv:sheet_benchmark.csv]"
-		echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	${subcmd1}_genus_species "${cmd_args[@]}"
-	;;
-man-figure-benchmark)
-	if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-		echo "Help: ${subcmd1} <all|some|test|outdir> [inum:0|N] [type:memory|time|data] [view]"
-		echo "  $(basename ${0}) ${subcmd1} some 2 time"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	${subcmd1}_genus_species "${cmd_args[@]}"
-	;;
-man-pdf)
-	if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-		echo "Help: ${subcmd1} [test|pdf]"
-		echo "  $(basename ${0}) ${subcmd1}"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	${subcmd1}_genus_species "${cmd_args[@]}"
-	;;
-archive)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <some|outdir|all|test> [inum:-1|N] [max-filesize:1M]"
-		echo "  polap-data-v2.sh ${subcmd1} some -1 1M"
-		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-		echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana 0"
-		echo "${help_message_archive}"
-		exit 0
-	fi
-	${subcmd1}_genus_species "${cmd_args[@]}"
-	;;
-benchmark-copy)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir:some|test> [index:0|N]"
-		echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	[[ "${_arg3}" == arg3 ]] && _arg3=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-	;;
-benchmark-skip)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir:some|test> [index:0|N]"
-		echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	[[ "${_arg3}" == arg3 ]] && _arg3=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-	;;
-benchmark-command)
-	if [[ "${_arg2}" == arg2 ]]; then
-		echo "Help: ${subcmd1} <outdir:some|test> [index:0|N]"
-		echo "  $(basename $0) ${subcmd1} Arabidopsis_thaliana"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	[[ "${_arg3}" == arg3 ]] && _arg3=""
-	${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-	;;
-man-table-benchmark)
-	if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-		echo "Help: ${subcmd1} <all|outdir> [inum:0|N] [benchmark|data]"
-		echo "  $(basename $0) ${subcmd1}"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	${subcmd1}_genus_species "${cmd_args[@]}"
-	;;
-benchmark)
-	if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-		echo "Help: ${subcmd1} <outdir1> [outdir2 ...]"
-		echo "  $(basename $0) ${subcmd1} some"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		echo "$ref"
-		exit 0
-	fi
-	opt_y_flag=true
-	${subcmd1}_genus_species "${cmd_args[@]}"
-	;;
-	#
-	# END: manuscript
-	################################################################################
-"menu")
-	_run_polap_menu
-	;;
-"delete-links")
-	find . -type l -delete
-	;;
-*)
-	# only print usage if common_case didn't handle it
-	if [[ $common_handled -ne 0 ]]; then
-		echo "Usage: $0 <subcommand> [species_folder]"
-		echo "${help_message}"
-		echo "subcommand '$subcmd1' is not recognized."
-		exit 1
-	fi
-	;;
-esac

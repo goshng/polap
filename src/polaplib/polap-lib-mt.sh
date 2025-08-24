@@ -72,7 +72,7 @@ function _polap_lib_mt-extract-dna {
 	local _ga_mt_annotation_depth_table="${mtdir}/contig-annotation-depth-table.txt"
 	awk 'NR==2 {print $1}' "${_ga_mt_annotation_depth_table}" >"${mtcontigname}"
 
-	_polap_log0 "TODO: implement mtDNA sequence extraction to output a FASTA file: ${_mtdna_fasta}"
+	_polap_log0_dev "TODO: implement mtDNA sequence extraction to output a FASTA file: ${_mtdna_fasta}"
 
 	# assemble2 based on the mtcontigname
 

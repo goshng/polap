@@ -1,10 +1,11 @@
 #!/usr/bin/env Rscript
 
-library(zoo)
-library(ggplot2)
-library(pracma)
-library(dplyr)
-
+suppressPackageStartupMessages({
+  library(zoo)
+  library(ggplot2)
+  library(pracma)
+  library(dplyr)
+})
 args <- commandArgs(trailingOnly = TRUE)
 histo_file <- args[1]
 output_file <- args[2]

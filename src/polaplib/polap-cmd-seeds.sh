@@ -462,41 +462,84 @@ function _run_polap_seeds { # select seed contigs
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 	source "${_POLAPLIB_DIR}/polap-variables-mtcontigs.sh"
 
-	# Print help message if requested
+  local polap_cmd="${FUNCNAME##*_}"
 	help_message=$(
-		cat <<HEREDOC
-Select contigs using seeds-graph
+		cat <<EOF
+Name:
+  polap ${polap_cmd} - Select seed contigs for organelle-genome assembly
 
-Arguments:
-  -i ${_arg_inum}: source Flye (usually whole-genome) assembly number
-  -j ${_arg_jnum}: destination Flye organelle assembly number
+Synopsis:
+  polap ${polap_cmd} [options]
+
+Description:
+  polap ${polap_cmd} selects seed contigs for organelle-genome assembly.
+
+Options:
+  -i INT
+    index of the source of an organelle-genome assembly [default: ${_arg_inum}]
+  
+  -j INT
+    index of the target organelle-genome assembly [default: ${_arg_jnum}]
+	
   --plastid
+		use plastid genes instead of mitochondrial genes [default: ${_arg_plastid}]
+  
+  -l FASTQ
+    reads data file
 
 Inputs:
   ${_polap_var_ga_contigger_edges_gfa}
+
   ${_polap_var_ga_annotation_all}
 
 Outputs:
   ${_polap_var_mtcontigname} or more such files
 
-Menu:
+Menus:
   bandage
+
   annotation
 
 View:
-
   <number> for the mt.contig.name-<number>
-Example:
-$(basename "$0") ${_arg_menu[0]} -i 0 -j 1
-$(basename "$0") ${_arg_menu[0]} -i 0 -j 1 [--max-seeds ${_arg_max_seeds}]
-$(basename "$0") ${_arg_menu[0]} view -i 0 -j 2
-$(basename "$0") ${_arg_menu[0]} annotation
-$(basename "$0") ${_arg_menu[0]} bandage
-HEREDOC
+
+Examples:
+  Get organelle genome sequences:
+    polap ${polap_cmd} -l l.fq
+
+  Select contigs using seeds-graph:
+    $(basename "$0") ${_arg_menu[0]} -i 0 -j 1
+
+  Select contigs using seeds-graph:
+    $(basename "$0") ${_arg_menu[0]} -i 0 -j 1 [--max-seeds ${_arg_max_seeds}]
+
+  Select contigs using seeds-graph:
+    $(basename "$0") ${_arg_menu[0]} view -i 0 -j 2
+
+  Select contigs using seeds-graph:
+    $(basename "$0") ${_arg_menu[0]} annotation
+
+  Select contigs using seeds-graph:
+    $(basename "$0") ${_arg_menu[0]} bandage
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
+		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
+		man "$manfile" >&3
+		rm -f "$manfile"
+		return
+	fi
+
+	# Display help message
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	# Display the content of output files

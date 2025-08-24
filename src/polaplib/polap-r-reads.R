@@ -1,8 +1,10 @@
 #!/usr/bin/env Rscript
 
-library(optparse)
-library(tidyverse)
-library(IRanges)
+suppressPackageStartupMessages({
+  library(optparse)
+  library(tidyverse)
+  library(IRanges)
+})
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Command-line options

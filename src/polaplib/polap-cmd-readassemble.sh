@@ -70,10 +70,10 @@ Options:
   --nano-raw [default]
   --pacbio-hifi
 Examples:
-  Assemble plant mitochondrial sequences:
+  Assemble plant mitochondrial sequences from l.fq to produce l.mt.gfa:
     polap readassemble -l l.fq
 
-  Assemble plastid sequences:
+  Assemble plastid sequences from l.fq to produce l.pt.fa and l.pt.gfa:
     polap readassemble -l l.fq --plastid
 TODO:
   Dev.
@@ -104,18 +104,33 @@ EOF
 
 	# Three cases
 	# 1. plastid
-	# 2. mitochondrial or mitochondrial + noncoding
 	# 3. animial mitochondrial
+	# 2. mitochondrial or mitochondrial + noncoding
 	if [[ "${_arg_plastid}" == "on" ]]; then
-		_polap_log1 "Read-assemble ptDNA"
+		local pt_fa="${_arg_long_reads%.*}.pt.fa"
+		local pt_gfa="${_arg_long_reads%.*}.pt.gfa"
+		local pt_png="${_arg_long_reads%.*}.pt.png"
+		_polap_log0 "Assemble the plastid genome sequence from ${_arg_long_reads} in ${pt_fa}"
 		_polap_readassemble-pt
+		cp -p "${_arg_outdir}/pt-pt.1.fa" "${pt_fa}"
+		cp -p "${_arg_outdir}/pt-pt.1.gfa" "${pt_gfa}"
+		cp -p "${_arg_outdir}/pt-pt.1.png" "${pt_png}"
+		_polap_log0 "output fasta: ${pt_fa}"
+		_polap_log0 "output assembly graph: ${pt_gfa}"
+		_polap_log0 "output assembly graph figure: ${pt_png}"
 	elif [[ "${_arg_animal}" == "on" ]]; then
-		_polap_log1 "Read-assemble animal mtDNA"
+		_polap_log1 "Read-assemble animal mtDNA (not tested yet)"
 		_polap_readassemble-mt-animal
 	else
 		if [[ "${_arg_noncoding}" == "on" ]]; then
-			_polap_log1 "Read-assemble plant mtDNA with mitochondrial noncoding regions"
+			local mt_gfa="${_arg_long_reads%.*}.mt.gfa"
+			local mt_png="${_arg_long_reads%.*}.mt.png"
+			_polap_log0 "Assemble the mitochondrial genome sequence from ${_arg_long_reads} in ${mt_gfa}"
 			_polap_readassemble-nt
+			cp -p "${_arg_outdir}/nt.1.gfa" "${mt_gfa}"
+			cp -p "${_arg_outdir}/nt.1.png" "${mt_png}"
+			_polap_log0 "output assembly graph: ${mt_gfa}"
+			_polap_log0 "output assembly graph figure: ${mt_png}"
 		else
 			_polap_log1 "Read-assemble plant mtDNA without mitochondrial noncoding regions"
 			# _polap_log0 "Before: _polap_readassemble-mt"
@@ -142,6 +157,9 @@ _polap_readassemble-nt() {
 	# 	_polap_log0 "Not Yet implemented!"
 	# 	return
 	# fi
+	if [[ -s "${_arg_outdir}/pt-pt.1.gfa" ]]; then
+		_polap_readassemble-pt
+	fi
 	_polap_lib_readassemble-annotate-read-nt
 	_polap_lib_readassemble-assemble-annotated-read-nt
 }

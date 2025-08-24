@@ -182,6 +182,26 @@ function _polap_lib_man-convert_help_message() {
 				echo ".SH EXAMPLES"
 				continue
 				;;
+			"Inputs:"*)
+				section="INPUTS"
+				echo ".SH INPUTS"
+				continue
+				;;
+			"Outputs:"*)
+				section="OUTPUTS"
+				echo ".SH OUTPUTS"
+				continue
+				;;
+			"Menus:"*)
+				section="MENUS"
+				echo ".SH MENUS"
+				continue
+				;;
+			"View:"*)
+				section="VIEW"
+				echo ".SH VIEW"
+				continue
+				;;
 			"TODO:"*)
 				section="TODO"
 				echo ".SH TODO"
@@ -215,7 +235,7 @@ function _polap_lib_man-convert_help_message() {
 			esac
 
 			case "$section" in
-			NAME | DESCRIPTION | ADVANCED\ USAGE | ENVIRONMENT | DIAGNOSTICS | EXAMPLES | TODO | BUGS | COPYRIGHT | SEE\ ALSO | AUTHOR)
+			NAME | DESCRIPTION | ADVANCED\ USAGE | ENVIRONMENT | DIAGNOSTICS | EXAMPLES | INPUTS | OUTPUTS | MENUS | VIEW | TODO | BUGS | COPYRIGHT | SEE\ ALSO | AUTHOR)
 				echo "$line"
 				;;
 			SYNOPSIS)

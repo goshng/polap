@@ -5443,7 +5443,7 @@ config-add_genus_species() {
 	local species_name="${_brg_species//_/ }"
 
 	echo "species,long,short,version,platform,type,folder,bioproject,species2,base,nseq,size,libray,type,model,taxon,coverage,down,dummy,genomesize,host,inref,min_read,plastid,range1,range2,range3,dimred,readsel,bench_ptgaul,bench_pmat,bench_tippo,bench_oatk,ptgaul_ref,mt_ref,random,random_seed,status" >"${_brg_csv}"
-	printf "%s-0,%s,%s,3,ONT,NA,%s,PRJEB89667,%s,46922076059,1297,11436,WGS,GENOMIC,Sequel II,%s,1,10,dummy,0,lab01,family,3000,TRUE,1:1:1,0.1:1:10,3000:6000:2,pca,manual,160000,0.1,onthq,30,NA,%s,367,367,done\n", \
+	printf "%s-0,%s,%s,3,ONT,NA,%s,PRJEB89667,%s,46922076059,1297,11436,WGS,GENOMIC,Sequel II,%s,1,10,dummy,0,lab01,family,3000,TRUE,1:1:1,0.1:1:10,3000:6000:2,pca,manual,160000,0.1,onthq,30,NA,%s,367,367,done\n" \
 		"${_brg_species}" "${_brg_long}" "${_brg_short}" \
 		"${_brg_species}" \
 		"${_brg_species}" \
@@ -5541,7 +5541,7 @@ run-polap-assemble-wga_genus_species() {
 
 	conda deactivate
 
-	rsync -azuq --max-size=5M "${_run_dir}"/ "${_brg_rundir}"/
+	rsync -azuq --max-size=5M "${_brg_rundir}"/ "${_brg_outdir_i}/${_brg_title}"/
 }
 
 run-polap-reduce-data_genus_species() {

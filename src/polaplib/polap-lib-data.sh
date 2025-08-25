@@ -99,12 +99,17 @@ _polap_pmat_options=(
 declare -a _polap_tippo_ont_options
 _polap_tippo_ont_options=(
 	onthq
-	ont
 )
+# ont
 
 declare -a _polap_tippo_hifi_options
 _polap_tippo_hifi_options=(
 	hifi
+)
+
+declare -a _polap_tippo_clr_options
+_polap_tippo_clr_options=(
+	clr
 )
 
 system_genus_species() {
@@ -5429,6 +5434,25 @@ get-dflye_genus_species() {
 }
 
 config-add_genus_species() {
+	local _brg_species="$1"
+	local _brg_long="$2"
+	local _brg_short="${3}"
+	local _brg_csv="${4:-polap-data-read.csv}"
+
+	# echo cp -p "${third_arg}" "${_POLAPLIB_DIR}/${_polap_data_csv}"
+	local species_name="${_brg_species//_/ }"
+
+	echo "species,long,short,version,platform,type,folder,bioproject,species2,base,nseq,size,libray,type,model,taxon,coverage,down,dummy,genomesize,host,inref,min_read,plastid,range1,range2,range3,dimred,readsel,bench_ptgaul,bench_pmat,bench_tippo,bench_oatk,ptgaul_ref,mt_ref,random,random_seed,status" >"${_brg_csv}"
+	printf "%s-0,%s,%s,3,ONT,NA,%s,PRJEB89667,%s,46922076059,1297,11436,WGS,GENOMIC,Sequel II,%s,1,10,dummy,0,lab01,family,3000,TRUE,1:1:1,0.1:1:10,3000:6000:2,pca,manual,160000,0.1,onthq,30,NA,%s,367,367,done\n", \
+		"${_brg_species}" "${_brg_long}" "${_brg_short}" \
+		"${_brg_species}" \
+		"${_brg_species}" \
+		"${species_name}" \
+		"${species_name}" \
+		>>"${_brg_csv}"
+}
+
+config-add-field_genus_species() {
 	local first_arg="$1"
 	local second_arg="${2:-0}"
 	local third_arg="${3:-out.csv}"
@@ -5516,6 +5540,8 @@ run-polap-assemble-wga_genus_species() {
 	fi
 
 	conda deactivate
+
+	rsync -azuq --max-size=5M "${_run_dir}"/ "${_brg_rundir}"/
 }
 
 run-polap-reduce-data_genus_species() {
@@ -6139,7 +6165,6 @@ setup-completions_genus_species() {
 }
 
 download-test-data-cflye_genus_species() {
-	local _brg_outdir="${1}"
 
 	if [[ "${_brg_outdir}" == "-h" || "${_brg_outdir}" == "--help" ]]; then
 		echo "$help_message_download_test_data_cflye"
@@ -6176,7 +6201,6 @@ download-test-data-cflye_genus_species() {
 }
 
 download-test-data-hifi_genus_species() {
-	local _brg_outdir="${1}"
 
 	if [[ "${_brg_outdir}" == "-h" || "${_brg_outdir}" == "--help" ]]; then
 		echo "$help_message_download_test_data_cflye"
@@ -6209,6 +6233,41 @@ download-test-data-hifi_genus_species() {
 		fi
 	else
 		echo "polap test download is canceled."
+	fi
+}
+
+download-test-data-read_genus_species() {
+
+	if [[ "${_brg_outdir}" == "-h" || "${_brg_outdir}" == "--help" ]]; then
+		echo "$help_message_download_test_data_cflye"
+		return
+	fi
+
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to download test data for polap-read? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
+	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+		local _s=polap-readassemble-test-full.tar.gz
+		# local _s=polap-disassemble-test.tar.gz
+		if [[ ! -s "${_s}" ]]; then
+			# full test data
+			# curl -L -o "${_s}" "https://figshare.com/ndownloader/files/53457569?private_link=ec1cb394870c7727a2d4"
+			wget -O "${_s}" "https://figshare.com/ndownloader/files/57379570?private_link=2ee3e102cadcf0d28bbb"
+			#
+			# test data
+			# curl -L -o "${_s}" "https://figshare.com/ndownloader/files/53457566?private_link=ec1cb394870c7727a2d4"
+		fi
+		if [[ ! -s "anthoceros_angustus_long.fq" ]]; then
+			tar -zxf "${_s}"
+			echo "downloaded: anthoceros_angustus_long.fq, anthoceros_angustus_short_1.fq, anthoceros_angustus_short_2.fq"
+		else
+			echo "You already have: anthoceros_angustus_long.fq"
+		fi
+	else
+		echo "polap read-assemble test download is canceled."
 	fi
 }
 
@@ -6322,7 +6381,7 @@ get-timing_genus_species() {
 }
 
 update-local_genus_species() {
-	local local_path="$1"
+	local local_path="${1:-polap}"
 
 	if [[ "${local_path}" == "-h" || "${local_path}" == "--help" ]]; then
 		echo "$help_message_update_local"
@@ -8276,8 +8335,6 @@ run-tippo-type_genus_species() {
 		_brg_input_data="${_brg_outdir_i}"/cns.fa
 	fi
 
-	_polap_lib_conda-ensure_conda_env polap-tippo || exit 1
-
 	# local fc_list=()
 	# # local _brg_fc="hifi,clr,ont,onthq"
 	# local _brg_fc="onthq,ont"
@@ -8295,6 +8352,8 @@ run-tippo-type_genus_species() {
 		local polap_tippo_options=("${_polap_tippo_hifi_options[@]}")
 	elif [[ "${_brg_type}" == "nextdenovo" ]]; then
 		local polap_tippo_options=("${_polap_tippo_ont_options[@]}")
+	elif [[ "${_brg_type}" == "clr" ]]; then
+		local polap_tippo_options=("${_polap_tippo_clr_options[@]}")
 	else
 		local polap_tippo_options=("${_polap_tippo_ont_options[@]}")
 	fi
@@ -8319,16 +8378,21 @@ run-tippo-type_genus_species() {
 
 		rm -rf "${_tippo_actual_outdir}"
 
+		_polap_lib_conda-ensure_conda_env polap-tippo || exit 1
+
 		# if [[ "${_brg_fc}" == "1" ]]; then
 		#
 		# -g organelle
+		# -g chloroplast \
 		command time -v timeout 6h TIPPo.v2.4.pl \
 			-f "${_brg_input_data}" \
 			-t ${_brg_threads} \
-			-g chloroplast \
+			-g organelle \
 			-p ${_fc} \
 			>"${_stdout_txt}" \
 			2>"${_timing_txt}"
+
+		conda deactivate
 
 		# Save results
 		mkdir -p "${_brg_titledir}/${_fc}"
@@ -8340,9 +8404,6 @@ run-tippo-type_genus_species() {
 		_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
 
 	done
-
-	conda deactivate
-
 	# Output files
 	# cns.fa.chloroplast.fasta.filter.800.round1.edge_*.edge_*.edge_*.organelle.chloroplast.fasta
 	# cns.fa.mitochondrial.fasta.filter.fasta.flye/assembly_graph.gfa

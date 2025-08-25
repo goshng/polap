@@ -196,6 +196,14 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 
 		if [[ ! -s "${annotatedir}/pt$i/mt.contig.name-pt$j" ]]; then
 			_polap_log0 "No ptDNA seed for pt$j"
+			if [[ "${_arg_data_type}" == "pacbio-raw" ]]; then
+				_polap_log1 "use then input long reads with an adjusted omega for the final stage mtDNA assembly"
+				_polap_lib_assemble-omega \
+					-o "${annotatedir}" \
+					-l "${resolved_fastq}" \
+					-t pt \
+					-i pt0 -j ptx
+			fi
 			return
 		fi
 

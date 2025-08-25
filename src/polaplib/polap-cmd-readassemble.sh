@@ -174,8 +174,7 @@ _polap_readassemble-pt-v1() {
 _polap_readassemble-pt() {
 	# downsampling
 	# number of bases
-	if [[ "${_arg_data_type}" == "pacbio-hifi" ]] ||
-		[[ "${_arg_data_type}" == "pacbio-raw" ]]; then
+	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
 		# check the genome size
 		# FIXME: estimate it if not exists.
 		# Take the value in the short_expected_genme_size.txt
@@ -190,6 +189,8 @@ _polap_readassemble-pt() {
 			"${_arg_outdir}/ld.fq" \
 			"${_arg_downsample}" \
 			"${genomesize}"
+	elif [[ "${_arg_data_type}" == "pacbio-raw" ]]; then
+		seqkit seq -m 3000 "${_arg_long_reads}" -o "${_arg_outdir}/ld.fq"
 	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
 		if [[ ! "${_arg_downsample}" =~ [gGkKmM]$ ]]; then
 			_polap_log0 "use --downsample 1g for ONT reads"

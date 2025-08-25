@@ -667,6 +667,9 @@ function _polap_lib_oga-estimate-omega {
 	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
 		_lower_bound_subsampling_rate=0.02
 		_upper_bound_subsampling_rate=0.50
+	elif [[ "${_arg_data_type}" == "pacbio-raw" ]]; then
+		_lower_bound_subsampling_rate=0.10
+		_upper_bound_subsampling_rate=0.50
 	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
 		_lower_bound_subsampling_rate=0.10
 		_upper_bound_subsampling_rate=0.50

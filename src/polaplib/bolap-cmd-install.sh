@@ -324,13 +324,7 @@ EOF
 		return
 	fi
 
-	local item="${_brg_menu[1]}"
-	local folder=""
-	if [[ "${_brg_menu[2]}" != "0" ]]; then
-		folder="${_brg_menu[2]}"
-	fi
-
-	"${bolap_cmd}_genus_species" "${item}" "${folder}" "${_brg_menu[3]}"
+	"${bolap_cmd}_genus_species" ${_positionals[@]:1}
 
 	return 0
 }
@@ -372,13 +366,7 @@ EOF
 		return
 	fi
 
-	local item="${_brg_menu[1]}"
-	local folder=""
-	if [[ "${_brg_menu[2]}" != "0" ]]; then
-		folder="${_brg_menu[2]}"
-	fi
-
-	"${bolap_cmd}_genus_species" "${item}" "${folder}" "${_brg_menu[3]}"
+	"${bolap_cmd}_genus_species" ${_positionals[@]:1}
 
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
@@ -422,13 +410,8 @@ EOF
 		return
 	fi
 
-	local item="${_brg_menu[1]}"
-	local folder=""
-	if [[ "${_brg_menu[2]}" != "0" ]]; then
-		folder="${_brg_menu[2]}"
-	fi
-
-	"${bolap_cmd}_genus_species" "${item}" "${folder}" "${_brg_menu[3]}"
+	subcmd1="${bolap_cmd}"
+	"${bolap_cmd}_genus_species" ${_positionals[@]:1}
 
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
@@ -771,15 +754,6 @@ EOF
 		man "$manfile"
 		rm -f "$manfile"
 		return
-	fi
-
-	local item="${_brg_menu[1]}"
-	local folder=""
-	if [[ "${_brg_menu[2]}" != "0" ]]; then
-		folder="${_brg_menu[2]}"
-	fi
-	if [[ "${_brg_menu[3]}" == "0" ]]; then
-		_brg_menu[3]=""
 	fi
 
 	"${bolap_cmd}_genus_species" ${_positionals[@]:1}

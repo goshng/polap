@@ -311,6 +311,12 @@ _polap_lib_extract-fasta_id() {
 		return 0
 	fi
 
+	local v=$(<"$fasta")
+	if [[ "$v" == "0" ]]; then
+		echo "NA"
+		return 0
+	fi
+
 	# If seqkit is available and succeeds
 	if command -v seqkit >/dev/null 2>&1; then
 		echo $(seqkit seq -ni "$fasta")

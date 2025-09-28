@@ -89,6 +89,9 @@ _arg_long_reads_is="off"
 # NOTE: some output directories and files are created automatically.
 # the default out directory o is created in polap-variables-main.sh
 # o/log, o/tmp, and the polap.log are handled in polap-variables-main.sh
+_arg_preset="base"
+_arg_config_dir="$HOME/.polap/profiles"
+_arg_config_path=""
 _arg_outdir="o"
 _arg_prefix=""
 _arg_logdir="${_arg_outdir}/log"
@@ -279,6 +282,32 @@ _arg_x_max=""
 _arg_y_min=""
 _arg_y_max=""
 
+# simulation
+_arg_sim_nuc_size=10000000
+_arg_sim_nuc=""
+_arg_sim_depth_nuc=1x
+_arg_sim_depth_mt=100x
+_arg_sim_depth_pt=500x
+_arg_sim_len_mean=30000
+
+# oatk
+_arg_oatk_k=151
+_arg_oatk_s=31
+_arg_oatk_c=30
+_arg_oatk_a=0.10
+_arg_oatk_max_bubble=100000
+_arg_oatk_max_tip=10000
+_arg_oatk_weak_cross=0.10
+_arg_oatk_unzip_round=3
+_arg_oatk_no_read_ec=off
+_arg_oatk_no_hpc=off
+_arg_oatk_oatkdb="$HOME/OatkDB"
+_arg_parallel=off
+
+# mtseed
+_arg_pt_ref=""
+_arg_mt_ref=""
+
 # for using polap-lib-data.sh
 opt_y_flag="false"
 
@@ -353,12 +382,53 @@ function _polap_jellyfish_convert_suffix() {
 	echo "$var"
 }
 
+parse_preset_commandline() {
+	# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+	while test $# -gt 0; do
+		_key="$1"
+		case "$_key" in
+		--preset)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_preset="$2"
+			shift
+			;;
+		--config-dir)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_config_dir="$2"
+			shift
+			;;
+		--config-path)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_config_path="$2"
+			shift
+			;;
+		*) ;;
+		esac
+		shift
+	done
+}
+
 parse_commandline() {
 	# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
 	_positionals_count=0
 	while test $# -gt 0; do
 		_key="$1"
 		case "$_key" in
+		--preset)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_preset="$2"
+			shift
+			;;
+		--config-dir)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_config_dir="$2"
+			shift
+			;;
+		--config-path)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_config_path="$2"
+			shift
+			;;
 		-l | --long-reads)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_long_reads="$2"
@@ -452,6 +522,7 @@ parse_commandline() {
 		-p | --unpolished-fasta)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_unpolished_fasta="$2"
+			_arg_pt_ref="$2"
 			shift
 			;;
 		--unpolished-fasta=*)
@@ -489,6 +560,16 @@ parse_commandline() {
 			;;
 		-m*)
 			_arg_min_read_length="${_key##-m}"
+			;;
+		--pt-ref)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_pt_ref="$2"
+			shift
+			;;
+		--mt-ref)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_mt_ref="$2"
+			shift
 			;;
 		-t | --threads)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -893,7 +974,7 @@ parse_commandline() {
 				{ begins_with_short_option "$_next" && shift && set -- "-u" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
 			fi
 			;;
-		--steps-include)
+		--steps-include | --step | --steps)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_steps_include="$2"
 			_arg_steps_is="on"
@@ -1346,6 +1427,14 @@ parse_commandline() {
 		--remove-plastid-min-identity=*)
 			_arg_remove_plastid_min_identity="${_key##--remove-plastid-min-identity=}"
 			;;
+		--sim-nuc)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_sim_nuc="$2"
+			shift
+			;;
+		--sim-nuc=*)
+			_arg_sim_nuc="${_key##--sim-nuc=}"
+			;;
 		--version)
 			_polap_lib_version
 			# echo $0 ${_polap_version}
@@ -1405,7 +1494,39 @@ assign_positional_args() {
 	done
 }
 
+parse_preset_commandline "$@"
+
+if [[ -z "${_arg_config_path}" ]]; then
+	_arg_config_path="${_arg_config_dir}/${_arg_preset}.yaml"
+fi
+if [[ ! -f "${_arg_config_path}" ]]; then
+	echo "[info] new profile (${_arg_preset}): ${_arg_config_path}" >&2
+	touch "${_arg_config_path}"
+	# echo "[error] no such profile (${_arg_preset}): ${_arg_config_path}" >&2
+	# exit 127
+fi
+
+LOAD_PY="${_POLAPLIB_DIR}/polap-py-config-load.py"
+[[ -f "$LOAD_PY" ]] || {
+	echo "[error] not found: $LOAD_PY" >&2
+	exit 127
+}
+ENV_LINES=$(python3 "$LOAD_PY" --path "${_arg_config_path}" --format env --prefix "PCFG")
+eval "$ENV_LINES"
+
+source "${_POLAPLIB_DIR}/polap-bash-apply-pcfg.sh"
+polap_apply_pcfg
+
+# echo "oatk-c: ${_arg_oatk_c}" 2>&1
+
+# reset options not affected by config
+_arg_verbose=1
 parse_commandline "$@"
+
+# source "${_POLAPLIB_DIR}/polap-lib-config.sh"
+# echo polap_args_dump_yaml --out "${_arg_config_path}"
+polap_args_dump_yaml --out "${_arg_config_path}"
+
 handle_passed_args_count
 set +u
 assign_positional_args 1 "${_positionals[@]}"

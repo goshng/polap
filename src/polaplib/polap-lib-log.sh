@@ -198,32 +198,130 @@ function _polap_log0_only {
 # --quiet level
 # log only to the log file
 #
+# if [[ "${_POLAP_RELEASE}" == "1" ]]; then
+# 	function _polap_log0 {
+# 		verbose_echo 0 "$@"
+# 		# verbose_echo 1 "$@" 1>&2
+# 		if [[ "${_arg_log_stderr}" = "off" ]]; then
+# 			verbose_echo 1 "$@" >&3
+# 		else
+# 			verbose_echo 1 "$@" >&2
+# 		fi
+# 	}
+# else
+# 	function _polap_log0 {
+# 		local func="${FUNCNAME[1]}"
+# 		local file="$(basename ${BASH_SOURCE[1]})"
+# 		local line="${BASH_LINENO[0]}"
+# 		local tag="[$func@$file:$line]"
+
+# 		verbose_echo 0 "${tag} $@"
+
+# 		if [[ "${_arg_log_stderr}" = "off" ]]; then
+# 			verbose_echo 1 "${tag} $@" >&3
+# 		else
+# 			verbose_echo 1 "${tag} $@" >&2
+# 		fi
+# 	}
+# fi
+
+# log level 1 to the log file
+# log level 0 to the screen
+# function _polap_log1 {
+# 	verbose_echo 0 "$@"
+# 	# verbose_echo 2 "$@" 1>&2
+# 	if [[ "${_arg_log_stderr}" = "off" ]]; then
+# 		verbose_echo 2 "$@" >&3
+# 	else
+# 		verbose_echo 2 "$@" >&2
+# 	fi
+# }
+
+# log level 2 to the log file
+# log level 1 to the screen
+# function _polap_log2 {
+# 	verbose_echo 0 "$@"
+# 	# verbose_echo 3 "$@" 1>&2
+# 	if [[ "${_arg_log_stderr}" = "off" ]]; then
+# 		verbose_echo 3 "$@" >&3
+# 	else
+# 		verbose_echo 3 "$@" >&2
+# 	fi
+# }
+
+# log level 3 to the log file
+# log level 2 to the screen
+# function _polap_log3 {
+# 	verbose_echo 0 "$@"
+# 	# verbose_echo 4 "$@" 1>&2
+# 	if [[ "${_arg_log_stderr}" = "off" ]]; then
+# 		verbose_echo 4 "$@" >&3
+# 	else
+# 		verbose_echo 4 "$@" >&2
+# 	fi
+# }
+
+
+# --quiet level
+# log only to the log file
+
 if [[ "${_POLAP_RELEASE}" == "1" ]]; then
 	function _polap_log0 {
 		verbose_echo 0 "$@"
-		# verbose_echo 1 "$@" 1>&2
 		if [[ "${_arg_log_stderr}" = "off" ]]; then
 			verbose_echo 1 "$@" >&3
 		else
 			verbose_echo 1 "$@" >&2
 		fi
 	}
-else
-	function _polap_log0 {
-		local func="${FUNCNAME[1]}"
-		local file="$(basename ${BASH_SOURCE[1]})"
-		local line="${BASH_LINENO[0]}"
-		local tag="[$func@$file:$line]"
-
-		verbose_echo 0 "${tag} $@"
-
+	function _polap_log1 {
+		verbose_echo 0 "$@"
 		if [[ "${_arg_log_stderr}" = "off" ]]; then
-			verbose_echo 1 "${tag} $@" >&3
+			verbose_echo 2 "$@" >&3
 		else
-			verbose_echo 1 "${tag} $@" >&2
+			verbose_echo 2 "$@" >&2
 		fi
 	}
+	function _polap_log2 {
+		verbose_echo 0 "$@"
+		if [[ "${_arg_log_stderr}" = "off" ]]; then
+			verbose_echo 3 "$@" >&3
+		else
+			verbose_echo 3 "$@" >&2
+		fi
+	}
+	function _polap_log3 {
+		verbose_echo 0 "$@"
+		if [[ "${_arg_log_stderr}" = "off" ]]; then
+			verbose_echo 4 "$@" >&3
+		else
+			verbose_echo 4 "$@" >&2
+		fi
+	}
+else
+	# Debug mode with func@file:line tags
+	__polap_log_with_tag() {
+		local level="$1"; shift
+		local outlevel="$1"; shift
+		local func="${FUNCNAME[2]}"
+		local file="$(basename "${BASH_SOURCE[2]}")"
+		local line="${BASH_LINENO[1]}"
+		local tag="[$func@$file:$line]"
+
+		verbose_echo 0 "${tag} $*"
+		if [[ "${_arg_log_stderr}" = "off" ]]; then
+			verbose_echo "${outlevel}" "${tag} $*" >&3
+		else
+			verbose_echo "${outlevel}" "${tag} $*" >&2
+		fi
+	}
+
+	function _polap_log0 { __polap_log_with_tag 0 1 "$@"; }
+	function _polap_log1 { __polap_log_with_tag 0 2 "$@"; }
+	function _polap_log2 { __polap_log_with_tag 0 3 "$@"; }
+	function _polap_log3 { __polap_log_with_tag 0 4 "$@"; }
 fi
+
 
 if [[ "${_POLAP_DEBUG}" == "1" ]]; then
 	function _polap_log0_dev {
@@ -245,42 +343,6 @@ else
 		:
 	}
 fi
-
-# log level 1 to the log file
-# log level 0 to the screen
-function _polap_log1 {
-	verbose_echo 0 "$@"
-	# verbose_echo 2 "$@" 1>&2
-	if [[ "${_arg_log_stderr}" = "off" ]]; then
-		verbose_echo 2 "$@" >&3
-	else
-		verbose_echo 2 "$@" >&2
-	fi
-}
-
-# log level 2 to the log file
-# log level 1 to the screen
-function _polap_log2 {
-	verbose_echo 0 "$@"
-	# verbose_echo 3 "$@" 1>&2
-	if [[ "${_arg_log_stderr}" = "off" ]]; then
-		verbose_echo 3 "$@" >&3
-	else
-		verbose_echo 3 "$@" >&2
-	fi
-}
-
-# log level 3 to the log file
-# log level 2 to the screen
-function _polap_log3 {
-	verbose_echo 0 "$@"
-	# verbose_echo 4 "$@" 1>&2
-	if [[ "${_arg_log_stderr}" = "off" ]]; then
-		verbose_echo 4 "$@" >&3
-	else
-		verbose_echo 4 "$@" >&2
-	fi
-}
 
 function _polap_log0_n {
 	verbose_echo_no_newline 0 "$@"
@@ -374,6 +436,51 @@ function _polap_log3_cmdout {
 
 	"${cmd[@]}" >"${_polap_output_dest}" 2>&1
 }
+
+# Run a command and log it at level N (0..3), mirroring _polap_logN behavior.
+# Usage:
+#   _polap_log_cmdout N cmd arg1 arg2 ...
+#   (or use wrappers: _polap_log0_cmdout ... _polap_log3_cmdout)
+
+function _polap_log_cmdout {
+	local level="$1"; shift
+	local cmd=("$@")
+	local full_cmd="${cmd[*]} >${_polap_output_dest} 2>&1"
+	local outlevel=$(( level + 1 ))
+
+	if [[ "${_POLAP_RELEASE}" == "1" ]]; then
+		# Release mode: plain
+		verbose_echo_trim 0 "$full_cmd"
+		if [[ "${_arg_log_stderr}" = "off" ]]; then
+			verbose_echo_trim "${outlevel}" "$full_cmd" >&3
+		else
+			verbose_echo_trim "${outlevel}" "$full_cmd" >&2
+		fi
+	else
+		# Debug mode: tag with func@file:line
+		local caller_func="${FUNCNAME[1]}"
+		local caller_file="$(basename "${BASH_SOURCE[1]}")"
+		local caller_line="${BASH_LINENO[0]}"
+		local tag="[$caller_func@${caller_file}:${caller_line}]"
+
+		verbose_echo_trim 0 "${tag} $full_cmd"
+		if [[ "${_arg_log_stderr}" = "off" ]]; then
+			verbose_echo_trim "${outlevel}" "${tag} $full_cmd" >&3
+		else
+			verbose_echo_trim "${outlevel}" "${tag} $full_cmd" >&2
+		fi
+	fi
+
+	# Execute, send stdout+stderr to destination
+	"${cmd[@]}" >"${_polap_output_dest}" 2>&1
+}
+
+# Compatibility wrappers
+_polap_log0_cmdout() { _polap_log_cmdout 0 "$@"; }
+_polap_log1_cmdout() { _polap_log_cmdout 1 "$@"; }
+_polap_log2_cmdout() { _polap_log_cmdout 2 "$@"; }
+# _polap_log3_cmdout() { _polap_log_cmdout 3 "$@"; }
+
 
 function _polap_log0_log {
 	_polap_log0 "LOG: $@"

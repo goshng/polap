@@ -39,12 +39,6 @@ fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
-################################################################################
-# Function to convert base pairs to the highest appropriate unit
-# Example usage
-# bp=31846726397
-# convert_bp $bp
-################################################################################
 _polap_lib_annotate-prepare() {
 	# we can use all polap_var_ variables.
 	# They are determined by output, i, and j.

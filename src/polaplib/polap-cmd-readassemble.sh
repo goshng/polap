@@ -102,10 +102,21 @@ EOF
 		return 0
 	fi
 
+	if [[ "${_arg_menu[1]}" == "annotated" ]]; then
+		_polap_lib_conda-ensure_conda_env polap || exit 1
+		_polap_lib_readassemble-annotated
+		conda deactivate
+		return 0
+	fi
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
 	# Three cases
 	# 1. plastid
 	# 3. animial mitochondrial
 	# 2. mitochondrial or mitochondrial + noncoding
+	_polap_log0 "plastid: ${_arg_plastid}"
+	_polap_log0 "animal: ${_arg_animal}"
+	_polap_log0 "noncoding: ${_arg_noncoding}"
 	if [[ "${_arg_plastid}" == "on" ]]; then
 		local pt_fa="${_arg_long_reads%.*}.pt.fa"
 		local pt_gfa="${_arg_long_reads%.*}.pt.gfa"
@@ -146,6 +157,8 @@ EOF
 		fi
 	fi
 
+	conda deactivate
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
@@ -175,20 +188,27 @@ _polap_readassemble-pt() {
 	# downsampling
 	# number of bases
 	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
-		# check the genome size
-		# FIXME: estimate it if not exists.
-		# Take the value in the short_expected_genme_size.txt
-		local genomesize=$(_polap_lib_genomesize)
 
-		if [[ "${_arg_downsample}" =~ [gGkKmM]$ ]]; then
-			_polap_log0 "use --downsample 3 for HiFi reads"
-			return
+		if [[ "${_arg_reduction_reads}" == "on" ]]; then
+
+			mkdir -p "${_arg_outdir}/genomesize"
+			_polap_lib_genomesize-estimate -l "${_arg_long_reads}" \
+				-o "${_arg_outdir}/genomesize"
+			local genomesize=$(<"${_arg_outdir}/genomesize/genome_size.txt")
+
+			if [[ "${_arg_downsample}" =~ [gGkKmM]$ ]]; then
+				_polap_log0 "use --downsample 3 for HiFi reads"
+				return
+			fi
+			_polap_lib_fastq-sample-to-coverage \
+				"${_arg_long_reads}" \
+				"${_arg_outdir}/ld.fq" \
+				"${_arg_downsample}" \
+				"${genomesize}"
+		else
+			ln -s "$(realpath "${_arg_long_reads}")" "${_arg_outdir}/ld.fq"
 		fi
-		_polap_lib_fastq-sample-to-coverage \
-			"${_arg_long_reads}" \
-			"${_arg_outdir}/ld.fq" \
-			"${_arg_downsample}" \
-			"${genomesize}"
+
 	elif [[ "${_arg_data_type}" == "pacbio-raw" ]]; then
 		seqkit seq -m 3000 "${_arg_long_reads}" -o "${_arg_outdir}/ld.fq"
 	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then

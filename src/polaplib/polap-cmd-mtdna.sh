@@ -346,42 +346,64 @@ function _run_polap_get-mtdna {
 
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 
-	if ! run_check_ncbitools; then
-		error_polap_conda
-		exit $EXIT_ERROR
-	fi
+	local polap_cmd="${FUNCNAME##*_}"
+	help_message=$(
+		cat <<EOF
+Name:
+  polap ${polap_cmd} - download the organelle-genome sequence in FASTA format from NCBI.
 
-	# Help message
-	local help_message=$(
-		cat <<HEREDOC
-# Download the organelle-genome sequence in FASTA format from NCBI.
-#
-# Note: A downloaded fasta file may have multiple sequences.
-#
-# 1. NCBI search for a mitochondrial genome:
-#   "(mitochondrion[Title] AND complete[Title] AND genome[Title]) AND <species>[Organism]"
-# 2. NCBI search for a plastid genome:
-#   "(chloroplast[Title] AND complete[Title] AND genome[Title]) AND <species>[Organism]"
-#
-# Arguments:
-#   --species "scientific name" (highest priority)
-#   or
-#   -o ${_arg_outdir} (next priority)
-# Outputs:
-#   ${_polap_var_project_mtdna_fasta1}
-#   ${_polap_var_project_mtdna_fasta2}
-#   ${_polap_var_project_mtdna_fasta2_accession}
-# Preconditions:
-#   get-bioproject
-Example: $(basename "$0") ${_arg_menu[0]} --species "Anthoceros agrestis"
-Example: $(basename "$0") ${_arg_menu[0]} without-genome --species "Anthoceros agrestis"
-Example: $(basename "$0") ${_arg_menu[0]} -o o
-Example: $(basename "$0") ${_arg_menu[0]} view
-HEREDOC
+Synopsis:
+  polap ${polap_cmd} [options]
+
+Description:
+  1. NCBI search for a mitochondrial genome:
+    "(mitochondrion[Title] AND complete[Title] AND genome[Title]) AND <species>[Organism]"
+
+  2. NCBI search for a plastid genome:
+    "(chloroplast[Title] AND complete[Title] AND genome[Title]) AND <species>[Organism]"
+
+Options:
+  --species
+    "scientific name" (highest priority)
+
+  -o ${_arg_outdir}
+    (next priority)
+
+Outputs:
+  ${_polap_var_project_mtdna_fasta1}
+
+  ${_polap_var_project_mtdna_fasta2}
+
+  ${_polap_var_project_mtdna_fasta2_accession}
+
+Examples:
+  Get organelle genome sequences:
+    polap ${polap_cmd} --species "Anthoceros agrestis"
+    polap ${polap_cmd} without-genome --species "Anthoceros agrestis"
+    polap ${polap_cmd} -o o
+    polap ${polap_cmd} view
+
+  Use preset species:
+    add species: 'Trifolium pratense' to $HOME/.polap/profiles/tpra.yaml
+    polap get-mtdna --plastid --preset tpra
+    polap get-mtdna --plastid --preset tpra view
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
 	)
 
 	# Display help message
-	[[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]] && _polap_echo0 "${help_message}" && return
+	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
+		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
+		man "$manfile" >&3
+		rm -f "$manfile"
+		return
+	fi
 
 	if [[ ${_arg_menu[1]} == "file" ]]; then
 		if [[ -s "${_polap_var_project_species}" ]]; then
@@ -391,6 +413,13 @@ HEREDOC
 			_polap_log0 "No species file."
 		fi
 		exit $EXIT_SUCCESS
+	fi
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	if ! run_check_ncbitools; then
+		error_polap_conda
+		exit $EXIT_ERROR
 	fi
 
 	if [[ ${_arg_menu[1]} == "view" ]]; then
@@ -525,6 +554,8 @@ HEREDOC
 			"${_polap_var_project_mtdna_fasta1}" \
 			"${_polap_var_project_mtdna_fasta2}"
 	fi
+
+	conda deactivate
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

@@ -225,6 +225,16 @@ HEREDOC
 		_polap_log0 "top-level j: ${_arg_jnum}"
 	fi
 
+	if [[ "${_arg_menu[1]}" == "yaml" ]]; then
+		_polap_log0 "nuc size: ${_arg_sim_nuc_size}"
+		_polap_log0 "depth nuc: ${_arg_sim_depth_nuc}"
+		_polap_log0 "depth mt: ${_arg_sim_depth_mt}"
+		_polap_log0 "depth pt: ${_arg_sim_depth_pt}"
+		_polap_log0 "a-b-c: ${PCFG_A_B_C}"
+		_polap_log0 "x-y-z: ${PCFG-Y}"
+		compgen -v | grep '^PCFG_'
+	fi
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

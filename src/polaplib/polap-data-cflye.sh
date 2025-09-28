@@ -217,7 +217,12 @@ _polap_script_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 	echo "Couldn't determine the script's running directory, which probably matters, bailing out" >&2
 	exit 2
 }
-_POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
+
+# Directory where this script (A.sh) resides
+_polap_script_bin_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+# _POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
+_POLAPLIB_DIR="${_polap_script_bin_dir}"
 
 # Target version is 0.4.4
 source "${_POLAPLIB_DIR}/polap-git-hash-version.sh"
@@ -3204,6 +3209,11 @@ if [[ "$_POLAP_DEBUG" == "1" ]]; then
 	done
 fi
 
+return 0
+
+# END OF SOURCE
+################################################################################
+
 all_args=("$@")               # Save all arguments to an array
 cmd_args=("${all_args[@]:1}") # Slice from index 1 onward
 
@@ -3567,11 +3577,11 @@ make-man)
 	;;
 *)
 	# only print usage if common_case didn't handle it
-	if [[ $common_handled -ne 0 ]]; then
-		echo "Usage: $0 <subcommand> [species_folder]"
-		echo "${help_message}"
-		echo "subcommand '$subcmd1' is not recognized."
-		exit 1
-	fi
+	# if [[ $common_handled -ne 0 ]]; then
+	# 	echo "Usage: $0 <subcommand> [species_folder]"
+	# 	echo "${help_message}"
+	# echo "subcommand '$subcmd1' is not recognized."
+	# exit 1
+	# fi
 	;;
 esac

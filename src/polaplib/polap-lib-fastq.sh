@@ -224,15 +224,16 @@ _polap_lib_fastq-sample() {
 # nano-raw: length >= 500 and Q30 greater than 30.
 _polap_lib_fastq-check-type() {
 	local file="$1"
+
 	if [[ ! -f "$file" ]]; then
-		# echo "Error: File not found: $file" >&2
+		# echo "Error: File not found: $file" >&3
 		echo "unknown"
 		return 1
 	fi
 
 	# Use head to avoid reading the full file
 	local stats
-	stats=$(head -n 100 "$file" | seqkit stats -Ta 2>/dev/null | awk 'NR==2')
+	stats=$(head -n 20000 "$file" | tail -n 10000 | seqkit stats -Ta 2>/dev/null | awk 'NR==2')
 
 	if [[ -z "$stats" ]]; then
 		echo "Error: seqkit stats failed on $file" >&2
@@ -308,4 +309,47 @@ _polap_lib_fastq-sample-to-coverage() {
 	fi
 
 	return 0
+}
+
+_polap_lib_fastq-normalize-filename() {
+	local infile="$1"
+	local outdir="${_arg_outdir}/tmp"
+	mkdir -p "$outdir"
+
+	# Get base name without path
+	local base="$(basename "$infile")"
+	local stem=l
+
+	case "$base" in
+	*.fq | *.fastq)
+		cp "$infile" "$outdir/${stem}.fq"
+		;;
+	*.fq.gz | *.fastq.gz)
+		gunzip -c "$infile" >"$outdir/${stem}.fq"
+		;;
+	*.fq.tar.gz | *.fastq.tar.gz)
+		# Extract into temp dir
+		tmpdir=$(mktemp -d)
+		tar -xzf "$infile" -C "$tmpdir"
+		# Concatenate all fastq/fq files into one
+		cat "$tmpdir"/*.{fq,fastq} 2>/dev/null >"$outdir/${stem}.fq"
+		rm -rf "$tmpdir"
+		;;
+	*.fa | *.fasta)
+		cp "$infile" "$outdir/${stem}.fa"
+		;;
+	*.fa.gz | *.fasta.gz)
+		gunzip -c "$infile" >"$outdir/${stem}.fa"
+		;;
+	*.fa.tar.gz | *.fasta.tar.gz)
+		tmpdir=$(mktemp -d)
+		tar -xzf "$infile" -C "$tmpdir"
+		cat "$tmpdir"/*.{fa,fasta} 2>/dev/null >"$outdir/${stem}.fa"
+		rm -rf "$tmpdir"
+		;;
+	*)
+		echo "Unsupported file type: $infile" >&2
+		return 1
+		;;
+	esac
 }

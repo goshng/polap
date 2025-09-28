@@ -74,8 +74,8 @@ Examples:
   Get organelle genome sequences:
     polap pt --infile in.gfa
 
-TODO:
-  Dev.
+  Create pt isoforms:
+    polap pt isoform -p pt.fa
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -105,64 +105,20 @@ EOF
 	fi
 
 	# read gfa
-	_polap_lib_pt-extract-dna "${_arg_infile}" "${_arg_outdir}"
+	if [[ "${_arg_menu[1]}" == "extract" ]]; then
+		_polap_lib_pt-extract-dna "${_arg_infile}" "${_arg_outdir}"
+	fi
+
+	if [[ "${_arg_menu[1]}" == "isoform" ]]; then
+		_polap_lib_conda-ensure_conda_env polap || exit 1
+		bash "${_POLAPLIB_DIR}/polap-bash-pt-isoform.sh" \
+			-r "${_arg_pt_ref}" \
+			-o "${_arg_outdir}/pt"
+		conda deactivate
+	fi
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 	return 0
 }
-
-# input1: gfa
-# output: output folder
-# function _polap_lib_pt-extract-dna {
-# 	local gfa="${1}"
-# 	local outdir="${2}"
-#
-# 	# avoid polap.log removal
-# 	local ptdir="${2}/ptdna"
-# 	local mtcontigname="${ptdir}/mt.contig.name"
-# 	local _ptdna_extracted_fasta="${ptdir}/circular_path_1_concatenated.fa"
-# 	local _ptdna_fasta="${outdir}/pt.0.fa"
-#
-# 	# annotate the gfa for contigs with PT genes
-# 	#
-# 	if [[ -d "${ptdir}" ]]; then
-# 		_polap_log3_cmd rm -rf "${ptdir}"
-# 	fi
-# 	_polap_log3_cmd mkdir -p "${ptdir}/30-contigger"
-# 	_polap_log3_cmd cp "${gfa}" "${ptdir}/30-contigger/graph_final.gfa"
-# 	local _contigger_edges_gfa="${ptdir}/30-contigger/graph_final.gfa"
-# 	local _ga_annotation_all="${ptdir}/assembly_info_organelle_annotation_count-all.txt"
-# 	polap_annotate "${_contigger_edges_gfa}" "${_ga_annotation_all}"
-#
-# 	# prepare mt.contig.name
-# 	local _ga_pt_annotation_depth_table="${ptdir}/pt-contig-annotation-depth-table.txt"
-# 	awk 'NR==2 {print $1}' "${_ga_pt_annotation_depth_table}" >"${mtcontigname}"
-#
-# 	# extract ptdna
-# 	_polap_log3_pipe "python \
-#           ${_POLAPLIB_DIR}/polap-py-find-plastid-gfa2fasta.py \
-# 		        --gfa ${gfa} \
-# 		        --seed ${mtcontigname} \
-# 		        --out ${ptdir} \
-# 		        2>$_polap_output_dest"
-#
-# 	if [[ -s "${ptdir}/circular_path_1_concatenated.fa" ]]; then
-# 		cp "${_ptdna_extracted_fasta}" "${_ptdna_fasta}"
-# 		_polap_log0 "output: ${_ptdna_fasta}"
-# 	else
-# 		_polap_log0 "output: no ptDNA"
-# 	fi
-#
-# 	# NOTE: we could use this instead.
-# 	#
-# 	local mtcontigname2="${ptdir}/mt.contig.name2.txt"
-# 	local start_contig=$(awk 'NR==2 {print $1}' "${_ga_pt_annotation_depth_table}")
-#
-# 	python "${_POLAPLIB_DIR}"/polap-py-find-plastid-gfa.py \
-# 		--seed "${start_contig}" \
-# 		--mtcontig "${mtcontigname2}" \
-# 		--fasta "${outdir}/pt2.0.fa" \
-# 		"${gfa}"
-# }

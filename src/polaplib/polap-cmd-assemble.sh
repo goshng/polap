@@ -573,7 +573,7 @@ Name:
   polap assemble - assemble whole-genome and organelle-genome sequences
 
 Synopsis:
-  polap assemble [-o|--outdir <arg>] [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-w|--single-min <arg>] [-c|--coverage <arg>] [-t|--threads <arg>] [--polap-reads] [--circularize] [--redo] [--stopafter {data,flye1}] [--min-read-length <arg>] [--random-seed <arg>] [--flye] [--data-type {ont,pacbio-raw,pacbio-hifi}] [--test] [--start-index <arg>] [-m|--min-read-length <arg>] [-s|--select-read-range <arg>] [--coverage-check] [--no-coverage-check] [--help] [--verbose <arg>] [--version]
+  polap assemble [-o|--outdir <arg>] [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-w|--single-min <arg>] [--preset] [-c|--coverage <arg>] [-t|--threads <arg>] [--redo] [--stopafter {data,flye1}] [--random-seed <arg>] [--data-type {ont,pacbio-raw,pacbio-hifi}] [--test] [-m|--min-read-length <arg>] [--help] [--verbose <arg>] [--version]
 
       [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]
       [-c|--coverage <arg>] [--flye-asm-coverage <arg>]
@@ -619,27 +619,48 @@ To assemble mitochondrial DNA (mtDNA), follow a series of sequential steps:
   ${_polap_command_string} flye2 [-i <arg>] -j <arg>
 
   init - inititalize a polap output folder
+
   summary-reads - summarize short-read data
+
   total-length-long - count the total length of the long-read data
+
   find-genome-size - estimate the genome size using short-read data
+
   reduce-data - reduce the long-read data for the whole-genome assembly
+  
   flye1 - execute Flye for a whole-genome assembly
+  
   edges-stats - prepare the assembly graph summary from Flye's graph_final.gfa
+  
   map-reads - map long reads on the seed contigs using minimap2
+  
   test-reads - iterate organelle genome assemblies on a range of -w option values
+  
   select-reads - use a -w option value after test-reads
+  
   flye2 - execute Flye for an organelle-genome assembly
+  
   blast-genome - execute NCBI's BLAST on seed contigs using organelle amino acid sequences
+  
   conut-genes - count genes on seed contigs after blast-genome
+  
   flye-polishing - execute Flye's polishing stage
+  
   make-menus - create empty files for easy command typing
+  
   clean-menus - delete the empty menu-name files
+  
   list - list commands
+  
   get-bioproject - fetch NCBI's BioProject info
+  
   bioproject-prepare - arrange BioProject info to determine which data to download
+  
   get-bioproject-sra - fetch NCBI's SRA data 
+  
   get-mtdna - fetch known organelle genome sequences
 
+  simulate - simulate long-read data from known organelle genome sequences
 
 Options:
   -l FASTQ

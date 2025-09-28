@@ -35,8 +35,8 @@ source "${_POLAPLIB_DIR}/run-polap-function-include.sh"
 _POLAP_INCLUDE_=$(_polap_include "${BASH_SOURCE[0]}")
 set +u
 if [[ -n "${!_POLAP_INCLUDE_}" ]]; then
-  set -u
-  return 0
+	set -u
+	return 0
 fi
 set -u
 declare "$_POLAP_INCLUDE_=1"
@@ -44,38 +44,80 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
 _polap_lib_conda-ensure_conda_env() {
-  local env_name="$1"
+	local env_name="$1"
 
-  if [[ -z "$env_name" ]]; then
-    if [[ "$_POLAP_DEBUG" == "1" ]]; then
-      echo "[ERROR] No conda environment name provided"
-    fi
-    return 1
-  fi
+	if [[ -z "$env_name" ]]; then
+		[[ "$_POLAP_DEBUG" == "1" ]] && echo "[ERROR] No conda environment name provided"
+		return 1
+	fi
 
-  # initialize conda and activate the base conda environment
-  source "$(conda info --base)/etc/profile.d/conda.sh"
+	# Try to find conda.sh
+	local conda_sh=""
+	if command -v conda >/dev/null 2>&1; then
+		conda_sh="$(conda info --base)/etc/profile.d/conda.sh"
+	elif [[ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]]; then
+		conda_sh="$HOME/miniconda3/etc/profile.d/conda.sh"
+	elif [[ -f "$HOME/etc/profile.d/conda.sh" ]]; then
+		conda_sh="$HOME/etc/profile.d/conda.sh"
+	fi
 
-  # activate the conda environment provided by the input
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "$env_name" ]]; then
-    if [[ "$_POLAP_DEBUG" == "1" ]]; then
-      echo "[INFO] Activating conda environment '$env_name'..."
-    fi
-    conda activate "$env_name"
-  fi
+	if [[ -z "$conda_sh" || ! -f "$conda_sh" ]]; then
+		[[ "$_POLAP_DEBUG" == "1" ]] && echo "[ERROR] Cannot find conda.sh"
+		return 1
+	fi
 
-  # check the activation of the conda environment
-  if [[ "${CONDA_DEFAULT_ENV:-}" != "$env_name" ]]; then
-    if [[ "$_POLAP_DEBUG" == "1" ]]; then
-      echo "[ERROR] Failed to enter conda environment '$env_name'"
-    fi
-    return 1
-  fi
+	# Source conda.sh to enable 'conda' command
+	# shellcheck disable=SC1090
+	source "$conda_sh"
+
+	# Activate the environment
+	if [[ "${CONDA_DEFAULT_ENV:-}" != "$env_name" ]]; then
+		[[ "$_POLAP_DEBUG" == "1" ]] && echo "[INFO] Activating conda environment '$env_name'..."
+		conda activate "$env_name"
+	fi
+
+	# Verify activation
+	if [[ "${CONDA_DEFAULT_ENV:-}" != "$env_name" ]]; then
+		[[ "$_POLAP_DEBUG" == "1" ]] && echo "[ERROR] Failed to enter conda environment '$env_name'"
+		return 1
+	fi
+
+	return 0
 }
+
+# _polap_lib_conda-ensure_conda_env() {
+# 	local env_name="$1"
+#
+# 	if [[ -z "$env_name" ]]; then
+# 		if [[ "$_POLAP_DEBUG" == "1" ]]; then
+# 			echo "[ERROR] No conda environment name provided"
+# 		fi
+# 		return 1
+# 	fi
+#
+# 	# initialize conda and activate the base conda environment
+# 	source "$(conda info --base)/etc/profile.d/conda.sh"
+#
+# 	# activate the conda environment provided by the input
+# 	if [[ "${CONDA_DEFAULT_ENV:-}" != "$env_name" ]]; then
+# 		if [[ "$_POLAP_DEBUG" == "1" ]]; then
+# 			echo "[INFO] Activating conda environment '$env_name'..."
+# 		fi
+# 		conda activate "$env_name"
+# 	fi
+#
+# 	# check the activation of the conda environment
+# 	if [[ "${CONDA_DEFAULT_ENV:-}" != "$env_name" ]]; then
+# 		if [[ "$_POLAP_DEBUG" == "1" ]]; then
+# 			echo "[ERROR] Failed to enter conda environment '$env_name'"
+# 		fi
+# 		return 1
+# 	fi
+# }

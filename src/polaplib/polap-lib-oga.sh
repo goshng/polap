@@ -195,7 +195,7 @@ function _polap_lib_oga-estimate-read-sampling-rate {
 
 	done
 
-	echa 4 >"${_polap_var_oga_contig}/index.txt"
+	echo 4 >"${_polap_var_oga_contig}/index.txt"
 }
 
 # This function is used to run the assembly rate estimation and read selection

@@ -47,51 +47,6 @@ function _run_polap_simulate {
 	# Grouped file path declarations
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
 
-	# Print help message if requested
-	x_help_message=$(
-		cat <<HEREDOC
-Simulate sequencing data from a genome.
-
-Use:
-  pbsim3
-
-Arguments:
-  -g INT nuclear genme size
-  -p FASTA plastid reference
-  -m FASTA 
-
-Inputs:
-  plastid_reference.fasta
-  mito_reference.fasta
-  nuclear_reference.fasta
-  plastid sequencing depth: 500
-  mito sequencing depth: 50
-  nuclear sequencing depth: 10
-
-Tools:
-
-pbsim --strategy wgs
-	--method qshmm
-	--qshmm pbsim3/data/QSHMM-RSII.model
-	--depth 500
-	--genome test_data/plastid_ref.fasta
-	--pass-num 10
-	--id-prefix plastid
-	--prefix test_data/pbsim_plastid
-
-./ccs test_data/pbsim_plastid_0001.bam test_data/pbsim_plastid_0001.fq.gz
-
-Outputs:
-  ${_arg_outdir}/reads.fq
-
-See:
-  
-
-Example:
-$(basename $0) ${_arg_menu[0]}
-HEREDOC
-	)
-
 	help_message=$(
 		cat <<'EOF'
 Name:
@@ -116,14 +71,36 @@ Options:
     Mitochondrial reference genome
 
 Examples:
-  Get organelle genome sequences:
+  Simulate PacBio HiFi sequencing data from Actinidia arguta genome (10 Mb):
     polap get-mtdna --species "Actinidia arguta"
     cp o/00-bioproject/2-mtdna.fasta mito_ref.fasta
     polap get-mtdna --species "Actinidia arguta" --plastid
     cp o/00-bioproject/2-mtdna.fasta plastid_ref.fasta
+    polap simulate hifi -g 10000000 -p plastid_ref.fasta -m mito_ref.fasta
 
-  Simulate PacBio HiFi sequencing data:
-    polap simulate -g 10000000 -p plastid_ref.fasta -m mito_ref.fasta
+  Simulate PacBio HiFi data for syncassemble test:
+    polap simulate syncam wgs.fq.gz
+
+  Simulate data with pt/mt reference:
+    polap simulate hifi-reference -p ptdna-reference.fa -m mtdna-reference.fa
+    polap simulate ont-reference -p ptdna-reference.fa -m mtdna-reference.fa
+    polap simulate onthq-reference -p ptdna-reference.fa -m mtdna-reference.fa
+    polap simulate onthq30-reference -p ptdna-reference.fa -m mtdna-reference.fa
+    polap simulate illumina-reference -p ptdna-reference.fa -m mtdna-reference.fa
+
+  Simulate ONT sequencing data from Anthoceros agrestis
+    polap simulate ont-reference --species "Anthoceros agrestis"
+
+  Save ~/.polap/profiles/sim1.yaml
+    preset: sim1
+    species: Anthoceros agrestis
+    outdir: sim1
+  Then,
+    polap simulate ont-reference --preset sim1
+    polap simulate ont-reference-nanosim --preset sim1 -l l.fastq
+
+  Simulate nuclear genome:
+    polap simulate nuclear 
 
 TODO:
   Check the required options values.
@@ -165,14 +142,32 @@ EOF
 	# -m
 	if [[ "${_arg_menu[1]}" == "hifi" ]]; then
 		_polap_simulate_hifi
-	fi
-
-	if [[ "${_arg_menu[1]}" == "ont" ]]; then
+	elif [[ "${_arg_menu[1]}" == "ont" ]]; then
 		_polap_simulate_ont
-	fi
-
-	if [[ "${_arg_menu[1]}" == "hifi-numt" ]]; then
+	elif [[ "${_arg_menu[1]}" == "hifi-numt" ]]; then
 		_polap_simulate_hifi_numt
+	elif [[ "${_arg_menu[1]}" == "syncasm" ]]; then
+		_polap_simulate_syncassemble_hifi "${_arg_menu[2]}"
+	elif [[ "${_arg_menu[1]}" == "hifi-reference" ]]; then
+		_polap_simulate_hifi_reference
+	elif [[ "${_arg_menu[1]}" == "ont-reference" ]]; then
+		_polap_simulate_ont_reference
+	elif [[ "${_arg_menu[1]}" == "ont-reference-nanosim" ]]; then
+		_polap_simulate_ont_reference_nanosim
+	elif [[ "${_arg_menu[1]}" == "onthq-reference" ]]; then
+		_polap_simulate_onthq_reference
+	elif [[ "${_arg_menu[1]}" == "onthq30-reference" ]]; then
+		_polap_simulate_onthq30_reference
+	elif [[ "${_arg_menu[1]}" == "illumina-reference" ]]; then
+		_polap_simulate_illumina_reference
+	elif [[ "${_arg_menu[1]}" == "nuclear" ]]; then
+		_polap_lib_conda-ensure_conda_env polap-sim || exit 1
+		python "${_POLAPLIB_DIR}/polap-py-make-nuclear-from-busco-aa.py" \
+			-o "${_arg_outdir}/nuclear" \
+			--genome-size 10000000
+		conda deactivate
+	else
+		_polap_log0 "ERROR: no such simulation: ${_arg_menu[1]}"
 	fi
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -398,4 +393,136 @@ _polap_simulate_hifi_numt() {
 	echo "📁 Simulated reads: $READS"
 	echo "📁 Reads from injected regions: $READ_NAMES"
 
+}
+
+_polap_simulate_syncassemble_hifi() {
+	local READS_OUT="${1:-out.fq.gz}"
+
+	local HIFI_RL_MEAN=10000
+	local HIFI_RL_SD=1500
+	local HIFI_SUB=0.002
+	local HIFI_INS=0.0003
+	local HIFI_DEL=0.0003
+	local ONT_RL_MEAN=10000
+	local ONT_RL_SD=3000
+	local ONT_SUB=0.01
+	local ONT_INS=0.01
+	local ONT_DEL=0.01
+	local OUTDIR="${_arg_outdir}"
+
+	# simulate or real
+	python3 "${_POLAPLIB_DIR}/polap-py-simulate-wgs-hifi.py" \
+		--nuclear-size "10m" --nuclear-cov "5" \
+		--mito-size "500k" --mito-cov "50" \
+		--plastid-size "150k" --plastid-cov "250" \
+		--rl-mean "$HIFI_RL_MEAN" \
+		--rl-sd "$HIFI_RL_SD" \
+		--sub "$HIFI_SUB" \
+		--ins "$HIFI_INS" \
+		--dele "$HIFI_DEL" \
+		--emit-refs -o "$READS_OUT" \
+		--summary "$OUTDIR/wgs_mix.summary.tsv"
+
+}
+
+_polap_simulate_hifi_reference() {
+	# local READS_OUT="${1:-out.fq.gz}"
+
+	_polap_lib_conda-ensure_conda_env polap-sim || exit 1
+	python "${_POLAPLIB_DIR}/polap-py-simulate-wgs-reads.py" \
+		--platform hifi \
+		-o "${_arg_outdir}"/sim-hifi \
+		--mt-fasta "${_arg_min_read_length}" \
+		--pt-fasta "${_arg_unpolished_fasta}" \
+		--nuc-depth 5 --mt-depth 50 --pt-depth 250
+	conda deactivate
+}
+
+_polap_simulate_ont_reference() {
+	local simdir="${_arg_outdir}/sim-ont"
+
+	_polap_lib_conda-ensure_conda_env polap-sim || exit 1
+	_polap_lib_simulate-ont-with-reference \
+		--mt "${_arg_min_read_length}" \
+		--pt "${_arg_unpolished_fasta}" \
+		--nuc-size "${_arg_sim_nuc_size}" \
+		${_arg_sim_nuc:+--nuc "$_arg_sim_nuc"} \
+		--depth-nuc "${_arg_sim_depth_nuc}" \
+		--depth-mt "${_arg_sim_depth_mt}" \
+		--depth-pt "${_arg_sim_depth_pt}" \
+		--mode badread \
+		--tech duplex \
+		--len-mean "${_arg_sim_len_mean}" \
+		--len-sd 8000 \
+		--threads 48 \
+		--verbose \
+		--out "${simdir}/simulate"
+
+	conda deactivate
+}
+
+_polap_simulate_ont_reference_nanosim() {
+	local simdir="${_arg_outdir}/sim"
+
+	# mtDNA: fetch all, list, pick the longest as representative
+	# _polap_lib_conda-ensure_conda_env polap || exit 1
+	# local organelle_type
+	# for organelle_type in pt mt; do
+	# 	polap_fetch_select_organelle \
+	# 		--species "${_arg_species}" \
+	# 		--type ${organelle_type} \
+	# 		--out-all "${simdir}"/${organelle_type}.all.fa \
+	# 		--out-tsv "${simdir}"/${organelle_type}.list.tsv \
+	# 		--out-rep-fa "${simdir}"/${organelle_type}.rep.fa \
+	# 		--out-rep-id "${simdir}"/${organelle_type}.rep.id \
+	# 		--strategy longest
+	# done
+	# conda deactivate
+
+	# See the following options:
+	# badread options:
+	# --err-model
+	# -q-model
+	_polap_lib_conda-ensure_conda_env polap-sim || exit 1
+	_polap_lib_simulate-ont-with-reference \
+		--mt "${simdir}"/mt.rep.fa \
+		--pt "${simdir}"/pt.rep.fa \
+		--nuc-size 100000 \
+		--depth-nuc 1x \
+		--depth-mt 5x \
+		--depth-pt 5x \
+		--mode nanosim-nu \
+		--in-fastq "${_arg_long_reads}" \
+		--verbose \
+		--out "${simdir}/simulate"
+	conda deactivate
+
+}
+
+_polap_simulate_onthq_reference() {
+
+	python "${_POLAPLIB_DIR}/polap-py-simulate-wgs-reads.py" \
+		--platform onthq -o "${_arg_outdir}"/onthq \
+		--mt-fasta "${_arg_min_read_length}" \
+		--pt-fasta "${_arg_unpolished_fasta}" \
+		--nuc-depth 5 --mt-depth 50 --pt-depth 250
+}
+
+_polap_simulate_onthq30_reference() {
+
+	python "${_POLAPLIB_DIR}/polap-py-simulate-wgs-reads.py" \
+		--platform onthq30 -o "${_arg_outdir}"/onthq30 \
+		--mt-fasta "${_arg_min_read_length}" \
+		--pt-fasta "${_arg_unpolished_fasta}" \
+		--nuc-depth 5 --mt-depth 50 --pt-depth 250 \
+		--sub 0.0007 --ins 0.0012 --dele 0.0012 --hp-rate 0.03 --qconst 32
+}
+
+_polap_simulate_illumina_reference() {
+
+	python "${_POLAPLIB_DIR}/polap-py-simulate-wgs-reads.py" \
+		--platform illumina -o "${_arg_outdir}"/illumina \
+		--mt-fasta "${_arg_min_read_length}" \
+		--pt-fasta "${_arg_unpolished_fasta}" \
+		--nuc-depth 5 --mt-depth 50 --pt-depth 250
 }

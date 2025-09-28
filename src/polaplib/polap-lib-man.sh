@@ -119,9 +119,9 @@ Author:
 EOF
 )
 
-function _polap_lib_man-convert_help_message() {
+function _polap_lib_man-main-convert_help_message() {
 	local help="$1"
-	local cmd="polap $2"
+	local cmd="$2"
 	local version="$_polap_version"
 	local date=$(date +"%B %Y")
 	local tmpfile
@@ -259,4 +259,12 @@ function _polap_lib_man-convert_help_message() {
 	} >"$tmpfile"
 
 	echo "$tmpfile"
+}
+
+function _bolap_lib_man-convert_help_message() {
+	_polap_lib_man-main-convert_help_message "$1" "bolap $2"
+}
+
+function _polap_lib_man-convert_help_message() {
+	_polap_lib_man-main-convert_help_message "$1" "polap $2"
 }

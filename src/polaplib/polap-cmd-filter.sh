@@ -229,6 +229,18 @@ EOF
 		_polap_filter-reads-by-rmkc
 	fi
 
+	if [[ "${_arg_menu[1]}" == "pt" ]]; then
+		_polap_lib_conda-ensure_conda_env polap || exit 1
+		bash "${_POLAPLIB_DIR}/polap-bash-remove-ptdna-reads.sh" \
+			-r "${_arg_long_reads}" \
+			-p "${_arg_pt_ref}" \
+			-o "${_arg_outdir}/pt-filter" \
+			--min-ident 0.70 \
+			--min-qcov 0.40 \
+			--min-mapq 0
+		conda deactivate
+	fi
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

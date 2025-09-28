@@ -1,0 +1,890 @@
+#!/usr/bin/env bash
+# polap-bash-fast-mtseed-ont.sh v0.3.0
+# Version: v0.3.0 (merged PT-removal + fast mtseed; steps start at 1)
+#
+# Pipeline outline (ONT):
+#   1) Remove plastid-origin reads (PT) using isoform A/B + identity cutoff
+#      (auto-learned or --identity-min override) → reads.nonpt.fq.gz
+#      [optional: --profiling]
+#   2) All-vs-all overlap:
+#        • default (classic) OR
+#        • --overlap-mode scan+stream+edges  (light scan → shortlist → streamed edges)
+#      (also: run miniprot vs BUSCO on a 10% subsample for QC only, if -n is given)
+#   3) Select mito-enriched reads (nuclear-aware if --nuc-ids given) from overlapness
+#   4) Assemble selected reads (miniasm | raven)
+#   5) Intergenic filtering (miniprot vs mito CDS; read-recruit median gate)
+#   6) Map reads→seeds (if iterating)
+#   7) Stop when Δ|M| < threshold (if iterating)
+#
+# Required helpers (must exist; not embedded here):
+#   ${_POLAPLIB_DIR}/polap-bash-pt-isoform.sh
+#   ${_POLAPLIB_DIR}/remove-ptdna-reads/polap-py-pt-ident-threshold.py
+#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-overlapness-from-paf.py
+#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-topfrac-by-wdeg.py
+#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-filter-paf-by-ids.py
+#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-cds-coverage-from-paf.py
+#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-seed-mapped-reads.py
+#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-stop-delta.py
+#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-awk-filter-conservative.awk
+#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-bash-recruit-count.sh
+#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-bash-paf2mreads.sh
+#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-r-pick-high-recruit.R
+#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-threshold-from-nuclear.py
+#   (for scan+stream+edges mode)
+#     ${_POLAPLIB_DIR}/fast-mtseed-ont/paf-topk-per-q.py
+#     ${_POLAPLIB_DIR}/fast-mtseed-ont/paf-to-edges-stream.py
+#     ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-edges-components.py  (optional)
+#
+set -euo pipefail
+
+# ────────────────────────────────────────────────────────────────────
+# Paths & environment
+# ────────────────────────────────────────────────────────────────────
+_POLAPLIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${_POLAPLIB_DIR}/polap-lib-conda.sh" || true
+HELP="${_POLAPLIB_DIR}/fast-mtseed-ont"
+mkdir -p "${HELP}"
+
+# Helpers (fast-mtseed)
+OLPY="${HELP}/polap-py-overlapness-from-paf.py"
+TOPPY="${HELP}/polap-py-topfrac-by-wdeg.py"
+FILTPY="${HELP}/polap-py-filter-paf-by-ids.py"
+CDSPY="${HELP}/polap-py-cds-coverage-from-paf.py"
+SEEDREADSPY="${HELP}/polap-py-seed-mapped-reads.py"
+STOPPY="${HELP}/polap-py-stop-delta.py"
+AWK_CONS="${HELP}/polap-awk-filter-conservative.awk"
+RECRUIT_SH="${HELP}/polap-bash-recruit-count.sh"
+PAF2MREADS_SH="${HELP}/polap-bash-paf2mreads.sh"
+R_PICK="${HELP}/polap-r-pick-high-recruit.R"
+THRESH_NUC_PY="${HELP}/polap-py-threshold-from-nuclear.py"
+PY_PT_THRESH="${HELP}/polap-py-pt-ident-threshold.py"
+
+# Helpers for PT removal & isoforms
+PT_ISOFORM_SH="${_POLAPLIB_DIR}/polap-bash-pt-isoform.sh"
+
+# scan+stream+edges mode
+TOPKPY="${HELP}/paf-topk-per-q.py"
+EDGPY="${HELP}/paf-to-edges-stream.py"
+EDGECOMP="${HELP}/polap-py-edges-components.py" # optional
+
+# ────────────────────────────────────────────────────────────────────
+# Logging & profiling
+# ────────────────────────────────────────────────────────────────────
+VERBOSE=1
+DRY=0
+LOG_FD="/dev/stderr"
+TEE_ACTIVE=0
+PROF=0
+PROF_FILE=""
+
+# Base helper for all note levels
+_note_base() {
+	local lvl=$1 # message verbosity level
+	shift
+	local msg="$*"
+
+	# Format with timestamp + caller
+	local src="${BASH_SOURCE[2]##*/}" # 2 to skip _note_base + noteX
+	local ln="${BASH_LINENO[1]}"
+	local ts
+	ts="$(date +'%F %T')"
+	local line="[$ts][${src}:${ln}] $msg"
+
+	# Always log, but only display if verbosity allows
+	if [[ "${VERBOSE:-0}" -gt "$lvl" ]]; then
+		if [[ "${_arg_log_stderr:-off}" == "off" ]]; then
+			printf "%s\n" "$line" >&3 # real screen
+		else
+			printf "%s\n" "$line" >&2
+		fi
+	fi
+
+	# Always append to log (stdout goes to logit, or LOG if you like)
+	printf "%s\n" "$line"
+}
+
+# Note functions
+note() { _note_base 1 "$@"; }
+note0() { _note_base 0 "$@"; } # always
+note1() { _note_base 1 "$@"; } # shown with -v
+note2() { _note_base 2 "$@"; } # shown with -v -v
+note3() { _note_base 3 "$@"; } # shown with -v -v -v
+
+cmd() {
+	if ((DRY)); then
+		local p="$1"
+		shift
+		printf "[DRY] %q" "$p" | tee -a "$LOG_FD"
+		for a in "$@"; do printf " %q" "$a" | tee -a "$LOG_FD"; done
+		printf "\n" | tee -a "$LOG_FD"
+		return 0
+	fi
+	local p="$1"
+	shift
+	printf "[RUN] %q" "$p" | tee -a "$LOG_FD"
+	for a in "$@"; do printf " %q" "$a" | tee -a "$LOG_FD"; done
+	printf "\n" | tee -a "$LOG_FD"
+	"$p" "$@"
+}
+prof_start() { ((PROF)) && PROF_T0=$(date +%s) && PROF_STEP="$1" || true; }
+prof_end() {
+	((PROF)) || return 0
+	local t1=$(date +%s)
+	echo -e "${PROF_STEP}\t$((t1 - PROF_T0))" >>"$PROF_FILE"
+}
+
+require_tools() {
+	local miss=0
+	for t in "$@"; do
+		command -v "$t" >/dev/null 2>&1 || {
+			note "ERR missing tool: $t"
+			miss=1
+		}
+	done
+	if ((miss == 1)); then
+		note "ERR load modules/conda"
+		exit 127
+	fi
+}
+
+# ────────────────────────────────────────────────────────────────────
+# CLI (merged options)
+# ────────────────────────────────────────────────────────────────────
+reads=""
+pt_ref=""
+outdir="fast_mtseed_ont_out"
+threads=32
+# PT removal knobs
+pt_origin=""
+nuc_origin=""
+alen_min=3000
+identity_min="" # override identity if set
+fpr=0.01
+tpr=0.95
+profiling=0
+# All-vs-all / selection / assembly
+# overlap_mode="default" # default | scan+stream+edges
+overlap_mode="scan+stream+edges"
+scan_keep_frac="0.40"
+scan_k=21
+scan_w=9
+scan_N=1
+scan_mask="0.70"
+scan_minocc=20
+refine_k=19
+refine_w=7
+refine_N=30
+refine_mask="0.60"
+refine_minocc=10
+topk_per_q=0
+topk_edges_per_node=0
+keep_scan_paf=0
+gzip_edges=1
+top_frac="0.20"
+min_olen=1200
+min_ident="0.84"
+w_floor="0.12"
+assembler="miniasm"
+# intergenic / BUSCO
+mcds=""
+nprot=""
+nuc_ids_opt=""
+# iteration
+rounds_max=1
+delta_stop="0.05"
+seed=13
+steps=""
+# nuclear overlap deplete is handled in separate tool; here we select seeds only
+
+usage() {
+	cat <<EOF
+polap-bash-fast-mtseed-ont.sh v0.3.0 (merged PT removal + fast mtseed)
+Usage:
+  $0 -r reads.fq.gz -p pt_ref.fa -o outdir [options]
+
+Required:
+  -r, --reads                 ONT reads (FASTQ[.gz])
+  -p, --pt-ref                plastid reference FASTA (single circle)
+
+PT removal:
+  --pt-origin FILE           PT-origin read IDs (weak labels) [optional]
+  --mt-origin FILE          Nuclear-origin read IDs (weak labels) [optional]
+  --alen-min INT             aligned length guard [${alen_min}]
+  --identity-min FLOAT       override auto identity cutoff (e.g., 0.93)
+  --fpr FLOAT                nuclear FPR target for identity [${fpr}]
+  --tpr FLOAT                PT TPR target for identity [${tpr}]
+
+All-vs-all:
+  --overlap-mode MODE        default | scan+stream+edges   [${overlap_mode}]
+  --scan-keep-frac FLOAT     shortlist fraction by wdegree [${scan_keep_frac}]
+  --scan-k INT  --scan-w INT --scan-N INT --scan-mask F --scan-minocc INT
+  --refine-k INT --refine-w INT --refine-N INT --refine-mask F --refine-minocc INT
+  --topk-per-q INT           cap scan hits per query (0=off)
+  --topk-edges-per-node INT  cap edges per node in reducer (0=off)
+  --keep-scan-paf            store scan.paf.gz for QA
+  --no-gzip-edges            keep edges.tsv uncompressed
+  --top-frac FLOAT           top fraction if no nuclear IDs [${top_frac}]
+  --min-olen INT --min-ident F --w-floor F   edge filters [${min_olen},${min_ident},${w_floor}]
+
+Intergenic & assembly:
+  -m, --mt-cds FILE          mito CDS proteins (miniprot) [optional]
+  -n, --nuc-prot FILE        BUSCO proteins (unused here; leave for future)
+  --assembler NAME           miniasm|raven [${assembler}]
+  --rounds-max INT           iteration rounds [${rounds_max}]
+  --delta-stop FLOAT         stop if Δ|M| < x [${delta_stop}]
+
+General:
+  -o, --outdir DIR           output directory [${outdir}]
+  -t, --threads INT          threads [${threads}]
+  --seed INT                 RNG seed [${seed}]
+  -v, --verbose              increase verbosity
+  --quiet                    quiet
+  --dry                      dry-run (no execution)
+  --profiling                per-step timings (log/profile.tsv)
+  -h, --help                 help
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+	-r | --reads)
+		reads="$2"
+		shift 2
+		;;
+	--step)
+		steps="$2"
+		shift 2
+		;;
+	-p | --pt-ref)
+		pt_ref="$2"
+		shift 2
+		;;
+	-o | --outdir)
+		outdir="$2"
+		shift 2
+		;;
+	--nuc-ids)
+		nuc_ids_opt="$2"
+		shift 2
+		;;
+	-t | --threads)
+		threads="$2"
+		shift 2
+		;;
+	--pt-origin)
+		pt_origin="$2"
+		shift 2
+		;;
+	--mt-origin)
+		mt_origin="$2"
+		shift 2
+		;;
+	--nuc-origin)
+		nuc_origin="$2"
+		shift 2
+		;;
+	--alen-min)
+		alen_min="$2"
+		shift 2
+		;;
+	--identity-min)
+		identity_min="$2"
+		shift 2
+		;;
+	--fpr)
+		fpr="$2"
+		shift 2
+		;;
+	--tpr)
+		tpr="$2"
+		shift 2
+		;;
+	--overlap-mode)
+		overlap_mode="$2"
+		shift 2
+		;;
+	--scan-keep-frac)
+		scan_keep_frac="$2"
+		shift 2
+		;;
+	--scan-k)
+		scan_k="$2"
+		shift 2
+		;;
+	--scan-w)
+		scan_w="$2"
+		shift 2
+		;;
+	--scan-N)
+		scan_N="$2"
+		shift 2
+		;;
+	--scan-mask)
+		scan_mask="$2"
+		shift 2
+		;;
+	--scan-minocc)
+		scan_minocc="$2"
+		shift 2
+		;;
+	--refine-k)
+		refine_k="$2"
+		shift 2
+		;;
+	--refine-w)
+		refine_w="$2"
+		shift 2
+		;;
+	--refine-N)
+		refine_N="$2"
+		shift 2
+		;;
+	--refine-mask)
+		refine_mask="$2"
+		shift 2
+		;;
+	--refine-minocc)
+		refine_minocc="$2"
+		shift 2
+		;;
+	--topk-per-q)
+		topk_per_q="$2"
+		shift 2
+		;;
+	--topk-edges-per-node)
+		topk_edges_per_node="$2"
+		shift 2
+		;;
+	--keep-scan-paf)
+		keep_scan_paf=1
+		shift
+		;;
+	--no-gzip-edges)
+		gzip_edges=0
+		shift
+		;;
+	--top-frac)
+		top_frac="$2"
+		shift 2
+		;;
+	--min-olen)
+		min_olen="$2"
+		shift 2
+		;;
+	--min-ident)
+		min_ident="$2"
+		shift 2
+		;;
+	--w-floor)
+		w_floor="$2"
+		shift 2
+		;;
+	-m | --mt-cds)
+		mcds="$2"
+		shift 2
+		;;
+	-n | --nuc-prot)
+		nprot="$2"
+		shift 2
+		;;
+	--rounds-max)
+		rounds_max="$2"
+		shift 2
+		;;
+	--delta-stop)
+		delta_stop="$2"
+		shift 2
+		;;
+	--seed)
+		seed="$2"
+		shift 2
+		;;
+	-v | --verbose)
+		VERBOSE=$((VERBOSE + 1))
+		shift
+		;;
+	--quiet | -q)
+		VERBOSE=0
+		shift
+		;;
+	--dry)
+		DRY=1
+		shift
+		;;
+	--profiling)
+		PROF=1
+		shift
+		;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	*)
+		note "ERR unknown arg: $1"
+		usage
+		exit 2
+		;;
+	esac
+done
+
+require_tools minimap2 samtools seqkit python Rscript awk sort comm cut gzip
+
+for s in "$OLPY" "$TOPPY" "$FILTPY" "$CDSPY" "$SEEDREADSPY" \
+	"$STOPPY" "$AWK_CONS" "$RECRUIT_SH" "$PAF2MREADS_SH" \
+	"$R_PICK" "$THRESH_NUC_PY" "$PT_ISOFORM_SH" "$PY_PT_THRESH"; do
+	[[ -s "$s" ]] || {
+		note "ERR missing helper: $s"
+		exit 1
+	}
+done
+if [[ "$overlap_mode" == "scan+stream+edges" ]]; then
+	for s in "$TOPKPY" "$EDGPY"; do [[ -s "$s" ]] || {
+		note "ERR missing $s"
+		exit 1
+	}; done
+fi
+
+[[ -n "$reads" && -s "$reads" ]] || {
+	note "ERR missing --reads"
+	exit 2
+}
+[[ -n "$pt_ref" && -s "$pt_ref" ]] || {
+	note "ERR missing --pt-ref"
+	exit 2
+}
+
+mkdir -p "$outdir" "$outdir/log"
+LOG="${outdir}/pipeline.log"
+LOG_FD="$LOG"
+if ((!DRY)); then
+	exec > >(tee -a "$LOG") 2>&1
+	TEE_ACTIVE=1
+fi
+if ((PROF)); then
+	PROF_FILE="$outdir/log/profile.tsv"
+	echo -e "step\tseconds" >"$PROF_FILE"
+fi
+
+note "Outdir: $outdir"
+note "Assembler: $assembler ; threads: $threads"
+note "Overlap mode: $overlap_mode"
+
+# Step gating
+_step_set=""
+_add_steps() {
+	local spec="$1"
+	IFS=',' read -r -a arr <<<"$spec"
+	for tok in "${arr[@]}"; do
+		if [[ "$tok" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+			local a=${BASH_REMATCH[1]} b=${BASH_REMATCH[2]}
+			for ((i = a; i <= b; i++)); do _step_set+=" $i "; done
+		elif [[ "$tok" =~ ^[0-9]+$ ]]; then _step_set+=" $tok "; fi
+	done
+}
+_should_run() {
+	local s="$1"
+	[[ -z "$steps" ]] && return 0
+	[[ -z "$_step_set" ]] && _add_steps "$steps"
+	[[ " $_step_set " == *" $s "* ]]
+}
+
+if _should_run 0; then
+	note "note"
+	note0 "note0"
+	note1 "note1"
+	note2 "note2"
+	note3 "note3"
+fi
+
+# ────────────────────────────────────────────────────────────────────
+# Step 1: PT removal (organized)
+# ────────────────────────────────────────────────────────────────────
+R1="$reads"
+if _should_run 1; then
+	# 1a) Build PT isoforms A/B (handles IR/SSC/LSC & origin)
+	note0 "1a) Build PT isoforms A/B (handles IR/SSC/LSC & origin)"
+	PANEL_DIR="$outdir/01-panel"
+	mkdir -p "$PANEL_DIR"
+	prof_start "pt_isoform"
+	cmd bash "$PT_ISOFORM_SH" -r "$pt_ref" -o "$PANEL_DIR" -t "$threads"
+	prof_end
+	ISO_A="$PANEL_DIR/pt_isomerA.fa"
+	ISO_B="$PANEL_DIR/pt_isomerB.fa"
+	[[ -s "$ISO_A" ]] || {
+		note "ERR missing pt_isomerA.fa"
+		exit 3
+	}
+
+	note1 "A: $ISO_A"
+	[[ -s "$ISO_B" ]] && note1 "B: $ISO_B"
+
+	# 1b) Make single-record doubled references (A/B)
+	note0 "1b) Make single-record doubled references (A/B)"
+	dbld() {
+		python - "$1" "$2" <<'PY'
+import sys
+inp,outp=sys.argv[1],sys.argv[2]
+name=None; seq=[]
+with open(inp) as f:
+  for ln in f:
+    if ln.startswith('>'):
+      if name is None: name=ln[1:].strip().split()[0]
+      else: break
+    else: seq.append(ln.strip())
+S=''.join(seq)
+with open(outp,'w') as w:
+  w.write('>pt.double\n'); w.write(S+S+'\n')
+PY
+	}
+	DBL_A="$PANEL_DIR/pt_isomerA.double.fa"
+	DBL_B="$PANEL_DIR/pt_isomerB.double.fa"
+	prof_start "pt_double"
+	((!DRY)) && dbld "$ISO_A" "$DBL_A"
+	((!DRY)) && { [[ -s "$ISO_B" ]] && dbld "$ISO_B" "$DBL_B" || true; }
+	prof_end
+	note1 "A: $DBL_A"
+	[[ -s "$DBL_B" ]] && note1 "B: $DBL_B"
+
+	# 1c) Map reads→doubled A/B
+	MAP_DIR="$outdir/02-map"
+	note0 "1c) Map reads→ doubled A/B"
+	PAF_A="$MAPDIR/formA.paf"
+	PAF_B="$MAPDIR/formB.paf"
+	mkdir -p "$MAPDIR"
+	prof_start "map_ptA"
+	note "Step1: map reads→ isomerA.double > $PAF_A"
+	cmd minimap2 -x map-ont --secondary=yes -N 50 -t "$threads" "$DBL_A" "$reads" >"$PAF_A"
+	prof_end
+	if [[ -s "$DBL_B" ]]; then
+		prof_start "map_ptB"
+		note "Step1: map reads→ isomerB.double > $PAF_B"
+		cmd minimap2 -x map-ont --secondary=yes -N 50 -t "$threads" "$DBL_B" "$reads" >"$PAF_B"
+		prof_end
+	fi
+
+	# 1d) Determine identity cutoff (MT-guided) & emit pt.ids
+	note0 "1d) Determine identity cutoff (MT-guided) & emit pt.ids"
+	PT_VARS="$outdir/pt_thresh.vars"
+	PT_DIAG="$outdir/pt_thresh.diag.tsv"
+	PT_IDS="$outdir/pt.ids"
+	if [[ -n "$identity_min" ]]; then
+		note "Step1: using --identity-min=$identity_min ; alen_min=$alen_min"
+		prof_start "emit_pt_ids_override"
+		if ((!DRY)); then
+			awk -v ID="$identity_min" -v AL="$alen_min" 'BEGIN{FS=OFS="\t"}
+        NF>=12{ id=($11>0?$10/$11:0); if(id>=ID && $11+0>=AL) print $1 }' \
+				"$PAF_A" | sort -u >"$outdir/ptA.ids"
+			if [[ -s "$PAF_B" ]]; then
+				awk -v ID="$identity_min" -v AL="$alen_min" 'BEGIN{FS=OFS="\t"}
+          NF>=12{ id=($11>0?$10/$11:0); if(id>=ID && $11+0>=AL) print $1 }' \
+					"$PAF_B" | sort -u >"$outdir/ptB.ids"
+				sort -u "$outdir/ptA.ids" "$outdir/ptB.ids" >"$PT_IDS"
+			else
+				mv "$outdir/ptA.ids" "$PT_IDS"
+			fi
+			printf "ident_min=%s\nalen_min=%d\n" "$identity_min" "$alen_min" >"$PT_VARS"
+			: >"$PT_DIAG"
+		fi
+		prof_end
+	else
+		prof_start "pt_ident_threshold"
+		if ((!DRY)); then
+			python "$PY_PT_THRESH" \
+				--paf "$PAF_A" ${PAF_B:+ "$PAF_B"} \
+				--pt-ids "${pt_origin:-/dev/null}" \
+				--mt-ids "${mt_origin:-/dev/null}" \
+				--alen-min "$alen_min" \
+				--fpr "$fpr" --tpr "$tpr" \
+				--diag "$PT_DIAG" \
+				--emit-pt-ids "$PT_IDS" >"$PT_VARS"
+			note "PT IDs: $PT_IDS"
+			note "PT Vars: $PT_VARS"
+		fi
+		prof_end
+	fi
+
+	# 1e) Remove PT reads → R1
+	note0 "1e) Remove PT reads →  R1"
+	ident_min_out="$identity_min"
+	if [[ -s "$PT_VARS" ]]; then
+		while IFS== read -r kv; do
+			case "$kv" in
+			ident_min=*) ident_min_out="${kv#ident_min=}" ;;
+			alen_min=*) alen_min="${kv#alen_min=}" ;;
+			esac
+		done <"$PT_VARS"
+	fi
+	note "Step1: PT thresholds →  ident_min=${ident_min_out}  alen_min=${alen_min}"
+	prof_start "write_nonPT"
+	if ((!DRY)); then
+		seqkit fx2tab -ni "$reads" | sort -u >"$MAPDIR/all.ids"
+		sort -u "$PT_IDS" >"$MAPDIR/pt.ids.sorted"
+		comm -23 "$MAPDIR/all.ids" "$MAPDIR/pt.ids.sorted" >"$outdir/keep.nonpt.ids"
+		note "Step1: write $outdir/reads.nonpt.fq.gz"
+		seqkit grep -f "$outdir/keep.nonpt.ids" "$reads" -o "$outdir/reads.nonpt.fq.gz"
+	fi
+	prof_end
+	R1="$outdir/reads.nonpt.fq.gz"
+fi
+[[ -s "$R1" ]] || {
+	note "ERR missing R1 ($R1)"
+	exit 3
+}
+
+# ────────────────────────────────────────────────────────────────────
+# Step 2: all-vs-all (organized) + optional BUSCO on 10% sample (QC)
+# ────────────────────────────────────────────────────────────────────
+ST1="$outdir/03-allvsall"
+mkdir -p "$ST1"
+PAFALL="$ST1/allvsall.paf"
+OTSV_GLOBAL="$ST1/overlapness.tsv"
+EDGES_GLOBAL="$ST1/edges.tsv.gz"
+
+if _should_run 2; then
+	if [[ "$overlap_mode" != "scan+stream+edges" ]]; then
+		note0 "Step2: minimap2 ava-ont R1×R1 > $PAFALL"
+		((!DRY)) && minimap2 -x ava-ont -t "$threads" --secondary=yes -N 50 \
+			--mask-level 0.50 "$R1" "$R1" >"$PAFALL"
+	else
+		note0 "Step2: overlap-mode scan+stream+edges"
+		SCAN_DIR="$ST1/scan"
+		REF_DIR="$ST1/refine"
+		mkdir -p "$SCAN_DIR" "$REF_DIR"
+
+		# 2a) scan (light) → shortlist
+		note0 "2a) scan (light) →  shortlist"
+		prof_start "scan"
+		if ((!DRY)); then
+			if ((keep_scan_paf)); then
+				minimap2 -t "$threads" -x ava-ont \
+					-k"$scan_k" -w"$scan_w" -N "$scan_N" \
+					--mask-level "$scan_mask" --min-occ-floor "$scan_minocc" \
+					"$R1" "$R1" |
+					{ ((topk_per_q > 0)) && python "$TOPKPY" "$topk_per_q" || cat; } |
+					tee >(gzip -1 >"$SCAN_DIR/scan.paf.gz") |
+					python "$OLPY" - --min_olen 800 --min_ident 0.82 --w_floor 0.08 \
+						>"$SCAN_DIR/scan.overlapness.tsv"
+			else
+				minimap2 -t "$threads" -x ava-ont \
+					-k"$scan_k" -w"$scan_w" -N "$scan_N" \
+					--mask-level "$scan_mask" --min-occ-floor "$scan_minocc" \
+					"$R1" "$R1" |
+					{ ((topk_per_q > 0)) && python "$TOPKPY" "$topk_per_q" || cat; } |
+					python "$OLPY" - --min_olen 800 --min_ident 0.82 --w_floor 0.08 \
+						>"$SCAN_DIR/scan.overlapness.tsv"
+			fi
+			awk 'NR>1{print $1"\t"$3}' "$SCAN_DIR/scan.overlapness.tsv" |
+				sort -k2,2nr |
+				awk -v f="$scan_keep_frac" '{a[NR]=$1} END{lim=int(NR*f); for(i=1;i<=lim;i++) print a[i]}' \
+					>"$SCAN_DIR/shortlist.ids"
+			seqkit grep -f "$SCAN_DIR/shortlist.ids" "$R1" -o "$SCAN_DIR/R1.short.fq.gz"
+		fi
+		prof_end
+
+		# 2b) refine streamed →  edges + overlapness
+		note0 "2b) refine streamed →  edges + overlapness"
+		prof_start "refine"
+		if ((!DRY)); then
+			minimap2 -t "$threads" -x ava-ont \
+				-k"$refine_k" -w"$refine_w" --secondary=yes -N "$refine_N" \
+				--mask-level "$refine_mask" --min-occ-floor "$refine_minocc" \
+				"$SCAN_DIR/R1.short.fq.gz" "$SCAN_DIR/R1.short.fq.gz" |
+				python "$EDGPY" \
+					--min-olen "$min_olen" --min-ident "$min_ident" --w-floor "$w_floor" \
+					--topk-node "$topk_edges_per_node" \
+					--edges "$ST1/edges.tsv" --overlapness "$OTSV_GLOBAL"
+			((gzip_edges)) && gzip -f "$ST1/edges.tsv"
+		fi
+		prof_end
+		EDGES_GLOBAL="$ST1/edges.tsv${gzip_edges:+.gz}"
+
+		# optional graph summary
+		if ((!DRY)) && [[ -s "$EDGECOMP" ]]; then
+			COMP_DIR="$ST1/comp"
+			mkdir -p "$COMP_DIR"
+			python "$EDGECOMP" "$EDGES_GLOBAL" \
+				--summary "$COMP_DIR/summary.tsv" \
+				--sizes "$COMP_DIR/comp_sizes.tsv" \
+				--membership "$COMP_DIR/node2comp.tsv" \
+				--deg "$COMP_DIR/degree.tsv" \
+				--giant-nodes "$COMP_DIR/giant_nodes.txt" \
+				--giant-edges "$COMP_DIR/giant_edges.tsv" \
+				--print || true
+		fi
+	fi
+
+	# 2c) BUSCO on a 10% length-stratified subsample (QC only)
+	note0 "2c) BUSCO on a 10% length-stratified subsample (QC only)"
+	if [[ -n "$nprot" ]]; then
+		note "Step2: miniprot BUSCO on 10% subsample of PT-depleted reads (QC)"
+		SAMP_IDS="$ST1/nonpt.sample.ids"
+		SAMP_FQ="$ST1/reads.nonpt.sample.fq.gz"
+		# simple random 10% by seed (keeps it fast and reproducible)
+		((!DRY)) && seqkit sample -s "$seed" -p 0.10 "$R1" -o "$SAMP_FQ"
+		((!DRY)) && miniprot -d "$ST1/nonpt.sample.mpi" "$SAMP_FQ"
+		((!DRY)) && miniprot -t "$threads" -S -N 3 --outc 0.4 \
+			"$ST1/nonpt.sample.mpi" "$nprot" >"$ST1/nonpt.sample.busco.paf"
+		((!DRY)) && awk 'BEGIN{FS=OFS="\t"} NF>=12 && $11+0>=150 {print $1}' \
+			"$ST1/nonpt.sample.busco.paf" | sort -u >"$ST1/nuc.ids.sample"
+	fi
+fi
+
+# ────────────────────────────────────────────────────────────────────
+# Step 3: overlapness + selection (organized)
+# ────────────────────────────────────────────────────────────────────
+RDIR="$outdir/04-round_1"
+mkdir -p "$RDIR"
+if _should_run 3; then
+
+	OTSV="$RDIR/overlapness.tsv"
+	note0 "3a) Prepare $OTSV"
+	if [[ "$overlap_mode" == "scan+stream+edges" ]]; then
+		note "Step3: reuse refined overlapness →  $OTSV"
+		((!DRY)) && cp -f "$OTSV_GLOBAL" "$OTSV"
+	else
+		note "Step3: compute overlapness from PAF →  $OTSV"
+		((!DRY)) && python "$OLPY" "$PAFALL" \
+			--min_olen "$min_olen" --min_ident "$min_ident" --w_floor "$w_floor" \
+			>"$OTSV"
+	fi
+
+	# --- Step 3: selection (prefer BUSCO sample labels from Step 2c) ---
+	note0 "3b) selection (prefer BUSCO sample labels from Step 2c)"
+	SELECT_IDS="$RDIR/select_ids.txt"
+
+	# Prefer the miniprot BUSCO sample labels from Step 2c, else fallback to --nuc-ids
+	NUC_SAMPLE="$ST1/nuc.ids.sample"
+	NUC_FOR_THRESH=""
+	if [[ -s "$NUC_SAMPLE" ]]; then
+		NUC_FOR_THRESH="$NUC_SAMPLE"
+	elif [[ -n "$nuc_ids_opt" && -s "$nuc_ids_opt" ]]; then
+		NUC_FOR_THRESH="$nuc_ids_opt"
+	fi
+
+	if [[ -n "$NUC_FOR_THRESH" ]]; then
+		note "Step3: nuclear-guided selection using $NUC_FOR_THRESH -> $SELECT_IDS"
+		if ((!DRY)); then
+			python "$THRESH_NUC_PY" "$OTSV" "$NUC_FOR_THRESH" \
+				--mode fpr --fpr 0.01 --diag "$RDIR/threshold_from_nuclear.tsv" \
+				>"$RDIR/nuc_thresh.vars"
+
+			wdeg_min=0
+			deg_min=0
+			while IFS== read -r kv; do
+				case "$kv" in
+				wdeg_min=*) wdeg_min="${kv#wdeg_min=}" ;;
+				deg_min=*) deg_min="${kv#deg_min=}" ;;
+				esac
+			done <"$RDIR/nuc_thresh.vars"
+
+			awk -v W="$wdeg_min" -v D="$deg_min" 'BEGIN{FS=OFS="\t"}
+      NR>1 && ($3+0)>=W && ($2+0)>=D {print $1}' "$OTSV" |
+				sort -u >"$RDIR/organelle.ids"
+
+			# Exclude labeled nuclear reads (from sample or full set)
+			comm -23 <(sort -u "$RDIR/organelle.ids") \
+				<(sort -u "$NUC_FOR_THRESH") \
+				>"$SELECT_IDS"
+		fi
+	else
+		note "Step3: select top-frac ($top_frac) by wdegree"
+		((!DRY)) && python "$TOPPY" "$OTSV" --top_frac "$top_frac" >"$SELECT_IDS"
+	fi
+
+fi
+
+# ────────────────────────────────────────────────────────────────────
+# Step 4: assemble selected reads
+#   Input  : select_ids.txt (IDs of mito-enriched reads, from Step 3)
+#   Output : contigs assembled from those reads
+#
+#   Miniasm requires:
+#     (1) the read sequences (FASTA/FASTQ)
+#     (2) the overlaps between those reads (PAF)
+#
+#   Raven can do both overlap + assembly internally, so it only needs reads.
+# ────────────────────────────────────────────────────────────────────
+SEEDS_ROUND=""
+if _should_run 4; then
+	SELECT_IDS="$RDIR/select_ids.txt"
+
+	if [[ "$assembler" == "miniasm" ]]; then
+		# Extract the actual sequences of the selected reads
+		TOPFA="$RDIR/top_reads.fa.gz"
+		note0 "4a) extract selected reads →  $TOPFA"
+		((!DRY)) && seqkit fq2fa "$R1" | seqkit grep -f "$SELECT_IDS" -o "$TOPFA"
+
+		GFA="$RDIR/miniasm.gfa"
+
+		if [[ "$overlap_mode" != "scan+stream+edges" ]]; then
+			note0 "4b) DEFAULT MODE:"
+			# DEFAULT MODE:
+			# In Step 2 we produced a full all-vs-all PAF (PAFALL).
+			# Here we filter it down to overlaps *only between the selected reads*.
+			SUBPAF="$RDIR/top_overlaps.paf.gz"
+			note "filter full PAF to selected read overlaps → $SUBPAF"
+			((!DRY)) && python "$FILTPY" "$PAFALL" "$SELECT_IDS" -o "$SUBPAF"
+
+			note "run miniasm with filtered overlaps"
+			((!DRY)) && miniasm -f "$TOPFA" <(zcat -f "$SUBPAF") >"$GFA"
+
+		else
+			# STREAMED MODE:
+			note0 "4b) STREAMED MODE:"
+			# In Step 2 we *did not* save a full PAF (we streamed directly to reducers).
+			# Miniasm still needs overlaps, so we regenerate them — but only among
+			# the smaller set of selected reads.
+			SELPAF="$RDIR/selected_allvsall.paf.gz"
+			note "generate overlaps among selected reads →  $SELPAF"
+			((!DRY)) && minimap2 -x ava-ont -t "$threads" --secondary=yes -N 30 \
+				--mask-level 0.60 --min-occ-floor 10 \
+				"$TOPFA" "$TOPFA" | gzip -1 >"$SELPAF"
+
+			note "run miniasm with selected-read overlaps"
+			((!DRY)) && miniasm -f "$TOPFA" <(zcat -f "$SELPAF") >"$GFA"
+		fi
+
+		# Extract contigs from the GFA into a FASTA for downstream use
+		note0 "4c) Extract contigs from the GFA into a FASTA for downstream use"
+		SEEDS_ROUND="$RDIR/m_seeds_raw.fa"
+		note "extract contigs from GFA → $SEEDS_ROUND"
+		((!DRY)) && awk '/^S/{print ">"$2"\n"$3}' "$GFA" >"$SEEDS_ROUND" || :
+
+	else
+		note0 "4b) RAVEN MODE:"
+		# Raven overlaps + assembles internally. We only need to provide the reads.
+		TOPFQ="$RDIR/top_reads.fq.gz"
+		note "extract selected reads (fq) → $TOPFQ"
+		((!DRY)) && seqkit grep -f "$SELECT_IDS" "$R1" -o "$TOPFQ"
+
+		SEEDS_ROUND="$RDIR/raven_contigs.fasta"
+		note "raven --disable-polishing → $SEEDS_ROUND"
+		((!DRY)) && raven --threads "$threads" --disable-polishing -o "$SEEDS_ROUND" "$TOPFQ"
+	fi
+
+	# Save path for finalize step
+	SEEDS_CUR="$SEEDS_ROUND"
+fi
+
+if _should_run 5; then
+	note0 "5a) convert miniasm's gfa to flye gfa"
+	contigger_dir="${RDIR}/30-contigger"
+	mkdir -p "${contigger_dir}"
+	sed 's/LN:i/dp:i/' "${RDIR}/miniasm.gfa" >"${contigger_dir}/graph_final.gfa"
+
+	note0 "5b) polap readassemble using the miniasm's assembly as seeds"
+	note0 bash "${_POLAPLIB_DIR}/../polap.sh" readassemble annotated \
+		-o "${outdir}" -i 04-round_1 \
+		-l "${reads}"
+fi
+
+# Finalize
+if ((!DRY)); then
+	FINAL_DIR="$(dirname "$SEEDS_CUR")"
+	FINAL_SEEDS="$FINAL_DIR/m_seeds_final.fa"
+	note "Finalize: cp $SEEDS_CUR → $FINAL_SEEDS"
+	cp "$SEEDS_CUR" "$FINAL_SEEDS"
+	note "Done. Final seeds: $FINAL_SEEDS"
+else
+	note "--dry finished (no commands executed)."
+fi

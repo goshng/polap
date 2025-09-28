@@ -37,4 +37,8 @@ _polap_var_function_verbose=4
 #
 # Set verbosity level: stderr if verbose >= 2, otherwise discard output
 _polap_output_dest="/dev/null"
-[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
+# echo "verbose1: $_arg_verbose"
+if [ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ]; then
+	_polap_output_dest="/dev/stderr"
+fi
+# echo "verbose2: $_arg_verbose"

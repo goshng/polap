@@ -174,7 +174,11 @@ EOF
 
 	# Display help message
 	if [[ ${_brg_menu[1]} == "help" || "${_brg_help}" == "on" ]]; then
-		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_brg_menu[0]}")
+		if [[ ${_brg_menu[1]} == "help" || ${_brg_menu[1]} == "0" ]]; then
+			local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_brg_menu[0]}")
+		else
+			local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_brg_menu[0]}")
+		fi
 		man "$manfile"
 		rm -f "$manfile"
 		return
@@ -197,17 +201,32 @@ function _run_bolap_run {
 	help_message=$(
 		cat <<EOF
 Name:
-  bolap ${bolap_cmd} - 
+  bolap ${bolap_cmd} - execute tools such as organelle genome assembly pipeline.
 
 Synopsis:
-  bolap ${bolap_cmd} 
+  bolap ${bolap_cmd} TOOL
 
 Description:
-  bolap ${bolap_cmd} 
+  bolap ${bolap_cmd} uses a tool to execute something. TOOL includes:
+readassemble,
+disassemble,
+syncassemble,
+getorganelle,
+ptgaul,
+tippo,
+oatk,
+pmat,
+
 
 Examples:
-  Setup polap:
-    bolap ${bolap_cmd}
+  Execute polap readassemble:
+    bolap ${bolap_cmd} readassemble Vigna_radiata
+
+  Execute polap disassemble:
+    bolap ${bolap_cmd} disassemble Vigna_radiata
+
+  Execute polap syncassemble:
+    bolap ${bolap_cmd} syncassemble Vigna_radiata
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -219,20 +238,30 @@ EOF
 	)
 
 	# Display help message
-	if [[ ${_brg_menu[1]} == "help" || "${_brg_help}" == "on" ]]; then
+	if [[ "${_brg_help}" == "on" ]]; then
+		subcmd1="${_brg_menu[1]}"
+		_subcmd1_clean="run_${subcmd1//-/_}"
+		declare -n ref="help_message_${_subcmd1_clean}"
+		local manfile=$(_polap_lib_man-convert_help_message "$ref" "${_brg_menu[0]}-${_brg_menu[1]}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	if [[ ${_brg_menu[1]} == "0" ]]; then
 		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_brg_menu[0]}")
 		man "$manfile"
 		rm -f "$manfile"
 		return
 	fi
 
-	local item="${_brg_menu[1]}"
-	local folder=""
-	if [[ "${_brg_menu[2]}" != "0" ]]; then
-		folder="${_brg_menu[2]}"
-	fi
-
-	"${bolap_cmd}_genus_species" "${item}" "${folder}" "${_brg_menu[3]}"
+	# local item="${_brg_menu[1]}"
+	# local folder=""
+	# if [[ "${_brg_menu[2]}" != "0" ]]; then
+	# 	folder="${_brg_menu[2]}"
+	# fi
+	# "${bolap_cmd}_genus_species" "${item}" "${folder}" "${_brg_menu[3]}"
+	"${bolap_cmd}_genus_species" ${_positionals[@]:1}
 
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
@@ -333,21 +362,37 @@ function _run_bolap_config {
 	local _brg_outdir="${_brg_menu[1]}"
 	local _brg_sindex="${_brg_menu[2]:-0}"
 
-	local bolap_cmd="${FUNCNAME##*_}"
+	local bolap_cmd="${_brg_menu[1]}"
 	help_message=$(
 		cat <<EOF
 Name:
-  bolap ${bolap_cmd} - 
+  bolap ${bolap_cmd} - view, add, info
 
 Synopsis:
-  bolap ${bolap_cmd} 
+  bolap ${bolap_cmd} view [column1,column2,...] [query key]
 
 Description:
   bolap ${bolap_cmd} 
 
 Examples:
-  Setup polap:
-    bolap ${bolap_cmd}
+  List all:
+    bolap ${bolap_cmd} view
+
+  List long and short columns of all:
+    bolap config view long,short
+
+  List long and short columns of key with Salix:
+    bolap config view long,short Salix
+
+  Info:
+    bolap config info
+
+  Add a new record to a.csv at the present directory:
+    bolap config add Salix_purpurea 1 SRR21824870 NA ONT a.csv
+    bolap config add Salix_purpurea 1 SRR21824870 NA PACBIO_SMRT a.csv
+
+  Add a new field to all rows:
+    bolap -c a.csv config add-field fieldname value a.csv 
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -359,14 +404,21 @@ EOF
 	)
 
 	# Display help message
-	if [[ ${_brg_menu[1]} == "help" || "${_brg_help}" == "on" ]]; then
-		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_brg_menu[0]}")
+	if [[ ${_brg_menu[1]} == "0" || "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$help_message" "${_brg_menu[0]}")
 		man "$manfile"
 		rm -f "$manfile"
 		return
 	fi
 
-	"${bolap_cmd}_genus_species" ${_positionals[@]:1}
+	local bolap_cmd="config-${_brg_menu[1]}"
+	subcmd1="${bolap_cmd}"
+	echo "subcmd: ${subcmd1}" 2>&1
+	if declare -f "${bolap_cmd}_genus_species" >/dev/null 2>&1; then
+		"${bolap_cmd}_genus_species" ${_positionals[@]:2}
+	else
+		_log_echo0 "No such subcommand for config: ${bolap_cmd}"
+	fi
 
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
@@ -381,17 +433,19 @@ function _run_bolap_benchmark {
 	help_message=$(
 		cat <<EOF
 Name:
-  bolap ${bolap_cmd} - 
+  bolap ${bolap_cmd} - execute organelle genome assembly pipelines
 
 Synopsis:
-  bolap ${bolap_cmd} 
+  bolap ${bolap_cmd} SPECIES-FOLDER [SPECIES-FOLDER2 ...]
 
 Description:
-  bolap ${bolap_cmd} 
+  bolap ${bolap_cmd} uses Oatk, TIPPo, ptGAUL, GetOrganelle, PMAT to assemble
+organelle genomes and profiles computing time and memory.
+SPECIES-FOLDER is binary species name delimited by an underscore.
 
 Examples:
-  Setup polap:
-    bolap ${bolap_cmd}
+  Benchamrk of polap and other pipelines:
+    bolap ${bolap_cmd} Carex_pseudochinensis
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -402,8 +456,20 @@ Author:
 EOF
 	)
 
+	# _brg_menu defualt: run 0 0 0 ...
+
 	# Display help message
-	if [[ ${_brg_menu[1]} == "help" || "${_brg_help}" == "on" ]]; then
+	if [[ "${_brg_help}" == "on" ]]; then
+		subcmd1="${_brg_menu[0]}"
+		_subcmd1_clean="${subcmd1//-/_}"
+		declare -n ref="help_message_${_bolap_type}_${_subcmd1_clean}"
+		local manfile=$(_polap_lib_man-convert_help_message "$ref" "${_brg_menu[0]}-${_bolap_type}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	if [[ ${_brg_menu[1]} == "0" ]]; then
 		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_brg_menu[0]}")
 		man "$manfile"
 		rm -f "$manfile"
@@ -618,6 +684,10 @@ EOF
 	return 0
 }
 
+function _run_bolap_list {
+	_run_bolap_search "$@"
+}
+
 function _run_bolap_help {
 	local _brg_outdir="${_brg_menu[1]}"
 	local _brg_sindex="${_brg_menu[2]:-0}"
@@ -661,7 +731,9 @@ EOF
 		folder="${_brg_menu[2]}"
 	fi
 
-	"${bolap_cmd}_genus_species" "${item}" "${folder}" "${_brg_menu[3]}"
+	if declare -f "${bolap_cmd}_genus_species" >/dev/null 2>&1; then
+		"${bolap_cmd}_genus_species" ${_positionals[@]:1}
+	fi
 
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
@@ -676,17 +748,18 @@ function _run_bolap_use {
 	help_message=$(
 		cat <<EOF
 Name:
-  bolap ${bolap_cmd} - 
+  bolap ${bolap_cmd} - choose polap's data analysis
 
 Synopsis:
-  bolap ${bolap_cmd} 
+  bolap ${bolap_cmd} DATA
 
 Description:
-  bolap ${bolap_cmd} 
+  bolap ${bolap_cmd} allows to choose polap's data analysis; DATA can be aflye, cflye, read.
+Each DATA has its own benchmark and man bolap subcommand.
 
 Examples:
-  Setup polap:
-    bolap ${bolap_cmd}
+  Choose read polap's data analysis.
+    bolap ${bolap_cmd} read
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -711,6 +784,7 @@ EOF
 		folder="${_brg_menu[2]}"
 	fi
 
+	subcmd1=use
 	_log_echo "${bolap_cmd}_genus_species" "${item}" "${folder}" "${_brg_menu[3]}"
 	echo "${item}" >"${HOME}/.bolaprc"
 
@@ -761,6 +835,149 @@ EOF
 	# store them
 	# rest=("${_positionals[@]:1}")
 	# echo "${_positionals[@]}"
+
+	# Disable debugging if previously enabled
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+function _run_bolap_test {
+	local _brg_outdir="${_brg_menu[1]}"
+	local _brg_sindex="${_brg_menu[2]:-0}"
+
+	local bolap_cmd="${FUNCNAME##*_}"
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - execute tools such as organelle genome assembly pipeline.
+
+Synopsis:
+  bolap ${bolap_cmd} TOOL
+
+Description:
+  bolap ${bolap_cmd} uses a tool to execute something. TOOL includes:
+readassemble,
+disassemble,
+syncassemble,
+getorganelle,
+ptgaul,
+tippo,
+oatk,
+pmat,
+
+
+Examples:
+  Execute polap readassemble:
+    bolap ${bolap_cmd} readassemble Vigna_radiata
+
+  Execute polap disassemble:
+    bolap ${bolap_cmd} disassemble Vigna_radiata
+
+  Execute polap syncassemble:
+    bolap ${bolap_cmd} syncassemble Vigna_radiata
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# Display help message
+	if [[ "${_brg_help}" == "on" ]]; then
+		subcmd1="${_brg_menu[1]}"
+		_subcmd1_clean="run_${subcmd1//-/_}"
+		declare -n ref="help_message_${_subcmd1_clean}"
+		local manfile=$(_polap_lib_man-convert_help_message "$ref" "${_brg_menu[0]}-${_brg_menu[1]}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	if [[ ${_brg_menu[1]} == "0" ]]; then
+		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_brg_menu[0]}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	# local item="${_brg_menu[1]}"
+	# local folder=""
+	# if [[ "${_brg_menu[2]}" != "0" ]]; then
+	# 	folder="${_brg_menu[2]}"
+	# fi
+	# "${bolap_cmd}_genus_species" "${item}" "${folder}" "${_brg_menu[3]}"
+	"${bolap_cmd}_genus_species" ${_positionals[@]:1}
+
+	# Disable debugging if previously enabled
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+function _run_bolap {
+
+	local bolap_cmd="${_brg_menu[0]}"
+	local subcmd1="${_brg_menu[0]}"
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - execute tools such as organelle genome assembly pipeline.
+
+Synopsis:
+  bolap ${bolap_cmd} TOOL
+
+Description:
+  bolap ${bolap_cmd} uses a tool to execute something. TOOL includes:
+readassemble,
+disassemble,
+syncassemble,
+getorganelle,
+ptgaul,
+tippo,
+oatk,
+pmat,
+
+
+Examples:
+  Execute polap readassemble:
+    bolap ${bolap_cmd} readassemble Vigna_radiata
+
+  Execute polap disassemble:
+    bolap ${bolap_cmd} disassemble Vigna_radiata
+
+  Execute polap syncassemble:
+    bolap ${bolap_cmd} syncassemble Vigna_radiata
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# Display help message
+	if [[ "${_brg_help}" == "on" || ${_brg_menu[1]} == "0" ]]; then
+		subcmd1="${_brg_menu[0]}"
+		_subcmd1_clean="${subcmd1//-/_}"
+		declare -n ref="help_message_${_subcmd1_clean}"
+		if [[ -v ref ]]; then
+			local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${_brg_menu[0]}")
+			man "$manfile"
+			rm -f "$manfile"
+		else
+			_log_echo0 "No such menu: $subcmd1"
+		fi
+
+		return
+	fi
+
+	if declare -f "${bolap_cmd}_genus_species" >/dev/null 2>&1; then
+		"${bolap_cmd}_genus_species" ${_positionals[@]:1}
+	fi
 
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

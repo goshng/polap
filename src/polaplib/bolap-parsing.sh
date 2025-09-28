@@ -82,7 +82,7 @@ begins_with_short_option() {
 
 # THE DEFAULTS INITIALIZATION - POSITIONALS
 _positionals=()
-_brg_menu=("run" "help" "0" "0" "0" "0" "0" "0" "0" "0" "0")
+_brg_menu=("run" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0")
 # THE DEFAULTS INITIALIZATION - OPTIONALS
 
 # Tesing groups of datasets
@@ -241,15 +241,6 @@ Ssome=(
 	Vitis_vinifera
 )
 
-opt_c_arg="off"
-opt_t_arg="v5"
-opt_m_arg="off"
-opt_v_flag=false
-opt_y_flag=false
-opt_f_flag=false
-opt_e_arg=""
-_brg_help="off"
-
 _bolap_command_string=bolap
 
 if [[ -s "${HOME}/.bolaprc" ]]; then
@@ -262,53 +253,65 @@ else
 	echo "${_bolap_type}" >"${HOME}/.bolaprc"
 fi
 
+_brg_verbose=0
+opt_c_arg="off"
+opt_t_arg="v5"
+if [[ "${_bolap_type}" == "read" ]]; then
+	opt_t_arg="v6"
+fi
+opt_m_arg="off"
+opt_y_flag=false
+opt_f_flag=false
+opt_e_arg=""
+_brg_help="off"
+_brg_preset="base"
+_brg_config_dir="$HOME/.polap/profiles"
+_brg_config_path=""
+
 print_help() {
 
 	help_message=$(
 		cat <<HEREDOC
 BOLAP - Benchmarking of organelle DNA long-read assembly pipeline.
+Version: ${_polap_version}, Analysis: ${_bolap_type}
 
-Version ${_polap_version}
-
-Data - ${_bolap_type}
-
-Usage: ${_bolap_command_string} [-h] [-y] [-c CSV] [--version] [command] [--help|-h]
+Usage: ${_bolap_command_string} [-hyvf] [-c CSV] [--version] [command] [--help|-h]
 
 bolap is a tool for data analysis of plant plastid genome assembly
 by annotating long reads with organelle genome sequences and selecting those
 originating from organelle genomes.
 
-options:
-  -h, --help          Show this help message and exit.
-  -y                  Enable -y flag to say YES to any question.
-  -v                  Enable verbose mode.
-  -f                  Enable -f flag to say YES to profiling.
-  -c <arg>            Set value for -c option (default: ${opt_c_arg})
-  -t <arg>            Set value for -t option (default: ${opt_t_arg})
-  -m <arg>            Set value for -m option figure folder (default: ${_brg_default_target_dir})
-  -e <ame>            Call <name>_genus_species function and exit.
-  --version           Show the polap-data-dflye version number and exit.
-
 commands:
-  use                Use one of benchmark analysis datasets: read, cflye, aflye
-  install            Install a list of tools to some conda environments.
-  setup              Setup installed tools.
-  update             Update tools.
-  list (search)      List tools.
-  run                Run an executable in a conda environment.
-  remove (uninstall) Remove a list of tools.
-  build (assemble)   Build plastid or mitochondrial genomes.
-  download (mkdir)   Download data.
-  config             Config view, add, etc.
-  benchmark          Benchmark GetOrganelle, ptGAUL, PMAT, TIPPo, and Oatk.
-  clean (delete, rm) Remove unnecessary folders.
-  get                Get results.
-  archive            Archive results.
-  man                Generate reports.
-  help               Print help message for commands and others.
-  print-help-all     List all help messages.
+  use                  Use one of benchmark analysis datasets: read, cflye, aflye
+  install/setup/update Install, setup, update tools using conda environments.
+  uninstall            Uninstall tools.
+  list (search)        List or search for tools.
+  run                  Run tools
+  download             Download data.
+  help                 Print help message for commands and others.
+
+options:
+  -h, --help           Show this help message and exit.
+  -y                   Enable YES to any question.
+  -v                   Enable verbose mode.
+  -f                   Enable profiling.
+  -c <arg>             Set value for -c option (default: ${opt_c_arg})
+  -t <arg>             Set value for -t option (default: ${opt_t_arg})
+  -m <arg>             Set value for -m option figure folder (default: ${_brg_default_target_dir})
+  --version            Show the polap-data-${_bolap_type} version number and exit.
+
+other commands:
+  config               Config view, add, etc.
+  benchmark            Benchmark GetOrganelle, ptGAUL, PMAT, TIPPo, and Oatk.
+  clean (delete, rm)   Remove unnecessary folders.
 HEREDOC
 	)
+
+	# get                  Get results.
+	# archive              Archive results.
+	# man                  Generate reports.
+	# build (assemble)     Build plastid or mitochondrial genomes.
+	# print-help-all       List all help messages.
 
 	# Display help message
 	echo "${help_message}"
@@ -341,9 +344,20 @@ parse_commandline() {
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			opt_y_flag=true
 			;;
-		-v)
+		--preset)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			opt_v_flag=true
+			_brg_preset="$2"
+			shift
+			;;
+		--config-dir)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_brg_config_dir="$2"
+			shift
+			;;
+		--config-path)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_brg_config_path="$2"
+			shift
 			;;
 		--version)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -352,7 +366,7 @@ parse_commandline() {
 			exit
 			;;
 		-q | --quiet)
-			_brg_verbose=0
+			_brg_verbose=-1
 			;;
 		-v | --verbose)
 			_brg_verbose=$((_brg_verbose + 1))
@@ -373,15 +387,6 @@ parse_commandline() {
 		shift
 	done
 }
-
-_polap_cmd="${_polap_script_bin_dir}/polap.sh"
-if [[ "${_POLAP_RELEASE}" == "1" ]]; then
-	_polap_cmd="${_polap_script_bin_dir}/polap"
-else
-	_polap_cmd="${_polap_script_bin_dir}/polap.sh"
-fi
-
-_brg_adir="${opt_t_arg:-t5}"
 
 handle_passed_args_count() {
 	test "${_positionals_count}" -le 12 || _PRINT_HELP=yes die "FATAL ERROR: There were spurious positional arguments --- we expect between 0 and 5, but got ${_positionals_count} (the last one was: '${_last_positional}')." 1
@@ -404,6 +409,40 @@ handle_passed_args_count
 set +u
 assign_positional_args 1 "${_positionals[@]}"
 set -u
+
+if [[ -z "${_brg_config_path}" ]]; then
+	_brg_config_path="${_brg_config_dir}/${_brg_preset}.yaml"
+fi
+if [[ ! -f "${_brg_config_path}" ]]; then
+	echo "[error] not found: ${_brg_config_path}" >&2
+	exit 127
+fi
+
+LOAD_PY="${_POLAPLIB_DIR}/polap-py-config-load.py"
+[[ -f "$LOAD_PY" ]] || {
+	echo "[error] not found: $LOAD_PY" >&2
+	exit 127
+}
+ENV_LINES=$(python3 "$LOAD_PY" --path "${_brg_config_path}" --format env --prefix "PCFG")
+eval "$ENV_LINES"
+# echo "[config] preset=${PCFG_PRESET:-}"
+# echo "         name=${PCFG_NAME:-}"
+
+_polap_cmd="${_polap_script_bin_dir}/polap.sh"
+if [[ "${_POLAP_RELEASE}" == "1" ]]; then
+	_polap_cmd="${_polap_script_bin_dir}/polap"
+else
+	_polap_cmd="${_polap_script_bin_dir}/polap.sh"
+fi
+
+_polap2_cmd="${_polap_script_bin_dir}/polap2.sh"
+if [[ "${_POLAP_RELEASE}" == "1" ]]; then
+	_polap2_cmd="${_polap_script_bin_dir}/polap2"
+else
+	_polap2_cmd="${_polap_script_bin_dir}/polap2.sh"
+fi
+
+_brg_adir="${opt_t_arg:-t5}"
 
 # OTHER STUFF GENERATED BY Argbash
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {

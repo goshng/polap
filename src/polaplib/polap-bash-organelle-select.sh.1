@@ -1,0 +1,351 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ---- locate library dir (scripts live here) ----
+_POLAPLIB_DIR="${_POLAPLIB_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)}"
+
+# ---- defaults ----
+PRESET=""
+STAGE="graph-early" # quickview | graph-early | graph-final
+OUTDIR="out"
+THREADS=8
+SIMULATE=false
+REAL_READS=""
+REDO=false
+
+TAIL=0.10
+WIN=0.20
+CUT_METHOD="hybrid"
+KEEP_NUCLEAR=false
+
+# sim defaults
+NUC_SIZE="10m"
+NUC_COV=5
+MT_SIZE="500k"
+MT_COV=50
+PT_SIZE="150k"
+PT_COV=250
+
+HIFI_RL_MEAN=10000
+HIFI_RL_SD=1500
+HIFI_SUB=0.002
+HIFI_INS=0.0003
+HIFI_DEL=0.0003
+ONT_RL_MEAN=10000
+ONT_RL_SD=3000
+ONT_SUB=0.01
+ONT_INS=0.01
+ONT_DEL=0.01
+
+# k/s defaults
+K_HIFI_QV=121
+S_HIFI_QV=27
+HPC_HIFI=""
+K_HIFI_GE=121
+S_HIFI_GE=27
+K_ONT_QV=41
+S_ONT_QV=17
+HPC_ONT="--hpc"
+K_ONT_GE=41
+S_ONT_GE=21
+
+usage() {
+	cat <<EOF
+Usage:
+  $(basename "$0") --preset {hifi|ont} [--simulate | --reads FILE] --stage {quickview|graph-early|graph-final} [options]
+
+Options:
+  --out DIR         Output dir (default: out)
+  --threads INT     Threads (default: 8)
+  --redo            Remove output dir first
+  --tail FLOAT      Right-tail for cut (default: 0.05)
+  --win FLOAT       Window width for cut-auto (log10; default: 0.20)
+  --method STR      Cut method (mad|window|std|valley|hybrid; default: hybrid)
+  --keep-nuclear    Run syncasm with permissive cleanup to preserve nuclear structure
+  --polaplib DIR    Override library directory (where this script & tools live)
+EOF
+	exit 1
+}
+
+# ---- parse args ----
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+	--preset)
+		PRESET="$2"
+		shift 2
+		;;
+	--stage)
+		STAGE="$2"
+		shift 2
+		;;
+	--simulate)
+		SIMULATE=true
+		shift
+		;;
+	--reads)
+		REAL_READS="$2"
+		shift 2
+		;;
+	--out)
+		OUTDIR="$2"
+		shift 2
+		;;
+	--threads)
+		THREADS="$2"
+		shift 2
+		;;
+	--redo)
+		REDO=true
+		shift
+		;;
+	--tail)
+		TAIL="$2"
+		shift 2
+		;;
+	--win)
+		WIN="$2"
+		shift 2
+		;;
+	--method)
+		CUT_METHOD="$2"
+		shift 2
+		;;
+	--keep-nuclear)
+		KEEP_NUCLEAR=true
+		shift
+		;;
+	--polaplib)
+		_POLAPLIB_DIR="$2"
+		shift 2
+		;;
+	-h | --help) usage ;;
+	*)
+		echo "[error] unknown option: $1"
+		usage
+		;;
+	esac
+done
+
+# ---- tools ----
+CUT_AUTO="${_POLAPLIB_DIR}/polap-py-syncfilter-cut-auto.py"
+SIM_HIFI="${_POLAPLIB_DIR}/simulate_wgs_hifi.py"
+SIM_ONT="${_POLAPLIB_DIR}/simulate_wgs_ont.py"
+
+[[ -z "$PRESET" ]] && {
+	echo "[error] --preset required"
+	usage
+}
+if ! $SIMULATE && [[ -z "$REAL_READS" ]]; then
+	echo "[error] need --simulate or --reads"
+	usage
+fi
+case "$STAGE" in quickview | graph-early | graph-final) : ;; *)
+	echo "[error] bad --stage"
+	exit 2
+	;;
+esac
+
+need() { command -v "$1" >/dev/null 2>&1 || {
+	echo "[error] missing $1"
+	exit 127
+}; }
+need syncfilter
+need syncasm
+need python3
+need seqtk
+[[ -f "$CUT_AUTO" ]] || {
+	echo "[error] not found: $CUT_AUTO"
+	exit 127
+}
+
+# ---- setup ----
+if [[ "$REDO" == true && -d "$OUTDIR" ]]; then
+	rm -rf "$OUTDIR"
+fi
+
+mkdir -p "$OUTDIR"
+PREFIX="$OUTDIR/sample"
+ASM_PREFIX="$OUTDIR/asm"
+READS_OUT="$OUTDIR/wgs_mix.fq" # plain FASTQ working input
+
+# ---- k/s presets ----
+if [[ "$PRESET" == "hifi" ]]; then
+	K_QV=$K_HIFI_QV
+	S_QV=$S_HIFI_QV
+	HPC_FLAG="$HPC_HIFI"
+	K_GE=$K_HIFI_GE
+	S_GE=$S_HIFI_GE
+	SIM_SCRIPT="$SIM_HIFI"
+	SIM_ARGS=(--rl-mean "$HIFI_RL_MEAN" --rl-sd "$HIFI_RL_SD" --sub "$HIFI_SUB" --ins "$HIFI_INS" --dele "$HIFI_DEL")
+else
+	K_QV=$K_ONT_QV
+	S_QV=$S_ONT_QV
+	HPC_FLAG="$HPC_ONT"
+	K_GE=$K_ONT_GE
+	S_GE=$S_ONT_GE
+	SIM_SCRIPT="$SIM_ONT"
+	SIM_ARGS=(--rl-mean "$ONT_RL_MEAN" --rl-sd "$ONT_RL_SD" --sub "$ONT_SUB" --ins "$ONT_INS" --dele "$ONT_DEL")
+fi
+
+# ---- syncasm cleanup policy ----
+if $KEEP_NUCLEAR; then
+	SYNCASM_OPTS_EARLY=(-c 1 -a 0.05 --unzip-round 0 --max-bubble 0 --max-tip 0 --weak-cross 0 --no-read-ec)
+	SYNCASM_OPTS_FINAL=(-c 1 -a 0.05 --unzip-round 0 --max-bubble 0 --max-tip 0 --weak-cross 0 --no-read-ec)
+else
+	SYNCASM_OPTS_EARLY=()
+	SYNCASM_OPTS_FINAL=()
+fi
+
+# ---- acquire plain FASTQ input ----
+if $SIMULATE; then
+	echo "[step] simulate WGS ($PRESET) -> plain FASTQ"
+	python3 "$SIM_SCRIPT" \
+		--nuclear-size "$NUC_SIZE" --nuclear-cov "$NUC_COV" \
+		--mito-size "$MT_SIZE" --mito-cov "$MT_COV" \
+		--plastid-size "$PT_SIZE" --plastid-cov "$PT_COV" \
+		"${SIM_ARGS[@]}" --emit-refs \
+		-o "$READS_OUT" \
+		--summary "$OUTDIR/wgs_mix.summary.tsv" || true
+
+	# If simulator wrote gz, convert to plain
+	if [[ ! -s "$READS_OUT" && -s "$OUTDIR/wgs_mix.fq.gz" ]]; then
+		echo "[fix] convert sim output wgs_mix.fq.gz -> wgs_mix.fq"
+		gzip -dc "$OUTDIR/wgs_mix.fq.gz" >"$READS_OUT"
+	fi
+	[[ -s "$READS_OUT" ]] || {
+		echo "[error] no reads at $READS_OUT"
+		exit 3
+	}
+else
+	echo "[step] real reads -> ensure plain FASTQ"
+	if [[ "$REAL_READS" == *.gz ]]; then
+		echo "[fix] gunzip to plain: $REAL_READS -> $READS_OUT"
+		gzip -dc "$REAL_READS" >"$READS_OUT"
+	else
+		ln -sf "$(realpath "$REAL_READS")" "$READS_OUT"
+	fi
+fi
+
+# ---- Stage 1: quickview (plain FASTQ) ----
+echo "[cmd] syncfilter --mode quickview $HPC_FLAG -k $K_QV -s $S_QV -t $THREADS -o $PREFIX $READS_OUT"
+syncfilter --mode quickview $HPC_FLAG -k "$K_QV" -s "$S_QV" -t "$THREADS" -o "$PREFIX" "$READS_OUT"
+[[ -f "${PREFIX}.syncfilter.tsv" ]] && mv "${PREFIX}.syncfilter.tsv" "${PREFIX}.quickview.tsv"
+
+python3 "$CUT_AUTO" \
+	-i "${PREFIX}.quickview.tsv" \
+	--method "$CUT_METHOD" \
+	--tail "$TAIL" --window-width "$WIN" \
+	--cuts-out "${PREFIX}.quickview.cuts.tsv" \
+	--png "${PREFIX}.quickview.png"
+
+# If quickview is the last stage, rerun quickview with bin-fold to get IDs and emit FASTQ bins
+if [[ "$STAGE" == "quickview" ]]; then
+	CUT_QV=$(awk 'NR==2{print $1}' "${PREFIX}.quickview.cuts.tsv")
+
+	echo "[cmd] syncfilter --mode quickview --bin-fold ${CUT_QV} --ids-out ${PREFIX}"
+	syncfilter --mode quickview $HPC_FLAG -k "$K_QV" -s "$S_QV" -t "$THREADS" \
+		-o "$PREFIX" --bin-fold "$CUT_QV" --ids-out "$PREFIX" "$READS_OUT"
+	[[ -f "${PREFIX}.syncfilter.tsv" ]] && mv "${PREFIX}.syncfilter.tsv" "${PREFIX}.quickview.tsv"
+
+	# Emit organelle/nuclear FASTQ bins (gzipped for space, can switch to plain if you prefer)
+	if [[ -s "${PREFIX}.organelle.ids" ]]; then
+		awk 'NF{print $1}' "${PREFIX}.organelle.ids" | tr -d '\r' | sort -u >"${PREFIX}.organelle.names"
+		seqtk subseq "$READS_OUT" "${PREFIX}.organelle.names" | gzip -c >"${PREFIX}.organelle.fastq.gz"
+		echo "[emit] ${PREFIX}.organelle.fastq.gz"
+	fi
+	# if [[ -s "${PREFIX}.nuclear.ids" ]]; then
+	# 	awk 'NF{print $1}' "${PREFIX}.nuclear.ids" | tr -d '\r' | sort -u >"${PREFIX}.nuclear.names"
+	# 	seqtk subseq "$READS_OUT" "${PREFIX}.nuclear.names" | gzip -c >"${PREFIX}.nuclear.fastq.gz"
+	# fi
+	echo "[done] quickview"
+	exit 0
+fi
+
+# ---- Stage 2: graph-early ----
+echo "[step] syncasm raw graph"
+syncasm -k "$K_GE" -s "$S_GE" -t "$THREADS" "${SYNCASM_OPTS_EARLY[@]}" -o "$ASM_PREFIX" "$READS_OUT"
+RAW_GFA="${ASM_PREFIX}.utg.gfa"
+[[ -f "$RAW_GFA" ]] || RAW_GFA="${ASM_PREFIX}.utg.raw.gfa"
+[[ -f "$RAW_GFA" ]] || {
+	echo "[error] raw GFA not found"
+	exit 4
+}
+
+# pass 1: TSV only
+echo "[cmd] syncfilter --mode graph-early ..."
+syncfilter --mode graph-early --gfa "$RAW_GFA" $HPC_FLAG -k "$K_GE" -s "$S_GE" -t "$THREADS" -o "$PREFIX" "$READS_OUT"
+[[ -f "${PREFIX}.syncfilter.tsv" ]] && mv "${PREFIX}.syncfilter.tsv" "${PREFIX}.graph.early.tsv"
+
+python3 "$CUT_AUTO" \
+	-i "${PREFIX}.graph.early.tsv" \
+	--method "$CUT_METHOD" \
+	--tail "$TAIL" --window-width "$WIN" \
+	--mu-seed "${PREFIX}.quickview.cuts.tsv" \
+	--cuts-out "${PREFIX}.graph.early.cuts.tsv" \
+	--png "${PREFIX}.graph.early.png"
+
+CUT_E=$(awk 'NR==2{print $1}' "${PREFIX}.graph.early.cuts.tsv")
+
+# pass 2: IDs (emit fastq only if last)
+syncfilter --mode graph-early --gfa "$RAW_GFA" $HPC_FLAG -k "$K_GE" -s "$S_GE" -t "$THREADS" \
+	-o "$PREFIX" --bin-fold "$CUT_E" --ids-out "$PREFIX" "$READS_OUT"
+[[ -f "${PREFIX}.syncfilter.tsv" ]] && mv "${PREFIX}.syncfilter.tsv" "${PREFIX}.graph.early.tsv"
+
+if [[ "$STAGE" == "graph-early" ]]; then
+	if [[ -s "${PREFIX}.organelle.ids" ]]; then
+		awk 'NF{print $1}' "${PREFIX}.organelle.ids" | tr -d '\r' | sort -u >"${PREFIX}.organelle.names"
+		seqtk subseq "$READS_OUT" "${PREFIX}.organelle.names" | gzip -c >"${PREFIX}.organelle.fastq.gz"
+		echo "[emit] ${PREFIX}.organelle.fastq.gz"
+	fi
+	# if [[ -s "${PREFIX}.nuclear.ids" ]]; then
+	# 	awk 'NF{print $1}' "${PREFIX}.nuclear.ids" | tr -d '\r' | sort -u >"${PREFIX}.nuclear.names"
+	# 	seqtk subseq "$READS_OUT" "${PREFIX}.nuclear.names" | gzip -c >"${PREFIX}.nuclear.fastq.gz"
+	# fi
+	echo "[done] graph-early"
+	exit 0
+fi
+
+# ---- Stage 3: graph-final ----
+echo "[step] graph-final"
+FINAL_GFA="${ASM_PREFIX}.utg.final.gfa"
+[[ -f "$FINAL_GFA" ]] || { [[ -f "${ASM_PREFIX}.utg.clean.gfa" ]] && FINAL_GFA="${ASM_PREFIX}.utg.clean.gfa"; }
+if [[ ! -f "$FINAL_GFA" ]]; then
+	syncasm -k "$K_GE" -s "$S_GE" -t "$THREADS" "${SYNCASM_OPTS_FINAL[@]}" -o "$ASM_PREFIX" "$READS_OUT"
+	FINAL_GFA="${ASM_PREFIX}.utg.final.gfa"
+	[[ -f "$FINAL_GFA" ]] || { [[ -f "${ASM_PREFIX}.utg.clean.gfa" ]] && FINAL_GFA="${ASM_PREFIX}.utg.clean.gfa"; }
+fi
+[[ -f "$FINAL_GFA" ]] || {
+	echo "[error] final GFA not found"
+	exit 5
+}
+
+# pass 1: TSV only
+syncfilter --mode graph-final --gfa "$FINAL_GFA" $HPC_FLAG -k "$K_GE" -s "$S_GE" -t "$THREADS" -o "$PREFIX" "$READS_OUT"
+[[ -f "${PREFIX}.syncfilter.tsv" ]] && mv "${PREFIX}.syncfilter.tsv" "${PREFIX}.graph.final.tsv"
+
+python3 "$CUT_AUTO" \
+	-i "${PREFIX}.graph.final.tsv" \
+	--method "$CUT_METHOD" \
+	--tail "$TAIL" --window-width "$WIN" \
+	--mu-seed "${PREFIX}.quickview.cuts.tsv" \
+	--cuts-out "${PREFIX}.graph.final.cuts.tsv" \
+	--png "${PREFIX}.graph.final.png"
+
+CUT_F=$(awk 'NR==2{print $1}' "${PREFIX}.graph.final.cuts.tsv")
+
+# pass 2: IDs + emit FASTQs
+syncfilter --mode graph-final --gfa "$FINAL_GFA" $HPC_FLAG -k "$K_GE" -s "$S_GE" -t "$THREADS" \
+	-o "$PREFIX" --bin-fold "$CUT_F" --ids-out "$PREFIX" "$READS_OUT"
+[[ -f "${PREFIX}.syncfilter.tsv" ]] && mv "${PREFIX}.syncfilter.tsv" "${PREFIX}.graph.final.tsv"
+
+if [[ -s "${PREFIX}.organelle.ids" ]]; then
+	awk 'NF{print $1}' "${PREFIX}.organelle.ids" | tr -d '\r' | sort -u >"${PREFIX}.organelle.names"
+	seqtk subseq "$READS_OUT" "${PREFIX}.organelle.names" | gzip -c >"${PREFIX}.organelle.fastq.gz"
+	echo "[emit] ${PREFIX}.organelle.fastq.gz"
+fi
+# if [[ -s "${PREFIX}.nuclear.ids" ]]; then
+# 	awk 'NF{print $1}' "${PREFIX}.nuclear.ids" | tr -d '\r' | sort -u >"${PREFIX}.nuclear.names"
+# 	seqtk subseq "$READS_OUT" "${PREFIX}.nuclear.names" | gzip -c >"${PREFIX}.nuclear.fastq.gz"
+# fi
+
+echo "[done] graph-final"

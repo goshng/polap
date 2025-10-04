@@ -1,0 +1,685 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ------------------------------------------------------------------------------
+# POLAP driver (minimal) with select-mt orchestrator
+# Save as: polap   (chmod +x polap)
+#
+# Expected tools in ${_POLAPLIB_DIR}:
+#   polap-py-select-mt-by-x-and-kmer.py           (X + k-mer LDA)
+#   polap-py-syncmer-connectivity-select-mt.py    (PPR syncmer connectivity, v0.2.0+ with X-prior)
+#   polap-py-ensemble-mt.py                       (ensemble: union/majority/strict)
+#   polap-py-ensemble-report.py                   (single HTML report)
+#
+# External commands needed:
+#   syncfilter, python3, seqtk (for FASTQ emission)
+#
+# You can export _POLAPLIB_DIR or it defaults to the script directory.
+# ------------------------------------------------------------------------------
+
+# resolve this file's directory (works for both sourced and executed)
+_THIS="${BASH_SOURCE[0]}"
+_POLAPLIB_DIR="$(cd -- "$(dirname -- "$_THIS")" && pwd)"
+# _POLAPLIB_DIR="${_POLAPLIB_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)}"
+
+# --- utility --------------------------------------------------------------
+_die() {
+	echo "[error] $*" >&2
+	exit 2
+}
+_need() { command -v "$1" >/dev/null 2>&1 || _die "missing command: $1"; }
+
+# ------------------------------------------------------------------------------
+# Subcommand: select-mt
+# ------------------------------------------------------------------------------
+
+_run_polap_select-mt-usage() {
+	cat <<'EOF'
+Usage:
+  polap select-mt --reads READS.fq[.gz] --mt mt.id.all.txt \
+      -o out/prefix [options]
+
+Inputs:
+  --reads FILE         FASTQ(.gz) with read IDs (first token)
+  --mt FILE            mt anchor IDs (1 per line)
+  --pt FILE            pt anchor IDs (optional)
+  -o, --out PREFIX     output prefix (required)
+
+General:
+  --preset {hifi|ont}  Tuning for syncmer parameters [hifi]
+  --threads INT        Threads for syncfilter quickview [8]
+  --redo               Remove output folder if exists
+
+Coverage (X) quickview:
+  -k INT               k for quickview [hifi:121, ont:41]
+  -s INT               s for quickview [hifi:27,  ont:17]
+  --hpc                HPC for quickview (ONT-friendly)
+
+X+LDA selector:
+  --x-tail FLOAT       One-sided tail for mt band [0.10]
+  --kmer-order {4,6}   K-mer order for LDA [4]
+  --use-hpc            HPC before k-mers (ONT)
+  --mix-mode STR       any|both|weighted [weighted]
+  --lda-th FLOAT       LDA rescaled threshold [0.50]
+  --lda-strong FLOAT   Strong-confidence cutoff [0.75]
+  --min-anchor INT     Min anchors to train LDA [25]
+
+PPR selector (syncmer connectivity):
+  --ppr-k INT          k for connectivity [defaults to quickview k]
+  --ppr-s INT          s for connectivity [defaults to quickview s]
+  --ppr-hpc            HPC for connectivity (ONT)
+  --max-occ INT        Ignore syncmers seen in > INT reads [200]
+  --min-shared INT     Edge if >= INT shared syncmers [4]
+  --jaccard-min FLOAT  Min Jaccard on syncmer sets [0.01]
+  --edge-norm          Normalize edge weight
+  --topk-nei INT       Keep top-K neighbors per node [50]
+  --steps INT          BFS steps from seeds [2]
+  --ppr-alpha FLOAT    Teleport prob [0.85]
+  --ppr-iter INT       Iterations [30]
+  --score-th FLOAT     PPR threshold (0=auto Otsu)
+
+PPR with X-prior (optional, reduces NUMTs):
+  --nuc-cut-log10 F    Nuclear cut in log10(median)
+  --x-slope F          Sigmoid slope for X-prior [0.20]
+  # When given, orchestrator passes: --x-prior --x-tsv PREFIX.quickview.tsv to PPR
+
+Ensemble + Outputs:
+  --ensemble STR       union|majority|strict [majority]
+  --emit-fastq         Write PREFIX.mt.fastq.gz via seqtk
+  --keep-intermediate  Keep intermediate files
+  --html-report FILE   Single HTML report to write (tables + plots)
+
+Meta:
+  --version            Print version
+  -h, --help           Show this help
+
+Outputs (under -o PREFIX):
+  PREFIX.quickview.tsv
+  PREFIX.xlda.{mt,pt,nuclear}.ids
+  PREFIX.ppr.{mt,nuclear}.ids
+  PREFIX.ensemble.{mt,pt,nuclear}.ids
+  [optional] PREFIX.mt.fastq.gz
+  [optional] HTML report
+EOF
+}
+
+_run_polap_select-mt() {
+	local READS=""
+	local OUT=""
+	local MT_ANCH=""
+	local PT_ANCH=""
+	local PRESET="hifi"
+	local THREADS=8
+	local REDO=0
+
+	# quickview
+	local K_QV=""
+	local S_QV=""
+	local HPC_QV=""
+	# X+LDA
+	local XTAIL=0.10
+	local KMER_ORDER=4
+	local USE_HPC_KMER=0
+	local MIX_MODE="weighted"
+	local LDA_TH=0.50
+	local LDA_STRONG=0.75
+	local MIN_ANCH=25
+	# PPR
+	local PPR_K=""
+	local PPR_S=""
+	local PPR_HPC=0
+	local MAX_OCC=200
+	local MIN_SHARED=4
+	local JAC_MIN=0.01
+	local EDGE_NORM=0
+	local TOPK=50
+	local STEPS=2
+	local PPR_ALPHA=0.85
+	local PPR_ITER=30
+	local SCORE_TH=0.0
+	# X-prior to PPR
+	local NUC_CUT_LOG10=""
+	local X_SLOPE=0.20
+	# ensemble & outputs
+	local ENSEMBLE="majority"
+	local EMIT_FASTQ=0
+	local KEEP_INT=0
+	local HTML_REPORT=""
+
+	# parse args
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--reads)
+			READS="$2"
+			shift 2
+			;;
+		--mt)
+			MT_ANCH="$2"
+			shift 2
+			;;
+		--pt)
+			PT_ANCH="$2"
+			shift 2
+			;;
+		-o | --out)
+			OUT="$2"
+			shift 2
+			;;
+		--preset)
+			PRESET="$2"
+			shift 2
+			;;
+		--threads)
+			THREADS="$2"
+			shift 2
+			;;
+		--redo)
+			REDO=1
+			shift
+			;;
+
+		-k)
+			K_QV="$2"
+			shift 2
+			;;
+		-s)
+			S_QV="$2"
+			shift 2
+			;;
+		--hpc)
+			HPC_QV="--hpc"
+			shift
+			;;
+
+		--x-tail)
+			XTAIL="$2"
+			shift 2
+			;;
+		--kmer-order)
+			KMER_ORDER="$2"
+			shift 2
+			;;
+		--use-hpc)
+			USE_HPC_KMER=1
+			shift
+			;;
+		--mix-mode)
+			MIX_MODE="$2"
+			shift 2
+			;;
+		--lda-th)
+			LDA_TH="$2"
+			shift 2
+			;;
+		--lda-strong)
+			LDA_STRONG="$2"
+			shift 2
+			;;
+		--min-anchor)
+			MIN_ANCH="$2"
+			shift 2
+			;;
+
+		--ppr-k)
+			PPR_K="$2"
+			shift 2
+			;;
+		--ppr-s)
+			PPR_S="$2"
+			shift 2
+			;;
+		--ppr-hpc)
+			PPR_HPC=1
+			shift
+			;;
+		--max-occ)
+			MAX_OCC="$2"
+			shift 2
+			;;
+		--min-shared)
+			MIN_SHARED="$2"
+			shift 2
+			;;
+		--jaccard-min)
+			JAC_MIN="$2"
+			shift 2
+			;;
+		--edge-norm)
+			EDGE_NORM=1
+			shift
+			;;
+		--topk-nei)
+			TOPK="$2"
+			shift 2
+			;;
+		--steps)
+			STEPS="$2"
+			shift 2
+			;;
+		--ppr-alpha)
+			PPR_ALPHA="$2"
+			shift 2
+			;;
+		--ppr-iter)
+			PPR_ITER="$2"
+			shift 2
+			;;
+		--score-th)
+			SCORE_TH="$2"
+			shift 2
+			;;
+
+		--nuc-cut-log10)
+			NUC_CUT_LOG10="$2"
+			shift 2
+			;;
+		--x-slope)
+			X_SLOPE="$2"
+			shift 2
+			;;
+
+		--ensemble)
+			ENSEMBLE="$2"
+			shift 2
+			;;
+		--emit-fastq)
+			EMIT_FASTQ=1
+			shift
+			;;
+		--keep-intermediate)
+			KEEP_INT=1
+			shift
+			;;
+		--html-report)
+			HTML_REPORT="$2"
+			shift 2
+			;;
+
+		--version)
+			echo "select-mt orchestrator v0.3.0"
+			return 0
+			;;
+		-h | --help)
+			_run_polap_select-mt-usage
+			return 0
+			;;
+		*) _die "unknown option: $1" ;;
+		esac
+	done
+
+	# sanity
+	[[ -z "$READS" || -z "$OUT" || -z "$MT_ANCH" ]] && {
+		polap_cmd_select_mt_usage
+		_die "require --reads, --mt, and -o/--out"
+	}
+
+	# presets (k/s defaults)
+	if [[ "$PRESET" == "hifi" ]]; then
+		[[ -z "$K_QV" ]] && K_QV=121
+		[[ -z "$S_QV" ]] && S_QV=27
+		[[ -z "$PPR_K" ]] && PPR_K=$K_QV
+		[[ -z "$PPR_S" ]] && PPR_S=$S_QV
+	elif [[ "$PRESET" == "ont" ]]; then
+		[[ -z "$K_QV" ]] && K_QV=41
+		[[ -z "$S_QV" ]] && S_QV=17
+		[[ -z "$PPR_K" ]] && PPR_K=$K_QV
+		[[ -z "$PPR_S" ]] && PPR_S=$S_QV
+		[[ -z "$HPC_QV" ]] && HPC_QV="--hpc"
+		[[ $USE_HPC_KMER -eq 0 ]] && USE_HPC_KMER=1
+		[[ $PPR_HPC -eq 0 ]] && PPR_HPC=1
+	else
+		_die "bad --preset: $PRESET"
+	fi
+
+	local OUTDIR
+	OUTDIR="$(dirname -- "$OUT")"
+	[[ "$OUTDIR" == "." ]] && OUTDIR="$PWD"
+	[[ $REDO -eq 1 && -d "$OUTDIR" ]] && rm -rf "$OUTDIR"
+	mkdir -p "$OUTDIR"
+
+	# tools
+	_need syncfilter
+	_need python3
+	local CUT_XLDA="${_POLAPLIB_DIR}/polap-py-select-mt-by-x-and-kmer.py"
+	local PPR_SEL="${_POLAPLIB_DIR}/polap-py-syncmer-connectivity-select-mt.py"
+	local ENSEMBLE_PY="${_POLAPLIB_DIR}/polap-py-ensemble-mt.py"
+	local REPORT_PY="${_POLAPLIB_DIR}/polap-py-ensemble-report.py"
+	[[ -f "$CUT_XLDA" ]] || _die "not found: $CUT_XLDA"
+	[[ -f "$PPR_SEL" ]] || _die "not found: $PPR_SEL"
+	[[ -f "$ENSEMBLE_PY" ]] || _die "not found: $ENSEMBLE_PY"
+	[[ -n "$HTML_REPORT" && ! -f "$REPORT_PY" ]] && _die "HTML report requested but not found: $REPORT_PY"
+	if [[ $EMIT_FASTQ -eq 1 ]]; then
+		if ! command -v seqtk >/dev/null 2>&1; then
+			echo "[warn] seqtk not found; disabling --emit-fastq" >&2
+			EMIT_FASTQ=0
+		fi
+	fi
+
+	# 1) Coverage quickview
+	echo "[step] quickview (coverage X)"
+	syncfilter --mode quickview $HPC_QV -k "$K_QV" -s "$S_QV" -t "$THREADS" -o "$OUT" "$READS"
+	mv -f "${OUT}.syncfilter.tsv" "${OUT}.quickview.tsv"
+
+	# 2) X + k-mer LDA
+	echo "[step] X+LDA selector"
+	python3 "$CUT_XLDA" \
+		--tsv "${OUT}.quickview.tsv" \
+		--reads "$READS" \
+		--mt "$MT_ANCH" \
+		${PT_ANCH:+--pt "$PT_ANCH"} \
+		--prefix "${OUT}.xlda" \
+		--x-tail "$XTAIL" \
+		--kmer-order "$KMER_ORDER" \
+		$([[ $USE_HPC_KMER -eq 1 ]] && echo --use-hpc) \
+		--mix-mode "$MIX_MODE" --lda-th "$LDA_TH" --lda-strong "$LDA_STRONG" \
+		--min-anchor "$MIN_ANCH"
+
+	# 3) PPR connectivity (optionally with X-prior)
+	echo "[step] PPR (syncmer connectivity)"
+	local PPR_X_PRIOR_ARGS=()
+	if [[ -n "$NUC_CUT_LOG10" ]]; then
+		PPR_X_PRIOR_ARGS=(--x-prior --x-tsv "${OUT}.quickview.tsv" --nuc-cut-log10 "$NUC_CUT_LOG10" --x-slope "$X_SLOPE")
+	fi
+	python3 "$PPR_SEL" \
+		--reads "$READS" \
+		--mt "$MT_ANCH" \
+		${PT_ANCH:+--pt "$PT_ANCH"} \
+		-k "$PPR_K" -s "$PPR_S" $([[ $PPR_HPC -eq 1 ]] && echo --hpc) \
+		--max-occ "$MAX_OCC" --min-shared "$MIN_SHARED" --jaccard-min "$JAC_MIN" \
+		$([[ $EDGE_NORM -eq 1 ]] && echo --edge-norm) \
+		--topk-nei "$TOPK" --steps "$STEPS" \
+		--ppr-alpha "$PPR_ALPHA" --ppr-iter "$PPR_ITER" \
+		--score-th "$SCORE_TH" \
+		"${PPR_X_PRIOR_ARGS[@]}" \
+		-o "${OUT}.ppr"
+
+	# 4) Ensemble fusion
+	echo "[step] ensemble fusion ($ENSEMBLE)"
+	python3 "$ENSEMBLE_PY" \
+		--xlda "${OUT}.xlda.mt.ids" \
+		--ppr "${OUT}.ppr.mt.ids" \
+		${PT_ANCH:+--xlda-pt "${OUT}.xlda.pt.ids"} \
+		-o "${OUT}.ensemble" \
+		--mode "$ENSEMBLE"
+
+	# 5) Emit FASTQ
+	if [[ $EMIT_FASTQ -eq 1 && -s "${OUT}.ensemble.mt.ids" ]]; then
+		echo "[step] emit FASTQ"
+		awk 'NF{print $1}' "${OUT}.ensemble.mt.ids" | sort -u >"${OUT}.ensemble.mt.names"
+		seqtk subseq "$READS" "${OUT}.ensemble.mt.names" | gzip -c >"${OUT}.mt.fastq.gz"
+		echo "[emit] ${OUT}.mt.fastq.gz"
+	fi
+
+	# 6) HTML report
+	if [[ -n "$HTML_REPORT" ]]; then
+		echo "[step] HTML report"
+		python3 "$REPORT_PY" \
+			--prefix "$OUT" \
+			--quickview "${OUT}.quickview.tsv" \
+			--xlda-prefix "${OUT}.xlda" \
+			--ppr-prefix "${OUT}.ppr" \
+			--ensemble-prefix "${OUT}.ensemble" \
+			--title "POLAP mt selection report" \
+			-o "$HTML_REPORT"
+		echo "[report] $HTML_REPORT"
+	fi
+
+	# cleanup
+	if [[ $KEEP_INT -eq 0 ]]; then
+		rm -f "${OUT}.ensemble.mt.names" || true
+	fi
+
+	echo "[done] final IDs: ${OUT}.ensemble.mt.ids"
+}
+
+_run_polap_select-mt-test() {
+	local READS=""
+	local OUT=""
+	local MT_ANCH=""
+	local PT_ANCH=""
+	local PRESET="hifi"
+	local THREADS=8
+	local REDO=0
+
+	# quickview
+	local K_QV=""
+	local S_QV=""
+	local HPC_QV=""
+	# X+LDA
+	local XTAIL=0.10
+	local KMER_ORDER=4
+	local USE_HPC_KMER=0
+	local MIX_MODE="weighted"
+	local LDA_TH=0.50
+	local LDA_STRONG=0.75
+	local MIN_ANCH=25
+	# PPR
+	local PPR_K=""
+	local PPR_S=""
+	local PPR_HPC=0
+	local MAX_OCC=200
+	local MIN_SHARED=4
+	local JAC_MIN=0.01
+	local EDGE_NORM=0
+	local TOPK=50
+	local STEPS=2
+	local PPR_ALPHA=0.85
+	local PPR_ITER=30
+	local SCORE_TH=0.0
+	# X-prior to PPR
+	local NUC_CUT_LOG10=""
+	local X_SLOPE=0.20
+	# ensemble & outputs
+	local ENSEMBLE="majority"
+	local EMIT_FASTQ=0
+	local KEEP_INT=0
+	local HTML_REPORT=""
+
+	# parse args
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--reads)
+			READS="$2"
+			shift 2
+			;;
+		--mt)
+			MT_ANCH="$2"
+			shift 2
+			;;
+		--pt)
+			PT_ANCH="$2"
+			shift 2
+			;;
+		-o | --out)
+			OUT="$2"
+			shift 2
+			;;
+		--preset)
+			PRESET="$2"
+			shift 2
+			;;
+		--threads)
+			THREADS="$2"
+			shift 2
+			;;
+		--redo)
+			REDO=1
+			shift
+			;;
+
+		-k)
+			K_QV="$2"
+			shift 2
+			;;
+		-s)
+			S_QV="$2"
+			shift 2
+			;;
+		--hpc)
+			HPC_QV="--hpc"
+			shift
+			;;
+
+		--x-tail)
+			XTAIL="$2"
+			shift 2
+			;;
+		--kmer-order)
+			KMER_ORDER="$2"
+			shift 2
+			;;
+		--use-hpc)
+			USE_HPC_KMER=1
+			shift
+			;;
+		--mix-mode)
+			MIX_MODE="$2"
+			shift 2
+			;;
+		--lda-th)
+			LDA_TH="$2"
+			shift 2
+			;;
+		--lda-strong)
+			LDA_STRONG="$2"
+			shift 2
+			;;
+		--min-anchor)
+			MIN_ANCH="$2"
+			shift 2
+			;;
+
+		--ppr-k)
+			PPR_K="$2"
+			shift 2
+			;;
+		--ppr-s)
+			PPR_S="$2"
+			shift 2
+			;;
+		--ppr-hpc)
+			PPR_HPC=1
+			shift
+			;;
+		--max-occ)
+			MAX_OCC="$2"
+			shift 2
+			;;
+		--min-shared)
+			MIN_SHARED="$2"
+			shift 2
+			;;
+		--jaccard-min)
+			JAC_MIN="$2"
+			shift 2
+			;;
+		--edge-norm)
+			EDGE_NORM=1
+			shift
+			;;
+		--topk-nei)
+			TOPK="$2"
+			shift 2
+			;;
+		--steps)
+			STEPS="$2"
+			shift 2
+			;;
+		--ppr-alpha)
+			PPR_ALPHA="$2"
+			shift 2
+			;;
+		--ppr-iter)
+			PPR_ITER="$2"
+			shift 2
+			;;
+		--score-th)
+			SCORE_TH="$2"
+			shift 2
+			;;
+
+		--nuc-cut-log10)
+			NUC_CUT_LOG10="$2"
+			shift 2
+			;;
+		--x-slope)
+			X_SLOPE="$2"
+			shift 2
+			;;
+
+		--ensemble)
+			ENSEMBLE="$2"
+			shift 2
+			;;
+		--emit-fastq)
+			EMIT_FASTQ=1
+			shift
+			;;
+		--keep-intermediate)
+			KEEP_INT=1
+			shift
+			;;
+		--html-report)
+			HTML_REPORT="$2"
+			shift 2
+			;;
+
+		--version)
+			echo "select-mt orchestrator v0.3.0"
+			return 0
+			;;
+		-h | --help)
+			polap_cmd_select_mt_usage
+			return 0
+			;;
+		*) _die "unknown option: $1" ;;
+		esac
+	done
+
+	# _polap_log0 "${_POLAPLIB_DIR}"
+	# echo "${_POLAPLIB_DIR}"
+
+	# sanity
+	[[ -z "$READS" || -z "$OUT" || -z "$MT_ANCH" ]] && {
+		_run_polap_select-mt-usage
+		_die "require --reads, --mt, and -o/--out"
+	}
+
+	# presets (k/s defaults)
+	if [[ "$PRESET" == "hifi" ]]; then
+		[[ -z "$K_QV" ]] && K_QV=121
+		[[ -z "$S_QV" ]] && S_QV=27
+		[[ -z "$PPR_K" ]] && PPR_K=$K_QV
+		[[ -z "$PPR_S" ]] && PPR_S=$S_QV
+	elif [[ "$PRESET" == "ont" ]]; then
+		[[ -z "$K_QV" ]] && K_QV=41
+		[[ -z "$S_QV" ]] && S_QV=17
+		[[ -z "$PPR_K" ]] && PPR_K=$K_QV
+		[[ -z "$PPR_S" ]] && PPR_S=$S_QV
+		[[ -z "$HPC_QV" ]] && HPC_QV="--hpc"
+		[[ $USE_HPC_KMER -eq 0 ]] && USE_HPC_KMER=1
+		[[ $PPR_HPC -eq 0 ]] && PPR_HPC=1
+	else
+		_die "bad --preset: $PRESET"
+	fi
+
+	# debug local variables
+	# for debugging: Inline local printing local var
+	while IFS= read -r line; do
+		if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
+			var="${BASH_REMATCH[1]}"
+			printf "%s=%q\n" "$var" "${!var}"
+		fi
+	done < <(local -p 2>/dev/null)
+	return
+}
+
+# ------------------------------------------------------------------------------
+# Main dispatch
+# ------------------------------------------------------------------------------
+# --- Main dispatch only if executed directly ---
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+	# polap_cmd_select_mt "$@"
+	# _run_polap_select-mt-test "$@"
+	_run_polap_select-mt "$@"
+fi

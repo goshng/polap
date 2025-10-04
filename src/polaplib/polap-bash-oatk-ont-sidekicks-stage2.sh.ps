@@ -1,0 +1,1580 @@
+%!PS-Adobe-3.0
+%%Title: polap-bash-oatk-ont-sidekicks-stage2.sh
+%%For: Sang Chul Choi
+%%Creator: a2ps version 4.14
+%%CreationDate: Mon Sep 15 17:46:11 2025
+%%BoundingBox: 24 24 571 818
+%%DocumentData: Clean7Bit
+%%Orientation: Landscape
+%%Pages: 7
+%%PageOrder: Ascend
+%%DocumentMedia: A4 595 842 0 () ()
+%%DocumentNeededResources: font Courier
+%%+ font Courier-Bold
+%%+ font Courier-BoldOblique
+%%+ font Courier-Oblique
+%%+ font Helvetica
+%%+ font Helvetica-Bold
+%%+ font Symbol
+%%+ font Times-Bold
+%%+ font Times-Roman
+%%DocumentProcessColors: Black 
+%%DocumentSuppliedResources: procset a2ps-a2ps-hdr
+%%+ procset a2ps-black+white-Prolog
+%%+ encoding ISO-8859-1Encoding
+%%EndComments
+/a2psdict 200 dict def
+a2psdict begin
+%%BeginProlog
+%%Copyright: (c) 1988, 89, 90, 91, 92, 93 Miguel Santana
+%%Copyright: (c) 1995, 96, 97, 98 Akim Demaille, Miguel Santana
+% Check PostScript language level.
+/languagelevel where {
+  pop /gs_languagelevel languagelevel def
+} {
+  /gs_languagelevel 1 def
+} ifelse
+
+% EPSF import as in the Red Book
+/BeginInclude {
+  /b4_Inc_state save def    		% Save state for cleanup
+  /dict_count countdictstack def	% Count objects on dict stack
+  /op_count count 1 sub def		% Count objects on operand stack 
+  userdict begin
+    0 setgray 0 setlinecap
+    1 setlinewidth 0 setlinejoin
+    10 setmiterlimit [ ] 0 setdash newpath
+    gs_languagelevel 1 ne {
+      false setstrokeadjust false setoverprint 
+    } if
+} bind def
+
+/EndInclude {
+  count op_count sub { pos } repeat	% Clean up stacks
+  countdictstack dict_count sub { end } repeat
+  b4_Inc_state restore
+} bind def
+
+/BeginEPSF {
+  BeginInclude
+  /showpage { } def
+} bind def
+
+/EndEPSF {
+  EndInclude
+} bind def
+
+% Page prefeed
+/page_prefeed {         % bool -> -
+  statusdict /prefeed known {
+    statusdict exch /prefeed exch put
+  } {
+    pop
+  } ifelse
+} bind def
+
+/deffont {
+  findfont exch scalefont def
+} bind def
+
+/reencode_font {
+  findfont reencode 2 copy definefont pop def
+} bind def
+
+% Function c-show (str => -)
+% centers text only according to x axis.
+/c-show { 
+  dup stringwidth pop
+  2 div neg 0 rmoveto
+  show
+} bind def
+
+% Function l-show (str => -)
+% prints texts so that it ends at currentpoint
+/l-show {
+  dup stringwidth pop neg 
+  0 
+  rmoveto show
+} bind def
+
+% center-fit show (str w => -)
+% show centered, and scale currentfont so that the width is less than w
+/cfshow {
+  exch dup stringwidth pop
+  % If the title is too big, try to make it smaller
+  3 2 roll 2 copy
+  gt
+  { % if, i.e. too big
+    exch div
+    currentfont exch scalefont setfont
+  } { % ifelse
+    pop pop 
+  }
+  ifelse
+  c-show			% center title
+} bind def
+
+% Return the y size of the current font
+% - => fontsize
+/currentfontsize {
+  currentfont /FontType get 0 eq {
+    currentfont /FontMatrix get 3 get
+  }{
+    currentfont /FontMatrix get 3 get 1000 mul
+  } ifelse
+} bind def
+
+% reencode the font
+% <encoding-vector> <fontdict> -> <newfontdict>
+/reencode { %def
+  dup length 5 add dict begin
+    { %forall
+      % <vector> <key> <val>
+      1 index /FID ne 
+      { def }{ pop pop } ifelse
+    } forall
+    /Encoding exch def % -
+
+    % Use the font's bounding box to determine the ascent, descent,
+    % and overall height; don't forget that these values have to be
+    % transformed using the font's matrix.
+    % We use `load' because sometimes BBox is executable, sometimes not.
+    % Since we need 4 numbers an not an array avoid BBox from being executed
+    /FontBBox load aload pop
+    FontMatrix transform /Ascent exch def pop
+    FontMatrix transform /Descent exch def pop
+    /FontHeight Ascent Descent sub def
+
+    % Get the underline position and thickness if they're defined.
+    % Use 1 if they are not defined.
+    currentdict /FontInfo 2 copy known
+    { get
+      /UnderlinePosition 2 copy % <FontInfo> /UP <FontInfo> /UP
+      2 copy known
+      { get }{ pop pop 1 } ifelse
+      0 exch FontMatrix transform exch pop
+      def % <FontInfo>
+
+      /UnderlineThickness 2 copy % <FontInfo> /UT <FontInfo> /UT
+      2 copy known
+      { get }{ pop pop 1 } ifelse
+      0 exch FontMatrix transform exch pop
+      def % <FontInfo>
+      pop % -
+    }{ pop pop
+    } ifelse
+
+    currentdict
+  end 
+} bind def
+
+% composite fonts for ASCII-EUC mixed strings
+% Version 1.2 1/31/1990
+% Original Ken'ichi HANDA (handa@etl.go.jp)
+% Modified Norio Katayama (katayama@rd.nacsis.ac.jp),1998
+% Extend & Fix Koji Nakamaru (maru@on.cs.keio.ac.jp), 1999
+% Anyone can freely copy, modify, distribute this program.
+
+/copyfont {	% font-dic extra-entry-count  copyfont  font-dic
+	1 index maxlength add dict begin
+	{	1 index /FID ne 2 index /UniqueID ne and
+		{def} {pop pop} ifelse
+	} forall
+	currentdict
+	end
+} bind def
+
+/compositefont { % ASCIIFontName EUCFontName RomanScale RomanOffset Rot(T/F) compositefont font
+    /RomanRotation exch def
+    /RomanOffset exch def
+    /RomanScale exch def
+    userdict /fixeucfont_dict known not {
+	userdict begin
+	    /fixeucfont_dict 2 dict begin
+		/UpperByteEncoding [
+		    16#00 1 16#20 { pop 0 } for
+		    16#21 1 16#28 { 16#20 sub } for
+		    16#29 1 16#2F { pop 0 } for
+		    16#30 1 16#74 { 16#27 sub } for
+		    16#75 1 16#FF { pop 0 } for
+		] def
+	        /LowerByteEncoding [
+		    16#00 1 16#A0 { pop /.notdef } for
+		    16#A1 1 16#FE { 16#80 sub 16 2 string cvrs
+				    (cXX) dup 1 4 -1 roll
+				    putinterval cvn } for
+		    /.notdef
+		] def
+		currentdict
+	    end def
+	end
+    } if
+    findfont dup /FontType get 0 eq {
+	14 dict begin
+	    %
+	    % 7+8 bit EUC font
+	    %
+	    12 dict begin
+		/EUCFont exch def
+		/FontInfo (7+8 bit EUC font) readonly def
+		/PaintType 0 def
+		/FontType 0 def
+		/FontMatrix matrix def
+		% /FontName
+		/Encoding fixeucfont_dict /UpperByteEncoding get def
+		/FMapType 2 def
+		EUCFont /WMode known
+		{ EUCFont /WMode get /WMode exch def }
+		{ /WMode 0 def } ifelse
+		/FDepVector [
+		    EUCFont /FDepVector get 0 get
+		    [ 16#21 1 16#28 {} for 16#30 1 16#74 {} for ]
+		    {
+			13 dict begin
+			    /EUCFont EUCFont def
+			    /UpperByte exch 16#80 add def	
+			    % /FontName
+			    /FontInfo (EUC lower byte font) readonly def
+			    /PaintType 0 def
+			    /FontType 3 def
+			    /FontMatrix matrix def
+			    /FontBBox {0 0 0 0} def
+			    /Encoding
+				fixeucfont_dict /LowerByteEncoding get def
+			    % /UniqueID
+			    % /WMode
+			    /BuildChar {
+				gsave
+				exch dup /EUCFont get setfont
+				/UpperByte get
+				2 string
+				dup 0 4 -1 roll put
+				dup 1 4 -1 roll put
+				dup stringwidth setcharwidth
+				0 0 moveto show
+				grestore
+			    } bind def
+			    currentdict
+			end
+			/lowerbytefont exch definefont
+		    } forall
+		] def
+		currentdict
+	    end
+	    /eucfont exch definefont
+	    exch
+	    findfont 1 copyfont dup begin
+		RomanRotation {
+			/FontMatrix FontMatrix
+			[ 0 RomanScale neg RomanScale 0 RomanOffset neg 0 ]
+			matrix concatmatrix def
+		}{
+			/FontMatrix FontMatrix
+			[ RomanScale 0 0 RomanScale 0 RomanOffset ] matrix concatmatrix
+			def
+			/CDevProc
+			    {pop pop pop pop 0 exch -1000 exch 2 div 880} def
+		} ifelse
+	    end
+	    /asciifont exch definefont
+	    exch
+	    /FDepVector [ 4 2 roll ] def
+	    /FontType 0 def
+	    /WMode 0 def
+	    /FMapType 4 def
+	    /FontMatrix matrix def
+	    /Encoding [0 1] def
+	    /FontBBox {0 0 0 0} def
+%	    /FontHeight 1.0 def % XXXX
+	    /FontHeight RomanScale 1.0 ge { RomanScale }{ 1.0 } ifelse def
+	    /Descent -0.3 def   % XXXX
+	    currentdict
+	end
+	/tmpfont exch definefont
+	pop
+	/tmpfont findfont
+    }{
+	pop findfont 0 copyfont
+    } ifelse
+} def	
+
+/slantfont {	% FontName slant-degree  slantfont  font'
+    exch findfont 1 copyfont begin
+    [ 1 0 4 -1 roll 1 0 0 ] FontMatrix exch matrix concatmatrix
+    /FontMatrix exch def
+    currentdict
+    end
+} def
+
+% Function print line number (<string> # -)
+/# {
+  gsave
+    sx cw mul neg 2 div 0 rmoveto
+    f# setfont
+    c-show
+  grestore
+} bind def
+
+% -------- Some routines to enlight plain b/w printings ---------
+
+% Underline
+% width --
+/dounderline {
+  currentpoint
+  gsave
+    moveto
+    0 currentfont /Descent get currentfontsize mul rmoveto
+    0 rlineto
+    stroke
+  grestore
+} bind def
+
+% Underline a string
+% string --
+/dounderlinestring {
+  stringwidth pop
+  dounderline
+} bind def
+
+/UL {
+  /ul exch store
+} bind def
+
+% Draw a box of WIDTH wrt current font
+% width --
+/dobox {
+  currentpoint
+  gsave
+    newpath
+    moveto
+    0 currentfont /Descent get currentfontsize mul rmoveto
+    dup 0 rlineto
+    0 currentfont /FontHeight get currentfontsize mul rlineto
+    neg 0 rlineto
+    closepath
+    stroke
+  grestore
+} bind def
+
+/BX {
+  /bx exch store
+} bind def
+
+% Box a string
+% string --
+/doboxstring {
+  stringwidth pop
+  dobox
+} bind def
+
+%
+% ------------- Color routines ---------------
+%
+/FG /setrgbcolor load def
+
+% Draw the background
+% width --
+/dobackground {
+  currentpoint
+  gsave
+    newpath
+    moveto
+    0 currentfont /Descent get currentfontsize mul rmoveto
+    dup 0 rlineto
+    0 currentfont /FontHeight get currentfontsize mul rlineto
+    neg 0 rlineto
+    closepath
+    bgcolor aload pop setrgbcolor
+    fill
+  grestore
+} bind def
+
+% Draw bg for a string
+% string --
+/dobackgroundstring {
+  stringwidth pop
+  dobackground
+} bind def
+
+
+/BG {
+  dup /bg exch store
+  { mark 4 1 roll ] /bgcolor exch store } if
+} bind def
+
+
+/Show {
+  bg { dup dobackgroundstring } if
+  ul { dup dounderlinestring } if
+  bx { dup doboxstring } if
+  show
+} bind def
+
+% Function T(ab), jumps to the n-th tabulation in the current line
+/T {
+  cw mul x0 add
+  bg { dup currentpoint pop sub dobackground } if
+  ul { dup currentpoint pop sub dounderline } if
+  bx { dup currentpoint pop sub dobox } if
+  y0 moveto
+} bind def
+
+% Function n: move to the next line
+/n {
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+} bind def
+
+% Function N: show and move to the next line
+/N {
+  Show
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+} bind def
+
+/S {
+  Show
+} bind def
+
+%%BeginResource: procset a2ps-a2ps-hdr 2.0 2
+%%Copyright: (c) 1988, 89, 90, 91, 92, 93 Miguel Santana
+%%Copyright: (c) 1995, 96, 97, 98 Akim Demaille, Miguel Santana
+% Function title: prints page header.
+% <ct> <rt> <lt> are passed as argument
+/title { 
+  % 1. Draw the background
+  x v get y v get moveto
+  gsave
+    0 th 2 div neg rmoveto 
+    th setlinewidth
+    0.95 setgray
+    pw 0 rlineto stroke
+  grestore
+  % 2. Border it
+  gsave
+    0.7 setlinewidth
+    pw 0 rlineto
+    0 th neg rlineto
+    pw neg 0 rlineto
+    closepath stroke
+  grestore
+  % stk: ct rt lt
+  x v get y v get th sub 1 add moveto
+%%IncludeResource: font Helvetica
+  fHelvetica fnfs 0.8 mul scalefont setfont
+  % 3. The left title
+  gsave
+    dup stringwidth pop fnfs 0.8 mul add exch % leave space took on stack
+    fnfs 0.8 mul hm rmoveto
+    show			% left title
+  grestore
+  exch
+  % stk: ct ltw rt
+  % 4. the right title
+  gsave
+    dup stringwidth pop fnfs 0.8 mul add exch % leave space took on stack
+    dup
+    pw exch stringwidth pop fnfs 0.8 mul add sub
+    hm
+    rmoveto
+    show			% right title
+  grestore
+  % stk: ct ltw rtw
+  % 5. the center title
+  gsave
+    pw 3 1 roll
+    % stk: ct pw ltw rtw
+    3 copy 
+    % Move to the center of the left room
+    sub add 2 div hm rmoveto
+    % What is the available space in here?
+    add sub fnfs 0.8 mul sub fnfs 0.8 mul sub
+    % stk: ct space_left
+%%IncludeResource: font Helvetica-Bold
+  fHelvetica-Bold fnfs scalefont setfont
+    cfshow
+  grestore
+} bind def
+
+% Function border: prints virtual page border
+/border { %def
+  gsave				% print four sides
+    0 setgray
+    x v get y v get moveto
+    0.7 setlinewidth		% of the square
+    pw 0 rlineto
+    0 ph neg rlineto
+    pw neg 0 rlineto
+    closepath stroke
+  grestore
+} bind def
+
+% Function water: prints a water mark in background
+/water { %def
+  gsave
+    scx scy moveto rotate
+%%IncludeResource: font Times-Bold
+  fTimes-Bold 100 scalefont setfont
+    .97 setgray
+    dup stringwidth pop 2 div neg -50 rmoveto
+    show
+  grestore
+} bind def
+
+% Function rhead: prints the right header
+/rhead {  %def
+  lx ly moveto
+  fHelvetica fnfs 0.8 mul scalefont setfont
+  l-show
+} bind def
+
+% Function footer (cf rf lf -> -)
+/footer {
+  fHelvetica fnfs 0.8 mul scalefont setfont
+  dx dy moveto
+  show
+
+  snx sny moveto
+  l-show
+  
+  fnx fny moveto
+  c-show
+} bind def
+%%EndResource
+%%BeginResource: procset a2ps-black+white-Prolog 2.0 1
+
+% Function T(ab), jumps to the n-th tabulation in the current line
+/T { 
+  cw mul x0 add y0 moveto
+} bind def
+
+% Function n: move to the next line
+/n { %def
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+} bind def
+
+% Function N: show and move to the next line
+/N {
+  Show
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+}  bind def
+
+/S {
+  Show
+} bind def
+
+/p {
+  false UL
+  false BX
+  fCourier bfs scalefont setfont
+  Show
+} bind def
+
+/sy {
+  false UL
+  false BX
+  fSymbol bfs scalefont setfont
+  Show
+} bind def
+
+/k {
+  false UL
+  false BX
+  fCourier-Oblique bfs scalefont setfont
+  Show
+} bind def
+
+/K {
+  false UL
+  false BX
+  fCourier-Bold bfs scalefont setfont
+  Show
+} bind def
+
+/c {
+  false UL
+  false BX
+  fCourier-Oblique bfs scalefont setfont
+  Show
+} bind def
+
+/C {
+  false UL
+  false BX
+  fCourier-BoldOblique bfs scalefont setfont
+  Show 
+} bind def
+
+/l {
+  false UL
+  false BX
+  fHelvetica bfs scalefont setfont
+  Show
+} bind def
+
+/L {
+  false UL
+  false BX
+  fHelvetica-Bold bfs scalefont setfont
+  Show 
+} bind def
+
+/str{
+  false UL
+  false BX
+  fTimes-Roman bfs scalefont setfont
+  Show
+} bind def
+
+/e{
+  false UL
+  true BX
+  fHelvetica-Bold bfs scalefont setfont
+  Show
+} bind def
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+%%IncludeResource: font Courier
+%%IncludeResource: font Courier-Oblique
+%%IncludeResource: font Courier-Bold
+%%IncludeResource: font Times-Roman
+%%IncludeResource: font Symbol
+%%IncludeResource: font Courier-BoldOblique
+%%BeginResource: encoding ISO-8859-1Encoding
+/ISO-8859-1Encoding [
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/space /exclam /quotedbl /numbersign /dollar /percent /ampersand /quoteright 
+/parenleft /parenright /asterisk /plus /comma /minus /period /slash 
+/zero /one /two /three /four /five /six /seven 
+/eight /nine /colon /semicolon /less /equal /greater /question 
+/at /A /B /C /D /E /F /G 
+/H /I /J /K /L /M /N /O 
+/P /Q /R /S /T /U /V /W 
+/X /Y /Z /bracketleft /backslash /bracketright /asciicircum /underscore 
+/quoteleft /a /b /c /d /e /f /g 
+/h /i /j /k /l /m /n /o 
+/p /q /r /s /t /u /v /w 
+/x /y /z /braceleft /bar /braceright /asciitilde /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/space /exclamdown /cent /sterling /currency /yen /brokenbar /section 
+/dieresis /copyright /ordfeminine /guillemotleft /logicalnot /hyphen /registered /macron 
+/degree /plusminus /twosuperior /threesuperior /acute /mu /paragraph /bullet 
+/cedilla /onesuperior /ordmasculine /guillemotright /onequarter /onehalf /threequarters /questiondown 
+/Agrave /Aacute /Acircumflex /Atilde /Adieresis /Aring /AE /Ccedilla 
+/Egrave /Eacute /Ecircumflex /Edieresis /Igrave /Iacute /Icircumflex /Idieresis 
+/Eth /Ntilde /Ograve /Oacute /Ocircumflex /Otilde /Odieresis /multiply 
+/Oslash /Ugrave /Uacute /Ucircumflex /Udieresis /Yacute /Thorn /germandbls 
+/agrave /aacute /acircumflex /atilde /adieresis /aring /ae /ccedilla 
+/egrave /eacute /ecircumflex /edieresis /igrave /iacute /icircumflex /idieresis 
+/eth /ntilde /ograve /oacute /ocircumflex /otilde /odieresis /divide 
+/oslash /ugrave /uacute /ucircumflex /udieresis /yacute /thorn /ydieresis 
+] def
+%%EndResource
+% Initialize page description variables.
+/sh 595 def
+/sw 842 def
+/llx 24 def
+/urx 818 def
+/ury 571 def
+/lly 24 def
+/#copies 1 def
+/th 20.000000 def
+/fnfs 15 def
+/bfs 9.561657 def
+/cw 5.736994 def
+
+% Dictionary for ISO-8859-1 support
+/iso1dict 8 dict begin
+  /fCourier ISO-8859-1Encoding /Courier reencode_font
+  /fCourier-Bold ISO-8859-1Encoding /Courier-Bold reencode_font
+  /fCourier-BoldOblique ISO-8859-1Encoding /Courier-BoldOblique reencode_font
+  /fCourier-Oblique ISO-8859-1Encoding /Courier-Oblique reencode_font
+  /fHelvetica ISO-8859-1Encoding /Helvetica reencode_font
+  /fHelvetica-Bold ISO-8859-1Encoding /Helvetica-Bold reencode_font
+  /fTimes-Bold ISO-8859-1Encoding /Times-Bold reencode_font
+  /fTimes-Roman ISO-8859-1Encoding /Times-Roman reencode_font
+currentdict end def
+/bgcolor [ 0 0 0 ] def
+/bg false def
+/ul false def
+/bx false def
+% The font for line numbering
+/f# /Helvetica findfont bfs .6 mul scalefont def
+/fSymbol /Symbol findfont def
+/hm fnfs 0.25 mul def
+/pw
+   cw 138.400000 mul
+def
+/ph
+   494.337664 th add
+def
+/pmw 0 def
+/pmh 0 def
+/v 0 def
+/x [
+  0
+] def
+/y [
+  pmh ph add 0 mul ph add
+] def
+/scx sw 2 div def
+/scy sh 2 div def
+/snx urx def
+/sny lly 2 add def
+/dx llx def
+/dy sny def
+/fnx scx def
+/fny dy def
+/lx snx def
+/ly ury fnfs 0.8 mul sub def
+/sx 5 def
+/tab 2 def
+/x0 0 def
+/y0 0 def
+%%EndSetup
+
+%%Page: (1) 1
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(1) # (#!/usr/bin/env bash) c n
+(2) # (# polap-bash-oatk-ont-sidekicks-stage12.sh) N
+(3) # (# Stage-1/2: use preprocessed reads from Stage-0, then:) N
+(4) # (#   Stage-1: \(HPC default ON\) \342M-^FM-^R qc,assemble,summary  \342M-^FM-^R backbone) N
+(5) # (#   Bait   : backbone-based k-mer bait \(bbduk|meryl\) \342M-^FM-^R ONT mt-subset) N
+(6) # (#   Stage-2: recover \(lift OR polish\) on subset \(chunked minimap2\) \342M-^FM-^R annotate \342M-^FM-^R pathfinder \342M-^FM-^R summary) N
+(7) # (#) N
+(8) # (# Inputs:) N
+(9) # (#   --reads-pre  OUT/pre/reads.pre.fq  \(or .fa/.fq.gz\)) N
+(10) # (#) N
+(11) # (# Requirements:) N
+(12) # (#   Always: seqkit, polap-bash-oatk-ont.sh) N
+(13) # (#   Bait: bbduk.sh \(default\) OR meryl,meryl-lookup) N
+(14) # (#   Stage-2 mapping speed: handled by polap-bash-oatk-ont.sh via --reads-map / --map-chunks.) N
+(15) # () N
+(16) # () S
+(set) K
+( -euo pipefail) p n
+(17) # () N
+(18) # (: ") S
+(${POLAP_LOG_LEVEL:=1}) str
+(") p n
+(19) # () S
+(log) l
+(\(\) {) p n
+(20) # () S 2 T (local l=$1) N
+(21) # () S 2 T () S
+(shift) K n
+(22) # () S
+() p 2 T ([[ $POLAP_LOG_LEVEL -ge $l ]] && echo ") S
+($@) str
+(" >&2) p n
+(23) # (}) N
+(24) # () S
+(die) l
+(\(\) {) p n
+(25) # () S 2 T (echo ") S
+([ERR]) str
+(" ") p
+($@) str
+(" >&2) p n
+(26) # () S 2 T () S
+(exit) K
+( 1) p n
+(27) # (}) N
+(28) # () S
+(need) l
+(\(\) { command -v ") p
+($1) str
+(" >/dev/null 2>&1 || die ") p
+(missing dependency: $1) str
+("; }) p n
+(29) # () N
+(30) # () S
+(# -------------- CLI defaults --------------) c n
+(31) # () S
+(READS_PRE="") p n
+(32) # (OUT="") N
+(33) # (THREADS=32) N
+(34) # (OATKDB="") N
+(35) # (CLADE=") S
+(magnoliopsida) str
+(") p n
+(36) # () N
+(37) # () S
+(# HPC for assembly \(enabled by default\)) c n
+(38) # () S
+(HPC_ENABLE=1) p n
+(39) # (HPC_OUT="") N
+(40) # () N
+(41) # () S
+(# bait method) c n
+(42) # () S
+(BAIT_METHOD=") p
+(bbduk) str
+(") p n
+(43) # (BBDUK_BIN=") S
+(bbduk.sh) str
+(") p n
+(44) # (MERYL_K=21) N
+(45) # (MAP_CHUNKS=4) N
+(46) # (MM2_EXTRA="") N
+(47) # () N
+(48) # () S
+(# Step-wise runner) c n
+(49) # () S
+(SCRIPT_DIR=") p
+($\(cd ) str
+("$\(dirname ") p
+(${BASH_SOURCE[0]}) str
+("\)") p
+( && pwd\)) str
+(") p n
+(50) # (ONT_SCRIPT=") S
+(${ONT_SCRIPT:-) str
+("$SCRIPT_DIR/polap-bash-oatk-ont.sh") p
+(}) str
+(") p n
+(51) # () N
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (Page 1/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (1/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (2) 2
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(52) # (# Stage-1 assemble knobs) c n
+(53) # () S
+(K_LIST_A=") p
+(251,151,121,91) str
+(") p n
+(54) # (SMER=31) N
+(55) # (AARC=0.25) N
+(56) # (WEAKX=0.20) N
+(57) # (UNZIP=6) N
+(58) # (NO_EC=0) N
+(59) # () N
+(60) # () S
+(# Stage-2 recovery) c n
+(61) # () S
+(USE_LIFT=0) p n
+(62) # (RACON_ROUNDS=2) N
+(63) # (MEDAKA_MODEL=") S
+(r104_e81_sup_g615) str
+(") p n
+(64) # (NO_MEDAKA=0) N
+(65) # () N
+(66) # () S
+(usage) l
+(\(\) {) p n
+(67) # () S 2 T (cat <<EOF) N
+(68) # (Usage:) N
+(69) # (  $\(basename "$0"\) --reads-pre OUT/pre/reads.pre.fq --out OUTDIR --oatkdb /path/OatkDB [options]) N
+(70) # () N
+(71) # (Required:) N
+(72) # (  --reads-pre FILE        preprocessed reads from Stage-0) N
+(73) # (  --out       DIR         output folder \(same root as Stage-0 is fine\)) N
+(74) # (  --oatkdb    DIR         OatkDB root \(must have v20230921\)) N
+(75) # () N
+(76) # (General:) N
+(77) # (  --threads INT           \(default ${THREADS}\)) N
+(78) # (  --clade   NAME          fam prefix \(default ${CLADE}\)) N
+(79) # (  -v|--verbose            verbose) N
+(80) # (  -q|--quiet              quiet) N
+(81) # () N
+(82) # (Assembly \(Stage-1\):) N
+(83) # (  --hpc / --no-hpc        use seqtk hpc for assembly \(default: on\)) N
+(84) # (  --hpc-out PATH          HPC FASTA path \(default OUT/stage12/reads.hpc.fa\)) N
+(85) # (  --k-list "251,151,121,91") N
+(86) # (  --smer INT              \(default ${SMER}\)) N
+(87) # (  --a FLOAT               \(default ${AARC}\)) N
+(88) # (  --weak-cross FLOAT      \(default ${WEAKX}\)) N
+(89) # (  --unzip-round INT       \(default ${UNZIP}\)) N
+(90) # (  --no-ec                 pass --no-read-ec) N
+(91) # () N
+(92) # (Bait:) N
+(93) # (  --bait bbduk|meryl      \(default bbduk\)) N
+(94) # (  --meryl-k INT           \(default ${MERYL_K}\)) N
+(95) # () N
+(96) # (Recovery \(Stage-2\) + speed:) N
+(97) # (  --lift                  use RLE lifter \(Option B\); else polish \(Option A\)) N
+(98) # (  --racon-rounds INT      racon rounds \(default ${RACON_ROUNDS}\)) N
+(99) # (  --medaka-model STR      medaka model \(default ${MEDAKA_MODEL}\)) N
+(100) # (  --no-medaka             skip medaka) N
+(101) # (  --map-chunks INT        chunk mapping \(default ${MAP_CHUNKS}\)) N
+(102) # (  --mm2-extra "FLAGS"     extra minimap2 flags to pass downstream) N
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (Page 2/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (2/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (3) 3
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(103) # (EOF) p n
+(104) # (}) N
+(105) # () N
+(106) # () S
+(# -------------- parse args --------------) c n
+(107) # () S
+(while) K
+( [[ $# -gt 0 ]]; ) p
+(do) K n
+(108) # () S
+() p 2 T () S
+(case) K
+( ") p
+($1) str
+(" ) p
+(in) K n
+(109) # () S
+() p 2 T (--reads-pre\)) N
+(110) # () S 2 T () S 4 T (READS_PRE=") S
+($2) str
+(") p n
+(111) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(112) # () S 2 T () S 4 T (;;) N
+(113) # () S 2 T (--out\)) N
+(114) # () S 2 T () S 4 T (OUT=") S
+($2) str
+(") p n
+(115) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(116) # () S 2 T () S 4 T (;;) N
+(117) # () S 2 T (--oatkdb\)) N
+(118) # () S 2 T () S 4 T (OATKDB=") S
+($2) str
+(") p n
+(119) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(120) # () S 2 T () S 4 T (;;) N
+(121) # () S 2 T (--threads\)) N
+(122) # () S 2 T () S 4 T (THREADS=") S
+($2) str
+(") p n
+(123) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(124) # () S 2 T () S 4 T (;;) N
+(125) # () S 2 T (--clade\)) N
+(126) # () S 2 T () S 4 T (CLADE=") S
+($2) str
+(") p n
+(127) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(128) # () S 2 T () S 4 T (;;) N
+(129) # () N
+(130) # () S 2 T (--hpc\)) N
+(131) # () S 2 T () S 4 T (HPC_ENABLE=1) N
+(132) # () S 2 T () S 4 T () S
+(shift) K n
+(133) # () S
+() p 2 T () S 4 T (;;) N
+(134) # () S 2 T (--no-hpc\)) N
+(135) # () S 2 T () S 4 T (HPC_ENABLE=0) N
+(136) # () S 2 T () S 4 T () S
+(shift) K n
+(137) # () S
+() p 2 T () S 4 T (;;) N
+(138) # () S 2 T (--hpc-out\)) N
+(139) # () S 2 T () S 4 T (HPC_OUT=") S
+($2) str
+(") p n
+(140) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(141) # () S 2 T () S 4 T (;;) N
+(142) # () N
+(143) # () S 2 T (--bait\)) N
+(144) # () S 2 T () S 4 T (BAIT_METHOD=") S
+($2) str
+(") p n
+(145) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(146) # () S 2 T () S 4 T (;;) N
+(147) # () S 2 T (--meryl-k\)) N
+(148) # () S 2 T () S 4 T (MERYL_K=") S
+($2) str
+(") p n
+(149) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(150) # () S 2 T () S 4 T (;;) N
+(151) # () N
+(152) # () S 2 T (--k-list\)) N
+(153) # () S 2 T () S 4 T (K_LIST_A=") S
+($2) str
+(") p n
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (Page 3/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (3/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (4) 4
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(154) # () p 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(155) # () S 2 T () S 4 T (;;) N
+(156) # () S 2 T (--smer\)) N
+(157) # () S 2 T () S 4 T (SMER=") S
+($2) str
+(") p n
+(158) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(159) # () S 2 T () S 4 T (;;) N
+(160) # () S 2 T (--a\)) N
+(161) # () S 2 T () S 4 T (AARC=") S
+($2) str
+(") p n
+(162) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(163) # () S 2 T () S 4 T (;;) N
+(164) # () S 2 T (--weak-cross\)) N
+(165) # () S 2 T () S 4 T (WEAKX=") S
+($2) str
+(") p n
+(166) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(167) # () S 2 T () S 4 T (;;) N
+(168) # () S 2 T (--unzip-round\)) N
+(169) # () S 2 T () S 4 T (UNZIP=") S
+($2) str
+(") p n
+(170) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(171) # () S 2 T () S 4 T (;;) N
+(172) # () S 2 T (--no-ec\)) N
+(173) # () S 2 T () S 4 T (NO_EC=1) N
+(174) # () S 2 T () S 4 T () S
+(shift) K n
+(175) # () S
+() p 2 T () S 4 T (;;) N
+(176) # () N
+(177) # () S 2 T (--lift\)) N
+(178) # () S 2 T () S 4 T (USE_LIFT=1) N
+(179) # () S 2 T () S 4 T () S
+(shift) K n
+(180) # () S
+() p 2 T () S 4 T (;;) N
+(181) # () S 2 T (--racon-rounds\)) N
+(182) # () S 2 T () S 4 T (RACON_ROUNDS=") S
+($2) str
+(") p n
+(183) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(184) # () S 2 T () S 4 T (;;) N
+(185) # () S 2 T (--medaka-model\)) N
+(186) # () S 2 T () S 4 T (MEDAKA_MODEL=") S
+($2) str
+(") p n
+(187) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(188) # () S 2 T () S 4 T (;;) N
+(189) # () S 2 T (--no-medaka\)) N
+(190) # () S 2 T () S 4 T (NO_MEDAKA=1) N
+(191) # () S 2 T () S 4 T () S
+(shift) K n
+(192) # () S
+() p 2 T () S 4 T (;;) N
+(193) # () N
+(194) # () S 2 T (--map-chunks\)) N
+(195) # () S 2 T () S 4 T (MAP_CHUNKS=") S
+($2) str
+(") p n
+(196) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(197) # () S 2 T () S 4 T (;;) N
+(198) # () S 2 T (--mm2-extra\)) N
+(199) # () S 2 T () S 4 T (MM2_EXTRA=") S
+($2) str
+(") p n
+(200) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(201) # () S 2 T () S 4 T (;;) N
+(202) # () N
+(203) # () S 2 T (-v | --verbose\)) N
+(204) # () S 2 T () S 4 T (POLAP_LOG_LEVEL=2) N
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (Page 4/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (4/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (5) 5
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(205) # () p 2 T () S 4 T () S
+(shift) K n
+(206) # () S
+() p 2 T () S 4 T (;;) N
+(207) # () S 2 T (-q | --quiet\)) N
+(208) # () S 2 T () S 4 T (POLAP_LOG_LEVEL=0) N
+(209) # () S 2 T () S 4 T () S
+(shift) K n
+(210) # () S
+() p 2 T () S 4 T (;;) N
+(211) # () S 2 T (-h | --help\)) N
+(212) # () S 2 T () S 4 T (usage) N
+(213) # () S 2 T () S 4 T () S
+(exit) K
+( 0) p n
+(214) # () S 2 T () S 4 T (;;) N
+(215) # () S 2 T (*\)) N
+(216) # () S 2 T () S 4 T (echo ") S
+([ERR] unknown arg: $1) str
+(" >&2) p n
+(217) # () S 2 T () S 4 T (usage) N
+(218) # () S 2 T () S 4 T () S
+(exit) K
+( 1) p n
+(219) # () S 2 T () S 4 T (;;) N
+(220) # () S 2 T () S
+(esac) K n
+(221) # (done) N
+(222) # () S
+([[ -z ") p
+($READS_PRE) str
+(" || -z ") p
+($OUT) str
+(" || -z ") p
+($OATKDB) str
+(" ]] && {) p n
+(223) # () S 2 T (usage) N
+(224) # () S 2 T () S
+(exit) K
+( 1) p n
+(225) # (}) N
+(226) # () N
+(227) # () S
+(# -------------- prep & deps --------------) c n
+(228) # () S
+(READS_PRE=") p
+($\(readlink -f ) str
+("$READS_PRE") p
+(\)) str
+(") p n
+(229) # (OUT=") S
+($\(readlink -f ) str
+("$OUT") p
+(\)) str
+(") p n
+(230) # (OATKDB=") S
+($\(readlink -f ) str
+("$OATKDB") p
+(\)) str
+(") p n
+(231) # (mkdir -p ") S
+($OUT/stage12) str
+(") p n
+(232) # (cd ") S
+($OUT/stage12) str
+(") p n
+(233) # () N
+(234) # (need seqkit) N
+(235) # (need ") S
+($ONT_SCRIPT) str
+(") p n
+(236) # ([[ ") S
+($BAIT_METHOD) str
+(" == ") p
+(bbduk) str
+(" ]] && need bbduk.sh || { [[ ") p
+($BAIT_METHOD) str
+(" == ") p
+(meryl) str
+(" ]] && {) p n
+(237) # () S 2 T (need meryl) N
+(238) # () S 2 T (need meryl-lookup) N
+(239) # (}; }) N
+(240) # ([[ $HPC_ENABLE -eq 1 ]] && need seqtk) N
+(241) # () N
+(242) # () S
+(# -------------- Stage-1: assemble backbone --------------) c n
+(243) # () S
+(CUR=") p
+($READS_PRE) str
+(") p n
+(244) # (HPC_FLAG=\(--no-hpc\)) N
+(245) # (CUR_ASM=") S
+($CUR) str
+(") p n
+(246) # () S
+(if) K
+( [[ $HPC_ENABLE -eq 1 ]]; ) p
+(then) K n
+(247) # () S
+() p 2 T (HPC_FILE=") S
+(${HPC_OUT:-$OUT/stage12/reads.hpc.fa}) str
+(") p n
+(248) # () S 2 T (log 1 ") S
+([hpc] seqtk hpc \342M-^FM-^R $HPC_FILE) str
+(") p n
+(249) # () S 2 T (seqtk hpc ") S
+($CUR) str
+(" >") p
+($HPC_FILE) str
+(") p n
+(250) # () S 2 T (CUR_ASM=") S
+($HPC_FILE) str
+(") p n
+(251) # () S 2 T (HPC_FLAG=\(--hpc --hpc-out ") S
+($HPC_FILE) str
+("\)) p n
+(252) # () S
+(else) K n
+(253) # () S
+() p 2 T (log 1 ") S
+([hpc] disabled for assembly) str
+(") p n
+(254) # () S
+(fi) K n
+(255) # () N
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (Page 5/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (5/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (6) 6
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(256) # (log 1 ") p
+([stage1] assemble backbone \(k=${K_LIST_A}; smer=${SMER}; -a=${AARC}\)) str
+(") p n
+(257) # (") S
+($ONT_SCRIPT) str
+(" \\) p n
+(258) # () S 2 T (--reads ") S
+($CUR_ASM) str
+(" \\) p n
+(259) # () S 2 T (--out ") S
+($OUT/ont_stage1) str
+(" \\) p n
+(260) # () S 2 T (--oatkdb ") S
+($OATKDB) str
+(" --clade ") p
+($CLADE) str
+(" \\) p n
+(261) # () S 2 T (--threads ") S
+($THREADS) str
+(" \\) p n
+(262) # () S 2 T (") S
+(${HPC_FLAG[@]}) str
+(" \\) p n
+(263) # () S 2 T (--k-list ") S
+($K_LIST_A) str
+(" --smer ") p
+($SMER) str
+(" --a ") p
+($AARC) str
+(" --weak-cross ") p
+($WEAKX) str
+(" --unzip-round ") p
+($UNZIP) str
+(" \\) p n
+(264) # () S 2 T ($\([[ $NO_EC -eq 1 ]] && echo --no-read-ec\) \\) N
+(265) # () S 2 T (-s qc,assemble,summary -v) N
+(266) # () N
+(267) # (BACKBONE=") S
+($OUT/ont_stage1/k1/unitigs.fa) str
+(") p n
+(268) # ([[ -s ") S
+($BACKBONE) str
+(" ]] || die ") p
+(backbone unitigs not found: $BACKBONE) str
+(") p n
+(269) # () N
+(270) # () S
+(# -------------- Bait: backbone-based \342M-^FM-^R subset --------------) c n
+(271) # () S
+(mkdir -p bait) p n
+(272) # (SUBSET=") S
+($OUT/stage12/bait/ont.mt.fq) str
+(") p n
+(273) # (mkdir -p ") S
+($\(dirname ) str
+("$SUBSET") p
+(\)) str
+(") p n
+(274) # () N
+(275) # () S
+(if) K
+( [[ ") p
+($BAIT_METHOD) str
+(" == ") p
+(bbduk) str
+(" ]]; ) p
+(then) K n
+(276) # () S
+() p 2 T (log 1 ") S
+([bait] bbduk: ref=$BACKBONE \342M-^FM-^R $SUBSET) str
+(") p n
+(277) # () S 2 T (bbduk.sh ) S
+(in) K
+(=") p
+($READS_PRE) str
+(" outm=") p
+($SUBSET) str
+(" outu=") p
+($OUT/stage12/bait/nonmt.fq) str
+(" ref=") p
+($BACKBONE) str
+(" k=31 hdist=1 threads=") p
+($THREADS) str
+(") p n
+(278) # () S
+(else) K n
+(279) # () S
+() p 2 T (log 1 ") S
+([bait] meryl k=$MERYL_K) str
+(") p n
+(280) # () S 2 T (meryl k=") S
+($MERYL_K) str
+(" count ") p
+($BACKBONE) str
+(" output ") p
+($OUT/stage12/bait/seeds.k$MERYL_K.meryl) str
+(") p n
+(281) # () S 2 T (meryl-lookup -existence -sequence ") S
+($READS_PRE) str
+(" ") p
+($OUT/stage12/bait/seeds.k$MERYL_K.meryl) str
+(" |) p n
+(282) # () S 2 T () S 4 T (awk ') S
+(/^>/{print substr\($0,2\)}) str
+(' >") p
+($OUT/stage12/bait/mt.ids) str
+(") p n
+(283) # () S 2 T (seqkit grep -f ") S
+($OUT/stage12/bait/mt.ids) str
+(" ") p
+($READS_PRE) str
+(" -o ") p
+($SUBSET) str
+(") p n
+(284) # () S
+(fi) K n
+(285) # () S
+(log 1 ") p
+([bait] subset size: $\( \(wc -c <) str
+("$SUBSET") p
+(\) 2>/dev/null || echo 0\) bytes) str
+(") p n
+(286) # () N
+(287) # () S
+(# -------------- Stage-2: recover \(lift OR polish\) --------------) c n
+(288) # () S
+(if) K
+( [[ $USE_LIFT -eq 1 ]]; ) p
+(then) K n
+(289) # () S
+() p 2 T (log 1 ") S
+([stage2] LIFT \(RLE\) + 1\303M-^W polish \342M-^FM-^R annotate \342M-^FM-^R PF) str
+(") p n
+(290) # () S 2 T (") S
+($ONT_SCRIPT) str
+(" \\) p n
+(291) # () S 2 T () S 4 T (--reads ") S
+($CUR_ASM) str
+(" \\) p n
+(292) # () S 2 T () S 4 T (--reads-map ") S
+($SUBSET) str
+(" \\) p n
+(293) # () S 2 T () S 4 T (--map-chunks ") S
+($MAP_CHUNKS) str
+(" --mm2-extra ") p
+($MM2_EXTRA) str
+(" \\) p n
+(294) # () S 2 T () S 4 T (--out ") S
+($OUT/ont_stage2) str
+(" \\) p n
+(295) # () S 2 T () S 4 T (--oatkdb ") S
+($OATKDB) str
+(" --clade ") p
+($CLADE) str
+(" \\) p n
+(296) # () S 2 T () S 4 T (--threads ") S
+($THREADS) str
+(" \\) p n
+(297) # () S 2 T () S 4 T (--lift --polish-after-lift \\) N
+(298) # () S 2 T () S 4 T (--racon-rounds 1 \\) N
+(299) # () S 2 T () S 4 T ($\([[ $NO_MEDAKA -eq 1 ]] && echo --no-medaka || echo --medaka-model ") S
+($MEDAKA_MODEL) str
+("\) \\) p n
+(300) # () S 2 T () S 4 T (-s lift,polish,annotate,pathfinder,summary -v) N
+(301) # () S
+(else) K n
+(302) # () S
+() p 2 T (log 1 ") S
+([stage2] POLISH \(racon/medaka\) on subset \342M-^FM-^R annotate \342M-^FM-^R PF) str
+(") p n
+(303) # () S 2 T (") S
+($ONT_SCRIPT) str
+(" \\) p n
+(304) # () S 2 T () S 4 T (--reads ") S
+($CUR_ASM) str
+(" \\) p n
+(305) # () S 2 T () S 4 T (--reads-map ") S
+($SUBSET) str
+(" \\) p n
+(306) # () S 2 T () S 4 T (--map-chunks ") S
+($MAP_CHUNKS) str
+(" --mm2-extra ") p
+($MM2_EXTRA) str
+(" \\) p n
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (Page 6/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (6/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (7) 7
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(307) # () p 2 T () S 4 T (--out ") S
+($OUT/ont_stage2) str
+(" \\) p n
+(308) # () S 2 T () S 4 T (--oatkdb ") S
+($OATKDB) str
+(" --clade ") p
+($CLADE) str
+(" \\) p n
+(309) # () S 2 T () S 4 T (--threads ") S
+($THREADS) str
+(" \\) p n
+(310) # () S 2 T () S 4 T (--racon-rounds ") S
+($RACON_ROUNDS) str
+(" \\) p n
+(311) # () S 2 T () S 4 T ($\([[ $NO_MEDAKA -eq 1 ]] && echo --no-medaka || echo --medaka-model ") S
+($MEDAKA_MODEL) str
+("\) \\) p n
+(312) # () S 2 T () S 4 T (-s polish,annotate,pathfinder,summary -v) N
+(313) # () S
+(fi) K n
+(314) # () N
+(315) # () S
+(log 1 ") p
+([Stage-1/2 done]) str
+(") p n
+(316) # (log 1 ") S
+(  backbone : $OUT/ont_stage1/k1/unitigs.fa) str
+(") p n
+(317) # (log 1 ") S
+(  outputs  : $OUT/ont_stage2 \(polished/lifted, annotated, PF summary\)) str
+(") p n
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (Page 7/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage2.sh) (7/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+
+%%Trailer
+end
+%%EOF

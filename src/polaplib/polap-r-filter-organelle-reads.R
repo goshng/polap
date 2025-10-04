@@ -21,6 +21,9 @@
 # The following template file provides argument processing.
 ################################################################################
 
+options(warn = -1)
+options(withr_seed_message = FALSE)
+suppressWarnings(library("ggplot2"))
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("dplyr"))
 suppressPackageStartupMessages(library("readr"))
@@ -66,10 +69,10 @@ args1 <- parse_args(opt_parser)
 # Determine RNG seed
 if (args1$`rng-seed` <= 0) {
   seed_value <- as.integer(as.numeric(Sys.time()) %% .Machine$integer.max)
-  message("Using random RNG seed: ", seed_value)
+  # message("Using random RNG seed: ", seed_value)
 } else {
   seed_value <- args1$`rng-seed`
-  message("Using fixed RNG seed: ", seed_value)
+  # message("Using fixed RNG seed: ", seed_value)
 }
 set.seed(seed_value)
 

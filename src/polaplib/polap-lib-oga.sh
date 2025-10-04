@@ -668,12 +668,13 @@ function _polap_lib_oga-estimate-omega {
 		_lower_bound_subsampling_rate=0.02
 		_upper_bound_subsampling_rate=0.50
 	elif [[ "${_arg_data_type}" == "pacbio-raw" ]]; then
-		_lower_bound_subsampling_rate=0.10
-		_upper_bound_subsampling_rate=0.50
+		_lower_bound_subsampling_rate=0.30
+		_upper_bound_subsampling_rate=0.90
 	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
-		_lower_bound_subsampling_rate=0.10
-		_upper_bound_subsampling_rate=0.50
+		_lower_bound_subsampling_rate=0.50
+		_upper_bound_subsampling_rate=5.00
 	fi
+	_polap_log1 "a range (${_arg_data_type}): ${_lower_bound_subsampling_rate} ~ ${_upper_bound_subsampling_rate}"
 
 	_polap_utility_get_contig_length \
 		"${_polap_var_oga_contig}/contig.fa" \
@@ -760,11 +761,11 @@ function _polap_lib_oga-estimate-omega {
 		# sampling rate
 		local _rate=$(echo "scale=9; ${_arg_coverage_oga}/$_expected_organelle_coverage" | bc)
 
-		_polap_log0 "omega: ${omega}: rate (0.1 ~ 0.5): ${_rate}"
+		_polap_log0 "omega: ${omega}: rate ($_lower_bound_subsampling_rate ~ $_upper_bound_subsampling_rate): ${_rate}"
 
-		if (($(echo "$_rate < 0.1" | bc -l))); then
+		if (($(echo "$_rate < $_lower_bound_subsampling_rate" | bc -l))); then
 			omega=$(echo "scale=9; ${omega} + 1000" | bc)
-		elif (($(echo "$_rate > 0.5" | bc -l))); then
+		elif (($(echo "$_rate > $_upper_bound_subsampling_rate" | bc -l))); then
 			omega=$(echo "scale=9; ${omega} - 1000" | bc)
 		else
 			echo "${omega}" >"${_polap_var_oga_contig}/omega.txt"
@@ -791,5 +792,5 @@ function _polap_lib_oga-estimate-omega {
 
 	done
 
-	echa 149 >"${_polap_var_oga_contig}/index.txt"
+	echo 149 >"${_polap_var_oga_contig}/index.txt"
 }

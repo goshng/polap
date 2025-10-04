@@ -1,0 +1,291 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Single-cut estimator from nuclear band (log10(median)).
+
+Methods:
+  mad     : σ ≈ MAD/0.6745 on nuclear band                     → cut = μ + zσ
+  window  : σ = std on [μ - W, μ] (W = --window-width)         → cut = μ + zσ
+  std     : σ = std on nuclear band                            → cut = μ + zσ
+  valley  : cut = first smoothed-hist local minimum right of μ (no σ)
+  hybrid  : min(valley, μ + zσ_window) (prefers valley if present)
+
+New:
+  --mu-seed FILE  : read μ (mu_log10) from a prior cuts.tsv (e.g., quickview.cuts.tsv)
+  --mu-log10 VAL  : set μ explicitly (overrides seed file and auto-detection)
+
+Output:
+  <cuts>.tsv with columns:
+    f1  f2  three_bins  method  mu_log10  sigma_log10  tail
+"""
+
+import argparse, csv, os, sys
+import numpy as np
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+
+# ---------- IO ----------
+def load_medians(tsv):
+    meds = []
+    with open(tsv, newline="") as fh:
+        r = csv.DictReader(fh, delimiter="\t")
+        for row in r:
+            try:
+                m = float(row["median"])
+                if m > 0:
+                    meds.append(m)
+            except Exception:
+                pass
+    return np.array(meds, dtype=float)
+
+
+def write_cuts_path(cuts_path, cut, method, mu_log, sig_log, tail):
+    with open(cuts_path, "w") as w:
+        w.write("f1\tf2\tthree_bins\tmethod\tmu_log10\tsigma_log10\ttail\n")
+        sig_out = (
+            "NaN" if (sig_log is None or not np.isfinite(sig_log)) else f"{sig_log:.5f}"
+        )
+        w.write(f"{cut}\tNA\t0\t{method}\t{mu_log:.5f}\t{sig_out}\t{tail}\n")
+    print(f"[cuts] saved -> {cuts_path}")
+
+
+def read_mu_from_cuts(cuts_tsv):
+    try:
+        with open(cuts_tsv, newline="") as fh:
+            r = csv.DictReader(fh, delimiter="\t")
+            for row in r:
+                if "mu_log10" in row:
+                    return float(row["mu_log10"])
+    except Exception:
+        pass
+    return None
+
+
+# ---------- utils ----------
+def z_for_tail(t):
+    if t <= 0.01:
+        return 2.3263478740408408
+    if t <= 0.02:
+        return 2.0537489106318225
+    if t <= 0.05:
+        return 1.6448536269514722
+    if t <= 0.10:
+        return 1.2815515655446004
+    return 1.6448536269514722
+
+
+def smooth(y, rounds=2):
+    z = y.astype(float)
+    for _ in range(rounds):
+        if z.size < 3:
+            break
+        z = np.r_[z[0], 0.25 * z[:-2] + 0.5 * z[1:-1] + 0.25 * z[2:], z[-1]]
+    return z
+
+
+def hist_range(x, nbins=160):
+    lo, hi = np.min(x), np.max(x)
+    if not np.isfinite(lo) or not np.isfinite(hi):
+        return None, None, None
+    if lo == hi:
+        hi = lo + 1e-6
+    hist, edges = np.histogram(x, bins=nbins, range=(lo, hi))
+    ctrs = 0.5 * (edges[:-1] + edges[1:])
+    return hist, ctrs, (hi - lo) / nbins
+
+
+def windowed_mode(logm, nbins=320, win=0.12):
+    h, c, bw = hist_range(logm, nbins=nbins)
+    if h is None:
+        return float(np.median(logm))
+    s = smooth(h, 1)
+    half = max(1, int((win / 2) / bw))
+    mv = np.convolve(s, np.ones(2 * half + 1), mode="same")
+    return float(c[int(np.argmax(mv))])
+
+
+def valley_right_of(logm, mu, nbins=320):
+    h, c, _ = hist_range(logm, nbins=nbins)
+    if h is None:
+        return None
+    s = smooth(h, 2)
+    midx = int(np.searchsorted(c, mu))
+    for i in range(max(midx + 1, 1), len(s) - 1):
+        if s[i] < s[i - 1] and s[i] < s[i + 1]:
+            return float(c[i])
+    return None
+
+
+def sigma_mad(x):
+    if x.size == 0:
+        return None
+    med = np.median(x)
+    mad = np.median(np.abs(x - med))
+    if mad == 0:
+        return float(np.std(x)) if x.size > 1 else None
+    return float(mad / 0.6744897501960817)
+
+
+def sigma_window(logm, mu, w=0.20, min_n=50):
+    sel = logm[(logm >= mu - w) & (logm <= mu)]
+    if sel.size < min_n:
+        return None
+    return float(np.std(sel)) if sel.size > 1 else None
+
+
+def sigma_band(logm):
+    return float(np.std(logm)) if logm.size > 1 else None
+
+
+def plot_overlay(logm_all, logm_band, mu, cut_log, out_png, title_extra=""):
+    plt.figure(figsize=(7.8, 4.3))
+    plt.hist(logm_all, bins=120, alpha=0.25, label="all")
+    plt.hist(logm_band, bins=120, alpha=0.85, label="band")
+    plt.axvline(mu, color="k", linestyle=":", linewidth=1.6, label=f"μ ≈ {mu:.3f}")
+    plt.axvline(
+        cut_log,
+        color="tab:blue",
+        linestyle="--",
+        linewidth=2.0,
+        label=f"cut={10**cut_log:.2f}×",
+    )
+    plt.title(f"Single normal cut (log10(median)){title_extra}")
+    plt.xlabel("log10(median syncmer multiplicity / coverage proxy)")
+    plt.ylabel("count (reads)")
+    plt.legend(loc="upper right", fontsize=9)
+    plt.tight_layout()
+    plt.savefig(out_png, dpi=150)
+    plt.close()
+    print(f"[plot] saved -> {out_png}")
+
+
+# ---------- main ----------
+def main():
+    ap = argparse.ArgumentParser(
+        description="Single-cut estimator from nuclear band (log10(median))"
+    )
+    ap.add_argument("-i", "--input", required=True, help="syncfilter quickview TSV")
+    ap.add_argument(
+        "--method",
+        choices=["mad", "window", "std", "valley", "hybrid"],
+        default="hybrid",
+    )
+    ap.add_argument("--tail", type=float, default=0.05)
+    ap.add_argument("--window-width", type=float, default=0.20)
+    ap.add_argument("--band-max", type=float, default=2.0)
+    ap.add_argument("--nbins", type=int, default=320)
+    ap.add_argument("--sigma-floor", type=float, default=0.03)
+    ap.add_argument(
+        "--cuts-out", help="write cuts TSV to this path (overrides default)"
+    )
+    ap.add_argument("--png", help="save overlay PNG")
+
+    # New: seeding μ
+    ap.add_argument(
+        "--mu-seed", help="read mu_log10 from this cuts.tsv (e.g., quickview.cuts.tsv)"
+    )
+    ap.add_argument(
+        "--mu-log10", type=float, help="set mu_log10 explicitly (overrides --mu-seed)"
+    )
+
+    args = ap.parse_args()
+
+    meds = load_medians(args.input)
+    if meds.size == 0:
+        print("[error] no medians found", file=sys.stderr)
+        sys.exit(2)
+    logm_all = np.log10(meds)
+
+    # restrict to nuclear band
+    logm_band = logm_all[logm_all < args.band_max]
+    if logm_band.size == 0:
+        print(f"[error] no reads with log10(median) < {args.band_max}", file=sys.stderr)
+        sys.exit(2)
+
+    # μ selection (seed > explicit wins)
+    mu_seed = None
+    if args.mu_log10 is not None:
+        mu_seed = float(args.mu_log10)
+    elif args.mu_seed:
+        mu_seed = read_mu_from_cuts(args.mu_seed)
+
+    if mu_seed is not None and np.isfinite(mu_seed):
+        mu = float(mu_seed)
+        # nudge into band bounds if necessary
+        if mu >= args.band_max:
+            mu = float(min(mu, args.band_max - 1e-3))
+        print(f"[info] using mu_log10 from seed: {mu:.5f}")
+    else:
+        mu = windowed_mode(logm_band, nbins=args.nbins, win=args.window_width)
+
+    z = z_for_tail(args.tail)
+
+    cut_log = None
+    sigma_log = None
+    chosen = args.method
+
+    # valley if requested
+    valley_log = None
+    if args.method in ("valley", "hybrid"):
+        valley_log = valley_right_of(logm_band, mu, nbins=args.nbins)
+
+    if args.method == "valley":
+        if valley_log is None:
+            print(
+                "[warn] valley not found; falling back to window tail", file=sys.stderr
+            )
+            chosen = "window"
+        else:
+            cut_log = valley_log
+
+    if cut_log is None and chosen in ("mad", "window", "std", "hybrid", "window"):
+        if chosen == "mad":
+            sigma_log = sigma_mad(logm_band)
+        elif chosen == "std":
+            sigma_log = sigma_band(logm_band)
+        else:
+            sigma_log = sigma_window(logm_band, mu, w=args.window_width, min_n=50)
+            if sigma_log is None:
+                sigma_log = sigma_mad(logm_band)
+
+        if sigma_log is None or not np.isfinite(sigma_log) or sigma_log <= 0:
+            sigma_log = args.sigma_floor
+        else:
+            sigma_log = max(sigma_log, args.sigma_floor)
+
+        tail_cut_log = mu + z * sigma_log
+        if args.method == "hybrid" and valley_log is not None:
+            cut_log = min(valley_log, tail_cut_log)
+        else:
+            cut_log = tail_cut_log
+
+    if cut_log is None:
+        cut_log = float(np.quantile(logm_band, 0.75))
+        sigma_log = np.nan
+        chosen += " (fallback q75)"
+
+    cut_lin = 10**cut_log
+
+    # decide output path
+    if args.cuts_out:
+        cuts_path = args.cuts_out
+    else:
+        prefix = os.path.splitext(os.path.splitext(args.input)[0])[0]
+        cuts_path = f"{prefix}.syncfilter.cuts.tsv"
+
+    write_cuts_path(cuts_path, cut_lin, args.method, mu, sigma_log, args.tail)
+
+    print(
+        f"[fit] method={chosen}  μ≈{mu:.4f}  σ≈{sigma_log if sigma_log is not None else np.nan:.4f}  cut≈{cut_lin:.3f}x"
+    )
+
+    if args.png:
+        title_txt = f"  [{args.method}, tail={args.tail}, W={args.window_width}]"
+        plot_overlay(logm_all, logm_band, mu, cut_log, args.png, title_extra=title_txt)
+
+
+if __name__ == "__main__":
+    main()

@@ -579,6 +579,7 @@ bolap run polap   # alternative if needed
 • ONT reads (Nanopore)
 bolap run polap-readassemble-pt   # plastid assembly
 bolap run polap-readassemble-nt   # mitochondrial assembly
+bolap run polap-readassemble <species_dir> <INT:0> [-f] [-v]
 
 Others:
   bolap run-polap-readassemble Vitis_vinifera [0] pt 1500 [no]

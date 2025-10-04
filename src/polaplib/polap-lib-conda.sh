@@ -91,33 +91,3 @@ _polap_lib_conda-ensure_conda_env() {
 
 	return 0
 }
-
-# _polap_lib_conda-ensure_conda_env() {
-# 	local env_name="$1"
-#
-# 	if [[ -z "$env_name" ]]; then
-# 		if [[ "$_POLAP_DEBUG" == "1" ]]; then
-# 			echo "[ERROR] No conda environment name provided"
-# 		fi
-# 		return 1
-# 	fi
-#
-# 	# initialize conda and activate the base conda environment
-# 	source "$(conda info --base)/etc/profile.d/conda.sh"
-#
-# 	# activate the conda environment provided by the input
-# 	if [[ "${CONDA_DEFAULT_ENV:-}" != "$env_name" ]]; then
-# 		if [[ "$_POLAP_DEBUG" == "1" ]]; then
-# 			echo "[INFO] Activating conda environment '$env_name'..."
-# 		fi
-# 		conda activate "$env_name"
-# 	fi
-#
-# 	# check the activation of the conda environment
-# 	if [[ "${CONDA_DEFAULT_ENV:-}" != "$env_name" ]]; then
-# 		if [[ "$_POLAP_DEBUG" == "1" ]]; then
-# 			echo "[ERROR] Failed to enter conda environment '$env_name'"
-# 		fi
-# 		return 1
-# 	fi
-# }

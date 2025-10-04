@@ -1,0 +1,1637 @@
+%!PS-Adobe-3.0
+%%Title: polap-bash-oatk-ont-sidekicks-stage1.sh
+%%For: Sang Chul Choi
+%%Creator: a2ps version 4.14
+%%CreationDate: Mon Sep 15 17:46:07 2025
+%%BoundingBox: 24 24 571 818
+%%DocumentData: Clean7Bit
+%%Orientation: Landscape
+%%Pages: 7
+%%PageOrder: Ascend
+%%DocumentMedia: A4 595 842 0 () ()
+%%DocumentNeededResources: font Courier
+%%+ font Courier-Bold
+%%+ font Courier-BoldOblique
+%%+ font Courier-Oblique
+%%+ font Helvetica
+%%+ font Helvetica-Bold
+%%+ font Symbol
+%%+ font Times-Bold
+%%+ font Times-Roman
+%%DocumentProcessColors: Black 
+%%DocumentSuppliedResources: procset a2ps-a2ps-hdr
+%%+ procset a2ps-black+white-Prolog
+%%+ encoding ISO-8859-1Encoding
+%%EndComments
+/a2psdict 200 dict def
+a2psdict begin
+%%BeginProlog
+%%Copyright: (c) 1988, 89, 90, 91, 92, 93 Miguel Santana
+%%Copyright: (c) 1995, 96, 97, 98 Akim Demaille, Miguel Santana
+% Check PostScript language level.
+/languagelevel where {
+  pop /gs_languagelevel languagelevel def
+} {
+  /gs_languagelevel 1 def
+} ifelse
+
+% EPSF import as in the Red Book
+/BeginInclude {
+  /b4_Inc_state save def    		% Save state for cleanup
+  /dict_count countdictstack def	% Count objects on dict stack
+  /op_count count 1 sub def		% Count objects on operand stack 
+  userdict begin
+    0 setgray 0 setlinecap
+    1 setlinewidth 0 setlinejoin
+    10 setmiterlimit [ ] 0 setdash newpath
+    gs_languagelevel 1 ne {
+      false setstrokeadjust false setoverprint 
+    } if
+} bind def
+
+/EndInclude {
+  count op_count sub { pos } repeat	% Clean up stacks
+  countdictstack dict_count sub { end } repeat
+  b4_Inc_state restore
+} bind def
+
+/BeginEPSF {
+  BeginInclude
+  /showpage { } def
+} bind def
+
+/EndEPSF {
+  EndInclude
+} bind def
+
+% Page prefeed
+/page_prefeed {         % bool -> -
+  statusdict /prefeed known {
+    statusdict exch /prefeed exch put
+  } {
+    pop
+  } ifelse
+} bind def
+
+/deffont {
+  findfont exch scalefont def
+} bind def
+
+/reencode_font {
+  findfont reencode 2 copy definefont pop def
+} bind def
+
+% Function c-show (str => -)
+% centers text only according to x axis.
+/c-show { 
+  dup stringwidth pop
+  2 div neg 0 rmoveto
+  show
+} bind def
+
+% Function l-show (str => -)
+% prints texts so that it ends at currentpoint
+/l-show {
+  dup stringwidth pop neg 
+  0 
+  rmoveto show
+} bind def
+
+% center-fit show (str w => -)
+% show centered, and scale currentfont so that the width is less than w
+/cfshow {
+  exch dup stringwidth pop
+  % If the title is too big, try to make it smaller
+  3 2 roll 2 copy
+  gt
+  { % if, i.e. too big
+    exch div
+    currentfont exch scalefont setfont
+  } { % ifelse
+    pop pop 
+  }
+  ifelse
+  c-show			% center title
+} bind def
+
+% Return the y size of the current font
+% - => fontsize
+/currentfontsize {
+  currentfont /FontType get 0 eq {
+    currentfont /FontMatrix get 3 get
+  }{
+    currentfont /FontMatrix get 3 get 1000 mul
+  } ifelse
+} bind def
+
+% reencode the font
+% <encoding-vector> <fontdict> -> <newfontdict>
+/reencode { %def
+  dup length 5 add dict begin
+    { %forall
+      % <vector> <key> <val>
+      1 index /FID ne 
+      { def }{ pop pop } ifelse
+    } forall
+    /Encoding exch def % -
+
+    % Use the font's bounding box to determine the ascent, descent,
+    % and overall height; don't forget that these values have to be
+    % transformed using the font's matrix.
+    % We use `load' because sometimes BBox is executable, sometimes not.
+    % Since we need 4 numbers an not an array avoid BBox from being executed
+    /FontBBox load aload pop
+    FontMatrix transform /Ascent exch def pop
+    FontMatrix transform /Descent exch def pop
+    /FontHeight Ascent Descent sub def
+
+    % Get the underline position and thickness if they're defined.
+    % Use 1 if they are not defined.
+    currentdict /FontInfo 2 copy known
+    { get
+      /UnderlinePosition 2 copy % <FontInfo> /UP <FontInfo> /UP
+      2 copy known
+      { get }{ pop pop 1 } ifelse
+      0 exch FontMatrix transform exch pop
+      def % <FontInfo>
+
+      /UnderlineThickness 2 copy % <FontInfo> /UT <FontInfo> /UT
+      2 copy known
+      { get }{ pop pop 1 } ifelse
+      0 exch FontMatrix transform exch pop
+      def % <FontInfo>
+      pop % -
+    }{ pop pop
+    } ifelse
+
+    currentdict
+  end 
+} bind def
+
+% composite fonts for ASCII-EUC mixed strings
+% Version 1.2 1/31/1990
+% Original Ken'ichi HANDA (handa@etl.go.jp)
+% Modified Norio Katayama (katayama@rd.nacsis.ac.jp),1998
+% Extend & Fix Koji Nakamaru (maru@on.cs.keio.ac.jp), 1999
+% Anyone can freely copy, modify, distribute this program.
+
+/copyfont {	% font-dic extra-entry-count  copyfont  font-dic
+	1 index maxlength add dict begin
+	{	1 index /FID ne 2 index /UniqueID ne and
+		{def} {pop pop} ifelse
+	} forall
+	currentdict
+	end
+} bind def
+
+/compositefont { % ASCIIFontName EUCFontName RomanScale RomanOffset Rot(T/F) compositefont font
+    /RomanRotation exch def
+    /RomanOffset exch def
+    /RomanScale exch def
+    userdict /fixeucfont_dict known not {
+	userdict begin
+	    /fixeucfont_dict 2 dict begin
+		/UpperByteEncoding [
+		    16#00 1 16#20 { pop 0 } for
+		    16#21 1 16#28 { 16#20 sub } for
+		    16#29 1 16#2F { pop 0 } for
+		    16#30 1 16#74 { 16#27 sub } for
+		    16#75 1 16#FF { pop 0 } for
+		] def
+	        /LowerByteEncoding [
+		    16#00 1 16#A0 { pop /.notdef } for
+		    16#A1 1 16#FE { 16#80 sub 16 2 string cvrs
+				    (cXX) dup 1 4 -1 roll
+				    putinterval cvn } for
+		    /.notdef
+		] def
+		currentdict
+	    end def
+	end
+    } if
+    findfont dup /FontType get 0 eq {
+	14 dict begin
+	    %
+	    % 7+8 bit EUC font
+	    %
+	    12 dict begin
+		/EUCFont exch def
+		/FontInfo (7+8 bit EUC font) readonly def
+		/PaintType 0 def
+		/FontType 0 def
+		/FontMatrix matrix def
+		% /FontName
+		/Encoding fixeucfont_dict /UpperByteEncoding get def
+		/FMapType 2 def
+		EUCFont /WMode known
+		{ EUCFont /WMode get /WMode exch def }
+		{ /WMode 0 def } ifelse
+		/FDepVector [
+		    EUCFont /FDepVector get 0 get
+		    [ 16#21 1 16#28 {} for 16#30 1 16#74 {} for ]
+		    {
+			13 dict begin
+			    /EUCFont EUCFont def
+			    /UpperByte exch 16#80 add def	
+			    % /FontName
+			    /FontInfo (EUC lower byte font) readonly def
+			    /PaintType 0 def
+			    /FontType 3 def
+			    /FontMatrix matrix def
+			    /FontBBox {0 0 0 0} def
+			    /Encoding
+				fixeucfont_dict /LowerByteEncoding get def
+			    % /UniqueID
+			    % /WMode
+			    /BuildChar {
+				gsave
+				exch dup /EUCFont get setfont
+				/UpperByte get
+				2 string
+				dup 0 4 -1 roll put
+				dup 1 4 -1 roll put
+				dup stringwidth setcharwidth
+				0 0 moveto show
+				grestore
+			    } bind def
+			    currentdict
+			end
+			/lowerbytefont exch definefont
+		    } forall
+		] def
+		currentdict
+	    end
+	    /eucfont exch definefont
+	    exch
+	    findfont 1 copyfont dup begin
+		RomanRotation {
+			/FontMatrix FontMatrix
+			[ 0 RomanScale neg RomanScale 0 RomanOffset neg 0 ]
+			matrix concatmatrix def
+		}{
+			/FontMatrix FontMatrix
+			[ RomanScale 0 0 RomanScale 0 RomanOffset ] matrix concatmatrix
+			def
+			/CDevProc
+			    {pop pop pop pop 0 exch -1000 exch 2 div 880} def
+		} ifelse
+	    end
+	    /asciifont exch definefont
+	    exch
+	    /FDepVector [ 4 2 roll ] def
+	    /FontType 0 def
+	    /WMode 0 def
+	    /FMapType 4 def
+	    /FontMatrix matrix def
+	    /Encoding [0 1] def
+	    /FontBBox {0 0 0 0} def
+%	    /FontHeight 1.0 def % XXXX
+	    /FontHeight RomanScale 1.0 ge { RomanScale }{ 1.0 } ifelse def
+	    /Descent -0.3 def   % XXXX
+	    currentdict
+	end
+	/tmpfont exch definefont
+	pop
+	/tmpfont findfont
+    }{
+	pop findfont 0 copyfont
+    } ifelse
+} def	
+
+/slantfont {	% FontName slant-degree  slantfont  font'
+    exch findfont 1 copyfont begin
+    [ 1 0 4 -1 roll 1 0 0 ] FontMatrix exch matrix concatmatrix
+    /FontMatrix exch def
+    currentdict
+    end
+} def
+
+% Function print line number (<string> # -)
+/# {
+  gsave
+    sx cw mul neg 2 div 0 rmoveto
+    f# setfont
+    c-show
+  grestore
+} bind def
+
+% -------- Some routines to enlight plain b/w printings ---------
+
+% Underline
+% width --
+/dounderline {
+  currentpoint
+  gsave
+    moveto
+    0 currentfont /Descent get currentfontsize mul rmoveto
+    0 rlineto
+    stroke
+  grestore
+} bind def
+
+% Underline a string
+% string --
+/dounderlinestring {
+  stringwidth pop
+  dounderline
+} bind def
+
+/UL {
+  /ul exch store
+} bind def
+
+% Draw a box of WIDTH wrt current font
+% width --
+/dobox {
+  currentpoint
+  gsave
+    newpath
+    moveto
+    0 currentfont /Descent get currentfontsize mul rmoveto
+    dup 0 rlineto
+    0 currentfont /FontHeight get currentfontsize mul rlineto
+    neg 0 rlineto
+    closepath
+    stroke
+  grestore
+} bind def
+
+/BX {
+  /bx exch store
+} bind def
+
+% Box a string
+% string --
+/doboxstring {
+  stringwidth pop
+  dobox
+} bind def
+
+%
+% ------------- Color routines ---------------
+%
+/FG /setrgbcolor load def
+
+% Draw the background
+% width --
+/dobackground {
+  currentpoint
+  gsave
+    newpath
+    moveto
+    0 currentfont /Descent get currentfontsize mul rmoveto
+    dup 0 rlineto
+    0 currentfont /FontHeight get currentfontsize mul rlineto
+    neg 0 rlineto
+    closepath
+    bgcolor aload pop setrgbcolor
+    fill
+  grestore
+} bind def
+
+% Draw bg for a string
+% string --
+/dobackgroundstring {
+  stringwidth pop
+  dobackground
+} bind def
+
+
+/BG {
+  dup /bg exch store
+  { mark 4 1 roll ] /bgcolor exch store } if
+} bind def
+
+
+/Show {
+  bg { dup dobackgroundstring } if
+  ul { dup dounderlinestring } if
+  bx { dup doboxstring } if
+  show
+} bind def
+
+% Function T(ab), jumps to the n-th tabulation in the current line
+/T {
+  cw mul x0 add
+  bg { dup currentpoint pop sub dobackground } if
+  ul { dup currentpoint pop sub dounderline } if
+  bx { dup currentpoint pop sub dobox } if
+  y0 moveto
+} bind def
+
+% Function n: move to the next line
+/n {
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+} bind def
+
+% Function N: show and move to the next line
+/N {
+  Show
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+} bind def
+
+/S {
+  Show
+} bind def
+
+%%BeginResource: procset a2ps-a2ps-hdr 2.0 2
+%%Copyright: (c) 1988, 89, 90, 91, 92, 93 Miguel Santana
+%%Copyright: (c) 1995, 96, 97, 98 Akim Demaille, Miguel Santana
+% Function title: prints page header.
+% <ct> <rt> <lt> are passed as argument
+/title { 
+  % 1. Draw the background
+  x v get y v get moveto
+  gsave
+    0 th 2 div neg rmoveto 
+    th setlinewidth
+    0.95 setgray
+    pw 0 rlineto stroke
+  grestore
+  % 2. Border it
+  gsave
+    0.7 setlinewidth
+    pw 0 rlineto
+    0 th neg rlineto
+    pw neg 0 rlineto
+    closepath stroke
+  grestore
+  % stk: ct rt lt
+  x v get y v get th sub 1 add moveto
+%%IncludeResource: font Helvetica
+  fHelvetica fnfs 0.8 mul scalefont setfont
+  % 3. The left title
+  gsave
+    dup stringwidth pop fnfs 0.8 mul add exch % leave space took on stack
+    fnfs 0.8 mul hm rmoveto
+    show			% left title
+  grestore
+  exch
+  % stk: ct ltw rt
+  % 4. the right title
+  gsave
+    dup stringwidth pop fnfs 0.8 mul add exch % leave space took on stack
+    dup
+    pw exch stringwidth pop fnfs 0.8 mul add sub
+    hm
+    rmoveto
+    show			% right title
+  grestore
+  % stk: ct ltw rtw
+  % 5. the center title
+  gsave
+    pw 3 1 roll
+    % stk: ct pw ltw rtw
+    3 copy 
+    % Move to the center of the left room
+    sub add 2 div hm rmoveto
+    % What is the available space in here?
+    add sub fnfs 0.8 mul sub fnfs 0.8 mul sub
+    % stk: ct space_left
+%%IncludeResource: font Helvetica-Bold
+  fHelvetica-Bold fnfs scalefont setfont
+    cfshow
+  grestore
+} bind def
+
+% Function border: prints virtual page border
+/border { %def
+  gsave				% print four sides
+    0 setgray
+    x v get y v get moveto
+    0.7 setlinewidth		% of the square
+    pw 0 rlineto
+    0 ph neg rlineto
+    pw neg 0 rlineto
+    closepath stroke
+  grestore
+} bind def
+
+% Function water: prints a water mark in background
+/water { %def
+  gsave
+    scx scy moveto rotate
+%%IncludeResource: font Times-Bold
+  fTimes-Bold 100 scalefont setfont
+    .97 setgray
+    dup stringwidth pop 2 div neg -50 rmoveto
+    show
+  grestore
+} bind def
+
+% Function rhead: prints the right header
+/rhead {  %def
+  lx ly moveto
+  fHelvetica fnfs 0.8 mul scalefont setfont
+  l-show
+} bind def
+
+% Function footer (cf rf lf -> -)
+/footer {
+  fHelvetica fnfs 0.8 mul scalefont setfont
+  dx dy moveto
+  show
+
+  snx sny moveto
+  l-show
+  
+  fnx fny moveto
+  c-show
+} bind def
+%%EndResource
+%%BeginResource: procset a2ps-black+white-Prolog 2.0 1
+
+% Function T(ab), jumps to the n-th tabulation in the current line
+/T { 
+  cw mul x0 add y0 moveto
+} bind def
+
+% Function n: move to the next line
+/n { %def
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+} bind def
+
+% Function N: show and move to the next line
+/N {
+  Show
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+}  bind def
+
+/S {
+  Show
+} bind def
+
+/p {
+  false UL
+  false BX
+  fCourier bfs scalefont setfont
+  Show
+} bind def
+
+/sy {
+  false UL
+  false BX
+  fSymbol bfs scalefont setfont
+  Show
+} bind def
+
+/k {
+  false UL
+  false BX
+  fCourier-Oblique bfs scalefont setfont
+  Show
+} bind def
+
+/K {
+  false UL
+  false BX
+  fCourier-Bold bfs scalefont setfont
+  Show
+} bind def
+
+/c {
+  false UL
+  false BX
+  fCourier-Oblique bfs scalefont setfont
+  Show
+} bind def
+
+/C {
+  false UL
+  false BX
+  fCourier-BoldOblique bfs scalefont setfont
+  Show 
+} bind def
+
+/l {
+  false UL
+  false BX
+  fHelvetica bfs scalefont setfont
+  Show
+} bind def
+
+/L {
+  false UL
+  false BX
+  fHelvetica-Bold bfs scalefont setfont
+  Show 
+} bind def
+
+/str{
+  false UL
+  false BX
+  fTimes-Roman bfs scalefont setfont
+  Show
+} bind def
+
+/e{
+  false UL
+  true BX
+  fHelvetica-Bold bfs scalefont setfont
+  Show
+} bind def
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+%%IncludeResource: font Courier
+%%IncludeResource: font Courier-Oblique
+%%IncludeResource: font Courier-Bold
+%%IncludeResource: font Times-Roman
+%%IncludeResource: font Symbol
+%%IncludeResource: font Courier-BoldOblique
+%%BeginResource: encoding ISO-8859-1Encoding
+/ISO-8859-1Encoding [
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/space /exclam /quotedbl /numbersign /dollar /percent /ampersand /quoteright 
+/parenleft /parenright /asterisk /plus /comma /minus /period /slash 
+/zero /one /two /three /four /five /six /seven 
+/eight /nine /colon /semicolon /less /equal /greater /question 
+/at /A /B /C /D /E /F /G 
+/H /I /J /K /L /M /N /O 
+/P /Q /R /S /T /U /V /W 
+/X /Y /Z /bracketleft /backslash /bracketright /asciicircum /underscore 
+/quoteleft /a /b /c /d /e /f /g 
+/h /i /j /k /l /m /n /o 
+/p /q /r /s /t /u /v /w 
+/x /y /z /braceleft /bar /braceright /asciitilde /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/space /exclamdown /cent /sterling /currency /yen /brokenbar /section 
+/dieresis /copyright /ordfeminine /guillemotleft /logicalnot /hyphen /registered /macron 
+/degree /plusminus /twosuperior /threesuperior /acute /mu /paragraph /bullet 
+/cedilla /onesuperior /ordmasculine /guillemotright /onequarter /onehalf /threequarters /questiondown 
+/Agrave /Aacute /Acircumflex /Atilde /Adieresis /Aring /AE /Ccedilla 
+/Egrave /Eacute /Ecircumflex /Edieresis /Igrave /Iacute /Icircumflex /Idieresis 
+/Eth /Ntilde /Ograve /Oacute /Ocircumflex /Otilde /Odieresis /multiply 
+/Oslash /Ugrave /Uacute /Ucircumflex /Udieresis /Yacute /Thorn /germandbls 
+/agrave /aacute /acircumflex /atilde /adieresis /aring /ae /ccedilla 
+/egrave /eacute /ecircumflex /edieresis /igrave /iacute /icircumflex /idieresis 
+/eth /ntilde /ograve /oacute /ocircumflex /otilde /odieresis /divide 
+/oslash /ugrave /uacute /ucircumflex /udieresis /yacute /thorn /ydieresis 
+] def
+%%EndResource
+% Initialize page description variables.
+/sh 595 def
+/sw 842 def
+/llx 24 def
+/urx 818 def
+/ury 571 def
+/lly 24 def
+/#copies 1 def
+/th 20.000000 def
+/fnfs 15 def
+/bfs 9.561657 def
+/cw 5.736994 def
+
+% Dictionary for ISO-8859-1 support
+/iso1dict 8 dict begin
+  /fCourier ISO-8859-1Encoding /Courier reencode_font
+  /fCourier-Bold ISO-8859-1Encoding /Courier-Bold reencode_font
+  /fCourier-BoldOblique ISO-8859-1Encoding /Courier-BoldOblique reencode_font
+  /fCourier-Oblique ISO-8859-1Encoding /Courier-Oblique reencode_font
+  /fHelvetica ISO-8859-1Encoding /Helvetica reencode_font
+  /fHelvetica-Bold ISO-8859-1Encoding /Helvetica-Bold reencode_font
+  /fTimes-Bold ISO-8859-1Encoding /Times-Bold reencode_font
+  /fTimes-Roman ISO-8859-1Encoding /Times-Roman reencode_font
+currentdict end def
+/bgcolor [ 0 0 0 ] def
+/bg false def
+/ul false def
+/bx false def
+% The font for line numbering
+/f# /Helvetica findfont bfs .6 mul scalefont def
+/fSymbol /Symbol findfont def
+/hm fnfs 0.25 mul def
+/pw
+   cw 138.400000 mul
+def
+/ph
+   494.337664 th add
+def
+/pmw 0 def
+/pmh 0 def
+/v 0 def
+/x [
+  0
+] def
+/y [
+  pmh ph add 0 mul ph add
+] def
+/scx sw 2 div def
+/scy sh 2 div def
+/snx urx def
+/sny lly 2 add def
+/dx llx def
+/dy sny def
+/fnx scx def
+/fny dy def
+/lx snx def
+/ly ury fnfs 0.8 mul sub def
+/sx 5 def
+/tab 2 def
+/x0 0 def
+/y0 0 def
+%%EndSetup
+
+%%Page: (1) 1
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(1) # (#!/usr/bin/env bash) c n
+(2) # (# polap-bash-oatk-ont-sidekicks-stage0.sh) N
+(3) # (# Stage-0 prefilters ONLY for ONT organelle assembly:) N
+(4) # (#   trim \(porechop_abi\), scrub \(yacrd\), lenfilt \(filtlong/seqkit\),) N
+(5) # (#   HMM mt-bait, plastid drop, duplex-only, rare-mask \(KMC\), correction \(Canu/Ratatosk\).) N
+(6) # (#) N
+(7) # (# Outputs:) N
+(8) # (#   OUT/pre/reads.pre.fq   \(or .fa/.fq.gz depending on tools used\)) N
+(9) # (#   OUT/pre/stage0.report.tsv) N
+(10) # (#) N
+(11) # (# Notes:) N
+(12) # (#   - Does NOT do HPC or assembly. Feed reads.pre.fq into Stage-1/2 wrapper.) N
+(13) # () N
+(14) # () S
+(set) K
+( -euo pipefail) p n
+(15) # () N
+(16) # (: ") S
+(${POLAP_LOG_LEVEL:=1}) str
+(" ) p
+(# 0=quiet,1=info,2=verbose) c n
+(17) # () S
+(log) l
+(\(\) {) p n
+(18) # () S 2 T (local l=$1) N
+(19) # () S 2 T () S
+(shift) K n
+(20) # () S
+() p 2 T ([[ $POLAP_LOG_LEVEL -ge $l ]] && echo ") S
+($@) str
+(" >&2) p n
+(21) # (}) N
+(22) # () S
+(die) l
+(\(\) {) p n
+(23) # () S 2 T (echo ") S
+([ERR]) str
+(" ") p
+($@) str
+(" >&2) p n
+(24) # () S 2 T () S
+(exit) K
+( 1) p n
+(25) # (}) N
+(26) # () S
+(need) l
+(\(\) { command -v ") p
+($1) str
+(" >/dev/null 2>&1 || die ") p
+(missing dependency: $1) str
+("; }) p n
+(27) # () N
+(28) # () S
+(# ---------------- CLI defaults ----------------) c n
+(29) # () S
+(READS="") p n
+(30) # (OUT="") N
+(31) # (THREADS=32) N
+(32) # (OATKDB="") N
+(33) # (CLADE=") S
+(magnoliopsida) str
+(") p n
+(34) # (HMMBIN=") S
+(hmmannot) str
+(") p n
+(35) # (NHMMSCAN=") S
+(nhmmscan) str
+(") p n
+(36) # () N
+(37) # (DO_TRIM=0) N
+(38) # (DO_SCRUB=0) N
+(39) # (DO_LENFILT=0) N
+(40) # (LEN_MIN=5000) N
+(41) # (KEEP_PCT=70) N
+(42) # (DO_MT_BAIT=0) N
+(43) # (DO_DROP_PLASTID=0) N
+(44) # (DO_DUPLEX_ONLY=0) N
+(45) # (DUPLEX_TAG=") S
+(duplex) str
+(") p n
+(46) # (DO_RARE_MASK=0) N
+(47) # (RARE_K=31) N
+(48) # (RARE_MAX=1) N
+(49) # (DO_CORRECT=0) N
+(50) # (SHORT_READS="") N
+(51) # () N
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (Page 1/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (1/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (2) 2
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(52) # (usage) l
+(\(\) {) p n
+(53) # () S 2 T (cat <<EOF) N
+(54) # (Usage:) N
+(55) # (  $\(basename "$0"\) --reads READS.fq.gz --out OUTDIR --oatkdb /path/OatkDB [options]) N
+(56) # () N
+(57) # (Required:) N
+(58) # (  --reads FILE          ONT reads \(fa/fq[.gz]\)) N
+(59) # (  --out   DIR           output directory) N
+(60) # (  --oatkdb DIR          OatkDB root \(must contain v20230921\)) N
+(61) # () N
+(62) # (General:) N
+(63) # (  --threads INT         \(default ${THREADS}\)) N
+(64) # (  --clade NAME          fam prefix under v20230921 \(default ${CLADE}\)) N
+(65) # (  --hmm-bin PATH        hmmannot/hmm_annotation \(default ${HMMBIN}\)) N
+(66) # (  --nhmmscan PATH       nhmmscan path \(default ${NHMMSCAN}\)) N
+(67) # (  -v|--verbose          verbose) N
+(68) # (  -q|--quiet            quiet) N
+(69) # () N
+(70) # (Stage-0 prefilters \(all optional\):) N
+(71) # (  --trim                porechop_abi) N
+(72) # (  --scrub               minimap2 ava-ont + yacrd) N
+(73) # (  --lenfilt             filtlong \(preferred\) or seqkit) N
+(74) # (  --len-min INT         min length \(default ${LEN_MIN}\)) N
+(75) # (  --keep-pct INT        filtlong keep percent \(default ${KEEP_PCT}\)) N
+(76) # (  --mt-bait             keep reads hitting mito fam \(HMM\)) N
+(77) # (  --drop-plastid        drop reads hitting plastid fam \(HMM\)) N
+(78) # (  --duplex-only         keep reads with tag \(default '${DUPLEX_TAG}'\)) N
+(79) # (  --duplex-tag STR      header tag \(default '${DUPLEX_TAG}'\)) N
+(80) # (  --rare-mask           KMC rare-kmer masking \(heavy placeholder\)) N
+(81) # (  --rare-k INT          \(default ${RARE_K}\)) N
+(82) # (  --rare-max INT        \(default ${RARE_MAX}\)) N
+(83) # (  --correct-canu        Canu correction-only) N
+(84) # (  --correct-ratatosk    Ratatosk \(needs --short-reads\)) N
+(85) # (  --short-reads FILE    short reads for Ratatosk) N
+(86) # (EOF) N
+(87) # (}) N
+(88) # () N
+(89) # () S
+(# --------------- parse args -------------------) c n
+(90) # () S
+(while) K
+( [[ $# -gt 0 ]]; ) p
+(do) K n
+(91) # () S
+() p 2 T () S
+(case) K
+( ") p
+($1) str
+(" ) p
+(in) K n
+(92) # () S
+() p 2 T (--reads\)) N
+(93) # () S 2 T () S 4 T (READS=") S
+($2) str
+(") p n
+(94) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(95) # () S 2 T () S 4 T (;;) N
+(96) # () S 2 T (--out\)) N
+(97) # () S 2 T () S 4 T (OUT=") S
+($2) str
+(") p n
+(98) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(99) # () S 2 T () S 4 T (;;) N
+(100) # () S 2 T (--oatkdb\)) N
+(101) # () S 2 T () S 4 T (OATKDB=") S
+($2) str
+(") p n
+(102) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (Page 2/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (2/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (3) 3
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(103) # () p 2 T () S 4 T (;;) N
+(104) # () S 2 T (--threads\)) N
+(105) # () S 2 T () S 4 T (THREADS=") S
+($2) str
+(") p n
+(106) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(107) # () S 2 T () S 4 T (;;) N
+(108) # () S 2 T (--clade\)) N
+(109) # () S 2 T () S 4 T (CLADE=") S
+($2) str
+(") p n
+(110) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(111) # () S 2 T () S 4 T (;;) N
+(112) # () S 2 T (--hmm-bin\)) N
+(113) # () S 2 T () S 4 T (HMMBIN=") S
+($2) str
+(") p n
+(114) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(115) # () S 2 T () S 4 T (;;) N
+(116) # () S 2 T (--nhmmscan\)) N
+(117) # () S 2 T () S 4 T (NHMMSCAN=") S
+($2) str
+(") p n
+(118) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(119) # () S 2 T () S 4 T (;;) N
+(120) # () S 2 T (-v | --verbose\)) N
+(121) # () S 2 T () S 4 T (POLAP_LOG_LEVEL=2) N
+(122) # () S 2 T () S 4 T () S
+(shift) K n
+(123) # () S
+() p 2 T () S 4 T (;;) N
+(124) # () S 2 T (-q | --quiet\)) N
+(125) # () S 2 T () S 4 T (POLAP_LOG_LEVEL=0) N
+(126) # () S 2 T () S 4 T () S
+(shift) K n
+(127) # () S
+() p 2 T () S 4 T (;;) N
+(128) # () S 2 T (--trim\)) N
+(129) # () S 2 T () S 4 T (DO_TRIM=1) N
+(130) # () S 2 T () S 4 T () S
+(shift) K n
+(131) # () S
+() p 2 T () S 4 T (;;) N
+(132) # () S 2 T (--scrub\)) N
+(133) # () S 2 T () S 4 T (DO_SCRUB=1) N
+(134) # () S 2 T () S 4 T () S
+(shift) K n
+(135) # () S
+() p 2 T () S 4 T (;;) N
+(136) # () S 2 T (--lenfilt\)) N
+(137) # () S 2 T () S 4 T (DO_LENFILT=1) N
+(138) # () S 2 T () S 4 T () S
+(shift) K n
+(139) # () S
+() p 2 T () S 4 T (;;) N
+(140) # () S 2 T (--len-min\)) N
+(141) # () S 2 T () S 4 T (LEN_MIN=") S
+($2) str
+(") p n
+(142) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(143) # () S 2 T () S 4 T (;;) N
+(144) # () S 2 T (--keep-pct\)) N
+(145) # () S 2 T () S 4 T (KEEP_PCT=") S
+($2) str
+(") p n
+(146) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(147) # () S 2 T () S 4 T (;;) N
+(148) # () S 2 T (--mt-bait\)) N
+(149) # () S 2 T () S 4 T (DO_MT_BAIT=1) N
+(150) # () S 2 T () S 4 T () S
+(shift) K n
+(151) # () S
+() p 2 T () S 4 T (;;) N
+(152) # () S 2 T (--drop-plastid\)) N
+(153) # () S 2 T () S 4 T (DO_DROP_PLASTID=1) N
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (Page 3/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (3/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (4) 4
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(154) # () p 2 T () S 4 T () S
+(shift) K n
+(155) # () S
+() p 2 T () S 4 T (;;) N
+(156) # () S 2 T (--duplex-only\)) N
+(157) # () S 2 T () S 4 T (DO_DUPLEX_ONLY=1) N
+(158) # () S 2 T () S 4 T () S
+(shift) K n
+(159) # () S
+() p 2 T () S 4 T (;;) N
+(160) # () S 2 T (--duplex-tag\)) N
+(161) # () S 2 T () S 4 T (DUPLEX_TAG=") S
+($2) str
+(") p n
+(162) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(163) # () S 2 T () S 4 T (;;) N
+(164) # () S 2 T (--rare-mask\)) N
+(165) # () S 2 T () S 4 T (DO_RARE_MASK=1) N
+(166) # () S 2 T () S 4 T () S
+(shift) K n
+(167) # () S
+() p 2 T () S 4 T (;;) N
+(168) # () S 2 T (--rare-k\)) N
+(169) # () S 2 T () S 4 T (RARE_K=") S
+($2) str
+(") p n
+(170) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(171) # () S 2 T () S 4 T (;;) N
+(172) # () S 2 T (--rare-max\)) N
+(173) # () S 2 T () S 4 T (RARE_MAX=") S
+($2) str
+(") p n
+(174) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(175) # () S 2 T () S 4 T (;;) N
+(176) # () S 2 T (--correct-canu\)) N
+(177) # () S 2 T () S 4 T (DO_CORRECT=1) N
+(178) # () S 2 T () S 4 T () S
+(shift) K n
+(179) # () S
+() p 2 T () S 4 T (;;) N
+(180) # () S 2 T (--correct-ratatosk\)) N
+(181) # () S 2 T () S 4 T (DO_CORRECT=2) N
+(182) # () S 2 T () S 4 T () S
+(shift) K n
+(183) # () S
+() p 2 T () S 4 T (;;) N
+(184) # () S 2 T (--short-reads\)) N
+(185) # () S 2 T () S 4 T (SHORT_READS=") S
+($2) str
+(") p n
+(186) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(187) # () S 2 T () S 4 T (;;) N
+(188) # () S 2 T (-h | --help\)) N
+(189) # () S 2 T () S 4 T (usage) N
+(190) # () S 2 T () S 4 T () S
+(exit) K
+( 0) p n
+(191) # () S 2 T () S 4 T (;;) N
+(192) # () S 2 T (*\)) N
+(193) # () S 2 T () S 4 T (echo ") S
+([ERR] unknown arg: $1) str
+(" >&2) p n
+(194) # () S 2 T () S 4 T (usage) N
+(195) # () S 2 T () S 4 T () S
+(exit) K
+( 1) p n
+(196) # () S 2 T () S 4 T (;;) N
+(197) # () S 2 T () S
+(esac) K n
+(198) # (done) N
+(199) # () S
+([[ -z ") p
+($READS) str
+(" || -z ") p
+($OUT) str
+(" || -z ") p
+($OATKDB) str
+(" ]] && {) p n
+(200) # () S 2 T (usage) N
+(201) # () S 2 T () S
+(exit) K
+( 1) p n
+(202) # (}) N
+(203) # () N
+(204) # () S
+(# --------------- prep & deps ------------------) c n
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (Page 4/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (4/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (5) 5
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(205) # (READS=") p
+($\(readlink -f ) str
+("$READS") p
+(\)) str
+(") p n
+(206) # (OUT=") S
+($\(readlink -f ) str
+("$OUT") p
+(\)) str
+(") p n
+(207) # (OATKDB=") S
+($\(readlink -f ) str
+("$OATKDB") p
+(\)) str
+(") p n
+(208) # (mkdir -p ") S
+($OUT/pre) str
+(") p n
+(209) # (cd ") S
+($OUT/pre) str
+(") p n
+(210) # () N
+(211) # (need seqkit) N
+(212) # ([[ $DO_TRIM -eq 1 ]] && need porechop_abi) N
+(213) # ([[ $DO_SCRUB -eq 1 ]] && {) N
+(214) # () S 2 T (need minimap2) N
+(215) # () S 2 T (need yacrd) N
+(216) # (}) N
+(217) # ([[ $DO_LENFILT -eq 1 ]] && { command -v filtlong >/dev/null 2>&1 || need seqkit; }) N
+(218) # (FAM_M=") S
+($OATKDB/v20230921/${CLADE}_mito.fam) str
+(") p n
+(219) # (FAM_P=") S
+($OATKDB/v20230921/${CLADE}_pltd.fam) str
+(") p n
+(220) # ([[ $DO_MT_BAIT -eq 0 || -s ") S
+($FAM_M) str
+(" ]] || die ") p
+(mito fam not found: $FAM_M) str
+(") p n
+(221) # ([[ $DO_DROP_PLASTID -eq 0 || -s ") S
+($FAM_P) str
+(" ]] || die ") p
+(plastid fam not found: $FAM_P) str
+(") p n
+(222) # ([[ $DO_MT_BAIT -eq 0 && $DO_DROP_PLASTID -eq 0 ]] || {) N
+(223) # () S 2 T (command -v ") S
+($HMMBIN) str
+(" >/dev/null 2>&1 || die ") p
+(missing $HMMBIN) str
+(") p n
+(224) # () S 2 T (need ") S
+($NHMMSCAN) str
+(") p n
+(225) # (}) N
+(226) # ([[ $DO_RARE_MASK -eq 1 ]] && {) N
+(227) # () S 2 T (need kmc) N
+(228) # () S 2 T (command -v kmc_tools >/dev/null 2>&1 || need kmc_tools) N
+(229) # (}) N
+(230) # ([[ $DO_CORRECT -eq 1 ]] && need canu) N
+(231) # ([[ $DO_CORRECT -eq 2 ]] && {) N
+(232) # () S 2 T (need ratatosk || need Ratatosk || true) N
+(233) # () S 2 T ([[ -n ") S
+($SHORT_READS) str
+(" ]] || die ") p
+(--short-reads required) str
+(") p n
+(234) # (}) N
+(235) # () N
+(236) # () S
+(# --------------- Stage-0 run ------------------) c n
+(237) # () S
+(CUR=") p
+($READS) str
+(") p n
+(238) # () N
+(239) # () S
+(# trim) c n
+(240) # () S
+(if) K
+( [[ $DO_TRIM -eq 1 ]]; ) p
+(then) K n
+(241) # () S
+() p 2 T (log 1 ") S
+([trim] porechop_abi) str
+(") p n
+(242) # () S 2 T (porechop_abi -i ") S
+($CUR) str
+(" -o reads.trim.fq -t ") p
+($THREADS) str
+(") p n
+(243) # () S 2 T (CUR=") S
+($PWD/reads.trim.fq) str
+(") p n
+(244) # () S
+(fi) K n
+(245) # () S
+(# scrub) c n
+(246) # () S
+(if) K
+( [[ $DO_SCRUB -eq 1 ]]; ) p
+(then) K n
+(247) # () S
+() p 2 T (log 1 ") S
+([scrub] minimap2 ava-ont + yacrd) str
+(") p n
+(248) # () S 2 T (minimap2 -x ava-ont -g 500 -t ") S
+($THREADS) str
+(" ") p
+($CUR) str
+(" ") p
+($CUR) str
+(" >overlaps.paf) p n
+(249) # () S 2 T (yacrd -i overlaps.paf -o yacrd.tsv -c 4 -n -p 0.4) N
+(250) # () S 2 T (awk ') S
+($3=="chimera"{next} $3=="unchanged"{print $1}) str
+(' yacrd.tsv >keep.ids) p n
+(251) # () S 2 T (seqkit grep -f keep.ids ") S
+($CUR) str
+(" -o reads.scrub.fq) p n
+(252) # () S 2 T (CUR=") S
+($PWD/reads.scrub.fq) str
+(") p n
+(253) # () S
+(fi) K n
+(254) # () S
+(# lenfilt) c n
+(255) # () S
+(if) K
+( [[ $DO_LENFILT -eq 1 ]]; ) p
+(then) K n
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (Page 5/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (5/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (6) 6
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(256) # () p 2 T () S
+(if) K
+( command -v filtlong >/dev/null 2>&1; ) p
+(then) K n
+(257) # () S
+() p 2 T () S 4 T (log 1 ") S
+([lenfilt] filtlong --min_length $LEN_MIN --keep_percent $KEEP_PCT) str
+(") p n
+(258) # () S 2 T () S 4 T (filtlong --min_length ") S
+($LEN_MIN) str
+(" --keep_percent ") p
+($KEEP_PCT) str
+(" ") p
+($CUR) str
+(" >reads.long.fq) p n
+(259) # () S 2 T () S 4 T (CUR=") S
+($PWD/reads.long.fq) str
+(") p n
+(260) # () S 2 T () S
+(else) K n
+(261) # () S
+() p 2 T () S 4 T (log 1 ") S
+([lenfilt] seqkit seq -m $LEN_MIN) str
+(") p n
+(262) # () S 2 T () S 4 T (seqkit seq -m ") S
+($LEN_MIN) str
+(" ") p
+($CUR) str
+(" -o reads.len.fq) p n
+(263) # () S 2 T () S 4 T (CUR=") S
+($PWD/reads.len.fq) str
+(") p n
+(264) # () S 2 T () S
+(fi) K n
+(265) # (fi) N
+(266) # () S
+(# HMM mt-bait) c n
+(267) # () S
+(if) K
+( [[ $DO_MT_BAIT -eq 1 ]]; ) p
+(then) K n
+(268) # () S
+() p 2 T (log 1 ") S
+([mt-bait pre] $HMMBIN vs mito fam) str
+(") p n
+(269) # () S 2 T (") S
+($HMMBIN) str
+(" -t ") p
+($THREADS) str
+(" --nhmmscan ") p
+($NHMMSCAN) str
+(" -o reads.mito.txt ") p
+($FAM_M) str
+(" ") p
+($CUR) str
+(") p n
+(270) # () S 2 T (awk -v FS=') S
+([[:space:]]+) str
+(' ') p
+($1!~/^#/{print $3}) str
+(' reads.mito.txt | sort -u >mt.ids) p n
+(271) # () S 2 T (seqkit grep -f mt.ids ") S
+($CUR) str
+(" -o reads.mt.fq) p n
+(272) # () S 2 T (CUR=") S
+($PWD/reads.mt.fq) str
+(") p n
+(273) # () S
+(fi) K n
+(274) # () S
+(# plastid drop) c n
+(275) # () S
+(if) K
+( [[ $DO_DROP_PLASTID -eq 1 ]]; ) p
+(then) K n
+(276) # () S
+() p 2 T (log 1 ") S
+([plastid pre] drop plastid reads) str
+(") p n
+(277) # () S 2 T (") S
+($HMMBIN) str
+(" -t ") p
+($THREADS) str
+(" --nhmmscan ") p
+($NHMMSCAN) str
+(" -o reads.pt.txt ") p
+($FAM_P) str
+(" ") p
+($CUR) str
+(") p n
+(278) # () S 2 T (awk -v FS=') S
+([[:space:]]+) str
+(' ') p
+($1!~/^#/{print $3}) str
+(' reads.pt.txt | sort -u >pt.ids) p n
+(279) # () S 2 T (seqkit grep -v -f pt.ids ") S
+($CUR) str
+(" -o reads.mt.noPT.fq) p n
+(280) # () S 2 T (CUR=") S
+($PWD/reads.mt.noPT.fq) str
+(") p n
+(281) # () S
+(fi) K n
+(282) # () S
+(# duplex-only) c n
+(283) # () S
+(if) K
+( [[ $DO_DUPLEX_ONLY -eq 1 ]]; ) p
+(then) K n
+(284) # () S
+() p 2 T (log 1 ") S
+([duplex] keep header tag: $DUPLEX_TAG) str
+(") p n
+(285) # () S 2 T (awk -v tag=") S
+($DUPLEX_TAG) str
+(" ') p
+(BEGIN{OFS="\\n"}) str n
+(286) # (    NR%4==1{keep=index\($0,tag\)>0;h=$0}) N
+(287) # (    NR%4==2{s=$0}) N
+(288) # (    NR%4==3{p=$0}) N
+(289) # (    NR%4==0{q=$0; if\(keep\){print h,s,p,q}}) S
+(' ") p
+($CUR) str
+(" >reads.duplex.fq) p n
+(290) # () S 2 T (CUR=") S
+($PWD/reads.duplex.fq) str
+(") p n
+(291) # () S
+(fi) K n
+(292) # () S
+(# rare-mask \(placeholder\)) c n
+(293) # () S
+(if) K
+( [[ $DO_RARE_MASK -eq 1 ]]; ) p
+(then) K n
+(294) # () S
+() p 2 T (log 1 ") S
+([rare-k] KMC k=$RARE_K, <=$RARE_MAX) str
+(") p n
+(295) # () S 2 T (mkdir -p kmc_tmp) N
+(296) # () S 2 T (kmc -k") S
+($RARE_K) str
+(" -t") p
+($THREADS) str
+(" -ci1 -cs100000000 ") p
+($CUR) str
+(" kmc.db kmc_tmp/) p n
+(297) # () S 2 T (kmc_tools transform kmc.db dump -ci1 -cx") S
+($RARE_MAX) str
+(" rare_k.txt) p n
+(298) # () S 2 T (cp ") S
+($CUR) str
+(" reads.mask.fq) p n
+(299) # () S 2 T (CUR=") S
+($PWD/reads.mask.fq) str
+(") p n
+(300) # () S
+(fi) K n
+(301) # () S
+(# correction) c n
+(302) # () S
+(if) K
+( [[ $DO_CORRECT -eq 1 ]]; ) p
+(then) K n
+(303) # () S
+() p 2 T (log 1 ") S
+([correct] Canu correction-only) str
+(") p n
+(304) # () S 2 T (mkdir -p corr) N
+(305) # () S 2 T (canu -correct -p ontcorr -d corr genomeSize=500k -nanopore-raw ") S
+($CUR) str
+(" 2>corr/canu.log || log 1 ") p
+([warn] canu failed?) str
+(") p n
+(306) # () S 2 T () S
+(if) K
+( ls corr/ontcorr.correctedReads.fasta.gz >/dev/null 2>&1; ) p
+(then) K
+( CUR=") p
+($PWD/corr/ontcorr.correctedReads.fasta.gz) str
+("; ) p
+(fi) K n
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (Page 6/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (6/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (7) 7
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(307) # (elif) K
+( [[ $DO_CORRECT -eq 2 ]]; ) p
+(then) K n
+(308) # () S
+() p 2 T (log 1 ") S
+([correct] Ratatosk) str
+(") p n
+(309) # () S 2 T (need ratatosk || need Ratatosk || true) N
+(310) # () S 2 T ([[ -n ") S
+($SHORT_READS) str
+(" ]] || die ") p
+(--short-reads required for Ratatosk) str
+(") p n
+(311) # () S 2 T (ratatosk -s ") S
+($SHORT_READS) str
+(" -l ") p
+($CUR) str
+(" -o reads.rtk.fq -t ") p
+($THREADS) str
+(" || log 1 ") p
+([warn] ratatosk failed?) str
+(") p n
+(312) # () S 2 T (CUR=") S
+($PWD/reads.rtk.fq) str
+(") p n
+(313) # () S
+(fi) K n
+(314) # () N
+(315) # () S
+(# emit final) c n
+(316) # () S
+(FINAL=") p
+($PWD/reads.pre.fq) str
+(") p n
+(317) # (cp -f ") S
+($CUR) str
+(" ") p
+($FINAL) str
+(") p n
+(318) # () N
+(319) # () S
+(# report) c n
+(320) # () S
+({) p n
+(321) # () S 2 T (echo -e ") S
+(key\\tvalue) str
+(") p n
+(322) # () S 2 T (echo -e ") S
+(reads_in\\t$READS) str
+(") p n
+(323) # () S 2 T (echo -e ") S
+(out\\t$OUT) str
+(") p n
+(324) # () S 2 T (echo -e ") S
+(reads_pre\\t$FINAL) str
+(") p n
+(325) # () S 2 T (echo -e ") S
+(trim\\t$\([[ $DO_TRIM -eq 1 ]] && echo ON || echo OFF\)) str
+(") p n
+(326) # () S 2 T (echo -e ") S
+(scrub\\t$\([[ $DO_SCRUB -eq 1 ]] && echo ON || echo OFF\)) str
+(") p n
+(327) # () S 2 T (echo -e ") S
+(len_min\\t$\([[ $DO_LENFILT -eq 1 ]] && echo $LEN_MIN || echo .\)) str
+(") p n
+(328) # () S 2 T (echo -e ") S
+(keep_pct\\t$\([[ $DO_LENFILT -eq 1 && $\() str n
+(329) # () S 2 T () S 4 T (command -v filtlong >/dev/null) N
+(330) # () S 2 T () S 4 T (echo $?) N
+(331) # () S 2 T (\) -eq 0 ]] && echo $KEEP_PCT || echo .\)) S
+(") p n
+(332) # () S 2 T (echo -e ") S
+(mt_bait_prefilter\\t$\([[ $DO_MT_BAIT -eq 1 ]] && echo ON || echo OFF\)) str
+(") p n
+(333) # () S 2 T (echo -e ") S
+(drop_plastid_prefilter\\t$\([[ $DO_DROP_PLASTID -eq 1 ]] && echo ON || echo OFF\)) str
+(") p n
+(334) # () S 2 T (echo -e ") S
+(duplex_only\\t$\([[ $DO_DUPLEX_ONLY -eq 1 ]] && echo $DUPLEX_TAG || echo OFF\)) str
+(") p n
+(335) # () S 2 T (echo -e ") S
+(rare_mask\\t$\([[ $DO_RARE_MASK -eq 1 ]] && echo K=$RARE_K,max=$RARE_MAX || echo OFF\)) str
+(") p n
+(336) # () S 2 T (echo -e ") S
+(corrector\\t$\([[ $DO_CORRECT -eq 1 ]] && echo CANU || \([[ $DO_CORRECT -eq 2 ]] && echo RATATOSK || echo OFF\)\)) str
+(") p n
+(337) # (} >") S
+($OUT/pre/stage0.report.tsv) str
+(") p n
+(338) # () N
+(339) # (log 1 ") S
+([Stage-0 done] Preprocessed reads: $FINAL) str
+(") p n
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (Page 7/7) ( 9\354M-^[M-^T 15, 25 17:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-oatk-ont-sidekicks-stage1.sh) (7/7) (\354M-^[M-^T\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 15, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+
+%%Trailer
+end
+%%EOF

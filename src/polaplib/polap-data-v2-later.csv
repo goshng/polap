@@ -1,0 +1,13 @@
+species,_folder,_long,_short,_host,_ptgaul_genomesize,_compare_n,_compare_p,_compare_r,_polish_n,_polish_p,_random_seed,_ssh,_memory,_downsample,_inum,_table1,_dummy,_status
+Test_test,Test_test,Test_test,SRRTESTL,SRRTESTS,thorne,160000,20,10,10,5,5,101,thorne,16,30,0,F,F,F,dummy,test
+Brassica_carinata,Brassica_carinata,ERR10115635,ERR10114828,vincent,160000,20,10,10,5,5,159,vincent,16,30,0,F,dummy,redownload-short-read
+Delphinium_montanum,Delphinium_montanum,ERR6447760,ERR6447361,vincent,160000,20,10,10,5,5,133,vincent,16,30,0,F,dummy,no-short-read-data
+Brassica_carinata-0,Brassica_carinata,Brassica_carinata,ERR10115635,ERR10114828,siepel,160000,20,10,10,5,5,135,siepel,32,10,0,F,F,F,dummy,done
+Brassica_carinata-1,Brassica_carinata,Brassica_carinata,ERR10115635,ERR10114828,siepel,160000,20,10,10,5,5,135,siepel,32,0,1,F,F,F,dummy,done
+Brassica_carinata-2,Brassica_carinata,Brassica_carinata,ERR10115635,ERR10114828,siepel,160000,10,5,5,5,5,135,siepel,32,10,2,F,F,F,dummy,done
+Pisum_sativum-0,Pisum_sativum,Pisum_sativum,DRR244482,DRR244484,vincent,160000,20,10,10,5,5,153,vincent,32,10,0,F,F,F,dummy,done
+Pisum_sativum-1,Pisum_sativum,Pisum_sativum,DRR244482,DRR244484,vincent,160000,20,1,10,5,5,153,vincent,16,30,1,F,F,F,dummy,inprogress
+Pisum_sativum-2,Pisum_sativum,Pisum_sativum,DRR244482,DRR244484,vincent,160000,10,5,5,5,5,333,vincent,32,10,2,F,F,F,dummy,done
+Pterocarpus_santalinus-0,Pterocarpus_santalinus,Pterocarpus_santalinus,SRR22806276,SRR22806277,vincent,160000,20,10,10,5,5,119,vincent,16,10,0,F,F,F,dummy,done
+Pterocarpus_santalinus-1,Pterocarpus_santalinus,Pterocarpus_santalinus,SRR22806276,SRR22806277,vincent,160000,20,10,10,5,5,119,vincent,16,30,1,F,F,F,dummy,done
+Pterocarpus_santalinus-2,Pterocarpus_santalinus,Pterocarpus_santalinus,SRR22806276,SRR22806277,vincent,160000,10,5,5,5,5,365,vincent,16,10,2,F,F,F,dummy,done

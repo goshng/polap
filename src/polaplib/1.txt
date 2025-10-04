@@ -1,0 +1,7 @@
+function _polap_summary-generated-reads {
+function _run_polap_summary-reads { # statisics of the read dataset
+function _run_polap_total-length-long { # total size (bp) of long-read data
+function _run_polap_total-length-short { # total size (bp) of short-read data
+function _run_polap_find-genome-size { # estimate the whole genome size
+function _run_polap_reduce-data { # reduce the long-read data, if too big
+function _run_polap_flye1 { # execute Flye for a whole-genome assembly

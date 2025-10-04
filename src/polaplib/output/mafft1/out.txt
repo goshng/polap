@@ -1,0 +1,5 @@
+Alignment: 159944 
+Match: 159929 
+Mismatch: 0 
+Gap: 15 
+Percent Identity: 99.99062%

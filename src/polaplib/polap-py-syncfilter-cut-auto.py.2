@@ -1,0 +1,493 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+polap-py-syncfilter-cut-auto.py  v0.6.0
+
+Purpose:
+  Learn a nuclear single cut (right-tail) and optional two-sided bands for
+  plastid (pt) and mitochondrial (mt) from anchor read IDs on
+  X = log10(median syncmer multiplicity / coverage proxy).
+
+Inputs:
+  -i/--input  syncfilter TSV (columns: read_id, n_syncmer, mean, median, q25, q75, class)
+  --pt FILE   list of pt-anchored read IDs (optional)
+  --mt FILE   list of mt-anchored read IDs (optional)
+
+Outputs:
+  --cuts-out <prefix>.cuts.tsv  with header:
+    f1  f2  three_bins  method  mu_log10  sigma_log10  tail  type
+    - nuclear row: one-sided cut (f1=linear, f2=NA, three_bins=0, type=nuclear)
+    - pt row: two-sided band (f1,f2 linear, three_bins=1, type=pt)
+    - mt row: two-sided band (f1,f2 linear, three_bins=1, type=mt)
+
+  --tsv-out <prefix>.reclass.tsv
+    same table as input but 'class' column rewritten to nuclear|pt|mt
+
+  Also writes three ID files next to --tsv-out:
+    <prefix base>.nuclear.ids
+    <prefix base>.pt.ids
+    <prefix base>.mt.ids
+
+  And an overlay PNG (if --png) with all three band/thresholds.
+
+Notes:
+  * Separate tails can be set via --tail (nuclear), --tail-mt, --tail-pt.
+  * If an anchor set is too small, band is skipped.
+  * Overlap resolution: pt > mt > nuclear (ties broken by closer μ).
+"""
+
+import argparse
+import csv
+import os
+import sys
+import math
+from collections import defaultdict
+
+import numpy as np
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+VERSION = "0.6.0"
+
+
+# -------------------- utils --------------------
+def norm_id(s: str) -> str:
+    """Keep only the first token (strip any description after whitespace)."""
+    return (s or "").split()[0]
+
+
+def read_ids(path):
+    S = set()
+    if not path:
+        return S
+    with open(path) as fh:
+        for line in fh:
+            tok = line.strip().split()
+            if tok:
+                S.add(tok[0])
+    return S
+
+
+def write_reclass_tsv(rows, path):
+    with open(path, "w", newline="") as w:
+        out = csv.writer(w, delimiter="\t")
+        out.writerow(["read_id", "n_syncmer", "mean", "median", "q25", "q75", "class"])
+        for r in rows:
+            out.writerow(
+                [
+                    r["read_id"],
+                    r.get("n_syncmer", ""),
+                    r.get("mean", ""),
+                    f'{r["median"]:.3f}',
+                    r.get("q25", ""),
+                    r.get("q75", ""),
+                    r["class_out"],
+                ]
+            )
+    print(f"[tsv] reclass saved -> {path}")
+
+
+def write_ids(paths_prefix, rows):
+    # paths_prefix is expected to be something like PREFIX.tag.reclass.tsv
+    base = os.path.splitext(paths_prefix)[0]  # drop .tsv
+    pref = base  # PREFIX.tag.reclass
+    roots = [
+        (os.path.splitext(pref)[0] + ".nuclear.ids", "nuclear"),
+        (os.path.splitext(pref)[0] + ".pt.ids", "pt"),
+        (os.path.splitext(pref)[0] + ".mt.ids", "mt"),
+    ]
+    buckets = defaultdict(list)
+    for r in rows:
+        buckets[r["class_out"]].append(r["read_id"])
+    for fn, k in roots:
+        with open(fn, "w") as w:
+            for rid in buckets.get(k, []):
+                w.write(rid + "\n")
+        print(f"[ids] {k:<7} -> {fn}  (n={len(buckets.get(k, []))})")
+
+
+def sigma_mad(x: np.ndarray):
+    if x.size == 0:
+        return None
+    med = np.median(x)
+    mad = np.median(np.abs(x - med))
+    if mad == 0:
+        return float(np.std(x)) if x.size > 1 else None
+    return float(mad / 0.6744897501960817)
+
+
+# ---- general one-sided z from tail ----
+try:
+    # Python 3.8+
+    from statistics import NormalDist
+except ImportError:
+    NormalDist = None
+
+
+def z_for_tail(t: float) -> float:
+    """
+    One-sided right-tail z for probability t, i.e. z = Phi^{-1}(1 - t).
+    Works for any t in (0,1). For t<=0 -> +inf; for t>=1 -> 0.
+    Examples: t=0.05→1.64485, t=0.10→1.28155, t=0.5→0.
+    """
+    t = float(t)
+    if t <= 0.0:
+        return float("inf")
+    if t >= 1.0:
+        return 0.0
+    if NormalDist is not None:
+        return NormalDist().inv_cdf(1.0 - t)
+    # Fallback (uses erfcinv if available; else Hastings' approximation)
+    try:
+        return math.sqrt(2.0) * math.erfcinv(2.0 * t)  # type: ignore[attr-defined]
+    except AttributeError:
+        # Hastings' approximation for inverse normal CDF (Abramowitz–Stegun 26.2.23)
+        p = 1.0 - t
+        a1, a2, a3, a4, a5 = (
+            -39.69683028665376,
+            220.9460984245205,
+            -275.9285104469687,
+            138.3577518672690,
+            -30.66479806614716,
+        )
+        a6 = 2.506628277459239
+        b1, b2, b3, b4 = (
+            -54.47609879822406,
+            161.5858368580409,
+            -155.6989798598866,
+            66.80131188771972,
+        )
+        c1, c2, c3, c4, c5 = (
+            -0.007784894002430293,
+            -0.3223964580411365,
+            -2.400758277161838,
+            -2.549732539343734,
+            4.374664141464968,
+        )
+        c6 = 2.938163982698783
+        d1, d2, d3 = 0.007784695709041462, 0.3224671290700398, 2.445134137142996
+        plow, phigh = 0.02425, 1.0 - 0.02425
+        if p < plow:
+            q = math.sqrt(-2.0 * math.log(p))
+            x = (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) / (
+                (((d1 * q + d2) * q + d3) * q + 1.0)
+            )
+        elif p > phigh:
+            q = math.sqrt(-2.0 * math.log(1.0 - p))
+            x = -(((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) / (
+                (((d1 * q + d2) * q + d3) * q + 1.0)
+            )
+        else:
+            q = p - 0.5
+            r = q * q
+            x = (
+                (((((a1 * r + a2) * r + a3) * r + a4) * r + a5) * r + a6)
+                * q
+                / (((((b1 * r + b2) * r + b3) * r + b4) * r + 1.0))
+            )
+        return float(x)
+
+
+def write_cuts(cuts_path, lines):
+    # lines: list of dicts with keys:
+    # f1,f2,three_bins,method,mu_log10,sigma_log10,tail,type
+    with open(cuts_path, "w") as w:
+        w.write("f1\tf2\tthree_bins\tmethod\tmu_log10\tsigma_log10\ttail\ttype\n")
+        for L in lines:
+            w.write(
+                f'{L["f1"]}\t{L["f2"]}\t{L["three_bins"]}\t{L["method"]}\t'
+                f'{L["mu_log10"]}\t{L["sigma_log10"]}\t{L["tail"]}\t{L["type"]}\n'
+            )
+    print(f"[cuts] saved -> {cuts_path}")
+
+
+def plot_bands(X_all, bands, png_path):
+    # bands: dict type->{mu,sigma,range}, where 'range' is (lo,hi) in log10
+    plt.figure(figsize=(8.8, 4.8))
+    plt.hist(X_all, bins=140, alpha=0.35, label="all reads")
+
+    colors = {"nuclear": "tab:blue", "pt": "tab:green", "mt": "tab:orange"}
+    for t in ("nuclear", "pt", "mt"):
+        if t in bands:
+            b = bands[t]
+            mu = b["mu"]
+            r = b["range"]
+            c = colors.get(t, None)
+            if r[0] is not None:
+                plt.axvline(r[0], linestyle="--", linewidth=1.8, color=c)
+            if r[1] is not None:
+                plt.axvline(r[1], linestyle="--", linewidth=1.8, color=c)
+            plt.axvline(
+                mu, linestyle=":", linewidth=1.8, color=c, label=f"{t} μ={mu:.3f}"
+            )
+
+    plt.xlabel("log10(median syncmer multiplicity / coverage proxy)")
+    plt.ylabel("count (reads)")
+    plt.legend(loc="upper right", fontsize=9)
+    plt.tight_layout()
+    plt.savefig(png_path, dpi=150)
+    plt.close()
+    print(f"[plot] saved -> {png_path}")
+
+
+# -------------------- main --------------------
+def main():
+    ap = argparse.ArgumentParser(
+        description="Auto-cut and band learning for nuclear/pt/mt using anchor IDs."
+    )
+    ap.add_argument("-i", "--input", required=True, help="syncfilter *.tsv")
+    ap.add_argument(
+        "--method",
+        choices=["mad", "window", "std", "valley", "hybrid"],
+        default="hybrid",
+        help="method for nuclear single-cut (right tail)",
+    )
+    ap.add_argument(
+        "--tail",
+        type=float,
+        default=0.05,
+        help="right-tail probability for nuclear band [default: 0.05]",
+    )
+    ap.add_argument(
+        "--tail-mt",
+        type=float,
+        default=None,
+        help="override right-tail probability for mt band (else use --tail)",
+    )
+    ap.add_argument(
+        "--tail-pt",
+        type=float,
+        default=None,
+        help="override right-tail probability for pt band (else use --tail)",
+    )
+    ap.add_argument(
+        "--window-width",
+        type=float,
+        default=0.20,
+        help="window width in log10 for 'window' sigma",
+    )
+    ap.add_argument(
+        "--band-max",
+        type=float,
+        default=2.0,
+        help="upper limit to define nuclear band (X < band_max)",
+    )
+    ap.add_argument(
+        "--sigma-floor", type=float, default=0.03, help="min sigma to avoid underflow"
+    )
+    ap.add_argument("--nbins", type=int, default=320)
+    ap.add_argument("--pt", help="pt anchor IDs (txt)")
+    ap.add_argument("--mt", help="mt anchor IDs (txt)")
+    ap.add_argument("--cuts-out", required=True, help="write cuts tsv here")
+    ap.add_argument(
+        "--tsv-out", required=True, help="reclass TSV (class=nuclear|pt|mt)"
+    )
+    ap.add_argument("--png", help="overlay PNG of all bands")
+    ap.add_argument("--version", action="store_true", help="print version and exit")
+    args = ap.parse_args()
+
+    if args.version:
+        print(VERSION)
+        sys.exit(0)
+
+    # pick tails per band
+    tail_nuc = args.tail
+    tail_mt = args.tail_mt if args.tail_mt is not None else args.tail
+    tail_pt = args.tail_pt if args.tail_pt is not None else args.tail
+
+    # Load rows
+    rows = []
+    with open(args.input, newline="") as fh:
+        r = csv.DictReader(fh, delimiter="\t")
+        for row in r:
+            try:
+                med = float(row["median"])
+                if med <= 0:
+                    continue
+                X = math.log10(med)
+                rows.append(
+                    {
+                        "read_id": norm_id(row["read_id"]),
+                        "n_syncmer": row.get("n_syncmer", ""),
+                        "mean": row.get("mean", ""),
+                        "median": med,
+                        "q25": row.get("q25", ""),
+                        "q75": row.get("q75", ""),
+                        "class_in": row.get("class", ""),
+                        "X": X,
+                    }
+                )
+            except Exception:
+                pass
+    if not rows:
+        print("[error] no usable rows", file=sys.stderr)
+        sys.exit(2)
+
+    X_all = np.array([r["X"] for r in rows], dtype=float)
+
+    # ----- Nuclear single cut (right-tail) -----
+    X_nuc_band = X_all[X_all < args.band_max]
+    if X_nuc_band.size == 0:
+        print(f"[error] no reads with X < {args.band_max}", file=sys.stderr)
+        sys.exit(2)
+
+    mu_nuc = float(np.median(X_nuc_band))
+
+    # sigma for nuclear
+    method_used = args.method
+    if args.method == "mad":
+        sigma_nuc = sigma_mad(X_nuc_band)
+    elif args.method == "std":
+        sigma_nuc = float(np.std(X_nuc_band)) if X_nuc_band.size > 1 else None
+    else:
+        W = args.window_width
+        sel = X_nuc_band[(X_nuc_band >= mu_nuc - W) & (X_nuc_band <= mu_nuc)]
+        sigma_nuc = float(np.std(sel)) if sel.size > 1 else sigma_mad(X_nuc_band)
+
+    if sigma_nuc is None or not np.isfinite(sigma_nuc) or sigma_nuc <= 0:
+        sigma_nuc = args.sigma_floor
+    else:
+        sigma_nuc = max(sigma_nuc, args.sigma_floor)
+
+    z_nuc = z_for_tail(tail_nuc)
+    cut_nuc_log = mu_nuc + z_nuc * sigma_nuc
+    cut_nuc_lin = 10**cut_nuc_log
+
+    cuts_lines = [
+        {
+            "f1": f"{cut_nuc_lin:.8f}",
+            "f2": "NA",
+            "three_bins": "0",
+            "method": method_used,
+            "mu_log10": f"{mu_nuc:.5f}",
+            "sigma_log10": f"{sigma_nuc:.5f}",
+            "tail": f"{tail_nuc}",
+            "type": "nuclear",
+        }
+    ]
+
+    # ----- PT / MT bands from anchors -----
+    pt_ids = read_ids(args.pt)
+    mt_ids = read_ids(args.mt)
+
+    def learn_band_from_ids(X_rows, ids, tail, tag):
+        """Return None or dict(mu, sigma, range=(f1_log10,f2_log10), z)."""
+        if not ids:
+            return None
+        X = np.array([r["X"] for r in X_rows if r["read_id"] in ids], dtype=float)
+        if X.size < 10:
+            print(
+                f"[warn] too few anchors for {tag} (n={X.size}) — skipping band",
+                file=sys.stderr,
+            )
+            return None
+        mu = float(np.median(X))
+        sigma = float(np.std(X)) if X.size > 1 else None
+        if sigma is None or not np.isfinite(sigma) or sigma <= 0:
+            sigma = sigma_mad(X)
+        if sigma is None or not np.isfinite(sigma) or sigma <= 0:
+            sigma = args.sigma_floor
+        else:
+            sigma = max(sigma, args.sigma_floor)
+        z = z_for_tail(tail)
+        f1 = mu - z * sigma
+        f2 = mu + z * sigma
+        return dict(mu=mu, sigma=sigma, z=z, range=(f1, f2))
+
+    band_pt = learn_band_from_ids(rows, pt_ids, tail_pt, "pt")
+    band_mt = learn_band_from_ids(rows, mt_ids, tail_mt, "mt")
+
+    if band_pt:
+        cuts_lines.append(
+            {
+                "f1": f"{10**band_pt['range'][0]:.8f}",
+                "f2": f"{10**band_pt['range'][1]:.8f}",
+                "three_bins": "1",
+                "method": "std",
+                "mu_log10": f"{band_pt['mu']:.5f}",
+                "sigma_log10": f"{band_pt['sigma']:.5f}",
+                "tail": f"{tail_pt}",
+                "type": "pt",
+            }
+        )
+    if band_mt:
+        cuts_lines.append(
+            {
+                "f1": f"{10**band_mt['range'][0]:.8f}",
+                "f2": f"{10**band_mt['range'][1]:.8f}",
+                "three_bins": "1",
+                "method": "std",
+                "mu_log10": f"{band_mt['mu']:.5f}",
+                "sigma_log10": f"{band_mt['sigma']:.5f}",
+                "tail": f"{tail_mt}",
+                "type": "mt",
+            }
+        )
+
+    write_cuts(args.cuts_out, cuts_lines)
+
+    # ----- Reclassify reads -> nuclear | pt | mt -----
+    def in_band(x, band):
+        if not band:
+            return False
+        a, b = band["range"]  # both are in log10 space
+        # be inclusive at boundaries; adjust eps if you like
+        return (x >= a) and (x <= b)
+
+    for r in rows:
+        x = r["X"]
+        # STRICT policy: pt > mt > nuclear
+        if band_pt and in_band(x, band_pt):
+            choose = "pt"
+        elif band_mt and in_band(x, band_mt):
+            choose = "mt"
+        else:
+            # Strict: everything else is nuclear, even if x > cut_nuc_log
+            choose = "nuclear"
+
+            # If you later want the old "closest μ" soft behavior back, uncomment:
+            # if x > cut_nuc_log:
+            #     cand = []
+            #     if band_pt: cand.append(("pt", abs(x - band_pt["mu"])))
+            #     if band_mt: cand.append(("mt", abs(x - band_mt["mu"])))
+            #     if cand and min(cand, key=lambda t: t[1])[1] < 1e-9:  # tiny tolerance
+            #         choose = min(cand, key=lambda t: t[1])[0]
+
+        r["class_out"] = choose
+
+    write_reclass_tsv(rows, args.tsv_out)
+    write_ids(args.tsv_out, rows)
+
+    # ----- Plot -----
+    if args.png:
+        bands = {
+            "nuclear": {
+                "mu": mu_nuc,
+                "sigma": sigma_nuc,
+                "range": (cut_nuc_log, cut_nuc_log),
+            }
+        }
+        if band_pt:
+            bands["pt"] = band_pt
+        if band_mt:
+            bands["mt"] = band_mt
+        plot_bands(X_all, bands, args.png)
+
+    # ----- Logs -----
+    print(f"[nuclear] μ={mu_nuc:.4f}  σ={sigma_nuc:.4f}  cut={10**cut_nuc_log:.3f}x")
+    if band_pt:
+        print(
+            f"[pt]      μ={band_pt['mu']:.4f}  σ={band_pt['sigma']:.4f}  "
+            f"[{10**band_pt['range'][0]:.3f}x .. {10**band_pt['range'][1]:.3f}x]  (tail={tail_pt})"
+        )
+    if band_mt:
+        print(
+            f"[mt]      μ={band_mt['mu']:.4f}  σ={band_mt['sigma']:.4f}  "
+            f"[{10**band_mt['range'][0]:.3f}x .. {10**band_mt['range'][1]:.3f}x]  (tail={tail_mt})"
+        )
+
+
+if __name__ == "__main__":
+    main()

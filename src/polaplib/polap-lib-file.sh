@@ -145,3 +145,71 @@ _polap_lib_file-gunzip() {
 		return 1
 	fi
 }
+
+# # Preview files > 5 MB (default)
+# _polap_lib_file-cleanup
+#
+# # Preview files > 10 MB
+# _polap_lib_file-cleanup -s 10M
+#
+# # Delete files > 1 GB in /tmp
+# _polap_lib_file-cleanup -d /tmp -s 1G -a rm
+#
+# # Ask before deleting files > 500K in ./logs
+# _polap_lib_file-cleanup -d ./logs -s 500K -a ask
+_polap_lib_file-cleanup() {
+	local dir="."
+	local size="+5M"   # default threshold
+	local action="dry" # default action: preview
+
+	# Parse arguments
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		-d | --dir)
+			dir="$2"
+			shift 2
+			;;
+		-s | --size)
+			size="$2"
+			# If size doesn’t start with + or -, assume +
+			if [[ ! "$size" =~ ^[+-] ]]; then
+				size="+$size"
+			fi
+			shift 2
+			;;
+		-a | --action)
+			action="$2" # dry | rm | ask
+			shift 2
+			;;
+		*)
+			echo "Unknown option: $1" >&2
+			echo "Usage: _polap_lib_file_cleanup [-d dir] [-s size] [-a dry|rm|ask]" >&2
+			return 2
+			;;
+		esac
+	done
+
+	if [[ ! -d "$dir" ]]; then
+		echo "Error: Directory not found: $dir" >&2
+		return 1
+	fi
+
+	case "$action" in
+	dry)
+		echo "[INFO] Previewing files > ${size#?} in: $dir"
+		find "$dir" -type f -size "$size" -printf "%s\t%p\n" | numfmt --to=iec --field=1
+		;;
+	rm)
+		echo "[INFO] Deleting files > ${size#?} in: $dir"
+		echo find "$dir" -type f -size "$size" -print -delete
+		;;
+	ask)
+		echo "[INFO] Confirm before deleting each file > ${size#?} in: $dir"
+		find "$dir" -type f -size "$size" -ok rm {} \;
+		;;
+	*)
+		echo "Usage: _polap_lib_file_cleanup [-d dir] [-s size] [-a dry|rm|ask]" >&2
+		return 2
+		;;
+	esac
+}

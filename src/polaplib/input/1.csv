@@ -1,0 +1,6 @@
+species,taxon,long,short,host,random,down,memory,p,n,r,alpha,delta,ptgaul,pmat,tippo,oatk,ref,dummy,status
+Test_species-0,Anthoceros_agrestis,l,s,siepel,157,100,16,100,10,5,1.0,0.75,160000,0.1,onthq,30,Anthoceros agrestis,dummy,done
+Test_species-1,Anthoceros_agrestis,l,s,siepel,101,100,16,100,10,5,1.0,0.75,160000,0.1,onthq,30,Anthoceros agrestis,dummy,done
+Test_species-2,Anthoceros_agrestis,l,s,siepel,301,100,16,100,10,5,1.0,0.75,160000,0.1,onthq,30,Anthoceros agrestis,dummy,done
+Test_species-4,Anthoceros_agrestis,l,s,siepel,401,100,16,100,10,5,1.0,0.75,160000,0.1,onthq,30,Anthoceros agrestis,dummy,cleanup
+Test_species-7,Anthoceros_agrestis,l,s,siepel,557,100,16,100,10,5,1.0,0.75,160000,0.1,onthq,30,Anthoceros agrestis,dummy,done

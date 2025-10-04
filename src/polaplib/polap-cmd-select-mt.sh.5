@@ -1,0 +1,743 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ----------------------------------------------------------------------
+# polap-bash-select-mt.sh  (consistent mt/pt outputs)
+#
+# Requires:
+#   syncfilter (>= v0.7.0 with --emit-read-syncmers)
+#   polap-py-syncfilter-cut-auto.py (supports --tail-mt/--tail-pt, strict bands)
+#   polap-py-syncmer-connectivity-select-mt.py (supports --sm-dump, --x-prior)
+#   polap-py-ensemble-mt.py
+#   polap-py-ensemble-report.py
+#   seqtk
+# ----------------------------------------------------------------------
+
+_THIS="${BASH_SOURCE[0]}"
+_POLAPLIB_DIR="$(cd -- "$(dirname -- "$_THIS")" && pwd)"
+
+# ---------- usage ----------
+polap_cmd_select_mt_usage() {
+	cat <<'EOF'
+Usage:
+  polap select-mt --reads READS.fq[.gz] --mt mt.id.all.txt -o out/prefix [options]
+  polap select-mt-report  ... generate HTML report (after GFA available)
+
+Inputs:
+  --reads FILE           FASTQ(.gz) with read IDs (first token)
+  --mt FILE              mt anchor IDs (one per line)
+  --pt FILE              pt anchor IDs (optional)
+  -o, --out PREFIX       output prefix (required)
+
+General:
+  --preset {hifi|ont}    k/s preset [hifi]
+  --threads INT          threads for syncfilter quickview [8]
+  --redo                 remove output folder if exists
+  -v INT                 syncfilter verbose [0]
+
+Coverage (syncfilter quickview):
+  -k INT                 k [hifi:121, ont:41]
+  -s INT                 s [hifi:27, ont:17]
+  --hpc                  HPC for quickview (ONT-friendly)
+
+Coverage banding:
+  --x-method STR         mad|window|std|valley|hybrid [hybrid]
+  --x-tail FLOAT         right-tail (nuclear) [0.05]
+  --tail-mt FLOAT        right-tail for mt band [default: --x-tail]
+  --tail-pt FLOAT        right-tail for pt band [default: --x-tail]
+  --x-win FLOAT          window width in log10 for 'window' sigma [0.20]
+  --band-max FLOAT       nuclear band upper [2.0]
+  --sigma-floor FLOAT    min sigma [0.03]
+
+PPR (runs on mt and, if --pt, pt band):
+  --ppr-k INT            k for PPR [defaults to quickview k]
+  --ppr-s INT            s for PPR [defaults to quickview s]
+  --ppr-hpc              HPC for PPR (ONT)
+  --max-occ INT          ignore syncmers seen in > INT reads [200]
+  --min-shared INT       edge if >= INT shared syncmers [4]
+  --jaccard-min FLOAT    min Jaccard [0.01]
+  --edge-norm            normalize edge weight
+  --topk-nei INT         keep top-K neighbors [50]
+  --steps INT            BFS steps [2]
+  --ppr-alpha FLOAT      teleport prob [0.85]
+  --ppr-iter INT         iterations [30]
+  --score-th FLOAT       threshold (0=Otsu)
+
+X-prior (optional):
+  --nuc-cut-log10 F      nuclear cut in log10(median)
+  --x-slope F            sigmoid slope [0.20]
+
+Ensemble + outputs:
+  --ensemble STR         union|majority|strict [majority]
+  --emit-fastq           write PREFIX.mt.fastq.gz and PREFIX.pt.fastq.gz
+  --keep-intermediate    keep intermediate files
+  --html-report FILE     mt-focused HTML report
+
+Meta:
+  --version              print version and exit
+  -h, --help             show this help
+EOF
+}
+
+# Pick separate GFAs for mt and pt (best-effort).
+# Defines globals: MT_GFA_PICK, PT_GFA_PICK, OVERVIEW_GFA_PICK
+
+polap_cmd_select_mt() {
+	local READS="" OUT="" MT_ANCH="" PT_ANCH=""
+	local PRESET="hifi" THREADS=8 REDO=0 SFV=0
+	local K_QV="" S_QV="" HPC_QV=""
+	local XMETHOD="hybrid" XTAIL=0.05 TAIL_MT="" TAIL_PT="" XWIN=0.20 BAND_MAX=2.0 SIGMA_FLOOR=0.03
+	local PPR_K="" PPR_S="" PPR_HPC=0 MAX_OCC=200 MIN_SHARED=4 JAC_MIN=0.01 EDGE_NORM=0 TOPK=50 STEPS=2 PPR_ALPHA=0.85 PPR_ITER=30 SCORE_TH=0.0
+	local NUC_CUT_LOG10="" X_SLOPE=0.20
+	local ENSEMBLE="majority" EMIT_FASTQ=0 KEEP_INT=0 HTML_REPORT=""
+	local BANDAGE_GFA=""
+	local BANDAGE_SIZE="3000x3000" # WIDTHxHEIGHT
+
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--reads)
+			READS="$2"
+			shift 2
+			;;
+		--mt)
+			MT_ANCH="$2"
+			shift 2
+			;;
+		--pt)
+			PT_ANCH="$2"
+			shift 2
+			;;
+		-o | --out)
+			OUT="$2"
+			shift 2
+			;;
+		--preset)
+			PRESET="$2"
+			shift 2
+			;;
+		--threads)
+			THREADS="$2"
+			shift 2
+			;;
+		--redo)
+			REDO=1
+			shift
+			;;
+		-v)
+			SFV="$2"
+			shift 2
+			;;
+
+		-k)
+			K_QV="$2"
+			shift 2
+			;;
+		-s)
+			S_QV="$2"
+			shift 2
+			;;
+		--hpc)
+			HPC_QV="--hpc"
+			shift
+			;;
+
+		--x-method | --method)
+			XMETHOD="$2"
+			shift 2
+			;;
+		--x-tail | --tail)
+			XTAIL="$2"
+			shift 2
+			;;
+		--tail-mt)
+			TAIL_MT="$2"
+			shift 2
+			;;
+		--tail-pt)
+			TAIL_PT="$2"
+			shift 2
+			;;
+		--x-win | --window-width)
+			XWIN="$2"
+			shift 2
+			;;
+		--band-max)
+			BAND_MAX="$2"
+			shift 2
+			;;
+		--sigma-floor)
+			SIGMA_FLOOR="$2"
+			shift 2
+			;;
+
+		--ppr-k)
+			PPR_K="$2"
+			shift 2
+			;;
+		--ppr-s)
+			PPR_S="$2"
+			shift 2
+			;;
+		--ppr-hpc)
+			PPR_HPC=1
+			shift
+			;;
+		--max-occ)
+			MAX_OCC="$2"
+			shift 2
+			;;
+		--min-shared)
+			MIN_SHARED="$2"
+			shift 2
+			;;
+		--jaccard-min)
+			JAC_MIN="$2"
+			shift 2
+			;;
+		--edge-norm)
+			EDGE_NORM=1
+			shift
+			;;
+		--topk-nei)
+			TOPK="$2"
+			shift 2
+			;;
+		--steps)
+			STEPS="$2"
+			shift 2
+			;;
+		--ppr-alpha)
+			PPR_ALPHA="$2"
+			shift 2
+			;;
+		--ppr-iter)
+			PPR_ITER="$2"
+			shift 2
+			;;
+		--score-th)
+			SCORE_TH="$2"
+			shift 2
+			;;
+
+		--nuc-cut-log10)
+			NUC_CUT_LOG10="$2"
+			shift 2
+			;;
+		--x-slope)
+			X_SLOPE="$2"
+			shift 2
+			;;
+
+		--ensemble)
+			ENSEMBLE="$2"
+			shift 2
+			;;
+		--emit-fastq)
+			EMIT_FASTQ=1
+			shift
+			;;
+		--keep-intermediate)
+			KEEP_INT=1
+			shift
+			;;
+		--html-report)
+			HTML_REPORT="$2"
+			shift 2
+			;;
+			# Bandage options
+		--bandage-gfa)
+			BANDAGE_GFA="$2"
+			shift 2
+			;;
+		--bandage-size)
+			BANDAGE_SIZE="$2"
+			shift 2
+			;;
+
+		--version)
+			echo "select-mt orchestrator (mt+pt)"
+			return 0
+			;;
+		-h | --help)
+			polap_cmd_select_mt_usage
+			return 0
+			;;
+		*)
+			echo "[error] unknown option: $1" >&2
+			polap_cmd_select_mt_usage
+			return 2
+			;;
+		esac
+	done
+
+	[[ -z "$READS" || -z "$OUT" || -z "$MT_ANCH" ]] && {
+		polap_cmd_select_mt_usage
+		echo "[error] need --reads, --mt, and -o/--out"
+		return 2
+	}
+
+	if [[ "$PRESET" == "hifi" ]]; then
+		[[ -z "$K_QV" ]] && K_QV=121
+		[[ -z "$S_QV" ]] && S_QV=27
+		[[ -z "$PPR_K" ]] && PPR_K=$K_QV
+		[[ -z "$PPR_S" ]] && PPR_S=$S_QV
+	elif [[ "$PRESET" == "ont" ]]; then
+		[[ -z "$K_QV" ]] && K_QV=41
+		[[ -z "$S_QV" ]] && S_QV=17
+		[[ -z "$PPR_K" ]] && PPR_K=$K_QV
+		[[ -z "$PPR_S" ]] && PPR_S=$S_QV
+		[[ -z "$HPC_QV" ]] && HPC_QV="--hpc"
+		[[ $PPR_HPC -eq 0 ]] && PPR_HPC=1
+	else
+		echo "[error] bad --preset: $PRESET" >&2
+		return 2
+	fi
+
+	local OUTDIR
+	OUTDIR="$(dirname -- "$OUT")"
+	[[ "$OUTDIR" == "." ]] && OUTDIR="$PWD"
+	[[ $REDO -eq 1 && -d "$OUTDIR" ]] && rm -rf "$OUTDIR"
+	mkdir -p "$OUTDIR"
+
+	local RUN_SF="syncfilter"
+	local CUT_AUTO="${_POLAPLIB_DIR}/polap-py-syncfilter-cut-auto.py"
+	local PPR_SEL="${_POLAPLIB_DIR}/polap-py-syncmer-connectivity-select-mt.py"
+	local ENSEMBLE_PY="${_POLAPLIB_DIR}/polap-py-ensemble-mt.py"
+	local REPORT_PY="${_POLAPLIB_DIR}/polap-py-ensemble-report.py"
+
+	command -v "$RUN_SF" >/dev/null || {
+		echo "[error] syncfilter missing"
+		return 127
+	}
+	command -v python3 >/dev/null || {
+		echo "[error] python3 missing"
+		return 127
+	}
+	command -v seqtk >/dev/null || {
+		echo "[error] seqtk missing"
+		return 127
+	}
+	[[ -f "$CUT_AUTO" && -f "$PPR_SEL" && -f "$ENSEMBLE_PY" ]] || {
+		echo "[error] missing polap python tools in $_POLAPLIB_DIR"
+		return 127
+	}
+	[[ -n "$HTML_REPORT" && ! -f "$REPORT_PY" ]] && {
+		echo "[error] HTML reporter missing: $REPORT_PY"
+		return 127
+	}
+
+	# 1) Coverage quickview
+	echo "[step] quickview (coverage X)"
+	"$RUN_SF" --mode quickview $HPC_QV -k "$K_QV" -s "$S_QV" -t "$THREADS" -v "$SFV" -o "$OUT" "$READS"
+	mv -f "${OUT}.syncfilter.tsv" "${OUT}.quickview.tsv"
+
+	# 2) Coverage bands via cut-auto
+	echo "[step] coverage banding (anchors → mt/pt bands)"
+	python3 "$CUT_AUTO" \
+		-i "${OUT}.quickview.tsv" \
+		--method "$XMETHOD" --tail "$XTAIL" \
+		${TAIL_MT:+--tail-mt "$TAIL_MT"} ${TAIL_PT:+--tail-pt "$TAIL_PT"} \
+		--window-width "$XWIN" --band-max "$BAND_MAX" --sigma-floor "$SIGMA_FLOOR" \
+		${PT_ANCH:+--pt "$PT_ANCH"} ${MT_ANCH:+--mt "$MT_ANCH"} \
+		--cuts-out "${OUT}.xcover.cuts.tsv" \
+		--png "${OUT}.xcover.x_hist.png" \
+		--tsv-out "${OUT}.xcover.reclass.tsv"
+
+	# ---------- MT branch ----------
+	if [[ -s "${OUT}.xcover.mt.ids" ]]; then
+		echo "[step] subset mt-band reads"
+		awk 'NF{print $1}' "${OUT}.xcover.mt.ids" | sort -u >"${OUT}.xcover.mt.names"
+		local PPR_READS_MT="${OUT}.xcover.mt.fastq"
+		seqtk subseq "$READS" "${OUT}.xcover.mt.names" >"$PPR_READS_MT"
+
+		echo "[step] dump read→syncmers (mt)"
+		"$RUN_SF" --mode quickview -k "$PPR_K" -s "$PPR_S" -t "$THREADS" -v "$SFV" \
+			--emit-read-syncmers "${OUT}.xcover.mt" \
+			-o "${OUT}.xcover.mt.pprprep" \
+			"$PPR_READS_MT"
+		local SM_DUMP_MT="${OUT}.xcover.mt.read2sm.tsv"
+		[[ -s "$SM_DUMP_MT" ]] || {
+			echo "[error] missing $SM_DUMP_MT"
+			return 2
+		}
+
+		echo "[step] PPR (mt) with sm-dump"
+		declare -a PPR_CMD_MT=(python3 "$PPR_SEL"
+			--reads "$PPR_READS_MT"
+			--sm-dump "$SM_DUMP_MT"
+			--mt "$MT_ANCH"
+			--max-occ "$MAX_OCC" --min-shared "$MIN_SHARED" --jaccard-min "$JAC_MIN"
+			--topk-nei "$TOPK" --steps "$STEPS"
+			--ppr-alpha "$PPR_ALPHA" --ppr-iter "$PPR_ITER"
+			--score-th "$SCORE_TH"
+			-o "${OUT}.ppr.mt" # <prefix>.mt.ids etc.
+		)
+		[[ ${EDGE_NORM:-0} -eq 1 ]] && PPR_CMD_MT+=(--edge-norm)
+		[[ -n "$NUC_CUT_LOG10" ]] && PPR_CMD_MT+=(--x-prior --x-tsv "${OUT}.quickview.tsv" --nuc-cut-log10 "$NUC_CUT_LOG10" --x-slope "$X_SLOPE")
+		"${PPR_CMD_MT[@]}"
+
+		# PPR tool writes: ${OUT}.ppr.mt.mt.ids  → normalize to ${OUT}.ppr.mt.ids
+		[[ -s "${OUT}.ppr.mt.mt.ids" ]] && mv -f "${OUT}.ppr.mt.mt.ids" "${OUT}.ppr.mt.ids"
+		[[ -s "${OUT}.ppr.mt.nuclear.ids" ]] || : >"${OUT}.ppr.mt.nuclear.ids"
+		[[ -s "${OUT}.ppr.mt.scores.tsv" ]] || : >"${OUT}.ppr.mt.scores.tsv"
+		[[ -s "${OUT}.ppr.mt.graph.stats.txt" ]] || : >"${OUT}.ppr.mt.graph.stats.txt"
+
+		echo "[step] ensemble mt ($ENSEMBLE)"
+		python3 "$ENSEMBLE_PY" \
+			--xlda "${OUT}.xcover.mt.ids" \
+			--ppr "${OUT}.ppr.mt.ids" \
+			-o "${OUT}.ensemble.mt" \
+			--mode "$ENSEMBLE"
+
+		# Ensemble tool writes ${OUT}.ensemble.mt.mt.ids → normalize
+		[[ -s "${OUT}.ensemble.mt.mt.ids" ]] && mv -f "${OUT}.ensemble.mt.mt.ids" "${OUT}.ensemble.mt.ids"
+		[[ -s "${OUT}.ensemble.mt.nuclear.ids" ]] || : >"${OUT}.ensemble.mt.nuclear.ids"
+		[[ -s "${OUT}.ensemble.mt.report.tsv" ]] || : >"${OUT}.ensemble.mt.report.tsv"
+
+		if [[ $EMIT_FASTQ -eq 1 && -s "${OUT}.ensemble.mt.ids" ]]; then
+			echo "[emit] mt FASTQ"
+			awk 'NF{print $1}' "${OUT}.ensemble.mt.ids" | sort -u >"${OUT}.ensemble.mt.names"
+			seqtk subseq "$READS" "${OUT}.ensemble.mt.names" | gzip -c >"${OUT}.mt.fastq.gz"
+			echo "[emit] ${OUT}.mt.fastq.gz"
+		fi
+
+		[[ $KEEP_INT -eq 0 ]] && rm -f "${OUT}.xcover.mt.names" "$PPR_READS_MT" || true
+	else
+		echo "[warn] no mt-band reads; coverage-only mt"
+		cp -f "${OUT}.xcover.mt.ids" "${OUT}.ensemble.mt.ids" 2>/dev/null || : >"${OUT}.ensemble.mt.ids"
+		: >"${OUT}.ensemble.mt.nuclear.ids"
+		: >"${OUT}.ensemble.mt.report.tsv"
+	fi
+
+	# ---------- PT branch (optional) ----------
+	if [[ -n "${PT_ANCH:-}" && -s "${OUT}.xcover.pt.ids" ]]; then
+		echo "[step] subset pt-band reads"
+		awk 'NF{print $1}' "${OUT}.xcover.pt.ids" | sort -u >"${OUT}.xcover.pt.names"
+		local PPR_READS_PT="${OUT}.xcover.pt.fastq"
+		seqtk subseq "$READS" "${OUT}.xcover.pt.names" >"$PPR_READS_PT"
+
+		echo "[step] dump read→syncmers (pt)"
+		"$RUN_SF" --mode quickview -k "$PPR_K" -s "$PPR_S" -t "$THREADS" -v "$SFV" \
+			--emit-read-syncmers "${OUT}.xcover.pt" \
+			-o "${OUT}.xcover.pt.pprprep" \
+			"$PPR_READS_PT"
+		local SM_DUMP_PT="${OUT}.xcover.pt.read2sm.tsv"
+
+		if [[ -s "$SM_DUMP_PT" ]]; then
+			echo "[step] PPR (pt) with sm-dump"
+			declare -a PPR_CMD_PT=(python3 "$PPR_SEL"
+				--reads "$PPR_READS_PT"
+				--sm-dump "$SM_DUMP_PT"
+				--mt "$PT_ANCH" # seed on pt anchors (script requires --mt)
+				--max-occ "$MAX_OCC" --min-shared "$MIN_SHARED" --jaccard-min "$JAC_MIN"
+				--topk-nei "$TOPK" --steps "$STEPS"
+				--ppr-alpha "$PPR_ALPHA" --ppr-iter "$PPR_ITER"
+				--score-th "$SCORE_TH"
+				-o "${OUT}.ppr.pt"
+			)
+			[[ ${EDGE_NORM:-0} -eq 1 ]] && PPR_CMD_PT+=(--edge-norm)
+			"${PPR_CMD_PT[@]}"
+
+			# Normalize ppr pt outputs
+			[[ -s "${OUT}.ppr.pt.mt.ids" ]] && mv -f "${OUT}.ppr.pt.mt.ids" "${OUT}.ppr.pt.ids"
+			[[ -s "${OUT}.ppr.pt.nuclear.ids" ]] || : >"${OUT}.ppr.pt.nuclear.ids"
+			[[ -s "${OUT}.ppr.pt.scores.tsv" ]] || : >"${OUT}.ppr.pt.scores.tsv"
+			[[ -s "${OUT}.ppr.pt.graph.stats.txt" ]] || : >"${OUT}.ppr.pt.graph.stats.txt"
+
+			echo "[step] ensemble pt ($ENSEMBLE)"
+			python3 "$ENSEMBLE_PY" \
+				--xlda "${OUT}.xcover.pt.ids" \
+				--ppr "${OUT}.ppr.pt.ids" \
+				-o "${OUT}.ensemble.pt" \
+				--mode "$ENSEMBLE"
+
+			# Normalize ensemble pt outputs
+			[[ -s "${OUT}.ensemble.pt.mt.ids" ]] && mv -f "${OUT}.ensemble.pt.mt.ids" "${OUT}.ensemble.pt.ids"
+			[[ -s "${OUT}.ensemble.pt.nuclear.ids" ]] || : >"${OUT}.ensemble.pt.nuclear.ids"
+			[[ -s "${OUT}.ensemble.pt.report.tsv" ]] || : >"${OUT}.ensemble.pt.report.tsv"
+
+			if [[ $EMIT_FASTQ -eq 1 && -s "${OUT}.ensemble.pt.ids" ]]; then
+				echo "[emit] pt FASTQ"
+				awk 'NF{print $1}' "${OUT}.ensemble.pt.ids" | sort -u >"${OUT}.ensemble.pt.names"
+				seqtk subseq "$READS" "${OUT}.ensemble.pt.names" | gzip -c >"${OUT}.pt.fastq.gz"
+				echo "[emit] ${OUT}.pt.fastq.gz"
+			fi
+		else
+			echo "[warn] missing $SM_DUMP_PT; coverage-only pt"
+			cp -f "${OUT}.xcover.pt.ids" "${OUT}.ensemble.pt.ids" 2>/dev/null || : >"${OUT}.ensemble.pt.ids"
+			: >"${OUT}.ensemble.pt.nuclear.ids"
+			: >"${OUT}.ensemble.pt.report.tsv"
+		fi
+
+		[[ $KEEP_INT -eq 0 ]] && rm -f "${OUT}.xcover.pt.names" "$PPR_READS_PT" || true
+	else
+		: >"${OUT}.ensemble.pt.ids"
+		: >"${OUT}.ensemble.pt.nuclear.ids"
+		: >"${OUT}.ensemble.pt.report.tsv"
+	fi
+
+	# ---------- Bandage images (optional, auto-pick MT/PT GFAs) ----------
+	# _find_gfa_twins "$OUT"
+	#
+	# if command -v Bandage >/dev/null 2>&1; then
+	# 	# Overview (from MT if available, else PT)
+	# 	if [[ -n "${OVERVIEW_GFA_PICK:-}" && -r "$OVERVIEW_GFA_PICK" ]]; then
+	# 		echo "[bandage] overview from ${OVERVIEW_GFA_PICK}"
+	# 		if Bandage image "$OVERVIEW_GFA_PICK" "${OUT}.bandage.overview.png" \
+	# 			--size "${BANDAGE_SIZE/x/ }" --labels --shortnames --title "Overview"; then
+	# 			:
+	# 		else
+	# 			echo "[bandage] overview failed; leaving blank" >&2
+	# 			rm -f "${OUT}.bandage.overview.png" || true
+	# 		fi
+	# 	else
+	# 		echo "[bandage] no overview GFA; skipping overview" >&2
+	# 	fi
+	#
+	# 	# MT image: only if we produced any MT IDs and have an MT GFA
+	# 	if [[ -s "${OUT}.ensemble.mt.ids" || -s "${OUT}.ppr.mt.ids" ]]; then
+	# 		if [[ -n "${MT_GFA_PICK:-}" && -r "$MT_GFA_PICK" ]]; then
+	# 			echo "[bandage] MT image from ${MT_GFA_PICK}"
+	# 			if Bandage image "$MT_GFA_PICK" "${OUT}.bandage.mt.png" \
+	# 				--size "${BANDAGE_SIZE/x/ }" --labels --shortnames --title "MT graph"; then
+	# 				:
+	# 			else
+	# 				echo "[bandage] mt image failed; leaving blank" >&2
+	# 				rm -f "${OUT}.bandage.mt.png" || true
+	# 			fi
+	# 		else
+	# 			echo "[bandage] no MT GFA; skipping MT image" >&2
+	# 		fi
+	# 	fi
+	#
+	# 	# PT image: only if we produced any PT IDs and have a PT GFA
+	# 	if [[ -s "${OUT}.ensemble.pt.ids" || -s "${OUT}.ppr.pt.ids" ]]; then
+	# 		if [[ -n "${PT_GFA_PICK:-}" && -r "$PT_GFA_PICK" ]]; then
+	# 			echo "[bandage] PT image from ${PT_GFA_PICK}"
+	# 			if Bandage image "$PT_GFA_PICK" "${OUT}.bandage.pt.png" \
+	# 				--size "${BANDAGE_SIZE/x/ }" --labels --shortnames --title "PT graph"; then
+	# 				:
+	# 			else
+	# 				echo "[bandage] pt image failed; leaving blank" >&2
+	# 				rm -f "${OUT}.bandage.pt.png" || true
+	# 			fi
+	# 		else
+	# 			echo "[bandage] no PT GFA; skipping PT image" >&2
+	# 		fi
+	# 	fi
+	#
+	# else
+	# 	echo "[bandage] Bandage not found; skipping PNGs" >&2
+	# fi
+	#
+	# # HTML report (mt-focused)
+	# if [[ -n "$HTML_REPORT" ]]; then
+	# 	echo "[step] HTML report"
+	# 	python3 "$REPORT_PY" \
+	# 		--prefix "$OUT" \
+	# 		--quickview "${OUT}.quickview.tsv" \
+	# 		--xlda-prefix "${OUT}.xcover" \
+	# 		--ppr-prefix "${OUT}.ppr.mt" \
+	# 		--ensemble-prefix "${OUT}.ensemble.mt" \
+	# 		--ppr-pt-prefix "${OUT}.ppr.pt" \
+	# 		--ensemble-pt-prefix "${OUT}.ensemble.pt" \
+	# 		--title "POLAP organelle selection (coverage + PPR via sm-dump)" \
+	# 		-o "$HTML_REPORT"
+	# 	echo "[report] $HTML_REPORT"
+	# fi
+	#
+	# # cleanup small temps
+	# if [[ $KEEP_INT -eq 0 ]]; then
+	# 	# keep sm-dumps and PPR outputs by default (useful downstream)
+	# 	:
+	# fi
+
+	echo "[done] mt: ${OUT}.ensemble.mt.ids  pt: ${OUT}.ensemble.pt.ids"
+}
+
+# ======================================================================
+# Report-only subcommand
+# ======================================================================
+polap_cmd_select_mt_report_usage() {
+	cat <<'EOF'
+Usage:
+  polap select-mt-report --out PREFIX --html-report FILE
+
+This assumes you already ran `polap select-mt` and (optionally) Flye
+to generate GFA files. It will:
+
+  • Auto-pick GFAs (mt1/pt1/asm.*.gfa, etc).
+  • Call Bandage (if installed) to produce PNGs:
+        PREFIX.bandage.overview.png
+        PREFIX.bandage.mt.png
+        PREFIX.bandage.pt.png
+  • Call polap-py-ensemble-report.py to generate the HTML report.
+
+Options:
+  -o, --out PREFIX       output prefix (same as used in select-mt)
+  --html-report FILE     path to write HTML report
+  --bandage-size WxH     Bandage PNG size (default: 3000x3000)
+EOF
+}
+
+_find_gfa_twins() {
+	local out="$1"
+	local outdir
+	outdir="$(dirname -- "$out")"
+	[[ "$outdir" == "." ]] && outdir="$PWD"
+
+	local cand_mt=("${outdir}/mt1/assembly_graph.gfa" "${out}.asm.utg.final.gfa")
+	local cand_pt=("${outdir}/pt1/assembly_graph.gfa" "${out}.asm.utg.final.gfa")
+
+	shopt -s nullglob
+	local any=("${outdir}"/*.gfa)
+	shopt -u nullglob
+
+	local mtg="" ptg=""
+	for f in "${cand_mt[@]}"; do [[ -s "$f" ]] && {
+		mtg="$f"
+		break
+	}; done
+	for f in "${cand_pt[@]}"; do [[ -s "$f" ]] && {
+		ptg="$f"
+		break
+	}; done
+	if [[ -z "$mtg" && ${#any[@]} -gt 0 ]]; then mtg="${any[0]}"; fi
+	if [[ -z "$ptg" && ${#any[@]} -gt 0 ]]; then ptg="${any[0]}"; fi
+
+	MT_GFA_PICK="$mtg"
+	PT_GFA_PICK="$ptg"
+	OVERVIEW_GFA_PICK="${MT_GFA_PICK:-$PT_GFA_PICK}"
+}
+
+polap_cmd_select_mt_report() {
+	local OUT="" HTML_REPORT="" BANDAGE_SIZE="3000x3000"
+
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		-o | --out)
+			OUT="$2"
+			shift 2
+			;;
+		--html-report)
+			HTML_REPORT="$2"
+			shift 2
+			;;
+		--bandage-size)
+			BANDAGE_SIZE="$2"
+			shift 2
+			;;
+		-h | --help)
+			polap_cmd_select_mt_report_usage
+			return 0
+			;;
+		*)
+			echo "[error] unknown option: $1" >&2
+			polap_cmd_select_mt_report_usage
+			return 2
+			;;
+		esac
+	done
+
+	[[ -z "$OUT" || -z "$HTML_REPORT" ]] && {
+		polap_cmd_select_mt_report_usage
+		echo "[error] require --out and --html-report" >&2
+		return 2
+	}
+
+	local REPORT_PY="${_POLAPLIB_DIR}/polap-py-ensemble-report.py"
+	[[ -f "$REPORT_PY" ]] || {
+		echo "[error] not found: $REPORT_PY"
+		return 127
+	}
+
+	# ---------- Bandage images (optional, best-effort; never fatal) ----------
+	_find_gfa_twins "$OUT"
+
+	bandage_ok=0
+	if command -v Bandage >/dev/null 2>&1; then
+		bandage_ok=1
+	else
+		echo "[bandage] Bandage not found; skipping PNGs" >&2
+	fi
+
+	# Render overview if we have a GFA and Bandage
+	local w=${BANDAGE_SIZE%x*} # take part before 'x'
+	local h=${BANDAGE_SIZE#*x}
+	if [[ $bandage_ok -eq 1 && -n "${OVERVIEW_GFA_PICK:-}" && -r "$OVERVIEW_GFA_PICK" ]]; then
+		echo "[bandage] overview from ${OVERVIEW_GFA_PICK}"
+		Bandage image "$OVERVIEW_GFA_PICK" "${OUT}.bandage.overview.png" \
+			--height "$h" ||
+			{
+				echo "[bandage] overview failed; leaving blank" >&2
+				rm -f "${OUT}.bandage.overview.png" || true
+			}
+	else
+		echo "[bandage] overview skipped (no GFA or Bandage)" >&2
+	fi
+
+	# MT image if we have MT IDs + MT GFA + Bandage
+	if [[ -s "${OUT}.ensemble.mt.ids" || -s "${OUT}.ppr.mt.ids" ]]; then
+		if [[ $bandage_ok -eq 1 && -n "${MT_GFA_PICK:-}" && -r "$MT_GFA_PICK" ]]; then
+			echo "[bandage] MT image from ${MT_GFA_PICK}"
+			Bandage image "$MT_GFA_PICK" "${OUT}.bandage.mt.png" \
+				--height "$h" ||
+				{
+					echo "[bandage] MT image failed; leaving blank" >&2
+					rm -f "${OUT}.bandage.mt.png" || true
+				}
+		else
+			echo "[bandage] MT image skipped (no MT GFA or Bandage)" >&2
+		fi
+	fi
+
+	# PT image if we have PT IDs + PT GFA + Bandage
+	if [[ -s "${OUT}.ensemble.pt.ids" || -s "${OUT}.ppr.pt.ids" ]]; then
+		if [[ $bandage_ok -eq 1 && -n "${PT_GFA_PICK:-}" && -r "$PT_GFA_PICK" ]]; then
+			echo "[bandage] PT image from ${PT_GFA_PICK}"
+			Bandage image "$PT_GFA_PICK" "${OUT}.bandage.pt.png" \
+				--height "$h" ||
+				{
+					echo "[bandage] PT image failed; leaving blank" >&2
+					rm -f "${OUT}.bandage.pt.png" || true
+				}
+		else
+			echo "[bandage] PT image skipped (no PT GFA or Bandage)" >&2
+		fi
+	fi
+
+	# ---------- HTML report ----------
+	python3 "$REPORT_PY" \
+		--prefix "$OUT" \
+		--quickview "${OUT}.quickview.tsv" \
+		--xlda-prefix "${OUT}.xcover" \
+		--ppr-prefix "${OUT}.ppr.mt" \
+		--ensemble-prefix "${OUT}.ensemble.mt" \
+		${PT_GFA_PICK:+--ppr-pt-prefix "${OUT}.ppr.pt"} \
+		${PT_GFA_PICK:+--ensemble-pt-prefix "${OUT}.ensemble.pt"} \
+		--title "POLAP organelle selection report" \
+		-o "$HTML_REPORT"
+
+	echo "[report] $HTML_REPORT"
+}
+
+# ---------- dispatch ----------
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+	sub="${1:-}"
+	case "$sub" in
+	select-mt)
+		shift
+		polap_cmd_select_mt "$@"
+		;;
+	select-mt-report)
+		shift
+		polap_cmd_select_mt_report "$@"
+		;;
+	"" | -h | --help) polap_cmd_select_mt_usage ;;
+	--version) echo "polap-bash-select-mt.sh (syncfilter v0.7.0)" ;;
+	*)
+		echo "[error] unknown subcommand: $sub" >&2
+		exit 2
+		;;
+	esac
+fi

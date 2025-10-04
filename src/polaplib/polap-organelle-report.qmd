@@ -1,0 +1,339 @@
+---
+title: "Organelle Assembly Report"
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 2
+    number-sections: false
+execute:
+  echo: false
+  warning: false
+  message: false
+params:
+  run_root: "."
+---
+
+```{r}
+run_root <- params$run_root
+exists_file <- function(path) file.exists(file.path(run_root, path))
+read_first <- function(path) {
+  p <- file.path(run_root, path)
+  if (!file.exists(p)) return(NA_character_)
+  readLines(p, n=1, warn = FALSE)
+}
+human_bp <- function(x) {
+  if (is.na(x) || x=="" ) return("NA")
+  x <- as.numeric(x)
+  if (is.na(x)) return("NA")
+  if (x >= 1e9)  sprintf("%.1f Gbp", x/1e9)
+  else if (x >= 1e6) sprintf("%.1f Mbp", x/1e6)
+  else if (x >= 1e3) sprintf("%.1f kbp", x/1e3)
+  else sprintf("%d bp", as.integer(x))
+}
+read_tsv_safe <- function(path) {
+  p <- file.path(run_root, path)
+  if (!file.exists(p)) return(NULL)
+  utils::read.table(p, header = TRUE, sep = "\t", check.names = FALSE)
+}
+include_img <- function(path, alt="") {
+  p <- file.path(run_root, path)
+  if (file.exists(p)) knitr::include_graphics(p)
+}
+
+# provenance
+polap_log <- file.path(run_root, "polap.log")
+polap_version <- if (file.exists(polap_log)) {
+  x <- readLines(polap_log, warn = FALSE)
+  v <- grep("POLAP:", x, value=TRUE)[1]
+  if (length(v)) sub(".*POLAP:\\s*", "", v) else "NA"
+} else "NA"
+
+polap_cmd <- if (file.exists(polap_log)) {
+  x <- readLines(polap_log, warn = FALSE)
+  v <- grep("\\] CMD:", x, value=TRUE)[1]
+  if (length(v)) sub(".*CMD:\\s*", "", v) else "NA"
+} else "NA"
+
+# overview numbers
+reads_total <- read_first("annotate-read-pt/pt1/01-contig/l.txt")
+reads_sub   <- read_first("annotate-read-pt/pt1/01-contig/l.subsample.txt")
+
+pt_fa1 <- "annotate-read-pt/pt1/30-contigger/graph_final.fasta"
+pt_fa0 <- "annotate-read-pt/pt/30-contigger/graph_final.fasta"
+pt_size <- NA_character_
+choose_pt <- if (exists_file(pt_fa1)) pt_fa1 else if (exists_file(pt_fa0)) pt_fa0 else NA_character_
+if (!is.na(choose_pt)) {
+  # sum len: quick FASTA sum
+  fa <- file.path(run_root, choose_pt)
+  x <- readLines(fa, warn = FALSE)
+  tot <- sum(nchar(gsub("\\s+","", x[!grepl("^>", x)])))
+  pt_size <- human_bp(tot)
+}
+
+mt_rounds <- c("mt0","mt1","mt2")
+mt_present <- mt_rounds[sapply(mt_rounds, function(r) exists_file(sprintf("mtseed/%s/30-contigger/graph_final.gfa", r)))]
+if (length(mt_present)==0) mt_present <- "none"
+
+Plastid (ptDNA)
+
+pt0
+
+if (exists_file("annotate-read-pt/pt/30-contigger/graph_final.png")) {
+  include_img("annotate-read-pt/pt/30-contigger/graph_final.png")
+  cat("\n\n[graph_final.gfa](annotate-read-pt/pt/30-contigger/graph_final.gfa) · ",
+      "[graph_final.fasta](annotate-read-pt/pt/30-contigger/graph_final.fasta)\n")
+}
+tbl <- read_tsv_safe("annotate-read-pt/pt/contig-annotation-depth-table.txt")
+if (!is.null(tbl)) {
+  knitr::kable(utils::head(tbl, 20), format = "html", caption = "pt0 contig annotation depth (first 20 rows)")
+}
+if (exists_file("annotate-read-pt/pt/50-annotation/mt.gene.count")) {
+  mc <- readLines(file.path(run_root,"annotate-read-pt/pt/50-annotation/mt.gene.count"), warn=FALSE)
+  cat("\n**mt.gene.count (pt0)** — entries:", length(mc), "\n")
+}
+
+pt1
+
+if (exists_file("annotate-read-pt/pt1/30-contigger/graph_final.png")) {
+  include_img("annotate-read-pt/pt1/30-contigger/graph_final.png")
+  cat("\n\n[graph_final.gfa](annotate-read-pt/pt1/30-contigger/graph_final.gfa) · ",
+      "[graph_final.fasta](annotate-read-pt/pt1/30-contigger/graph_final.fasta)\n")
+}
+tbl <- read_tsv_safe("annotate-read-pt/pt1/contig-annotation-depth-table.txt")
+if (!is.null(tbl)) {
+  knitr::kable(utils::head(tbl, 20), format = "html", caption = "pt1 contig annotation depth (first 20 rows)")
+}
+if (exists_file("annotate-read-pt/pt1/50-annotation/mt.gene.count")) {
+  mc <- readLines(file.path(run_root,"annotate-read-pt/pt1/50-annotation/mt.gene.count"), warn=FALSE)
+  cat("\n**mt.gene.count (pt1)** — entries:", length(mc), "\n")
+}
+
+
+Mitochondria (mtDNA)
+
+mt0
+
+if (exists_file("mtseed/mt0/30-contigger/graph_final.png")) {
+  include_img("mtseed/mt0/30-contigger/graph_final.png")
+  cat("\n\n[graph_final.gfa](mtseed/mt0/30-contigger/graph_final.gfa) · ",
+      "[graph_final.fasta](mtseed/mt0/30-contigger/graph_final.fasta)\n")
+}
+tbl <- read_tsv_safe("mtseed/mt0/contig-annotation-depth-table.txt")
+if (!is.null(tbl)) {
+  knitr::kable(utils::head(tbl, 20), format = "html", caption = "mt0 contig annotation depth (first 20 rows)")
+}
+if (exists_file("mtseed/mt0/mt.contig.name-mt1")) {
+  cat("\nNext seeds: `mtseed/mt0/mt.contig.name-mt1`\n")
+}
+
+mt1
+
+if (exists_file("mtseed/mt1/30-contigger/graph_final.png")) {
+  include_img("mtseed/mt1/30-contigger/graph_final.png")
+  cat("\n\n[graph_final.gfa](mtseed/mt1/30-contigger/graph_final.gfa) · ",
+      "[graph_final.fasta](mtseed/mt1/30-contigger/graph_final.fasta)\n")
+}
+tbl <- read_tsv_safe("mtseed/mt1/contig-annotation-depth-table.txt")
+if (!is.null(tbl)) {
+  knitr::kable(utils::head(tbl, 20), format = "html", caption = "mt1 contig annotation depth (first 20 rows)")
+}
+if (exists_file("mtseed/mt1/mt.contig.name-mt2")) {
+  cat("\nNext seeds: `mtseed/mt1/mt.contig.name-mt2`\n")
+}
+
+mt2
+
+if (exists_file("mtseed/mt2/30-contigger/graph_final.png")) {
+  include_img("mtseed/mt2/30-contigger/graph_final.png")
+  cat("\n\n[graph_final.gfa](mtseed/mt2/30-contigger/graph_final.gfa) · ",
+      "[graph_final.fasta](mtseed/mt2/30-contigger/graph_final.fasta)\n")
+}
+tbl <- read_tsv_safe("mtseed/mt2/contig-annotation-depth-table.txt")
+if (!is.null(tbl)) {
+  knitr::kable(utils::head(tbl, 20), format = "html", caption = "mt2 contig annotation depth (first 20 rows)")
+}
+if (exists_file("mtseed/mt2/mt.contig.name-mt3")) {
+  cat("\nNext seeds: `mtseed/mt2/mt.contig.name-mt3`\n")
+}
+
+
+
+cat("\n**Plastid**\n\n")
+for (p in c("pt","pt1")) {
+  if (exists_file(sprintf("annotate-read-pt/%s/30-contigger/graph_final.gfa", p))) {
+    cat(sprintf("- [%s graph_final.gfa](annotate-read-pt/%s/30-contigger/graph_final.gfa)\n", p, p))
+    cat(sprintf("- [%s graph_final.fasta](annotate-read-pt/%s/30-contigger/graph_final.fasta)\n", p, p))
+    if (exists_file(sprintf("annotate-read-pt/%s/30-contigger/graph_final.png", p)))
+      cat(sprintf("- [%s graph_final.png](annotate-read-pt/%s/30-contigger/graph_final.png)\n", p, p))
+    if (exists_file(sprintf("annotate-read-pt/%s/contig-annotation-depth-table.txt", p)))
+      cat(sprintf("- [%s contig-annotation-depth-table.txt](annotate-read-pt/%s/contig-annotation-depth-table.txt)\n", p, p))
+    cat("\n")
+  }
+}
+
+cat("\n**Mitochondria**\n\n")
+for (r in c("mt0","mt1","mt2")) {
+  if (exists_file(sprintf("mtseed/%s/30-contigger/graph_final.gfa", r))) {
+    cat(sprintf("- [%s graph_final.gfa](mtseed/%s/30-contigger/graph_final.gfa)\n", r, r))
+    cat(sprintf("- [%s graph_final.fasta](mtseed/%s/30-contigger/graph_final.fasta)\n", r, r))
+    if (exists_file(sprintf("mtseed/%s/30-contigger/graph_final.png", r)))
+      cat(sprintf("- [%s graph_final.png](mtseed/%s/30-contigger/graph_final.png)\n", r, r))
+    if (exists_file(sprintf("mtseed/%s/contig-annotation-depth-table.txt", r)))
+      cat(sprintf("- [%s contig-annotation-depth-table.txt](mtseed/%s/contig-annotation-depth-table.txt)\n", r, r))
+    cat("\n")
+  }
+}
+
+
+
+here’s a compact, data-driven Next steps section you can drop into the end of your Quarto report. It reads the available depth tables, applies simple heuristics, and prints tailored bullets.
+
+Paste this under the “Downloads” section in your polap-organelle-report.qmd.
+
+## Next steps
+
+```{r}
+# helper to load a depth table if it exists
+load_depth <- function(path) {
+  p <- file.path(run_root, path)
+  if (!file.exists(p)) return(NULL)
+  tryCatch(
+    utils::read.table(p, header = TRUE, sep = "\t", check.names = FALSE),
+    error = function(e) NULL
+  )
+}
+
+# pick plastid and mitochondrial tables (pt1 preferred, else pt0)
+pt_tbl <- NULL
+if (exists_file("annotate-read-pt/pt1/contig-annotation-depth-table.txt")) {
+  pt_tbl <- load_depth("annotate-read-pt/pt1/contig-annotation-depth-table.txt")
+} else if (exists_file("annotate-read-pt/pt/contig-annotation-depth-table.txt")) {
+  pt_tbl <- load_depth("annotate-read-pt/pt/contig-annotation-depth-table.txt")
+}
+
+# choose the latest mt round present
+mt_rounds <- c("mt2","mt1","mt0")
+mt_tbl <- NULL; mt_round <- NA_character_
+for (r in mt_rounds) {
+  if (exists_file(sprintf("mtseed/%s/contig-annotation-depth-table.txt", r))) {
+    mt_tbl <- load_depth(sprintf("mtseed/%s/contig-annotation-depth-table.txt", r))
+    mt_round <- r
+    break
+  }
+}
+
+# coerce expected columns if present
+norm_cols <- function(df) {
+  if (is.null(df)) return(NULL)
+  cn <- colnames(df)
+  # try common variants
+  nmap <- c("Contig"="Contig","Length"="Length","Depth"="Depth","Copy"="Copy","MT"="MT","PT"="PT")
+  for (k in names(nmap)) {
+    if (!k %in% cn) {
+      # try case-insensitive match
+      hit <- which(tolower(cn) == tolower(k))
+      if (length(hit)==1) colnames(df)[hit] <- k
+    }
+  }
+  df
+}
+pt_tbl <- norm_cols(pt_tbl)
+mt_tbl <- norm_cols(mt_tbl)
+
+# simple heuristics ----------------------------------------------------
+# thresholds (tweakable)
+pt_len_min <- 120000        # 120 kb plastid expected scale
+pt_even_depth_cv_max <- 0.25  # coefficient of variation threshold for "even"
+pt_mt_leak_max <- 2          # max allowed MT genes on plastid contigs total
+
+mt_len_min <- 3000           # ignore tiny mt contigs
+mt_mt_gene_min <- 3          # contigs with >=3 MT genes are promising
+mt_promote_min_n <- 2        # if >=2 such contigs exist, suggest next round
+
+bullets <- character(0)
+
+# --- Plastid guidance ---
+if (!is.null(pt_tbl) && all(c("Length","Depth","MT","PT") %in% colnames(pt_tbl))) {
+  # keep plausible contigs
+  ptx <- pt_tbl
+  # even coverage heuristic: cv of Depth across top-length contigs
+  if (nrow(ptx) > 0) {
+    total_len <- sum(ptx$Length, na.rm=TRUE)
+    biggest <- subset(ptx, Length >= 0.15*max(ptx$Length, na.rm=TRUE))  # top 15% by length
+    depth_cv <- if (nrow(biggest)>1) stats::sd(biggest$Depth, na.rm=TRUE) / mean(biggest$Depth, na.rm=TRUE) else 0
+    pt_total_len <- sum(ptx$Length, na.rm=TRUE)
+    pt_mt_sum <- sum(ptx$MT, na.rm=TRUE)
+
+    if (pt_total_len >= pt_len_min && depth_cv <= pt_even_depth_cv_max && pt_mt_sum <= pt_mt_leak_max) {
+      bullets <- c(bullets,
+        "PT looks consistent (size and even depth). Proceed to polishing and finalize the plastid assembly.")
+    } else {
+      msg <- "PT is present but coverage or composition is ambiguous."
+      tips <- c()
+      if (pt_total_len < pt_len_min) tips <- c(tips, "size is smaller than expected")
+      if (depth_cv > pt_even_depth_cv_max) tips <- c(tips, "depth is uneven across major contigs")
+      if (pt_mt_sum > pt_mt_leak_max) tips <- c(tips, "MT gene signal detected on PT contigs")
+      if (length(tips)) msg <- sprintf("%s (%s).", msg, paste(tips, collapse=", "))
+      bullets <- c(bullets,
+        paste0(msg, " Inspect `graph_final.gfa` and circular-path results; consider repeat-resolution or read recruitment tweaks."))
+    }
+  }
+} else {
+  bullets <- c(bullets, "PT tables not found; skip plastid guidance.")
+}
+
+# --- Mitochondrial guidance ---
+if (!is.null(mt_tbl) && all(c("Length","Depth","MT","PT") %in% colnames(mt_tbl))) {
+  mtx <- subset(mt_tbl, Length >= mt_len_min)
+  n_promote <- sum(mtx$MT >= mt_mt_gene_min, na.rm=TRUE)
+
+  if (!is.na(mt_round)) {
+    # seed file that points to next round
+    next_seed <- switch(mt_round,
+                        mt0="mtseed/mt0/mt.contig.name-mt1",
+                        mt1="mtseed/mt1/mt.contig.name-mt2",
+                        mt2="mtseed/mt2/mt.contig.name-mt3",
+                        NA_character_)
+  } else {
+    next_seed <- NA_character_
+  }
+
+  if (n_promote >= mt_promote_min_n) {
+    bullets <- c(bullets,
+      sprintf("MT shows strong candidates (>= %d contigs with MT gene count ≥ %d). Promote as seeds and advance to the next round%s.",
+              mt_promote_min_n, mt_mt_gene_min,
+              if (!is.na(next_seed) && file.exists(file.path(run_root,next_seed)))
+                sprintf(" using `%s`", next_seed) else "" ))
+  } else {
+    bullets <- c(bullets,
+      "MT signal is limited or fragmented. Re-tune read recruitment (increase shortlist fraction, adjust thresholds) or add more ONT data.")
+  }
+} else {
+  bullets <- c(bullets, "MT tables not found; skip mitochondrial guidance.")
+}
+
+# print bullets
+cat(paste0("\n- ", bullets, collapse="\n"))
+
+### what it does
+- **PT**: uses `contig-annotation-depth-table.txt` to check total length, depth evenness (coefficient of variation across the largest contigs), and total MT-gene “leak” on PT contigs.  
+  - If large enough, even, and low MT contamination → “polish and finalize.”  
+  - Otherwise → short, specific tips (small size / uneven depth / MT contamination).
+
+- **MT**: counts contigs with **MT gene count ≥ 3** (ignores tiny contigs) to gauge whether you have multiple strong candidates.  
+  - If yes → suggest advancing to the next round and point to the forward seed file (`mt.contig.name-mt(N+1)`), if it exists.  
+  - If not → suggest recruitment re-tuning or more ONT data.
+
+You can **tune thresholds** at the top of the chunk:
+
+```r
+pt_len_min <- 120000
+pt_even_depth_cv_max <- 0.25
+pt_mt_leak_max <- 2
+
+mt_len_min <- 3000
+mt_mt_gene_min <- 3
+mt_promote_min_n <- 2
+
+This keeps the “Next steps” block compact, deterministic, and fully data-driven from the files you already produce.

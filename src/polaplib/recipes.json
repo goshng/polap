@@ -1,0 +1,20 @@
+{
+  "hifi": {
+    "description": "PacBio HiFi presets for organelle tuning",
+    "final_if": "genes_score < 0.95 || breadth < 0.97",
+    "c_radius": "0,10,20",
+    "k": 121,
+    "s": 27,
+    "hpc": false,
+    "notes": "HiFi is accurate; require near-complete genes and high breadth before skipping final"
+  },
+  "ont": {
+    "description": "ONT (Q20+/duplex) presets with HPC and smaller k",
+    "final_if": "genes_score < 0.90 || breadth < 0.95",
+    "c_radius": "0,10,20",
+    "k": 41,
+    "s": 21,
+    "hpc": true,
+    "notes": "ONT is noisier; allow slightly lower gene score; keep breadth high"
+  }
+}

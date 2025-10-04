@@ -60,6 +60,13 @@ Synopsis:
   polap readassemble [options]
 Description:
   polap readassemble uses organelle genes to annotate reads before organelle genome assembly.
+We have four-case workflows;
+1) ptDNA from ONT: select plastid‑origin reads using protein‑to‑genome alignment (e.g., NCBI BLAST) and assemble with Flye v2.9.6. This leverages ONT read length to bridge repeats.
+2) mtDNA from ONT: aggressively filter ptDNA/nuclear reads (e.g., protein markers; BUSCO to identify nuclear reads), bootstrap seed contigs with miniasm, then complete with Flye.
+3) ptDNA from HiFi: either use the protein‑guided selection + Flye route (method 1) or a wrapper of Oatk with organelle gene–aware pathfinding.
+4) mtDNA from HiFi: a wrapper of Oatk is generally preferred although (method 2).
+We assemble ptDNA first before mtDNA assembly.
+
 Options:
   -l FASTQ
     long reads data file
@@ -69,14 +76,29 @@ Options:
     assemble animal mtDNA
   --nano-raw [default]
   --pacbio-hifi
+  --use-oatk
 Examples:
-  Assemble plant mitochondrial sequences from l.fq to produce l.mt.gfa:
+  Assemble plant mitochondrial sequences from ONT l.fq to produce l.mt.gfa:
     polap readassemble -l l.fq
 
-  Assemble plastid sequences from l.fq to produce l.pt.fa and l.pt.gfa:
+  Assemble plant mitochondrial sequences from HiFi l.fq to produce l.mt.gfa:
+    polap readassemble -l l.fq --pacbio-hifi
+
+  Assemble plastid sequences from ONT l.fq to produce l.pt.fa and l.pt.gfa:
     polap readassemble -l l.fq --plastid
-TODO:
-  Dev.
+
+  Assemble plastid sequences from HiFi l.fq to produce l.pt.fa and l.pt.gfa:
+    polap readassemble -l l.fq --plastid
+
+  Oatk assembles plastid sequences from HiFi l.fq to produce l.pt.fa and l.pt.gfa:
+    polap readassemble -l l.fq --plastid --use-oatk
+
+  Oatk assembles mitochondrial sequences from HiFi l.fq to produce l.pt.fa and l.pt.gfa:
+    polap readassemble -l l.fq --use-oatk
+
+  (not tested) Oatk assembles animal mitochondrial sequences from HiFi l.fq to produce l.pt.fa and l.pt.gfa:
+    polap readassemble -l l.fq --animal --use-oatk
+
 Copyright:
   Copyright © 2025 Sang Chul Choi
   Free Software Foundation (1998–2018)
@@ -104,59 +126,78 @@ EOF
 
 	if [[ "${_arg_menu[1]}" == "annotated" ]]; then
 		_polap_lib_conda-ensure_conda_env polap || exit 1
-		_polap_lib_readassemble-annotated
+		_polap_lib_readassemble-annotated mtseed
 		conda deactivate
 		return 0
 	fi
 
-	_polap_lib_conda-ensure_conda_env polap || exit 1
-	# Three cases
-	# 1. plastid
-	# 3. animial mitochondrial
-	# 2. mitochondrial or mitochondrial + noncoding
-	_polap_log0 "plastid: ${_arg_plastid}"
-	_polap_log0 "animal: ${_arg_animal}"
-	_polap_log0 "noncoding: ${_arg_noncoding}"
-	if [[ "${_arg_plastid}" == "on" ]]; then
-		local pt_fa="${_arg_long_reads%.*}.pt.fa"
-		local pt_gfa="${_arg_long_reads%.*}.pt.gfa"
-		local pt_png="${_arg_long_reads%.*}.pt.png"
-		_polap_log0 "Assemble the plastid genome sequence from ${_arg_long_reads} in ${pt_fa}"
-		_polap_readassemble-pt
-		cp -p "${_arg_outdir}/pt-pt.1.fa" "${pt_fa}"
-		cp -p "${_arg_outdir}/pt-pt.1.gfa" "${pt_gfa}"
-		cp -p "${_arg_outdir}/pt-pt.1.png" "${pt_png}"
-		_polap_log0 "output fasta: ${pt_fa}"
-		_polap_log0 "output assembly graph: ${pt_gfa}"
-		_polap_log0 "output assembly graph figure: ${pt_png}"
-	elif [[ "${_arg_animal}" == "on" ]]; then
-		_polap_log1 "Read-assemble animal mtDNA (not tested yet)"
-		_polap_readassemble-mt-animal
-	else
-		if [[ "${_arg_noncoding}" == "on" ]]; then
-			local mt_gfa="${_arg_long_reads%.*}.mt.gfa"
-			local mt_png="${_arg_long_reads%.*}.mt.png"
-			_polap_log0 "Assemble the mitochondrial genome sequence from ${_arg_long_reads} in ${mt_gfa}"
-			_polap_readassemble-nt
-			cp -p "${_arg_outdir}/nt.1.gfa" "${mt_gfa}"
-			cp -p "${_arg_outdir}/nt.1.png" "${mt_png}"
-			_polap_log0 "output assembly graph: ${mt_gfa}"
-			_polap_log0 "output assembly graph figure: ${mt_png}"
+	if [[ "${_arg_use_oatk}" == "off" ]]; then
+		_polap_lib_conda-ensure_conda_env polap || exit 1
+
+		if [[ "${_arg_plastid}" == "on" ]]; then
+			_polap_log0 "Assemble the plastid genome sequence from ${_arg_long_reads}"
+			_polap_readassemble-pt
+			local pt_fa="${_arg_long_reads%.*}.pt.fa"
+			local pt_gfa="${_arg_long_reads%.*}.pt.gfa"
+			local pt_png="${_arg_long_reads%.*}.pt.png"
+			cp -p "${_arg_outdir}/pt-pt.1.fa" "${pt_fa}"
+			cp -p "${_arg_outdir}/pt-pt.1.gfa" "${pt_gfa}"
+			cp -p "${_arg_outdir}/pt-pt.1.png" "${pt_png}"
+			_polap_log0 "output fasta: ${pt_fa}"
+			_polap_log0 "output assembly graph: ${pt_gfa}"
+			_polap_log0 "output assembly graph figure: ${pt_png}"
+		elif [[ "${_arg_animal}" == "on" ]]; then
+			_polap_log1 "Read-assemble animal mtDNA (not tested yet)"
+			_polap_readassemble-mt-animal
 		else
-			_polap_log1 "Read-assemble plant mtDNA without mitochondrial noncoding regions"
-			# _polap_log0 "Before: _polap_readassemble-mt"
-			# _polap_log0 "  -o ${_arg_outdir}"
-			# _polap_log0 "  -i ${_arg_inum}"
-			# _polap_log0 "  -j ${_arg_jnum}"
-			_polap_readassemble-mt
-			# _polap_log0 "After: _polap_readassemble-mt"
-			# _polap_log0 "  -o ${_arg_outdir}"
-			# _polap_log0 "  -i ${_arg_inum}"
-			# _polap_log0 "  -j ${_arg_jnum}"
-
+			if [[ "${_arg_noncoding}" == "on" ]]; then
+				local mt_gfa="${_arg_long_reads%.*}.mt.gfa"
+				local mt_png="${_arg_long_reads%.*}.mt.png"
+				_polap_log0 "Assemble the mitochondrial genome sequence from ${_arg_long_reads} in ${mt_gfa}"
+				_polap_readassemble-nt
+				cp -p "${_arg_outdir}/nt.1.gfa" "${mt_gfa}"
+				cp -p "${_arg_outdir}/nt.1.png" "${mt_png}"
+				_polap_log0 "output assembly graph: ${mt_gfa}"
+				_polap_log0 "output assembly graph figure: ${mt_png}"
+			else
+				# mtDNA using ONT data
+				_polap_log0 "Use miniasm to generate seed contigs"
+				# _polap_log0 "Use miniasm to generate seed contigs ${_arg_verbose_str}"
+				_polap_log1 "Read-assemble plant mtDNA without mitochondrial noncoding regions"
+				_arg_plastid="on"
+				if [[ "${_arg_readassemble_pt}" == "on" ]]; then
+					_polap_readassemble-pt
+				else
+					_arg_long_reads="${_arg_outdir}/ld.fq"
+				fi
+				_arg_plastid="off"
+				_arg_menu[1]="annotate"
+				if [[ "${_arg_readassemble_mtseed}" == "on" ]]; then
+					_run_polap_mtseed
+				fi
+				_arg_menu[1]="fast"
+				_arg_pt_ref="${_arg_outdir}/pt-pt.1.fa"
+				_polap_assert '[[ -s "${_arg_pt_ref}" ]]' \
+					"pt ref must exist, '${_arg_pt_ref}'"
+				# _arg_steps_include="1-9"
+				# _arg_steps_include="3"
+				if [[ -d "${_arg_outdir}/mtseed/mt1" ]]; then
+					rm -rf "${_arg_outdir}/mtseed/mt1"
+					rm -rf "${_arg_outdir}/mtseed/mt2"
+					rm -rf "${_arg_outdir}/mtseed/mt3"
+				fi
+				_run_polap_mtseed
+				local mt_gfa="${_arg_long_reads%.*}.mt.gfa"
+				cp -p "${_arg_outdir}/mt.1.gfa" "${mt_gfa}"
+				_polap_log0 "output assembly graph: ${mt_gfa}"
+			fi
 		fi
-	fi
+	else
+		_polap_lib_conda-ensure_conda_env polap || exit 1
 
+		_polap_assert '[[ "${_arg_data_type}" == "pacbio-hifi" ]]' \
+			"_arg_data_type must be pacbio-hifi, got '${_arg_data_type}'"
+	fi
 	conda deactivate
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -226,6 +267,7 @@ _polap_readassemble-pt() {
 
 	_polap_lib_readassemble-annotate-read-pt
 	_polap_lib_readassemble-assemble-annotated-read-pt
+	_polap_lib_file-cleanup -d "${_arg_outdir}/annotate-read-pt" -s 5M -a rm
 }
 
 # 2025-08-13

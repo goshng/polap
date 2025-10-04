@@ -1,0 +1,30 @@
+{
+  "explorer.confirmDelete": false,
+  "files.exclude": {
+    "*~": true
+  },
+  "editor.fontSize": 24,
+  "editor.wordWrap": "on",
+  "editor.wrappingIndent": "indent",
+  "editor.suggestSelection": "first",
+  "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
+  "files.associations": {
+    "*.rmd": "markdown",
+    "*.Rmd": "rmarkdown",
+    "README": "markdown"
+  },
+  "explorer.confirmDragAndDrop": false,
+  "[python]": {
+    "editor.formatOnType": true
+  },
+  "workbench.colorTheme": "Default Dark+",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "redhat.telemetry.enabled": true,
+  "[cpp]": {
+    "editor.defaultFormatter": "xaver.clang-format"
+  },
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2
+}

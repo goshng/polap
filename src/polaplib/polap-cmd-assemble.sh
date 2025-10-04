@@ -187,6 +187,7 @@ EOF
 		exit $EXIT_SUCCESS
 	fi
 
+	_polap_lib_conda-ensure_conda_env polap || exit 1
 	_polap_log0 "starting the whole-genome assembly on ${_arg_outdir} ..."
 	_polap_log1 "  output1: ${_polap_var_outdir_s1_fq_stats}"
 	_polap_log1 "  output1: ${_polap_var_outdir_s2_fq_stats}"
@@ -304,6 +305,8 @@ EOF
 		fi
 	fi
 
+	conda deactivate
+
 	_polap_log1 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
@@ -338,6 +341,7 @@ function _run_polap_assemble2 { # organelle-genome assembly
 	FDIR="${_arg_outdir}"/${_arg_inum}
 
 	_polap_var_mtcontigname="$FDIR"/mt.contig.name-"${_arg_jnum}"
+	local i=0
 
 	help_message=$(
 		cat <<EOF
@@ -432,7 +436,10 @@ EOF
 	#
 	# check_file_existence "${_polap_var_outdir_lk_fq_gz}"
 
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	_polap_log0 "i: $i"
 	_run_polap_map-reads
+	_polap_log0 "i: $i"
 	if [[ "${_arg_polap_reads}" == "on" ]]; then
 		_arg_menu[1]="polap-reads"
 
@@ -444,10 +451,15 @@ EOF
 	else
 		_arg_menu[1]="infile"
 	fi
+	_polap_log0 "i: $i"
 	_run_polap_select-reads
+	_polap_log0 "i: $i"
 	_run_polap_flye2
+	_polap_log0 "i: $i"
 
 	_polap_log1 "NEXT: $(basename "$0") prepare-polishing -o ${_arg_outdir} -i ${_arg_inum} -j ${_arg_jnum}"
+
+	conda deactivate
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

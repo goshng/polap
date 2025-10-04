@@ -1,0 +1,838 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+polap-py-syncmer-connectivity-select-mt.py  v0.8.0
+
+Fast, externalized pipeline for organelle read selection via syncmer-connectivity PPR.
+
+Fixes stalls at:
+  • [step] loading precomputed syncmers …   (streaming loader + external counting)
+  • [step] building graph …                 (external pair aggregation)
+
+New:
+  --label {mt,pt,...}   Use label in output filenames:
+      OUTPREFIX.<label>.ids
+      OUTPREFIX.<label>.nuclear.ids
+      OUTPREFIX.<label>.scores.tsv
+      OUTPREFIX.<label>.graph.stats.txt
+
+Inputs
+------
+Either:
+  --sm-dump FILE   TSV: read_id \t hex64,hex64,...  (unique per read)
+or:
+  --reads FASTQ    Fallback: compute syncmers in Python (slower)
+
+Required:
+  --mt FILE        Anchor IDs (mt or pt, depending on pass). One per line.
+
+Optional:
+  --pt FILE        (unused; accepted for parity)
+  -k, -s, --hpc    Used only when --reads is given
+
+Graph build
+-----------
+  --max-occ INT       Ignore syncmers seen in > INT reads [200]
+  --min-shared INT    Keep edge only if intersection >= INT [4]
+  --jaccard-min F     Keep edge only if inter/union >= F [0.01]
+  --edge-norm         Edge weight = inter / sqrt(|Su||Sv|)
+  --topk-nei INT      Keep up to top-K neighbors per node [50]
+  --steps INT         BFS radius from seeds [2]
+
+PPR
+---
+  --ppr-alpha FLOAT   [0.85]
+  --ppr-iter INT      [30]
+  --seed-fraction F   [1.0]
+  --score-th FLOAT    If 0, auto Otsu
+
+Coverage prior (optional)
+-------------------------
+  --x-prior
+  --x-tsv FILE        quickview TSV with X = log10(median)
+  --nuc-cut-log10 F
+  --x-slope F         [0.20]
+
+External engine control
+-----------------------
+  --edge-mode {external,memory}  default: external
+  --tmpdir DIR
+  --external-threshold INT       If N_reads > threshold, force external [500000]
+  --sort-parallel INT            GNU sort --parallel
+  --sort-mem STR                 GNU sort -S (e.g. 4G)
+
+Outputs
+-------
+  -o OUTPREFIX
+    OUTPREFIX.<label>.ids
+    OUTPREFIX.<label>.nuclear.ids
+    OUTPREFIX.<label>.scores.tsv
+    OUTPREFIX.<label>.graph.stats.txt
+"""
+
+import sys, os, math, argparse, tempfile, subprocess, csv
+from collections import defaultdict, Counter
+
+
+# -------------------- small utils --------------------
+def eprint(*a, **kw):
+    print(*a, file=sys.stderr, **kw)
+
+
+def open_guess(fn):
+    import gzip
+
+    return gzip.open(fn, "rt") if fn.endswith(".gz") else open(fn, "rt")
+
+
+def norm_id(s: str) -> str:
+    return (s or "").split()[0]
+
+
+# -------------------- FASTQ fallback --------------------
+def fastq_iter(path: str):
+    with open_guess(path) as fh:
+        while True:
+            n = fh.readline()
+            if not n:
+                break
+            s = fh.readline()
+            p = fh.readline()
+            q = fh.readline()
+            if not q:
+                break
+            rid = norm_id(n[1:].strip())
+            yield rid, s.strip()
+
+
+def nt4(c: str) -> int:
+    if c in "Aa":
+        return 0
+    if c in "Cc":
+        return 1
+    if c in "Gg":
+        return 2
+    if c in "Tt":
+        return 3
+    return -1
+
+
+def rc2b(x: int, l: int) -> int:
+    mask = (1 << (2 * l)) - 1 if l < 32 else (1 << 64) - 1
+    x = (~x) & mask
+    y = 0
+    for _ in range(l):
+        y = (y << 2) | (x & 3)
+        x >>= 2
+    return y
+
+
+def hpc_compress(seq: str) -> str:
+    out = []
+    prev = ""
+    for c in seq.upper():
+        if c not in "ACGT":
+            prev = ""
+            continue
+        if c != prev:
+            out.append(c)
+            prev = c
+    return "".join(out)
+
+
+def closed_syncmers(seq: str, k: int, s: int):
+    n = len(seq)
+    if n < k:
+        return []
+    ns = n - s + 1
+    w = k - s + 1
+    mask = (1 << (2 * s)) - 1 if s < 32 else (1 << 64) - 1
+    f = 0
+    r = 0
+    l = 0
+    sh = [0] * ns
+    nw = 0
+    for c in seq:
+        b = nt4(c)
+        if b < 0:
+            l = 0
+            f = 0
+            r = 0
+            continue
+        f = ((f << 2) | b) & mask
+        r = (rc2b(b, 1) << (2 * (s - 1))) | (r >> 2)
+        if l < s:
+            l += 1
+            if l < s:
+                continue
+        can = f if f < r else r
+        if nw < ns:
+            sh[nw] = can
+            nw += 1
+    if nw > ns:
+        nw = ns
+    out = []
+    for i in range(0, n - k + 1):
+        mn = (1 << 64) - 1
+        arg = -1
+        for j in range(w):
+            v = sh[i + j]
+            if v < mn:
+                mn = v
+                arg = j
+        if arg == 0 or arg == w - 1:
+            out.append(mn)
+    return out
+
+
+# -------------------- anchors & X --------------------
+def load_id_set(path):
+    S = set()
+    if not path:
+        return S
+    with open(path) as fh:
+        for line in fh:
+            t = line.strip().split()
+            if t:
+                S.add(t[0])
+    return S
+
+
+def load_X_quickview(tsv):
+    X = {}
+    if not tsv:
+        return X
+    with open(tsv, newline="") as fh:
+        r = csv.DictReader(fh, delimiter="\t")
+        for row in r:
+            try:
+                rid = norm_id(row["read_id"])
+                med = float(row["median"])
+                if med > 0:
+                    X[rid] = math.log10(med)
+            except:
+                pass
+    return X
+
+
+# -------------------- external helpers --------------------
+def _run_sort_uniq_count(in_path, out_path, parallel=None, mem=None):
+    env = os.environ.copy()
+    env["LC_ALL"] = "C"
+    sort_cmd = ["sort", in_path]
+    if parallel or mem:
+        sort_cmd = (
+            ["sort"]
+            + ([f"--parallel={parallel}"] if parallel else [])
+            + ([f"-S{mem}"] if mem else [])
+            + [in_path]
+        )
+    p1 = subprocess.Popen(sort_cmd, stdout=subprocess.PIPE, env=env, text=True)
+    p2 = subprocess.Popen(
+        ["uniq", "-c"], stdin=p1.stdout, stdout=open(out_path, "w"), env=env, text=True
+    )
+    p1.stdout.close()
+    p2.communicate()
+
+
+def _run_sort_keyval(in_path, out_path, parallel=None, mem=None):
+    env = os.environ.copy()
+    env["LC_ALL"] = "C"
+    sort_cmd = ["sort", "-k1,1", in_path]
+    if parallel or mem:
+        sort_cmd = (
+            ["sort", "-k1,1"]
+            + ([f"--parallel={parallel}"] if parallel else [])
+            + ([f"-S{mem}"] if mem else [])
+            + [in_path]
+        )
+    subprocess.check_call(sort_cmd, stdout=open(out_path, "w"), env=env, text=True)
+
+
+# -------------------- sm-dump loader (streaming/external) -------------------
+def load_sm_dump_external_stream(
+    path, max_occ, tmpdir=None, sort_parallel=None, sort_mem=None
+):
+    """
+    Build read index, per-read cardinalities, and a *sorted* stream of (hash, read_idx)
+    filtered by max_occ WITHOUT building sm2reads in RAM.
+    Returns:
+      read_index, idx2read, card, sm_read_filtered_path (sorted by hash)
+    """
+    eprint("[load] pass1: assign read indices, spill all hashes + sm_read rows …")
+    read_index, idx2read, card = {}, [], []
+
+    # spill all hashes ONLY for counting
+    all_fd, all_path = tempfile.mkstemp(prefix="sm_all_", dir=tmpdir, text=True)
+    os.close(all_fd)
+
+    # spill unsorted (hash \t read_idx) rows
+    smr_fd, smr_path = tempfile.mkstemp(prefix="sm_read_", dir=tmpdir, text=True)
+    os.close(smr_fd)
+
+    n = 0
+    with open(path) as fh, open(all_path, "w") as wh, open(smr_path, "w") as wr:
+        for line in fh:
+            n += 1
+            if (n % 1_000_000) == 0:
+                eprint(f"[load] pass1 … {n/1e6:.1f}M lines")
+            line = line.rstrip("\n")
+            if not line:
+                continue
+            rid, hashes = (line.split("\t", 1) + [""])[:2]
+            rid = rid.strip()
+            if not rid:
+                continue
+            if rid in read_index:  # should not happen; skip safely
+                continue
+            vals = []
+            if hashes:
+                for x in hashes.split(","):
+                    if x:
+                        vals.append(int(x, 16))
+            if len(vals) > 1:
+                vals = sorted(set(vals))
+            idx = len(idx2read)
+            read_index[rid] = idx
+            idx2read.append(rid)
+            card.append(len(vals))
+            for h in vals:
+                wh.write(f"{h:016x}\n")
+                wr.write(f"{h:016x}\t{idx}\n")
+
+    eprint("[load] counting hashes (sort | uniq -c) …")
+    cnt_fd, cnt_path = tempfile.mkstemp(prefix="sm_cnt_", dir=tmpdir, text=True)
+    os.close(cnt_fd)
+    _run_sort_uniq_count(all_path, cnt_path, parallel=sort_parallel, mem=sort_mem)
+    try:
+        os.remove(all_path)
+    except:
+        pass
+
+    # allowed hashes (<= max_occ) as a sorted file
+    eprint("[load] derive allowed-hash list …")
+    allow_fd, allow_path = tempfile.mkstemp(prefix="sm_allow_", dir=tmpdir, text=True)
+    os.close(allow_fd)
+    with open(cnt_path) as fi, open(allow_path, "w") as fo:
+        for line in fi:
+            parts = line.strip().split()
+            if len(parts) != 2:
+                continue
+            occ = int(parts[0])
+            hx = parts[1]
+            if occ <= max_occ:
+                fo.write(hx + "\n")
+    try:
+        os.remove(cnt_path)
+    except:
+        pass
+
+    eprint("[load] sort sm_read by hash …")
+    smr_sorted_fd, smr_sorted_path = tempfile.mkstemp(
+        prefix="sm_read_sorted_", dir=tmpdir, text=True
+    )
+    os.close(smr_sorted_fd)
+    _run_sort_keyval(smr_path, smr_sorted_path, parallel=sort_parallel, mem=sort_mem)
+    try:
+        os.remove(smr_path)
+    except:
+        pass
+
+    # filter sm_read_sorted against allowed list (both sorted by hash)
+    eprint("[load] filter sm_read by allowed hashes (sorted merge) …")
+    filt_fd, filt_path = tempfile.mkstemp(
+        prefix="sm_read_allowed_", dir=tmpdir, text=True
+    )
+    os.close(filt_fd)
+    with open(allow_path) as fa, open(smr_sorted_path) as fs, open(
+        filt_path, "w"
+    ) as fo:
+        ha = fa.readline().strip()
+        hs = fs.readline().strip()
+        while hs:
+            if not ha:
+                break
+            hs_hex = hs.split("\t", 1)[0]
+            if hs_hex == ha:
+                fo.write(hs + "\n")
+                hs = fs.readline().strip()
+            elif hs_hex < ha:
+                hs = fs.readline().strip()
+            else:
+                ha = fa.readline().strip()
+    try:
+        os.remove(allow_path)
+        os.remove(smr_sorted_path)
+    except:
+        pass
+
+    return read_index, idx2read, card, filt_path
+
+
+# -------------------- external edge builder (from filtered stream) ----------
+def build_edges_external_stream(
+    sm_read_filtered_path,
+    min_shared,
+    jacc_min,
+    edge_norm,
+    topk_nei,
+    card,
+    tmpdir=None,
+    sort_parallel=None,
+    sort_mem=None,
+):
+    """
+    sm_read_filtered_path: sorted rows "<hex>\t<read_idx>"
+    Returns adjacency dict: idx -> [(nbr, weight), ...]
+    """
+    # group by hash and emit pairs
+    pair_fd, pair_path = tempfile.mkstemp(prefix="pairs_", dir=tmpdir, text=True)
+    os.close(pair_fd)
+    with open(sm_read_filtered_path) as f, open(pair_path, "w") as wp:
+        w = wp.write
+        cur_hash = None
+        group = []
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            hx, idx_s = line.split("\t")
+            idx = int(idx_s)
+            if cur_hash is None:
+                cur_hash = hx
+                group = [idx]
+            elif hx == cur_hash:
+                group.append(idx)
+            else:
+                if len(group) >= 2:
+                    group.sort()
+                    L = len(group)
+                    for i in range(L):
+                        u = group[i]
+                        for j in range(i + 1, L):
+                            v = group[j]
+                            w(f"{u}\t{v}\n")
+                cur_hash = hx
+                group = [idx]
+        if group and len(group) >= 2:
+            group.sort()
+            L = len(group)
+            for i in range(L):
+                u = group[i]
+                for j in range(i + 1, L):
+                    v = group[j]
+                    w(f"{u}\t{v}\n")
+
+    # aggregate pairs
+    agg_fd, agg_path = tempfile.mkstemp(prefix="pairs_agg_", dir=tmpdir, text=True)
+    os.close(agg_fd)
+    _run_sort_uniq_count(pair_path, agg_path, parallel=sort_parallel, mem=sort_mem)
+    try:
+        os.remove(pair_path)
+    except:
+        pass
+
+    # build adjacency
+    adj = {}
+    with open(agg_path) as f:
+        for line in f:
+            parts = line.strip().split()
+            if len(parts) != 3:
+                continue
+            inter = int(parts[0])
+            u = int(parts[1])
+            v = int(parts[2])
+            if inter < min_shared:
+                continue
+            union = card[u] + card[v] - inter
+            if union <= 0:
+                continue
+            jacc = inter / union
+            if jacc < jacc_min:
+                continue
+            w = inter
+            if edge_norm:
+                w = inter / max(1.0, math.sqrt(card[u] * card[v]))
+            adj.setdefault(u, []).append((v, w))
+            adj.setdefault(v, []).append((u, w))
+    try:
+        os.remove(agg_path)
+    except:
+        pass
+
+    if topk_nei and topk_nei > 0:
+        for u, nbrs in adj.items():
+            if len(nbrs) > topk_nei:
+                nbrs.sort(key=lambda x: x[1], reverse=True)
+                adj[u] = nbrs[:topk_nei]
+    return adj
+
+
+# -------------------- in-memory fallback ------------------------------------
+def build_edges_memory(sm2reads, min_shared, jacc_min, edge_norm, topk_nei, card):
+    inter = defaultdict(int)
+    for lst in sm2reads.values():
+        L = len(lst)
+        lst = sorted(lst)
+        for i in range(L):
+            u = lst[i]
+            for j in range(i + 1, L):
+                v = lst[j]
+                inter[(u, v)] += 1
+    adj = {}
+    for (u, v), cnt in inter.items():
+        if cnt < min_shared:
+            continue
+        union = card[u] + card[v] - cnt
+        if union <= 0:
+            continue
+        jacc = cnt / union
+        if jacc < jacc_min:
+            continue
+        w = cnt
+        if edge_norm:
+            w = cnt / max(1.0, math.sqrt(card[u] * card[v]))
+        adj.setdefault(u, []).append((v, w))
+        adj.setdefault(v, []).append((u, w))
+    if topk_nei and topk_nei > 0:
+        for u, nbrs in adj.items():
+            if len(nbrs) > topk_nei:
+                nbrs.sort(key=lambda x: x[1], reverse=True)
+                adj[u] = nbrs[:topk_nei]
+    return adj
+
+
+# -------------------- PPR --------------------
+def bfs_expand(adj, seeds, steps):
+    cur = set(seeds)
+    frontier = set(seeds)
+    for _ in range(steps):
+        nxt = set()
+        for u in frontier:
+            for v, _ in adj.get(u, []):
+                if v not in cur:
+                    nxt.add(v)
+        if not nxt:
+            break
+        cur |= nxt
+        frontier = nxt
+    return cur
+
+
+def personalized_pagerank(adj, seeds, alpha=0.85, iters=30, seed_fraction=1.0):
+    nodes = sorted(adj.keys())
+    ix = {u: i for i, u in enumerate(nodes)}
+    N = len(nodes)
+    if N == 0:
+        return {}
+    nbr = [adj.get(u, [])[:] for u in nodes]
+    for i in range(N):
+        tot = sum(w for _, w in nbr[i]) or 1.0
+        nbr[i] = [(v, w / tot) for (v, w) in nbr[i]]
+    s = [0.0] * N
+    if seeds:
+        mass = seed_fraction / len(seeds)
+        for u in seeds:
+            if u in ix:
+                s[ix[u]] += mass
+    p = s[:]
+    for _ in range(iters):
+        new = [0.0] * N
+        for i in range(N):
+            if nbr[i]:
+                pi = p[i]
+                for v, w in nbr[i]:
+                    j = ix.get(v, None)
+                    if j is not None:
+                        new[j] += alpha * pi * w
+        for j in range(N):
+            new[j] += (1 - alpha) * s[j]
+        p = new
+    return {nodes[i]: p[i] for i in range(N)}
+
+
+def apply_x_prior(scores, idx2read, Xmap, nuc_cut_log10, x_slope):
+    if nuc_cut_log10 is None:
+        return scores
+
+    def sigmoid(z):
+        return 1.0 / (1.0 + math.exp(-z))
+
+    slope = max(float(x_slope), 1e-6)
+    out = {}
+    for u, sc in scores.items():
+        rid = idx2read[u]
+        x = Xmap.get(rid, nuc_cut_log10)
+        out[u] = sc * sigmoid((x - nuc_cut_log10) / slope)
+    return out
+
+
+def auto_threshold(values):
+    import numpy as np
+
+    x = np.array(values, dtype=float)
+    if x.size == 0:
+        return 0.0
+    hist, edges = np.histogram(x, bins=64)
+    if hist.sum() == 0:
+        return float(np.percentile(x, 80))
+    w0 = np.cumsum(hist) / hist.sum()
+    centers = 0.5 * (edges[:-1] + edges[1:])
+    mu = np.cumsum(hist * centers) / hist.sum()
+    mu_t = mu[-1] if mu.size else 0.0
+    w1 = 1.0 - w0
+    between = (mu_t * w0 - mu) ** 2 / (w0 * w1 + 1e-12)
+    k = int(np.nanargmax(between)) if between.size else int(len(x) * 0.2)
+    return float(edges[min(k + 1, len(edges) - 1)])
+
+
+# -------------------- main --------------------
+def main():
+    ap = argparse.ArgumentParser(
+        description="Syncmer-connectivity PPR (organelle selection) — fast external loader + graph."
+    )
+    ap.add_argument(
+        "--sm-dump", help="TSV: read_id\\thex64,hex64,... (unique per read)"
+    )
+    ap.add_argument("--reads", help="FASTQ(.gz) if no sm-dump")
+    ap.add_argument("--mt", required=True, help="anchor ID list (mt or pt)")
+    ap.add_argument("--pt", help="(unused; parity)")
+    ap.add_argument("-k", type=int, default=121)
+    ap.add_argument("-s", type=int, default=27)
+    ap.add_argument("--hpc", action="store_true")
+    ap.add_argument("--max-occ", type=int, default=200)
+    ap.add_argument("--min-shared", type=int, default=4)
+    ap.add_argument("--jaccard-min", type=float, default=0.01)
+    ap.add_argument("--edge-norm", action="store_true")
+    ap.add_argument("--topk-nei", type=int, default=50)
+    ap.add_argument("--steps", type=int, default=2)
+    ap.add_argument("--ppr-alpha", type=float, default=0.85)
+    ap.add_argument("--ppr-iter", type=int, default=30)
+    ap.add_argument("--seed-fraction", type=float, default=1.0)
+    ap.add_argument("--score-th", type=float, default=0.0)
+    ap.add_argument("--x-prior", action="store_true")
+    ap.add_argument("--x-tsv", help="quickview TSV")
+    ap.add_argument("--nuc-cut-log10", type=float)
+    ap.add_argument("--x-slope", type=float, default=0.20)
+    ap.add_argument("--edge-mode", choices=["external", "memory"], default="external")
+    ap.add_argument("--tmpdir", default=None)
+    ap.add_argument("--external-threshold", type=int, default=500000)
+    ap.add_argument(
+        "--sort-parallel", type=int, default=None, help="GNU sort --parallel"
+    )
+    ap.add_argument("--sort-mem", default=None, help="GNU sort -S (e.g. 4G)")
+    ap.add_argument(
+        "--label",
+        type=str,
+        default="mt",
+        help="Label for outputs (e.g., mt or pt) [default: mt]",
+    )
+    ap.add_argument("-o", "--out", required=True)
+    ap.add_argument("--version", action="store_true")
+    args = ap.parse_args()
+
+    if args.version:
+        print("0.8.0")
+        return
+
+    label = args.label.strip() or "mt"
+
+    anchors = load_id_set(args.mt)
+    if not anchors:
+        eprint("[error] no anchors in --mt")
+        sys.exit(2)
+
+    if not args.sm_dump and not args.reads:
+        eprint("[error] need --sm-dump or --reads")
+        sys.exit(2)
+
+    # --- Load dump (prefer external streaming path) ---
+    if args.sm_dump:
+        eprint("[step] loading precomputed syncmers (streaming/external) …")
+        read_index, idx2read, card, sm_read_filtered_path = (
+            load_sm_dump_external_stream(
+                args.sm_dump,
+                args.max_occ,
+                tmpdir=args.tmpdir,
+                sort_parallel=args.sort_parallel,
+                sort_mem=args.sort_mem,
+            )
+        )
+        N = len(idx2read)
+        eprint(f"[info] N_reads={N}")
+    else:
+        # fallback path (in-RAM)
+        eprint("[step] computing syncmers from FASTQ (slow) …")
+        sm_counts = Counter()
+        per_read_sms = []
+        idx2read = []
+        read_index = {}
+        for rid, seq in fastq_iter(args.reads):
+            if args.hpc:
+                seq = hpc_compress(seq)
+            sms = closed_syncmers(seq, args.k, args.s)
+            sms = sorted(set(sms)) if sms else []
+            read_index[rid] = len(idx2read)
+            idx2read.append(rid)
+            per_read_sms.append(sms)
+            for h in sms:
+                sm_counts[h] += 1
+        card = [0] * len(idx2read)
+        # Create a filtered stream file equivalent to sm_read_filtered_path
+        smr_fd, sm_read_filtered_path = tempfile.mkstemp(
+            prefix="sm_read_allowed_", dir=args.tmpdir, text=True
+        )
+        os.close(smr_fd)
+        with open(sm_read_filtered_path, "w") as fo:
+            for i, sms in enumerate(per_read_sms):
+                card[i] = len(sms)
+                if not sms:
+                    continue
+                keep = [h for h in sms if sm_counts[h] <= args.max_occ]
+                keep = sorted(set(keep))
+                for h in keep:
+                    fo.write(f"{h:016x}\t{i}\n")
+        # ensure sorted by hash
+        sorted_fd, sorted_path = tempfile.mkstemp(
+            prefix="sm_read_filt_sorted_", dir=args.tmpdir, text=True
+        )
+        os.close(sorted_fd)
+        _run_sort_keyval(
+            sm_read_filtered_path,
+            sorted_path,
+            parallel=args.sort_parallel,
+            mem=args.sort_mem,
+        )
+        try:
+            os.remove(sm_read_filtered_path)
+        except:
+            pass
+        sm_read_filtered_path = sorted_path
+        N = len(idx2read)
+
+    # --- Build graph (external from filtered stream) or memory fallback ---
+    mode = args.edge_mode
+    if mode == "memory" and N > args.external_threshold:
+        mode = "external"
+    eprint(f"[step] building graph ({mode}) …")
+    if mode == "external":
+        adj = build_edges_external_stream(
+            sm_read_filtered_path,
+            args.min_shared,
+            args.jaccard_min,
+            args.edge_norm,
+            args.topk_nei,
+            card,
+            tmpdir=args.tmpdir,
+            sort_parallel=args.sort_parallel,
+            sort_mem=args.sort_mem,
+        )
+    else:
+        # Build sm2reads in RAM from the filtered stream
+        sm2reads = defaultdict(list)
+        with open(sm_read_filtered_path) as f:
+            for line in f:
+                hx, idx_s = line.strip().split("\t")
+                sm2reads[hx].append(int(idx_s))
+        adj = build_edges_memory(
+            sm2reads,
+            args.min_shared,
+            args.jaccard_min,
+            args.edge_norm,
+            args.topk_nei,
+            card,
+        )
+
+    # free filtered stream file asap
+    try:
+        os.remove(sm_read_filtered_path)
+    except:
+        pass
+
+    # --- Seeds ---
+    seed_idx = [read_index[r] for r in anchors if r in read_index]
+    if not seed_idx:
+        eprint("[error] none of the anchors found in dump")
+        sys.exit(2)
+
+    # --- Candidate set via BFS ---
+    eprint("[step] BFS candidate expansion …")
+    cand = bfs_expand(adj, seed_idx, args.steps)
+    sub_adj = {
+        u: [(v, w) for (v, w) in adj.get(u, []) if v in cand] for u in cand if u in adj
+    }
+    eprint(f"[info] cand_nodes={len(sub_adj)}")
+
+    # --- PPR ---
+    eprint("[step] PPR …")
+    scores = personalized_pagerank(
+        sub_adj,
+        seed_idx,
+        alpha=args.ppr_alpha,
+        iters=args.ppr_iter,
+        seed_fraction=args.seed_fraction,
+    )
+
+    # --- X-prior (optional) ---
+    if args.x_prior and args.nuc_cut_log10 is not None and args.x_tsv:
+        eprint("[step] applying X-prior …")
+        Xmap = load_X_quickview(args.x_tsv)
+        scores = apply_x_prior(scores, idx2read, Xmap, args.nuc_cut_log10, args.x_slope)
+
+    # --- threshold ---
+    vals = list(scores.values())
+    th = args.score_th if args.score_th and args.score_th > 0 else auto_threshold(vals)
+    eprint(f"[info] threshold={th:.6g}")
+
+    # --- outputs (labeled) ---
+    os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+    lab = label
+    ids_path = f"{args.out}.{lab}.ids"
+    nuc_path = f"{args.out}.{lab}.nuclear.ids"
+    sc_path = f"{args.out}.{lab}.scores.tsv"
+    st_path = f"{args.out}.{lab}.graph.stats.txt"
+
+    with open(ids_path, "w") as w_ids, open(nuc_path, "w") as w_nuc, open(
+        sc_path, "w"
+    ) as w_sc:
+        w_sc.write("read_id\tdeg\tshared_sum\tfinal_score\n")
+        for u in sorted(sub_adj.keys()):
+            rid = idx2read[u]
+            deg = len(sub_adj[u])
+            shared_sum = sum(w for _, w in sub_adj[u])
+            s = scores.get(u, 0.0)
+            w_sc.write(f"{rid}\t{deg}\t{shared_sum:.3f}\t{s:.6g}\n")
+            if s >= th:
+                w_ids.write(rid + "\n")
+            else:
+                w_nuc.write(rid + "\n")
+
+    with open(st_path, "w") as w:
+        w.write(f"nodes\t{len(adj)}\n")
+        w.write(f"cand_nodes\t{len(sub_adj)}\n")
+        w.write(f"anchors\t{len(seed_idx)}\n")
+        w.write(f"max_occ\t{args.max_occ}\n")
+        w.write(f"min_shared\t{args.min_shared}\n")
+        w.write(f"jaccard_min\t{args.jaccard_min}\n")
+        w.write(f"edge_norm\t{int(args.edge_norm)}\n")
+        w.write(f"topk_nei\t{args.topk_nei}\n")
+        w.write(f"steps\t{args.steps}\n")
+        w.write(f"ppr_alpha\t{args.ppr_alpha}\n")
+        w.write(f"ppr_iter\t{args.ppr_iter}\n")
+        w.write(
+            f"x_prior\t{int(bool(args.x_prior and args.nuc_cut_log10 is not None and args.x_tsv))}\n"
+        )
+        if args.x_prior and args.nuc_cut_log10 is not None:
+            w.write(f"nuc_cut_log10\t{args.nuc_cut_log10}\n")
+            w.write(f"x_slope\t{args.x_slope}\n")
+        w.write(f"threshold\t{th}\n")
+        w.write(f"label\t{lab}\n")
+
+    eprint(f"[done] {ids_path}")
+    eprint(f"[done] {nuc_path}")
+    eprint(f"[done] {sc_path}")
+    eprint(f"[done] {st_path}")
+
+
+if __name__ == "__main__":
+    main()

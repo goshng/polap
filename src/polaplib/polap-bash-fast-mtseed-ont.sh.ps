@@ -1,0 +1,3823 @@
+%!PS-Adobe-3.0
+%%Title: polap-bash-fast-mtseed-ont.sh
+%%For: Sang Chul Choi
+%%Creator: a2ps version 4.14
+%%CreationDate: Sat Sep 27 13:54:37 2025
+%%BoundingBox: 24 24 571 818
+%%DocumentData: Clean7Bit
+%%Orientation: Landscape
+%%Pages: 20
+%%PageOrder: Ascend
+%%DocumentMedia: A4 595 842 0 () ()
+%%DocumentNeededResources: font Courier
+%%+ font Courier-Bold
+%%+ font Courier-BoldOblique
+%%+ font Courier-Oblique
+%%+ font Helvetica
+%%+ font Helvetica-Bold
+%%+ font Symbol
+%%+ font Times-Bold
+%%+ font Times-Roman
+%%DocumentProcessColors: Black 
+%%DocumentSuppliedResources: procset a2ps-a2ps-hdr
+%%+ procset a2ps-black+white-Prolog
+%%+ encoding ISO-8859-1Encoding
+%%EndComments
+/a2psdict 200 dict def
+a2psdict begin
+%%BeginProlog
+%%Copyright: (c) 1988, 89, 90, 91, 92, 93 Miguel Santana
+%%Copyright: (c) 1995, 96, 97, 98 Akim Demaille, Miguel Santana
+% Check PostScript language level.
+/languagelevel where {
+  pop /gs_languagelevel languagelevel def
+} {
+  /gs_languagelevel 1 def
+} ifelse
+
+% EPSF import as in the Red Book
+/BeginInclude {
+  /b4_Inc_state save def    		% Save state for cleanup
+  /dict_count countdictstack def	% Count objects on dict stack
+  /op_count count 1 sub def		% Count objects on operand stack 
+  userdict begin
+    0 setgray 0 setlinecap
+    1 setlinewidth 0 setlinejoin
+    10 setmiterlimit [ ] 0 setdash newpath
+    gs_languagelevel 1 ne {
+      false setstrokeadjust false setoverprint 
+    } if
+} bind def
+
+/EndInclude {
+  count op_count sub { pos } repeat	% Clean up stacks
+  countdictstack dict_count sub { end } repeat
+  b4_Inc_state restore
+} bind def
+
+/BeginEPSF {
+  BeginInclude
+  /showpage { } def
+} bind def
+
+/EndEPSF {
+  EndInclude
+} bind def
+
+% Page prefeed
+/page_prefeed {         % bool -> -
+  statusdict /prefeed known {
+    statusdict exch /prefeed exch put
+  } {
+    pop
+  } ifelse
+} bind def
+
+/deffont {
+  findfont exch scalefont def
+} bind def
+
+/reencode_font {
+  findfont reencode 2 copy definefont pop def
+} bind def
+
+% Function c-show (str => -)
+% centers text only according to x axis.
+/c-show { 
+  dup stringwidth pop
+  2 div neg 0 rmoveto
+  show
+} bind def
+
+% Function l-show (str => -)
+% prints texts so that it ends at currentpoint
+/l-show {
+  dup stringwidth pop neg 
+  0 
+  rmoveto show
+} bind def
+
+% center-fit show (str w => -)
+% show centered, and scale currentfont so that the width is less than w
+/cfshow {
+  exch dup stringwidth pop
+  % If the title is too big, try to make it smaller
+  3 2 roll 2 copy
+  gt
+  { % if, i.e. too big
+    exch div
+    currentfont exch scalefont setfont
+  } { % ifelse
+    pop pop 
+  }
+  ifelse
+  c-show			% center title
+} bind def
+
+% Return the y size of the current font
+% - => fontsize
+/currentfontsize {
+  currentfont /FontType get 0 eq {
+    currentfont /FontMatrix get 3 get
+  }{
+    currentfont /FontMatrix get 3 get 1000 mul
+  } ifelse
+} bind def
+
+% reencode the font
+% <encoding-vector> <fontdict> -> <newfontdict>
+/reencode { %def
+  dup length 5 add dict begin
+    { %forall
+      % <vector> <key> <val>
+      1 index /FID ne 
+      { def }{ pop pop } ifelse
+    } forall
+    /Encoding exch def % -
+
+    % Use the font's bounding box to determine the ascent, descent,
+    % and overall height; don't forget that these values have to be
+    % transformed using the font's matrix.
+    % We use `load' because sometimes BBox is executable, sometimes not.
+    % Since we need 4 numbers an not an array avoid BBox from being executed
+    /FontBBox load aload pop
+    FontMatrix transform /Ascent exch def pop
+    FontMatrix transform /Descent exch def pop
+    /FontHeight Ascent Descent sub def
+
+    % Get the underline position and thickness if they're defined.
+    % Use 1 if they are not defined.
+    currentdict /FontInfo 2 copy known
+    { get
+      /UnderlinePosition 2 copy % <FontInfo> /UP <FontInfo> /UP
+      2 copy known
+      { get }{ pop pop 1 } ifelse
+      0 exch FontMatrix transform exch pop
+      def % <FontInfo>
+
+      /UnderlineThickness 2 copy % <FontInfo> /UT <FontInfo> /UT
+      2 copy known
+      { get }{ pop pop 1 } ifelse
+      0 exch FontMatrix transform exch pop
+      def % <FontInfo>
+      pop % -
+    }{ pop pop
+    } ifelse
+
+    currentdict
+  end 
+} bind def
+
+% composite fonts for ASCII-EUC mixed strings
+% Version 1.2 1/31/1990
+% Original Ken'ichi HANDA (handa@etl.go.jp)
+% Modified Norio Katayama (katayama@rd.nacsis.ac.jp),1998
+% Extend & Fix Koji Nakamaru (maru@on.cs.keio.ac.jp), 1999
+% Anyone can freely copy, modify, distribute this program.
+
+/copyfont {	% font-dic extra-entry-count  copyfont  font-dic
+	1 index maxlength add dict begin
+	{	1 index /FID ne 2 index /UniqueID ne and
+		{def} {pop pop} ifelse
+	} forall
+	currentdict
+	end
+} bind def
+
+/compositefont { % ASCIIFontName EUCFontName RomanScale RomanOffset Rot(T/F) compositefont font
+    /RomanRotation exch def
+    /RomanOffset exch def
+    /RomanScale exch def
+    userdict /fixeucfont_dict known not {
+	userdict begin
+	    /fixeucfont_dict 2 dict begin
+		/UpperByteEncoding [
+		    16#00 1 16#20 { pop 0 } for
+		    16#21 1 16#28 { 16#20 sub } for
+		    16#29 1 16#2F { pop 0 } for
+		    16#30 1 16#74 { 16#27 sub } for
+		    16#75 1 16#FF { pop 0 } for
+		] def
+	        /LowerByteEncoding [
+		    16#00 1 16#A0 { pop /.notdef } for
+		    16#A1 1 16#FE { 16#80 sub 16 2 string cvrs
+				    (cXX) dup 1 4 -1 roll
+				    putinterval cvn } for
+		    /.notdef
+		] def
+		currentdict
+	    end def
+	end
+    } if
+    findfont dup /FontType get 0 eq {
+	14 dict begin
+	    %
+	    % 7+8 bit EUC font
+	    %
+	    12 dict begin
+		/EUCFont exch def
+		/FontInfo (7+8 bit EUC font) readonly def
+		/PaintType 0 def
+		/FontType 0 def
+		/FontMatrix matrix def
+		% /FontName
+		/Encoding fixeucfont_dict /UpperByteEncoding get def
+		/FMapType 2 def
+		EUCFont /WMode known
+		{ EUCFont /WMode get /WMode exch def }
+		{ /WMode 0 def } ifelse
+		/FDepVector [
+		    EUCFont /FDepVector get 0 get
+		    [ 16#21 1 16#28 {} for 16#30 1 16#74 {} for ]
+		    {
+			13 dict begin
+			    /EUCFont EUCFont def
+			    /UpperByte exch 16#80 add def	
+			    % /FontName
+			    /FontInfo (EUC lower byte font) readonly def
+			    /PaintType 0 def
+			    /FontType 3 def
+			    /FontMatrix matrix def
+			    /FontBBox {0 0 0 0} def
+			    /Encoding
+				fixeucfont_dict /LowerByteEncoding get def
+			    % /UniqueID
+			    % /WMode
+			    /BuildChar {
+				gsave
+				exch dup /EUCFont get setfont
+				/UpperByte get
+				2 string
+				dup 0 4 -1 roll put
+				dup 1 4 -1 roll put
+				dup stringwidth setcharwidth
+				0 0 moveto show
+				grestore
+			    } bind def
+			    currentdict
+			end
+			/lowerbytefont exch definefont
+		    } forall
+		] def
+		currentdict
+	    end
+	    /eucfont exch definefont
+	    exch
+	    findfont 1 copyfont dup begin
+		RomanRotation {
+			/FontMatrix FontMatrix
+			[ 0 RomanScale neg RomanScale 0 RomanOffset neg 0 ]
+			matrix concatmatrix def
+		}{
+			/FontMatrix FontMatrix
+			[ RomanScale 0 0 RomanScale 0 RomanOffset ] matrix concatmatrix
+			def
+			/CDevProc
+			    {pop pop pop pop 0 exch -1000 exch 2 div 880} def
+		} ifelse
+	    end
+	    /asciifont exch definefont
+	    exch
+	    /FDepVector [ 4 2 roll ] def
+	    /FontType 0 def
+	    /WMode 0 def
+	    /FMapType 4 def
+	    /FontMatrix matrix def
+	    /Encoding [0 1] def
+	    /FontBBox {0 0 0 0} def
+%	    /FontHeight 1.0 def % XXXX
+	    /FontHeight RomanScale 1.0 ge { RomanScale }{ 1.0 } ifelse def
+	    /Descent -0.3 def   % XXXX
+	    currentdict
+	end
+	/tmpfont exch definefont
+	pop
+	/tmpfont findfont
+    }{
+	pop findfont 0 copyfont
+    } ifelse
+} def	
+
+/slantfont {	% FontName slant-degree  slantfont  font'
+    exch findfont 1 copyfont begin
+    [ 1 0 4 -1 roll 1 0 0 ] FontMatrix exch matrix concatmatrix
+    /FontMatrix exch def
+    currentdict
+    end
+} def
+
+% Function print line number (<string> # -)
+/# {
+  gsave
+    sx cw mul neg 2 div 0 rmoveto
+    f# setfont
+    c-show
+  grestore
+} bind def
+
+% -------- Some routines to enlight plain b/w printings ---------
+
+% Underline
+% width --
+/dounderline {
+  currentpoint
+  gsave
+    moveto
+    0 currentfont /Descent get currentfontsize mul rmoveto
+    0 rlineto
+    stroke
+  grestore
+} bind def
+
+% Underline a string
+% string --
+/dounderlinestring {
+  stringwidth pop
+  dounderline
+} bind def
+
+/UL {
+  /ul exch store
+} bind def
+
+% Draw a box of WIDTH wrt current font
+% width --
+/dobox {
+  currentpoint
+  gsave
+    newpath
+    moveto
+    0 currentfont /Descent get currentfontsize mul rmoveto
+    dup 0 rlineto
+    0 currentfont /FontHeight get currentfontsize mul rlineto
+    neg 0 rlineto
+    closepath
+    stroke
+  grestore
+} bind def
+
+/BX {
+  /bx exch store
+} bind def
+
+% Box a string
+% string --
+/doboxstring {
+  stringwidth pop
+  dobox
+} bind def
+
+%
+% ------------- Color routines ---------------
+%
+/FG /setrgbcolor load def
+
+% Draw the background
+% width --
+/dobackground {
+  currentpoint
+  gsave
+    newpath
+    moveto
+    0 currentfont /Descent get currentfontsize mul rmoveto
+    dup 0 rlineto
+    0 currentfont /FontHeight get currentfontsize mul rlineto
+    neg 0 rlineto
+    closepath
+    bgcolor aload pop setrgbcolor
+    fill
+  grestore
+} bind def
+
+% Draw bg for a string
+% string --
+/dobackgroundstring {
+  stringwidth pop
+  dobackground
+} bind def
+
+
+/BG {
+  dup /bg exch store
+  { mark 4 1 roll ] /bgcolor exch store } if
+} bind def
+
+
+/Show {
+  bg { dup dobackgroundstring } if
+  ul { dup dounderlinestring } if
+  bx { dup doboxstring } if
+  show
+} bind def
+
+% Function T(ab), jumps to the n-th tabulation in the current line
+/T {
+  cw mul x0 add
+  bg { dup currentpoint pop sub dobackground } if
+  ul { dup currentpoint pop sub dounderline } if
+  bx { dup currentpoint pop sub dobox } if
+  y0 moveto
+} bind def
+
+% Function n: move to the next line
+/n {
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+} bind def
+
+% Function N: show and move to the next line
+/N {
+  Show
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+} bind def
+
+/S {
+  Show
+} bind def
+
+%%BeginResource: procset a2ps-a2ps-hdr 2.0 2
+%%Copyright: (c) 1988, 89, 90, 91, 92, 93 Miguel Santana
+%%Copyright: (c) 1995, 96, 97, 98 Akim Demaille, Miguel Santana
+% Function title: prints page header.
+% <ct> <rt> <lt> are passed as argument
+/title { 
+  % 1. Draw the background
+  x v get y v get moveto
+  gsave
+    0 th 2 div neg rmoveto 
+    th setlinewidth
+    0.95 setgray
+    pw 0 rlineto stroke
+  grestore
+  % 2. Border it
+  gsave
+    0.7 setlinewidth
+    pw 0 rlineto
+    0 th neg rlineto
+    pw neg 0 rlineto
+    closepath stroke
+  grestore
+  % stk: ct rt lt
+  x v get y v get th sub 1 add moveto
+%%IncludeResource: font Helvetica
+  fHelvetica fnfs 0.8 mul scalefont setfont
+  % 3. The left title
+  gsave
+    dup stringwidth pop fnfs 0.8 mul add exch % leave space took on stack
+    fnfs 0.8 mul hm rmoveto
+    show			% left title
+  grestore
+  exch
+  % stk: ct ltw rt
+  % 4. the right title
+  gsave
+    dup stringwidth pop fnfs 0.8 mul add exch % leave space took on stack
+    dup
+    pw exch stringwidth pop fnfs 0.8 mul add sub
+    hm
+    rmoveto
+    show			% right title
+  grestore
+  % stk: ct ltw rtw
+  % 5. the center title
+  gsave
+    pw 3 1 roll
+    % stk: ct pw ltw rtw
+    3 copy 
+    % Move to the center of the left room
+    sub add 2 div hm rmoveto
+    % What is the available space in here?
+    add sub fnfs 0.8 mul sub fnfs 0.8 mul sub
+    % stk: ct space_left
+%%IncludeResource: font Helvetica-Bold
+  fHelvetica-Bold fnfs scalefont setfont
+    cfshow
+  grestore
+} bind def
+
+% Function border: prints virtual page border
+/border { %def
+  gsave				% print four sides
+    0 setgray
+    x v get y v get moveto
+    0.7 setlinewidth		% of the square
+    pw 0 rlineto
+    0 ph neg rlineto
+    pw neg 0 rlineto
+    closepath stroke
+  grestore
+} bind def
+
+% Function water: prints a water mark in background
+/water { %def
+  gsave
+    scx scy moveto rotate
+%%IncludeResource: font Times-Bold
+  fTimes-Bold 100 scalefont setfont
+    .97 setgray
+    dup stringwidth pop 2 div neg -50 rmoveto
+    show
+  grestore
+} bind def
+
+% Function rhead: prints the right header
+/rhead {  %def
+  lx ly moveto
+  fHelvetica fnfs 0.8 mul scalefont setfont
+  l-show
+} bind def
+
+% Function footer (cf rf lf -> -)
+/footer {
+  fHelvetica fnfs 0.8 mul scalefont setfont
+  dx dy moveto
+  show
+
+  snx sny moveto
+  l-show
+  
+  fnx fny moveto
+  c-show
+} bind def
+%%EndResource
+%%BeginResource: procset a2ps-black+white-Prolog 2.0 1
+
+% Function T(ab), jumps to the n-th tabulation in the current line
+/T { 
+  cw mul x0 add y0 moveto
+} bind def
+
+% Function n: move to the next line
+/n { %def
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+} bind def
+
+% Function N: show and move to the next line
+/N {
+  Show
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+}  bind def
+
+/S {
+  Show
+} bind def
+
+/p {
+  false UL
+  false BX
+  fCourier bfs scalefont setfont
+  Show
+} bind def
+
+/sy {
+  false UL
+  false BX
+  fSymbol bfs scalefont setfont
+  Show
+} bind def
+
+/k {
+  false UL
+  false BX
+  fCourier-Oblique bfs scalefont setfont
+  Show
+} bind def
+
+/K {
+  false UL
+  false BX
+  fCourier-Bold bfs scalefont setfont
+  Show
+} bind def
+
+/c {
+  false UL
+  false BX
+  fCourier-Oblique bfs scalefont setfont
+  Show
+} bind def
+
+/C {
+  false UL
+  false BX
+  fCourier-BoldOblique bfs scalefont setfont
+  Show 
+} bind def
+
+/l {
+  false UL
+  false BX
+  fHelvetica bfs scalefont setfont
+  Show
+} bind def
+
+/L {
+  false UL
+  false BX
+  fHelvetica-Bold bfs scalefont setfont
+  Show 
+} bind def
+
+/str{
+  false UL
+  false BX
+  fTimes-Roman bfs scalefont setfont
+  Show
+} bind def
+
+/e{
+  false UL
+  true BX
+  fHelvetica-Bold bfs scalefont setfont
+  Show
+} bind def
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+%%IncludeResource: font Courier
+%%IncludeResource: font Courier-Oblique
+%%IncludeResource: font Courier-Bold
+%%IncludeResource: font Times-Roman
+%%IncludeResource: font Symbol
+%%IncludeResource: font Courier-BoldOblique
+%%BeginResource: encoding ISO-8859-1Encoding
+/ISO-8859-1Encoding [
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/space /exclam /quotedbl /numbersign /dollar /percent /ampersand /quoteright 
+/parenleft /parenright /asterisk /plus /comma /minus /period /slash 
+/zero /one /two /three /four /five /six /seven 
+/eight /nine /colon /semicolon /less /equal /greater /question 
+/at /A /B /C /D /E /F /G 
+/H /I /J /K /L /M /N /O 
+/P /Q /R /S /T /U /V /W 
+/X /Y /Z /bracketleft /backslash /bracketright /asciicircum /underscore 
+/quoteleft /a /b /c /d /e /f /g 
+/h /i /j /k /l /m /n /o 
+/p /q /r /s /t /u /v /w 
+/x /y /z /braceleft /bar /braceright /asciitilde /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/space /exclamdown /cent /sterling /currency /yen /brokenbar /section 
+/dieresis /copyright /ordfeminine /guillemotleft /logicalnot /hyphen /registered /macron 
+/degree /plusminus /twosuperior /threesuperior /acute /mu /paragraph /bullet 
+/cedilla /onesuperior /ordmasculine /guillemotright /onequarter /onehalf /threequarters /questiondown 
+/Agrave /Aacute /Acircumflex /Atilde /Adieresis /Aring /AE /Ccedilla 
+/Egrave /Eacute /Ecircumflex /Edieresis /Igrave /Iacute /Icircumflex /Idieresis 
+/Eth /Ntilde /Ograve /Oacute /Ocircumflex /Otilde /Odieresis /multiply 
+/Oslash /Ugrave /Uacute /Ucircumflex /Udieresis /Yacute /Thorn /germandbls 
+/agrave /aacute /acircumflex /atilde /adieresis /aring /ae /ccedilla 
+/egrave /eacute /ecircumflex /edieresis /igrave /iacute /icircumflex /idieresis 
+/eth /ntilde /ograve /oacute /ocircumflex /otilde /odieresis /divide 
+/oslash /ugrave /uacute /ucircumflex /udieresis /yacute /thorn /ydieresis 
+] def
+%%EndResource
+% Initialize page description variables.
+/sh 595 def
+/sw 842 def
+/llx 24 def
+/urx 818 def
+/ury 571 def
+/lly 24 def
+/#copies 1 def
+/th 20.000000 def
+/fnfs 15 def
+/bfs 9.561657 def
+/cw 5.736994 def
+
+% Dictionary for ISO-8859-1 support
+/iso1dict 8 dict begin
+  /fCourier ISO-8859-1Encoding /Courier reencode_font
+  /fCourier-Bold ISO-8859-1Encoding /Courier-Bold reencode_font
+  /fCourier-BoldOblique ISO-8859-1Encoding /Courier-BoldOblique reencode_font
+  /fCourier-Oblique ISO-8859-1Encoding /Courier-Oblique reencode_font
+  /fHelvetica ISO-8859-1Encoding /Helvetica reencode_font
+  /fHelvetica-Bold ISO-8859-1Encoding /Helvetica-Bold reencode_font
+  /fTimes-Bold ISO-8859-1Encoding /Times-Bold reencode_font
+  /fTimes-Roman ISO-8859-1Encoding /Times-Roman reencode_font
+currentdict end def
+/bgcolor [ 0 0 0 ] def
+/bg false def
+/ul false def
+/bx false def
+% The font for line numbering
+/f# /Helvetica findfont bfs .6 mul scalefont def
+/fSymbol /Symbol findfont def
+/hm fnfs 0.25 mul def
+/pw
+   cw 138.400000 mul
+def
+/ph
+   494.337664 th add
+def
+/pmw 0 def
+/pmh 0 def
+/v 0 def
+/x [
+  0
+] def
+/y [
+  pmh ph add 0 mul ph add
+] def
+/scx sw 2 div def
+/scy sh 2 div def
+/snx urx def
+/sny lly 2 add def
+/dx llx def
+/dy sny def
+/fnx scx def
+/fny dy def
+/lx snx def
+/ly ury fnfs 0.8 mul sub def
+/sx 5 def
+/tab 2 def
+/x0 0 def
+/y0 0 def
+%%EndSetup
+
+%%Page: (1) 1
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(1) # (#!/usr/bin/env bash) c n
+(2) # (# polap-bash-fast-mtseed-ont.sh v0.3.0) N
+(3) # (# Version: v0.3.0 \(merged PT-removal + fast mtseed; steps start at 1\)) N
+(4) # (#) N
+(5) # (# Pipeline outline \(ONT\):) N
+(6) # (#   1\) Remove plastid-origin reads \(PT\) using isoform A/B + identity cutoff) N
+(7) # (#      \(auto-learned or --identity-min override\) \342M-^FM-^R reads.nonpt.fq.gz) N
+(8) # (#      [optional: --profiling]) N
+(9) # (#   2\) All-vs-all overlap:) N
+(10) # (#        \342M-^@\242 default \(classic\) OR) N
+(11) # (#        \342M-^@\242 --overlap-mode scan+stream+edges  \(light scan \342M-^FM-^R shortlist \342M-^FM-^R streamed edges\)) N
+(12) # (#      \(also: run miniprot vs BUSCO on a 10% subsample for QC only, if -n is given\)) N
+(13) # (#   3\) Select mito-enriched reads \(nuclear-aware if --nuc-ids given\) from overlapness) N
+(14) # (#   4\) Assemble selected reads \(miniasm | raven\)) N
+(15) # (#   5\) Intergenic filtering \(miniprot vs mito CDS; read-recruit median gate\)) N
+(16) # (#   6\) Map reads\342M-^FM-^Rseeds \(if iterating\)) N
+(17) # (#   7\) Stop when \316M-^T|M| < threshold \(if iterating\)) N
+(18) # (#) N
+(19) # (# Required helpers \(must exist; not embedded here\):) N
+(20) # (#   ${_POLAPLIB_DIR}/polap-bash-pt-isoform.sh) N
+(21) # (#   ${_POLAPLIB_DIR}/remove-ptdna-reads/polap-py-pt-ident-threshold.py) N
+(22) # (#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-overlapness-from-paf.py) N
+(23) # (#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-topfrac-by-wdeg.py) N
+(24) # (#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-filter-paf-by-ids.py) N
+(25) # (#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-cds-coverage-from-paf.py) N
+(26) # (#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-seed-mapped-reads.py) N
+(27) # (#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-stop-delta.py) N
+(28) # (#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-awk-filter-conservative.awk) N
+(29) # (#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-bash-recruit-count.sh) N
+(30) # (#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-bash-paf2mreads.sh) N
+(31) # (#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-r-pick-high-recruit.R) N
+(32) # (#   ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-threshold-from-nuclear.py) N
+(33) # (#   \(for scan+stream+edges mode\)) N
+(34) # (#     ${_POLAPLIB_DIR}/fast-mtseed-ont/paf-topk-per-q.py) N
+(35) # (#     ${_POLAPLIB_DIR}/fast-mtseed-ont/paf-to-edges-stream.py) N
+(36) # (#     ${_POLAPLIB_DIR}/fast-mtseed-ont/polap-py-edges-components.py  \(optional\)) N
+(37) # (#) N
+(38) # () S
+(set) K
+( -euo pipefail) p n
+(39) # () N
+(40) # () S
+(# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) c n
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(41) # (# Paths & environment) N
+(42) # (# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(43) # () S
+(_POLAPLIB_DIR=") p
+($\(cd ) str
+("$\(dirname ") p
+(${BASH_SOURCE[0]}) str
+("\)") p
+( && pwd\)) str
+(") p n
+(polap-bash-fast-mtseed-ont.sh) (Page 1/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (1/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (2) 2
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(44) # (source) K
+( ") p
+(${_POLAPLIB_DIR}/polap-lib-conda.sh) str
+(" || true) p n
+(45) # (HELP=") S
+(${_POLAPLIB_DIR}/fast-mtseed-ont) str
+(") p n
+(46) # (mkdir -p ") S
+(${HELP}) str
+(") p n
+(47) # () N
+(48) # () S
+(# Helpers \(fast-mtseed\)) c n
+(49) # () S
+(OLPY=") p
+(${HELP}/polap-py-overlapness-from-paf.py) str
+(") p n
+(50) # (TOPPY=") S
+(${HELP}/polap-py-topfrac-by-wdeg.py) str
+(") p n
+(51) # (FILTPY=") S
+(${HELP}/polap-py-filter-paf-by-ids.py) str
+(") p n
+(52) # (CDSPY=") S
+(${HELP}/polap-py-cds-coverage-from-paf.py) str
+(") p n
+(53) # (SEEDREADSPY=") S
+(${HELP}/polap-py-seed-mapped-reads.py) str
+(") p n
+(54) # (STOPPY=") S
+(${HELP}/polap-py-stop-delta.py) str
+(") p n
+(55) # (AWK_CONS=") S
+(${HELP}/polap-awk-filter-conservative.awk) str
+(") p n
+(56) # (RECRUIT_SH=") S
+(${HELP}/polap-bash-recruit-count.sh) str
+(") p n
+(57) # (PAF2MREADS_SH=") S
+(${HELP}/polap-bash-paf2mreads.sh) str
+(") p n
+(58) # (R_PICK=") S
+(${HELP}/polap-r-pick-high-recruit.R) str
+(") p n
+(59) # (THRESH_NUC_PY=") S
+(${HELP}/polap-py-threshold-from-nuclear.py) str
+(") p n
+(60) # (PY_PT_THRESH=") S
+(${HELP}/polap-py-pt-ident-threshold.py) str
+(") p n
+(61) # () N
+(62) # () S
+(# Helpers for PT removal & isoforms) c n
+(63) # () S
+(PT_ISOFORM_SH=") p
+(${_POLAPLIB_DIR}/polap-bash-pt-isoform.sh) str
+(") p n
+(64) # () N
+(65) # () S
+(# scan+stream+edges mode) c n
+(66) # () S
+(TOPKPY=") p
+(${HELP}/paf-topk-per-q.py) str
+(") p n
+(67) # (EDGPY=") S
+(${HELP}/paf-to-edges-stream.py) str
+(") p n
+(68) # (EDGECOMP=") S
+(${HELP}/polap-py-edges-components.py) str
+(" ) p
+(# optional) c n
+(69) # () N
+(70) # (# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(71) # (# Logging & profiling) N
+(72) # (# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(73) # () S
+(VERBOSE=1) p n
+(74) # (DRY=0) N
+(75) # (LOG_FD=") S
+(/dev/stderr) str
+(") p n
+(76) # (TEE_ACTIVE=0) N
+(77) # (PROF=0) N
+(78) # (PROF_FILE="") N
+(79) # () N
+(80) # () S
+(# Base helper for all note levels) c n
+(81) # () S
+(_note_base) l
+(\(\) {) p n
+(82) # () S 2 T (local lvl=$1 ) S
+(# message verbosity level) c n
+(83) # () S
+() p 2 T () S
+(shift) K n
+(84) # () S
+() p 2 T (local msg=") S
+($*) str
+(") p n
+(85) # () N
+(86) # () S 2 T () S
+(# Format with timestamp + caller) c n
+(polap-bash-fast-mtseed-ont.sh) (Page 2/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (2/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (3) 3
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(87) # () p 2 T (local src=") S
+(${BASH_SOURCE[2]##*/}) str
+(" ) p
+(# 2 to skip _note_base + noteX) c n
+(88) # () S
+() p 2 T (local ln=") S
+(${BASH_LINENO[1]}) str
+(") p n
+(89) # () S 2 T (local ts) N
+(90) # () S 2 T (ts=") S
+($\(date +'%F %T'\)) str
+(") p n
+(91) # () S 2 T (local line=") S
+([$ts][${src}:${ln}] $msg) str
+(") p n
+(92) # () N
+(93) # () S 2 T () S
+(# Always log, but only display if verbosity allows) c n
+(94) # () S
+() p 2 T () S
+(if) K
+( [[ ") p
+(${VERBOSE:-0}) str
+(" -gt ") p
+($lvl) str
+(" ]]; ) p
+(then) K n
+(95) # () S
+() p 2 T () S 4 T () S
+(if) K
+( [[ ") p
+(${_arg_log_stderr:-off}) str
+(" == ") p
+(off) str
+(" ]]; ) p
+(then) K n
+(96) # () S
+() p 2 T () S 4 T () S 6 T (printf ") S
+(%s\\n) str
+(" ") p
+($line) str
+(" >&3 ) p
+(# real screen) c n
+(97) # () S
+() p 2 T () S 4 T () S
+(else) K n
+(98) # () S
+() p 2 T () S 4 T () S 6 T (printf ") S
+(%s\\n) str
+(" ") p
+($line) str
+(" >&2) p n
+(99) # () S 2 T () S 4 T () S
+(fi) K n
+(100) # () S
+() p 2 T () S
+(fi) K n
+(101) # () N
+(102) # () S
+() p 2 T () S
+(# Always append to log \(stdout goes to logit, or LOG if you like\)) c n
+(103) # () S
+() p 2 T (printf ") S
+(%s\\n) str
+(" ") p
+($line) str
+(") p n
+(104) # (}) N
+(105) # () N
+(106) # () S
+(# Note functions) c n
+(107) # () S
+(note) l
+(\(\) { _note_base 1 ") p
+($@) str
+("; }) p n
+(108) # () S
+(note0) l
+(\(\) { _note_base 0 ") p
+($@) str
+("; } ) p
+(# always) c n
+(109) # () S
+(note1) l
+(\(\) { _note_base 1 ") p
+($@) str
+("; } ) p
+(# shown with -v) c n
+(110) # () S
+(note2) l
+(\(\) { _note_base 2 ") p
+($@) str
+("; } ) p
+(# shown with -v -v) c n
+(111) # () S
+(note3) l
+(\(\) { _note_base 3 ") p
+($@) str
+("; } ) p
+(# shown with -v -v -v) c n
+(112) # () N
+(113) # () S
+(cmd) l
+(\(\) {) p n
+(114) # () S 2 T () S
+(if) K
+( \(\(DRY\)\); ) p
+(then) K n
+(115) # () S
+() p 2 T () S 4 T (local p=") S
+($1) str
+(") p n
+(116) # () S 2 T () S 4 T () S
+(shift) K n
+(117) # () S
+() p 2 T () S 4 T (printf ") S
+([DRY] %q) str
+(" ") p
+($p) str
+(" | tee -a ") p
+($LOG_FD) str
+(") p n
+(118) # () S 2 T () S 4 T () S
+(for) K
+( a ) p
+(in) K
+( ") p
+($@) str
+("; ) p
+(do) K
+( printf ") p
+( %q) str
+(" ") p
+($a) str
+(" | tee -a ") p
+($LOG_FD) str
+("; ) p
+(done) K n
+(119) # () S
+() p 2 T () S 4 T (printf ") S
+(\\n) str
+(" | tee -a ") p
+($LOG_FD) str
+(") p n
+(120) # () S 2 T () S 4 T () S
+(return) K
+( 0) p n
+(121) # () S 2 T () S
+(fi) K n
+(122) # () S
+() p 2 T (local p=") S
+($1) str
+(") p n
+(123) # () S 2 T () S
+(shift) K n
+(124) # () S
+() p 2 T (printf ") S
+([RUN] %q) str
+(" ") p
+($p) str
+(" | tee -a ") p
+($LOG_FD) str
+(") p n
+(125) # () S 2 T () S
+(for) K
+( a ) p
+(in) K
+( ") p
+($@) str
+("; ) p
+(do) K
+( printf ") p
+( %q) str
+(" ") p
+($a) str
+(" | tee -a ") p
+($LOG_FD) str
+("; ) p
+(done) K n
+(126) # () S
+() p 2 T (printf ") S
+(\\n) str
+(" | tee -a ") p
+($LOG_FD) str
+(") p n
+(127) # () S 2 T (") S
+($p) str
+(" ") p
+($@) str
+(") p n
+(128) # (}) N
+(129) # () S
+(prof_start) l
+(\(\) { \(\(PROF\)\) && PROF_T0=$\(date +%s\) && PROF_STEP=") p
+($1) str
+(" || true; }) p n
+(130) # () S
+(prof_end) l
+(\(\) {) p n
+(131) # () S 2 T (\(\(PROF\)\) || ) S
+(return) K
+( 0) p n
+(132) # () S 2 T (local t1=$\(date +%s\)) N
+(133) # () S 2 T (echo -e ") S
+(${PROF_STEP}\\t$\(\(t1 - PROF_T0\)\)) str
+(" >>") p
+($PROF_FILE) str
+(") p n
+(134) # (}) N
+(135) # () N
+(136) # () S
+(require_tools) l
+(\(\) {) p n
+(137) # () S 2 T (local miss=0) N
+(polap-bash-fast-mtseed-ont.sh) (Page 3/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (3/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (4) 4
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(138) # () p 2 T () S
+(for) K
+( t ) p
+(in) K
+( ") p
+($@) str
+("; ) p
+(do) K n
+(139) # () S
+() p 2 T () S 4 T (command -v ") S
+($t) str
+(" >/dev/null 2>&1 || {) p n
+(140) # () S 2 T () S 4 T () S 6 T (note ") S
+(ERR missing tool: $t) str
+(") p n
+(141) # () S 2 T () S 4 T () S 6 T (miss=1) N
+(142) # () S 2 T () S 4 T (}) N
+(143) # () S 2 T () S
+(done) K n
+(144) # () S
+() p 2 T () S
+(if) K
+( \(\(miss == 1\)\); ) p
+(then) K n
+(145) # () S
+() p 2 T () S 4 T (note ") S
+(ERR load modules/conda) str
+(") p n
+(146) # () S 2 T () S 4 T () S
+(exit) K
+( 127) p n
+(147) # () S 2 T () S
+(fi) K n
+(148) # () S
+(}) p n
+(149) # () N
+(150) # () S
+(# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) c n
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(151) # (# CLI \(merged options\)) N
+(152) # (# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(153) # () S
+(reads="") p n
+(154) # (pt_ref="") N
+(155) # (outdir=") S
+(fast_mtseed_ont_out) str
+(") p n
+(156) # (threads=32) N
+(157) # () S
+(# PT removal knobs) c n
+(158) # () S
+(pt_origin="") p n
+(159) # (nuc_origin="") N
+(160) # (alen_min=3000) N
+(161) # (identity_min="" ) S
+(# override identity if set) c n
+(162) # () S
+(fpr=0.01) p n
+(163) # (tpr=0.95) N
+(164) # (profiling=0) N
+(165) # () S
+(# All-vs-all / selection / assembly) c n
+(166) # (# overlap_mode="default" # default | scan+stream+edges) N
+(167) # () S
+(overlap_mode=") p
+(scan+stream+edges) str
+(") p n
+(168) # (scan_keep_frac=") S
+(0.40) str
+(") p n
+(169) # (scan_k=21) N
+(170) # (scan_w=9) N
+(171) # (scan_N=1) N
+(172) # (scan_mask=") S
+(0.70) str
+(") p n
+(173) # (scan_minocc=20) N
+(174) # (refine_k=19) N
+(175) # (refine_w=7) N
+(176) # (refine_N=30) N
+(177) # (refine_mask=") S
+(0.60) str
+(") p n
+(178) # (refine_minocc=10) N
+(179) # (topk_per_q=0) N
+(180) # (topk_edges_per_node=0) N
+(polap-bash-fast-mtseed-ont.sh) (Page 4/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (4/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (5) 5
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(181) # (keep_scan_paf=0) p n
+(182) # (gzip_edges=1) N
+(183) # (top_frac=") S
+(0.20) str
+(") p n
+(184) # (min_olen=1200) N
+(185) # (min_ident=") S
+(0.84) str
+(") p n
+(186) # (w_floor=") S
+(0.12) str
+(") p n
+(187) # (assembler=") S
+(miniasm) str
+(") p n
+(188) # () S
+(# intergenic / BUSCO) c n
+(189) # () S
+(mcds="") p n
+(190) # (nprot="") N
+(191) # (nuc_ids_opt="") N
+(192) # () S
+(# iteration) c n
+(193) # () S
+(rounds_max=1) p n
+(194) # (delta_stop=") S
+(0.05) str
+(") p n
+(195) # (seed=13) N
+(196) # (steps="") N
+(197) # () S
+(# nuclear overlap deplete is handled in separate tool; here we select seeds only) c n
+(198) # () N
+(199) # () S
+(usage) l
+(\(\) {) p n
+(200) # () S 2 T (cat <<EOF) N
+(201) # (polap-bash-fast-mtseed-ont.sh v0.3.0 \(merged PT removal + fast mtseed\)) N
+(202) # (Usage:) N
+(203) # (  $0 -r reads.fq.gz -p pt_ref.fa -o outdir [options]) N
+(204) # () N
+(205) # (Required:) N
+(206) # (  -r, --reads                 ONT reads \(FASTQ[.gz]\)) N
+(207) # (  -p, --pt-ref                plastid reference FASTA \(single circle\)) N
+(208) # () N
+(209) # (PT removal:) N
+(210) # (  --pt-origin FILE           PT-origin read IDs \(weak labels\) [optional]) N
+(211) # (  --mt-origin FILE          Nuclear-origin read IDs \(weak labels\) [optional]) N
+(212) # (  --alen-min INT             aligned length guard [${alen_min}]) N
+(213) # (  --identity-min FLOAT       override auto identity cutoff \(e.g., 0.93\)) N
+(214) # (  --fpr FLOAT                nuclear FPR target for identity [${fpr}]) N
+(215) # (  --tpr FLOAT                PT TPR target for identity [${tpr}]) N
+(216) # () N
+(217) # (All-vs-all:) N
+(218) # (  --overlap-mode MODE        default | scan+stream+edges   [${overlap_mode}]) N
+(219) # (  --scan-keep-frac FLOAT     shortlist fraction by wdegree [${scan_keep_frac}]) N
+(220) # (  --scan-k INT  --scan-w INT --scan-N INT --scan-mask F --scan-minocc INT) N
+(221) # (  --refine-k INT --refine-w INT --refine-N INT --refine-mask F --refine-minocc INT) N
+(222) # (  --topk-per-q INT           cap scan hits per query \(0=off\)) N
+(223) # (  --topk-edges-per-node INT  cap edges per node in reducer \(0=off\)) N
+(224) # (  --keep-scan-paf            store scan.paf.gz for QA) N
+(225) # (  --no-gzip-edges            keep edges.tsv uncompressed) N
+(226) # (  --top-frac FLOAT           top fraction if no nuclear IDs [${top_frac}]) N
+(227) # (  --min-olen INT --min-ident F --w-floor F   edge filters [${min_olen},${min_ident},${w_floor}]) N
+(228) # () N
+(229) # (Intergenic & assembly:) N
+(230) # (  -m, --mt-cds FILE          mito CDS proteins \(miniprot\) [optional]) N
+(231) # (  -n, --nuc-prot FILE        BUSCO proteins \(unused here; leave for future\)) N
+(polap-bash-fast-mtseed-ont.sh) (Page 5/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (5/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (6) 6
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(232) # (  --assembler NAME           miniasm|raven [${assembler}]) p n
+(233) # (  --rounds-max INT           iteration rounds [${rounds_max}]) N
+(234) # (  --delta-stop FLOAT         stop if \316M-^T|M| < x [${delta_stop}]) N
+(235) # () N
+(236) # (General:) N
+(237) # (  -o, --outdir DIR           output directory [${outdir}]) N
+(238) # (  -t, --threads INT          threads [${threads}]) N
+(239) # (  --seed INT                 RNG seed [${seed}]) N
+(240) # (  -v, --verbose              increase verbosity) N
+(241) # (  --quiet                    quiet) N
+(242) # (  --dry                      dry-run \(no execution\)) N
+(243) # (  --profiling                per-step timings \(log/profile.tsv\)) N
+(244) # (  -h, --help                 help) N
+(245) # (EOF) N
+(246) # (}) N
+(247) # () N
+(248) # () S
+(while) K
+( [[ $# -gt 0 ]]; ) p
+(do) K n
+(249) # () S
+() p 2 T () S
+(case) K
+( ") p
+($1) str
+(" ) p
+(in) K n
+(250) # () S
+() p 2 T (-r | --reads\)) N
+(251) # () S 2 T () S 4 T (reads=") S
+($2) str
+(") p n
+(252) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(253) # () S 2 T () S 4 T (;;) N
+(254) # () S 2 T (--step\)) N
+(255) # () S 2 T () S 4 T (steps=") S
+($2) str
+(") p n
+(256) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(257) # () S 2 T () S 4 T (;;) N
+(258) # () S 2 T (-p | --pt-ref\)) N
+(259) # () S 2 T () S 4 T (pt_ref=") S
+($2) str
+(") p n
+(260) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(261) # () S 2 T () S 4 T (;;) N
+(262) # () S 2 T (-o | --outdir\)) N
+(263) # () S 2 T () S 4 T (outdir=") S
+($2) str
+(") p n
+(264) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(265) # () S 2 T () S 4 T (;;) N
+(266) # () S 2 T (--nuc-ids\)) N
+(267) # () S 2 T () S 4 T (nuc_ids_opt=") S
+($2) str
+(") p n
+(268) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(269) # () S 2 T () S 4 T (;;) N
+(270) # () S 2 T (-t | --threads\)) N
+(271) # () S 2 T () S 4 T (threads=") S
+($2) str
+(") p n
+(272) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(273) # () S 2 T () S 4 T (;;) N
+(274) # () S 2 T (--pt-origin\)) N
+(275) # () S 2 T () S 4 T (pt_origin=") S
+($2) str
+(") p n
+(276) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(277) # () S 2 T () S 4 T (;;) N
+(278) # () S 2 T (--mt-origin\)) N
+(279) # () S 2 T () S 4 T (mt_origin=") S
+($2) str
+(") p n
+(280) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(281) # () S 2 T () S 4 T (;;) N
+(282) # () S 2 T (--nuc-origin\)) N
+(polap-bash-fast-mtseed-ont.sh) (Page 6/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (6/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (7) 7
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(283) # () p 2 T () S 4 T (nuc_origin=") S
+($2) str
+(") p n
+(284) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(285) # () S 2 T () S 4 T (;;) N
+(286) # () S 2 T (--alen-min\)) N
+(287) # () S 2 T () S 4 T (alen_min=") S
+($2) str
+(") p n
+(288) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(289) # () S 2 T () S 4 T (;;) N
+(290) # () S 2 T (--identity-min\)) N
+(291) # () S 2 T () S 4 T (identity_min=") S
+($2) str
+(") p n
+(292) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(293) # () S 2 T () S 4 T (;;) N
+(294) # () S 2 T (--fpr\)) N
+(295) # () S 2 T () S 4 T (fpr=") S
+($2) str
+(") p n
+(296) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(297) # () S 2 T () S 4 T (;;) N
+(298) # () S 2 T (--tpr\)) N
+(299) # () S 2 T () S 4 T (tpr=") S
+($2) str
+(") p n
+(300) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(301) # () S 2 T () S 4 T (;;) N
+(302) # () S 2 T (--overlap-mode\)) N
+(303) # () S 2 T () S 4 T (overlap_mode=") S
+($2) str
+(") p n
+(304) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(305) # () S 2 T () S 4 T (;;) N
+(306) # () S 2 T (--scan-keep-frac\)) N
+(307) # () S 2 T () S 4 T (scan_keep_frac=") S
+($2) str
+(") p n
+(308) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(309) # () S 2 T () S 4 T (;;) N
+(310) # () S 2 T (--scan-k\)) N
+(311) # () S 2 T () S 4 T (scan_k=") S
+($2) str
+(") p n
+(312) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(313) # () S 2 T () S 4 T (;;) N
+(314) # () S 2 T (--scan-w\)) N
+(315) # () S 2 T () S 4 T (scan_w=") S
+($2) str
+(") p n
+(316) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(317) # () S 2 T () S 4 T (;;) N
+(318) # () S 2 T (--scan-N\)) N
+(319) # () S 2 T () S 4 T (scan_N=") S
+($2) str
+(") p n
+(320) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(321) # () S 2 T () S 4 T (;;) N
+(322) # () S 2 T (--scan-mask\)) N
+(323) # () S 2 T () S 4 T (scan_mask=") S
+($2) str
+(") p n
+(324) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(325) # () S 2 T () S 4 T (;;) N
+(326) # () S 2 T (--scan-minocc\)) N
+(327) # () S 2 T () S 4 T (scan_minocc=") S
+($2) str
+(") p n
+(328) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(329) # () S 2 T () S 4 T (;;) N
+(330) # () S 2 T (--refine-k\)) N
+(331) # () S 2 T () S 4 T (refine_k=") S
+($2) str
+(") p n
+(332) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(333) # () S 2 T () S 4 T (;;) N
+(polap-bash-fast-mtseed-ont.sh) (Page 7/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (7/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (8) 8
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(334) # () p 2 T (--refine-w\)) N
+(335) # () S 2 T () S 4 T (refine_w=") S
+($2) str
+(") p n
+(336) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(337) # () S 2 T () S 4 T (;;) N
+(338) # () S 2 T (--refine-N\)) N
+(339) # () S 2 T () S 4 T (refine_N=") S
+($2) str
+(") p n
+(340) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(341) # () S 2 T () S 4 T (;;) N
+(342) # () S 2 T (--refine-mask\)) N
+(343) # () S 2 T () S 4 T (refine_mask=") S
+($2) str
+(") p n
+(344) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(345) # () S 2 T () S 4 T (;;) N
+(346) # () S 2 T (--refine-minocc\)) N
+(347) # () S 2 T () S 4 T (refine_minocc=") S
+($2) str
+(") p n
+(348) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(349) # () S 2 T () S 4 T (;;) N
+(350) # () S 2 T (--topk-per-q\)) N
+(351) # () S 2 T () S 4 T (topk_per_q=") S
+($2) str
+(") p n
+(352) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(353) # () S 2 T () S 4 T (;;) N
+(354) # () S 2 T (--topk-edges-per-node\)) N
+(355) # () S 2 T () S 4 T (topk_edges_per_node=") S
+($2) str
+(") p n
+(356) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(357) # () S 2 T () S 4 T (;;) N
+(358) # () S 2 T (--keep-scan-paf\)) N
+(359) # () S 2 T () S 4 T (keep_scan_paf=1) N
+(360) # () S 2 T () S 4 T () S
+(shift) K n
+(361) # () S
+() p 2 T () S 4 T (;;) N
+(362) # () S 2 T (--no-gzip-edges\)) N
+(363) # () S 2 T () S 4 T (gzip_edges=0) N
+(364) # () S 2 T () S 4 T () S
+(shift) K n
+(365) # () S
+() p 2 T () S 4 T (;;) N
+(366) # () S 2 T (--top-frac\)) N
+(367) # () S 2 T () S 4 T (top_frac=") S
+($2) str
+(") p n
+(368) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(369) # () S 2 T () S 4 T (;;) N
+(370) # () S 2 T (--min-olen\)) N
+(371) # () S 2 T () S 4 T (min_olen=") S
+($2) str
+(") p n
+(372) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(373) # () S 2 T () S 4 T (;;) N
+(374) # () S 2 T (--min-ident\)) N
+(375) # () S 2 T () S 4 T (min_ident=") S
+($2) str
+(") p n
+(376) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(377) # () S 2 T () S 4 T (;;) N
+(378) # () S 2 T (--w-floor\)) N
+(379) # () S 2 T () S 4 T (w_floor=") S
+($2) str
+(") p n
+(380) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(381) # () S 2 T () S 4 T (;;) N
+(382) # () S 2 T (-m | --mt-cds\)) N
+(383) # () S 2 T () S 4 T (mcds=") S
+($2) str
+(") p n
+(384) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(polap-bash-fast-mtseed-ont.sh) (Page 8/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (8/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (9) 9
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(385) # () p 2 T () S 4 T (;;) N
+(386) # () S 2 T (-n | --nuc-prot\)) N
+(387) # () S 2 T () S 4 T (nprot=") S
+($2) str
+(") p n
+(388) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(389) # () S 2 T () S 4 T (;;) N
+(390) # () S 2 T (--rounds-max\)) N
+(391) # () S 2 T () S 4 T (rounds_max=") S
+($2) str
+(") p n
+(392) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(393) # () S 2 T () S 4 T (;;) N
+(394) # () S 2 T (--delta-stop\)) N
+(395) # () S 2 T () S 4 T (delta_stop=") S
+($2) str
+(") p n
+(396) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(397) # () S 2 T () S 4 T (;;) N
+(398) # () S 2 T (--seed\)) N
+(399) # () S 2 T () S 4 T (seed=") S
+($2) str
+(") p n
+(400) # () S 2 T () S 4 T () S
+(shift) K
+( 2) p n
+(401) # () S 2 T () S 4 T (;;) N
+(402) # () S 2 T (-v | --verbose\)) N
+(403) # () S 2 T () S 4 T (VERBOSE=$\(\(VERBOSE + 1\)\)) N
+(404) # () S 2 T () S 4 T () S
+(shift) K n
+(405) # () S
+() p 2 T () S 4 T (;;) N
+(406) # () S 2 T (--quiet | -q\)) N
+(407) # () S 2 T () S 4 T (VERBOSE=0) N
+(408) # () S 2 T () S 4 T () S
+(shift) K n
+(409) # () S
+() p 2 T () S 4 T (;;) N
+(410) # () S 2 T (--dry\)) N
+(411) # () S 2 T () S 4 T (DRY=1) N
+(412) # () S 2 T () S 4 T () S
+(shift) K n
+(413) # () S
+() p 2 T () S 4 T (;;) N
+(414) # () S 2 T (--profiling\)) N
+(415) # () S 2 T () S 4 T (PROF=1) N
+(416) # () S 2 T () S 4 T () S
+(shift) K n
+(417) # () S
+() p 2 T () S 4 T (;;) N
+(418) # () S 2 T (-h | --help\)) N
+(419) # () S 2 T () S 4 T (usage) N
+(420) # () S 2 T () S 4 T () S
+(exit) K
+( 0) p n
+(421) # () S 2 T () S 4 T (;;) N
+(422) # () S 2 T (*\)) N
+(423) # () S 2 T () S 4 T (note ") S
+(ERR unknown arg: $1) str
+(") p n
+(424) # () S 2 T () S 4 T (usage) N
+(425) # () S 2 T () S 4 T () S
+(exit) K
+( 2) p n
+(426) # () S 2 T () S 4 T (;;) N
+(427) # () S 2 T () S
+(esac) K n
+(428) # (done) N
+(429) # () N
+(430) # () S
+(require_tools minimap2 samtools seqkit python Rscript awk sort comm cut gzip) p n
+(431) # () N
+(432) # () S
+(for) K
+( s ) p
+(in) K
+( ") p
+($OLPY) str
+(" ") p
+($TOPPY) str
+(" ") p
+($FILTPY) str
+(" ") p
+($CDSPY) str
+(" ") p
+($SEEDREADSPY) str
+(" \\) p n
+(433) # () S 2 T (") S
+($STOPPY) str
+(" ") p
+($AWK_CONS) str
+(" ") p
+($RECRUIT_SH) str
+(" ") p
+($PAF2MREADS_SH) str
+(" \\) p n
+(434) # () S 2 T (") S
+($R_PICK) str
+(" ") p
+($THRESH_NUC_PY) str
+(" ") p
+($PT_ISOFORM_SH) str
+(" ") p
+($PY_PT_THRESH) str
+("; ) p
+(do) K n
+(435) # () S
+() p 2 T ([[ -s ") S
+($s) str
+(" ]] || {) p n
+(polap-bash-fast-mtseed-ont.sh) (Page 9/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (9/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (10) 10
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(436) # () p 2 T () S 4 T (note ") S
+(ERR missing helper: $s) str
+(") p n
+(437) # () S 2 T () S 4 T () S
+(exit) K
+( 1) p n
+(438) # () S 2 T (}) N
+(439) # () S
+(done) K n
+(440) # (if) S
+( [[ ") p
+($overlap_mode) str
+(" == ") p
+(scan+stream+edges) str
+(" ]]; ) p
+(then) K n
+(441) # () S
+() p 2 T () S
+(for) K
+( s ) p
+(in) K
+( ") p
+($TOPKPY) str
+(" ") p
+($EDGPY) str
+("; ) p
+(do) K
+( [[ -s ") p
+($s) str
+(" ]] || {) p n
+(442) # () S 2 T () S 4 T (note ") S
+(ERR missing $s) str
+(") p n
+(443) # () S 2 T () S 4 T () S
+(exit) K
+( 1) p n
+(444) # () S 2 T (}; ) S
+(done) K n
+(445) # (fi) N
+(446) # () N
+(447) # () S
+([[ -n ") p
+($reads) str
+(" && -s ") p
+($reads) str
+(" ]] || {) p n
+(448) # () S 2 T (note ") S
+(ERR missing --reads) str
+(") p n
+(449) # () S 2 T () S
+(exit) K
+( 2) p n
+(450) # (}) N
+(451) # ([[ -n ") S
+($pt_ref) str
+(" && -s ") p
+($pt_ref) str
+(" ]] || {) p n
+(452) # () S 2 T (note ") S
+(ERR missing --pt-ref) str
+(") p n
+(453) # () S 2 T () S
+(exit) K
+( 2) p n
+(454) # (}) N
+(455) # () N
+(456) # (mkdir -p ") S
+($outdir) str
+(" ") p
+($outdir/log) str
+(") p n
+(457) # (LOG=") S
+(${outdir}/pipeline.log) str
+(") p n
+(458) # (LOG_FD=") S
+($LOG) str
+(") p n
+(459) # () S
+(if) K
+( \(\(!DRY\)\); ) p
+(then) K n
+(460) # () S
+() p 2 T () S
+(exec) K
+( > >\(tee -a ") p
+($LOG) str
+("\) 2>&1) p n
+(461) # () S 2 T (TEE_ACTIVE=1) N
+(462) # () S
+(fi) K n
+(463) # (if) S
+( \(\(PROF\)\); ) p
+(then) K n
+(464) # () S
+() p 2 T (PROF_FILE=") S
+($outdir/log/profile.tsv) str
+(") p n
+(465) # () S 2 T (echo -e ") S
+(step\\tseconds) str
+(" >") p
+($PROF_FILE) str
+(") p n
+(466) # () S
+(fi) K n
+(467) # () N
+(468) # () S
+(note ") p
+(Outdir: $outdir) str
+(") p n
+(469) # (note ") S
+(Assembler: $assembler ; threads: $threads) str
+(") p n
+(470) # (note ") S
+(Overlap mode: $overlap_mode) str
+(") p n
+(471) # () N
+(472) # () S
+(# Step gating) c n
+(473) # () S
+(_step_set="") p n
+(474) # () S
+(_add_steps) l
+(\(\) {) p n
+(475) # () S 2 T (local spec=") S
+($1) str
+(") p n
+(476) # () S 2 T (IFS=') S
+(,) str
+(' ) p
+(read) K
+( -r -a arr <<<") p
+($spec) str
+(") p n
+(477) # () S 2 T () S
+(for) K
+( tok ) p
+(in) K
+( ") p
+(${arr[@]}) str
+("; ) p
+(do) K n
+(478) # () S
+() p 2 T () S 4 T () S
+(if) K
+( [[ ") p
+($tok) str
+(" =~ ^\([0-9]+\)-\([0-9]+\)$ ]]; ) p
+(then) K n
+(479) # () S
+() p 2 T () S 4 T () S 6 T (local a=${BASH_REMATCH[1]} b=${BASH_REMATCH[2]}) N
+(480) # () S 2 T () S 4 T () S 6 T () S
+(for) K
+( \(\(i = a; i <= b; i++\)\); ) p
+(do) K
+( _step_set+=") p
+( $i ) str
+("; ) p
+(done) K n
+(481) # () S
+() p 2 T () S 4 T () S
+(elif) K
+( [[ ") p
+($tok) str
+(" =~ ^[0-9]+$ ]]; ) p
+(then) K
+( _step_set+=") p
+( $tok ) str
+("; ) p
+(fi) K n
+(482) # () S
+() p 2 T () S
+(done) K n
+(483) # () S
+(}) p n
+(484) # () S
+(_should_run) l
+(\(\) {) p n
+(485) # () S 2 T (local s=") S
+($1) str
+(") p n
+(486) # () S 2 T ([[ -z ") S
+($steps) str
+(" ]] && ) p
+(return) K
+( 0) p n
+(polap-bash-fast-mtseed-ont.sh) (Page 10/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (10/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (11) 11
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(487) # () p 2 T ([[ -z ") S
+($_step_set) str
+(" ]] && _add_steps ") p
+($steps) str
+(") p n
+(488) # () S 2 T ([[ ") S
+( $_step_set ) str
+(" == *") p
+( $s ) str
+("* ]]) p n
+(489) # (}) N
+(490) # () N
+(491) # () S
+(if) K
+( _should_run 0; ) p
+(then) K n
+(492) # () S
+() p 2 T (note ") S
+(note) str
+(") p n
+(493) # () S 2 T (note0 ") S
+(note0) str
+(") p n
+(494) # () S 2 T (note1 ") S
+(note1) str
+(") p n
+(495) # () S 2 T (note2 ") S
+(note2) str
+(") p n
+(496) # () S 2 T (note3 ") S
+(note3) str
+(") p n
+(497) # () S
+(fi) K n
+(498) # () N
+(499) # () S
+(# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) c n
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(500) # (# Step 1: PT removal \(organized\)) N
+(501) # (# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(502) # () S
+(R1=") p
+($reads) str
+(") p n
+(503) # () S
+(if) K
+( _should_run 1; ) p
+(then) K n
+(504) # () S
+() p 2 T () S
+(# 1a\) Build PT isoforms A/B \(handles IR/SSC/LSC & origin\)) c n
+(505) # () S
+() p 2 T (note0 ") S
+(1a\) Build PT isoforms A/B \(handles IR/SSC/LSC & origin\)) str
+(") p n
+(506) # () S 2 T (PANEL_DIR=") S
+($outdir/panel) str
+(") p n
+(507) # () S 2 T (mkdir -p ") S
+($PANEL_DIR) str
+(") p n
+(508) # () S 2 T (prof_start ") S
+(pt_isoform) str
+(") p n
+(509) # () S 2 T (cmd bash ") S
+($PT_ISOFORM_SH) str
+(" -r ") p
+($pt_ref) str
+(" -o ") p
+($PANEL_DIR) str
+(" -t ") p
+($threads) str
+(") p n
+(510) # () S 2 T (prof_end) N
+(511) # () S 2 T (ISO_A=") S
+($PANEL_DIR/pt_isomerA.fa) str
+(") p n
+(512) # () S 2 T (ISO_B=") S
+($PANEL_DIR/pt_isomerB.fa) str
+(") p n
+(513) # () S 2 T ([[ -s ") S
+($ISO_A) str
+(" ]] || {) p n
+(514) # () S 2 T () S 4 T (note ") S
+(ERR missing pt_isomerA.fa) str
+(") p n
+(515) # () S 2 T () S 4 T () S
+(exit) K
+( 3) p n
+(516) # () S 2 T (}) N
+(517) # () N
+(518) # () S 2 T (note1 ") S
+(A: $ISO_A) str
+(") p n
+(519) # () S 2 T ([[ -s ") S
+($ISO_B) str
+(" ]] && note1 ") p
+(B: $ISO_B) str
+(") p n
+(520) # () N
+(521) # () S 2 T () S
+(# 1b\) Make single-record doubled references \(A/B\)) c n
+(522) # () S
+() p 2 T (note0 ") S
+(1b\) Make single-record doubled references \(A/B\)) str
+(") p n
+(523) # () S 2 T (dbld\(\) {) N
+(524) # () S 2 T () S 4 T (python - ") S
+($1) str
+(" ") p
+($2) str
+(" <<') p
+(PY) str
+(') p n
+(525) # (import sys) N
+(526) # (inp,outp=sys.argv[1],sys.argv[2]) N
+(527) # (name=None; seq=[]) N
+(528) # (with open\(inp\) as f:) N
+(529) # (  ) S
+(for) K
+( ln ) p
+(in) K
+( f:) p n
+(polap-bash-fast-mtseed-ont.sh) (Page 11/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (11/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (12) 12
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(530) # (    ) p
+(if) K
+( ln.startswith\(') p
+(>) str
+('\):) p n
+(531) # (      ) S
+(if) K
+( name is None: name=ln[1:].strip\(\).split\(\)[0]) p n
+(532) # (      ) S
+(else) K
+(: ) p
+(break) K n
+(533) # () S
+(    ) p
+(else) K
+(: seq.append\(ln.strip\(\)\)) p n
+(534) # (S=''.join\(seq\)) N
+(535) # (with open\(outp,') S
+(w) str
+('\) as w:) p n
+(536) # (  w.write\(') S
+(>pt.double\\n) str
+('\); w.write\(S+S+') p
+(\\n) str
+('\)) p n
+(537) # (PY) N
+(538) # () S 2 T (}) N
+(539) # () S 2 T (DBL_A=") S
+($PANEL_DIR/pt_isomerA.double.fa) str
+(") p n
+(540) # () S 2 T (DBL_B=") S
+($PANEL_DIR/pt_isomerB.double.fa) str
+(") p n
+(541) # () S 2 T (prof_start ") S
+(pt_double) str
+(") p n
+(542) # () S 2 T (\(\(!DRY\)\) && dbld ") S
+($ISO_A) str
+(" ") p
+($DBL_A) str
+(") p n
+(543) # () S 2 T (\(\(!DRY\)\) && { [[ -s ") S
+($ISO_B) str
+(" ]] && dbld ") p
+($ISO_B) str
+(" ") p
+($DBL_B) str
+(" || true; }) p n
+(544) # () S 2 T (prof_end) N
+(545) # () S 2 T (note1 ") S
+(A: $DBL_A) str
+(") p n
+(546) # () S 2 T ([[ -s ") S
+($DBL_B) str
+(" ]] && note1 ") p
+(B: $DBL_B) str
+(") p n
+(547) # () N
+(548) # () S 2 T () S
+(# 1c\) Map reads\342M-^FM-^Rdoubled A/B) c n
+(549) # () S
+() p 2 T (note0 ") S
+(1c\) Map reads\342M-^FM-^R doubled A/B) str
+(") p n
+(550) # () S 2 T (PAF_A=") S
+($outdir/map/formA.paf) str
+(") p n
+(551) # () S 2 T (PAF_B=") S
+($outdir/map/formB.paf) str
+(") p n
+(552) # () S 2 T (mkdir -p ") S
+($outdir/map) str
+(") p n
+(553) # () S 2 T (prof_start ") S
+(map_ptA) str
+(") p n
+(554) # () S 2 T (note ") S
+(Step1: map reads\342M-^FM-^R isomerA.double > $PAF_A) str
+(") p n
+(555) # () S 2 T (cmd minimap2 -x map-ont --secondary=yes -N 50 -t ") S
+($threads) str
+(" ") p
+($DBL_A) str
+(" ") p
+($reads) str
+(" >") p
+($PAF_A) str
+(") p n
+(556) # () S 2 T (prof_end) N
+(557) # () S 2 T () S
+(if) K
+( [[ -s ") p
+($DBL_B) str
+(" ]]; ) p
+(then) K n
+(558) # () S
+() p 2 T () S 4 T (prof_start ") S
+(map_ptB) str
+(") p n
+(559) # () S 2 T () S 4 T (note ") S
+(Step1: map reads\342M-^FM-^R isomerB.double > $PAF_B) str
+(") p n
+(560) # () S 2 T () S 4 T (cmd minimap2 -x map-ont --secondary=yes -N 50 -t ") S
+($threads) str
+(" ") p
+($DBL_B) str
+(" ") p
+($reads) str
+(" >") p
+($PAF_B) str
+(") p n
+(561) # () S 2 T () S 4 T (prof_end) N
+(562) # () S 2 T () S
+(fi) K n
+(563) # () N
+(564) # () S
+() p 2 T () S
+(# 1d\) Determine identity cutoff \(MT-guided\) & emit pt.ids) c n
+(565) # () S
+() p 2 T (note0 ") S
+(1d\) Determine identity cutoff \(MT-guided\) & emit pt.ids) str
+(") p n
+(566) # () S 2 T (PT_VARS=") S
+($outdir/pt_thresh.vars) str
+(") p n
+(567) # () S 2 T (PT_DIAG=") S
+($outdir/pt_thresh.diag.tsv) str
+(") p n
+(568) # () S 2 T (PT_IDS=") S
+($outdir/pt.ids) str
+(") p n
+(569) # () S 2 T () S
+(if) K
+( [[ -n ") p
+($identity_min) str
+(" ]]; ) p
+(then) K n
+(570) # () S
+() p 2 T () S 4 T (note ") S
+(Step1: using --identity-min=$identity_min ; alen_min=$alen_min) str
+(") p n
+(571) # () S 2 T () S 4 T (prof_start ") S
+(emit_pt_ids_override) str
+(") p n
+(572) # () S 2 T () S 4 T () S
+(if) K
+( \(\(!DRY\)\); ) p
+(then) K n
+(573) # () S
+() p 2 T () S 4 T () S 6 T (awk -v ID=") S
+($identity_min) str
+(" -v AL=") p
+($alen_min) str
+(" ') p
+(BEGIN{FS=OFS="\\t"}) str n
+(574) # (        NF>=12{ id=\($11>0?$10/$11:0\); if\(id>=ID && $11+0>=AL\) print $1 }) S
+(' \\) p n
+(575) # () S 2 T () S 4 T () S 6 T () S 8 T (") S
+($PAF_A) str
+(" | sort -u >") p
+($outdir/ptA.ids) str
+(") p n
+(576) # () S 2 T () S 4 T () S 6 T () S
+(if) K
+( [[ -s ") p
+($PAF_B) str
+(" ]]; ) p
+(then) K n
+(577) # () S
+() p 2 T () S 4 T () S 6 T () S 8 T (awk -v ID=") S
+($identity_min) str
+(" -v AL=") p
+($alen_min) str
+(" ') p
+(BEGIN{FS=OFS="\\t"}) str n
+(578) # (          NF>=12{ id=\($11>0?$10/$11:0\); if\(id>=ID && $11+0>=AL\) print $1 }) S
+(' \\) p n
+(579) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (") S
+($PAF_B) str
+(" | sort -u >") p
+($outdir/ptB.ids) str
+(") p n
+(580) # () S 2 T () S 4 T () S 6 T () S 8 T (sort -u ") S
+($outdir/ptA.ids) str
+(" ") p
+($outdir/ptB.ids) str
+(" >") p
+($PT_IDS) str
+(") p n
+(polap-bash-fast-mtseed-ont.sh) (Page 12/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (12/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (13) 13
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(581) # () p 2 T () S 4 T () S 6 T () S
+(else) K n
+(582) # () S
+() p 2 T () S 4 T () S 6 T () S 8 T (mv ") S
+($outdir/ptA.ids) str
+(" ") p
+($PT_IDS) str
+(") p n
+(583) # () S 2 T () S 4 T () S 6 T () S
+(fi) K n
+(584) # () S
+() p 2 T () S 4 T () S 6 T (printf ") S
+(ident_min=%s\\nalen_min=%d\\n) str
+(" ") p
+($identity_min) str
+(" ") p
+($alen_min) str
+(" >") p
+($PT_VARS) str
+(") p n
+(585) # () S 2 T () S 4 T () S 6 T (: >") S
+($PT_DIAG) str
+(") p n
+(586) # () S 2 T () S 4 T () S
+(fi) K n
+(587) # () S
+() p 2 T () S 4 T (prof_end) N
+(588) # () S 2 T () S
+(else) K n
+(589) # () S
+() p 2 T () S 4 T (prof_start ") S
+(pt_ident_threshold) str
+(") p n
+(590) # () S 2 T () S 4 T () S
+(if) K
+( \(\(!DRY\)\); ) p
+(then) K n
+(591) # () S
+() p 2 T () S 4 T () S 6 T (python ") S
+($PY_PT_THRESH) str
+(" \\) p n
+(592) # () S 2 T () S 4 T () S 6 T () S 8 T (--paf ") S
+($PAF_A) str
+(" ${PAF_B:+ ") p
+($PAF_B) str
+("} \\) p n
+(593) # () S 2 T () S 4 T () S 6 T () S 8 T (--pt-ids ") S
+(${pt_origin:-/dev/null}) str
+(" \\) p n
+(594) # () S 2 T () S 4 T () S 6 T () S 8 T (--mt-ids ") S
+(${mt_origin:-/dev/null}) str
+(" \\) p n
+(595) # () S 2 T () S 4 T () S 6 T () S 8 T (--alen-min ") S
+($alen_min) str
+(" \\) p n
+(596) # () S 2 T () S 4 T () S 6 T () S 8 T (--fpr ") S
+($fpr) str
+(" --tpr ") p
+($tpr) str
+(" \\) p n
+(597) # () S 2 T () S 4 T () S 6 T () S 8 T (--diag ") S
+($PT_DIAG) str
+(" \\) p n
+(598) # () S 2 T () S 4 T () S 6 T () S 8 T (--emit-pt-ids ") S
+($PT_IDS) str
+(" >") p
+($PT_VARS) str
+(") p n
+(599) # () S 2 T () S 4 T () S 6 T (note ") S
+(PT IDs: $PT_IDS) str
+(") p n
+(600) # () S 2 T () S 4 T () S 6 T (note ") S
+(PT Vars: $PT_VARS) str
+(") p n
+(601) # () S 2 T () S 4 T () S
+(fi) K n
+(602) # () S
+() p 2 T () S 4 T (prof_end) N
+(603) # () S 2 T () S
+(fi) K n
+(604) # () N
+(605) # () S
+() p 2 T () S
+(# 1e\) Remove PT reads \342M-^FM-^R R1) c n
+(606) # () S
+() p 2 T (note0 ") S
+(1e\) Remove PT reads \342M-^FM-^R  R1) str
+(") p n
+(607) # () S 2 T (ident_min_out=") S
+($identity_min) str
+(") p n
+(608) # () S 2 T () S
+(if) K
+( [[ -s ") p
+($PT_VARS) str
+(" ]]; ) p
+(then) K n
+(609) # () S
+() p 2 T () S 4 T () S
+(while) K
+( IFS== ) p
+(read) K
+( -r kv; ) p
+(do) K n
+(610) # () S
+() p 2 T () S 4 T () S 6 T () S
+(case) K
+( ") p
+($kv) str
+(" ) p
+(in) K n
+(611) # () S
+() p 2 T () S 4 T () S 6 T (ident_min=*\) ident_min_out=") S
+(${kv#ident_min=}) str
+(" ;;) p n
+(612) # () S 2 T () S 4 T () S 6 T (alen_min=*\) alen_min=") S
+(${kv#alen_min=}) str
+(" ;;) p n
+(613) # () S 2 T () S 4 T () S 6 T () S
+(esac) K n
+(614) # () S
+() p 2 T () S 4 T () S
+(done) K
+( <") p
+($PT_VARS) str
+(") p n
+(615) # () S 2 T () S
+(fi) K n
+(616) # () S
+() p 2 T (note ") S
+(Step1: PT thresholds \342M-^FM-^R  ident_min=${ident_min_out}  alen_min=${alen_min}) str
+(") p n
+(617) # () S 2 T (prof_start ") S
+(write_nonPT) str
+(") p n
+(618) # () S 2 T () S
+(if) K
+( \(\(!DRY\)\); ) p
+(then) K n
+(619) # () S
+() p 2 T () S 4 T (seqkit fx2tab -ni ") S
+($reads) str
+(" | sort -u >") p
+($outdir/map/all.ids) str
+(") p n
+(620) # () S 2 T () S 4 T (sort -u ") S
+($PT_IDS) str
+(" >") p
+($outdir/map/pt.ids.sorted) str
+(") p n
+(621) # () S 2 T () S 4 T (comm -23 ") S
+($outdir/map/all.ids) str
+(" ") p
+($outdir/map/pt.ids.sorted) str
+(" >") p
+($outdir/keep.nonpt.ids) str
+(") p n
+(622) # () S 2 T () S 4 T (note ") S
+(Step1: write $outdir/reads.nonpt.fq.gz) str
+(") p n
+(623) # () S 2 T () S 4 T (seqkit grep -f ") S
+($outdir/keep.nonpt.ids) str
+(" ") p
+($reads) str
+(" -o ") p
+($outdir/reads.nonpt.fq.gz) str
+(") p n
+(624) # () S 2 T () S
+(fi) K n
+(625) # () S
+() p 2 T (prof_end) N
+(626) # () S 2 T (R1=") S
+($outdir/reads.nonpt.fq.gz) str
+(") p n
+(627) # () S
+(fi) K n
+(628) # () S
+([[ -s ") p
+($R1) str
+(" ]] || {) p n
+(629) # () S 2 T (note ") S
+(ERR missing R1 \($R1\)) str
+(") p n
+(630) # () S 2 T () S
+(exit) K
+( 3) p n
+(631) # (}) N
+(polap-bash-fast-mtseed-ont.sh) (Page 13/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (13/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (14) 14
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(632) # () p n
+(633) # () S
+(# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) c n
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(634) # (# Step 2: all-vs-all \(organized\) + optional BUSCO on 10% sample \(QC\)) N
+(635) # (# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(636) # () S
+(ST1=") p
+($outdir/01_allvsall) str
+(") p n
+(637) # (mkdir -p ") S
+($ST1) str
+(") p n
+(638) # (PAFALL=") S
+($ST1/allvsall.paf) str
+(") p n
+(639) # (OTSV_GLOBAL=") S
+($ST1/overlapness.tsv) str
+(") p n
+(640) # (EDGES_GLOBAL=") S
+($ST1/edges.tsv.gz) str
+(") p n
+(641) # () N
+(642) # () S
+(if) K
+( _should_run 2; ) p
+(then) K n
+(643) # () S
+() p 2 T () S
+(if) K
+( [[ ") p
+($overlap_mode) str
+(" != ") p
+(scan+stream+edges) str
+(" ]]; ) p
+(then) K n
+(644) # () S
+() p 2 T () S 4 T (note0 ") S
+(Step2: minimap2 ava-ont R1\303M-^WR1 > $PAFALL) str
+(") p n
+(645) # () S 2 T () S 4 T (\(\(!DRY\)\) && minimap2 -x ava-ont -t ") S
+($threads) str
+(" --secondary=yes -N 50 \\) p n
+(646) # () S 2 T () S 4 T () S 6 T (--mask-level 0.50 ") S
+($R1) str
+(" ") p
+($R1) str
+(" >") p
+($PAFALL) str
+(") p n
+(647) # () S 2 T () S
+(else) K n
+(648) # () S
+() p 2 T () S 4 T (note0 ") S
+(Step2: overlap-mode scan+stream+edges) str
+(") p n
+(649) # () S 2 T () S 4 T (SCAN_DIR=") S
+($ST1/scan) str
+(") p n
+(650) # () S 2 T () S 4 T (REF_DIR=") S
+($ST1/refine) str
+(") p n
+(651) # () S 2 T () S 4 T (mkdir -p ") S
+($SCAN_DIR) str
+(" ") p
+($REF_DIR) str
+(") p n
+(652) # () N
+(653) # () S 2 T () S 4 T () S
+(# 2a\) scan \(light\) \342M-^FM-^R shortlist) c n
+(654) # () S
+() p 2 T () S 4 T (note0 ") S
+(2a\) scan \(light\) \342M-^FM-^R  shortlist) str
+(") p n
+(655) # () S 2 T () S 4 T (prof_start ") S
+(scan) str
+(") p n
+(656) # () S 2 T () S 4 T () S
+(if) K
+( \(\(!DRY\)\); ) p
+(then) K n
+(657) # () S
+() p 2 T () S 4 T () S 6 T () S
+(if) K
+( \(\(keep_scan_paf\)\); ) p
+(then) K n
+(658) # () S
+() p 2 T () S 4 T () S 6 T () S 8 T (minimap2 -t ") S
+($threads) str
+(" -x ava-ont \\) p n
+(659) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (-k") S
+($scan_k) str
+(" -w") p
+($scan_w) str
+(" -N ") p
+($scan_N) str
+(" \\) p n
+(660) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (--mask-level ") S
+($scan_mask) str
+(" --min-occ-floor ") p
+($scan_minocc) str
+(" \\) p n
+(661) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (") S
+($R1) str
+(" ") p
+($R1) str
+(" |) p n
+(662) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T ({ \(\(topk_per_q > 0\)\) && python ") S
+($TOPKPY) str
+(" ") p
+($topk_per_q) str
+(" || cat; } |) p n
+(663) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (tee >\(gzip -1 >") S
+($SCAN_DIR/scan.paf.gz) str
+("\) |) p n
+(664) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (python ") S
+($OLPY) str
+(" - --min_olen 800 --min_ident 0.82 --w_floor 0.08 \\) p n
+(665) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T () S 12 T (>") S
+($SCAN_DIR/scan.overlapness.tsv) str
+(") p n
+(666) # () S 2 T () S 4 T () S 6 T () S
+(else) K n
+(667) # () S
+() p 2 T () S 4 T () S 6 T () S 8 T (minimap2 -t ") S
+($threads) str
+(" -x ava-ont \\) p n
+(668) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (-k") S
+($scan_k) str
+(" -w") p
+($scan_w) str
+(" -N ") p
+($scan_N) str
+(" \\) p n
+(669) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (--mask-level ") S
+($scan_mask) str
+(" --min-occ-floor ") p
+($scan_minocc) str
+(" \\) p n
+(670) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (") S
+($R1) str
+(" ") p
+($R1) str
+(" |) p n
+(671) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T ({ \(\(topk_per_q > 0\)\) && python ") S
+($TOPKPY) str
+(" ") p
+($topk_per_q) str
+(" || cat; } |) p n
+(672) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (python ") S
+($OLPY) str
+(" - --min_olen 800 --min_ident 0.82 --w_floor 0.08 \\) p n
+(673) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T () S 12 T (>") S
+($SCAN_DIR/scan.overlapness.tsv) str
+(") p n
+(674) # () S 2 T () S 4 T () S 6 T () S
+(fi) K n
+(polap-bash-fast-mtseed-ont.sh) (Page 14/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (14/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (15) 15
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(675) # () p 2 T () S 4 T () S 6 T (awk ') S
+(NR>1{print $1"\\t"$3}) str
+(' ") p
+($SCAN_DIR/scan.overlapness.tsv) str
+(" |) p n
+(676) # () S 2 T () S 4 T () S 6 T () S 8 T (sort -k2,2nr |) N
+(677) # () S 2 T () S 4 T () S 6 T () S 8 T (awk -v f=") S
+($scan_keep_frac) str
+(" ') p
+({a[NR]=$1} END{lim=int\(NR*f\); for\(i=1;i<=lim;i++\) print a[i]}) str
+(' \\) p n
+(678) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (>") S
+($SCAN_DIR/shortlist.ids) str
+(") p n
+(679) # () S 2 T () S 4 T () S 6 T (seqkit grep -f ") S
+($SCAN_DIR/shortlist.ids) str
+(" ") p
+($R1) str
+(" -o ") p
+($SCAN_DIR/R1.short.fq.gz) str
+(") p n
+(680) # () S 2 T () S 4 T () S
+(fi) K n
+(681) # () S
+() p 2 T () S 4 T (prof_end) N
+(682) # () N
+(683) # () S 2 T () S 4 T () S
+(# 2b\) refine streamed \342M-^FM-^R  edges + overlapness) c n
+(684) # () S
+() p 2 T () S 4 T (note0 ") S
+(2b\) refine streamed \342M-^FM-^R  edges + overlapness) str
+(") p n
+(685) # () S 2 T () S 4 T (prof_start ") S
+(refine) str
+(") p n
+(686) # () S 2 T () S 4 T () S
+(if) K
+( \(\(!DRY\)\); ) p
+(then) K n
+(687) # () S
+() p 2 T () S 4 T () S 6 T (minimap2 -t ") S
+($threads) str
+(" -x ava-ont \\) p n
+(688) # () S 2 T () S 4 T () S 6 T () S 8 T (-k") S
+($refine_k) str
+(" -w") p
+($refine_w) str
+(" --secondary=yes -N ") p
+($refine_N) str
+(" \\) p n
+(689) # () S 2 T () S 4 T () S 6 T () S 8 T (--mask-level ") S
+($refine_mask) str
+(" --min-occ-floor ") p
+($refine_minocc) str
+(" \\) p n
+(690) # () S 2 T () S 4 T () S 6 T () S 8 T (") S
+($SCAN_DIR/R1.short.fq.gz) str
+(" ") p
+($SCAN_DIR/R1.short.fq.gz) str
+(" |) p n
+(691) # () S 2 T () S 4 T () S 6 T () S 8 T (python ") S
+($EDGPY) str
+(" \\) p n
+(692) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (--min-olen ") S
+($min_olen) str
+(" --min-ident ") p
+($min_ident) str
+(" --w-floor ") p
+($w_floor) str
+(" \\) p n
+(693) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (--topk-node ") S
+($topk_edges_per_node) str
+(" \\) p n
+(694) # () S 2 T () S 4 T () S 6 T () S 8 T () S 10 T (--edges ") S
+($ST1/edges.tsv) str
+(" --overlapness ") p
+($OTSV_GLOBAL) str
+(") p n
+(695) # () S 2 T () S 4 T () S 6 T (\(\(gzip_edges\)\) && gzip -f ") S
+($ST1/edges.tsv) str
+(") p n
+(696) # () S 2 T () S 4 T () S
+(fi) K n
+(697) # () S
+() p 2 T () S 4 T (prof_end) N
+(698) # () S 2 T () S 4 T (EDGES_GLOBAL=") S
+($ST1/edges.tsv${gzip_edges:+.gz}) str
+(") p n
+(699) # () N
+(700) # () S 2 T () S 4 T () S
+(# optional graph summary) c n
+(701) # () S
+() p 2 T () S 4 T () S
+(if) K
+( \(\(!DRY\)\) && [[ -s ") p
+($EDGECOMP) str
+(" ]]; ) p
+(then) K n
+(702) # () S
+() p 2 T () S 4 T () S 6 T (COMP_DIR=") S
+($ST1/comp) str
+(") p n
+(703) # () S 2 T () S 4 T () S 6 T (mkdir -p ") S
+($COMP_DIR) str
+(") p n
+(704) # () S 2 T () S 4 T () S 6 T (python ") S
+($EDGECOMP) str
+(" ") p
+($EDGES_GLOBAL) str
+(" \\) p n
+(705) # () S 2 T () S 4 T () S 6 T () S 8 T (--summary ") S
+($COMP_DIR/summary.tsv) str
+(" \\) p n
+(706) # () S 2 T () S 4 T () S 6 T () S 8 T (--sizes ") S
+($COMP_DIR/comp_sizes.tsv) str
+(" \\) p n
+(707) # () S 2 T () S 4 T () S 6 T () S 8 T (--membership ") S
+($COMP_DIR/node2comp.tsv) str
+(" \\) p n
+(708) # () S 2 T () S 4 T () S 6 T () S 8 T (--deg ") S
+($COMP_DIR/degree.tsv) str
+(" \\) p n
+(709) # () S 2 T () S 4 T () S 6 T () S 8 T (--giant-nodes ") S
+($COMP_DIR/giant_nodes.txt) str
+(" \\) p n
+(710) # () S 2 T () S 4 T () S 6 T () S 8 T (--giant-edges ") S
+($COMP_DIR/giant_edges.tsv) str
+(" \\) p n
+(711) # () S 2 T () S 4 T () S 6 T () S 8 T (--print || true) N
+(712) # () S 2 T () S 4 T () S
+(fi) K n
+(713) # () S
+() p 2 T () S
+(fi) K n
+(714) # () N
+(715) # () S
+() p 2 T () S
+(# 2c\) BUSCO on a 10% length-stratified subsample \(QC only\)) c n
+(716) # () S
+() p 2 T (note0 ") S
+(2c\) BUSCO on a 10% length-stratified subsample \(QC only\)) str
+(") p n
+(717) # () S 2 T () S
+(if) K
+( [[ -n ") p
+($nprot) str
+(" ]]; ) p
+(then) K n
+(718) # () S
+() p 2 T () S 4 T (note ") S
+(Step2: miniprot BUSCO on 10% subsample of PT-depleted reads \(QC\)) str
+(") p n
+(719) # () S 2 T () S 4 T (SAMP_IDS=") S
+($ST1/nonpt.sample.ids) str
+(") p n
+(720) # () S 2 T () S 4 T (SAMP_FQ=") S
+($ST1/reads.nonpt.sample.fq.gz) str
+(") p n
+(721) # () S 2 T () S 4 T () S
+(# simple random 10% by seed \(keeps it fast and reproducible\)) c n
+(722) # () S
+() p 2 T () S 4 T (\(\(!DRY\)\) && seqkit sample -s ") S
+($seed) str
+(" -p 0.10 ") p
+($R1) str
+(" -o ") p
+($SAMP_FQ) str
+(") p n
+(723) # () S 2 T () S 4 T (\(\(!DRY\)\) && miniprot -d ") S
+($ST1/nonpt.sample.mpi) str
+(" ") p
+($SAMP_FQ) str
+(") p n
+(724) # () S 2 T () S 4 T (\(\(!DRY\)\) && miniprot -t ") S
+($threads) str
+(" -S -N 3 --outc 0.4 \\) p n
+(725) # () S 2 T () S 4 T () S 6 T (") S
+($ST1/nonpt.sample.mpi) str
+(" ") p
+($nprot) str
+(" >") p
+($ST1/nonpt.sample.busco.paf) str
+(") p n
+(polap-bash-fast-mtseed-ont.sh) (Page 15/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (15/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (16) 16
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(726) # () p 2 T () S 4 T (\(\(!DRY\)\) && awk ') S
+(BEGIN{FS=OFS="\\t"} NF>=12 && $11+0>=150 {print $1}) str
+(' \\) p n
+(727) # () S 2 T () S 4 T () S 6 T (") S
+($ST1/nonpt.sample.busco.paf) str
+(" | sort -u >") p
+($ST1/nuc.ids.sample) str
+(") p n
+(728) # () S 2 T () S
+(fi) K n
+(729) # (fi) N
+(730) # () N
+(731) # () S
+(# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) c n
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(732) # (# Step 3: overlapness + selection \(organized\)) N
+(733) # (# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(734) # () S
+(RDIR=") p
+($outdir/round_1) str
+(") p n
+(735) # (mkdir -p ") S
+($RDIR) str
+(") p n
+(736) # () S
+(if) K
+( _should_run 3; ) p
+(then) K n
+(737) # () N
+(738) # () S
+() p 2 T (OTSV=") S
+($RDIR/overlapness.tsv) str
+(") p n
+(739) # () S 2 T (note0 ") S
+(3a\) Prepare $OTSV) str
+(") p n
+(740) # () S 2 T () S
+(if) K
+( [[ ") p
+($overlap_mode) str
+(" == ") p
+(scan+stream+edges) str
+(" ]]; ) p
+(then) K n
+(741) # () S
+() p 2 T () S 4 T (note ") S
+(Step3: reuse refined overlapness \342M-^FM-^R  $OTSV) str
+(") p n
+(742) # () S 2 T () S 4 T (\(\(!DRY\)\) && cp -f ") S
+($OTSV_GLOBAL) str
+(" ") p
+($OTSV) str
+(") p n
+(743) # () S 2 T () S
+(else) K n
+(744) # () S
+() p 2 T () S 4 T (note ") S
+(Step3: compute overlapness from PAF \342M-^FM-^R  $OTSV) str
+(") p n
+(745) # () S 2 T () S 4 T (\(\(!DRY\)\) && python ") S
+($OLPY) str
+(" ") p
+($PAFALL) str
+(" \\) p n
+(746) # () S 2 T () S 4 T () S 6 T (--min_olen ") S
+($min_olen) str
+(" --min_ident ") p
+($min_ident) str
+(" --w_floor ") p
+($w_floor) str
+(" \\) p n
+(747) # () S 2 T () S 4 T () S 6 T (>") S
+($OTSV) str
+(") p n
+(748) # () S 2 T () S
+(fi) K n
+(749) # () N
+(750) # () S
+() p 2 T () S
+(# --- Step 3: selection \(prefer BUSCO sample labels from Step 2c\) ---) c n
+(751) # () S
+() p 2 T (note0 ") S
+(3b\) selection \(prefer BUSCO sample labels from Step 2c\)) str
+(") p n
+(752) # () S 2 T (SELECT_IDS=") S
+($RDIR/select_ids.txt) str
+(") p n
+(753) # () N
+(754) # () S 2 T () S
+(# Prefer the miniprot BUSCO sample labels from Step 2c, else fallback to --nuc-ids) c n
+(755) # () S
+() p 2 T (NUC_SAMPLE=") S
+($ST1/nuc.ids.sample) str
+(") p n
+(756) # () S 2 T (NUC_FOR_THRESH="") N
+(757) # () S 2 T () S
+(if) K
+( [[ -s ") p
+($NUC_SAMPLE) str
+(" ]]; ) p
+(then) K n
+(758) # () S
+() p 2 T () S 4 T (NUC_FOR_THRESH=") S
+($NUC_SAMPLE) str
+(") p n
+(759) # () S 2 T () S
+(elif) K
+( [[ -n ") p
+($nuc_ids_opt) str
+(" && -s ") p
+($nuc_ids_opt) str
+(" ]]; ) p
+(then) K n
+(760) # () S
+() p 2 T () S 4 T (NUC_FOR_THRESH=") S
+($nuc_ids_opt) str
+(") p n
+(761) # () S 2 T () S
+(fi) K n
+(762) # () N
+(763) # () S
+() p 2 T () S
+(if) K
+( [[ -n ") p
+($NUC_FOR_THRESH) str
+(" ]]; ) p
+(then) K n
+(764) # () S
+() p 2 T () S 4 T (note ") S
+(Step3: nuclear-guided selection using $NUC_FOR_THRESH -> $SELECT_IDS) str
+(") p n
+(765) # () S 2 T () S 4 T () S
+(if) K
+( \(\(!DRY\)\); ) p
+(then) K n
+(766) # () S
+() p 2 T () S 4 T () S 6 T (python ") S
+($THRESH_NUC_PY) str
+(" ") p
+($OTSV) str
+(" ") p
+($NUC_FOR_THRESH) str
+(" \\) p n
+(767) # () S 2 T () S 4 T () S 6 T () S 8 T (--mode fpr --fpr 0.01 --diag ") S
+($RDIR/threshold_from_nuclear.tsv) str
+(" \\) p n
+(768) # () S 2 T () S 4 T () S 6 T () S 8 T (>") S
+($RDIR/nuc_thresh.vars) str
+(") p n
+(polap-bash-fast-mtseed-ont.sh) (Page 16/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (16/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (17) 17
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(769) # () p n
+(770) # () S 2 T () S 4 T () S 6 T (wdeg_min=0) N
+(771) # () S 2 T () S 4 T () S 6 T (deg_min=0) N
+(772) # () S 2 T () S 4 T () S 6 T () S
+(while) K
+( IFS== ) p
+(read) K
+( -r kv; ) p
+(do) K n
+(773) # () S
+() p 2 T () S 4 T () S 6 T () S 8 T () S
+(case) K
+( ") p
+($kv) str
+(" ) p
+(in) K n
+(774) # () S
+() p 2 T () S 4 T () S 6 T () S 8 T (wdeg_min=*\) wdeg_min=") S
+(${kv#wdeg_min=}) str
+(" ;;) p n
+(775) # () S 2 T () S 4 T () S 6 T () S 8 T (deg_min=*\) deg_min=") S
+(${kv#deg_min=}) str
+(" ;;) p n
+(776) # () S 2 T () S 4 T () S 6 T () S 8 T () S
+(esac) K n
+(777) # () S
+() p 2 T () S 4 T () S 6 T () S
+(done) K
+( <") p
+($RDIR/nuc_thresh.vars) str
+(") p n
+(778) # () N
+(779) # () S 2 T () S 4 T () S 6 T (awk -v W=") S
+($wdeg_min) str
+(" -v D=") p
+($deg_min) str
+(" ') p
+(BEGIN{FS=OFS="\\t"}) str n
+(780) # (      NR>1 && \($3+0\)>=W && \($2+0\)>=D {print $1}) S
+(' ") p
+($OTSV) str
+(" |) p n
+(781) # () S 2 T () S 4 T () S 6 T () S 8 T (sort -u >") S
+($RDIR/organelle.ids) str
+(") p n
+(782) # () N
+(783) # () S 2 T () S 4 T () S 6 T () S
+(# Exclude labeled nuclear reads \(from sample or full set\)) c n
+(784) # () S
+() p 2 T () S 4 T () S 6 T (comm -23 <\(sort -u ") S
+($RDIR/organelle.ids) str
+("\) \\) p n
+(785) # () S 2 T () S 4 T () S 6 T () S 8 T (<\(sort -u ") S
+($NUC_FOR_THRESH) str
+("\) \\) p n
+(786) # () S 2 T () S 4 T () S 6 T () S 8 T (>") S
+($SELECT_IDS) str
+(") p n
+(787) # () S 2 T () S 4 T () S
+(fi) K n
+(788) # () S
+() p 2 T () S
+(else) K n
+(789) # () S
+() p 2 T () S 4 T (note ") S
+(Step3: select top-frac \($top_frac\) by wdegree) str
+(") p n
+(790) # () S 2 T () S 4 T (\(\(!DRY\)\) && python ") S
+($TOPPY) str
+(" ") p
+($OTSV) str
+(" --top_frac ") p
+($top_frac) str
+(" >") p
+($SELECT_IDS) str
+(") p n
+(791) # () S 2 T () S
+(fi) K n
+(792) # () N
+(793) # (fi) N
+(794) # () N
+(795) # () S
+(# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) c n
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(796) # (# Step 4: assemble selected reads \(organized\)) N
+(797) # (# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(798) # () S
+(SEEDS_ROUND="") p n
+(799) # () S
+(if) K
+( _should_run 4; ) p
+(then) K n
+(800) # () S
+() p 2 T () S
+(if) K
+( [[ ") p
+($assembler) str
+(" == ") p
+(miniasm) str
+(" ]]; ) p
+(then) K n
+(801) # () S
+() p 2 T () S 4 T (SUBPAF=") S
+($RDIR/top_overlaps.paf.gz) str
+(") p n
+(802) # () S 2 T () S 4 T () S
+(# In streamed mode we do not have a refined PAF; miniasm will still run with -f) c n
+(803) # () S
+() p 2 T () S 4 T () S
+(if) K
+( [[ ") p
+($overlap_mode) str
+(" != ") p
+(scan+stream+edges) str
+(" ]]; ) p
+(then) K n
+(804) # () S
+() p 2 T () S 4 T () S 6 T (note ") S
+(Step4: filter PAF by selected ids \342M-^FM-^R $SUBPAF) str
+(") p n
+(805) # () S 2 T () S 4 T () S 6 T (\(\(!DRY\)\) && python ") S
+($FILTPY) str
+(" ") p
+($PAFALL) str
+(" ") p
+($RDIR/select_ids.txt) str
+(" -o ") p
+($SUBPAF) str
+(") p n
+(806) # () S 2 T () S 4 T () S
+(fi) K n
+(807) # () S
+() p 2 T () S 4 T (TOPFA=") S
+($RDIR/top_reads.fa.gz) str
+(") p n
+(808) # () S 2 T () S 4 T (note ") S
+(Step4: extract selected reads \342M-^FM-^R $TOPFA) str
+(") p n
+(809) # () S 2 T () S 4 T (\(\(!DRY\)\) && seqkit fq2fa ") S
+($R1) str
+(" | seqkit grep -f ") p
+($RDIR/select_ids.txt) str
+(" -o ") p
+($TOPFA) str
+(") p n
+(810) # () S 2 T () S 4 T (GFA=") S
+($RDIR/miniasm.gfa) str
+(") p n
+(811) # () S 2 T () S 4 T (note ") S
+(Step4: run miniasm on the selected reads) str
+(") p n
+(polap-bash-fast-mtseed-ont.sh) (Page 17/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (17/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (18) 18
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(812) # () p 2 T () S 4 T (\(\(!DRY\)\) && miniasm -f ") S
+($TOPFA) str
+(" <\(zcat -f ") p
+($SUBPAF) str
+(" 2>/dev/null || true\) >") p
+($GFA) str
+(" || true) p n
+(813) # () S 2 T () S 4 T (SEEDS_ROUND=") S
+($RDIR/m_seeds_raw.fa) str
+(") p n
+(814) # () S 2 T () S 4 T (note ") S
+(Step4: extract contigs from GFA \342M-^FM-^R $SEEDS_ROUND) str
+(") p n
+(815) # () S 2 T () S 4 T (\(\(!DRY\)\) && awk ') S
+(/^S/{print ">"$2"\\n"$3}) str
+(' ") p
+($GFA) str
+(" >") p
+($SEEDS_ROUND) str
+(" || :) p n
+(816) # () S 2 T () S
+(else) K n
+(817) # () S
+() p 2 T () S 4 T (TOPFQ=") S
+($RDIR/top_reads.fq.gz) str
+(") p n
+(818) # () S 2 T () S 4 T (note ") S
+(Step4: extract selected reads \(fq\) \342M-^FM-^R $TOPFQ) str
+(") p n
+(819) # () S 2 T () S 4 T (\(\(!DRY\)\) && seqkit grep -f ") S
+($RDIR/select_ids.txt) str
+(" ") p
+($R1) str
+(" -o ") p
+($TOPFQ) str
+(") p n
+(820) # () S 2 T () S 4 T (SEEDS_ROUND=") S
+($RDIR/raven_contigs.fasta) str
+(") p n
+(821) # () S 2 T () S 4 T (note ") S
+(Step4: raven --disable-polishing \342M-^FM-^R $SEEDS_ROUND) str
+(") p n
+(822) # () S 2 T () S 4 T (\(\(!DRY\)\) && raven --threads ") S
+($threads) str
+(" --disable-polishing -o ") p
+($SEEDS_ROUND) str
+(" ") p
+($TOPFQ) str
+(") p n
+(823) # () S 2 T () S
+(fi) K n
+(824) # () S
+() p 2 T () S
+(# ensure downstream finalize has a source) c n
+(825) # () S
+() p 2 T (SEEDS_CUR=") S
+($SEEDS_ROUND) str
+(") p n
+(826) # () S
+(fi) K n
+(827) # () N
+(828) # () S
+(# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) c n
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(829) # (# Step 4: assemble selected reads) N
+(830) # (#   Input  : select_ids.txt \(IDs of mito-enriched reads, from Step 3\)) N
+(831) # (#   Output : contigs assembled from those reads) N
+(832) # (#) N
+(833) # (#   Miniasm requires:) N
+(834) # (#     \(1\) the read sequences \(FASTA/FASTQ\)) N
+(835) # (#     \(2\) the overlaps between those reads \(PAF\)) N
+(836) # (#) N
+(837) # (#   Raven can do both overlap + assembly internally, so it only needs reads.) N
+(838) # (# \342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342) N
+0 T (M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^T) N
+0 T (M-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@\342M-^TM-^@) N
+(839) # () S
+(SEEDS_ROUND="") p n
+(840) # () S
+(if) K
+( _should_run 4; ) p
+(then) K n
+(841) # () S
+() p 2 T (SELECT_IDS=") S
+($RDIR/select_ids.txt) str
+(") p n
+(842) # () N
+(843) # () S 2 T () S
+(if) K
+( [[ ") p
+($assembler) str
+(" == ") p
+(miniasm) str
+(" ]]; ) p
+(then) K n
+(844) # () S
+() p 2 T () S 4 T () S
+(# Extract the actual sequences of the selected reads) c n
+(845) # () S
+() p 2 T () S 4 T (TOPFA=") S
+($RDIR/top_reads.fa.gz) str
+(") p n
+(846) # () S 2 T () S 4 T (note ") S
+(Step4: extract selected reads \342M-^FM-^R $TOPFA) str
+(") p n
+(847) # () S 2 T () S 4 T (\(\(!DRY\)\) && seqkit fq2fa ") S
+($R1) str
+(" | seqkit grep -f ") p
+($SELECT_IDS) str
+(" -o ") p
+($TOPFA) str
+(") p n
+(848) # () N
+(849) # () S 2 T () S 4 T (GFA=") S
+($RDIR/miniasm.gfa) str
+(") p n
+(850) # () N
+(851) # () S 2 T () S 4 T () S
+(if) K
+( [[ ") p
+($overlap_mode) str
+(" != ") p
+(scan+stream+edges) str
+(" ]]; ) p
+(then) K n
+(852) # () S
+() p 2 T () S 4 T () S 6 T () S
+(# DEFAULT MODE:) c n
+(853) # () S
+() p 2 T () S 4 T () S 6 T () S
+(# In Step 2 we produced a full all-vs-all PAF \(PAFALL\).) c n
+(854) # () S
+() p 2 T () S 4 T () S 6 T () S
+(# Here we filter it down to overlaps *only between the selected reads*.) c n
+(polap-bash-fast-mtseed-ont.sh) (Page 18/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (18/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (19) 19
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(855) # () p 2 T () S 4 T () S 6 T (SUBPAF=") S
+($RDIR/top_overlaps.paf.gz) str
+(") p n
+(856) # () S 2 T () S 4 T () S 6 T (note ") S
+(Step4: filter full PAF to selected read overlaps \342M-^FM-^R $SUBPAF) str
+(") p n
+(857) # () S 2 T () S 4 T () S 6 T (\(\(!DRY\)\) && python ") S
+($FILTPY) str
+(" ") p
+($PAFALL) str
+(" ") p
+($SELECT_IDS) str
+(" -o ") p
+($SUBPAF) str
+(") p n
+(858) # () N
+(859) # () S 2 T () S 4 T () S 6 T (note ") S
+(Step4: run miniasm with filtered overlaps) str
+(") p n
+(860) # () S 2 T () S 4 T () S 6 T (\(\(!DRY\)\) && miniasm -f ") S
+($TOPFA) str
+(" <\(zcat -f ") p
+($SUBPAF) str
+("\) >") p
+($GFA) str
+(") p n
+(861) # () N
+(862) # () S 2 T () S 4 T () S
+(else) K n
+(863) # () S
+() p 2 T () S 4 T () S 6 T () S
+(# STREAMED MODE:) c n
+(864) # () S
+() p 2 T () S 4 T () S 6 T () S
+(# In Step 2 we *did not* save a full PAF \(we streamed directly to reducers\).) c n
+(865) # () S
+() p 2 T () S 4 T () S 6 T () S
+(# Miniasm still needs overlaps, so we regenerate them \342M-^@M-^T but only among) c n
+(866) # () S
+() p 2 T () S 4 T () S 6 T () S
+(# the smaller set of selected reads.) c n
+(867) # () S
+() p 2 T () S 4 T () S 6 T (SELPAF=") S
+($RDIR/selected_allvsall.paf.gz) str
+(") p n
+(868) # () S 2 T () S 4 T () S 6 T (note ") S
+(Step4: generate overlaps among selected reads \342M-^FM-^R $SELPAF) str
+(") p n
+(869) # () S 2 T () S 4 T () S 6 T (\(\(!DRY\)\) && minimap2 -x ava-ont -t ") S
+($threads) str
+(" --secondary=yes -N 30 \\) p n
+(870) # () S 2 T () S 4 T () S 6 T () S 8 T (--mask-level 0.60 --min-occ-floor 10 \\) N
+(871) # () S 2 T () S 4 T () S 6 T () S 8 T (") S
+($TOPFA) str
+(" ") p
+($TOPFA) str
+(" | gzip -1 >") p
+($SELPAF) str
+(") p n
+(872) # () N
+(873) # () S 2 T () S 4 T () S 6 T (note ") S
+(Step4: run miniasm with selected-read overlaps) str
+(") p n
+(874) # () S 2 T () S 4 T () S 6 T (\(\(!DRY\)\) && miniasm -f ") S
+($TOPFA) str
+(" <\(zcat -f ") p
+($SELPAF) str
+("\) >") p
+($GFA) str
+(") p n
+(875) # () S 2 T () S 4 T () S
+(fi) K n
+(876) # () N
+(877) # () S
+() p 2 T () S 4 T () S
+(# Extract contigs from the GFA into a FASTA for downstream use) c n
+(878) # () S
+() p 2 T () S 4 T (SEEDS_ROUND=") S
+($RDIR/m_seeds_raw.fa) str
+(") p n
+(879) # () S 2 T () S 4 T (note ") S
+(Step4: extract contigs from GFA \342M-^FM-^R $SEEDS_ROUND) str
+(") p n
+(880) # () S 2 T () S 4 T (\(\(!DRY\)\) && awk ') S
+(/^S/{print ">"$2"\\n"$3}) str
+(' ") p
+($GFA) str
+(" >") p
+($SEEDS_ROUND) str
+(" || :) p n
+(881) # () N
+(882) # () S 2 T () S
+(else) K n
+(883) # () S
+() p 2 T () S 4 T () S
+(# RAVEN MODE:) c n
+(884) # () S
+() p 2 T () S 4 T () S
+(# Raven overlaps + assembles internally. We only need to provide the reads.) c n
+(885) # () S
+() p 2 T () S 4 T (TOPFQ=") S
+($RDIR/top_reads.fq.gz) str
+(") p n
+(886) # () S 2 T () S 4 T (note ") S
+(Step4: extract selected reads \(fq\) \342M-^FM-^R $TOPFQ) str
+(") p n
+(887) # () S 2 T () S 4 T (\(\(!DRY\)\) && seqkit grep -f ") S
+($SELECT_IDS) str
+(" ") p
+($R1) str
+(" -o ") p
+($TOPFQ) str
+(") p n
+(888) # () N
+(889) # () S 2 T () S 4 T (SEEDS_ROUND=") S
+($RDIR/raven_contigs.fasta) str
+(") p n
+(890) # () S 2 T () S 4 T (note ") S
+(Step4: raven --disable-polishing \342M-^FM-^R $SEEDS_ROUND) str
+(") p n
+(891) # () S 2 T () S 4 T (\(\(!DRY\)\) && raven --threads ") S
+($threads) str
+(" --disable-polishing -o ") p
+($SEEDS_ROUND) str
+(" ") p
+($TOPFQ) str
+(") p n
+(892) # () S 2 T () S
+(fi) K n
+(893) # () N
+(894) # () S
+() p 2 T () S
+(# Save path for finalize step) c n
+(895) # () S
+() p 2 T (SEEDS_CUR=") S
+($SEEDS_ROUND) str
+(") p n
+(896) # () S
+(fi) K n
+(897) # () N
+(898) # (if) S
+( _should_run 5; ) p
+(then) K n
+(899) # () S
+() p 2 T (note ") S
+(polap readassemble) str
+(") p n
+(900) # () N
+(901) # () S 2 T () S
+(# annotate miniasm assembly contigs) c n
+(902) # () S
+() p 2 T () S
+(#) c n
+(903) # () S
+() p 2 T (contigger_dir=") S
+(${RDIR}/30-contigger) str
+(") p n
+(904) # () S 2 T (mkdir -p ") S
+(${contigger_dir}) str
+(") p n
+(905) # () S 2 T (sed ') S
+(s/LN:i/dp:i/) str
+(' ") p
+(${RDIR}/miniasm.gfa) str
+(" >") p
+(${contigger_dir}/graph_final.gfa) str
+(") p n
+(polap-bash-fast-mtseed-ont.sh) (Page 19/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (19/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (20) 20
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(906) # () p n
+(907) # () S 2 T () S
+(# polap annotate -o "${outdir}" -i round_1) c n
+(908) # () N
+(909) # () S
+() p 2 T () S
+(# select seed contigs) c n
+(910) # () S
+() p 2 T () S
+(#) c n
+(911) # () S
+() p 2 T (bash ") S
+(${_POLAPLIB_DIR}/../polap2.sh) str
+(" readassemble annotated \\) p n
+(912) # () S 2 T () S 4 T (-o ") S
+(${outdir}) str
+(" -i round_1 \\) p n
+(913) # () S 2 T () S 4 T (-l ") S
+(${reads}) str
+(") p n
+(914) # () N
+(915) # () S
+(fi) K n
+(916) # () N
+(917) # () S
+(# Finalize) c n
+(918) # () S
+(if) K
+( \(\(!DRY\)\); ) p
+(then) K n
+(919) # () S
+() p 2 T (FINAL_DIR=") S
+($\(dirname ) str
+("$SEEDS_CUR") p
+(\)) str
+(") p n
+(920) # () S 2 T (FINAL_SEEDS=") S
+($FINAL_DIR/m_seeds_final.fa) str
+(") p n
+(921) # () S 2 T (note ") S
+(Finalize: cp $SEEDS_CUR \342M-^FM-^R $FINAL_SEEDS) str
+(") p n
+(922) # () S 2 T (cp ") S
+($SEEDS_CUR) str
+(" ") p
+($FINAL_SEEDS) str
+(") p n
+(923) # () S 2 T (note ") S
+(Done. Final seeds: $FINAL_SEEDS) str
+(") p n
+(924) # () S
+(else) K n
+(925) # () S
+() p 2 T (note ") S
+(--dry finished \(no commands executed\).) str
+(") p n
+(926) # () S
+(fi) K n
+(polap-bash-fast-mtseed-ont.sh) (Page 20/20) ( 9\354M-^[M-^T 27, 25 13:53) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(polap-bash-fast-mtseed-ont.sh) (20/20) (\355M-^F\240\354M-^ZM-^T\354M-^]\274 9\354M-^[M-^T 27, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+
+%%Trailer
+end
+%%EOF

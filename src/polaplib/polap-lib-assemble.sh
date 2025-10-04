@@ -117,6 +117,7 @@ _polap_lib_assemble-omega() {
 	# _arg_type
 	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
+	local i=0
 
 	if ! _polap_gfatools-gfa2fasta; then
 		_polap_error_message $?
@@ -125,10 +126,13 @@ _polap_lib_assemble-omega() {
 	check_file_existence "${_polap_var_mtcontigname}"
 	check_file_existence "${_polap_var_ga_contigger_edges_fasta}"
 
+	_polap_log0 "i: $i"
 	_run_polap_map-reads
 
+	_polap_log0 "i: $i"
 	_polap_lib_oga-estimate-omega
 
+	_polap_log0 "i: $i"
 	# remove NUMT/NUPT using rkmerrc
 	# if [[ "${_arg_data_type}" == "pacbio-hifi" ]] && [[ "${_arg_plastid}" == "off" ]]; then
 	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
@@ -154,6 +158,7 @@ _polap_lib_assemble-omega() {
 		_arg_redo="on"
 		_run_polap_assemble2
 	fi
+	_polap_log0 "i: $i"
 
 	return 0
 }

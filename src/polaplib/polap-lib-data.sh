@@ -51,9 +51,9 @@ fi
 # TODO: Check
 # _POLAP_RELEASE
 if [[ "${_POLAP_RELEASE}" == "1" ]]; then
-	_polap_var_memtracker_time_interval=6
+	_polap_var_memtracker_time_interval=60
 else
-	_polap_var_memtracker_time_interval=3
+	_polap_var_memtracker_time_interval=30
 fi
 
 source "${_POLAPLIB_DIR}/polap-lib-conda.sh"
@@ -94,7 +94,7 @@ __log() {
 	# (( _silent == 1 )) && return 0
 
 	# Print only if verbosity is high enough
-	if ((_brg_verbose >= level)); then
+	if ((_brg_verbose > level)); then
 		local line
 		line="$(date '+%Y-%m-%d %H:%M:%S') [$subcmd1] - $msg"
 
@@ -2003,6 +2003,116 @@ run-polap-disassemble-hifi_genus_species() {
 	fi
 }
 
+run-polap-downsample_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	if [[ "$#" -gt 1 ]]; then
+		shift 2
+	else
+		shift
+	fi
+
+	# defaults
+	local _brg_type="miniasm"
+	local _brg_omega="1500"
+	local _brg_downsample="no-downsample"
+	local _brg_coverage="10g"
+
+	# parse options
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--type)
+			_brg_type="$2"
+			shift 2
+			;;
+		-w)
+			_brg_omega="$2"
+			shift 2
+			;;
+		-f)
+			shift
+			;;
+		-d)
+			_brg_downsample="downsample"
+			shift
+			;;
+		--coverage)
+			_brg_coverage="$2"
+			shift 2
+			;;
+		--dry-run)
+			_brg_dry="on"
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			_log_echo "Unknown option: $1"
+			return 1
+			;;
+		esac
+	done
+
+	# redefine
+	local _brg_rundir="${_brg_outdir_i}/${_brg_title}-1-${_brg_type}"
+
+	mkdir -p "${_brg_outdir_i}"
+
+	local platform="${_platform["$_brg_target"]}"
+
+	_log_echo1 "Do: downsample ${_brg_type}DNA using seed reads of coverage (${_brg_coverage}): ${_brg_rundir}"
+
+	# rm -rf "${_brg_target}"
+	mkdir -p "${_brg_target}/tmp"
+
+	# Start memory logger
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	# check out input data
+	# ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
+	# _brg_input_data="${long_sra}.fastq"
+	if [[ ! -s "${long_sra}".fastq ]]; then
+		data-long_genus_species "${_brg_outdir}"
+	fi
+
+	# plant mt
+	_log_echo1 ${_polap_cmd} fastq-sample-to \
+		-g "${_brg_coverage}" \
+		-l "${long_sra}.fastq" \
+		--outfile "${_brg_target}/tmp/l.fq"
+	${_polap_cmd} fastq-sample-to \
+		-g "${_brg_coverage}" \
+		-l "${long_sra}.fastq" \
+		--outfile "${_brg_target}/tmp/l.fq"
+
+	_log_echo1 mv "${_brg_target}/tmp/l.fq" "${long_sra}.fastq"
+	if ! mv "${_brg_target}/tmp/l.fq" "${long_sra}.fastq" 2>/dev/null; then
+		_log_echo1 "skip: mv failed because the two files are the same"
+	fi
+
+	_log_echo1 seqkit stats -Ta "${long_sra}.fastq" -o "${long_sra}.fastq.seqkit.stats.Ta.txt"
+	seqkit stats -Ta "${long_sra}.fastq" -o "${long_sra}.fastq.seqkit.stats.Ta.txt"
+	cut -f1-5 "${long_sra}.fastq.seqkit.stats.Ta.txt"
+	conda deactivate
+
+	# Summarize results after job (with previously defined summary function)
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+	if [[ -d "${_brg_target}" ]]; then
+		_log_echo1 rm -rf "${_brg_target}"
+		rm -rf "${_brg_target}"
+	fi
+
+}
+
 # two positional arguments: outdir and index
 # optiotns
 # type: -t pt|mt|nt
@@ -2012,23 +2122,31 @@ run-polap-readassemble_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
-	shift 2
+
+	if [[ "$#" -gt 1 ]]; then
+		shift 2
+	else
+		shift
+	fi
 
 	# defaults
-	local _brg_type="pt"
+	local _brg_type="miniasm"
 	local _brg_omega="1500"
 	local _brg_downsample="no-downsample"
 
 	# parse options
 	while [[ $# -gt 0 ]]; do
 		case "$1" in
-		-t)
+		--type)
 			_brg_type="$2"
 			shift 2
 			;;
 		-w)
 			_brg_omega="$2"
 			shift 2
+			;;
+		-f)
+			shift
 			;;
 		-d)
 			_brg_downsample="downsample"
@@ -2051,6 +2169,8 @@ run-polap-readassemble_genus_species() {
 
 	# redefine
 	local _brg_rundir="${_brg_outdir_i}/${_brg_title}-1-${_brg_type}"
+
+	mkdir -p "${_brg_outdir_i}"
 
 	local platform="${_platform["$_brg_target"]}"
 
@@ -2079,52 +2199,25 @@ run-polap-readassemble_genus_species() {
 		fi
 	fi
 
-	_log_echo "Do: assemble ${_brg_type}DNA using seed reads of coverage (${_brg_coverage}) with ${option_data_type}: ${_brg_rundir}"
+	_log_echo1 "Do: assemble ${_brg_type}DNA using seed reads of coverage (${_brg_coverage}) with ${option_data_type}: ${_brg_rundir}"
 
 	rm -rf "${_brg_target}"
 	mkdir -p "${_brg_target}"
-
-	# Too complicated: just assemble pt genome for mt or nt
-	# mkdir -p "${_brg_rundir}"
-	# if [[ "${_brg_type}" != "pt" ]]; then
-	# 	if [[ "${_local_host}" != "$(hostname)" ]]; then
-	# 		scp "${_local_host}:$PWD/${_brg_outdir}/t5/0/polap-readassemble-1-pt/pt.0.gfa" \
-	# 			"${_brg_rundir}/mt-pt.0.gfa"
-	# 		scp "${_local_host}:$PWD/${_brg_outdir}/t5/0/polap-readassemble-1-pt/pt.0.fa" \
-	# 			"${_brg_rundir}/mt-pt.0.fa"
-	# 		if [[ ! -s "${_brg_rundir}/mt-pt.0.gfa" ]]; then
-	# 			echo "No such file: ${_brg_rundir}/mt-pt.0.gfa"
-	# 			return
-	# 		fi
-	# 	fi
-	# fi
-
-	ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
-	_brg_input_data="${long_sra}.fastq"
-	# check out input data
-	if [[ ! -s "${long_sra}".fastq ]]; then
-		data-long_genus_species "${_brg_outdir}"
-	fi
-
-	# temporary
-	# if [[ "${platform}" == "PACBIO_SMRT" ]] || [[ "${platform}" == "PACBIO_CLR" ]]; then
-	# 	write-genomesize-10x "${_brg_outdir}"
-	# 	cp -p "${_brg_outdir}/short_expected_genome_size.txt" "${_brg_rundir}"
-	# fi
 
 	# Start memory logger
 	_polap_lib_process-start_memtracker "${_memlog_file}" \
 		"${_polap_var_memtracker_time_interval}"
 
-	# if [[ "${_brg_downsample}" == "downsample" ]]; then
-	# 	data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_coverage}"
-	# fi
-
-	# local resolved_fastq=$(<"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt")
-	local resolved_fastq="${long_sra}.fastq"
-	# echo "  - FASTQ: $resolved_fastq"
-
 	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	# check out input data
+	# ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
+	# _brg_input_data="${long_sra}.fastq"
+	if [[ ! -s "${long_sra}".fastq ]]; then
+		data-long_genus_species "${_brg_outdir}"
+	fi
+
+	local resolved_fastq="${long_sra}.fastq"
 
 	if [[ "${_brg_type}" == "pt" ]]; then
 		${_polap_cmd} readassemble \
@@ -2141,6 +2234,18 @@ run-polap-readassemble_genus_species() {
 			--animal \
 			--downsample "${_brg_coverage}" \
 			-l "${resolved_fastq}" \
+			-o "${_brg_target}"
+	elif [[ "${_brg_type}" == "miniasm" ]]; then
+		_log_echo2 "plant mt $_brg_verbose_str"
+		_log_echo0 ${_polap_cmd} readassemble \
+			"${option_data_type}" \
+			-l "${resolved_fastq}" \
+			${_brg_verbose_str} \
+			-o "${_brg_target}"
+		${_polap_cmd} readassemble \
+			"${option_data_type}" \
+			-l "${resolved_fastq}" \
+			${_brg_verbose_str} \
 			-o "${_brg_target}"
 	elif [[ "${_brg_type}" == "nt" ]]; then
 		# plant mt
@@ -2182,18 +2287,14 @@ run-polap-readassemble_genus_species() {
 	rsync -azuq --max-size=5M \
 		"${_brg_target}/" "${_brg_rundir}/"
 
-	# if [[ "${_local_host}" != "$(hostname)" ]]; then
-	# 	sync_genus_species "${_brg_outdir}" "${_brg_sindex}" --main-push
-	# 	if [[ "${_brg_type}" == "nt" ]]; then
-	# 		rm -rf "${_brg_rundir}" "${_brg_outdir}"
-	# 		rm -f "${long_sra}.fastq" "${long_sra}-10x.fastq.tar.gz"
-	# 	fi
-	# 	if [[ "${_brg_type}" == "mt" ]]; then
-	# 		rm -rf "${_brg_rundir}" "${_brg_outdir}"
-	# 		rm -f "${long_sra}.fastq" "${long_sra}-10x.fastq.tar.gz"
-	# 	fi
+	if [[ -s "${long_sra}".fastq ]]; then
+		_log_echo1 rm -f "${long_sra}".fastq
+		rm -f "${long_sra}".fastq
+	fi
+	# if [[ -d "${_brg_target}" ]]; then
+	# 	_log_echo1 rm -rf "${_brg_target}"
+	# 	rm -rf "${_brg_target}"
 	# fi
-	# rm -f "${long_sra}.fastq" "${long_sra}-10x.fastq.tar.gz"
 }
 
 run-polap-readassemble-animal-mt_genus_species() {
@@ -2218,6 +2319,14 @@ run-polap-readassemble-mt_genus_species() {
 
 	run-polap-readassemble_genus_species "${_brg_outdir}" "${_brg_sindex}" \
 		-t "mt"
+}
+
+run-polap-readassemble-miniasm_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+
+	run-polap-readassemble_genus_species "${_brg_outdir}" "${_brg_sindex}" \
+		-t "miniasm"
 }
 
 run-polap-readassemble-pt_genus_species() {
@@ -11701,9 +11810,18 @@ check_and_prepare_fastq() {
 			echo "Found local archive: $full_archive_path"
 			if [[ "$dry_run" != true ]]; then
 				echo "  decompressing ..."
-				tar -zxf "$full_archive_path"
+				if command -v pv >/dev/null 2>&1; then
+					pv -p -t -e -r -b "$full_archive_path" | tar xzf - -C .
+				else
+					tar -zxf "$full_archive_path"
+				fi
 			fi
-			result=$(tar -tzf "$full_archive_path" | head -n 1)
+			if [[ -s "${long_sra}.fastq" ]]; then
+				result="${long_sra}.fastq"
+			else
+				result="no-such-file.fastq"
+			fi
+			# result=$(tar -tzf "$full_archive_path" | head -n 1)
 			eval $__result_var="'$result'"
 			return 0
 		fi
@@ -12346,6 +12464,16 @@ man_genus_species() {
 	local remaining_args=("${@:2}")
 
 	man-${first_arg}_genus_species "${remaining_args[@]}"
+}
+
+man-minimap2_genus_species() {
+	local args=("$@")
+
+	if [[ ! -s minimap2.1 ]]; then
+		curl -L https://raw.githubusercontent.com/lh3/minimap2/master/minimap2.1 \
+			-o minimap2.1
+	fi
+	man ./minimap2.1
 }
 
 man-update_genus_species() {

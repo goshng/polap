@@ -541,6 +541,8 @@ HEREDOC
 		return 0
 	fi
 
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
 	_polap_log0 "annotating edge sequence contigs with mitochondrial and plastid genes on the assembly number ${_arg_inum} ..."
 
 	if [ -s "${_polap_var_ga_annotation_all}" ] && [ "${_arg_redo}" = "off" ]; then
@@ -556,6 +558,8 @@ HEREDOC
 		_run_polap_blast-genome
 		_run_polap_count-gene
 	fi
+
+	conda deactivate
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

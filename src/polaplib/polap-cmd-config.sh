@@ -163,8 +163,8 @@ EOF
 	if [[ "${_arg_menu[1]}" == "copy" || "${_arg_menu[1]}" == "cp" ]]; then
 		_polap_log0 "copy config preset:${_arg_menu[2]} to preset:${_arg_menu[3]}"
 
-		cp -p "${HOME}/.polap/profiles/${_arg_menu[2]}" \
-			"${HOME}/.polap/profiles/${_arg_menu[3]}"
+		cp -p "${HOME}/.polap/profiles/${_arg_menu[2]}.yaml" \
+			"${HOME}/.polap/profiles/${_arg_menu[3]}.yaml"
 	fi
 
 	if [[ "${_arg_menu[1]}" == "infile" || "${_arg_menu[1]}" == "edit" ]]; then

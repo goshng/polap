@@ -1,0 +1,5 @@
+Contig Length Depth Copy MT PT Edge
+edge_2 82227 8 0 0 0 2
+edge_1 87082 93 1 41 38 1
+edge_3 17949 111 1 2 12 3
+edge_4 25803 185 2 5 10 4

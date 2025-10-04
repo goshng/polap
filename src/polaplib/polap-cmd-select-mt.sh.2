@@ -1,0 +1,498 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ----------------------------------------------------------------------
+# polap-bash-select-mt.sh
+# Coverage (X) + PPR (syncmer connectivity) pipeline
+#   - Uses polap-py-syncfilter-cut-auto.py (with --tail-mt/--tail-pt)
+#   - Feeds only mt-band reads to PPR selector
+#   - Optional X-prior to PPR
+#   - Ensemble fusion + optional HTML report
+#
+# Can be:
+#   (1) executed directly:
+#         bash polap-bash-select-mt.sh select-mt [..]
+#   (2) sourced by top-level polap.sh:
+#         source polaplib/polap-bash-select-mt.sh
+#         case "$1" in
+#           select-mt) shift; polap_cmd_select_mt "$@";;
+#         esac
+# ----------------------------------------------------------------------
+
+# Resolve library dir both when executed and when sourced.
+_THIS="${BASH_SOURCE[0]}"
+_POLAPLIB_DIR="$(cd -- "$(dirname -- "$_THIS")" && pwd)"
+
+# ---------- usage ----------
+polap_cmd_select_mt_usage() {
+	cat <<'EOF'
+Usage:
+  polap select-mt --reads READS.fq[.gz] --mt mt.id.all.txt -o out/prefix [options]
+
+Inputs:
+  --reads FILE           FASTQ(.gz) with read IDs (first token)
+  --mt FILE              mt anchor IDs (one per line)
+  --pt FILE              pt anchor IDs (optional)
+  -o, --out PREFIX       output prefix (required)
+
+General:
+  --preset {hifi|ont}    k/s preset [hifi]
+  --threads INT          threads for syncfilter quickview [8]
+  --redo                 remove output folder if exists
+
+Coverage (X) quickview:
+  -k INT                 k for quickview [hifi:121, ont:41]
+  -s INT                 s for quickview [hifi:27,  ont:17]
+  --hpc                  HPC for quickview (ONT-friendly)
+
+Coverage banding (cut-auto):
+  --x-method STR         mad|window|std|valley|hybrid [hybrid]
+  --x-tail FLOAT         right-tail (nuclear) [0.05]
+  --tail-mt FLOAT        right-tail for mt band [default: --x-tail]
+  --tail-pt FLOAT        right-tail for pt band [default: --x-tail]
+  --x-win FLOAT          window width in log10 for 'window' sigma [0.20]
+  --band-max FLOAT       upper limit to define nuclear band [2.0]
+  --sigma-floor FLOAT    min sigma to avoid underflow [0.03]
+
+PPR selector (syncmer connectivity; runs on mt-band-only reads):
+  --ppr-k INT            k for PPR [defaults to quickview k]
+  --ppr-s INT            s for PPR [defaults to quickview s]
+  --ppr-hpc              HPC for PPR (ONT)
+  --max-occ INT          ignore syncmers seen in > INT reads [200]
+  --min-shared INT       edge if >= INT shared syncmers [4]
+  --jaccard-min FLOAT    min Jaccard on syncmer sets [0.01]
+  --edge-norm            normalize edge weight
+  --topk-nei INT         keep top-K neighbors per node [50]
+  --steps INT            BFS steps from seeds [2]
+  --ppr-alpha FLOAT      teleport prob [0.85]
+  --ppr-iter INT         iterations [30]
+  --score-th FLOAT       PPR threshold (0=auto Otsu)
+
+PPR with X-prior (optional, reduces NUMTs):
+  --nuc-cut-log10 F      nuclear cut in log10(median)
+  --x-slope F            sigmoid slope for X-prior [0.20]
+  # When set, orchestrator passes: --x-prior --x-tsv PREFIX.quickview.tsv
+
+Ensemble + Outputs:
+  --ensemble STR         union|majority|strict [majority]
+  --emit-fastq           write PREFIX.mt.fastq.gz via seqtk
+  --keep-intermediate    keep intermediate files
+  --html-report FILE     write a single HTML summary report
+
+Meta:
+  --version              print version and exit
+  -h, --help             show this help
+EOF
+}
+
+# ---------- core ----------
+polap_cmd_select_mt() {
+	local READS=""
+	local OUT=""
+	local MT_ANCH=""
+	local PT_ANCH=""
+	local PRESET="hifi"
+	local THREADS=8
+	local REDO=0
+
+	# quickview
+	local K_QV=""
+	local S_QV=""
+	local HPC_QV=""
+
+	# coverage cut-auto
+	local XMETHOD="hybrid"
+	local XTAIL=0.05
+	local TAIL_MT=""
+	local TAIL_PT=""
+	local XWIN=0.20
+	local BAND_MAX=2.0
+	local SIGMA_FLOOR=0.03
+
+	# PPR
+	local PPR_K=""
+	local PPR_S=""
+	local PPR_HPC=0
+	local MAX_OCC=200
+	local MIN_SHARED=4
+	local JAC_MIN=0.01
+	local EDGE_NORM=0
+	local TOPK=50
+	local STEPS=2
+	local PPR_ALPHA=0.85
+	local PPR_ITER=30
+	local SCORE_TH=0.0
+
+	# X-prior to PPR
+	local NUC_CUT_LOG10=""
+	local X_SLOPE=0.20
+
+	# ensemble & outputs
+	local ENSEMBLE="majority"
+	local EMIT_FASTQ=0
+	local KEEP_INT=0
+	local HTML_REPORT=""
+
+	# parse args
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--reads)
+			READS="$2"
+			shift 2
+			;;
+		--mt)
+			MT_ANCH="$2"
+			shift 2
+			;;
+		--pt)
+			PT_ANCH="$2"
+			shift 2
+			;;
+		-o | --out)
+			OUT="$2"
+			shift 2
+			;;
+		--preset)
+			PRESET="$2"
+			shift 2
+			;;
+		--threads)
+			THREADS="$2"
+			shift 2
+			;;
+		--redo)
+			REDO=1
+			shift
+			;;
+
+		# quickview
+		-k)
+			K_QV="$2"
+			shift 2
+			;;
+		-s)
+			S_QV="$2"
+			shift 2
+			;;
+		--hpc)
+			HPC_QV="--hpc"
+			shift
+			;;
+
+		# cut-auto (coverage bands)
+		--x-method | --method)
+			XMETHOD="$2"
+			shift 2
+			;;
+		--x-tail | --tail)
+			XTAIL="$2"
+			shift 2
+			;;
+		--tail-mt)
+			TAIL_MT="$2"
+			shift 2
+			;;
+		--tail-pt)
+			TAIL_PT="$2"
+			shift 2
+			;;
+		--x-win | --window-width)
+			XWIN="$2"
+			shift 2
+			;;
+		--band-max)
+			BAND_MAX="$2"
+			shift 2
+			;;
+		--sigma-floor)
+			SIGMA_FLOOR="$2"
+			shift 2
+			;;
+
+		# PPR
+		--ppr-k)
+			PPR_K="$2"
+			shift 2
+			;;
+		--ppr-s)
+			PPR_S="$2"
+			shift 2
+			;;
+		--ppr-hpc)
+			PPR_HPC=1
+			shift
+			;;
+		--max-occ)
+			MAX_OCC="$2"
+			shift 2
+			;;
+		--min-shared)
+			MIN_SHARED="$2"
+			shift 2
+			;;
+		--jaccard-min)
+			JAC_MIN="$2"
+			shift 2
+			;;
+		--edge-norm)
+			EDGE_NORM=1
+			shift
+			;;
+		--topk-nei)
+			TOPK="$2"
+			shift 2
+			;;
+		--steps)
+			STEPS="$2"
+			shift 2
+			;;
+		--ppr-alpha)
+			PPR_ALPHA="$2"
+			shift 2
+			;;
+		--ppr-iter)
+			PPR_ITER="$2"
+			shift 2
+			;;
+		--score-th)
+			SCORE_TH="$2"
+			shift 2
+			;;
+
+		# PPR X-prior
+		--nuc-cut-log10)
+			NUC_CUT_LOG10="$2"
+			shift 2
+			;;
+		--x-slope)
+			X_SLOPE="$2"
+			shift 2
+			;;
+
+		# ensemble & outputs
+		--ensemble)
+			ENSEMBLE="$2"
+			shift 2
+			;;
+		--emit-fastq)
+			EMIT_FASTQ=1
+			shift
+			;;
+		--keep-intermediate)
+			KEEP_INT=1
+			shift
+			;;
+		--html-report)
+			HTML_REPORT="$2"
+			shift 2
+			;;
+
+		--version)
+			echo "select-mt orchestrator (coverage→mt-band + PPR) v0.6.0"
+			return 0
+			;;
+		-h | --help)
+			polap_cmd_select_mt_usage
+			return 0
+			;;
+		*)
+			echo "[error] unknown option: $1" >&2
+			polap_cmd_select_mt_usage
+			return 2
+			;;
+		esac
+	done
+
+	# sanity
+	[[ -z "$READS" || -z "$OUT" || -z "$MT_ANCH" ]] && {
+		polap_cmd_select_mt_usage
+		echo "[error] require --reads, --mt, and -o/--out" >&2
+		return 2
+	}
+
+	# presets (k/s defaults)
+	if [[ "$PRESET" == "hifi" ]]; then
+		[[ -z "$K_QV" ]] && K_QV=121
+		[[ -z "$S_QV" ]] && S_QV=27
+		[[ -z "$PPR_K" ]] && PPR_K=$K_QV
+		[[ -z "$PPR_S" ]] && PPR_S=$S_QV
+	elif [[ "$PRESET" == "ont" ]]; then
+		[[ -z "$K_QV" ]] && K_QV=41
+		[[ -z "$S_QV" ]] && S_QV=17
+		[[ -z "$PPR_K" ]] && PPR_K=$K_QV
+		[[ -z "$PPR_S" ]] && PPR_S=$S_QV
+		[[ -z "$HPC_QV" ]] && HPC_QV="--hpc"
+		[[ $PPR_HPC -eq 0 ]] && PPR_HPC=1
+	else
+		echo "[error] bad --preset: $PRESET" >&2
+		return 2
+	fi
+
+	# paths & tools
+	local OUTDIR
+	OUTDIR="$(dirname -- "$OUT")"
+	[[ "$OUTDIR" == "." ]] && OUTDIR="$PWD"
+	[[ $REDO -eq 1 && -d "$OUTDIR" ]] && rm -rf "$OUTDIR"
+	mkdir -p "$OUTDIR"
+
+	local CUT_AUTO="${_POLAPLIB_DIR}/polap-py-syncfilter-cut-auto.py"
+	local PPR_SEL="${_POLAPLIB_DIR}/polap-py-syncmer-connectivity-select-mt.py"
+	local ENSEMBLE_PY="${_POLAPLIB_DIR}/polap-py-ensemble-mt.py"
+	local REPORT_PY="${_POLAPLIB_DIR}/polap-py-ensemble-report.py"
+
+	command -v syncfilter >/dev/null 2>&1 || {
+		echo "[error] syncfilter missing"
+		return 127
+	}
+	command -v python3 >/dev/null 2>&1 || {
+		echo "[error] python3 missing"
+		return 127
+	}
+	command -v seqtk >/dev/null 2>&1 || {
+		echo "[error] seqtk missing (needed to subset mt-band reads for PPR)"
+		return 127
+	}
+	[[ -f "$CUT_AUTO" ]] || {
+		echo "[error] not found: $CUT_AUTO"
+		return 127
+	}
+	[[ -f "$PPR_SEL" ]] || {
+		echo "[error] not found: $PPR_SEL"
+		return 127
+	}
+	[[ -f "$ENSEMBLE_PY" ]] || {
+		echo "[error] not found: $ENSEMBLE_PY"
+		return 127
+	}
+	if [[ -n "$HTML_REPORT" && ! -f "$REPORT_PY" ]]; then
+		echo "[error] HTML report requested but not found: $REPORT_PY" >&2
+		return 127
+	fi
+
+	# 1) Coverage quickview (compute X)
+	echo "[step] quickview (coverage X)"
+	syncfilter --mode quickview $HPC_QV -k "$K_QV" -s "$S_QV" -t "$THREADS" -o "$OUT" "$READS"
+	mv -f "${OUT}.syncfilter.tsv" "${OUT}.quickview.tsv"
+
+	# 2) Coverage banding (anchors → mt/pt bands)
+	echo "[step] coverage banding (anchors → mt/pt bands)"
+	python3 "$CUT_AUTO" \
+		-i "${OUT}.quickview.tsv" \
+		--method "$XMETHOD" \
+		--tail "$XTAIL" \
+		${TAIL_MT:+--tail-mt "$TAIL_MT"} \
+		${TAIL_PT:+--tail-pt "$TAIL_PT"} \
+		--window-width "$XWIN" \
+		--band-max "$BAND_MAX" \
+		--sigma-floor "$SIGMA_FLOOR" \
+		${PT_ANCH:+--pt "$PT_ANCH"} \
+		${MT_ANCH:+--mt "$MT_ANCH"} \
+		--cuts-out "${OUT}.xcover.cuts.tsv" \
+		--png "${OUT}.xcover.x_hist.png" \
+		--tsv-out "${OUT}.xcover.reclass.tsv"
+
+	# Expect: ${OUT}.xcover.mt.ids (and .pt.ids / .nuclear.ids)
+	if [[ ! -s "${OUT}.xcover.mt.ids" ]]; then
+		echo "[warn] no mt-band reads found by coverage; skipping PPR. Using coverage-only IDs."
+		cp -f "${OUT}.xcover.mt.ids" "${OUT}.ensemble.mt.ids" 2>/dev/null || : >"${OUT}.ensemble.mt.ids"
+		: >"${OUT}.ensemble.nuclear.ids"
+		if [[ -n "$HTML_REPORT" ]]; then
+			python3 "$REPORT_PY" \
+				--prefix "$OUT" \
+				--quickview "${OUT}.quickview.tsv" \
+				--xlda-prefix "${OUT}.xcover" \
+				--ppr-prefix "${OUT}.ppr" \
+				--ensemble-prefix "${OUT}.ensemble" \
+				--title "POLAP mt selection report (coverage only)" \
+				-o "$HTML_REPORT"
+			echo "[report] $HTML_REPORT"
+		fi
+		return 0
+	fi
+
+	# 3) Subset READS to mt-band only for PPR input
+	echo "[step] subset mt-band reads for PPR"
+	awk 'NF{print $1}' "${OUT}.xcover.mt.ids" | sort -u >"${OUT}.xcover.mt.names"
+	local PPR_READS="${OUT}.xcover.mt.fastq"
+	seqtk subseq "$READS" "${OUT}.xcover.mt.names" >"$PPR_READS"
+	if [[ ! -s "$PPR_READS" ]]; then
+		echo "[warn] mt-band fastq empty after subsetting; skipping PPR. Using coverage-only."
+		cp -f "${OUT}.xcover.mt.ids" "${OUT}.ensemble.mt.ids"
+		: >"${OUT}.ensemble.nuclear.ids"
+		[[ $KEEP_INT -eq 0 ]] && rm -f "${OUT}.xcover.mt.names" "$PPR_READS"
+		if [[ -n "$HTML_REPORT" ]]; then
+			python3 "$REPORT_PY" \
+				--prefix "$OUT" \
+				--quickview "${OUT}.quickview.tsv" \
+				--xlda-prefix "${OUT}.xcover" \
+				--ppr-prefix "${OUT}.ppr" \
+				--ensemble-prefix "${OUT}.ensemble" \
+				--title "POLAP mt selection report (coverage only)" \
+				-o "$HTML_REPORT"
+			echo "[report] $HTML_REPORT"
+		fi
+		return 0
+	fi
+
+	# 4) PPR connectivity on the mt-only FASTQ (optional X-prior)
+	echo "[step] PPR (syncmer connectivity) on mt-band reads"
+	local PPR_X_PRIOR_ARGS=()
+	if [[ -n "$NUC_CUT_LOG10" ]]; then
+		PPR_X_PRIOR_ARGS=(--x-prior --x-tsv "${OUT}.quickview.tsv" --nuc-cut-log10 "$NUC_CUT_LOG10" --x-slope "$X_SLOPE")
+	fi
+	python3 "$PPR_SEL" \
+		--reads "$PPR_READS" \
+		--mt "$MT_ANCH" \
+		${PT_ANCH:+--pt "$PT_ANCH"} \
+		-k "$PPR_K" -s "$PPR_S" $([[ $PPR_HPC -eq 1 ]] && echo --hpc) \
+		--max-occ "$MAX_OCC" --min-shared "$MIN_SHARED" --jaccard-min "$JAC_MIN" \
+		$([[ $EDGE_NORM -eq 1 ]] && echo --edge-norm) \
+		--topk-nei "$TOPK" --steps "$STEPS" \
+		--ppr-alpha "$PPR_ALPHA" --ppr-iter "$PPR_ITER" \
+		--score-th "$SCORE_TH" \
+		"${PPR_X_PRIOR_ARGS[@]}" \
+		-o "${OUT}.ppr"
+
+	# 5) Ensemble fusion (coverage vs PPR)
+	echo "[step] ensemble fusion ($ENSEMBLE)"
+	python3 "$ENSEMBLE_PY" \
+		--xlda "${OUT}.xcover.mt.ids" \
+		--ppr "${OUT}.ppr.mt.ids" \
+		${PT_ANCH:+--xlda-pt "${OUT}.xcover.pt.ids"} \
+		-o "${OUT}.ensemble" \
+		--mode "$ENSEMBLE"
+
+	# 6) Emit FASTQ for final mt set (from original full reads)
+	if [[ $EMIT_FASTQ -eq 1 && -s "${OUT}.ensemble.mt.ids" ]]; then
+		echo "[step] emit FASTQ"
+		awk 'NF{print $1}' "${OUT}.ensemble.mt.ids" | sort -u >"${OUT}.ensemble.mt.names"
+		seqtk subseq "$READS" "${OUT}.ensemble.mt.names" | gzip -c >"${OUT}.mt.fastq.gz"
+		echo "[emit] ${OUT}.mt.fastq.gz"
+	fi
+
+	# 7) HTML report
+	if [[ -n "$HTML_REPORT" ]]; then
+		echo "[step] HTML report"
+		python3 "$REPORT_PY" \
+			--prefix "$OUT" \
+			--quickview "${OUT}.quickview.tsv" \
+			--xlda-prefix "${OUT}.xcover" \
+			--ppr-prefix "${OUT}.ppr" \
+			--ensemble-prefix "${OUT}.ensemble" \
+			--title "POLAP mt selection report (coverage + PPR on mt-band)" \
+			-o "$HTML_REPORT"
+		echo "[report] $HTML_REPORT"
+	fi
+
+	# cleanup temps
+	if [[ $KEEP_INT -eq 0 ]]; then
+		rm -f "${OUT}.xcover.mt.names" "${OUT}.xcover.mt.fastq" || true
+	fi
+
+	echo "[done] final IDs: ${OUT}.ensemble.mt.ids"
+}
+
+# ---------- optional standalone dispatch ----------
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+	polap_cmd_select_mt "$@"
+fi

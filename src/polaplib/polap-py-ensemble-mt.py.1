@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+polap-py-ensemble-mt.py  v0.1.0
+
+Fuse method-specific mt ID lists into final calls.
+
+Inputs:
+  --xlda FILE           xlda.mt.ids
+  --ppr  FILE           ppr.mt.ids
+  --xlda-pt FILE        optional xlda.pt.ids (for reporting)
+  -o, --out PREFIX      output prefix (required)
+  --mode union|majority|strict   [majority]
+
+Outputs:
+  <prefix>.mt.ids
+  <prefix>.nuclear.ids
+  <prefix>.report.tsv   (counts & Jaccard)
+"""
+
+import sys, os, argparse
+
+
+def load_ids(p):
+    S = set()
+    if p and os.path.exists(p):
+        with open(p) as fh:
+            for line in fh:
+                line = line.strip()
+                if line:
+                    S.add(line.split()[0])
+    return S
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--xlda", required=True)
+    ap.add_argument("--ppr", required=True)
+    ap.add_argument("--xlda-pt")
+    ap.add_argument("-o", "--out", required=True)
+    ap.add_argument(
+        "--mode", choices=["union", "majority", "strict"], default="majority"
+    )
+    args = ap.parse_args()
+
+    X = load_ids(args.xlda)
+    P = load_ids(args.ppr)
+    PT = load_ids(args.xlda_pt) if args.xlda_pt else set()
+
+    # votes
+    if args.mode == "union":
+        MT = X | P
+    elif args.mode == "strict":  # intersection
+        MT = X & P
+    else:  # majority; with 2 sources this equals intersection
+        MT = X & P
+
+    # (We can't enumerate all nuclear IDs without the full universe;
+    # produce a "negative" list only for reads seen by at least one method.)
+    universe = X | P | PT
+    NUC = (universe - MT) - PT
+
+    os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+    with open(f"{args.out}.mt.ids", "w") as w:
+        for r in sorted(MT):
+            w.write(r + "\n")
+    with open(f"{args.out}.nuclear.ids", "w") as w:
+        for r in sorted(NUC):
+            w.write(r + "\n")
+
+    # small report
+    def jacc(a, b):
+        if not a and not b:
+            return 1.0
+        return len(a & b) / max(1, len(a | b))
+
+    with open(f"{args.out}.report.tsv", "w") as w:
+        w.write("set\tn\n")
+        w.write(f"xlda_mt\t{len(X)}\n")
+        w.write(f"ppr_mt\t{len(P)}\n")
+        w.write(f"pt_xlda\t{len(PT)}\n")
+        w.write(f"ensemble_mt\t{len(MT)}\n")
+        w.write("\njackard\nsetpair\tJ\n")
+        w.write(f"xlda_mt_vs_ppr_mt\t{jacc(X,P):.4f}\n")
+
+    print(f"[ensemble] xlda={len(X)} ppr={len(P)} -> mt={len(MT)}")
+
+
+if __name__ == "__main__":
+    main()

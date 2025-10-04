@@ -1,0 +1,8 @@
+index	sampling_datasize	long_total	long_rate_sample	long_sample_seed	short_total	short_rate_sample	short_sample_seed	expected_genome_size	peak_ram_size_gb	alpha	gfa_number_segments	gfa_number_links	gfa_total_segment_length	num_circular_paths	num_circular_nodes	time	coverage_ref	coverage_target	pident	length	gc	j_candidate	draft_assembly_size	diff
+6	75892138	1088382112	0.0697293139	3059	-1	0.0697293139	3298	194175	9	0.25	3	4	135862	4	4	1m	-1	-1	0	167476	35.79	-1	345872	98
+8	97856184	1088382112	0.0899097687	5712	-1	0.0899097687	5032	170555	9	0.25	3	4	136054	4	4	2m	-1	-1	0	167683	35.81	-1	222608	109
+9	108838211	1088382112	0.0999999998	7880	-1	0.0999999998	3094	463583	9	0.25	10	14	235360	4	4	2m	-1	-1	0	167061	35.78	-1	933929	513
+#mode: 167574
+#sd: 317
+#index: 6
+#n: 3

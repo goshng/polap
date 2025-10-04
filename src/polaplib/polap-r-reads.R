@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+options(warn = -1)
+suppressWarnings(library("ggplot2"))
 suppressPackageStartupMessages({
   library(optparse)
   library(tidyverse)

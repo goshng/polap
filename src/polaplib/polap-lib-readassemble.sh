@@ -175,7 +175,7 @@ _polap_lib_readassemble-select-organelle-reads() {
 	_polap_lib_readassemble-common-variables \
 		annotatedir pt_table mt_table at_table all_table
 
-	_polap_lib_readassemble-annotate-read-pt
+	_polap_lib_readassemble-annotate-read-pt "${type}"
 
 	bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
 		-t "${pt_table}" \
@@ -304,6 +304,7 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 					-l "${resolved_fastq}" \
 					-t pt \
 					-i pt0 -j ptx
+				_polap_lib_file-cleanup -d "${annotatedir}/ptx" -s 5M -a rm
 			fi
 			return
 		fi
@@ -313,6 +314,7 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 			-l "${_arg_long_reads}" \
 			-w "${_arg_single_min}" \
 			-i pt$i -j pt$j
+		_polap_lib_file-cleanup -d "${annotatedir}/pt$j" -s 5M -a rm
 
 		ptdna0_gfa="${annotatedir}/pt$j/30-contigger/graph_final.gfa"
 
@@ -477,6 +479,7 @@ _polap_lib_readassemble-assemble-annotated-read-mt-100k() {
 			-t mt \
 			-i mt$i -j mt$j
 	fi
+	_polap_lib_file-cleanup -d "${annotatedir}/mt$j" -s 5M -a rm
 
 	#######################################################################
 	# BEGIN: function readassemble-ont-pt-iterate_genus_species
@@ -558,6 +561,7 @@ _polap_lib_readassemble-assemble-annotated-read-mt-100k() {
 				-t mt \
 				-i mt$i -j mt$j
 		fi
+		_polap_lib_file-cleanup -d "${annotatedir}/mt$j" -s 5M -a rm
 
 		if [[ -s "${annotatedir}/mt$j/assembly_graph.gfa" ]]; then
 			_polap_lib_mt-extract-dna \
@@ -619,6 +623,7 @@ _polap_lib_readassemble-assemble-annotated-read-mt-100k() {
 			-t mt \
 			-i mt$i -j mt$j
 	fi
+	_polap_lib_file-cleanup -d "${annotatedir}/mt$j" -s 5M -a rm
 
 	_polap_lib_annotate \
 		-o "${annotatedir}" \
@@ -798,6 +803,7 @@ _polap_lib_readassemble-assemble-annotated-read-mt() {
 				-t mt \
 				-i mt$i -j mt$j
 		fi
+		_polap_lib_file-cleanup -d "${annotatedir}/mt$j" -s 5M -a rm
 
 		if [[ -s "${annotatedir}/mt$j/assembly_graph.gfa" ]]; then
 			_polap_lib_mt-extract-dna \
@@ -856,6 +862,7 @@ _polap_lib_readassemble-assemble-annotated-read-mt() {
 			-l "${_arg_long_reads}" \
 			-i mt$i -j mt$j
 	fi
+	_polap_lib_file-cleanup -d "${annotatedir}/mt$j" -s 5M -a rm
 
 	_polap_lib_annotate \
 		-o "${annotatedir}" \
@@ -899,6 +906,9 @@ _polap_lib_readassemble-assemble-annotated-read-mt() {
 
 # be called
 _polap_lib_readassemble-annotated() {
+	# local type="${1:-pt}"
+	# local annotatedir="${_arg_outdir}/annotate-read-${type}"
+
 	local mt="${_arg_inum}"
 	local annotatedir="${_arg_outdir}"
 
@@ -942,8 +952,9 @@ _polap_lib_readassemble-annotated() {
 	fi
 
 	local i
-	for ((i = 0; i < 6; i++)); do
+	for ((i = 0; i < 1; i++)); do
 		local j=$((i + 1))
+		_polap_log0 "i: $i"
 
 		# NOTE: annotate for seeding
 		# select connected components of the mt contigs only
@@ -951,11 +962,13 @@ _polap_lib_readassemble-annotated() {
 			-o "${annotatedir}" \
 			-i mt$i
 
+		_polap_log0 "i: $i"
 		# NOTE: mito seed
 		_polap_lib_seed-mito \
 			-o "${annotatedir}" \
 			-i mt$i -j mt$j
 
+		_polap_log0 "i: $i"
 		if [[ ! -s "${annotatedir}/mt$i/mt.contig.name-mt$j" ]]; then
 			_polap_log0 "No mt seed for mt$j"
 			break
@@ -972,22 +985,34 @@ _polap_lib_readassemble-annotated() {
 				-i mt$i -j mt$j
 		elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
 			_polap_log1 "use the only selected long reads using organelle gene annotation for mtDNA assembly"
-			_polap_lib_assemble-rate \
+			_polap_log0 "i: $i"
+			_polap_lib_assemble-omega \
 				-o "${annotatedir}" \
 				-l "${_arg_long_reads}" \
-				-w "${_arg_single_min}" \
 				-t mt \
 				-i mt$i -j mt$j
-		fi
+			_polap_log0 "i: $i"
 
+			# _polap_lib_assemble-rate \
+			# 	-o "${annotatedir}" \
+			# 	-l "${_arg_long_reads}" \
+			# 	-w "${_arg_single_min}" \
+			# 	-t mt \
+			# 	-i mt$i -j mt$j
+		fi
+		_polap_log0 "i: $i"
+		_polap_lib_file-cleanup -d "${annotatedir}/mt$j" -s 5M -a rm
+
+		_polap_log0 "i: $i"
 		if [[ -s "${annotatedir}/mt$j/assembly_graph.gfa" ]]; then
-			_polap_lib_mt-extract-dna \
-				"${annotatedir}/mt$j/assembly_graph.gfa" \
-				"${annotatedir}/mt$j/mtdna"
+			# _polap_lib_mt-extract-dna \
+			# 	"${annotatedir}/mt$j/assembly_graph.gfa" \
+			# 	"${annotatedir}/mt$j/mtdna"
 
 			_polap_lib_bandage \
 				"${annotatedir}/mt$j/assembly_graph.gfa" \
 				"${annotatedir}/mt$j/assembly_graph.png"
+			_polap_log0 "i: $i"
 
 			ln -sf "mt$j/mtdna/mt.0.fa" \
 				"${annotatedir}/mt.$j.fa"
@@ -998,19 +1023,33 @@ _polap_lib_readassemble-annotated() {
 			ln -sf "mt$j/assembly_graph.png" \
 				"${annotatedir}/mt.$j.png"
 
+			_polap_log0 "i: $i"
 			_polap_log0 "mtDNA assembly: ${annotatedir}/mt.$j.gfa"
 		else
 			_polap_log0 "No mt assembly $j"
 		fi
 
 	done
+
+	_polap_log0 "after the for-loop"
+	_polap_log0 "i: $i"
+	_polap_log0 "j: $j"
+
 	#
 	# END: function readassemble-ont-pt-iterate_genus_species
 	#######################################################################
 
+	# why mt2 not mt1?
+
 	# use the generated reference to assemble a mitochondrial genome.
 	local j=$((i + 1))
+	_polap_log0 "after the j update"
+	_polap_log0 "i: $i"
+	_polap_log0 "j: $j"
 	# polap command: annotate
+	_polap_log0 _polap_lib_annotate \
+		-o "${annotatedir}" \
+		-i mt$i
 	_polap_lib_annotate \
 		-o "${annotatedir}" \
 		-i mt$i
@@ -1035,8 +1074,10 @@ _polap_lib_readassemble-annotated() {
 		_polap_lib_assemble-omega \
 			-o "${annotatedir}" \
 			-l "${_arg_long_reads}" \
+			-t mt \
 			-i mt$i -j mt$j
 	fi
+	_polap_lib_file-cleanup -d "${annotatedir}/mt$j" -s 5M -a rm
 
 	_polap_lib_annotate \
 		-o "${annotatedir}" \
@@ -1065,17 +1106,17 @@ _polap_lib_readassemble-annotated() {
 
 	# final link
 	i=$((j - 1))
-	ln -sf "annotate-read-mt/mt.$i.gfa" \
-		"${_arg_outdir}/mt.0.gfa"
+	ln -sf "mtseed/mt.$i.gfa" \
+		"${_arg_outdir}/../mt.0.gfa"
 
-	ln -sf "annotate-read-mt/mt.$i.png" \
-		"${_arg_outdir}/mt.0.png"
+	ln -sf "mtseed/mt.$i.png" \
+		"${_arg_outdir}/../mt.0.png"
 
-	ln -sf "annotate-read-mt/mt.$j.gfa" \
-		"${_arg_outdir}/mt.1.gfa"
+	ln -sf "mtseed/mt.$j.gfa" \
+		"${_arg_outdir}/../mt.1.gfa"
 
-	ln -sf "annotate-read-mt/mt.$j.png" \
-		"${_arg_outdir}/mt.1.png"
+	ln -sf "mtseed/mt.$j.png" \
+		"${_arg_outdir}/../mt.1.png"
 }
 
 ################################################################################
@@ -1257,6 +1298,7 @@ _polap_lib_readassemble-assemble-annotated-read-nt() {
 				-t mt \
 				-i mt$i -j mt$j
 		fi
+		_polap_lib_file-cleanup -d "${annotatedir}/mt$j" -s 5M -a rm
 
 		# polap command: mt
 		mtdna0_gfa="${annotatedir}/mt$j/30-contigger/graph_final.gfa"
@@ -1312,6 +1354,7 @@ _polap_lib_readassemble-assemble-annotated-read-nt() {
 			-l "${_arg_long_reads}" \
 			-i mt$i -j mt$j
 	fi
+	_polap_lib_file-cleanup -d "${annotatedir}/mt$j" -s 5M -a rm
 
 	_polap_lib_annotate \
 		-o "${annotatedir}" \

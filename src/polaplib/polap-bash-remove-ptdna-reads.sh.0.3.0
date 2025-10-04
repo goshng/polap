@@ -1,0 +1,308 @@
+#!/usr/bin/env bash
+# polap-bash-remove-ptdna-reads.sh
+# Version: v0.3.0
+#
+# Purpose
+#   Remove plastid-origin (ptDNA) reads from long-read data.
+#   Build two plastid isoforms (LSC–IRb–SSC–IRa and LSC–IRb–rev(SSC)–IRa)
+#   by locating IR/SSC on the circular ptDNA, then map reads to EACH
+#   isoform (using a doubled sequence to handle circular boundary) and
+#   drop any read that confidently maps to either form.
+#
+# Flags (renamed as requested):
+#   -r, --reads     : FASTQ(.gz) long reads (required)
+#   -p, --pt-ref    : plastid reference FASTA; single circular contig (required)
+#   -o, --outdir    : output directory [ptfilter.out]
+#   -t, --threads   : threads [16]
+#   --min-ident     : nmatch/alen threshold [0.90]
+#   --min-qcov      : (qend-qstart)/qlen threshold [0.40]
+#   --min-alen      : alen threshold [20]
+#   --dry           : log only; do not execute
+#   -v, --verbose   : verbose notes
+#   --quiet         : quiet
+#   -h, --help      : help
+#
+# Outputs
+#   ${outdir}/panel/pt_isomerA.fa, pt_isomerB.fa
+#   ${outdir}/panel/pt_isomerA.double.fa, pt_isomerB.double.fa
+#   ${outdir}/map/formA.paf, formB.paf
+#   ${outdir}/pt.ids, keep.ids
+#   ${outdir}/reads.pt.fq.gz, reads.nonpt.fq.gz
+#
+# Dependencies
+#   minimap2, seqkit, awk, sort, comm, nucmer, delta-filter, show-coords
+#
+set -euo pipefail
+
+# ────────────────────────────────────────────────────────────────────
+# Base paths: $(_POLAPLIB_DIR) and HELPDIR derived from script name
+# ────────────────────────────────────────────────────────────────────
+_POLAPLIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HELPDIR="${_POLAPLIB_DIR}/remove-ptdna-reads"
+mkdir -p "${HELPDIR}"
+
+# ────────────────────────────────────────────────────────────────────
+# Logging (file:line in every note for easy debugging)
+# ────────────────────────────────────────────────────────────────────
+VERBOSE=1
+QUIET=0
+DRY=0
+LOG_FILE=""
+note() {
+	[[ $QUIET -eq 1 ]] && return 0
+	local src="${BASH_SOURCE[1]##*/}"
+	local ln="${BASH_LINENO[0]}"
+	local ts
+	ts="$(date +'%F %T')"
+	printf "[%s][%s:%s] %s\n" "$ts" "$src" "$ln" "$*" |
+		{ if [[ -n "$LOG_FILE" ]]; then tee -a "$LOG_FILE"; else cat; fi; } \
+			>&2
+}
+
+# ────────────────────────────────────────────────────────────────────
+# CLI
+# ────────────────────────────────────────────────────────────────────
+READS=""
+PT_REF=""
+OUTDIR="ptfilter.out"
+THREADS=16
+MIN_IDENT="0.90"
+MIN_QCOV="0.40"
+MIN_ALEN="20"
+
+usage() {
+	cat <<EOF
+polap-bash-remove-ptdna-reads.sh v0.3.0
+
+Usage:
+  $0 -r reads.fq[.gz] -p pt_ref.fa -o outdir [options]
+
+Options:
+  -r, --reads     FASTQ(.gz) input (required)
+  -p, --pt-ref    plastid reference FASTA (required; single circular contig)
+  -o, --outdir    output directory [${OUTDIR}]
+  -t, --threads   threads [${THREADS}]
+  --min-ident     min identity (nmatch/alen) for PT [${MIN_IDENT}]
+  --min-qcov      min query coverage for PT      [${MIN_QCOV}]
+  --min-alen      min alen for PT                [${MIN_ALEN}]
+  --dry           dry-run (log only)
+  -v, --verbose   increase verbosity
+  --quiet         quiet
+  -h, --help      this help
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+	-r | --reads)
+		READS="$2"
+		shift 2
+		;;
+	-p | --pt-ref)
+		PT_REF="$2"
+		shift 2
+		;;
+	-o | --outdir)
+		OUTDIR="$2"
+		shift 2
+		;;
+	-t | --threads)
+		THREADS="$2"
+		shift 2
+		;;
+	--min-ident)
+		MIN_IDENT="$2"
+		shift 2
+		;;
+	--min-qcov)
+		MIN_QCOV="$2"
+		shift 2
+		;;
+	--min-alen)
+		MIN_ALEN="$2"
+		shift 2
+		;;
+	--dry)
+		DRY=1
+		shift
+		;;
+	-v | --verbose)
+		VERBOSE=$((VERBOSE + 1))
+		shift
+		;;
+	--quiet)
+		QUIET=1
+		shift
+		;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	*)
+		note "ERR unknown arg: $1"
+		usage
+		exit 2
+		;;
+	esac
+done
+
+# ────────────────────────────────────────────────────────────────────
+# Tool check
+# ────────────────────────────────────────────────────────────────────
+require_tools() {
+	local missing=0
+	for t in "$@"; do
+		if ! command -v "$t" >/dev/null 2>&1; then
+			note "ERR tool not found in PATH: $t"
+			missing=1
+		fi
+	done
+	if ((missing == 1)); then
+		note "ERR load modules/conda env and retry."
+		exit 127
+	fi
+}
+
+# ────────────────────────────────────────────────────────────────────
+# Write helper scripts into $HELPDIR (Python, AWK, R stubs)
+# ────────────────────────────────────────────────────────────────────
+
+# 1) Build two plastid isoforms via IR/SSC detection (nucmer-based)
+#    Writes pt_isomerA.fa, pt_isomerB.fa and a coords TSV.
+
+# 2) Make a doubled FASTA from a single-record FASTA (handle boundary)
+PY_DOUBLE="${HELPDIR}/py_make_doubled_fa.py"
+
+# 3) AWK classifier for PAF → pt.ids
+AWK_CLASS="${HELPDIR}/awk_pt_classifier.awk"
+
+# 4) (Optional) tiny R summary (not required by pipeline, included as stub)
+R_SUM="${HELPDIR}/r_pt_summary.R"
+
+require_tools minimap2 seqkit awk sort comm nucmer delta-filter show-coords
+
+[[ -s "$READS" ]] || {
+	note "ERR missing -r/--reads"
+	exit 2
+}
+
+[[ -s "$PT_REF" ]] || {
+	note "ERR missing -p/--pt-ref"
+	exit 2
+}
+
+mkdir -p "$OUTDIR"/{log,panel,map}
+LOG_FILE="$OUTDIR/log/remove_ptdna.log"
+note "START ptDNA removal v0.3.0"
+
+# ────────────────────────────────────────────────────────────────────
+# Build two plastid isoforms and doubled sequences
+# ────────────────────────────────────────────────────────────────────
+PANEL_DIR="$OUTDIR/panel"
+mkdir -p "$PANEL_DIR"
+
+note "Build two plastid isoforms (IR/SSC-driven)"
+ISO_A=""
+ISO_B=""
+if ((!DRY)); then
+
+	bash "${_POLAPLIB_DIR}/polap-bash-pt-isoform.sh" \
+		-r "${PT_REF}" \
+		-o "${PANEL_DIR}"
+
+	ISO_A="$PANEL_DIR/pt_isomerA.fa"
+	ISO_B="$PANEL_DIR/pt_isomerB.fa"
+	[[ -s "$ISO_A" && -s "$ISO_B" ]] ||
+		{
+			note "ERR isoform build failed"
+			exit 0
+		}
+fi
+
+note "Make doubled FASTA for each isoform (handle circular boundary)"
+DBL_A="$PANEL_DIR/pt_isomerA.double.fa"
+DBL_B="$PANEL_DIR/pt_isomerB.double.fa"
+if ((!DRY)); then
+	python "$PY_DOUBLE" "$ISO_A" "$DBL_A"
+	python "$PY_DOUBLE" "$ISO_B" "$DBL_B"
+fi
+
+# ────────────────────────────────────────────────────────────────────
+# Map reads to each doubled isoform and classify pt.ids
+# ────────────────────────────────────────────────────────────────────
+MAP_DIR="$OUTDIR/map"
+mkdir -p "$MAP_DIR"
+PAF_A="$MAP_DIR/formA.paf"
+PAF_B="$MAP_DIR/formB.paf"
+
+note "Map reads → isomerA.double (minimap2 map-ont)"
+if [[ ! -s "$PAF_A" ]]; then
+	((!DRY)) && minimap2 -x map-ont --secondary=yes -N 50 -t "$THREADS" \
+		"$DBL_A" "$READS" >"$PAF_A"
+fi
+
+note "Map reads → isomerB.double (minimap2 map-ont)"
+if [[ ! -s "$PAF_B" ]]; then
+	((!DRY)) && minimap2 -x map-ont --secondary=yes -N 50 -t "$THREADS" \
+		"$DBL_B" "$READS" >"$PAF_B"
+fi
+
+PT_A_IDS="$OUTDIR/pt.formA.ids"
+PT_B_IDS="$OUTDIR/pt.formB.ids"
+PT_IDS="$OUTDIR/pt.ids"
+KEEP_IDS="$OUTDIR/keep.ids"
+
+note "Classify PT matches on each form (ident>=$MIN_IDENT, ""\
+qcov>=$MIN_QCOV, alen>=$MIN_ALEN)"
+if ((!DRY)); then
+	awk -v MID="$MIN_IDENT" -v QC="$MIN_QCOV" -v ALEN="$MIN_ALEN" \
+		-f "$AWK_CLASS" "$PAF_A" | sort -u >"$PT_A_IDS"
+	awk -v MID="$MIN_IDENT" -v QC="$MIN_QCOV" -v ALEN="$MIN_ALEN" \
+		-f "$AWK_CLASS" "$PAF_B" | sort -u >"$PT_B_IDS"
+	sort -u "$PT_A_IDS" "$PT_B_IDS" >"$PT_IDS"
+fi
+
+# KEEP = all reads - PT (union over both forms)
+note "Compute keep.ids = all - pt"
+if ((!DRY)); then
+	seqkit seq -m $MIN_ALEN "$READS" |
+		seqkit fx2tab -ni |
+		sort -u >"$MAP_DIR/all.ids"
+	comm -23 "$MAP_DIR/all.ids" "$PT_IDS" >"$KEEP_IDS"
+fi
+
+# ────────────────────────────────────────────────────────────────────
+# Write filtered FASTQs and summary
+# ────────────────────────────────────────────────────────────────────
+if ((!DRY)); then
+	if [[ -s "$KEEP_IDS" ]]; then
+		note "Write reads.nonpt.fq.gz"
+		seqkit grep -f "$KEEP_IDS" "$READS" -o "$OUTDIR/reads.nonpt.fq.gz"
+	else
+		note "WARN keep.ids empty; skip writing reads.nonpt.fq.gz"
+	fi
+
+	if [[ -s "$PT_IDS" ]]; then
+		note "Write reads.pt.fq.gz"
+		seqkit grep -f "$PT_IDS" "$READS" -o "$OUTDIR/reads.pt.fq.gz"
+	else
+		note "INFO no plastid reads detected under thresholds."
+	fi
+
+	# quick summary
+	ALL_N=$(seqkit stats -T "$READS" 2>/dev/null | awk 'NR==2{print $4}')
+	KEEP_N=$([[ -s "$KEEP_IDS" ]] && wc -l <"$KEEP_IDS" || echo 0)
+	PT_N=$([[ -s "$PT_IDS" ]] && wc -l <"$PT_IDS" || echo 0)
+	note "Summary: total_reads=${ALL_N} keep=${KEEP_N} pt=${PT_N}"
+fi
+
+note "DONE ptDNA removal v0.3.0"
+
+: <<'EXAMPLE'
+Example:
+  polap-bash-remove-ptdna-reads.sh \
+    -r reads.fastq.gz \
+    -p plastid_ref.fa \
+    -o ptfilter.out \
+    -t 32 --min-ident 0.92 --min-qcov 0.5 --min-alen 30
+EXAMPLE

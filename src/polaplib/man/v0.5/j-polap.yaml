@@ -1,0 +1,2831 @@
+references:
+  - DOI: 10.1093/GBE/EVAA108
+    ISSN: 1759-6653
+    author:
+      - family: Jackman
+        given: Shaun D.
+      - family: Coombe
+        given: Lauren
+      - family: Warren
+        given: René L.
+      - family: Kirk
+        given: Heather
+      - family: Trinh
+        given: Eva
+      - family: MacLeod
+        given: Tina
+      - family: Pleasance
+        given: Stephen
+      - family: Pandoh
+        given: Pawan
+      - family: Zhao
+        given: Yongjun
+      - family: Coope
+        given: Robin J. N.
+      - family: Bousquet
+        given: Jean
+      - family: Bohlmann
+        given: Joerg
+      - family: Jones
+        given: Steven J. M.
+      - family: Birol
+        given: Inanc
+    container-title: Genome Biol Evol
+    id: Jackman2020
+    issue: "7"
+    issued:
+      date-parts:
+        - - 2020
+          - 5
+    page: 1174-1179
+    publisher: Oxford University Press (OUP)
+    title: Complete mitochondrial genome of a gymnosperm, sitka spruce (picea sitchensis), indicates a complex physical structure
+    type: article-journal
+    volume: "12"
+  - DOI: 10.1186/S12870-023-04054-9
+    ISSN: 1471-2229
+    author:
+      - family: Xia
+        given: Changying
+      - family: Li
+        given: Jingling
+      - family: Zuo
+        given: Youwei
+      - family: He
+        given: Ping
+      - family: Zhang
+        given: Huan
+      - family: Zhang
+        given: Xiaoxia
+      - family: Wang
+        given: Binru
+      - family: Zhang
+        given: Jiabin
+      - family: Yu
+        given: Jie
+      - family: Deng
+        given: Hongping
+      - family: Xia
+        given: Changying
+      - family: Li
+        given: Jingling
+      - family: Zuo
+        given: Youwei
+      - family: He
+        given: Ping
+      - family: Zhang
+        given: Huan
+      - family: Zhang
+        given: Xiaoxia
+      - family: Wang
+        given: Binru
+      - family: Zhang
+        given: Jiabin
+      - family: Yu
+        given: Jie
+      - family: Deng
+        given: Hongping
+    container-title: BMC Plant Biology
+    id: Xia2023
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2023
+          - 2
+    publisher: Springer Science and Business Media LLC
+    title: Complete mitochondrial genome of thuja sutchuenensis and its implications on evolutionary analysis of complex mitogenome architecture in cupressaceae
+    type: article-journal
+    volume: "23"
+  - DOI: 10.3389/FPLS.2022.1051221
+    ISSN: 1664-462X
+    author:
+      - family: Zhang
+        given: Kun
+      - family: Wang
+        given: Yanjun
+      - family: Zhang
+        given: Xun
+      - family: Han
+        given: Zhiping
+      - family: Shan
+        given: Xiaofei
+    container-title: Front Plant Sci
+    id: Zhang2022
+    issued:
+      date-parts:
+        - - 2022
+          - 11
+    publisher: Frontiers Media SA
+    title: Deciphering the mitochondrial genome of hemerocallis citrina (asphodelaceae) using a combined assembly and comparative genomic strategy
+    type: article-journal
+    volume: "13"
+  - DOI: 10.1093/GBE/EVS042
+    ISSN: 1759-6653
+    author:
+      - family: Mower
+        given: Jeffrey P.
+      - family: Case
+        given: Andrea L.
+      - family: Floro
+        given: Eric R.
+      - family: Willis
+        given: John H.
+    container-title: Genome Biol Evol
+    id: Mower2012
+    issue: "5"
+    issued:
+      date-parts:
+        - - 2012
+    page: 670-686
+    publisher: Oxford University Press (OUP)
+    title: Evidence against equimolarity of large repeat arrangements and a predominant master circle structure of the mitochondrial genome from a monkeyflower (mimulus guttatus) lineage with cryptic CMS
+    type: article-journal
+    volume: "4"
+  - DOI: 10.1038/s41477-020-0618-2
+    ISSN: 2055-0278
+    URL: https://www.nature.com/articles/s41477-020-0618-2
+    abstract: Hornworts comprise a bryophyte lineage that diverged from other extant land plants >400 million years ago and bears unique biological features, including a distinct sporophyte architecture, cyanobacterial symbiosis and a pyrenoid-based carbon-concentrating mechanism (CCM). Here, we provide three high-quality genomes of Anthoceros hornworts. Phylogenomic analyses place hornworts as a sister clade to liverworts plus mosses with high support. The Anthoceros genomes lack repeat-dense centromeres as well as whole-genome duplication, and contain a limited transcription factor repertoire. Several genes involved in angiosperm meristem and stomatal function are conserved in Anthoceros and upregulated during sporophyte development, suggesting possible homologies at the genetic level. We identified candidate genes involved in cyanobacterial symbiosis and found that LCIB, a Chlamydomonas CCM gene, is present in hornworts but absent in other plant lineages, implying a possible conserved role in CCM function. We anticipate that these hornwort genomes will serve as essential references for future hornwort research and comparative studies across land plants.
+    accessed:
+      date-parts:
+        - - 2023
+          - 8
+          - 8
+    author:
+      - family: Li
+        given: Fay-Wei
+      - family: Nishiyama
+        given: Tomoaki
+      - family: Waller
+        given: Manuel
+      - family: Frangedakis
+        given: Eftychios
+      - family: Keller
+        given: Jean
+      - family: Li
+        given: Zheng
+      - family: Fernandez-Pozo
+        given: Noe
+      - family: Barker
+        given: Michael S.
+      - family: Bennett
+        given: Tom
+      - family: Blázquez
+        given: Miguel A.
+      - family: Cheng
+        given: Shifeng
+      - family: Cuming
+        given: Andrew C.
+      - dropping-particle: de
+        family: Vries
+        given: Jan
+      - dropping-particle: de
+        family: Vries
+        given: Sophie
+      - family: Delaux
+        given: Pierre-Marc
+      - family: Diop
+        given: Issa S.
+      - family: Harrison
+        given: C. Jill
+      - family: Hauser
+        given: Duncan
+      - family: Hernández-García
+        given: Jorge
+      - family: Kirbis
+        given: Alexander
+      - family: Meeks
+        given: John C.
+      - family: Monte
+        given: Isabel
+      - family: Mutte
+        given: Sumanth K.
+      - family: Neubauer
+        given: Anna
+      - family: Quandt
+        given: Dietmar
+      - family: Robison
+        given: Tanner
+      - family: Shimamura
+        given: Masaki
+      - family: Rensing
+        given: Stefan A.
+      - family: Villarreal
+        given: Juan Carlos
+      - family: Weijers
+        given: Dolf
+      - family: Wicke
+        given: Susann
+      - family: Wong
+        given: Gane K.-S.
+      - family: Sakakibara
+        given: Keiko
+      - family: Szövényi
+        given: Péter
+    container-title: Nat Plants
+    id: Li2020
+    issue: "3"
+    issued:
+      date-parts:
+        - - 2020
+          - 3
+    keyword: Evolution, Genetics, Genomics, Plant sciences
+    page: 259-272
+    publisher: Nature Publishing Group
+    title: Anthoceros genomes illuminate the origin of land plants and the unique biology of hornworts
+    type: article-journal
+    volume: "6"
+  - DOI: 10.1639/0007-2745-121.1.014
+    URL: https://www.researchgate.net/publication/322642723_Complete_mitochondrial_genome_sequence_of_Anthoceros_angustus_Conservative_evolution_of_the_mitogenomes_in_hornworts
+    author:
+      - family: Dong
+        given: Shanshan
+      - family: Xue
+        given: Jia-Yu
+      - family: Zhang
+        given: Shouzhou
+      - family: Zhang
+        given: Li
+      - family: Wu
+        given: Hong
+      - family: Chen
+        given: Zhiduan
+      - family: Goffinet
+        given: Bernard
+      - family: Liu
+        given: Yang
+    container-title: The Bryologist
+    id: Dong2018
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2018
+          - 1
+    page: "14"
+    publisher: American Bryological and Lichenological Society
+    title: 'Complete mitochondrial genome sequence of anthoceros angustus: Conservative evolution of the mitogenomes in hornworts'
+    title-short: Complete mitochondrial genome sequence of anthoceros angustus
+    type: article-journal
+    volume: "121"
+  - DOI: 10.1371/journal.pcbi.1005595
+    ISSN: 1553-7358
+    URL: https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005595
+    abstract: The Illumina DNA sequencing platform generates accurate but short reads, which can be used to produce accurate but fragmented genome assemblies. Pacific Biosciences and Oxford Nanopore Technologies DNA sequencing platforms generate long reads that can produce complete genome assemblies, but the sequencing is more expensive and error-prone. There is significant interest in combining data from these complementary sequencing technologies to generate more accurate “hybrid” assemblies. However, few tools exist that truly leverage the benefits of both types of data, namely the accuracy of short reads and the structural resolving power of long reads. Here we present Unicycler, a new tool for assembling bacterial genomes from a combination of short and long reads, which produces assemblies that are accurate, complete and cost-effective. Unicycler builds an initial assembly graph from short reads using the de novo assembler SPAdes and then simplifies the graph using information from short and long reads. Unicycler uses a novel semi-global aligner to align long reads to the assembly graph. Tests on both synthetic and real reads show Unicycler can assemble larger contigs with fewer misassemblies than other hybrid assemblers, even when long-read depth and accuracy are low. Unicycler is open source (GPLv3) and available at github.com/rrwick/Unicycler.
+    accessed:
+      date-parts:
+        - - 2023
+          - 8
+          - 9
+    author:
+      - family: Wick
+        given: Ryan R.
+      - family: Judd
+        given: Louise M.
+      - family: Gorrie
+        given: Claire L.
+      - family: Holt
+        given: Kathryn E.
+    container-title: PLOS Comput Biol
+    id: Wick2017
+    issue: "6"
+    issued:
+      date-parts:
+        - - 2017
+          - 6
+    keyword: Bacterial genomics, Genomics, Sequence alignment, Klebsiella pneumoniae, Chromosome pairs, Genome sequencing, Operons, Plasmid construction
+    page: e1005595
+    publisher: Public Library of Science
+    title: 'Unicycler: Resolving bacterial genome assemblies from short and long sequencing reads'
+    title-short: Unicycler
+    type: article-journal
+    volume: "13"
+  - DOI: 10.1038/s41587-019-0072-8
+    ISSN: 1546-1696
+    URL: https://www.nature.com/articles/s41587-019-0072-8
+    abstract: Accurate genome assembly is hampered by repetitive regions. Although long single molecule sequencing reads are better able to resolve genomic repeats than short-read data, most long-read assembly algorithms do not provide the repeat characterization necessary for producing optimal assemblies. Here, we present Flye, a long-read assembly algorithm that generates arbitrary paths in an unknown repeat graph, called disjointigs, and constructs an accurate repeat graph from these error-riddled disjointigs. We benchmark Flye against five state-of-the-art assemblers and show that it generates better or comparable assemblies, while being an order of magnitude faster. Flye nearly doubled the contiguity of the human genome assembly (as measured by the NGA50 assembly quality metric) compared with existing assemblers.
+    accessed:
+      date-parts:
+        - - 2023
+          - 4
+          - 7
+    author:
+      - family: Kolmogorov
+        given: Mikhail
+      - family: Yuan
+        given: Jeffrey
+      - family: Lin
+        given: Yu
+      - family: Pevzner
+        given: Pavel A.
+    container-title: Nat Biotechnol
+    id: Kolmogorov2019
+    issue: "5"
+    issued:
+      date-parts:
+        - - 2019
+          - 5
+    keyword: Computational biology and bioinformatics, Genome, Genome assembly algorithms, Software
+    page: 540-546
+    publisher: Nature Publishing Group
+    title: Assembly of long, error-prone reads using repeat graphs
+    type: article-journal
+    volume: "37"
+  - DOI: 10.1111/1755-0998.13787
+    ISSN: 1755-0998
+    URL: https://github.com/Bean061/ptgaul
+    abstract: 'Although plastid genome (plastome) structure is highly conserved across most seed plants, investigations during the past two decades have revealed several disparately related lineages that experienced substantial rearrangements. Most plastomes contain a large inverted repeat and two single-copy regions, and a few dispersed repeats; however, the plastomes of some taxa harbour long repeat sequences (>300 bp). These long repeats make it challenging to assemble complete plastomes using short-read data, leading to misassemblies and consensus sequences with spurious rearrangements. Single-molecule, long-read sequencing has the potential to overcome these challenges, yet there is no consensus on the most effective method for accurately assembling plastomes using long-read data. We generated a pipeline, plastid Genome Assembly Using Long-read data (ptGAUL), to address the problem of plastome assembly using long-read data from Oxford Nanopore Technologies (ONT) or Pacific Biosciences platforms. We demonstrated the efficacy of the ptGAUL pipeline using 16 published long-read data sets. We showed that ptGAUL quickly produces accurate and unbiased assemblies using only 50× coverage of plastome data. Additionally, we deployed ptGAUL to assemble four new Juncus (Juncaceae) plastomes using ONT long reads. Our results revealed many long repeats and rearrangements in Juncus plastomes compared with basal lineages of Poales. The ptGAUL pipeline is available on GitHub: https://github.com/Bean061/ptgaul.'
+    accessed:
+      date-parts:
+        - - 2023
+          - 4
+          - 10
+    author:
+      - family: Zhou
+        given: Wenbin
+      - family: Armijos
+        given: Carolina E.
+      - family: Lee
+        given: Chaehee
+      - family: Lu
+        given: Ruisen
+      - family: Wang
+        given: Jeremy
+      - family: Ruhlman
+        given: Tracey A.
+      - family: Jansen
+        given: Robert K.
+      - family: Jones
+        given: Alan M.
+      - family: Jones
+        given: Corbin D.
+    container-title: Mol Ecol Resour
+    id: Zhou2023
+    issued:
+      date-parts:
+        - - 2023
+          - 4
+    keyword: chloroplast, Juncaceae, Juncus, long-read assembly, Poales, rearrangement events
+    note: 'ZSCC: 0000001'
+    page: 1442-1457
+    publisher: Wiley
+    title: Plastid Genome Assembly Using Long-read data
+    type: article-journal
+    volume: "23"
+  - DOI: 10.1186/S13059-020-02154-5
+    ISSN: 1474-760X
+    URL: https://github.com/Kinggerm/GetOrganelle
+    author:
+      - family: Jin
+        given: Jian-Jun
+      - family: Yu
+        given: Wen-Bin
+      - family: Yang
+        given: Jun-Bo
+      - family: Song
+        given: Yu
+      - family: dePamphilis
+        given: Claude W.
+      - family: Yi
+        given: Ting-Shuang
+      - family: Li
+        given: De-Zhu
+    container-title: Genome Biol
+    id: Jin2020
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2020
+          - 9
+    page: "241"
+    publisher: Springer Science and Business Media LLC
+    title: 'GetOrganelle: A fast and versatile toolkit for accurate <i>de novo</i> assembly of organelle genomes'
+    title-short: GetOrganelle
+    type: article-journal
+    volume: "21"
+  - DOI: 10.1093/nar/gkw955
+    ISSN: 0305-1048
+    URL: https://doi.org/10.1093/nar/gkw955
+    abstract: The evolution in next-generation sequencing (NGS) technology has led to the development of many different assembly algorithms, but few of them focus on assembling the organelle genomes. These genomes are used in phylogenetic studies, food identification and are the most deposited eukaryotic genomes in GenBank. Producing organelle genome assembly from whole genome sequencing (WGS) data would be the most accurate and least laborious approach, but a tool specifically designed for this task is lacking. We developed a seed-and-extend algorithm that assembles organelle genomes from whole genome sequencing (WGS) data, starting from a related or distant single seed sequence. The algorithm has been tested on several new (Gonioctena intermedia and Avicennia marina) and public (Arabidopsis thaliana and Oryza sativa) whole genome Illumina data sets where it outperforms known assemblers in assembly accuracy and coverage. In our benchmark, NOVOPlasty assembled all tested circular genomes in less than 30 min with a maximum memory requirement of 16 GB and an accuracy over 99.99%. In conclusion, NOVOPlasty is the sole de novo assembler that provides a fast and straightforward extraction of the extranuclear genomes from WGS data in one circular high quality contig. The software is open source and can be downloaded at https://github.com/ndierckx/NOVOPlasty.
+    accessed:
+      date-parts:
+        - - 2023
+          - 5
+          - 24
+    author:
+      - family: Dierckxsens
+        given: Nicolas
+      - family: Mardulyn
+        given: Patrick
+      - family: Smits
+        given: Guillaume
+    container-title: Nucleic Acids Res
+    id: Dierckxsens2017
+    issue: "4"
+    issued:
+      date-parts:
+        - - 2017
+          - 2
+    note: 'ZSCC: 0002258'
+    page: e18
+    title: 'NOVOPlasty: De novo assembly of organelle genomes from whole genome data'
+    title-short: NOVOPlasty
+    type: article-journal
+    volume: "45"
+  - DOI: 10.1089/cmb.2012.0021
+    URL: https://www.liebertpub.com/doi/abs/10.1089/cmb.2012.0021
+    abstract: The lion’s share of bacteria in various environments cannot be cloned in the laboratory and thus cannot be sequenced using existing technologies. A major goal of single-cell genomics is to complement gene-centric metagenomic data with whole-genome assemblies of uncultivated organisms. Assembly of single-cell data is challenging because of highly non-uniform read coverage as well as elevated levels of sequencing errors and chimeric reads. We describe SPAdes, a new assembler for both single-cell and standard (multicell) assembly, and demonstrate that it improves on the recently released E+V−SC assembler (specialized for single-cell data) and on popular assemblers Velvet and SoapDeNovo (for multicell data). SPAdes generates single-cell assemblies, providing information about genomes of uncultivatable bacteria that vastly exceeds what may be obtained via traditional metagenomics studies. SPAdes is available online (http://bioinf.spbau.ru/spades). It is distributed as open source software.
+    accessed:
+      date-parts:
+        - - 2023
+          - 4
+          - 7
+    author:
+      - family: Bankevich
+        given: Anton
+      - family: Nurk
+        given: Sergey
+      - family: Antipov
+        given: Dmitry
+      - family: Gurevich
+        given: Alexey A.
+      - family: Dvorkin
+        given: Mikhail
+      - family: Kulikov
+        given: Alexander S.
+      - family: Lesin
+        given: Valery M.
+      - family: Nikolenko
+        given: Sergey I.
+      - family: Pham
+        given: Son
+      - family: Prjibelski
+        given: Andrey D.
+      - family: Pyshkin
+        given: Alexey V.
+      - family: Sirotkin
+        given: Alexander V.
+      - family: Vyahhi
+        given: Nikolay
+      - family: Tesler
+        given: Glenn
+      - family: Alekseyev
+        given: Max A.
+      - family: Pevzner
+        given: Pavel A.
+    container-title: J Comput Biol
+    id: Bankevich2012
+    issue: "5"
+    issued:
+      date-parts:
+        - - 2012
+          - 5
+    keyword: assembly, de Bruijn graph, single cell, sequencing, bacteria
+    page: 455-477
+    publisher: Mary Ann Liebert, Inc., publishers
+    title: 'SPAdes: A New Genome Assembly Algorithm and Its Applications to Single-Cell Sequencing'
+    title-short: SPAdes
+    type: article-journal
+    volume: "19"
+  - DOI: 10.1093/molbev/msad048
+    ISSN: 1537-1719
+    URL: https://doi.org/10.1093/molbev/msad048
+    abstract: As the accuracy and throughput of nanopore sequencing improve, it is increasingly common to perform long-read first de novo genome assemblies followed by polishing with accurate short reads. We briefly introduce FMLRC2, the successor to the original FM-index Long Read Corrector (FMLRC), and illustrate its performance as a fast and accurate de novo assembly polisher for both bacterial and eukaryotic genomes.
+    accessed:
+      date-parts:
+        - - 2023
+          - 5
+          - 31
+    author:
+      - family: Mak
+        given: Q X Charles
+      - family: Wick
+        given: Ryan R
+      - family: Holt
+        given: James Matthew
+      - family: Wang
+        given: Jeremy R
+    container-title: Mol Biol Evol
+    id: Mak2023
+    issue: "3"
+    issued:
+      date-parts:
+        - - 2023
+          - 3
+    page: msad048
+    publisher: Oxford University Press (OUP)
+    title: Polishing <i>de novo</i> Nanopore assemblies of Bacteria and Eukaryotes with FMLRC2
+    type: article-journal
+    volume: "40"
+  - DOI: 10.1093/bioinformatics/btv383
+    ISSN: 1367-4803
+    URL: https://doi.org/10.1093/bioinformatics/btv383
+    abstract: 'Summary: Although de novo assembly graphs contain assembled contigs (nodes), the connections between those contigs (edges) are difficult for users to access. Bandage (a Bioinformatics Application for Navigating De novo Assembly Graphs Easily) is a tool for visualizing assembly graphs with connections. Users can zoom in to specific areas of the graph and interact with it by moving nodes, adding labels, changing colors and extracting sequences. BLAST searches can be performed within the Bandage graphical user interface and the hits are displayed as highlights in the graph. By displaying connections between contigs, Bandage presents new possibilities for analyzing de novo assemblies that are not possible through investigation of contigs alone.Availability and implementation: Source code and binaries are freely available at https://github.com/rrwick/Bandage. Bandage is implemented in C++ and supported on Linux, OS X and Windows. A full feature list and screenshots are available at http://rrwick.github.io/Bandage.Contact:  rrwick@gmail.comSupplementary information  :  Supplementary data are available at Bioinformatics online.'
+    accessed:
+      date-parts:
+        - - 2023
+          - 4
+          - 7
+    author:
+      - family: Wick
+        given: Ryan R.
+      - family: Schultz
+        given: Mark B.
+      - family: Zobel
+        given: Justin
+      - family: Holt
+        given: Kathryn E.
+    container-title: Method Biochem Anal
+    id: Wick2015
+    issue: "20"
+    issued:
+      date-parts:
+        - - 2015
+          - 10
+    page: 3350-3352
+    publisher: Oxford University Press (OUP)
+    title: 'Bandage: Interactive visualization of <i>de novo</i> genome assemblies'
+    title-short: Bandage
+    type: article-journal
+    volume: "31"
+  - DOI: 10.1186/s12859-017-1927-y
+    ISSN: 1471-2105
+    URL: https://doi.org/10.1186/s12859-017-1927-y
+    abstract: Whole-genome sequencing (WGS) projects provide short read nucleotide sequences from nuclear and possibly organelle DNA depending on the source of origin. Mitochondrial DNA is present in animals and fungi, while plants contain DNA from both mitochondria and chloroplasts. Current techniques for separating organelle reads from nuclear reads in WGS data require full reference or partial seed sequences for assembling.
+    accessed:
+      date-parts:
+        - - 2023
+          - 6
+          - 12
+    author:
+      - family: Al-Nakeeb
+        given: Kosai
+      - family: Petersen
+        given: Thomas Nordahl
+      - family: Sicheritz-Pontén
+        given: Thomas
+    container-title: BMC Bioinf
+    id: AlNakeeb2017
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2017
+          - 11
+    keyword: Mitochondrial dna, K-mer, Next-generation sequencing, De novo assembly
+    page: "510"
+    title: 'Norgal: Extraction and de novo assembly of mitochondrial DNA from whole-genome sequencing data'
+    title-short: Norgal
+    type: article-journal
+    volume: "18"
+  - DOI: 10.1093/bioinformatics/bty191
+    URL: https://doi.org/10.1093/bioinformatics/bty191
+    author:
+      - family: Li
+        given: Heng
+    container-title: Method Biochem Anal
+    id: Li2018
+    issue: "18"
+    issued:
+      date-parts:
+        - - 2018
+          - 5
+    page: 3094-3100
+    publisher: Oxford University Press (OUP)
+    title: 'Minimap2: Pairwise alignment for nucleotide sequences'
+    title-short: Minimap2
+    type: article-journal
+    volume: "34"
+  - DOI: 10.1089/10665270050081478
+    URL: https://www.liebertpub.com/doi/10.1089/10665270050081478
+    abstract: For aligning DNA sequences that differ only by sequencing errors, or by equivalent errors from other sources, a greedy algorithm can be much faster than traditional dynamic programming approaches and yet produce an alignment that is guaranteed to be theoretically optimal. We introduce a new greedy alignment algorithm with particularly good performance and show that it computes the same alignment as does a certain dynamic programming algorithm, while executing over 10 times faster on appropriate data. An implementation of this algorithm is currently used in a program that assembles the UniGene database at the National Center for Biotechnology Information.
+    accessed:
+      date-parts:
+        - - 2023
+          - 8
+          - 9
+    author:
+      - family: Zhang
+        given: Zheng
+      - family: Schwartz
+        given: Scott
+      - family: Wagner
+        given: Lukas
+      - family: Miller
+        given: Webb
+    container-title: J Comput Biol
+    id: Zhang2000
+    issue: 1-2
+    issued:
+      date-parts:
+        - - 2000
+          - 2
+    keyword: SEQUENCE ALIGNMENT, GREEDY ALGORITHMS, DYNAMIC PROGRAMMING
+    page: 203-214
+    publisher: Mary Ann Liebert, Inc., publishers
+    title: A Greedy Algorithm for Aligning DNA Sequences
+    type: article-journal
+    volume: "7"
+  - DOI: 10.1093/nar/25.17.3389
+    ISSN: 0305-1048
+    URL: https://doi.org/10.1093/nar/25.17.3389
+    abstract: The BLAST programs are widely used tools for searching protein and DNA databases for sequence similarities. For protein comparisons, a variety of definitional, algorithmic and statistical refinements described here permits the execution time of the BLAST programs to be decreased substantially while enhancing their sensitivity to weak similarities. A new criterion for triggering the extension of word hits, combined with a new heuristic for generating gapped alignments, yields a gapped BLAST program that runs at approximately three times the speed of the original. In addition, a method is introduced for automatically combining statistically significant alignments produced by BLAST into a position-specific score matrix, and searching the database using this matrix. The resulting Position-Specific Iterated BLAST (PSIBLAST) program runs at approximately the same speed per iteration as gapped BLAST, but in many cases is much more sensitive to weak but biologically relevant sequence similarities. PSI-BLAST is used to uncover several new and interesting members of the BRCT superfamily.
+    author:
+      - family: Altschul
+        given: Stephen F.
+      - family: Madden
+        given: Thomas L.
+      - family: Schäffer
+        given: Alejandro A.
+      - family: Zhang
+        given: Jinghui
+      - family: Zhang
+        given: Zheng
+      - family: Miller
+        given: Webb
+      - family: Lipman
+        given: David J.
+    container-title: Nucleic Acids Res
+    id: Altschul1997
+    issue: "17"
+    issued:
+      date-parts:
+        - - 1997
+          - 9
+    page: 3389-3402
+    title: 'Gapped BLAST and PSI-BLAST: A new generation of protein database search programs'
+    type: article-journal
+    volume: "25"
+  - DOI: 10.1093/bioinformatics/btr011
+    ISSN: 1367-4803
+    URL: https://doi.org/10.1093/bioinformatics/btr011
+    abstract: 'Motivation: Counting the number of occurrences of every k-mer (substring of length k) in a long string is a central subproblem in many applications, including genome assembly, error correction of sequencing reads, fast multiple sequence alignment and repeat detection. Recently, the deep sequence coverage generated by next-generation sequencing technologies has caused the amount of sequence to be processed during a genome project to grow rapidly, and has rendered current k-mer counting tools too slow and memory intensive. At the same time, large multicore computers have become commonplace in research facilities allowing for a new parallel computational paradigm.Results: We propose a new k-mer counting algorithm and associated implementation, called Jellyfish, which is fast and memory efficient. It is based on a multithreaded, lock-free hash table optimized for counting k-mers up to 31 bases in length. Due to their flexibility, suffix arrays have been the data structure of choice for solving many string problems. For the task of k-mer counting, important in many biological applications, Jellyfish offers a much faster and more memory-efficient solution.Availability: The Jellyfish software is written in C++ and is GPL licensed. It is available for download at http://www.cbcb.umd.edu/software/jellyfish.Contact:  gmarcais@umd.eduSupplementary information:  Supplementary data are available at Bioinformatics online.'
+    accessed:
+      date-parts:
+        - - 2023
+          - 8
+          - 9
+    author:
+      - family: Marçais
+        given: Guillaume
+      - family: Kingsford
+        given: Carl
+    container-title: Method Biochem Anal
+    id: Marcais2011
+    issue: "6"
+    issued:
+      date-parts:
+        - - 2011
+          - 3
+    page: 764-770
+    title: A fast, lock-free approach for efficient parallel counting of occurrences of k-mers
+    type: article-journal
+    volume: "27"
+  - DOI: 10.1371/journal.pone.0163962
+    ISSN: 1932-6203
+    URL: https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0163962
+    abstract: FASTA and FASTQ are basic and ubiquitous formats for storing nucleotide and protein sequences. Common manipulations of FASTA/Q file include converting, searching, filtering, deduplication, splitting, shuffling, and sampling. Existing tools only implement some of these manipulations, and not particularly efficiently, and some are only available for certain operating systems. Furthermore, the complicated installation process of required packages and running environments can render these programs less user friendly. This paper describes a cross-platform ultrafast comprehensive toolkit for FASTA/Q processing. SeqKit provides executable binary files for all major operating systems, including Windows, Linux, and Mac OSX, and can be directly used without any dependencies or pre-configurations. SeqKit demonstrates competitive performance in execution time and memory usage compared to similar tools. The efficiency and usability of SeqKit enable researchers to rapidly accomplish common FASTA/Q file manipulations. SeqKit is open source and available on Github at https://github.com/shenwei356/seqkit.
+    accessed:
+      date-parts:
+        - - 2023
+          - 8
+          - 9
+    author:
+      - family: Shen
+        given: Wei
+      - family: Le
+        given: Shuai
+      - family: Li
+        given: Yan
+      - family: Hu
+        given: Fuquan
+    container-title: PLOS ONE
+    id: Shen2016
+    issue: "10"
+    issued:
+      date-parts:
+        - - 2016
+          - 10
+    keyword: Computer hardware, Programming languages, FASTA searching, Operating systems, Algorithms, Computer software, Human genomics, Nucleotide sequencing
+    page: e0163962
+    publisher: Public Library of Science
+    title: 'SeqKit: A cross-platform and ultrafast toolkit for FASTA/Q file manipulation'
+    title-short: SeqKit
+    type: article-journal
+    volume: "11"
+  - DOI: 10.48550/arXiv.1308.2012
+    URL: http://arxiv.org/abs/1308.2012
+    abstract: 'Background: With the fast development of next generation sequencing technologies, increasing numbers of genomes are being de novo sequenced and assembled. However, most are in fragmental and incomplete draft status, and thus it is often difficult to know the accurate genome size and repeat content. Furthermore, many genomes are highly repetitive or heterozygous, posing problems to current assemblers utilizing short reads. Therefore, it is necessary to develop efficient assembly-independent methods for accurate estimation of these genomic characteristics. Results: Here we present a framework for modeling the distribution of k-mer frequency from sequencing data and estimating the genomic characteristics such as genome size, repeat structure and heterozygous rate. By introducing novel techniques of k-mer individuals, float precision estimation, and proper treatment of sequencing error and coverage bias, the estimation accuracy of our method is significantly improved over existing methods. We also studied how the various genomic and sequencing characteristics affect the estimation accuracy using simulated sequencing data, and discussed the limitations on applying our method to real sequencing data. Conclusion: Based on this research, we show that the k-mer frequency analysis can be used as a general and assembly-independent method for estimating genomic characteristics, which can improve our understanding of a species genome, help design the sequencing strategy of genome projects, and guide the development of assembly algorithms. The programs developed in this research are written using C/C++, and freely accessible at Github URL (https://github.com/fanagislab/GCE) or BGI ftp ( ftp://ftp.genomics.org.cn/pub/gce).'
+    accessed:
+      date-parts:
+        - - 2023
+          - 8
+          - 9
+    annote: 'Comment: In total, 47 pages include maintext and supplemental. 7 maintext figures, 3 tables, 6 supplemental figures, 5 supplemental tables'
+    author:
+      - family: Liu
+        given: Binghang
+      - family: Shi
+        given: Yujian
+      - family: Yuan
+        given: Jianying
+      - family: Hu
+        given: Xuesong
+      - family: Zhang
+        given: Hao
+      - family: Li
+        given: Nan
+      - family: Li
+        given: Zhenyu
+      - family: Chen
+        given: Yanxiang
+      - family: Mu
+        given: Desheng
+      - family: Fan
+        given: Wei
+    id: Liu2020
+    issued:
+      date-parts:
+        - - 2020
+          - 2
+    keyword: Quantitative Biology - Genomics
+    note: 'arXiv:1308.2012 [q-bio] type: article'
+    publisher: arXiv; arXiv
+    title: Estimation of genomic characteristics by analyzing k-mer frequency in de novo genome projects
+    type: report
+  - DOI: 10.1093/bioinformatics/btl158
+    ISSN: 1367-4803
+    URL: https://doi.org/10.1093/bioinformatics/btl158
+    abstract: 'Motivation: In 2001 and 2002, we published two papers (Bioinformatics, 17, 282–283, Bioinformatics, 18, 77–82) describing an ultrafast protein sequence clustering program called cd-hit. This program can efficiently cluster a huge protein database with millions of sequences. However, the applications of the underlying algorithm are not limited to only protein sequences clustering, here we present several new programs using the same algorithm including cd-hit-2d, cd-hit-est and cd-hit-est-2d. Cd-hit-2d compares two protein datasets and reports similar matches between them; cd-hit-est clusters a DNA/RNA sequence database and cd-hit-est-2d compares two nucleotide datasets. All these programs can handle huge datasets with millions of sequences and can be hundreds of times faster than methods based on the popular sequence comparison and database search tools, such as BLAST.Availability:  Contact:  liwz@sdsc.edu'
+    accessed:
+      date-parts:
+        - - 2023
+          - 8
+          - 9
+    author:
+      - family: Li
+        given: Weizhong
+      - family: Godzik
+        given: Adam
+    container-title: Method Biochem Anal
+    id: Li2006
+    issue: "13"
+    issued:
+      date-parts:
+        - - 2006
+          - 7
+    page: 1658-1659
+    title: 'Cd-hit: A fast program for clustering and comparing large sets of protein or nucleotide sequences'
+    title-short: Cd-hit
+    type: article-journal
+    volume: "22"
+  - DOI: 10.1093/bioinformatics/btq033
+    ISSN: 1367-4803
+    author:
+      - family: Quinlan
+        given: Aaron R.
+      - family: Hall
+        given: Ira M.
+    container-title: Method Biochem Anal
+    id: Quinlan2010
+    issue: "6"
+    issued:
+      date-parts:
+        - - 2010
+          - 3
+    page: 841-842
+    publisher: Oxford Academic
+    title: 'BEDTools: a flexible suite of utilities for comparing genomic features'
+    type: article-journal
+    volume: "26"
+  - DOI: 10.1371/journal.pone.0016404
+    ISSN: 1932-6203
+    URL: https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0016404
+    abstract: The mitochondrial genomes of seed plants are exceptionally fluid in size, structure, and sequence content, with the accumulation and activity of repetitive sequences underlying much of this variation. We report the first fully sequenced mitochondrial genome of a legume, Vigna radiata (mung bean), and show that despite its unexceptional size (401,262 nt), the genome is unusually depauperate in repetitive DNA and "promiscuous" sequences from the chloroplast and nuclear genomes. Although Vigna lacks the large, recombinationally active repeats typical of most other seed plants, a PCR survey of its modest repertoire of short (38–297 nt) repeats nevertheless revealed evidence for recombination across all of them. A set of novel control assays showed, however, that these results could instead reflect, in part or entirely, artifacts of PCR-mediated recombination. Consequently, we recommend that other methods, especially high-depth genome sequencing, be used instead of PCR to infer patterns of plant mitochondrial recombination. The average-sized but repeat- and feature-poor mitochondrial genome of Vigna makes it ever more difficult to generalize about the factors shaping the size and sequence content of plant mitochondrial genomes.
+    accessed:
+      date-parts:
+        - - 2023
+          - 8
+          - 11
+    author:
+      - family: Alverson
+        given: Andrew J.
+      - family: Zhuo
+        given: Shi
+      - family: Rice
+        given: Danny W.
+      - family: Sloan
+        given: Daniel B.
+      - family: Palmer
+        given: Jeffrey D.
+    container-title: PLOS ONE
+    id: Alverson2011
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2011
+          - 1
+    keyword: Mitochondria, Plant genomics, Genomics, Polymerase chain reaction, Recombination-based assay, Seeds, DNA recombination, Mitochondrial DNA
+    page: e16404
+    publisher: Public Library of Science
+    title: The Mitochondrial Genome of the Legume Vigna radiata and the Analysis of Recombination across Short Mitochondrial Repeats
+    type: article-journal
+    volume: "6"
+  - DOI: 10.1093/bioinformatics/btab004
+    ISSN: 1367-4803
+    URL: https://doi.org/10.1093/bioinformatics/btab004
+    abstract: 'De Bruijn graphs can be constructed from short reads efficiently and have been used for many purposes. Traditionally, long-read sequencing technologies have had too high error rates for de Bruijn graph-based methods. Recently, HiFi reads have provided a combination of long-read length and low error rate, which enables de Bruijn graphs to be used with HiFi reads.We have implemented MBG, a tool for building sparse de Bruijn graphs from HiFi reads. MBG outperforms existing tools for building dense de Bruijn graphs and can build a graph of 50× coverage whole human genome HiFi reads in four hours on a single core. MBG also assembles the bacterial E.coli genome into a single contig in 8 s.Package manager: https://anaconda.org/bioconda/mbg and source code: https://github.com/maickrau/MBG.Supplementary data are available at Bioinformatics online.'
+    accessed:
+      date-parts:
+        - - 2023
+          - 8
+          - 11
+    author:
+      - family: Rautiainen
+        given: Mikko
+      - family: Marschall
+        given: Tobias
+    container-title: Method Biochem Anal
+    id: Rautiainen2021
+    issue: "16"
+    issued:
+      date-parts:
+        - - 2021
+          - 8
+    page: 2476-2478
+    title: 'MBG: Minimizer-based sparse de Bruijn Graph construction'
+    title-short: MBG
+    type: article-journal
+    volume: "37"
+  - DOI: 10.1186/1471-2164-14-202
+    ISSN: 1471-2164
+    URL: https://doi.org/10.1186/1471-2164-14-202
+    abstract: Perennial ryegrass (Lolium perenne L.) is one of the most important forage and turf grass species of temperate regions worldwide. Its mitochondrial genome is inherited maternally and contains genes that can influence traits of agricultural importance. Moreover, the DNA sequence of mitochondrial genomes has been established and compared for a large number of species in order to characterize evolutionary relationships. Therefore, it is crucial to understand the organization of the mitochondrial genome and how it varies between and within species. Here, we report the first de novo assembly and annotation of the complete mitochondrial genome from perennial ryegrass.
+    accessed:
+      date-parts:
+        - - 2023
+          - 8
+          - 25
+    author:
+      - family: Islam
+        given: Md Shofiqul
+      - family: Studer
+        given: Bruno
+      - family: Byrne
+        given: Stephen L.
+      - family: Farrell
+        given: Jacqueline D.
+      - family: Panitz
+        given: Frank
+      - family: Bendixen
+        given: Christian
+      - family: Møller
+        given: Ian Max
+      - family: Asp
+        given: Torben
+    container-title: BMC Genomics
+    id: Islam2013
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2013
+          - 3
+    keyword: De novo assembly, Mitochondrial gene expression, Mitochondrial genome, Next-generation sequencing, Perennial ryegrass (Lolium perenne L.)
+    page: "202"
+    title: The genome and transcriptome of perennial ryegrass mitochondria
+    type: article-journal
+    volume: "14"
+  - DOI: 10.1093/bib/bbaa429
+    ISSN: 1477-4054
+    PMID: "33515000"
+    abstract: Over the past decade, the field of next-generation sequencing (NGS) has seen dramatic advances in methods and a decrease in costs. Consequently, a large expansion of data has been generated by NGS, most of which have originated from RNA-sequencing (RNA-seq) experiments. Because mitochondrial genes are expressed in most eukaryotic cells, mitochondrial mRNA sequences are usually co-sequenced within the target transcriptome, generating data that are commonly underused or discarded. Here, we present MITGARD, an automated pipeline that reliably recovers the mitochondrial genome from RNA-seq data from various sources. The pipeline identifies mitochondrial sequence reads based on a phylogenetically related reference, assembles them into contigs, and extracts a complete mtDNA for the target species. We demonstrate that MITGARD can reconstruct the mitochondrial genomes of several species throughout the tree of life. We noticed that MITGARD can recover the mitogenomes in different sequencing schemes and even in a scenario of low-sequencing depth. Moreover, we showed that the use of references from congeneric species diverging up to 30 million years ago (MYA) from the target species is sufficient to recover the entire mitogenome, whereas the use of species diverging between 30 and 60 MYA allows the recovery of most mitochondrial genes. Additionally, we provide a case study with original data in which we estimate a phylogenetic tree of snakes from the genus Bothrops, further demonstrating that MITGARD is suitable for use on biodiversity projects. MITGARD is then a valuable tool to obtain high-quality information for studies focusing on the phylogenetic and evolutionary aspects of eukaryotes and provides data for easily identifying a sample using barcoding, and to check for cross-contamination using third-party tools.
+    author:
+      - family: Nachtigall
+        given: Pedro G.
+      - family: Grazziotin
+        given: Felipe G.
+      - family: Junqueira-de-Azevedo
+        given: Inácio L. M.
+    container-title: Briefings in bioinformatics
+    id: Nachtigall2021
+    issued:
+      date-parts:
+        - - 2021
+          - 9
+    keyword: Animals; Bothrops, classification, genetics; Eukaryotic Cells; Genome, Mitochondrial; RNA-Seq; Software
+    status: ppublish
+    title: 'MITGARD: An automated pipeline for mitochondrial genome assembly in eukaryotic species using RNA-seq data.'
+    title-short: MITGARD
+    type: article-journal
+    volume: "22"
+  - author:
+      - family: Lee
+        given: Jieun
+      - family: Kim
+        given: Sangtae
+      - family: Choi
+        given: Sang Chul
+    container-title: Applications of Plant Sciences
+    id: Lee2024
+    issued:
+      date-parts:
+        - - 2024
+    title: Assembling a plant mitochondrial genome of carex pseudochinensis h. Lév. And vaniot by referencing contigs from a whole-genome assembly
+    type: article-journal
+  - DOI: 10.1093/bioinformatics/btp352
+    ISSN: 1367-4803
+    URL: https://doi.org/10.1093/bioinformatics/btp352
+    abstract: 'Summary: The Sequence Alignment/Map (SAM) format is a generic alignment format for storing read alignments against reference sequences, supporting short and long reads (up to 128 Mbp) produced by different sequencing platforms. It is flexible in style, compact in size, efficient in random access and is the format in which alignments from the 1000 Genomes Project are released. SAMtools implements various utilities for post-processing alignments in the SAM format, such as indexing, variant caller and alignment viewer, and thus provides universal tools for processing read alignments.Availability:  http://samtools.sourceforge.netContact:  rd@sanger.ac.uk'
+    accessed:
+      date-parts:
+        - - 2023
+          - 4
+          - 7
+    author:
+      - family: Li
+        given: Heng
+      - family: Handsaker
+        given: Bob
+      - family: Wysoker
+        given: Alec
+      - family: Fennell
+        given: Tim
+      - family: Ruan
+        given: Jue
+      - family: Homer
+        given: Nils
+      - family: Marth
+        given: Gabor
+      - family: Abecasis
+        given: Goncalo
+      - family: Durbin
+        given: Richard
+      - literal: 1000 Genome Project Data Processing Subgroup
+    container-title: Method Biochem Anal
+    id: Li2009a
+    issue: "16"
+    issued:
+      date-parts:
+        - - 2009
+          - 8
+    page: 2078-2079
+    title: The Sequence Alignment/Map format and SAMtools
+    type: article-journal
+    volume: "25"
+  - DOI: 10.1371/JOURNAL.PGEN.1008373
+    ISSN: 1553-7404
+    author:
+      - family: Kozik
+        given: Alexander
+      - family: Rowan
+        given: Beth A.
+      - family: Lavelle
+        given: Dean
+      - family: Berke
+        given: Lidija
+      - family: Schranz
+        given: M. Eric
+      - family: Michelmore
+        given: Richard W
+      - family: Christensen
+        given: Alan C.
+    container-title: PLOS Genet
+    id: Kozik2019
+    issue: "8"
+    issued:
+      date-parts:
+        - - 2019
+          - 8
+    page: e1008373
+    publisher: Public Library of Science (PLoS)
+    title: 'The alternative reality of plant mitochondrial DNA: One ring does not rule them all'
+    title-short: The alternative reality of plant mitochondrial DNA
+    type: article-journal
+    volume: "15"
+  - DOI: 10.1093/nar/gkx391
+    URL: https://doi.org/10.1093/nar/gkx391
+    author:
+      - family: Tillich
+        given: Michael
+      - family: Lehwark
+        given: Pascal
+      - family: Pellizzer
+        given: Tommaso
+      - family: Ulbricht-Jones
+        given: Elena S.
+      - family: Fischer
+        given: Axel
+      - family: Bock
+        given: Ralph
+      - family: Greiner
+        given: Stephan
+    container-title: Nucleic Acids Res
+    id: Tillich2017
+    issue: W1
+    issued:
+      date-parts:
+        - - 2017
+          - 5
+    page: W6-W11
+    publisher: Oxford University Press (OUP)
+    title: GeSeq  versatile and accurate annotation of organelle genomes
+    type: article-journal
+    volume: "45"
+  - DOI: 10.1038/s41477-024-01883-w
+    ISSN: 2055-0278
+    URL: https://www.nature.com/articles/s41477-024-01883-w
+    abstract: Hornworts, one of the three bryophyte phyla, show some of the deepest divergences in extant land plants, with some families separated by more than 300 million years. Previous hornwort genomes represented only one genus, limiting the ability to infer evolution within hornworts and their early land plant ancestors. Here we report ten new chromosome-scale genomes representing all hornwort families and most of the genera. We found that, despite the deep divergence, synteny was surprisingly conserved across all hornwort genomes, a pattern that might be related to the absence of whole-genome duplication. We further uncovered multiple accessory and putative sex chromosomes that are highly repetitive and CpG methylated. In contrast to autosomes, these chromosomes mostly lack syntenic relationships with one another and are evolutionarily labile. Notable gene retention and losses were identified, including those responsible for flavonoid biosynthesis, stomata patterning and phytohormone reception, which have implications in reconstructing the evolution of early land plants. Together, our pan-phylum genomes revealed an array of conserved and divergent genomic features in hornworts, highlighting the uniqueness of this deeply diverged lineage.
+    accessed:
+      date-parts:
+        - - 2025
+          - 1
+          - 25
+    author:
+      - family: Schafran
+        given: Peter
+      - family: Hauser
+        given: Duncan A.
+      - family: Nelson
+        given: Jessica M.
+      - family: Xu
+        given: Xia
+      - family: Mueller
+        given: Lukas A.
+      - family: Kulshrestha
+        given: Samarth
+      - family: Smalley
+        given: Isabel
+      - dropping-particle: de
+        family: Vries
+        given: Sophie
+      - family: Irisarri
+        given: Iker
+      - dropping-particle: de
+        family: Vries
+        given: Jan
+      - family: Davies
+        given: Kevin
+      - family: Villarreal
+        given: Juan Carlos A.
+      - family: Li
+        given: Fay-Wei
+    container-title: Nat Plants
+    id: Schafran2025
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2025
+          - 1
+    keyword: Evolution, Plant evolution
+    page: 49-62
+    publisher: Nature Publishing Group
+    title: Pan-phylum genomes of hornworts reveal conserved autosomes but dynamic accessory and sex chromosomes
+    type: article-journal
+    volume: "11"
+  - DOI: 10.1186/s12864-023-09256-x
+    ISSN: 1471-2164
+    URL: https://doi.org/10.1186/s12864-023-09256-x
+    abstract: Eutrema salsugineum (2n = 14), a halophyte in the family Brassicaceae, is an attractive model to study abiotic stress tolerance in plants. Two versions of E. salsugineum genomes that previously reported were based on relatively short reads; thus, the repetitive regions were difficult to characterize.
+    accessed:
+      date-parts:
+        - - 2025
+          - 1
+          - 31
+    author:
+      - family: Xiao
+        given: Meng
+      - family: Hao
+        given: Guoqian
+      - family: Guo
+        given: Xinyi
+      - family: Feng
+        given: Landi
+      - family: Lin
+        given: Hao
+      - family: Yang
+        given: Wenjie
+      - family: Chen
+        given: Yanyu
+      - family: Zhao
+        given: Kexin
+      - family: Xiang
+        given: Ling
+      - family: Jiang
+        given: Xinyao
+      - family: Mei
+        given: Dong
+      - family: Hu
+        given: Quanjun
+    container-title: BMC Genomics
+    id: Xiao2023
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2023
+          - 4
+    keyword: Eutrema salsugineum , Adaptation, De novo genome, Halophyte, Genome assembly
+    page: "174"
+    title: A high-quality chromosome-level Eutrema salsugineum genome, an extremophile plant model
+    type: article-journal
+    volume: "24"
+  - DOI: 10.7554/eLife.81050
+    ISSN: 2050-084X
+    URL: https://doi.org/10.7554/eLife.81050
+    abstract: As a first step in innate immunity, pattern recognition receptors (PRRs) recognize the distinct pathogen and herbivore-associated molecular patterns and mediate activation of immune responses, but specific steps in the evolution of new PRR sensing functions are not well understood. We employed comparative genomic and functional analyses to define evolutionary events leading to the sensing of the herbivore-associated peptide inceptin (In11) by the PRR inceptin receptor (INR) in legume plant species. Existing and de novo genome assemblies revealed that the presence of a functional INR gene corresponded with ability to respond to In11 across ~53 million years (my) of evolution. In11 recognition is unique to the clade of Phaseoloid legumes, and only a single clade of INR homologs from Phaseoloids was functional in a heterologous model. The syntenic loci of several non-Phaseoloid outgroup species nonetheless contain non-functional INR-like homologs, suggesting that an ancestral gene insertion event and diversification preceded the evolution of a specific INR receptor function ~28 my ago. Chimeric and ancestrally reconstructed receptors indicated that 16 amino acid differences in the C1 leucine-rich repeat domain and C2 intervening motif mediate gain of In11 recognition. Thus, high PRR diversity was likely followed by a small number of mutations to expand innate immune recognition to a novel peptide elicitor. Analysis of INR evolution provides a model for functional diversification of other germline-encoded PRRs.
+    accessed:
+      date-parts:
+        - - 2025
+          - 1
+          - 31
+    author:
+      - family: Snoeck
+        given: Simon
+      - family: Abramson
+        given: Bradley W
+      - family: Garcia
+        given: Anthony GK
+      - family: Egan
+        given: Ashley N
+      - family: Michael
+        given: Todd P
+      - family: Steinbrenner
+        given: Adam D
+    container-title: eLife
+    editor:
+      - family: Bart
+        given: Rebecca
+      - family: Weigel
+        given: Detlef
+      - family: Prigozhin
+        given: Daniil M
+    id: Snoeck2022
+    issued:
+      date-parts:
+        - - 2022
+          - 11
+    keyword: LRR-RLP, HAMP, ancestral sequence reconstruction, Nicotiana benthamiana, legumes, innate immunity
+    page: e81050
+    publisher: eLife Sciences Publications, Ltd
+    title: Evolutionary gain and loss of a plant pattern-recognition receptor for HAMP recognition
+    type: article-journal
+    volume: "11"
+  - DOI: 10.1080/01621459.1987.10478410
+    ISSN: 1537-274X
+    URL: https://www.tandfonline.com/doi/abs/10.1080/01621459.1987.10478410
+    author:
+      - family: Efron
+        given: Bradley
+    container-title: J Amer Statistical Assoc
+    id: Efron1987
+    issue: "397"
+    issued:
+      date-parts:
+        - - 1987
+          - 3
+    page: 171-185
+    publisher: Informa UK Limited
+    title: Better bootstrap confidence intervals
+    type: article-journal
+    volume: "82"
+  - DOI: 10.1371/journal.pcbi.1011870
+    ISSN: 1553-7358
+    URL: https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011870
+    abstract: Chloroplasts are photosynthetic organelles in algal and plant cells that contain their own genome. Chloroplast genomes are commonly used in evolutionary studies and taxonomic identification and are increasingly becoming a target for crop improvement studies. As DNA sequencing becomes more affordable, researchers are collecting vast swathes of high-quality whole-genome sequence data from laboratory and field settings alike. Whole tissue read libraries sequenced with the primary goal of understanding the nuclear genome will inadvertently contain many reads derived from the chloroplast genome. These whole-genome, whole-tissue read libraries can additionally be used to assemble chloroplast genomes with little to no extra cost. While several tools exist that make use of short-read second generation and third-generation long-read sequencing data for chloroplast genome assembly, these tools may have complex installation steps, inadequate error reporting, poor expandability, and/or lack scalability. Here, we present CLAW (Chloroplast Long-read Assembly Workflow), an easy to install, customise, and use Snakemake tool to assemble chloroplast genomes from chloroplast long-reads found in whole-genome read libraries (https://github.com/aaronphillips7493/CLAW). Using 19 publicly available reference chloroplast genome assemblies and long-read libraries from algal, monocot and eudicot species, we show that CLAW can rapidly produce chloroplast genome assemblies with high similarity to the reference assemblies. CLAW was designed such that users have complete control over parameterisation, allowing individuals to optimise CLAW to their specific use cases. We expect that CLAW will provide researchers (with varying levels of bioinformatics expertise) with an additional resource useful for contributing to the growing number of publicly available chloroplast genome assemblies.
+    accessed:
+      date-parts:
+        - - 2025
+          - 2
+          - 16
+    author:
+      - family: Phillips
+        given: Aaron L.
+      - family: Ferguson
+        given: Scott
+      - family: Burton
+        given: Rachel A.
+      - family: Watson-Haigh
+        given: Nathan S.
+    container-title: PLOS Comput Biol
+    id: Phillips2024
+    issue: "2"
+    issued:
+      date-parts:
+        - - 2024
+          - 2
+    keyword: Chloroplast genome, Genomics, Chloroplasts, Mitochondria, Algae, Dicotyledons, Reptile genomics, Sequence alignment
+    page: e1011870
+    publisher: Public Library of Science
+    title: 'CLAW: An automated Snakemake workflow for the assembly of chloroplast genomes from long-read data'
+    title-short: CLAW
+    type: article-journal
+    volume: "20"
+  - DOI: 10.1093/molbev/msae247
+    ISSN: 1537-1719
+    URL: https://doi.org/10.1093/molbev/msae247
+    abstract: 'Plant cells have two major organelles with their own genomes: chloroplasts and mitochondria. While chloroplast genomes tend to be structurally conserved, the mitochondrial genomes of plants, which are much larger than those of animals, are characterized by complex structural variation. We introduce TIPPo, a user-friendly, reference-free assembly tool that uses PacBio high-fidelity long-read data and that does not rely on genomes from related species or nuclear genome information for the assembly of organellar genomes. TIPPo employs a deep learning model for initial read classification and leverages k-mer counting for further refinement, significantly reducing the impact of nuclear insertions of organellar DNA on the assembly process. We used TIPPo to completely assemble a set of 54 complete chloroplast genomes. No other tool was able to completely assemble this set. TIPPo is comparable with PMAT in assembling mitochondrial genomes from most species but does achieve even higher completeness for several species. We also used the assembled organelle genomes to identify instances of nuclear plastid DNA (NUPTs) and nuclear mitochondrial DNA (NUMTs) insertions. The cumulative length of NUPTs/NUMTs positively correlates with the size of the nuclear genome, suggesting that insertions occur stochastically. NUPTs/NUMTs show predominantly C:G to T:A changes, with the mutated cytosines typically found in CG and CHG contexts, suggesting that degradation of NUPT and NUMT sequences is driven by the known elevated mutation rate of methylated cytosines. Small interfering RNA loci are enriched in NUPTs and NUMTs, consistent with the RdDM pathway mediating DNA methylation in these sequences.'
+    accessed:
+      date-parts:
+        - - 2025
+          - 2
+          - 16
+    author:
+      - family: Xian
+        given: Wenfei
+      - family: Bezrukov
+        given: Ilja
+      - family: Bao
+        given: Zhigui
+      - family: Vorbrugg
+        given: Sebastian
+      - family: Gautam
+        given: Anupam
+      - family: Weigel
+        given: Detlef
+    container-title: Mol Biol Evol
+    id: Xian2025
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2025
+          - 1
+    page: msae247
+    title: 'TIPPo: A user-friendly tool for <i>de novo</i> assembly of organellar genomes with high-fidelity data'
+    title-short: TIPPo
+    type: article-journal
+    volume: "42"
+  - DOI: 10.1007/s11103-011-9762-4
+    ISSN: 1573-5028
+    URL: https://doi.org/10.1007/s11103-011-9762-4
+    abstract: This review bridges functional and evolutionary aspects of plastid chromosome architecture in land plants and their putative ancestors. We provide an overview on the structure and composition of the plastid genome of land plants as well as the functions of its genes in an explicit phylogenetic and evolutionary context. We will discuss the architecture of land plant plastid chromosomes, including gene content and synteny across land plants. Moreover, we will explore the functions and roles of plastid encoded genes in metabolism and their evolutionary importance regarding gene retention and conservation. We suggest that the slow mode at which the plastome typically evolves is likely to be influenced by a combination of different molecular mechanisms. These include the organization of plastid genes in operons, the usually uniparental mode of plastid inheritance, the activity of highly effective repair mechanisms as well as the rarity of plastid fusion. Nevertheless, structurally rearranged plastomes can be found in several unrelated lineages (e.g. ferns, Pinaceae, multiple angiosperm families). Rearrangements and gene losses seem to correlate with an unusual mode of plastid transmission, abundance of repeats, or a heterotrophic lifestyle (parasites or myco-heterotrophs). While only a few functional gene gains and more frequent gene losses have been inferred for land plants, the plastid Ndh complex is one example of multiple independent gene losses and will be discussed in detail. Patterns of ndh-gene loss and functional analyses indicate that these losses are usually found in plant groups with a certain degree of heterotrophy, might rendering plastid encoded Ndh1 subunits dispensable.
+    accessed:
+      date-parts:
+        - - 2025
+          - 2
+          - 16
+    author:
+      - family: Wicke
+        given: Susann
+      - family: Schneeweiss
+        given: Gerald M.
+      - family: dePamphilis
+        given: Claude W.
+      - family: Müller
+        given: Kai F.
+      - family: Quandt
+        given: Dietmar
+    container-title: Plant Mol Biol
+    id: Wicke2011
+    issue: "3"
+    issued:
+      date-parts:
+        - - 2011
+          - 7
+    keyword: Plastid genome, Land plants, Genome evolution, Plastid gene function, Gene retention
+    page: 273-297
+    title: 'The evolution of the plastid chromosome in land plants: Gene content, gene order, gene function'
+    title-short: The evolution of the plastid chromosome in land plants
+    type: article-journal
+    volume: "76"
+  - DOI: 10.1093/gbe/evv069
+    ISSN: 1759-6653
+    URL: https://doi.org/10.1093/gbe/evv069
+    abstract: Within plastid-bearing species, the mutation rate of the plastid genome is often assumed to be greater than that of the mitochondrial genome. This assumption is based on early, pioneering studies of land plant molecular evolution, which uncovered higher rates of synonymous substitution in plastid versus mitochondrial DNAs. However, much of the plastid-containing eukaryotic diversity falls outside of land plants, and the patterns of plastid DNA evolution for embryophytes do not necessarily reflect those of other groups. Recent analyses of plastid and mitochondrial substitution rates in diverse lineages have uncovered very different trends than those recorded for land plants. Here, I explore these new data and argue that for many protists the plastid mutation rate is lower than that of the mitochondrion, including groups with primary or secondary plastids as well as nonphotosynthetic algae. These findings have far-reaching implications for how we view plastid genomes and how their sequences are used for evolutionary analyses, and might ultimately reflect a general tendency toward more efficient DNA repair mechanisms in plastids than in mitochondria.
+    accessed:
+      date-parts:
+        - - 2025
+          - 2
+          - 16
+    author:
+      - family: Smith
+        given: David Roy
+    container-title: Genome Biol Evol
+    id: Smith2015
+    issue: "5"
+    issued:
+      date-parts:
+        - - 2015
+          - 5
+    page: 1227-1234
+    title: 'Mutation Rates in Plastid Genomes: They Are Lower than You Might Think'
+    title-short: Mutation Rates in Plastid Genomes
+    type: article-journal
+    volume: "7"
+  - DOI: 10.1073/pnas.89.22.10648
+    URL: https://www.pnas.org/doi/abs/10.1073/pnas.89.22.10648
+    abstract: Complete nucleotide sequencing shows that the plastid genome of Epifagus virginiana, a nonphotosynthetic parasitic flowering plant, lacks all genes for photosynthesis and chlororespiration found in chloroplast genomes of green plants. The 70,028-base-pair genome contains only 42 genes, at least 38 of which specify components of the gene-expression apparatus of the plastid. Moreover, all chloroplast-encoded RNA polymerase genes and many tRNA and ribosomal protein genes have been lost. Since the genome is functional, nuclear gene products must compensate for some gene losses by means of previously unsuspected import mechanisms that may operate in all plastids. At least one of the four unassigned protein genes in Epifagus plastid DNA must have a nongenetic and nonbioenergetic function and, thereby, serve as the reason for the maintenance of an active genome. Many small insertions in the Epifagus plastid genome create tandem duplications and presumably arose by slippage mispairing during DNA replication. The extensive reduction in genome size in Epifagus reflects an intensification of the same processes of length mutation that govern the amount of noncoding DNA in chloroplast genomes. Remarkably, this massive pruning occurred with a virtual absence of gene order change.
+    accessed:
+      date-parts:
+        - - 2025
+          - 2
+          - 16
+    author:
+      - family: Wolfe
+        given: K H
+      - family: Morden
+        given: C W
+      - family: Palmer
+        given: J D
+    container-title: Proc Natl Acad Sci
+    id: Wolfe1992
+    issue: "22"
+    issued:
+      date-parts:
+        - - 1992
+          - 11
+    page: 10648-10652
+    publisher: Proceedings of the National Academy of Sciences
+    title: Function and evolution of a minimal plastid genome from a nonphotosynthetic parasitic plant.
+    type: article-journal
+    volume: "89"
+  - DOI: 10.1007/s00294-008-0208-8
+    ISSN: 0172-8083
+    PMID: "18696071"
+    URL: https://doi.org/10.1007/s00294-008-0208-8
+    abstract: To date, more than 130 plastid genomes (plastomes) have been completely sequenced. Of those, 12 are strongly reduced plastid genomes from heterotrophic plants or plant-related species that exhibit a parasitic lifestyle. Half of these species are land plants while the other half consists of unicellular species that have evolved from photosynthetic algae. Due to their specialized lifestyle, parasitic lineages experienced a loss of evolutionary pressure on the plastid genome and, in particular, on the photosynthesis-related genes. This made them tolerant for the accumulation of detrimental mutations and deletions in plastid genes. That parasitic plants are naturally occurring plastome mutants makes them a rich source of information concerning plastome evolution and the mechanisms that are involved. This review reports on the progress made in recent years with parasitic plant plastomes and attempts to summarize what we can learn from analysing the genomes of functionally reduced, or cryptic, plastids. Particularly, the loss of genes for a plastid-encoded RNA polymerase as well as an intron maturase and the retention of the gene for the large subunit of the Calvin cycle enzyme Ribulose-1,5-bisphosphate carboxylase/oxygenase (Rubisco) in selected species will be discussed.
+    author:
+      - family: Krause
+        given: Kirsten
+    container-title: Curr Genet
+    id: Krause2008
+    issued:
+      date-parts:
+        - - 2008
+          - 9
+    keyword: Amino Acid Sequence; Chloroplasts, genetics; Eukaryota, genetics, physiology; Genome, Plant; Introns; Magnoliopsida, genetics, physiology; Molecular Sequence Data; Photosynthesis, genetics; Plant Proteins, chemistry; Plastids, genetics; Sequence Homology, Amino Acid; Transcription, Genetic
+    page: 111-121
+    status: ppublish
+    title: 'From chloroplasts to “cryptic” plastids: Evolution of plastid genomes in parasitic plants.'
+    title-short: From chloroplasts to “cryptic” plastids
+    type: article-journal
+    volume: "54"
+  - DOI: 10.1007/s00294-017-0761-0
+    ISSN: 1432-0983
+    PMID: "29026976"
+    URL: https://doi.org/10.1007/s00294-017-0761-0
+    abstract: Chloroplasts are generally known as eukaryotic organelles whose main function is photosynthesis. They perform other functions, however, such as synthesizing isoprenoids, fatty acids, heme, iron sulphur clusters and other essential compounds. In non-photosynthetic lineages that possess plastids, the chloroplast genomes have been reduced and most (or all) photosynthetic genes have been lost. Consequently, non-photosynthetic plastids have also been reduced structurally. Some of these non-photosynthetic or "cryptic" plastids were overlooked or unrecognized for decades. The number of complete plastid genome sequences and/or transcriptomes from non-photosynthetic taxa possessing plastids is rapidly increasing, thus allowing prediction of the functions of non-photosynthetic plastids in various eukaryotic lineages. In some non-photosynthetic eukaryotes with photosynthetic ancestors, no traces of plastid genomes or of plastids have been found, suggesting that they have lost the genomes or plastids completely. This review summarizes current knowledge of non-photosynthetic plastids, their genomes, structures and potential functions in free-living and parasitic plants, algae and protists. We introduce a model for the order of plastid gene losses which combines models proposed earlier for land plants with the patterns of gene retention and loss observed in protists. The rare cases of plastid genome loss and complete plastid loss are also discussed.
+    author:
+      - family: Hadariová
+        given: Lucia
+      - family: Vesteg
+        given: Matej
+      - family: Hampl
+        given: Vladimír
+      - family: Krajčovič
+        given: Juraj
+    container-title: Curr Genet
+    id: Hadariova2018
+    issued:
+      date-parts:
+        - - 2018
+          - 4
+    keyword: Biological Evolution; Chloroplasts, genetics; Cyanobacteria, genetics, growth & development; Genome, genetics; Photosynthesis, genetics; Phylogeny; Plants, genetics; Plastids, genetics; Essential metabolic pathways; Non-photosynthetic plastids; Parasitism; Plastid genome; Plastid loss
+    page: 365-387
+    status: ppublish
+    title: Reductive evolution of chloroplasts in non-photosynthetic plants, algae and protists.
+    type: article-journal
+    volume: "64"
+  - DOI: 10.1093/bioinformatics/btp324
+    ISSN: 1367-4811
+    PMID: "19451168"
+    URL: https://doi.org/10.1093/bioinformatics/btp324
+    abstract: The enormous amount of short reads generated by the new DNA sequencing technologies call for the development of fast and accurate read alignment programs. A first generation of hash table-based methods has been developed, including MAQ, which is accurate, feature rich and fast enough to align short reads from a single individual. However, MAQ does not support gapped alignment for single-end reads, which makes it unsuitable for alignment of longer reads where indels may occur frequently. The speed of MAQ is also a concern when the alignment is scaled up to the resequencing of hundreds of individuals. We implemented Burrows-Wheeler Alignment tool (BWA), a new read alignment package that is based on backward search with Burrows-Wheeler Transform (BWT), to efficiently align short sequencing reads against a large reference sequence such as the human genome, allowing mismatches and gaps. BWA supports both base space reads, e.g. from Illumina sequencing machines, and color space reads from AB SOLiD machines. Evaluations on both simulated and real data suggest that BWA is approximately 10-20x faster than MAQ, while achieving similar accuracy. In addition, BWA outputs alignment in the new standard SAM (Sequence Alignment/Map) format. Variant calling and other downstream analyses after the alignment can be achieved with the open source SAMtools software package. http://maq.sourceforge.net.
+    author:
+      - family: Li
+        given: Heng
+      - family: Durbin
+        given: Richard
+    container-title: Bioinformatics
+    id: Li2009
+    issued:
+      date-parts:
+        - - 2009
+          - 7
+    keyword: Algorithms; Genomics, methods; Sequence Alignment, methods; Sequence Analysis, DNA, methods; Software
+    page: 1754-1760
+    status: ppublish
+    title: Fast and accurate short read alignment with Burrows-Wheeler transform.
+    type: article-journal
+    volume: "25"
+  - DOI: 10.3389/fpls.2024.1430443
+    ISSN: 1664-462X
+    PMID: "39258299"
+    URL: https://doi.org/10.3389/fpls.2024.1430443
+    abstract: Accurate reference genomes are fundamental to understanding biological evolution, biodiversity, hereditary phenomena and diseases. However, many assembled nuclear chromosomes are often contaminated by organelle genomes, which will mislead bioinformatic analysis, and genomic and transcriptomic data interpretation. To address this issue, we developed a tool named Chlomito, aiming at precise identification and elimination of organelle genome contamination from nuclear genome assembly. Compared to conventional approaches, Chlomito utilized new metrics, alignment length coverage ratio (ALCR) and sequencing depth ratio (SDR), thereby effectively distinguishing true organelle genome sequences from those transferred into nuclear genomes via horizontal gene transfer (HGT). The accuracy of Chlomito was tested using sequencing data from Plum, Mango and Arabidopsis . The results confirmed that Chlomito can accurately detect contigs originating from the organelle genomes, and the identified contigs covered most regions of the organelle reference genomes, demonstrating efficiency and precision of Chlomito. Considering user convenience, we further packaged this method into a Docker image, simplified the data processing workflow. Overall, Chlomito provides an efficient, accurate and convenient method for identifying and removing contigs derived from organelle genomes in genomic assembly data, contributing to the improvement of genome assembly quality.
+    author:
+      - family: Song
+        given: Wei
+      - family: Li
+        given: Chong
+      - family: Lu
+        given: Yanming
+      - family: Shen
+        given: Dawei
+      - family: Jia
+        given: Yunxiao
+      - family: Huo
+        given: Yixin
+      - family: Piao
+        given: Weilan
+      - family: Jin
+        given: Hua
+    container-title: Front Plant Sci
+    id: Song2024
+    issued:
+      date-parts:
+        - - 2024
+    keyword: chloroplast genome; chromosome-level assembly; horizontal gene transfer; mitochondrial genome; organelle identification
+    page: "1430443"
+    status: epublish
+    title: 'Chlomito: A novel tool for precise elimination of organelle genome contamination from nuclear genome assembly.'
+    title-short: Chlomito
+    type: article-journal
+    volume: "15"
+  - DOI: 10.1111/1755-0998.12626
+    ISSN: 1755-0998
+    PMID: "27790830"
+    URL: https://doi.org/10.1111/1755-0998.12626
+    abstract: Plastid sequencing is an essential tool in the study of plant evolution. This high-copy organelle is one of the most technically accessible regions of the genome, and its sequence conservation makes it a valuable region for comparative genome evolution, phylogenetic analysis and population studies. Here, we discuss recent innovations and approaches for de novo plastid assembly that harness genomic tools. We focus on technical developments including low-cost sequence library preparation approaches for genome skimming, enrichment via hybrid baits and methylation-sensitive capture, sequence platforms with higher read outputs and longer read lengths, and automated tools for assembly. These developments allow for a much more streamlined assembly than via conventional short-range PCR. Although newer methods make complete plastid sequencing possible for any land plant or green alga, there are still challenges for producing finished plastomes particularly from herbarium material or from structurally divergent plastids such as those of parasitic plants.
+    author:
+      - family: Twyford
+        given: Alex D.
+      - family: Ness
+        given: Rob W.
+    container-title: Mol Ecol Resour
+    id: Twyford2017
+    issued:
+      date-parts:
+        - - 2017
+          - 9
+    keyword: Computational Biology, methods; DNA, Chloroplast, chemistry, genetics; Genome, Plastid; Genomics, methods; Plants, genetics; Sequence Analysis, DNA, methods; chloroplast; genomic; next-generation sequencing; plant evolution; plastid
+    page: 858-868
+    status: ppublish
+    title: Strategies for complete plastid genome sequencing.
+    type: article-journal
+    volume: "17"
+  - DOI: 10.1111/nph.13743
+    ISSN: 1469-8137
+    URL: https://onlinelibrary.wiley.com/doi/abs/10.1111/nph.13743
+    abstract: Rates of nucleotide substitution were previously shown to be several times slower in the plastid inverted repeat (IR) compared with single-copy (SC) regions, suggesting that the IR provides enhanced copy-correction activity. To examine the generality of this synonymous rate dependence on the IR, we compared plastomes from 69 pairs of closely related species representing 52 families of angiosperms, gymnosperms, and ferns. We explored the breadth of IR boundary shifts in land plants and demonstrate that synonymous substitution rates are, on average, 3.7 times slower in IR genes than in SC genes. In addition, genes moved from the SC into the IR exhibit lower synonymous rates consistent with other IR genes, while genes moved from the IR into the SC exhibit higher rates consistent with other SC genes. Surprisingly, however, several plastid genes from Pelargonium, Plantago, and Silene have highly accelerated synonymous rates despite their IR localization. Together, these results provide strong evidence that the duplicative nature of the IR reduces the substitution rate within this region. The anomalously fast-evolving genes in Pelargonium, Plantago, and Silene indicate localized hypermutation, potentially induced by a higher level of error-prone double-strand break repair in these regions, which generates substitutional rate variation.
+    accessed:
+      date-parts:
+        - - 2025
+          - 2
+          - 16
+    author:
+      - family: Zhu
+        given: Andan
+      - family: Guo
+        given: Wenhu
+      - family: Gupta
+        given: Sakshi
+      - family: Fan
+        given: Weishu
+      - family: Mower
+        given: Jeffrey P.
+    container-title: New Phytol
+    id: Zhu2016
+    issue: "4"
+    issued:
+      date-parts:
+        - - 2016
+    keyword: inverted repeat (IR), localized hypermutation, plastid genome (plastome), recombination-mediated repair, synonymous substitution rate, vascular plants
+    page: 1747-1756
+    title: 'Evolutionary dynamics of the plastid inverted repeat: The effects of expansion, contraction, and loss on substitution rates'
+    title-short: Evolutionary dynamics of the plastid inverted repeat
+    type: article-journal
+    volume: "209"
+  - DOI: 10.1186/s12870-021-03053-y
+    ISSN: 1471-2229
+    URL: https://doi.org/10.1186/s12870-021-03053-y
+    abstract: Paphiopedilum is the largest genus of slipper orchids. Previous studies showed that the phylogenetic relationships of this genus are not well resolved, and sparse taxon sampling documented inverted repeat (IR) expansion and small single copy (SSC) contraction of the chloroplast genomes of Paphiopedilum.
+    accessed:
+      date-parts:
+        - - 2025
+          - 2
+          - 16
+    author:
+      - family: Guo
+        given: Yan-Yan
+      - family: Yang
+        given: Jia-Xing
+      - family: Bai
+        given: Ming-Zhu
+      - family: Zhang
+        given: Guo-Qiang
+      - family: Liu
+        given: Zhong-Jian
+    container-title: BMC Plant Biol
+    id: Guo2021
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2021
+          - 5
+    keyword: Orchidaceae, Paphiopedilum , Phylogenomics, Plastome, Boundary shift, IR, SSC boundary, Gene loss, Pseudogenization
+    page: "248"
+    title: 'The chloroplast genome evolution of <i>Venus slipper</i> (Paphiopedilum): IR expansion, SSC contraction, and highly rearranged SSC regions'
+    title-short: The chloroplast genome evolution of Venus slipper (Paphiopedilum)
+    type: article-journal
+    volume: "21"
+  - DOI: 10.1093/hr/uhae023
+    ISSN: 2662-6810
+    URL: https://doi.org/10.1093/hr/uhae023
+    abstract: Complete mitochondrial genomes (mitogenomes) of plants are valuable resources for nucleocytoplasmic interactions, plant evolution, and plant cytoplasmic male sterile line breeding. However, the complete assembly of plant mitogenomes is challenging due to frequent recombination events and horizontal gene transfers. Previous studies have adopted Illumina, PacBio, and Nanopore sequencing data to assemble plant mitogenomes, but the poor assembly completeness, low sequencing accuracy, and high cost limit the sampling capacity. Here, we present an efficient assembly toolkit (PMAT) for de novo assembly of plant mitogenomes using low-coverage HiFi sequencing data. PMAT has been applied to the de novo assembly of 13 broadly representative plant mitogenomes, outperforming existing organelle genome assemblers in terms of assembly accuracy and completeness. By evaluating the assembly of plant mitogenomes from different sequencing data, it was confirmed that PMAT only requires 1 HiFi sequencing data to obtain a complete plant mitogenome. The source code for PMAT is available at https://github.com/bichangwei/PMAT. The developed PMAT toolkit will indeed accelerate the understanding of evolutionary variation and breeding application of plant mitogenomes.
+    author:
+      - family: Bi
+        given: Changwei
+      - family: Shen
+        given: Fei
+      - family: Han
+        given: Fuchuan
+      - family: Qu
+        given: Yanshu
+      - family: Hou
+        given: Jing
+      - family: Xu
+        given: Kewang
+      - family: Xu
+        given: Li-an
+      - family: He
+        given: Wenchuang
+      - family: Wu
+        given: Zhiqiang
+      - family: Yin
+        given: Tongming
+    container-title: Hortic Res
+    id: Bi2024
+    issue: "3"
+    issued:
+      date-parts:
+        - - 2024
+          - 3
+    page: uhae023
+    publisher: Oxford Academic
+    title: 'PMAT: An efficient plant mitogenome assembly toolkit using low-coverage HiFi sequencing data'
+    title-short: PMAT
+    type: article-journal
+    volume: "11"
+  - DOI: 10.1016/j.biochi.2013.09.016
+    ISSN: 0300-9084
+    URL: https://www.sciencedirect.com/science/article/pii/S0300908413003301
+    abstract: Plant mitochondria have a complex and peculiar genetic system. They have the largest genomes, as compared to organelles from other eukaryotic organisms. These can expand tremendously in some species, reaching the megabase range. Nevertheless, whichever the size, the gene content remains modest and restricted to a few polypeptides required for the biogenesis of the oxidative phosphorylation chain complexes, ribosomal proteins, transfer RNAs and ribosomal RNAs. The presence of autonomous plasmids of essentially unknown function further enhances the level of complexity. The physical organization of the plant mitochondrial DNA includes a set of sub-genomic forms resulting from homologous recombination between repeats, with a mixture of linear, circular and branched structures. This material is compacted into membrane-bound nucleoids, which are the inheritance units but also the centers of genome maintenance and expression. Recombination appears to be an essential characteristic of plant mitochondrial genetic processes, both in shaping and maintaining the genome. Under nuclear surveillance, recombination is also the basis for the generation of new mitotypes and is involved in the evolution of the mitochondrial DNA. In line with, or as a consequence of its complex physical organization, replication of the plant mitochondrial DNA is likely to occur through multiple mechanisms, potentially involving recombination processes. We give here a synthetic view of these aspects.
+    accessed:
+      date-parts:
+        - - 2025
+          - 3
+          - 2
+    author:
+      - family: Gualberto
+        given: José M.
+      - family: Mileshina
+        given: Daria
+      - family: Wallet
+        given: Clémentine
+      - family: Niazi
+        given: Adnan Khan
+      - family: Weber-Lotfi
+        given: Frédérique
+      - family: Dietrich
+        given: André
+    collection-title: 'Mitochondria: An organelle for life'
+    container-title: Biochimie
+    id: Gualberto2014
+    issued:
+      date-parts:
+        - - 2014
+          - 5
+    keyword: Mitochondria, mtDNA, Replication, Recombination, Repair
+    page: 107-120
+    title: 'The plant mitochondrial genome: Dynamics and maintenance'
+    title-short: The plant mitochondrial genome
+    type: article-journal
+    volume: "100"
+  - DOI: 10.1093/MOLBEV/MSW024
+    ISSN: 1537-1719
+    abstract: Mitochondrial genomes (mitogenomes) of flowering plants are well known for their extreme diversity in size, structure, gene content, and rates of sequence evolution and recombination. In contrast, little is known about mitogenomic diversity and evolution within gymnosperms. Only a single complete genome sequence is available, from the cycad Cycas taitungensis, while limited information is available for the one draft sequence, from Norway spruce (Picea abies). To examine mitogenomic evolution in gymnosperms, we generated complete genome sequences for the ginkgo tree (Ginkgo biloba) and a gnetophyte (Welwitschia mirabilis). There is great disparity in size, sequence conservation, levels of shared DNA, and functional content among gymnosperm mitogenomes. The Cycas and Ginkgo mitogenomes are relatively small, have low substitution rates, and possess numerous genes, introns, and edit sites; we infer that these properties were present in the ancestral seed plant. By contrast, the Welwitschia mitogenome has an expanded size coupled with accelerated substitution rates and extensive loss of these functional features. The Picea genome has expanded further, to more than 4Mb. With regard to structural evolution, the Cycas and Ginkgo mitogenomes share a remarkable amount of intergenic DNA, which may be related to the limited recombinational activity detected at repeats in Ginkgo. Conversely, the Welwitschia mitogenome shares almost no intergenic DNA with any other seed plant. By conducting the first measurements of rates of DNA turnover in seed plant mitogenomes, we discovered that turnover rates vary by orders of magnitude among species.
+    author:
+      - family: Guo
+        given: Wenhu
+      - family: Grewe
+        given: Felix
+      - family: Fan
+        given: Weishu
+      - family: Young
+        given: Gregory J.
+      - family: Knoop
+        given: Volker
+      - family: Palmer
+        given: Jeffrey D.
+      - family: Mower
+        given: Jeffrey P.
+    container-title: Mol Biol Evol
+    id: Guo2016
+    issue: "6"
+    issued:
+      date-parts:
+        - - 2016
+          - 2
+    page: 1448-1460
+    publisher: Oxford University Press (OUP)
+    title: Ginkgo and welwitschia mitogenomes reveal extreme contrasts in gymnosperm mitochondrial evolution
+    type: article-journal
+    volume: "33"
+  - DOI: 10.1093/nar/gkt371
+    ISSN: 0305-1048
+    abstract: We present an in silico approach for the reconstruction of complete mitochondrial genomes of non-model organisms directly from next-generation sequencing (NGS) data—mitochondrial baiting and iterative mapping (MITObim). The method is straightforward even if only (i) distantly related mitochondrial genomes or (ii) mitochondrial barcode sequences are available as starting-reference sequences or seeds, respectively. We demonstrate the efficiency of the approach in case studies using real NGS data sets of the two monogenean ectoparasites species Gyrodactylus thymalli and Gyrodactylus derjavinoides including their respective teleost hosts European grayling (Thymallus thymallus) and Rainbow trout (Oncorhynchus mykiss). MITObim appeared superior to existing tools in terms of accuracy, runtime and memory requirements and fully automatically recovered mitochondrial genomes exceeding 99.5% accuracy from total genomic DNA derived NGS data sets in $<$24 h using a standard desktop computer. The approach overcomes the limitations of traditional strategies for obtaining mitochondrial genomes for species with little or no mitochondrial sequence information at hand and represents a fast and highly efficient in silico alternative to laborious conventional strategies relying on initial long-range PCR. We furthermore demonstrate the applicability of MITObim for metagenomic/pooled data sets using simulated data. MITObim is an easy to use tool even for biologists with modest bioinformatics experience. The software is made available as open source pipeline under the MIT license at https://github.com/chrishah/MITObim.
+    author:
+      - family: Hahn
+        given: Christoph
+      - family: Bachmann
+        given: Lutz
+      - family: Chevreux
+        given: Bastien
+    container-title: Nucleic Acids Res
+    id: Hahn2013
+    issue: "13"
+    issued:
+      date-parts:
+        - - 2013
+          - 7
+    page: e129
+    publisher: Oxford Academic
+    title: Reconstructing mitochondrial genomes directly from genomic next-generation sequencing reads—a baiting and iterative mapping approach
+    type: article-journal
+    volume: "41"
+  - DOI: 10.1093/bib/bbac522
+    ISSN: 1477-4054
+    abstract: Unlike the typical single circular structure of most animal mitochondrial genomes (mitogenome), the drastic structural variation of plant mitogenomes is a result of a mixture of molecules of various sizes and structures. Obtaining the full panoramic plant mitogenome is still considered a roadblock in evolutionary biology. In this study, we developed a graph-based sequence assembly toolkit (GSAT) to construct the pan-structural landscape of plant mitogenome with high-quality mitochondrial master graphs (MMGs) for model species including rice (Oryza sativa) and thale cress (Arabidopsis thaliana). The rice and thale cress MMGs have total lengths of 346 562 and 358 041 bp, including 9 and 6 contigs and 12 and 8 links, respectively, and could be further divided into 6 and 3 minimum master circles and 4 and 2 minimum secondary circles separately. The nuclear mitochondrial DNA segments (NUMTs) in thale cress strongly affected the frequency evaluation of the homologous structures in the mitogenome, while the effects of NUMTs in rice were relatively weak. The mitochondrial plastid DNA segments (MTPTs) in both species had no effects on the assessment of the MMGs. All potential recombinant structures were evaluated, and the findings revealed that all, except for nuclear-homologous structures, MMG structures are present at a much higher frequency than non-MMG structures are. Investigations of potential circular and linear molecules further supported multiple dominant structures in the mitogenomes and could be completely summarized in the MMG. Our study provided an efficient and accurate model for assembling and applying graph-based plant mitogenomes to assess their pan-structural variations.
+    author:
+      - family: He
+        given: Wenchuang
+      - family: Xiang
+        given: Kunli
+      - family: Chen
+        given: Caijin
+      - family: Wang
+        given: Jie
+      - family: Wu
+        given: Zhiqiang
+    container-title: Brief Bioinform
+    id: He2023
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2023
+          - 1
+    page: bbac522
+    publisher: Oxford Academic
+    title: 'Master graph: an essential integrated assembly model for the plant mitogenome based on a graph-based framework'
+    type: article-journal
+    volume: "24"
+  - DOI: 10.1093/molbev/msu199
+    ISSN: 0737-4038
+    abstract: Among land plants, angiosperms have the structurally most labile mitochondrial (mt) genomes. In contrast, the so-called early land plants (e.g., mosses) seem to have completely static mt chromosomes. We assembled the complete mt genomes from 12 mosses spanning the moss tree of life, to assess 1) the phylogenetic depth of the conserved mt gene content and order and 2) the correlation between scattered sequence repeats and gene order lability in land plants. The mt genome of most mosses is approximately 100 kb in size, and thereby the smallest among land plants. Based on divergence time estimates, moss mt genome structure has remained virtually frozen for 350 My, with only two independent gene losses and a single gene relocation detected across the macroevolutionary tree. This is the longest period of mt genome stasis demonstrated to date in a plant lineage. The complete lack of intergenic repeat sequences, considered to be essential for intragenomic recombinations, likely accounts for the evolutionary stability of moss mt genomes.
+    author:
+      - family: Liu
+        given: Yang
+      - family: Medina
+        given: Rafael
+      - family: Goffinet
+        given: Bernard
+    container-title: Mol Biol Evol
+    id: Liu2014
+    issue: "10"
+    issued:
+      date-parts:
+        - - 2014
+          - 10
+    page: 2586-2591
+    publisher: Oxford Academic
+    title: 350 My of Mitochondrial Genome Stasis in Mosses, an Early Land Plant Lineage
+    type: article-journal
+    volume: "31"
+  - DOI: 10.1038/nature03959
+    ISSN: 1476-4687
+    URL: https://www.nature.com/articles/nature03959
+    abstract: The proliferation of large-scale DNA-sequencing projects in recent years has driven a search for alternative methods to reduce time and cost. Here we describe a scalable, highly parallel sequencing system with raw throughput significantly greater than that of state-of-the-art capillary electrophoresis instruments. The apparatus uses a novel fibre-optic slide of individual wells and is able to sequence 25 million bases, at 99% or better accuracy, in one four-hour run. To achieve an approximately 100-fold increase in throughput over current Sanger sequencing technology, we have developed an emulsion method for DNA amplification and an instrument for sequencing by synthesis using a pyrosequencing protocol optimized for solid support and picolitre-scale volumes. Here we show the utility, throughput, accuracy and robustness of this system by shotgun sequencing and de novo assembly of the Mycoplasma genitalium genome with 96% coverage at 99.96% accuracy in one run of the machine.
+    accessed:
+      date-parts:
+        - - 2025
+          - 3
+          - 2
+    author:
+      - family: Margulies
+        given: Marcel
+      - family: Egholm
+        given: Michael
+      - family: Altman
+        given: William E.
+      - family: Attiya
+        given: Said
+      - family: Bader
+        given: Joel S.
+      - family: Bemben
+        given: Lisa A.
+      - family: Berka
+        given: Jan
+      - family: Braverman
+        given: Michael S.
+      - family: Chen
+        given: Yi-Ju
+      - family: Chen
+        given: Zhoutao
+      - family: Dewell
+        given: Scott B.
+      - family: Du
+        given: Lei
+      - family: Fierro
+        given: Joseph M.
+      - family: Gomes
+        given: Xavier V.
+      - family: Godwin
+        given: Brian C.
+      - family: He
+        given: Wen
+      - family: Helgesen
+        given: Scott
+      - family: Ho
+        given: Chun He
+      - family: Irzyk
+        given: Gerard P.
+      - family: Jando
+        given: Szilveszter C.
+      - family: Alenquer
+        given: Maria L. I.
+      - family: Jarvie
+        given: Thomas P.
+      - family: Jirage
+        given: Kshama B.
+      - family: Kim
+        given: Jong-Bum
+      - family: Knight
+        given: James R.
+      - family: Lanza
+        given: Janna R.
+      - family: Leamon
+        given: John H.
+      - family: Lefkowitz
+        given: Steven M.
+      - family: Lei
+        given: Ming
+      - family: Li
+        given: Jing
+      - family: Lohman
+        given: Kenton L.
+      - family: Lu
+        given: Hong
+      - family: Makhijani
+        given: Vinod B.
+      - family: McDade
+        given: Keith E.
+      - family: McKenna
+        given: Michael P.
+      - family: Myers
+        given: Eugene W.
+      - family: Nickerson
+        given: Elizabeth
+      - family: Nobile
+        given: John R.
+      - family: Plant
+        given: Ramona
+      - family: Puc
+        given: Bernard P.
+      - family: Ronan
+        given: Michael T.
+      - family: Roth
+        given: George T.
+      - family: Sarkis
+        given: Gary J.
+      - family: Simons
+        given: Jan Fredrik
+      - family: Simpson
+        given: John W.
+      - family: Srinivasan
+        given: Maithreyan
+      - family: Tartaro
+        given: Karrie R.
+      - family: Tomasz
+        given: Alexander
+      - family: Vogt
+        given: Kari A.
+      - family: Volkmer
+        given: Greg A.
+      - family: Wang
+        given: Shally H.
+      - family: Wang
+        given: Yong
+      - family: Weiner
+        given: Michael P.
+      - family: Yu
+        given: Pengguang
+      - family: Begley
+        given: Richard F.
+      - family: Rothberg
+        given: Jonathan M.
+    container-title: Nature
+    id: Margulies2005
+    issue: "7057"
+    issued:
+      date-parts:
+        - - 2005
+          - 9
+    keyword: Science, Humanities and Social Sciences, multidisciplinary, Science, multidisciplinary
+    page: 376-380
+    publisher: Nature Publishing Group
+    title: Genome sequencing in microfabricated high-density picolitre reactors
+    type: article-journal
+    volume: "437"
+  - DOI: 10.1371/journal.pbio.1001241
+    ISSN: 1545-7885
+    URL: https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.1001241
+    abstract: A pair of species within the genus Silene have evolved the largest known mitochondrial genomes, coinciding with extreme changes in mutation rate, recombination activity, and genome structure.
+    accessed:
+      date-parts:
+        - - 2025
+          - 3
+          - 2
+    author:
+      - family: Sloan
+        given: Daniel B.
+      - family: Alverson
+        given: Andrew J.
+      - family: Chuckalovcak
+        given: John P.
+      - family: Wu
+        given: Martin
+      - family: McCauley
+        given: David E.
+      - family: Palmer
+        given: Jeffrey D.
+      - family: Taylor
+        given: Douglas R.
+    container-title: PLOS Biol
+    id: Sloan2012
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2012
+          - 1
+    keyword: Genomics, Mitochondria, Plant genomics, Silene, Flowering plants, Mitochondrial DNA, Introns, Genome evolution
+    page: e1001241
+    publisher: Public Library of Science
+    title: Rapid Evolution of Enormous, Multichromosomal Genomes in Flowering Plant Mitochondria with Exceptionally High Mutation Rates
+    type: article-journal
+    volume: "10"
+  - DOI: 10.1016/j.tplants.2023.12.014
+    ISSN: 1360-1385
+    URL: https://www.sciencedirect.com/science/article/pii/S1360138523004120
+    abstract: Plastids and mitochondria are the only organelles that possess genomes of endosymbiotic origin. In recent decades, advances in sequencing technologies have contributed to a meteoric rise in the number of published organellar genomes, and have revealed greatly divergent evolutionary trajectories. In this review, we quantify the abundance and distribution of sequenced plant organellar genomes across the plant tree of life. We compare numerous genomic features between the two organellar genomes, with an emphasis on evolutionary trajectories, transfers, the current state of organellar genome editing by transcriptional activator-like effector nucleases (TALENs), transcription activator-like effector (TALE)-mediated deaminase, and clustered regularly interspaced short palindromic repeats (CRISPR)/CRISPR-associated protein (Cas), as well as genetic transformation. Finally, we propose future research to understand these different evolutionary trajectories, and genome-editing strategies to promote functional studies and eventually improve organellar genomes.
+    accessed:
+      date-parts:
+        - - 2025
+          - 3
+          - 2
+    author:
+      - family: Wang
+        given: Jie
+      - family: Kan
+        given: Shenglong
+      - family: Liao
+        given: Xuezhu
+      - family: Zhou
+        given: Jiawei
+      - family: Tembrock
+        given: Luke R.
+      - family: Daniell
+        given: Henry
+      - family: Jin
+        given: Shuangxia
+      - family: Wu
+        given: Zhiqiang
+    container-title: Trends Plant Sci
+    id: Wang2024
+    issue: "7"
+    issued:
+      date-parts:
+        - - 2024
+          - 7
+    keyword: organellar genome, structural variation, plastid transformation, genome editing, mitochondria
+    page: 754-769
+    title: 'Plant organellar genomes: Much done, much more to do'
+    title-short: Plant organellar genomes
+    type: article-journal
+    volume: "29"
+  - DOI: 10.1111/jse.12655
+    ISSN: 1759-6831
+    URL: https://onlinelibrary.wiley.com/doi/abs/10.1111/jse.12655
+    abstract: Since the endosymbiont origin from α-Proteobacteria, mitochondrial genomes have undergone extremely divergent evolutionary trajectories among eukaryotic lineages. Compared with the relatively compact and conserved animal mitochondrial genomes, plant mitochondrial genomes have many unique features, especially their large and complex genomic arrangements. The sizes of fully sequenced plant mitochondrial genomes span over a 100-fold range from 66 kb in Viscum scurruloideum to 11 000 kb in Silene conica. In addition to the typical circular structure, some species of plants also possess linear, and even multichromosomal, architectures. In contrast with the thousands of fully sequenced animal mitochondrial genomes and plant plastid genomes, only around 200 fully sequenced land plant mitochondrial genomes have been published, with many being only draft assemblies. In this review, we summarize some of the known novel characteristics found in plant mitochondrial genomes, with special emphasis on multichromosomal structures described in recent publications. Finally, we discuss the future prospects for studying the inheritance patterns of multichromosomal plant mitochondria and examining architectural variation at different levels of taxonomic organization—including at the population level.
+    accessed:
+      date-parts:
+        - - 2025
+          - 3
+          - 2
+    author:
+      - family: Wu
+        given: Zhi-Qiang
+      - family: Liao
+        given: Xue-Zhu
+      - family: Zhang
+        given: Xiao-Ni
+      - family: Tembrock
+        given: Luke R.
+      - family: Broz
+        given: Amanda
+    container-title: J Syst Evol
+    id: Wu2022
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2022
+    keyword: genome evolution, mitochondrial genome, multichromosomal architecture, organelle genomes
+    page: 160-168
+    title: Genomic architectural variation of plant mitochondria—A review of multichromosomal structuring
+    type: article-journal
+    volume: "60"
+  - DOI: 10.3390/ijms23169198
+    ISSN: 1422-0067
+    URL: https://www.mdpi.com/1422-0067/23/16/9198
+    abstract: As the core of heterosis utilization, cytoplasmic male sterility (CMS) has been widely used in hybrid seed production. Previous studies have shown that CMS is always closely related to the altered programming of mitochondrial genes. To explore candidate CMS genes in cotton (Gossypium hirsutum), sequencing and de novo assembly were performed on the mitochondrial genome of the G. hirsutum CMS line SI3A, with G. harknessii CMS-D2 cytoplasm, and the corresponding G. hirsutum restorer line 0-613-2R. Remarkable variations in genome structure and gene transcripts were detected. The mitochondrial genome of SI3A has three circle molecules, including one main circle and two sub-circles, while 0-613-2R only has one. RNA-seq and RT-qPCR analysis proved that orf606a and orf109a, which have a chimeric structure and transmembrane domain, were highly expressed in abortive anthers of SI3A. In addition, comparative analysis of RNA-seq and full-length transcripts revealed the complex I gene nad4 to be expressed at a lower level in SI3A than in its restorer and that it featured an intron retention splicing pattern. These two novel chimeric ORFs and nad4 are potential candidates that confer CMS character in SI3A. This study provides new insight into the molecular basis of the nuclear–cytoplasmic interaction mechanism, and that putative CMS genes might be important sources for future precise design cross-breeding of cotton.
+    accessed:
+      date-parts:
+        - - 2025
+          - 3
+          - 2
+    author:
+      - family: Xuan
+        given: Lisha
+      - family: Qi
+        given: Guoan
+      - family: Li
+        given: Xiaoran
+      - family: Yan
+        given: Sunyi
+      - family: Cao
+        given: Yiwen
+      - family: Huang
+        given: Chujun
+      - family: He
+        given: Lu
+      - family: Zhang
+        given: Tianzhen
+      - family: Shang
+        given: Haihong
+      - family: Hu
+        given: Yan
+    container-title: Int J Mol Sci
+    id: Xuan2022
+    issue: "16"
+    issued:
+      date-parts:
+        - - 2022
+          - 1
+    keyword: cytoplasmic male sterility (CMS), mitochondrial genome, cotton (<i>Gossypium hirsutum</i>), full-length transcriptome, CMS-associated gene
+    page: "9198"
+    publisher: Multidisciplinary Digital Publishing Institute
+    title: Comparison of Mitochondrial Genomes between a Cytoplasmic Male-Sterile Line and Its Restorer Line for Identifying Candidate CMS Genes in Gossypium hirsutum
+    type: article-journal
+    volume: "23"
+  - DOI: 10.1371/journal.pone.0011147
+    PMCID: PMC2892488
+    PMID: "20593022"
+    URL: https://dx.plos.org/10.1371/journal.pone.0011147
+    abstract: BACKGROUND:Multiple genome alignment remains a challenging problem. Effects of recombination including rearrangement, segmental duplication, gain, and loss can create a mosaic pattern of homology even among closely related organisms. METHODOLOGY/PRINCIPAL FINDINGS:We describe a new method to align two or more genomes that have undergone rearrangements due to recombination and substantial amounts of segmental gain and loss (flux). We demonstrate that the new method can accurately align regions conserved in some, but not all, of the genomes, an important case not handled by our previous work. The method uses a novel alignment objective score called a sum-of-pairs breakpoint score, which facilitates accurate detection of rearrangement breakpoints when genomes have unequal gene content. We also apply a probabilistic alignment filtering method to remove erroneous alignments of unrelated sequences, which are commonly observed in other genome alignment methods. We describe new metrics for quantifying genome alignment accuracy which measure the quality of rearrangement breakpoint predictions and indel predictions. The new genome alignment algorithm demonstrates high accuracy in situations where genomes have undergone biologically feasible amounts of genome rearrangement, segmental gain and loss. We apply the new algorithm to a set of 23 genomes from the genera Escherichia, Shigella, and Salmonella. Analysis of whole-genome multiple alignments allows us to extend the previously defined concepts of core- and pan-genomes to include not only annotated genes, but also non-coding regions with potential regulatory roles. The 23 enterobacteria have an estimated core-genome of 2.46Mbp conserved among all taxa and a pan-genome of 15.2Mbp. We document substantial population-level variability among these organisms driven by segmental gain and loss. Interestingly, much variability lies in intergenic regions, suggesting that the Enterobacteriacae may exhibit regulatory divergence. CONCLUSIONS:The multiple genome alignments generated by our software provide a platform for comparative genomic and population genomic studies. Free, open-source software implementing the described genome alignment approach is available from http://gel.ahabs.wisc.edu/mauve.
+    author:
+      - family: Darling
+        given: Aaron E.
+      - family: Mau
+        given: Bob
+      - family: Perna
+        given: Nicole T.
+    container-title: PloS one
+    genre: Journal Article
+    id: Darling2010
+    issue: "6"
+    issued:
+      date-parts:
+        - - 2010
+          - 6
+    keyword: ASF virus
+    page: e11147
+    publisher: Public Library of Science
+    title: 'progressiveMauve: Multiple genome alignment with gene gain, loss and rearrangement'
+    title-short: progressiveMauve
+    type: article-journal
+    volume: "5"
+  - DOI: 10.1093/molbev/mst010
+    ISSN: 0737-4038
+    URL: https://doi.org/10.1093/molbev/mst010
+    abstract: We report a major update of the MAFFT multiple sequence alignment program. This version has several new features, including options for adding unaligned sequences into an existing alignment, adjustment of direction in nucleotide alignment, constrained alignment and parallel processing, which were implemented after the previous major update. This report shows actual examples to explain how these features work, alone and in combination. Some examples incorrectly aligned by MAFFT are also shown to clarify its limitations. We discuss how to avoid misalignments, and our ongoing efforts to overcome such limitations.
+    accessed:
+      date-parts:
+        - - 2024
+          - 1
+          - 25
+    author:
+      - family: Katoh
+        given: Kazutaka
+      - family: Standley
+        given: Daron M.
+    container-title: Mol Biol Evol
+    id: Katoh2013
+    issue: "4"
+    issued:
+      date-parts:
+        - - 2013
+          - 4
+    page: 772-780
+    title: 'MAFFT Multiple Sequence Alignment Software Version 7: Improvements in Performance and Usability'
+    title-short: MAFFT Multiple Sequence Alignment Software Version 7
+    type: article-journal
+    volume: "30"
+  - DOI: 10.1186/s12859-018-2051-3
+    ISSN: 1471-2105
+    URL: https://doi.org/10.1186/s12859-018-2051-3
+    author:
+      - family: Wang
+        given: Jeremy R.
+      - family: Holt
+        given: James
+      - family: McMillan
+        given: Leonard
+      - family: Jones
+        given: Corbin D.
+    container-title: BMC Bioinf
+    id: Wang2018
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2018
+          - 12
+    page: 1-11
+    publisher: BioMed Central
+    title: 'FMLRC: Hybrid long read error correction using an FM-index'
+    type: article-journal
+    volume: "19"
+  - DOI: 10.12688/f1000research.21782.4
+    ISSN: 2046-1402
+    PMCID: PMC6966772
+    PMID: "31984131"
+    URL: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6966772/
+    abstract: Background: Data sets from long-read sequencing platforms (Oxford Nanopore Technologies and Pacific Biosciences) allow for most prokaryote genomes to be completely assembled – one contig per chromosome or plasmid. However, the high per-read error rate of long-read sequencing necessitates different approaches to assembly than those used for short-read sequencing. Multiple assembly tools (assemblers) exist, which use a variety of algorithms for long-read assembly., Methods: We used 500 simulated read sets and 120 real read sets to assess the performance of eight long-read assemblers (Canu, Flye, Miniasm/Minipolish, NECAT, NextDenovo/NextPolish, Raven, Redbean and Shasta) across a wide variety of genomes and read parameters. Assemblies were assessed on their structural accuracy/completeness, sequence identity, contig circularisation and computational resources used., Results: Canu v2.1 produced reliable assemblies and was good with plasmids, but it performed poorly with circularisation and had the longest runtimes of all assemblers tested. Flye v2.8 was also reliable and made the smallest sequence errors, though it used the most RAM. Miniasm/Minipolish v0.3/v0.1.3 was the most likely to produce clean contig circularisation. NECAT v20200803 was reliable and good at circularisation but tended to make larger sequence errors. NextDenovo/NextPolish v2.3.1/v1.3.1 was reliable with chromosome assembly but bad with plasmid assembly. Raven v1.3.0 was reliable for chromosome assembly, though it did not perform well on small plasmids and had circularisation issues. Redbean v2.5 and Shasta v0.7.0 were computationally efficient but more likely to produce incomplete assemblies., Conclusions: Of the assemblers tested, Flye, Miniasm/Minipolish, NextDenovo/NextPolish and Raven performed best overall. However, no single tool performed well on all metrics, highlighting the need for continued development on long-read assembly algorithms.
+    accessed:
+      date-parts:
+        - - 2025
+          - 4
+          - 28
+    author:
+      - family: Wick
+        given: Ryan R.
+      - family: Holt
+        given: Kathryn E.
+    container-title: F1000Research
+    id: Wick2021
+    issued:
+      date-parts:
+        - - 2021
+          - 2
+    page: "2138"
+    title: Benchmarking of long-read assemblers for prokaryote whole genome sequencing
+    type: article-journal
+    volume: "8"
+  - DOI: 10.1101/gr.215087.116
+    ISSN: 1088-9051, 1549-5469
+    PMID: "28298431"
+    URL: http://genome.cshlp.org/content/27/5/722
+    abstract: Long-read single-molecule sequencing has revolutionized de novo genome assembly and enabled the automated reconstruction of reference-quality genomes. However, given the relatively high error rates of such technologies, efficient and accurate assembly of large repeats and closely related haplotypes remains challenging. We address these issues with Canu, a successor of Celera Assembler that is specifically designed for noisy single-molecule sequences. Canu introduces support for nanopore sequencing, halves depth-of-coverage requirements, and improves assembly continuity while simultaneously reducing runtime by an order of magnitude on large genomes versus Celera Assembler 8.2. These advances result from new overlapping and assembly algorithms, including an adaptive overlapping strategy based on tf-idf weighted MinHash and a sparse assembly graph construction that avoids collapsing diverged repeats and haplotypes. We demonstrate that Canu can reliably assemble complete microbial genomes and near-complete eukaryotic chromosomes using either Pacific Biosciences (PacBio) or Oxford Nanopore technologies and achieves a contig NG50 of >21 Mbp on both human and Drosophila melanogaster PacBio data sets. For assembly structures that cannot be linearly represented, Canu provides graph-based assembly outputs in graphical fragment assembly (GFA) format for analysis or integration with complementary phasing and scaffolding techniques. The combination of such highly resolved assembly graphs with long-range scaffolding information promises the complete and automated assembly of complex genomes.
+    accessed:
+      date-parts:
+        - - 2025
+          - 4
+          - 28
+    author:
+      - family: Koren
+        given: Sergey
+      - family: Walenz
+        given: Brian P.
+      - family: Berlin
+        given: Konstantin
+      - family: Miller
+        given: Jason R.
+      - family: Bergman
+        given: Nicholas H.
+      - family: Phillippy
+        given: Adam M.
+    container-title: Genome Res
+    id: Koren2017
+    issue: "5"
+    issued:
+      date-parts:
+        - - 2017
+          - 5
+    page: 722-736
+    publisher: Cold Spring Harbor Lab
+    title: 'Canu: Scalable and accurate long-read assembly via adaptive k-mer weighting and repeat separation'
+    title-short: Canu
+    type: article-journal
+    volume: "27"
+  - DOI: 10.1186/s13059-024-03252-4
+    ISSN: 1474-760X
+    URL: https://doi.org/10.1186/s13059-024-03252-4
+    abstract: Long-read sequencing data, particularly those derived from the Oxford Nanopore sequencing platform, tend to exhibit high error rates. Here, we present NextDenovo, an efficient error correction and assembly tool for noisy long reads, which achieves a high level of accuracy in genome assembly. We apply NextDenovo to assemble 35 diverse human genomes from around the world using Nanopore long-read data. These genomes allow us to identify the landscape of segmental duplication and gene copy number variation in modern human populations. The use of NextDenovo should pave the way for population-scale long-read assembly using Nanopore long-read data.
+    accessed:
+      date-parts:
+        - - 2025
+          - 4
+          - 28
+    author:
+      - family: Hu
+        given: Jiang
+      - family: Wang
+        given: Zhuo
+      - family: Sun
+        given: Zongyi
+      - family: Hu
+        given: Benxia
+      - family: Ayoola
+        given: Adeola Oluwakemi
+      - family: Liang
+        given: Fan
+      - family: Li
+        given: Jingjing
+      - family: Sandoval
+        given: José R.
+      - family: Cooper
+        given: David N.
+      - family: Ye
+        given: Kai
+      - family: Ruan
+        given: Jue
+      - family: Xiao
+        given: Chuan-Le
+      - family: Wang
+        given: Depeng
+      - family: Wu
+        given: Dong-Dong
+      - family: Wang
+        given: Sheng
+    container-title: Genome Biol
+    id: Hu2024
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2024
+          - 4
+    keyword: Long reads, Genome assembly, Error-correction, Human genomes, Segmental duplication
+    page: "107"
+    title: 'NextDenovo: An efficient error correction and accurate assembly tool for noisy long reads'
+    title-short: NextDenovo
+    type: article-journal
+    volume: "25"
+  - DOI: 10.48130/gcomm-0024-0003
+    URL: https://www.maxapress.com/article/doi/10.48130/gcomm-0024-0003
+    abstract: <p>A recent analysis of genome copy numbers has demonstrated that reduced availability of homologous templates accelerates nucleotide substitution rates in plant mitochondrial DNA likely due to insufficient repair efficiency, reinforcing the importance of homologous recombination in plant DNA damage repair. This finding drives us to consider and compare the relevant hypotheses of the raising and variable mutation for plant organellar DNA, concluding that no single mechanism has a full explanation.</p>
+    accessed:
+      date-parts:
+        - - 2025
+          - 5
+          - 18
+    author:
+      - family: Wang
+        given: Jie
+      - family: Zou
+        given: Yi
+      - family: Mower
+        given: Jeffrey P.
+      - family: Reeve
+        given: Wayne
+      - family: Wu
+        given: Zhiqiang
+      - family: Wang
+        given: Jie
+      - family: Zou
+        given: Yi
+      - family: Mower
+        given: Jeffrey P.
+      - family: Reeve
+        given: Wayne
+      - family: Wu
+        given: Zhiqiang
+    container-title: Genomics Commun
+    id: Wang2024a
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2024
+          - 9
+    page: e003
+    title: Rethinking the mutation hypotheses of plant organellar DNA
+    type: article-journal
+    volume: "1"
+  - DOI: 10.48550/arXiv.2410.07006
+    author:
+      - family: Huang
+        given: Kerui
+      - family: Xu
+        given: Wenbo
+      - family: Hu
+        given: Haoliang
+      - family: Jiang
+        given: Xiaolong
+      - family: Sun
+        given: Lei
+      - family: Zhao
+        given: Wenyan
+      - family: Long
+        given: Binbin
+      - family: Fan
+        given: Shaogang
+      - family: Zhou
+        given: Zhibo
+      - family: Mo
+        given: Ping
+      - family: Jiang
+        given: Xiaocheng
+      - family: Tian
+        given: Jianhong
+      - family: Deng
+        given: Aihua
+      - family: Xie
+        given: Peng
+      - family: Wang
+        given: Yun
+    container-title: arXiv
+    id: Huang2024
+    issued:
+      date-parts:
+        - - 2024
+          - 10
+    title: 'The Mitochondrial Genome of Cathaya argyrophylla Reaches 18.99 Mb: Analysis of Super-Large Mitochondrial Genomes in Pinaceae'
+    type: article-journal
+  - DOI: 10.1002/tpg2.20234
+    ISSN: 1940-3372
+    abstract: Black gram [Vigna mungo (L.) Hepper var. mungo] is a warm-season legume highly prized for its protein content along with significant folate and iron proportions. To expedite the genetic enhancement of black gram, a high-quality draft genome from the center of origin of the crop is indispensable. Here, we established a draft genome sequence of an Indian black gram cultivar, ‘Uttara’ (IPU 94-1), known for its high resistance to mungbean yellow mosaic virus. Pacific Biosciences of California, Inc. (PacBio) single-molecule real-time (SMRT) and Illumina sequencing assembled a draft reference-guided assembly with a cumulative size of $\sim$454.4 Mb, of which, 444.4 Mb was anchored on 11 pseudomolecules corresponding to 11 chromosomes. Uttara assembly denotes features of a high-quality draft genome illustrated through high N50 value (42.88 Mb), gene completeness (benchmarking universal single-copy ortholog [BUSCO] score 94.17%) and low levels of ambiguous nucleotides (N) percent (0.0005%). Gene discovery using transcript evidence predicted 28,881 protein-coding genes, from which, $\sim$95% were functionally annotated. A global survey of genes associated with disease resistance revealed 119 nucleotide binding siteleucine rich repeat (NBS-LRR) proteins, while 23 genes encoding seed storage proteins (SSPs) were discovered in black gram. A large set of microsatellite loci were discovered for marker development in the crop. Our draft genome of an Indian black gram provides the foundational genomic resources for the improvement of important agronomic traits and ultimately will help in accelerating black gram breeding programs.
+    author:
+      - family: Ambreen
+        given: Heena
+      - family: Oraon
+        given: Praveen Kumar
+      - family: Wahlang
+        given: Daniel Regie
+      - family: Satyawada
+        given: Rama Rao
+      - family: Katiyar-Agarwal
+        given: Surekha
+      - family: Agarwal
+        given: Manu
+      - family: Jagannath
+        given: Arun
+      - family: Kumar
+        given: Amar
+      - family: Budhwar
+        given: Roli
+      - family: Shukla
+        given: Rohit Nandan
+      - family: Goel
+        given: Shailendra
+    container-title: Plant Genome
+    id: Ambreen2022
+    issue: "3"
+    issued:
+      date-parts:
+        - - 2022
+          - 9
+    page: e20234
+    publisher: John Wiley & Sons, Ltd
+    title: 'Long-read-based draft genome sequence of Indian black gram IPU-94-1 ‘Uttara’: Insights into disease resistance and seed storage protein genes'
+    type: article-journal
+    volume: "15"
+  - DOI: 10.46471/gigabyte.42
+    ISSN: 2709-4715
+    abstract: Relative to other crops, red clover (Trifolium pratense L.) has various favorable traits making it an ideal forage crop. Conventional breeding has improved varieties, but modern genomic methods could accelerate progress and facilitate gene discovery. Existing short-read-based genome assemblies of the $\sim$420 megabase pair (Mbp) genome are fragmented into $>$135,000 contigs, with numerous order and orientation errors within scaffolds, probably associated with the plant’s biology, which displays gametophytic self-incompatibility resulting in inherent high heterozygosity. Here, we present a high-quality long-read-based assembly of red clover with a more than 500-fold reduction in contigs, improved per-base quality, and increased contig N50 by three orders of magnitude. The 413.5 Mbp assembly is nearly 20% longer than the 350 Mbp short-read assembly, closer to the predicted genome size. We also present quality measures and full-length isoform RNA transcript sequences for assessing accuracy and future genome annotation. The assembly accurately represents the seven main linkage groups in an allogamous (outcrossing), highly heterozygous plant genome.
+    author:
+      - family: Bickhart
+        given: Derek M.
+      - family: Koch
+        given: Lisa M.
+      - family: Smith
+        given: Timothy P. L.
+      - family: Riday
+        given: Heathcliffe
+      - family: Sullivan
+        given: Michael L.
+      - family: Koch
+        given: Lisa M.
+      - family: Smith
+        given: Timothy P. L.
+      - family: Riday
+        given: Heathcliffe
+      - family: Sullivan
+        given: Michael L.
+    container-title: Gigabyte
+    id: Bickhart2022
+    issued:
+      date-parts:
+        - - 2022
+          - 2
+    page: 1-13
+    publisher: GigaScience Press
+    title: Chromosome-scale assembly of the highly heterozygous genome of red clover (Trifolium pratense L.), an allogamous forage crop species
+    type: article-journal
+    volume: "2022"
+  - DOI: 10.1093/jxb/erab006
+    ISSN: 0022-0957
+    abstract: Duckweeds are a monophyletic group of rapidly reproducing aquatic monocots in the Lemnaceae family. Given their clonal, exponentially fast reproduction, a key question is whether genome structure is conserved across the species in the absence of meiotic recombination. Here, we studied the genome and proteome of Spirodela polyrhiza, or greater duckweed, which has the largest body plan yet the smallest genome size in the family (1C=150 Mb). Using Oxford Nanopore sequencing combined with Hi-C scaffolding, we generated a highly contiguous, chromosome-scale assembly of S. polyrhiza line Sp7498 (Sp7498$\_$HiC). Both the Sp7498$\_$HiC and Sp9509 genome assemblies reveal large chromosomal misorientations relative to a recent PacBio assembly of Sp7498, highlighting the need for orthogonal long-range scaffolding techniques such as Hi-C and BioNano optical mapping. Shotgun proteomics of Sp7498 verified the expression of ~2250 proteins and revealed a high abundance of proteins involved in photosynthesis and carbohydrate metabolism among other functions. In addition, a strong increase in chloroplast proteins was observed that correlated to chloroplast density. This Sp7498$\_$HiC genome was generated cheaply and quickly with a single Oxford Nanopore MinION flow cell and one Hi-C library in a classroom setting. Combining these data with a mass spectrometry-generated proteome illustrates the utility of duckweed as a model for genomics- and proteomics-based education.
+    author:
+      - family: Harkess
+        given: Alex
+      - family: McLoughlin
+        given: Fionn
+      - family: Bilkey
+        given: Natasha
+      - family: Elliott
+        given: Kiona
+      - family: Emenecker
+        given: Ryan
+      - family: Mattoon
+        given: Erin
+      - family: Miller
+        given: Kari
+      - family: Czymmek
+        given: Kirk
+      - family: Vierstra
+        given: Richard D.
+      - family: Meyers
+        given: Blake C.
+      - family: Michael
+        given: Todd P.
+    container-title: J Exp Bot
+    id: Harkess2021
+    issue: "7"
+    issued:
+      date-parts:
+        - - 2021
+          - 3
+    page: 2491-2500
+    publisher: Oxford Academic
+    title: Improved Spirodela polyrhiza genome and proteomic analyses reveal a conserved chromosomal structure with high abundance of chloroplastic proteins favoring energy production
+    type: article-journal
+    volume: "72"
+  - DOI: 10.1038/s41467-024-51158-3
+    ISSN: 2041-1723
+    abstract: Polyploidization presents an unusual challenge for species with sex chromosomes, as it can lead to complex combinations of sex chromosomes that disrupt reproductive development. This is particularly true for allopolyploidization between species with different sex chromosome systems. Here, we assemble haplotype-resolved chromosome-level genomes of a female allotetraploid weeping willow (Salix babylonica) and a male diploid S. dunnii. We show that weeping willow arose from crosses between a female ancestor from the Salix-clade, which has XY sex chromosomes on chromosome 7, and a male ancestor from the Vetrix-clade, which has ancestral XY sex chromosomes on chromosome 15. We find that weeping willow has one pair of sex chromosomes, ZW on chromosome 15, that derived from the ancestral XY sex chromosomes in the male ancestor of the Vetrix-clade. Moreover, the ancestral 7X chromosomes from the female ancestor of the Salix-clade have reverted to autosomal inheritance. Duplicated intact ARR17-like genes on the four homologous chromosomes 19 likely have contributed to the maintenance of dioecy during polyploidization and sex chromosome turnover. Taken together, our results suggest the rapid evolution and reversion of sex chromosomes following allopolyploidization in weeping willow.
+    author:
+      - family: He
+        given: Li
+      - family: Wang
+        given: Yuàn
+      - family: Wang
+        given: Yi
+      - family: Zhang
+        given: Ren-Gang
+      - family: Wang
+        given: Yuán
+      - family: Hörandl
+        given: Elvira
+      - family: Ma
+        given: Tao
+      - family: Mao
+        given: Yan-Fei
+      - family: Mank
+        given: Judith E.
+      - family: Ming
+        given: Ray
+    container-title: Nat Commun
+    id: He2024
+    issue: "6893"
+    issued:
+      date-parts:
+        - - 2024
+          - 8
+    page: 1-16
+    publisher: Nature Publishing Group
+    title: Allopolyploidization from two dioecious ancestors leads to recurrent evolution of sex chromosomes
+    type: article-journal
+    volume: "15"
+  - DOI: 10.1007/s11427-021-2033-2
+    ISSN: 1869-1889
+    abstract: Plants belonging to the genus Taraxacum are widespread all over the world, which contain rubber-producing and non-rubber-producing species. However, the genomic basis underlying natural rubber (NR) biosynthesis still needs more investigation. Here, we presented high-quality genome assemblies of rubber-producing T. kok-saghyz TK1151 and non-rubber-producing T. mongolicum TM5. Comparative analyses uncovered a large number of genetic variations, including inversions, translocations, presence/absence variations, as well as considerable protein divergences between the two species. Two gene duplication events were found in these two Taraxacum species, including one common ancestral whole-genome triplication and one subsequent round of gene amplification. In genomes of both TK1151 and TM5, we identified the genes encoding for each step in the NR biosynthesis pathway and found that the SRPP and CPT gene families have experienced a more obvious expansion in TK1151 compared to TM5. This study will have large-ranging implications for the mechanism of NR biosynthesis and genetic improvement of NR-producing crops.
+    author:
+      - family: Lin
+        given: Tao
+      - family: Xu
+        given: Xia
+      - family: Du
+        given: Huilong
+      - family: Fan
+        given: Xiuli
+      - family: Chen
+        given: Qingwen
+      - family: Hai
+        given: Chunyan
+      - family: Zhou
+        given: Zijian
+      - family: Su
+        given: Xiao
+      - family: Kou
+        given: Liquan
+      - family: Gao
+        given: Qiang
+      - family: Deng
+        given: Lingwei
+      - family: Jiang
+        given: Jinsheng
+      - family: You
+        given: Hanli
+      - family: Ma
+        given: Yihua
+      - family: Cheng
+        given: Zhukuan
+      - family: Wang
+        given: Guodong
+      - family: Liang
+        given: Chengzhi
+      - family: Zhang
+        given: Guomin
+      - family: Yu
+        given: Hong
+      - family: Li
+        given: Jiayang
+    container-title: Sci China Life Sci
+    id: Lin2022
+    issue: "3"
+    issued:
+      date-parts:
+        - - 2022
+          - 3
+    page: 515-528
+    publisher: Science China Press
+    title: Extensive sequence divergence between the reference genomes of Taraxacum kok-saghyz and Taraxacum mongolicum
+    type: article-journal
+    volume: "65"
+  - DOI: 10.3389/fgene.2022.835363
+    ISSN: 1664-8021
+    abstract: Macadamia is an evergreen nut tree belonging to the Proteaceae family. The two commercial macadamia species, Macadamia integrifolia and M. tetraphylla, are highly prized for their edible kernels. The M. integrifolia genome was recently sequenced, but the genome of M. tetraphylla has to date not been published, which limits the study of biological research and breeding in this species. This study reports a high-quality genome sequence of M. tetraphylla based on the Oxford Nanopore Technologies (ONT) technology and high-throughput chromosome conformation capture techniques (Hi-C). An assembly of 750.87 Mb with 51.11 Mb N50 length was generated, close to the 740 and 758 Mb size estimates by flow cytometry and k-mer analysis, respectively. Genome annotation indicated that 61.42% of the genome is composed of repetitive sequences and 34.95% is composed of long terminal repeat retrotransposons. Up to 31,571 protein-coding genes were predicted, of which 92.59% were functionally annotated. The average gene length was 6,055 bp. Comparative genome analysis revealed that the gene families associated with defense response, lipid transport, steroid biosynthesis, triglyceride lipase activity, and fatty acid metabolism are expanded in the M. tetraphylla genome. The distribution of fourfold synonymous third-codon transversion showed a recent whole-genome duplication event in M. tetraphylla. Genomic and transcriptomic analysis identified 187 genes encoding 33 crucial oil biosynthesis enzymes, depicting a comprehensive map of macadamia lipid biosynthesis. Besides, the 55 identified WRKY genes exhibited preferential expression in root as compared to that in other tissues. The genome sequence of M. tetraphylla provides novel insights for breeding novel varieties and genetic improvement of agronomic traits.
+    author:
+      - family: Niu
+        given: Yingfeng
+      - family: Li
+        given: Guohua
+      - family: Ni
+        given: Shubang
+      - family: He
+        given: Xiyong
+      - family: Zheng
+        given: Cheng
+      - family: Liu
+        given: Ziyan
+      - family: Gong
+        given: Lidan
+      - family: Kong
+        given: Guanghong
+      - family: Li
+        given: Wei
+      - family: Liu
+        given: Jin
+    container-title: Front Genet
+    id: Niu2022
+    issued:
+      date-parts:
+        - - 2022
+          - 2
+    page: "835363"
+    publisher: Frontiers
+    title: The Chromosome-Scale Reference Genome of Macadamia tetraphylla Provides Insights Into Fatty Acid Biosynthesis
+    type: article-journal
+    volume: "13"
+  - DOI: 10.1111/pbi.13260
+    ISSN: 1467-7644
+    abstract: Complete and highly accurate reference genomes and gene annotations are indispensable for basic biological research and trait improvement of woody tree species. In this study, we integrated single-molecule sequencing and high-throughput chromosome conformation capture techniques to produce a high-quality and long-range contiguity chromosome-scale genome assembly of the soft-seeded pomegranate cultivar ‘Tunisia’. The genome covers 320.31 Mb (scaffold N50 = 39.96 Mb; contig N50 = 4.49 Mb) and includes 33 594 protein-coding genes. We also resequenced 26 pomegranate varieties that varied regarding seed hardness. Comparative genomic analyses revealed many genetic differences between soft- and hard-seeded pomegranate varieties. A set of selective loci containing SUC8-like, SUC6, FoxO and MAPK were identified by the selective sweep analysis between hard- and soft-seeded populations. An exceptionally large selective region (26.2 Mb) was identified on chromosome 1. Our assembled pomegranate genome is more complete than other currently available genome assemblies. Our results indicate that genomic variations and selective genes may have contributed to the genetic divergence between soft- and hard-seeded pomegranate varieties.
+    author:
+      - family: Luo
+        given: Xiang
+      - family: Li
+        given: Haoxian
+      - family: Wu
+        given: Zhikun
+      - family: Yao
+        given: Wen
+      - family: Zhao
+        given: Peng
+      - family: Cao
+        given: Da
+      - family: Yu
+        given: Haiyan
+      - family: Li
+        given: Kaidi
+      - family: Poudel
+        given: Krishna
+      - family: Zhao
+        given: Diguang
+      - family: Zhang
+        given: Fuhong
+      - family: Xia
+        given: Xiaocong
+      - family: Chen
+        given: Lina
+      - family: Wang
+        given: Qi
+      - family: Jing
+        given: Dan
+      - family: Cao
+        given: Shangyin
+    container-title: Plant Biotechnol J
+    id: Luo2020
+    issue: "4"
+    issued:
+      date-parts:
+        - - 2020
+          - 4
+    page: 955-968
+    publisher: John Wiley & Sons, Ltd
+    title: The pomegranate (Punica granatum L.) draft genome dissects genetic divergence between soft- and hard-seeded cultivars
+    type: article-journal
+    volume: "18"
+  - DOI: 10.1186/s12864-022-08697-0
+    ISSN: 1471-2164
+    abstract: The availability of chromosome-scale genome assemblies is fundamentally important to advance genetics and breeding in crops, as well as for evolutionary and comparative genomics. The improvement of long-read sequencing technologies and the advent of optical mapping and chromosome conformation capture technologies in the last few years, significantly promoted the development of chromosome-scale genome assemblies of model plants and crop species. In grasses, chromosome-scale genome assemblies recently became available for cultivated and wild species of the Triticeae subfamily. Development of state-of-the-art genomic resources in species of the Poeae subfamily, which includes important crops like fescues and ryegrasses, is lagging behind the progress in the cereal species. Here, we report a new chromosome-scale genome sequence assembly for perennial ryegrass, obtained by combining PacBio long-read sequencing, Illumina short-read polishing, BioNano optical mapping and Hi-C scaffolding. More than 90% of the total genome size of perennial ryegrass (approximately 2.55 Gb) is covered by seven pseudo-chromosomes that show high levels of collinearity to the orthologous chromosomes of Triticeae species. The transposon fraction of perennial ryegrass was found to be relatively low, approximately 35% of the total genome content, which is less than half of the genome repeat content of cultivated cereal species. We predicted 54,629 high-confidence gene models, 10,287 long non-coding RNAs and a total of 8,393 short non-coding RNAs in the perennial ryegrass genome. The new reference genome sequence and annotation presented here are valuable resources for comparative genomic studies in grasses, as well as for breeding applications and will expedite the development of productive varieties in perennial ryegrass and related species.
+    author:
+      - family: Nagy
+        given: Istvan
+      - family: Veeckman
+        given: Elisabeth
+      - family: Liu
+        given: Chang
+      - family: Bel
+        given: Michiel Van
+      - family: Vandepoele
+        given: Klaas
+      - family: Jensen
+        given: Christian Sig
+      - family: Ruttink
+        given: Tom
+      - family: Asp
+        given: Torben
+    container-title: BMC Genomics
+    id: Nagy2022
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2022
+          - 12
+    page: 1-20
+    publisher: BioMed Central
+    title: Chromosome-scale assembly and annotation of the perennial ryegrass genome
+    type: article-journal
+    volume: "23"
+  - DOI: 10.1038/s41477-019-0588-4
+    ISSN: 2055-0278
+    abstract: Hornworts, liverworts and mosses are three early diverging clades of land plants, and together comprise the bryophytes. Here, we report the draft genome sequence of the hornwort Anthoceros angustus. Phylogenomic inferences confirm the monophyly of bryophytes, with hornworts sister to liverworts and mosses. The simple morphology of hornworts correlates with low genetic redundancy in plant body plan, while the basic transcriptional regulation toolkit for plant development has already been established in this early land plant lineage. Although the Anthoceros genome is small and characterized by minimal redundancy, expansions are observed in gene families related to RNA editing, UV protection and desiccation tolerance. The genome of A. angustus bears the signatures of horizontally transferred genes from bacteria and fungi, in particular of genes operating in stress-response and metabolic pathways. Our study provides insight into the unique features of hornworts and their molecular adaptations to live on land.
+    author:
+      - family: Zhang
+        given: Jian
+      - family: Fu
+        given: Xin-Xing
+      - family: Li
+        given: Rui-Qi
+      - family: Zhao
+        given: Xiang
+      - family: Liu
+        given: Yang
+      - family: Li
+        given: Ming-He
+      - family: Zwaenepoel
+        given: Arthur
+      - family: Ma
+        given: Hong
+      - family: Goffinet
+        given: Bernard
+      - family: Guan
+        given: Yan-Long
+      - family: Xue
+        given: Jia-Yu
+      - family: Liao
+        given: Yi-Ying
+      - family: Wang
+        given: Qing-Feng
+      - family: Wang
+        given: Qing-Hua
+      - family: Wang
+        given: Jie-Yu
+      - family: Zhang
+        given: Guo-Qiang
+      - family: Wang
+        given: Zhi-Wen
+      - family: Jia
+        given: Yu
+      - family: Wang
+        given: Mei-Zhi
+      - family: Dong
+        given: Shan-Shan
+      - family: Yang
+        given: Jian-Fen
+      - family: Jiao
+        given: Yuan-Nian
+      - family: Guo
+        given: Ya-Long
+      - family: Kong
+        given: Hong-Zhi
+      - family: Lu
+        given: An-Ming
+      - family: Yang
+        given: Huan-Ming
+      - family: Zhang
+        given: Shou-Zhou
+      - family: Van de Peer
+        given: Yves
+      - family: Liu
+        given: Zhong-Jian
+      - family: Chen
+        given: Zhi-Duan
+    container-title: Nat Plants
+    id: Zhang2020
+    issued:
+      date-parts:
+        - - 2020
+          - 2
+    page: 107-118
+    publisher: Nature Publishing Group
+    title: The hornwort genome and early land plant evolution
+    type: article-journal
+    volume: "6"
+  - DOI: 10.1038/s41438-018-0071-9
+    ISSN: 2052-7276
+    abstract: Brassica rapa comprises several important cultivated vegetables and oil crops. Current reference genome assemblies of Brassica rapa are quite fragmented and not highly contiguous, thereby limiting extensive genetic and genomic analyses. Here, we report an improved assembly of the B. rapa genome (v3.0) using single-molecule sequencing, optical mapping, and chromosome conformation capture technologies (Hi-C). Relative to the previous reference genomes, our assembly features a contig N50 size of 1.45Mb, representing a ~30-fold improvement. We also identified a new event that occurred in the B. rapa genome ~1.2 million years ago, when a long terminal repeat retrotransposon (LTR-RT) expanded. Further analysis refined the relationship of genome blocks and accurately located the centromeres in the B. rapa genome. The B. rapa genome v3.0 will serve as an important community resource for future genetic and genomic studies in B. rapa. This resource will facilitate breeding efforts in B. rapa, as well as comparative genomic analysis with other Brassica species.
+    author:
+      - family: Zhang
+        given: Lei
+      - family: Cai
+        given: Xu
+      - family: Wu
+        given: Jian
+      - family: Liu
+        given: Min
+      - family: Grob
+        given: Stefan
+      - family: Cheng
+        given: Feng
+      - family: Liang
+        given: Jianli
+      - family: Cai
+        given: Chengcheng
+      - family: Liu
+        given: Zhiyuan
+      - family: Liu
+        given: Bo
+      - family: Wang
+        given: Fan
+      - family: Li
+        given: Song
+      - family: Liu
+        given: Fuyan
+      - family: Li
+        given: Xuming
+      - family: Cheng
+        given: Lin
+      - family: Yang
+        given: Wencai
+      - family: Li
+        given: Mai-he
+      - family: Grossniklaus
+        given: Ueli
+      - family: Zheng
+        given: Hongkun
+      - family: Wang
+        given: Xiaowu
+    container-title: Hortic Res
+    id: Zhang2018
+    issued:
+      date-parts:
+        - - 2018
+          - 1
+    page: "50"
+    publisher: Oxford Academic
+    title: Improved Brassica rapa reference genome by single-molecule sequencing and chromosome conformation capture technologies
+    type: article-journal
+    volume: "5"
+  - DOI: 10.1104/pp.15.00437
+    abstract: A DNA-binding protein affects mitochondrial DNA copy number in pollen vegetative cells, resulting in decreased mitochondrial respiration and pollen tube growth.
+    author:
+      - family: Cai
+        given: Qiang
+      - family: Guo
+        given: Liang
+      - family: Shen
+        given: Zhao-Rui
+      - family: Wang
+        given: Dan-Yang
+      - family: Zhang
+        given: Quan
+      - family: Sodmergen
+    container-title: Plant Physiol
+    id: Cai2015
+    issue: "1"
+    issued:
+      date-parts:
+        - - 2015
+          - 7
+    page: "660"
+    title: 'Elevation of Pollen Mitochondrial DNA Copy Number by WHIRLY2: Altered Respiration and Pollen Tube Growth in Arabidopsis'
+    type: article-journal
+    volume: "169"
+  - DOI: 10.1038/s41438-019-0177-8
+    ISSN: 2052-7276
+    abstract: Melon is a useful plant species for studying mitochondrial genetics because it contains one of the largest and structurally diverse mitochondrial genomes among all plant species and undergoes paternal transmission of mitochondria. We used droplet digital (dd) PCR in combination with flow cytometric determination of nuclear DNA quantities to determine the absolute per-cell copy numbers of four mitochondrial genes (nad9, rps1, matR, and atp6) across four stages of melon leaf development. The copy numbers of these mitochondrial genes not only varied during leaf development but also differed among each other, and there was no correlation between the copy numbers of the mitochondrial genes and their transcript levels. The gene copy numbers varied from approximately 36.8$\pm$4.5 (atp6 copies in the 15th leaf) to approximately 82.9$\pm$5.7 (nad9 copies in the 9th leaf), while the mean number of mitochondria was approximately 416.6$\pm$182.7 in the 15th leaf and 459.1$\pm$228.2 in the 9th leaf. These observations indicate that the leaf cells of melon do not contain sufficient copies of mitochondrial genes to ensure that every mitochondrion possesses the entire mitochondrial genome. Given this cytological evidence, our results indicate that mtDNA in melon exists as a sub-genomic molecule rather than as a single-master circle and that the copy numbers of individual mitochondrial genes may vary greatly. An improved understanding of the molecular mechanism(s) controlling the relative prevalence and transmission of sub-genomic mtDNA molecules should provide insights into the continuity of the mitochondrial genome across generations.
+    author:
+      - family: Shen
+        given: Jia
+      - family: Zhang
+        given: Yuejian
+      - family: Havey
+        given: Michael J.
+      - family: Shou
+        given: Weisong
+    container-title: Hortic Res
+    id: Shen2019
+    issue: "95"
+    issued:
+      date-parts:
+        - - 2019
+          - 8
+    page: 1-9
+    publisher: Nature Publishing Group
+    title: Copy numbers of mitochondrial genes change during melon leaf development and are lower than the numbers of mitochondria
+    type: article-journal
+    volume: "6"
+  - DOI: 10.3389/fcell.2016.00085
+    ISSN: 2296-634X
+    abstract: Organelles with their own distinct genomes, such as plastids and mitochondria, are found in most eukaryotic cells. As these organelles and their host cells have evolved, the partitioning of metabolic processes and the encoding of interacting gene products have created an obligate codependence. This relationship has played a role in shaping the number of organelles in cells through evolution. Factors such as stochastic evolutionary forces acting on genes involved in organelle biogenesis, organelle-nuclear gene interactions, and physical limitations may, to varying degrees, dictate the selective constraint that per-cell organelle number is under. In particular, coordination between nuclear and organellar gene expression may be important in maintaining gene product stoichiometry, which may have a significant role in constraining the evolution of this trait.
+    author:
+      - family: Cole
+        given: Logan W.
+    container-title: Front Cell Dev Biol
+    id: Cole2016
+    issued:
+      date-parts:
+        - - 2016
+          - 8
+    page: "213715"
+    publisher: Frontiers
+    title: The Evolution of Per-cell Organelle Number
+    type: article-journal
+    volume: "4"
+  - DOI: 10.3389/fpls.2016.00057
+    ISSN: 1664-462X
+    abstract: Chloroplast genome copy number is very high in leaf tissue, with upwards of 10,000 or more copies of the chloroplast DNA (ctDNA) per leaf cell. This is often promoted as a major advantage for engineering the plastid genome, as it provides high gene copy number and thus is expected to result in high expression of foreign proteins from integrated genes. However, it is also known that ctDNA copy number and ctDNA integrity decrease as cells age. Quantitative PCR (qPCR) allows measurement of organelle DNA levels relative to a nuclear gene target. We have used this approach to determine changes in copy number of ctDNA relative to the nuclear genome at different ages of Arabidopsis plant growth and in organellar DNA polymerase mutants. The mutant plant lines have T-DNA insertions in genes encoding the two organelle localized DNA polymerases (PolIA and PolIB). Each of these mutant lines exhibits some delay in plant growth and development as compared to wild-type plants, with the PolIB plants having a more pronounced delay. Both mutant lines develop to maturity and produce viable seeds. Mutants for both proteins were observed to have a reduction in ctDNA and mtDNA copy number relative to wild type plants at all time points as measured by qPCR. Both DNA polymerase mutants had a fairly similar decrease in ctDNA copy number, while the PolIB mutant had a greater effect of reduction in mtDNA levels. However, despite similar decreases in genome copy number, RT-PCR analysis of PolIA mutants show that PolIB expression remains unchanged, suggesting that PolIA may not be essential to plant survival. Furthermore, genotypic analysis of plants from heterozygous parents display a strong pressure to maintain two functioning copies of PolIB. These results indicate that the two DNA polymerases are both important in ctDNA replication, and they are not fully redundant to each other, suggesting each has a specific function in plant organelles.
+    author:
+      - family: Morley
+        given: Stewart A.
+      - family: Nielsen
+        given: Brent L.
+    container-title: Front Plant Sci
+    id: Morley2016
+    issued:
+      date-parts:
+        - - 2016
+          - 2
+    page: "171196"
+    publisher: Frontiers
+    title: Chloroplast DNA Copy Number Changes during Plant Development in Organelle DNA Polymerase Mutants
+    type: article-journal
+    volume: "7"
+  - DOI: 10.1093/pcp/pcy084
+    ISSN: 0032-0781
+    abstract: Endosymbiotically originated chloroplast DNA (cpDNA) encodes part of the genetic information needed to fulfill chloroplast function, including fundamental processes such as photosynthesis. In the last two decades, advances in genome analysis led to the identification of a considerable number of cpDNA sequences from various species. While these data provided the consensus features of cpDNA organization and chloroplast evolution in plants, how cpDNA is maintained through development and is inherited remains to be fully understood. In particular, the fact that cpDNA exists as multiple copies despite its limited genetic capacity raises the important question of how copy number is maintained or whether cpDNA is subjected to quantitative fluctuation or even developmental degradation. For example, cpDNA is abundant in leaves, where it forms punctate structures called nucleoids, which seemingly alter their morphologies and numbers depending on the developmental status of the chloroplast. In this review, we summarize our current understanding of ‘cpDNA dynamics’, focusing on the changes in DNA abundance. A special focus is given to the cpDNA degradation mechanism, which appears to be mediated by Defective in Pollen organelle DNA degradation 1 (DPD1), a recently discovered organelle exonuclease. The physiological significance of cpDNA degradation in flowering plants is also discussed.
+    author:
+      - family: Sakamoto
+        given: Wataru
+      - family: Takami
+        given: Tsuneaki
+    container-title: Plant Cell Physiol
+    id: Sakamoto2018
+    issue: "6"
+    issued:
+      date-parts:
+        - - 2018
+          - 6
+    page: 1120-1127
+    publisher: Oxford Academic
+    title: 'Chloroplast DNA Dynamics: Copy Number, Quality Control and Degradation'
+    type: article-journal
+    volume: "59"
+  - URL: https://doi.org/10.1101/2024.10.23.619857
+    abstract: Plant organelle genomes, particularly the large mitochondrial genomes with intricate repetitive structures, present significant challenges for assembly. The advent of long-read sequencing technologies provides a transformative opportunity to generate complete genomes, but problems of resolving alternative structures remain. Here we introduce a novel tool for plant organelle genome assembly from high-accuracy long reads. Our method employs a k-mer based assembler for rapid assembly graph construction, integrates a profile HMM gene database for robust organelle sequence annotation, and leverages a new search method to find the best supported path through the assembly graph. We describe high-quality organelle assemblies for 195 plant species and demonstrate improvements over other methods. The assembled genomes provide multiple insights into structural complexity, heteroplasmy, and DNA exchange between organelles.
+    author:
+      - family: Zhou
+        given: Chenxi
+      - family: Brown
+        given: Max
+      - family: Blaxter
+        given: Mark
+      - literal: The Darwin Tree of Life Project Consortium
+      - family: McCarthy
+        given: Shane A.
+      - family: Durbin
+        given: Richard
+    container-title: bioRxiv
+    id: Zhou2024
+    issued:
+      date-parts:
+        - - 2024
+          - 10
+    page: 2024.10.23.619857
+    publisher: Cold Spring Harbor Laboratory
+    title: 'Oatk: a de novo assembly tool for complex plant organelle genomes'
+    type: article-journal

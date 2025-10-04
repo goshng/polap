@@ -1,0 +1,464 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+polap-py-syncmer-connectivity-select-mt.py  v0.2.0
+
+Assembly-free selection of mitochondrial reads using syncmer connectivity
+and optional X-prior (coverage proxy) to reduce NUMTs/NUPTs.
+
+New:
+  --x-prior            Enable X-based prior weighting of PPR scores
+  --x-tsv FILE         syncfilter quickview TSV (for X = log10(median))
+  --nuc-cut-log10 F    nuclear cut in log10(median); if omitted with --x-prior, X-prior is disabled
+  --x-slope F          sigmoid slope (scale in log10 units, default 0.20)
+
+Score with X-prior:
+  final_score = PPR_score * sigmoid( (X - nuc_cut_log10) / x_slope )
+  → reads far below nuclear cut get small multipliers; mt-like reads get ~1.0
+
+Other arguments unchanged.
+"""
+import sys, os, argparse, gzip, math, collections
+from typing import Dict, List, Tuple, Iterable
+
+VERSION = "0.2.0"
+
+
+def load_sm_dump(path):
+    read2sm = {}
+    sm2reads = {}
+    with open(path) as fh:
+        for line in fh:
+            line = line.rstrip("\n")
+            if not line:
+                continue
+            rid, hashes = (line.split("\t", 1) + [""])[:2]
+            rid = rid.strip()
+            if not rid:
+                continue
+            if hashes:
+                vals = [int(x, 16) for x in hashes.split(",") if x]
+            else:
+                vals = []
+            if not vals:
+                read2sm[rid] = []
+                continue
+            # unique already from dumper; but guard anyway
+            vals = sorted(set(vals))
+            read2sm[rid] = vals
+            for h in vals:
+                sm2reads.setdefault(h, []).append(rid)
+    return read2sm, sm2reads
+
+
+# ------------------ FASTQ / Utils ------------------
+def open_guess(fn):
+    return gzip.open(fn, "rt") if fn.endswith(".gz") else open(fn, "rt")
+
+
+def norm_id(s: str) -> str:
+    return (s or "").split()[0]
+
+
+def fastq_iter(path: str, max_reads: int = 0):
+    n = 0
+    with open_guess(path) as fh:
+        while True:
+            h = fh.readline()
+            if not h:
+                break
+            seq = fh.readline()
+            plus = fh.readline()
+            qual = fh.readline()
+            if not qual:
+                break
+            rid = norm_id(h[1:].strip())
+            yield rid, seq.strip()
+            n += 1
+            if max_reads and n >= max_reads:
+                break
+
+
+# ------------------ load X (quickview TSV) ----------
+def load_X(tsv_path: str):
+    """Return dict: read_id -> X=log10(median)."""
+    X = {}
+    if not tsv_path:
+        return X
+    import csv
+
+    with open(tsv_path, newline="") as fh:
+        r = csv.DictReader(fh, delimiter="\t")
+        for row in r:
+            try:
+                rid = norm_id(row["read_id"])
+                med = float(row["median"])
+                if med > 0:
+                    X[rid] = math.log10(med)
+            except Exception:
+                pass
+    return X
+
+
+# ------------------ Closed Syncmers -----------------
+def nt4(c: str) -> int:
+    if c in "Aa":
+        return 0
+    if c in "Cc":
+        return 1
+    if c in "Gg":
+        return 2
+    if c in "Tt":
+        return 3
+    return -1
+
+
+def rc2b(x: int, l: int) -> int:
+    mask = (1 << (2 * l)) - 1 if l < 32 else (1 << 64) - 1
+    x = (~x) & mask
+    y = 0
+    for _ in range(l):
+        y = (y << 2) | (x & 3)
+        x >>= 2
+    return y
+
+
+def hpc_compress(seq: str) -> str:
+    out = []
+    prev = ""
+    for c in seq.upper():
+        if c not in "ACGT":
+            prev = ""
+            continue
+        if c != prev:
+            out.append(c)
+            prev = c
+    return "".join(out)
+
+
+def closed_syncmers(seq: str, k: int, s: int) -> Iterable[int]:
+    n = len(seq)
+    if n < k:
+        return
+    ns = n - s + 1
+    w = k - s + 1
+    mask = (1 << (2 * s)) - 1 if s < 32 else (1 << 64) - 1
+    f = 0
+    r = 0
+    l = 0
+    sh = [0] * ns
+    nw = 0
+    for c in seq:
+        b = nt4(c)
+        if b < 0:
+            l = 0
+            f = 0
+            r = 0
+            continue
+        f = ((f << 2) | b) & mask
+        r = (rc2b(b, 1) << (2 * (s - 1))) | (r >> 2)
+        if l < s:
+            l += 1
+            if l < s:
+                continue
+        can = f if f < r else r
+        if nw < ns:
+            sh[nw] = can
+            nw += 1
+    if nw > ns:
+        nw = ns
+    for i in range(0, n - k + 1):
+        mn = (1 << 64) - 1
+        arg = -1
+        for j in range(w):
+            v = sh[i + j]
+            if v < mn:
+                mn = v
+                arg = j
+        if arg == 0 or arg == w - 1:
+            yield mn
+
+
+# ------------------ Graph build ---------------------
+def build_syncmer_index(reads_path: str, k: int, s: int, hpc: bool, max_reads: int = 0):
+    read2sm = {}
+    sm2reads = collections.defaultdict(list)
+    for rid, seq in fastq_iter(reads_path, max_reads):
+        if hpc:
+            seq = hpc_compress(seq)
+        S = set(closed_syncmers(seq, k, s))
+        if not S:
+            continue
+        read2sm[rid] = lst = list(S)
+        for h in lst:
+            sm2reads[h].append(rid)
+    return read2sm, sm2reads
+
+
+def build_graph(
+    read2sm, sm2reads, max_occ, min_shared, jaccard_min, edge_norm, topk_nei
+):
+    good_sm = {h: reads for h, reads in sm2reads.items() if len(reads) <= max_occ}
+    rsize = {r: len(sm) for r, sm in read2sm.items()}
+    sm_sets = {r: set(sm) for r, sm in read2sm.items()}
+
+    shared = collections.defaultdict(lambda: collections.defaultdict(int))
+    for h, lst in good_sm.items():
+        n = len(lst)
+        for i in range(n):
+            u = lst[i]
+            for j in range(i + 1, n):
+                v = lst[j]
+                shared[u][v] += 1
+                shared[v][u] += 1
+
+    G = {}
+    for u, nbrs in shared.items():
+        edges = []
+        for v, c in nbrs.items():
+            inter = c
+            union = rsize[u] + rsize[v] - inter
+            jac = inter / union if union > 0 else 0.0
+            if c >= min_shared and jac >= jaccard_min:
+                w = c / math.sqrt(rsize[u] * rsize[v]) if edge_norm else float(c)
+                edges.append((v, w))
+        if topk_nei > 0 and len(edges) > topk_nei:
+            edges.sort(key=lambda x: x[1], reverse=True)
+            edges = edges[:topk_nei]
+        if edges:
+            G[u] = {v: w for v, w in edges}
+    return G
+
+
+# ------------------ Seeded connectivity (PPR) -----------
+def bfs_expand(G, seeds, steps: int):
+    cur = set(seeds)
+    frontier = set(seeds)
+    for _ in range(steps):
+        nxt = set()
+        for u in list(frontier):
+            for v in G.get(u, {}):
+                if v not in cur:
+                    nxt.add(v)
+        if not nxt:
+            break
+        cur.update(nxt)
+        frontier = nxt
+    return cur
+
+
+def personalized_pagerank(G, seeds_pos, alpha=0.85, iters=30, seed_fraction=1.0):
+    nodes = list(G.keys())
+    idx = {u: i for i, u in enumerate(nodes)}
+    N = len(nodes)
+    if N == 0:
+        return {}
+
+    nbr = [list(G[n].items()) for n in nodes]
+    for i in range(N):
+        tot = sum(w for _, w in nbr[i]) or 1.0
+        nbr[i] = [(v, w / tot) for v, w in nbr[i]]
+
+    s = [0.0] * N
+    if seeds_pos:
+        mass = seed_fraction / len(seeds_pos)
+        for u in seeds_pos:
+            if u in idx:
+                s[idx[u]] += mass
+
+    p = s[:]
+    for _ in range(iters):
+        new = [0.0] * N
+        for i in range(N):
+            if nbr[i]:
+                for v, w in nbr[i]:
+                    j = idx.get(v)
+                    if j is not None:
+                        new[j] += alpha * p[i] * w
+        for j in range(N):
+            new[j] += (1 - alpha) * s[j]
+        p = new
+    return {nodes[i]: p[i] for i in range(N)}
+
+
+# ------------------ Main -----------------------
+def main():
+    ap = argparse.ArgumentParser(
+        description="Select mt reads via syncmer connectivity (seeded PPR) with optional X-prior."
+    )
+    ap.add_argument("--reads", required=True)
+    ap.add_argument("--mt", required=True)
+    ap.add_argument("--pt")
+    ap.add_argument("-k", type=int, default=121)
+    ap.add_argument("-s", type=int, default=27)
+    ap.add_argument("--hpc", action="store_true")
+    ap.add_argument("--max-occ", type=int, default=200)
+    ap.add_argument("--min-shared", type=int, default=4)
+    ap.add_argument("--jaccard-min", type=float, default=0.01)
+    ap.add_argument("--edge-norm", action="store_true")
+    ap.add_argument("--topk-nei", type=int, default=50)
+    ap.add_argument("--steps", type=int, default=2)
+    ap.add_argument("--ppr-alpha", type=float, default=0.85)
+    ap.add_argument("--ppr-iter", type=int, default=30)
+    ap.add_argument("--seed-fraction", type=float, default=1.0)
+    ap.add_argument("--score-th", type=float, default=0.0)
+    ap.add_argument("--max-reads", type=int, default=0)
+    ap.add_argument("-o", "--out", required=True)
+    ap.add_argument("--version", action="store_true")
+
+    # X-prior
+    ap.add_argument("--x-prior", action="store_true", help="enable X-prior weighting")
+    ap.add_argument(
+        "--x-tsv", help="quickview TSV with medians to compute X=log10(median)"
+    )
+    ap.add_argument("--nuc-cut-log10", type=float, help="nuclear cut in log10(median)")
+    ap.add_argument(
+        "--x-slope", type=float, default=0.20, help="sigmoid slope in log10 units"
+    )
+    ap.add_argument(
+        "--sm-dump",
+        help="precomputed syncmers per read (TSV: read_id\\thex64,hex64,...)",
+    )
+
+    args = ap.parse_args()
+    if args.version:
+        print(VERSION)
+        sys.exit(0)
+    os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+
+    # Load anchors
+    def read_ids(path):
+        S = set()
+        with open(path) as fh:
+            for line in fh:
+                t = line.strip().split()
+                if t:
+                    S.add(t[0])
+        return S
+
+    mt_seeds = list(read_ids(args.mt))
+    pt_seeds = list(read_ids(args.pt)) if args.pt else []
+
+    # Optional X prior data
+    Xmap = {}
+    if args.x_prior:
+        if args.x_tsv and args.nuc_cut_log10 is not None:
+            Xmap = load_X(args.x_tsv)
+        else:
+            print(
+                "[warn] --x-prior requested but --x-tsv or --nuc-cut-log10 missing; disabling X-prior",
+                file=sys.stderr,
+            )
+            args.x_prior = False
+
+    # ...
+    if args.sm_dump:
+        print("[step] loading precomputed syncmers ...", file=sys.stderr)
+        read2sm, sm2reads = load_sm_dump(args.sm_dump)
+    else:
+        print("[step] computing closed syncmers ...", file=sys.stderr)
+        read2sm, sm2reads = build_syncmer_index(
+            args.reads, args.k, args.s, args.hpc, args.max_reads
+        )
+    print(f"[info] reads with syncmers: {len(read2sm)}", file=sys.stderr)
+
+    # Build graph
+    print("[step] building graph ...", file=sys.stderr)
+    G = build_graph(
+        read2sm,
+        sm2reads,
+        args.max_occ,
+        args.min_shared,
+        args.jaccard_min,
+        args.edge_norm,
+        args.topk_nei,
+    )
+    nE = sum(len(nbrs) for nbrs in G.values())
+    print(f"[graph] nodes={len(G)} edges~={nE}", file=sys.stderr)
+
+    mt_seeds = [u for u in mt_seeds if u in G]
+    if not mt_seeds:
+        print("[error] no mt seeds found in graph", file=sys.stderr)
+        sys.exit(2)
+
+    cand = bfs_expand(G, mt_seeds, args.steps)
+    print(f"[cand] expanded candidates: {len(cand)}", file=sys.stderr)
+
+    subG = {u: {v: w for v, w in G[u].items() if v in cand} for u in cand if u in G}
+    print(f"[ppr] subgraph nodes={len(subG)}", file=sys.stderr)
+
+    scores = personalized_pagerank(
+        subG,
+        mt_seeds,
+        alpha=args.ppr_alpha,
+        iters=args.ppr_iter,
+        seed_fraction=args.seed_fraction,
+    )
+    if not scores:
+        print("[error] PPR returned empty", file=sys.stderr)
+        sys.exit(2)
+
+    # ----- Apply X-prior if enabled -----
+    def sigmoid(z):
+        return 1.0 / (1.0 + math.exp(-z))
+
+    if args.x_prior:
+        cut = args.nuc_cut_log10
+        slope = max(args.x_slope, 1e-6)
+        scores = {
+            u: (scores[u] * sigmoid(((Xmap.get(u, cut) - cut) / slope))) for u in scores
+        }
+
+    # Decide threshold
+    vals = sorted(scores.values(), reverse=True)
+    if args.score_th > 0:
+        th = args.score_th
+    else:
+        import numpy as np
+
+        x = np.array(vals, dtype=float)
+        hist, edges = np.histogram(x, bins=64)
+        if hist.sum() == 0:
+            th = float(np.percentile(x, 80))
+        else:
+            w0 = np.cumsum(hist) / (hist.sum() or 1.0)
+            w1 = 1.0 - w0
+            centers = 0.5 * (edges[:-1] + edges[1:])
+            mu = np.cumsum(hist * centers) / (hist.sum() or 1.0)
+            mu_t = mu[-1] if mu.size else 0.0
+            between = (mu_t * w0 - mu) ** 2 / (w0 * w1 + 1e-12)
+            k = int(np.nanargmax(between)) if between.size else int(len(x) * 0.2)
+            th = edges[min(k + 1, len(edges) - 1)]
+    print(f"[th] threshold = {th:.6g}", file=sys.stderr)
+
+    # Write outputs
+    with open(f"{args.out}.mt.ids", "w") as mt_out, open(
+        f"{args.out}.nuclear.ids", "w"
+    ) as nuc_out, open(f"{args.out}.scores.tsv", "w") as sc_out:
+        sc_out.write("read_id\tdeg\tshared_sum\tfinal_score\n")
+        for u in subG:
+            deg = len(subG[u])
+            shared_sum = sum(subG[u].values())
+            s = scores.get(u, 0.0)
+            sc_out.write(f"{u}\t{deg}\t{shared_sum:.3f}\t{s:.6g}\n")
+            (mt_out if s >= th else nuc_out).write(u + "\n")
+
+    with open(f"{args.out}.graph.stats.txt", "w") as w:
+        w.write(f"nodes\t{len(G)}\n")
+        w.write(f"edges\t{nE}\n")
+        w.write(f"cand_nodes\t{len(subG)}\n")
+        w.write(f"ppr_alpha\t{args.ppr_alpha}\n")
+        w.write(f"ppr_iter\t{args.ppr_iter}\n")
+        w.write(f"x_prior\t{int(args.x_prior)}\n")
+        if args.x_prior:
+            w.write(f"nuc_cut_log10\t{args.nuc_cut_log10}\n")
+            w.write(f"x_slope\t{args.x_slope}\n")
+        w.write(f"threshold\t{th}\n")
+
+    # print(f"[done] {args.out}.mt.ids  {args.out}.nuclear.ids", file=sys.stderr)
+    # print(f"[done] {args.out}.mt.ids", file=sys.stderr)
+    print(f"[done] {args.out}.ids", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

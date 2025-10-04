@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Organelle Assembly Report — %%RUN_NAME%%</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Arial,
+          sans-serif;
+        margin: 24px;
+        line-height: 1.45;
+      }
+      h1,
+      h2,
+      h3 {
+        margin: 0.6em 0 0.3em;
+      }
+      .muted {
+        color: #666;
+      }
+      .small {
+        font-size: 0.9em;
+      }
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin: 12px 0 20px;
+      }
+      .card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 12px;
+      }
+      .card h3 {
+        margin: 0 0 4px;
+        font-size: 1.05em;
+      }
+      .grid {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      }
+      .panel {
+        border: 1px solid #eee;
+        padding: 12px;
+        border-radius: 8px;
+        margin: 12px 0;
+      }
+      .tbl {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.95em;
+      }
+      .tbl th,
+      .tbl td {
+        border: 1px solid #ddd;
+        padding: 6px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      .tbl th {
+        background: #fafafa;
+      }
+      .files a {
+        display: inline-block;
+        margin: 4px 10px 4px 0;
+      }
+      .warn {
+        background: #fff7e6;
+        border: 1px solid #f2cf7f;
+        padding: 8px 10px;
+        border-radius: 6px;
+        margin: 8px 0;
+      }
+      img.graph {
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #eee;
+        border-radius: 4px;
+        background: #fff;
+      }
+      .section {
+        margin-top: 24px;
+      }
+      code {
+        background: #f7f7f7;
+        padding: 1px 4px;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- HEADER -->
+    <h1>Organelle Assembly Report</h1>
+    <p class="muted small">
+      Run: <strong>%%RUN_NAME%%</strong> &middot; Date: %%RUN_DATE%% &middot;
+      polap %%POLAP_VERSION%%
+    </p>
+    <p class="muted small">Command: <code>%%POLAP_CMDLINE%%</code></p>
+
+    <!-- OVERVIEW KPI STRIP -->
+    <div class="kpis">
+      <div class="card">
+        <h3>Input long reads</h3>
+        <div>Total bases: <strong>%%READ_BASES_TOTAL%%</strong></div>
+        <div class="small muted">
+          from <code>annotate-read-pt/pt1/01-contig/l.txt</code>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Subsampled bases</h3>
+        <div>%%READ_BASES_SUBSAMPLED%%</div>
+        <div class="small muted">
+          from <code>annotate-read-pt/pt1/01-contig/l.subsample.txt</code>
+        </div>
+      </div>
+      <div class="card">
+        <h3>PT assembled size</h3>
+        <div><strong>%%PT_SIZE%%</strong></div>
+        <div class="small muted">
+          sum length of <code>graph_final.fasta</code>
+        </div>
+      </div>
+      <div class="card">
+        <h3>MT rounds</h3>
+        <div>Detected: <strong>%%MT_ROUNDS%%</strong></div>
+        <div class="small muted">
+          presence of <code>mt*/30-contigger/graph_final.gfa</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLASTID SECTION -->
+    <div class="section">
+      <h2>Plastid (ptDNA)</h2>
+
+      <!-- PT0 (if exists) -->
+      <div class="panel">
+        <h3>pt0</h3>
+        <div class="grid">
+          <div>
+            <p class="small muted">Assembly graph</p>
+            <a href="annotate-read-pt/pt/30-contigger/graph_final.gfa"
+              >graph_final.gfa</a
+            >
+            &middot;
+            <a href="annotate-read-pt/pt/30-contigger/graph_final.fasta"
+              >graph_final.fasta</a
+            >
+            <div>
+              <img
+                class="graph"
+                src="annotate-read-pt/pt/30-contigger/graph_final.png"
+                alt="pt0 graph"
+              />
+            </div>
+          </div>
+          <div>
+            <p class="small muted">Contig annotation depth</p>
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <a
+                      href="annotate-read-pt/pt/contig-annotation-depth-table.txt"
+                      >contig-annotation-depth-table.txt</a
+                    >
+                  </td>
+                  <td>Depth and MT/PT counts per contig</td>
+                </tr>
+                <tr>
+                  <td>
+                    <a href="annotate-read-pt/pt/50-annotation/mt.gene.count"
+                      >mt.gene.count</a
+                    >
+                  </td>
+                  <td>MT gene hits across pt contigs (if present)</td>
+                </tr>
+                <tr>
+                  <td>
+                    <a
+                      href="annotate-read-pt/pt/pt-contig-annotation-depth-table.txt.scatter.pdf"
+                      >depth scatter (pdf)</a
+                    >
+                  </td>
+                  <td>Coverage scatter diagnostic</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PT1 (if exists) -->
+      <div class="panel">
+        <h3>pt1</h3>
+        <div class="grid">
+          <div>
+            <p class="small muted">Assembly graph</p>
+            <a href="annotate-read-pt/pt1/30-contigger/graph_final.gfa"
+              >graph_final.gfa</a
+            >
+            &middot;
+            <a href="annotate-read-pt/pt1/30-contigger/graph_final.fasta"
+              >graph_final.fasta</a
+            >
+            <div>
+              <img
+                class="graph"
+                src="annotate-read-pt/pt1/30-contigger/graph_final.png"
+                alt="pt1 graph"
+              />
+            </div>
+          </div>
+          <div>
+            <p class="small muted">Contig annotation depth</p>
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <a
+                      href="annotate-read-pt/pt1/contig-annotation-depth-table.txt"
+                      >contig-annotation-depth-table.txt</a
+                    >
+                  </td>
+                  <td>Depth and MT/PT counts per contig</td>
+                </tr>
+                <tr>
+                  <td>
+                    <a href="annotate-read-pt/pt1/50-annotation/mt.gene.count"
+                      >mt.gene.count</a
+                    >
+                  </td>
+                  <td>MT gene hits across pt contigs (if present)</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="small muted">
+              Circular path summary (if present in ptdna/ptdna)
+            </p>
+            <div class="files">
+              <a href="annotate-read-pt/ptdna/ptdna/circular_path.txt"
+                >circular_path.txt</a
+              >
+              <a
+                href="annotate-read-pt/ptdna/ptdna/circular_path_1_concatenated.fa"
+                >circular_path_1_concatenated.fa</a
+              >
+              <!-- add more links if present -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MITOCHONDRIA SECTION -->
+    <div class="section">
+      <h2>Mitochondria (mtDNA)</h2>
+
+      <!-- MT0 -->
+      <div class="panel">
+        <h3>mt0</h3>
+        <div class="grid">
+          <div>
+            <p class="small muted">Assembly graph</p>
+            <a href="mtseed/mt0/30-contigger/graph_final.gfa"
+              >graph_final.gfa</a
+            >
+            &middot;
+            <a href="mtseed/mt0/30-contigger/graph_final.fasta"
+              >graph_final.fasta</a
+            >
+            <div>
+              <img
+                class="graph"
+                src="mtseed/mt0/30-contigger/graph_final.png"
+                alt="mt0 graph"
+              />
+            </div>
+          </div>
+          <div>
+            <p class="small muted">Contig annotation depth</p>
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <a href="mtseed/mt0/contig-annotation-depth-table.txt"
+                      >contig-annotation-depth-table.txt</a
+                    >
+                  </td>
+                  <td>Depth and MT/PT counts per contig</td>
+                </tr>
+                <tr>
+                  <td>
+                    <a href="mtseed/mt0/50-annotation/mt.gene.count"
+                      >mt.gene.count</a
+                    >
+                  </td>
+                  <td>MT gene hits per contig (if present)</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="small muted">
+              Next seeds: <code>mtseed/mt0/mt.contig.name-mt1</code> (forward
+              seed list for mt1)
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- MT1 -->
+      <div class="panel">
+        <h3>mt1</h3>
+        <div class="grid">
+          <div>
+            <p class="small muted">Assembly graph</p>
+            <a href="mtseed/mt1/30-contigger/graph_final.gfa"
+              >graph_final.gfa</a
+            >
+            &middot;
+            <a href="mtseed/mt1/30-contigger/graph_final.fasta"
+              >graph_final.fasta</a
+            >
+            <div>
+              <img
+                class="graph"
+                src="mtseed/mt1/30-contigger/graph_final.png"
+                alt="mt1 graph"
+              />
+            </div>
+          </div>
+          <div>
+            <p class="small muted">Contig annotation depth</p>
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <a href="mtseed/mt1/contig-annotation-depth-table.txt"
+                      >contig-annotation-depth-table.txt</a
+                    >
+                  </td>
+                  <td>Depth and MT/PT counts per contig</td>
+                </tr>
+                <tr>
+                  <td>
+                    <a href="mtseed/mt1/50-annotation/mt.gene.count"
+                      >mt.gene.count</a
+                    >
+                  </td>
+                  <td>MT gene hits per contig (if present)</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="small muted">
+              Next seeds: <code>mtseed/mt1/mt.contig.name-mt2</code> (forward
+              seed list for mt2)
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- MT2 -->
+      <div class="panel">
+        <h3>mt2</h3>
+        <div class="grid">
+          <div>
+            <p class="small muted">Assembly graph</p>
+            <a href="mtseed/mt2/30-contigger/graph_final.gfa"
+              >graph_final.gfa</a
+            >
+            &middot;
+            <a href="mtseed/mt2/30-contigger/graph_final.fasta"
+              >graph_final.fasta</a
+            >
+            <div>
+              <img
+                class="graph"
+                src="mtseed/mt2/30-contigger/graph_final.png"
+                alt="mt2 graph"
+              />
+            </div>
+          </div>
+          <div>
+            <p class="small muted">Contig annotation depth</p>
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <a href="mtseed/mt2/contig-annotation-depth-table.txt"
+                      >contig-annotation-depth-table.txt</a
+                    >
+                  </td>
+                  <td>Depth and MT/PT counts per contig</td>
+                </tr>
+                <tr>
+                  <td>
+                    <a href="mtseed/mt2/50-annotation/mt.gene.count"
+                      >mt.gene.count</a
+                    >
+                  </td>
+                  <td>MT gene hits per contig (if present)</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="small muted">
+              Seeds forward (if any): <code>mtseed/mt2/mt.contig.name-mt3</code>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- MT overlapness (optional global note) -->
+      <div class="panel">
+        <h3>MT overlapness (optional)</h3>
+        <p class="small muted">
+          If present, you can inspect:
+          <a href="mtseed/03-allvsall/overlapness.tsv">overlapness.tsv</a>,
+          <a href="mtseed/03-allvsall/overlapness_strict.tsv"
+            >overlapness_strict.tsv</a
+          >, and QC plots under <code>mtseed/03-allvsall/04-qc</code>.
+        </p>
+      </div>
+    </div>
+
+    <!-- DOWNLOADS -->
+    <div class="section">
+      <h2>Downloads</h2>
+      <div class="panel files">
+        <h3>Plastid</h3>
+        <a href="annotate-read-pt/pt/30-contigger/graph_final.gfa"
+          >pt0 graph_final.gfa</a
+        >
+        <a href="annotate-read-pt/pt/30-contigger/graph_final.fasta"
+          >pt0 graph_final.fasta</a
+        >
+        <a href="annotate-read-pt/pt/contig-annotation-depth-table.txt"
+          >pt0 contig-annotation-depth-table.txt</a
+        >
+        <br />
+        <a href="annotate-read-pt/pt1/30-contigger/graph_final.gfa"
+          >pt1 graph_final.gfa</a
+        >
+        <a href="annotate-read-pt/pt1/30-contigger/graph_final.fasta"
+          >pt1 graph_final.fasta</a
+        >
+        <a href="annotate-read-pt/pt1/contig-annotation-depth-table.txt"
+          >pt1 contig-annotation-depth-table.txt</a
+        >
+      </div>
+      <div class="panel files">
+        <h3>Mitochondria</h3>
+        <a href="mtseed/mt0/30-contigger/graph_final.gfa"
+          >mt0 graph_final.gfa</a
+        >
+        <a href="mtseed/mt0/30-contigger/graph_final.fasta"
+          >mt0 graph_final.fasta</a
+        >
+        <a href="mtseed/mt0/contig-annotation-depth-table.txt"
+          >mt0 contig-annotation-depth-table.txt</a
+        >
+        <br />
+        <a href="mtseed/mt1/30-contigger/graph_final.gfa"
+          >mt1 graph_final.gfa</a
+        >
+        <a href="mtseed/mt1/30-contigger/graph_final.fasta"
+          >mt1 graph_final.fasta</a
+        >
+        <a href="mtseed/mt1/contig-annotation-depth-table.txt"
+          >mt1 contig-annotation-depth-table.txt</a
+        >
+        <br />
+        <a href="mtseed/mt2/30-contigger/graph_final.gfa"
+          >mt2 graph_final.gfa</a
+        >
+        <a href="mtseed/mt2/30-contigger/graph_final.fasta"
+          >mt2 graph_final.fasta</a
+        >
+        <a href="mtseed/mt2/contig-annotation-depth-table.txt"
+          >mt2 contig-annotation-depth-table.txt</a
+        >
+      </div>
+    </div>
+
+    <!-- NEXT STEPS -->
+    <div class="section">
+      <h2>Next steps</h2>
+      <ul>
+        <li>
+          <strong>PT finalized?</strong> If pt1 shows one clean contig with even
+          depth and clear PT gene support, proceed to polishing and release.
+        </li>
+        <li>
+          <strong>PT ambiguous?</strong> Inspect <code>graph_final.gfa</code>,
+          review circular paths in <code>ptdna/ptdna/</code>, adjust repeat
+          resolution if needed.
+        </li>
+        <li>
+          <strong>MT round advance:</strong> Use
+          <code>mtN/mt.contig.name-mt(N+1)</code> to seed the next round;
+          confirm contigs with high MT gene counts and reasonable depth.
+        </li>
+        <li>
+          <strong>Low MT signal?</strong> Re-tune read recruitment or add data;
+          ensure BUSCO AA DB is installed for nuclear labeling if you rely on
+          it.
+        </li>
+      </ul>
+    </div>
+
+    <!-- FOOTER -->
+    <p class="muted small">
+      Generated by polap readassemble. Paths are relative to report location.
+    </p>
+  </body>
+</html>

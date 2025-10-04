@@ -1,0 +1,602 @@
+#!/usr/bin/env bash
+# polap-bash-fast-mtseed-ont.sh
+# Version: v0.0.7
+# Track A+B (ONT): one PAF → overlapness → top-Q% → assemble
+# (miniasm/Raven) → keep intergenic contigs → iterate until <5% growth.
+
+set -euo pipefail
+
+# ────────────────────────────────────────────────────────────────────
+# Paths: POLAP library and helper folder
+# ────────────────────────────────────────────────────────────────────
+_POLAPLIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${_POLAPLIB_DIR}/polap-lib-conda.sh"
+
+HELP="${_POLAPLIB_DIR}/fast-mtseed-ont"
+mkdir -p "${HELP}"
+
+# Helper scripts expected to ALREADY exist in $HELP
+OLPY="${HELP}/polap-py-overlapness-from-paf.py"
+TOPPY="${HELP}/polap-py-topfrac-by-wdeg.py"
+FILTPY="${HELP}/polap-py-filter-paf-by-ids.py"
+CDSPY="${HELP}/polap-py-cds-coverage-from-paf.py"
+SEEDREADSPY="${HELP}/polap-py-seed-mapped-reads.py"
+STOPPY="${HELP}/polap-py-stop-delta.py"
+AWK_CONS="${HELP}/polap-awk-filter-conservative.awk"
+RECRUIT_SH="${HELP}/polap-bash-recruit-count.sh"
+PAF2MREADS_SH="${HELP}/polap-bash-paf2mreads.sh"
+R_PICK="${HELP}/polap-r-pick-high-recruit.R"
+THRESH_NUC_PY="${HELP}/polap-py-threshold-from-nuclear.py"
+
+# ────────────────────────────────────────────────────────────────────
+# Logging (verbose notes with file:line to help debugging)
+# ────────────────────────────────────────────────────────────────────
+VERBOSE=1
+DRY=0
+LOG_FD="/dev/stderr"
+
+# Place near top (after defining LOG/LOG_FD vars), default to 0
+TEE_ACTIVE=0
+
+note() {
+	# file:line + message (for easy debugging)
+	local src="${BASH_SOURCE[1]}"
+	local ln="${BASH_LINENO[0]}"
+	local ts
+	ts="$(date +'%F %T')"
+	local line="[$ts][${src##*/}:${ln}] $*"
+
+	if ((TEE_ACTIVE)); then
+		# Global exec is already tee'ing; just write once to stderr.
+		printf "%s\n" "$line" >&2
+	else
+		# No global tee yet; if LOG is set, tee it here; otherwise stderr only.
+		if [[ -n "${LOG:-}" ]]; then
+			printf "%s\n" "$line" | tee -a "$LOG" >&2
+		else
+			printf "%s\n" "$line" >&2
+		fi
+	fi
+}
+
+# Keep these for future compatibility, but we WON’T use them below.
+cmd() { :; }     # unused on purpose (readability first)
+cmdline() { :; } # unused on purpose (readability first)
+
+# argv-safe (no pipes/redirs inside the argument list)
+cmd() {
+	if ((DRY)); then
+		local prog="$1"
+		shift
+		printf "[DRY] %q" "$prog" | tee -a "$LOG_FD"
+		for a in "$@"; do printf " %q" "$a" | tee -a "$LOG_FD"; done
+		printf "\n" | tee -a "$LOG_FD"
+		return 0
+	fi
+	local prog="$1"
+	shift
+	printf "[RUN] %q" "$prog" | tee -a "$LOG_FD"
+	for a in "$@"; do printf " %q" "$a" | tee -a "$LOG_FD"; done
+	printf "\n" | tee -a "$LOG_FD"
+	"$prog" "$@"
+}
+
+require_tools() {
+	local missing=0
+	for t in "$@"; do
+		if ! command -v "$t" >/dev/null 2>&1; then
+			note "ERR required tool not found in PATH: $t"
+			missing=1
+		fi
+	done
+	if ((missing)); then
+		note "ERR please load modules / activate conda env so tools are on PATH."
+		exit 127
+	fi
+}
+
+# ────────────────────────────────────────────────────────────────────
+# Small bash functions (no wrappers inside; plain commands only)
+# ────────────────────────────────────────────────────────────────────
+
+# plastid_ids_from_paf: pick confident plastid-origin read IDs
+# - Input : $1=plastid.paf  (minimap2 PAF; columns 0..11)
+# - Output: $2=plastid.ids  (unique qnames)
+# - Rule  : ident>=0.90, qcov>=0.30, MAPQ>=20
+plastid_ids_from_paf() {
+	local paf="$1" out="$2"
+	note "plastid_ids_from_paf: awk filter → sort -u"
+	awk 'BEGIN{FS=OFS="\t"}
+       NF>=12{
+         alen=$11+0; nmatch=$10+0; mapq=$12+0;
+         ident = (alen>0? nmatch/alen : 0);
+         qcov  = ($4-$3)/($2+0.0);
+         if (ident>=0.90 && qcov>=0.30 && mapq>=20) print $1
+       }' "$paf" | sort -u >"$out"
+}
+
+# nuc_ids_from_paf_miniprot: pick confident BUSCO-mapped reads
+# - Input : $1=nuc_miniprot.paf
+# - Output: $2=nuc.ids      (unique qnames)
+# - Rule  : aligned length (PAF col10) >= 150
+nuc_ids_from_paf_miniprot() {
+	local paf="$1" out="$2"
+	note "nuc_ids_from_paf_miniprot: awk length >=150 → sort -u"
+	awk 'BEGIN{FS=OFS="\t"} NF>=12{ if($11+0>=150) print $1 }' "$paf" |
+		sort -u >"$out"
+}
+
+# make_keep_ids: IDs in reads minus (plastid ∪ nuclear)
+# Uses process substitution and comm. Pure shell with tools.
+make_keep_ids() {
+	local in_reads="$1" pt_ids="$2" nuc_ids="$3" keep="$4"
+	note "make_keep_ids: create keep.ids by excluding PT/NUC"
+	if [[ -n "$pt_ids" && -s "$pt_ids" && -n "$nuc_ids" && -s "$nuc_ids" ]]; then
+		comm -23 <(seqkit fx2tab -n "$in_reads" | sort -u) \
+			<(cat "$pt_ids" "$nuc_ids" | sort -u) >"$keep"
+	elif [[ -n "$pt_ids" && -s "$pt_ids" ]]; then
+		comm -23 <(seqkit fx2tab -n "$in_reads" | sort -u) \
+			<(sort -u "$pt_ids") >"$keep"
+	elif [[ -n "$nuc_ids" && -s "$nuc_ids" ]]; then
+		comm -23 <(seqkit fx2tab -n "$in_reads" | sort -u) \
+			<(sort -u "$nuc_ids") >"$keep"
+	else
+		note "make_keep_ids: no subtraction lists; keeping all."
+		seqkit fx2tab -n "$in_reads" | sort -u >"$keep"
+	fi
+}
+
+# make_keep_ids_pt_only:
+#   Keep reads minus plastid-only; do NOT subtract nuclear.
+#   Args: reads.fq(.gz) pt_ids keep_out
+make_keep_ids_pt_only() {
+	local in_reads="$1" pt_ids="$2" keep="$3"
+	note "make_keep_ids_pt_only: exclude PT only → $keep"
+	if [[ -n "$pt_ids" && -s "$pt_ids" ]]; then
+		comm -23 <(seqkit fx2tab -n "$in_reads" | sort -u) \
+			<(sort -u "$pt_ids") >"$keep"
+	else
+		# No PT list → keep everything
+		seqkit fx2tab -n "$in_reads" | sort -u >"$keep"
+	fi
+}
+
+# map_sort_bam: minimap2 map-ont to BAM (sorted)
+# - Args: ref.fa reads.fq(.gz) out.bam threads
+map_sort_bam() {
+	local ref="$1" rds="$2" bam="$3" th="$4"
+	note "map_sort_bam: minimap2 | samtools sort → $bam"
+	minimap2 -x map-ont -a -t "$th" "$ref" "$rds" |
+		samtools sort -@4 -o "$bam"
+}
+
+# ────────────────────────────────────────────────────────────────────
+# Defaults & CLI
+# ────────────────────────────────────────────────────────────────────
+reads=""
+pref=""
+nprot=""
+mcds=""
+outdir="fast_mtseed_ont_out"
+threads=48
+top_frac="0.20"
+min_olen=1200
+min_ident="0.84"
+w_floor="0.12"
+rounds_max=1
+delta_stop="0.05"
+seed=13
+assembler="miniasm"
+steps=""
+nuc_ids_opt=""
+
+usage() {
+	cat <<EOF
+polap-bash-fast-mtseed-ont.sh v0.0.7
+
+Usage:
+  $0 -r reads.fq.gz -o outdir [options]
+
+Required:
+  -r, --reads        ONT reads (FASTQ[.gz])
+
+Optional:
+  -p, --plastid-ref  plastid FASTA (subtraction)
+  -n, --nuc-prot     BUSCO proteins FASTA (miniprot subtraction)
+  -m, --mt-cds       mito CDS proteins FASTA (intergenic filter)
+  -o, --outdir       output directory [${outdir}]
+  -t, --threads      threads [${threads}]
+  --top-frac         top frac by overlapness [${top_frac}]
+  --min-olen         min aligned length [${min_olen}]
+  --min-ident        min identity [${min_ident}]
+  --w-floor          min edge weight floor [${w_floor}]
+  --rounds-max       max rounds [${rounds_max}]
+  --delta-stop       stop if |M| growth < x [${delta_stop}]
+  --nuc-ids          file of BUSCO-positive nuclear read IDs (optional)
+  --seed             RNG seed [${seed}]
+  --assembler        miniasm|raven [${assembler}]
+  --step             run only steps (e.g. 1,3 or 1-3)
+  -v, --verbose      increase verbosity
+  --quiet            be quiet
+  --dry              dry-run (log-only; does NOT execute)
+  -h, --help         help
+
+Steps:
+  0 subtraction, 1 allvsall, 2 overlapness+top,
+  3 assemble, 4 intergenic, 5 map-seeds, 6 stop-check
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+	-r | --reads)
+		reads="$2"
+		shift 2
+		;;
+	-p | --plastid-ref)
+		pref="$2"
+		shift 2
+		;;
+	-n | --nuc-prot)
+		nprot="$2"
+		shift 2
+		;;
+	--nuc-ids)
+		nuc_ids_opt="$2"
+		shift 2
+		;;
+	-m | --mt-cds)
+		mcds="$2"
+		shift 2
+		;;
+	-o | --outdir)
+		outdir="$2"
+		shift 2
+		;;
+	-t | --threads)
+		threads="$2"
+		shift 2
+		;;
+	--top-frac)
+		top_frac="$2"
+		shift 2
+		;;
+	--min-olen)
+		min_olen="$2"
+		shift 2
+		;;
+	--min-ident)
+		min_ident="$2"
+		shift 2
+		;;
+	--w-floor)
+		w_floor="$2"
+		shift 2
+		;;
+	--rounds-max)
+		rounds_max="$2"
+		shift 2
+		;;
+	--delta-stop)
+		delta_stop="$2"
+		shift 2
+		;;
+	--seed)
+		seed="$2"
+		shift 2
+		;;
+	--assembler)
+		assembler="$2"
+		shift 2
+		;;
+	--step)
+		steps="$2"
+		shift 2
+		;;
+	-v | --verbose)
+		VERBOSE=$((VERBOSE + 1))
+		shift
+		;;
+	--quiet)
+		VERBOSE=0
+		shift
+		;;
+	--dry)
+		DRY=1
+		shift
+		;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	*)
+		note "ERR unknown arg: $1"
+		usage
+		exit 1
+		;;
+	esac
+done
+
+_polap_lib_conda-ensure_conda_env polap || exit 1
+# Call it once up-front (add/remove as needed)
+require_tools minimap2 samtools seqkit python Rscript awk sort comm cut
+
+[[ -z "$reads" ]] && {
+	note "ERR missing --reads"
+	exit 1
+}
+
+# Verify helper scripts exist
+for s in "$OLPY" "$TOPPY" "$FILTPY" "$CDSPY" "$SEEDREADSPY" \
+	"$STOPPY" "$AWK_CONS" "$RECRUIT_SH" "$PAF2MREADS_SH" \
+	"$R_PICK" "$THRESH_NUC_PY"; do
+	[[ -s "$s" ]] || {
+		note "ERR missing helper: $s"
+		exit 1
+	}
+done
+
+mkdir -p "$outdir"
+
+LOG="${outdir}/pipeline.log"
+LOG_FD="$LOG"
+if ((!DRY)); then
+	exec > >(tee -a "$LOG") 2>&1
+	TEE_ACTIVE=1 # <— tell note() the global tee is active
+fi
+
+note "Outdir: $outdir"
+note "Assembler: $assembler ; threads: $threads"
+note "top-frac: $top_frac ; w-floor: $w_floor"
+
+# Step selection helpers
+_step_set=""
+_add_steps() {
+	local spec="$1"
+	IFS=',' read -r -a arr <<<"$spec"
+	for tok in "${arr[@]}"; do
+		if [[ "$tok" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+			local a=${BASH_REMATCH[1]} b=${BASH_REMATCH[2]}
+			for ((i = a; i <= b; i++)); do _step_set+=" $i "; done
+		elif [[ "$tok" =~ ^[0-9]+$ ]]; then
+			_step_set+=" $tok "
+		fi
+	done
+}
+_should_run() {
+	local s="$1"
+	[[ -z "$steps" ]] && return 0
+	[[ -z "$_step_set" ]] && _add_steps "$steps"
+	[[ " $_step_set " == *" $s "* ]]
+}
+
+# ────────────────────────────────────────────────────────────────────
+# Step 0: conservative subtraction (optional)
+# ────────────────────────────────────────────────────────────────────
+ST0="${outdir}/00_subtract"
+cmd mkdir -p "$ST0"
+R1="$reads"
+
+if _should_run 1; then
+	note "Step1 - delete ptDNA reads"
+
+	if [[ -n "$pref" ]]; then
+		bash "${_POLAPLIB_DIR}/polap-bash-remove-ptdna-reads.sh" \
+			-r "${reads}" \
+			-p "${pref}" \
+			-o "${ST0}" \
+			--min-ident 0.70 \
+			--min-qcov 0.20 \
+			--min-alen 1000 \
+			--threads "${threads}"
+	fi
+fi
+
+if _should_run 2; then
+	if [[ -n "$nprot" ]]; then
+		NPAF="${ST0}/nuc_miniprot.paf"
+		note "Step0: miniprot proteins →  reads > $NPAF"
+		if ((!DRY)); then
+			if [[ ! -s "$reads.mpi" ]]; then
+				miniprot -d "$reads.mpi" "$reads"
+			fi
+			miniprot -t "${threads}" \
+				-S \
+				-N 1 --outc 0.5 --outs 0.995 \
+				-n 6 -m 120 -l 7 -e 1500 \
+				-c 5000 -M 2 \
+				"$reads.mpi" "$nprot" >"$NPAF"
+		fi
+		NIDS="${ST0}/nuc.ids"
+		note "Step0: nuc_ids_from_paf_miniprot →  $NIDS"
+		if ((!DRY)); then
+			nuc_ids_from_paf_miniprot "$NPAF" "$NIDS"
+		fi
+	fi
+fi
+R1="${outdir}/00_subtract/reads.nonpt.fq.gz"
+
+note "R1: ${R1}"
+
+# ────────────────────────────────────────────────────────────────────
+# Step 1: one all-vs-all PAF on R1
+# ────────────────────────────────────────────────────────────────────
+ST1="${outdir}/01_allvsall"
+mkdir -p "$ST1"
+PAFALL="${ST1}/allvsall.paf"
+if _should_run 3; then
+	note "Step1: minimap2 ava-ont R1×R1 > $PAFALL"
+	if ((!DRY)); then
+		if [[ ! -s "$PAFALL" ]]; then
+			minimap2 -x ava-ont -t "$threads" --secondary=yes -N 50 \
+				--mask-level 0.50 "$R1" "$R1" >"$PAFALL"
+		fi
+	fi
+fi
+
+# ────────────────────────────────────────────────────────────────────
+# Iterative rounds (Steps 2–6)
+# ────────────────────────────────────────────────────────────────────
+M_PREV_SIZE=0
+SEEDS_CUR=""
+
+for round in $(seq 1 "$rounds_max"); do
+	RDIR="${outdir}/round_${round}"
+	mkdir -p "$RDIR"
+	note "== Round ${round} =="
+
+	# Step 2: overlapness + selection (nuclear-aware if --nuc-ids is given)
+	if _should_run 4; then
+		OTSV="${RDIR}/overlapness.tsv"
+		note "Step2: compute overlapness (degree, wdegree) →  $OTSV"
+		if ((!DRY)); then
+			python "$OLPY" "$PAFALL" \
+				--min_olen "$min_olen" \
+				--min_ident "$min_ident" \
+				--w_floor "$w_floor" >"$OTSV"
+		fi
+
+		# Decide selection method:
+		#  - If --nuc-ids present and non-empty: derive cutoffs from nuclear set.
+		#  - Else fallback to top-frac.
+		# Decide selection method in Step 2:
+		SELECT_IDS="${RDIR}/select_ids.txt"
+
+		if [[ -n "$nuc_ids_opt" && -s "$nuc_ids_opt" ]]; then
+			note "Step2: nuclear-guided thresholds from $nuc_ids_opt"
+			if ((!DRY)); then
+				eval "$("$THRESH_NUC_PY" "$OTSV" "$nuc_ids_opt" \
+					--mode fpr --fpr 0.01 --diag "${RDIR}/threshold_from_nuclear.tsv")"
+				note "Step2: thresholds → wdeg_min=$wdeg_min  deg_min=$deg_min"
+
+				awk -v W="$wdeg_min" -v D="$deg_min" 'BEGIN{FS=OFS="\t"}
+      NR>1 && ($3+0)>=W && ($2+0)>=D {print $1}' "$OTSV" |
+					sort -u >"${RDIR}/organelle.ids"
+
+				comm -23 <(sort -u "${RDIR}/organelle.ids") \
+					<(sort -u "$nuc_ids_opt") >"$SELECT_IDS"
+			fi
+		else
+			note "Step2: no nuc_ids; using top-frac ($top_frac)"
+			((!DRY)) && python "$TOPPY" "$OTSV" --top_frac "$top_frac" \
+				>"$SELECT_IDS"
+		fi
+
+	else
+		# Step skipped; expect precomputed select_ids
+		SELECT_IDS="${RDIR}/select_ids.txt"
+		[[ -s "$SELECT_IDS" ]] || {
+			note "ERR missing $SELECT_IDS"
+			exit 1
+		}
+	fi
+
+	# Step 3: assemble
+	if _should_run 5; then
+		if [[ "$assembler" == "miniasm" ]]; then
+
+			# miniasm branch
+			SUBPAF="${RDIR}/top_overlaps.paf.gz"
+			note "Step3: filter PAF by SELECT_IDS → $SUBPAF"
+			((!DRY)) && python "$FILTPY" "$PAFALL" "$SELECT_IDS" -o "$SUBPAF"
+
+			TOPFA="${RDIR}/top_reads.fa.gz"
+			note "Step3: fq2fa | seqkit grep SELECT_IDS → $TOPFA"
+			((!DRY)) && seqkit fq2fa "$R1" | seqkit grep -f "$SELECT_IDS" -o "$TOPFA"
+
+			GFA="${RDIR}/miniasm.gfa"
+			note "Step3: miniasm -f $TOPFA $SUBPAF > $GFA"
+			((!DRY)) && miniasm -f "$TOPFA" "$SUBPAF" >"$GFA"
+
+			SEEDS_ROUND="${RDIR}/m_seeds_raw.fa"
+			note "Step3: extract sequences from GFA → $SEEDS_ROUND"
+			if ((!DRY)); then
+				awk '/^S/{print ">"$2"\n"$3}' "$GFA" >"$SEEDS_ROUND"
+			fi
+		else
+			TOPFQ="${RDIR}/top_reads.fq.gz"
+			note "Step3: seqkit grep SELECT_IDS → $TOPFQ"
+			((!DRY)) && seqkit grep -f "$SELECT_IDS" "$R1" -o "$TOPFQ"
+
+			SEEDS_ROUND="${RDIR}/raven_contigs.fasta"
+			note "Step3: raven --disable-polishing → $SEEDS_ROUND"
+			((!DRY)) && raven --threads "$threads" --disable-polishing \
+				-o "$SEEDS_ROUND" "$TOPFQ"
+		fi
+	else
+		SEEDS_ROUND="${RDIR}/m_seeds_raw.fa"
+		[[ -s "$SEEDS_ROUND" ]] || {
+			SEEDS_ROUND="${RDIR}/raven_contigs.fasta"
+			[[ -s "$SEEDS_ROUND" ]] || {
+				note "ERR no contigs"
+				exit 1
+			}
+		}
+	fi
+
+	if _should_run 6; then
+
+		# annotate miniasm assembly contigs
+		#
+		contigger_dir="${RDIR}/30-contigger"
+		mkdir -p "${contigger_dir}"
+		sed 's/LN:i/dp:i/' "${RDIR}/miniasm.gfa" >"${contigger_dir}/graph_final.gfa"
+
+		# polap annotate -o "${outdir}" -i round_1
+
+		# select seed contigs
+		#
+		bash "${_POLAPLIB_DIR}/../polap2.sh" readassemble annotated \
+			-o "${outdir}" -i round_1 \
+			-l "${reads}"
+
+		# select reads by mapping reads on the seeds
+		#
+
+	fi
+
+	# Step 6: compute |M| and stopping
+	if _should_run x; then
+		MIDS="${RDIR}/M_reads.ids"
+		note "Step6: conservative PAF→M read IDs via awk+py → $MIDS"
+		((!DRY)) && bash "$PAF2MREADS_SH" "$PAFM" "$AWK_CONS" \
+			"$SEEDREADSPY" "$MIDS"
+
+		if ((!DRY)); then
+			M_CURR_SIZE=$(wc -l <"$MIDS" | tr -d '[:space:]')
+			if [[ "$M_PREV_SIZE" -gt 0 ]]; then
+				DELTA=$(
+					python - <<PY
+prev=${M_PREV_SIZE}; curr=${M_CURR_SIZE}
+print(0.0 if prev==0 else (curr-prev)/prev)
+PY
+				)
+			else
+				DELTA="1.0"
+			fi
+			note "Step6: |M|_prev=$M_PREV_SIZE  |M|_curr=$M_CURR_SIZE  Δ=$DELTA"
+
+			SEEDS_CUR="${RDIR}/m_seeds_merged.fa"
+			note "Step6: cp new seeds → $SEEDS_CUR"
+			cp "$NEWSEEDS" "$SEEDS_CUR"
+			M_PREV_SIZE="$M_CURR_SIZE"
+
+			STOP=$(python "$STOPPY" "$DELTA" "$delta_stop")
+			note "Step6: STOP? ($DELTA < $delta_stop) → $STOP"
+			if [[ "$STOP" -eq 1 ]]; then
+				note "Stop: growth threshold reached."
+				break
+			fi
+		fi
+	fi
+done
+
+if ((!DRY)); then
+	FINAL_DIR="$(dirname "$SEEDS_CUR")"
+	FINAL_SEEDS="${FINAL_DIR}/m_seeds_final.fa"
+	note "Finalize: cp $SEEDS_CUR → $FINAL_SEEDS"
+	cp "$SEEDS_CUR" "$FINAL_SEEDS"
+	note "Done. Final seeds: $FINAL_SEEDS"
+else
+	note "--dry finished (no commands executed)."
+fi

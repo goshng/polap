@@ -1,0 +1,12 @@
+getorganelle,Anthoceros agrestis,GetOrganelle,./Test_species/t1/0/getorganelle/embplant_pt.K115.complete.graph1.selected_graph.png
+ptgaul,Anthoceros agrestis,ptGAUL,./Test_species/t1/0/ptgaul/flye_cpONT/assembly_graph.png
+polap-disassemble,Anthoceros agrestis,Polap,./Test_species/t1/2/polap-disassemble/2/disassemble/infer-1/2/1/assembly_graph.png
+pmat-nextdenovo,Anthoceros agrestis,PMAT,./na.png
+tippo-nextdenovo,Anthoceros agrestis,TIPPo,./Test_species/t1/0/tippo-nextdenovo/onthq/cns.fa.chloroplast.fasta.filter.800.round1.fasta.chloroplast.flye/assembly_graph.png
+oatk-nextdenovo,Anthoceros agrestis,Oatk,./Test_species/t1/0/oatk-nextdenovo/oatk-nextdenovo-30.pltd.png
+getorganelle,Eucalyptus pauciflora,GetOrganelle,./Taxon_genus/t1/0/getorganelle/embplant_pt.K115.complete.graph1.selected_graph.png
+ptgaul,Eucalyptus pauciflora,ptGAUL,./Taxon_genus/t1/0/ptgaul/flye_cpONT/assembly_graph.png
+polap-disassemble,Eucalyptus pauciflora,Polap,./Taxon_genus/t1/2/polap-disassemble/2/disassemble/infer-1/2/2/assembly_graph.png
+pmat-nextdenovo,Eucalyptus pauciflora,PMAT,./na.png
+tippo-nextdenovo,Eucalyptus pauciflora,TIPPo,./Taxon_genus/t1/0/tippo-nextdenovo/onthq/cns.fa.chloroplast.fasta.filter.800.round1.fasta.chloroplast.flye/assembly_graph.png
+oatk-nextdenovo,Eucalyptus pauciflora,Oatk,./Taxon_genus/t1/0/oatk-nextdenovo/oatk-nextdenovo-30.pltd.png

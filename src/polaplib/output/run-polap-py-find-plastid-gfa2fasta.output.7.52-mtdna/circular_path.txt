@@ -1,0 +1,4 @@
+edge_2+, edge_1-, edge_3-, edge_1+
+edge_2+, edge_1-, edge_3+, edge_1+
+edge_1-, edge_3-, edge_1+, edge_2-
+edge_1-, edge_3+, edge_1+, edge_2-

@@ -70,14 +70,11 @@ Options:
     reads data file
 
 Examples:
-  Collect mtDNA reads:
-    polap ${polap_cmd} fast -l l.fq
-
   Annotate l.fq:
     polap ${polap_cmd} annotate -l l.fq
 
-TODO:
-  Dev.
+  Collect mtDNA reads and assemble mtDNA:
+    polap ${polap_cmd} fast -l l.fq
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -110,30 +107,41 @@ EOF
 
 	if [[ "${_arg_menu[1]}" == "annotate" ]]; then
 		_polap_lib_conda-ensure_conda_env polap || exit 1
-		_polap_lib_readassemble-select-organelle-reads
+		_polap_lib_readassemble-select-organelle-reads mtseed
+		_polap_lib_file-cleanup -d "${_arg_outdir}/annotate-read-mtseed" -s 5M -a rm
 		conda deactivate
 	fi
 
 	if [[ "${_arg_menu[1]}" == "fast" ]]; then
 		_polap_lib_conda-ensure_conda_env polap || exit 1
 
-		verbose_or_quiet_flags() {
-			((_arg_verbose > 0)) && for ((i = 1; i < _arg_verbose; i++)); do echo -n "-v "; done || echo -n "--quiet"
-		}
+		# verbose_or_quiet_flags() {
+		# 	((_arg_verbose > 0)) && for ((i = 1; i < _arg_verbose; i++)); do echo -n "-v "; done || echo -n "--quiet"
+		# }
+		# local _arg_verbose_str=$(verbose_or_quiet_flags)
 
+		if [[ "${_arg_steps_is}" == "off" ]]; then
+			_arg_steps_include="1-9"
+		fi
+		_polap_log0 "verbose: ${_arg_verbose_str}"
 		bash "${_POLAPLIB_DIR}/polap-bash-fast-mtseed-ont.sh" \
 			-r "${_arg_long_reads}" \
 			-o "${_arg_outdir}/mtseed" \
 			-p "${_arg_pt_ref}" \
-			--pt-origin "${_arg_outdir}/annotate-read-pt/pt.id.all.txt" \
-			--mt-origin "${_arg_outdir}/annotate-read-pt/mt.id.all.txt" \
+			--pt-origin "${_arg_outdir}/annotate-read-mtseed/pt.id.all.txt" \
+			--mt-origin "${_arg_outdir}/annotate-read-mtseed/mt.id.all.txt" \
 			-n "busco_downloads/lineages/viridiplantae_odb12/refseq_db.faa.gz" \
 			-t "${_arg_threads}" \
-			--step "${_arg_steps_include}" \
-			$(verbose_or_quiet_flags)
+			--use-parallel \
+			${_arg_verbose_str} \
+			--step "${_arg_steps_include}"
+
+		_polap_lib_file-cleanup -d "${_arg_outdir}/mtseed" -s 5M -a rm
 
 		conda deactivate
 	fi
+	# _polap_log0 "verbose: ${_arg_verbose_str}"
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

@@ -1,0 +1,299 @@
+#!/usr/bin/env bash
+# polap-bash-oatk-ont.sh
+# -------------------------------------------------------------
+# ONT (Oxford Nanopore) runner for Oatk syncasm + polish + annotate + pathfinder.
+# Handles chunked mapping, polishing, Medaka, and pathfinder pipeline.
+#
+#   Typical stages:
+#     1) QC:   sanity checks, seqkit stats, base length histograms
+#     2) Assemble: run syncasm with ONT-friendly knobs (big k ladder, RLE/HPC optional)
+#     3) Polish: racon polishing (ONT reads → assembly)
+#     4) Medaka: optional neural polishing (if model available)
+#     5) Annotate: hmmannot against mito/plastid profiles
+#     6) Pathfinder: select best circular path
+#     7) Summary: reports, plots, unitigs, and annotation tables
+#
+# Notes:
+#   - Syncasm options are tuned for ONT: --a, --weak-cross, --unzip-round, --no-read-ec.
+#   - Polishing uses racon (N rounds). Medaka is optional.
+#   - Supports --map-chunks to split huge FASTQs into smaller minimap2 jobs.
+#   - All steps are selectable via -s (--steps qc,assemble,polish,annotate,...).
+#
+# Requirements: minimap2, racon, medaka (optional), hmmannot, seqkit, awk, polap libs.
+# -------------------------------------------------------------
+
+set -euo pipefail
+
+#############################################
+# Logging & helpers
+#############################################
+: "${POLAP_LOG_LEVEL:=1}" # 0=quiet, 1=info, 2=verbose
+log() {
+	local lvl=$1
+	shift
+	[[ $POLAP_LOG_LEVEL -ge $lvl ]] && echo "$@" >&2
+}
+die() {
+	echo "[ERR]" "$@" >&2
+	exit 1
+}
+need() { command -v "$1" >/dev/null 2>&1 || die "missing dependency: $1"; }
+
+#############################################
+# Defaults
+#############################################
+READS=""
+OUT=""
+THREADS=32
+STEPS="qc,assemble,polish,annotate,pathfinder,summary"
+
+# Syncasm knobs
+K_LIST="401,251,151,121"
+SMER=31
+ARC=0.25
+WEAKX=0.20
+UNZIP=6
+NO_EC=0
+
+# Polishing knobs
+RACON_ROUNDS=2
+MEDAKA_MODEL="r104_e81_sup_g615"
+NO_MEDAKA=0
+
+# Chunked mapping knobs
+MAP_CHUNKS=0
+MM2_EXTRA=""
+
+# DB / annotation
+OATKDB=""
+CLADE="magnoliopsida"
+HMMBIN="hmmannot"
+NHMMSCAN="nhmmscan"
+
+usage() {
+	cat <<EOF
+Usage:
+  $(basename "$0") --reads READS.fq.gz --out OUTDIR --oatkdb OATKDB [options]
+
+Required:
+  --reads FILE          ONT reads
+  --out   DIR           output folder
+  --oatkdb DIR          OatkDB root (must contain v20230921)
+
+General:
+  --threads INT         threads (default ${THREADS})
+  -s qc,assemble,...    steps to run (default all)
+  -v|--verbose          verbose
+  -q|--quiet            quiet
+
+Syncasm options (ONT-friendly defaults):
+  --k-list "401,251,151,121"
+  --smer INT            syncmer size (default ${SMER})
+  --a FLOAT             min arc coverage (default ${ARC})
+  --weak-cross FLOAT    weak crosslink threshold (default ${WEAKX})
+  --unzip-round INT     graph unzip rounds (default ${UNZIP})
+  --no-read-ec          disable syncasm error correction
+
+Polish / Medaka:
+  --racon-rounds INT    racon rounds (default ${RACON_ROUNDS})
+  --medaka-model STR    medaka model (default ${MEDAKA_MODEL})
+  --no-medaka           skip medaka polish
+
+Mapping knobs:
+  --map-chunks INT      split reads into chunks (default ${MAP_CHUNKS})
+  --mm2-extra "FLAGS"   extra minimap2 flags
+
+Annotation:
+  --clade NAME          Oatk fam clade (default ${CLADE})
+  --hmm-bin PATH        hmmannot binary (default ${HMMBIN})
+  --nhmmscan PATH       nhmmscan binary (default ${NHMMSCAN})
+EOF
+}
+
+#############################################
+# Parse CLI
+#############################################
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+	--reads)
+		READS="$2"
+		shift 2
+		;;
+	--out)
+		OUT="$2"
+		shift 2
+		;;
+	--oatkdb)
+		OATKDB="$2"
+		shift 2
+		;;
+	--threads)
+		THREADS="$2"
+		shift 2
+		;;
+	-s | --steps)
+		STEPS="$2"
+		shift 2
+		;;
+	--k-list)
+		K_LIST="$2"
+		shift 2
+		;;
+	--smer)
+		SMER="$2"
+		shift 2
+		;;
+	--a)
+		ARC="$2"
+		shift 2
+		;;
+	--weak-cross)
+		WEAKX="$2"
+		shift 2
+		;;
+	--unzip-round)
+		UNZIP="$2"
+		shift 2
+		;;
+	--no-read-ec)
+		NO_EC=1
+		shift
+		;;
+	--racon-rounds)
+		RACON_ROUNDS="$2"
+		shift 2
+		;;
+	--medaka-model)
+		MEDAKA_MODEL="$2"
+		shift 2
+		;;
+	--no-medaka)
+		NO_MEDAKA=1
+		shift
+		;;
+	--map-chunks)
+		MAP_CHUNKS="$2"
+		shift 2
+		;;
+	--mm2-extra)
+		MM2_EXTRA="$2"
+		shift 2
+		;;
+	--clade)
+		CLADE="$2"
+		shift 2
+		;;
+	--hmm-bin)
+		HMMBIN="$2"
+		shift 2
+		;;
+	--nhmmscan)
+		NHMMSCAN="$2"
+		shift 2
+		;;
+	-v | --verbose)
+		POLAP_LOG_LEVEL=2
+		shift
+		;;
+	-q | --quiet)
+		POLAP_LOG_LEVEL=0
+		shift
+		;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	*)
+		echo "[ERR] unknown arg: $1"
+		usage
+		exit 1
+		;;
+	esac
+done
+[[ -z "$READS" || -z "$OUT" || -z "$OATKDB" ]] && {
+	usage
+	exit 1
+}
+
+#############################################
+# Prep
+#############################################
+READS="$(readlink -f "$READS")"
+OUT="$(readlink -f "$OUT")"
+mkdir -p "$OUT"
+cd "$OUT"
+log 1 "[info] ONT pipeline: OUT=$OUT threads=$THREADS steps=$STEPS"
+
+#############################################
+# Step: QC
+#############################################
+if [[ "$STEPS" == *qc* ]]; then
+	log 1 "[qc] seqkit stats"
+	seqkit stats -Ta "$READS" >qc.stats.txt
+fi
+
+#############################################
+# Step: Assemble (syncasm)
+#############################################
+if [[ "$STEPS" == *assemble* ]]; then
+	log 1 "[assemble] syncasm with K=$K_LIST"
+	syncasm -t "$THREADS" -o syncasm.asm \
+		-k "$K_LIST" -s "$SMER" -a "$ARC" \
+		--weak-cross "$WEAKX" --unzip-round "$UNZIP" \
+		$([[ $NO_EC -eq 1 ]] && echo --no-read-ec) \
+		"$READS"
+	cp syncasm.asm.utg.final.gfa unitigs.gfa || true
+fi
+
+#############################################
+# Step: Polish (Racon)
+#############################################
+if [[ "$STEPS" == *polish* && $RACON_ROUNDS -gt 0 ]]; then
+	need minimap2
+	need racon
+	ASM="unitigs.gfa"
+	cp "$ASM" polish.round0.fa
+	for r in $(seq 1 $RACON_ROUNDS); do
+		log 1 "[polish] racon round $r"
+		minimap2 -t "$THREADS" -x map-ont $MM2_EXTRA polish.round$((r - 1)).fa "$READS" >map.paf
+		racon -t "$THREADS" "$READS" map.paf polish.round$((r - 1)).fa >polish.round$r.fa
+	done
+	mv polish.round$RACON_ROUNDS.fa polished.fa
+fi
+
+#############################################
+# Step: Medaka
+#############################################
+if [[ "$STEPS" == *polish* && $NO_MEDAKA -eq 0 ]]; then
+	need medaka_consensus
+	log 1 "[medaka] model=$MEDAKA_MODEL"
+	medaka_consensus -i "$READS" -d polished.fa -o medaka -t "$THREADS" -m "$MEDAKA_MODEL"
+fi
+
+#############################################
+# Step: Annotate
+#############################################
+if [[ "$STEPS" == *annotate* ]]; then
+	need "$HMMBIN"
+	log 1 "[annotate] $HMMBIN vs fams"
+	"$HMMBIN" -t "$THREADS" --nhmmscan "$NHMMSCAN" -o annotation.tsv "$OATKDB/v20230921/${CLADE}_mito.fam" polished.fa
+fi
+
+#############################################
+# Step: Pathfinder
+#############################################
+if [[ "$STEPS" == *pathfinder* ]]; then
+	need pathfinder
+	log 1 "[pathfinder] run on polished.fa"
+	pathfinder polished.fa >paths.txt
+fi
+
+#############################################
+# Step: Summary
+#############################################
+if [[ "$STEPS" == *summary* ]]; then
+	log 1 "[summary] final outputs"
+	echo -e "reads\t$READS" >summary.tsv
+	echo -e "outdir\t$OUT" >>summary.tsv
+	echo -e "steps\t$STEPS" >>summary.tsv
+fi

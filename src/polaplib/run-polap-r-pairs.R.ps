@@ -1,0 +1,1877 @@
+%!PS-Adobe-3.0
+%%Title: run-polap-r-pairs.R
+%%For: Sang Chul Choi
+%%Creator: a2ps version 4.14
+%%CreationDate: Thu Jul  3 13:44:57 2025
+%%BoundingBox: 24 24 571 818
+%%DocumentData: Clean7Bit
+%%Orientation: Landscape
+%%Pages: 9
+%%PageOrder: Ascend
+%%DocumentMedia: A4 595 842 0 () ()
+%%DocumentNeededResources: font Courier
+%%+ font Courier-Bold
+%%+ font Courier-BoldOblique
+%%+ font Courier-Oblique
+%%+ font Helvetica
+%%+ font Helvetica-Bold
+%%+ font Symbol
+%%+ font Times-Bold
+%%+ font Times-Roman
+%%DocumentProcessColors: Black 
+%%DocumentSuppliedResources: procset a2ps-a2ps-hdr
+%%+ procset a2ps-black+white-Prolog
+%%+ encoding ISO-8859-1Encoding
+%%EndComments
+/a2psdict 200 dict def
+a2psdict begin
+%%BeginProlog
+%%Copyright: (c) 1988, 89, 90, 91, 92, 93 Miguel Santana
+%%Copyright: (c) 1995, 96, 97, 98 Akim Demaille, Miguel Santana
+% Check PostScript language level.
+/languagelevel where {
+  pop /gs_languagelevel languagelevel def
+} {
+  /gs_languagelevel 1 def
+} ifelse
+
+% EPSF import as in the Red Book
+/BeginInclude {
+  /b4_Inc_state save def    		% Save state for cleanup
+  /dict_count countdictstack def	% Count objects on dict stack
+  /op_count count 1 sub def		% Count objects on operand stack 
+  userdict begin
+    0 setgray 0 setlinecap
+    1 setlinewidth 0 setlinejoin
+    10 setmiterlimit [ ] 0 setdash newpath
+    gs_languagelevel 1 ne {
+      false setstrokeadjust false setoverprint 
+    } if
+} bind def
+
+/EndInclude {
+  count op_count sub { pos } repeat	% Clean up stacks
+  countdictstack dict_count sub { end } repeat
+  b4_Inc_state restore
+} bind def
+
+/BeginEPSF {
+  BeginInclude
+  /showpage { } def
+} bind def
+
+/EndEPSF {
+  EndInclude
+} bind def
+
+% Page prefeed
+/page_prefeed {         % bool -> -
+  statusdict /prefeed known {
+    statusdict exch /prefeed exch put
+  } {
+    pop
+  } ifelse
+} bind def
+
+/deffont {
+  findfont exch scalefont def
+} bind def
+
+/reencode_font {
+  findfont reencode 2 copy definefont pop def
+} bind def
+
+% Function c-show (str => -)
+% centers text only according to x axis.
+/c-show { 
+  dup stringwidth pop
+  2 div neg 0 rmoveto
+  show
+} bind def
+
+% Function l-show (str => -)
+% prints texts so that it ends at currentpoint
+/l-show {
+  dup stringwidth pop neg 
+  0 
+  rmoveto show
+} bind def
+
+% center-fit show (str w => -)
+% show centered, and scale currentfont so that the width is less than w
+/cfshow {
+  exch dup stringwidth pop
+  % If the title is too big, try to make it smaller
+  3 2 roll 2 copy
+  gt
+  { % if, i.e. too big
+    exch div
+    currentfont exch scalefont setfont
+  } { % ifelse
+    pop pop 
+  }
+  ifelse
+  c-show			% center title
+} bind def
+
+% Return the y size of the current font
+% - => fontsize
+/currentfontsize {
+  currentfont /FontType get 0 eq {
+    currentfont /FontMatrix get 3 get
+  }{
+    currentfont /FontMatrix get 3 get 1000 mul
+  } ifelse
+} bind def
+
+% reencode the font
+% <encoding-vector> <fontdict> -> <newfontdict>
+/reencode { %def
+  dup length 5 add dict begin
+    { %forall
+      % <vector> <key> <val>
+      1 index /FID ne 
+      { def }{ pop pop } ifelse
+    } forall
+    /Encoding exch def % -
+
+    % Use the font's bounding box to determine the ascent, descent,
+    % and overall height; don't forget that these values have to be
+    % transformed using the font's matrix.
+    % We use `load' because sometimes BBox is executable, sometimes not.
+    % Since we need 4 numbers an not an array avoid BBox from being executed
+    /FontBBox load aload pop
+    FontMatrix transform /Ascent exch def pop
+    FontMatrix transform /Descent exch def pop
+    /FontHeight Ascent Descent sub def
+
+    % Get the underline position and thickness if they're defined.
+    % Use 1 if they are not defined.
+    currentdict /FontInfo 2 copy known
+    { get
+      /UnderlinePosition 2 copy % <FontInfo> /UP <FontInfo> /UP
+      2 copy known
+      { get }{ pop pop 1 } ifelse
+      0 exch FontMatrix transform exch pop
+      def % <FontInfo>
+
+      /UnderlineThickness 2 copy % <FontInfo> /UT <FontInfo> /UT
+      2 copy known
+      { get }{ pop pop 1 } ifelse
+      0 exch FontMatrix transform exch pop
+      def % <FontInfo>
+      pop % -
+    }{ pop pop
+    } ifelse
+
+    currentdict
+  end 
+} bind def
+
+% composite fonts for ASCII-EUC mixed strings
+% Version 1.2 1/31/1990
+% Original Ken'ichi HANDA (handa@etl.go.jp)
+% Modified Norio Katayama (katayama@rd.nacsis.ac.jp),1998
+% Extend & Fix Koji Nakamaru (maru@on.cs.keio.ac.jp), 1999
+% Anyone can freely copy, modify, distribute this program.
+
+/copyfont {	% font-dic extra-entry-count  copyfont  font-dic
+	1 index maxlength add dict begin
+	{	1 index /FID ne 2 index /UniqueID ne and
+		{def} {pop pop} ifelse
+	} forall
+	currentdict
+	end
+} bind def
+
+/compositefont { % ASCIIFontName EUCFontName RomanScale RomanOffset Rot(T/F) compositefont font
+    /RomanRotation exch def
+    /RomanOffset exch def
+    /RomanScale exch def
+    userdict /fixeucfont_dict known not {
+	userdict begin
+	    /fixeucfont_dict 2 dict begin
+		/UpperByteEncoding [
+		    16#00 1 16#20 { pop 0 } for
+		    16#21 1 16#28 { 16#20 sub } for
+		    16#29 1 16#2F { pop 0 } for
+		    16#30 1 16#74 { 16#27 sub } for
+		    16#75 1 16#FF { pop 0 } for
+		] def
+	        /LowerByteEncoding [
+		    16#00 1 16#A0 { pop /.notdef } for
+		    16#A1 1 16#FE { 16#80 sub 16 2 string cvrs
+				    (cXX) dup 1 4 -1 roll
+				    putinterval cvn } for
+		    /.notdef
+		] def
+		currentdict
+	    end def
+	end
+    } if
+    findfont dup /FontType get 0 eq {
+	14 dict begin
+	    %
+	    % 7+8 bit EUC font
+	    %
+	    12 dict begin
+		/EUCFont exch def
+		/FontInfo (7+8 bit EUC font) readonly def
+		/PaintType 0 def
+		/FontType 0 def
+		/FontMatrix matrix def
+		% /FontName
+		/Encoding fixeucfont_dict /UpperByteEncoding get def
+		/FMapType 2 def
+		EUCFont /WMode known
+		{ EUCFont /WMode get /WMode exch def }
+		{ /WMode 0 def } ifelse
+		/FDepVector [
+		    EUCFont /FDepVector get 0 get
+		    [ 16#21 1 16#28 {} for 16#30 1 16#74 {} for ]
+		    {
+			13 dict begin
+			    /EUCFont EUCFont def
+			    /UpperByte exch 16#80 add def	
+			    % /FontName
+			    /FontInfo (EUC lower byte font) readonly def
+			    /PaintType 0 def
+			    /FontType 3 def
+			    /FontMatrix matrix def
+			    /FontBBox {0 0 0 0} def
+			    /Encoding
+				fixeucfont_dict /LowerByteEncoding get def
+			    % /UniqueID
+			    % /WMode
+			    /BuildChar {
+				gsave
+				exch dup /EUCFont get setfont
+				/UpperByte get
+				2 string
+				dup 0 4 -1 roll put
+				dup 1 4 -1 roll put
+				dup stringwidth setcharwidth
+				0 0 moveto show
+				grestore
+			    } bind def
+			    currentdict
+			end
+			/lowerbytefont exch definefont
+		    } forall
+		] def
+		currentdict
+	    end
+	    /eucfont exch definefont
+	    exch
+	    findfont 1 copyfont dup begin
+		RomanRotation {
+			/FontMatrix FontMatrix
+			[ 0 RomanScale neg RomanScale 0 RomanOffset neg 0 ]
+			matrix concatmatrix def
+		}{
+			/FontMatrix FontMatrix
+			[ RomanScale 0 0 RomanScale 0 RomanOffset ] matrix concatmatrix
+			def
+			/CDevProc
+			    {pop pop pop pop 0 exch -1000 exch 2 div 880} def
+		} ifelse
+	    end
+	    /asciifont exch definefont
+	    exch
+	    /FDepVector [ 4 2 roll ] def
+	    /FontType 0 def
+	    /WMode 0 def
+	    /FMapType 4 def
+	    /FontMatrix matrix def
+	    /Encoding [0 1] def
+	    /FontBBox {0 0 0 0} def
+%	    /FontHeight 1.0 def % XXXX
+	    /FontHeight RomanScale 1.0 ge { RomanScale }{ 1.0 } ifelse def
+	    /Descent -0.3 def   % XXXX
+	    currentdict
+	end
+	/tmpfont exch definefont
+	pop
+	/tmpfont findfont
+    }{
+	pop findfont 0 copyfont
+    } ifelse
+} def	
+
+/slantfont {	% FontName slant-degree  slantfont  font'
+    exch findfont 1 copyfont begin
+    [ 1 0 4 -1 roll 1 0 0 ] FontMatrix exch matrix concatmatrix
+    /FontMatrix exch def
+    currentdict
+    end
+} def
+
+% Function print line number (<string> # -)
+/# {
+  gsave
+    sx cw mul neg 2 div 0 rmoveto
+    f# setfont
+    c-show
+  grestore
+} bind def
+
+% -------- Some routines to enlight plain b/w printings ---------
+
+% Underline
+% width --
+/dounderline {
+  currentpoint
+  gsave
+    moveto
+    0 currentfont /Descent get currentfontsize mul rmoveto
+    0 rlineto
+    stroke
+  grestore
+} bind def
+
+% Underline a string
+% string --
+/dounderlinestring {
+  stringwidth pop
+  dounderline
+} bind def
+
+/UL {
+  /ul exch store
+} bind def
+
+% Draw a box of WIDTH wrt current font
+% width --
+/dobox {
+  currentpoint
+  gsave
+    newpath
+    moveto
+    0 currentfont /Descent get currentfontsize mul rmoveto
+    dup 0 rlineto
+    0 currentfont /FontHeight get currentfontsize mul rlineto
+    neg 0 rlineto
+    closepath
+    stroke
+  grestore
+} bind def
+
+/BX {
+  /bx exch store
+} bind def
+
+% Box a string
+% string --
+/doboxstring {
+  stringwidth pop
+  dobox
+} bind def
+
+%
+% ------------- Color routines ---------------
+%
+/FG /setrgbcolor load def
+
+% Draw the background
+% width --
+/dobackground {
+  currentpoint
+  gsave
+    newpath
+    moveto
+    0 currentfont /Descent get currentfontsize mul rmoveto
+    dup 0 rlineto
+    0 currentfont /FontHeight get currentfontsize mul rlineto
+    neg 0 rlineto
+    closepath
+    bgcolor aload pop setrgbcolor
+    fill
+  grestore
+} bind def
+
+% Draw bg for a string
+% string --
+/dobackgroundstring {
+  stringwidth pop
+  dobackground
+} bind def
+
+
+/BG {
+  dup /bg exch store
+  { mark 4 1 roll ] /bgcolor exch store } if
+} bind def
+
+
+/Show {
+  bg { dup dobackgroundstring } if
+  ul { dup dounderlinestring } if
+  bx { dup doboxstring } if
+  show
+} bind def
+
+% Function T(ab), jumps to the n-th tabulation in the current line
+/T {
+  cw mul x0 add
+  bg { dup currentpoint pop sub dobackground } if
+  ul { dup currentpoint pop sub dounderline } if
+  bx { dup currentpoint pop sub dobox } if
+  y0 moveto
+} bind def
+
+% Function n: move to the next line
+/n {
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+} bind def
+
+% Function N: show and move to the next line
+/N {
+  Show
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+} bind def
+
+/S {
+  Show
+} bind def
+
+%%BeginResource: procset a2ps-a2ps-hdr 2.0 2
+%%Copyright: (c) 1988, 89, 90, 91, 92, 93 Miguel Santana
+%%Copyright: (c) 1995, 96, 97, 98 Akim Demaille, Miguel Santana
+% Function title: prints page header.
+% <ct> <rt> <lt> are passed as argument
+/title { 
+  % 1. Draw the background
+  x v get y v get moveto
+  gsave
+    0 th 2 div neg rmoveto 
+    th setlinewidth
+    0.95 setgray
+    pw 0 rlineto stroke
+  grestore
+  % 2. Border it
+  gsave
+    0.7 setlinewidth
+    pw 0 rlineto
+    0 th neg rlineto
+    pw neg 0 rlineto
+    closepath stroke
+  grestore
+  % stk: ct rt lt
+  x v get y v get th sub 1 add moveto
+%%IncludeResource: font Helvetica
+  fHelvetica fnfs 0.8 mul scalefont setfont
+  % 3. The left title
+  gsave
+    dup stringwidth pop fnfs 0.8 mul add exch % leave space took on stack
+    fnfs 0.8 mul hm rmoveto
+    show			% left title
+  grestore
+  exch
+  % stk: ct ltw rt
+  % 4. the right title
+  gsave
+    dup stringwidth pop fnfs 0.8 mul add exch % leave space took on stack
+    dup
+    pw exch stringwidth pop fnfs 0.8 mul add sub
+    hm
+    rmoveto
+    show			% right title
+  grestore
+  % stk: ct ltw rtw
+  % 5. the center title
+  gsave
+    pw 3 1 roll
+    % stk: ct pw ltw rtw
+    3 copy 
+    % Move to the center of the left room
+    sub add 2 div hm rmoveto
+    % What is the available space in here?
+    add sub fnfs 0.8 mul sub fnfs 0.8 mul sub
+    % stk: ct space_left
+%%IncludeResource: font Helvetica-Bold
+  fHelvetica-Bold fnfs scalefont setfont
+    cfshow
+  grestore
+} bind def
+
+% Function border: prints virtual page border
+/border { %def
+  gsave				% print four sides
+    0 setgray
+    x v get y v get moveto
+    0.7 setlinewidth		% of the square
+    pw 0 rlineto
+    0 ph neg rlineto
+    pw neg 0 rlineto
+    closepath stroke
+  grestore
+} bind def
+
+% Function water: prints a water mark in background
+/water { %def
+  gsave
+    scx scy moveto rotate
+%%IncludeResource: font Times-Bold
+  fTimes-Bold 100 scalefont setfont
+    .97 setgray
+    dup stringwidth pop 2 div neg -50 rmoveto
+    show
+  grestore
+} bind def
+
+% Function rhead: prints the right header
+/rhead {  %def
+  lx ly moveto
+  fHelvetica fnfs 0.8 mul scalefont setfont
+  l-show
+} bind def
+
+% Function footer (cf rf lf -> -)
+/footer {
+  fHelvetica fnfs 0.8 mul scalefont setfont
+  dx dy moveto
+  show
+
+  snx sny moveto
+  l-show
+  
+  fnx fny moveto
+  c-show
+} bind def
+%%EndResource
+%%BeginResource: procset a2ps-black+white-Prolog 2.0 1
+
+% Function T(ab), jumps to the n-th tabulation in the current line
+/T { 
+  cw mul x0 add y0 moveto
+} bind def
+
+% Function n: move to the next line
+/n { %def
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+} bind def
+
+% Function N: show and move to the next line
+/N {
+  Show
+  /y0 y0 bfs sub store
+  x0 y0 moveto
+}  bind def
+
+/S {
+  Show
+} bind def
+
+/p {
+  false UL
+  false BX
+  fCourier bfs scalefont setfont
+  Show
+} bind def
+
+/sy {
+  false UL
+  false BX
+  fSymbol bfs scalefont setfont
+  Show
+} bind def
+
+/k {
+  false UL
+  false BX
+  fCourier-Oblique bfs scalefont setfont
+  Show
+} bind def
+
+/K {
+  false UL
+  false BX
+  fCourier-Bold bfs scalefont setfont
+  Show
+} bind def
+
+/c {
+  false UL
+  false BX
+  fCourier-Oblique bfs scalefont setfont
+  Show
+} bind def
+
+/C {
+  false UL
+  false BX
+  fCourier-BoldOblique bfs scalefont setfont
+  Show 
+} bind def
+
+/l {
+  false UL
+  false BX
+  fHelvetica bfs scalefont setfont
+  Show
+} bind def
+
+/L {
+  false UL
+  false BX
+  fHelvetica-Bold bfs scalefont setfont
+  Show 
+} bind def
+
+/str{
+  false UL
+  false BX
+  fTimes-Roman bfs scalefont setfont
+  Show
+} bind def
+
+/e{
+  false UL
+  true BX
+  fHelvetica-Bold bfs scalefont setfont
+  Show
+} bind def
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+%%IncludeResource: font Courier
+%%IncludeResource: font Courier-Oblique
+%%IncludeResource: font Courier-Bold
+%%IncludeResource: font Times-Roman
+%%IncludeResource: font Symbol
+%%IncludeResource: font Courier-BoldOblique
+%%BeginResource: encoding ISO-8859-1Encoding
+/ISO-8859-1Encoding [
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/space /exclam /quotedbl /numbersign /dollar /percent /ampersand /quoteright 
+/parenleft /parenright /asterisk /plus /comma /minus /period /slash 
+/zero /one /two /three /four /five /six /seven 
+/eight /nine /colon /semicolon /less /equal /greater /question 
+/at /A /B /C /D /E /F /G 
+/H /I /J /K /L /M /N /O 
+/P /Q /R /S /T /U /V /W 
+/X /Y /Z /bracketleft /backslash /bracketright /asciicircum /underscore 
+/quoteleft /a /b /c /d /e /f /g 
+/h /i /j /k /l /m /n /o 
+/p /q /r /s /t /u /v /w 
+/x /y /z /braceleft /bar /braceright /asciitilde /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef 
+/space /exclamdown /cent /sterling /currency /yen /brokenbar /section 
+/dieresis /copyright /ordfeminine /guillemotleft /logicalnot /hyphen /registered /macron 
+/degree /plusminus /twosuperior /threesuperior /acute /mu /paragraph /bullet 
+/cedilla /onesuperior /ordmasculine /guillemotright /onequarter /onehalf /threequarters /questiondown 
+/Agrave /Aacute /Acircumflex /Atilde /Adieresis /Aring /AE /Ccedilla 
+/Egrave /Eacute /Ecircumflex /Edieresis /Igrave /Iacute /Icircumflex /Idieresis 
+/Eth /Ntilde /Ograve /Oacute /Ocircumflex /Otilde /Odieresis /multiply 
+/Oslash /Ugrave /Uacute /Ucircumflex /Udieresis /Yacute /Thorn /germandbls 
+/agrave /aacute /acircumflex /atilde /adieresis /aring /ae /ccedilla 
+/egrave /eacute /ecircumflex /edieresis /igrave /iacute /icircumflex /idieresis 
+/eth /ntilde /ograve /oacute /ocircumflex /otilde /odieresis /divide 
+/oslash /ugrave /uacute /ucircumflex /udieresis /yacute /thorn /ydieresis 
+] def
+%%EndResource
+% Initialize page description variables.
+/sh 595 def
+/sw 842 def
+/llx 24 def
+/urx 818 def
+/ury 571 def
+/lly 24 def
+/#copies 1 def
+/th 20.000000 def
+/fnfs 15 def
+/bfs 9.561657 def
+/cw 5.736994 def
+
+% Dictionary for ISO-8859-1 support
+/iso1dict 8 dict begin
+  /fCourier ISO-8859-1Encoding /Courier reencode_font
+  /fCourier-Bold ISO-8859-1Encoding /Courier-Bold reencode_font
+  /fCourier-BoldOblique ISO-8859-1Encoding /Courier-BoldOblique reencode_font
+  /fCourier-Oblique ISO-8859-1Encoding /Courier-Oblique reencode_font
+  /fHelvetica ISO-8859-1Encoding /Helvetica reencode_font
+  /fHelvetica-Bold ISO-8859-1Encoding /Helvetica-Bold reencode_font
+  /fTimes-Bold ISO-8859-1Encoding /Times-Bold reencode_font
+  /fTimes-Roman ISO-8859-1Encoding /Times-Roman reencode_font
+currentdict end def
+/bgcolor [ 0 0 0 ] def
+/bg false def
+/ul false def
+/bx false def
+% The font for line numbering
+/f# /Helvetica findfont bfs .6 mul scalefont def
+/fSymbol /Symbol findfont def
+/hm fnfs 0.25 mul def
+/pw
+   cw 138.400000 mul
+def
+/ph
+   494.337664 th add
+def
+/pmw 0 def
+/pmh 0 def
+/v 0 def
+/x [
+  0
+] def
+/y [
+  pmh ph add 0 mul ph add
+] def
+/scx sw 2 div def
+/scy sh 2 div def
+/snx urx def
+/sny lly 2 add def
+/dx llx def
+/dy sny def
+/fnx scx def
+/fny dy def
+/lx snx def
+/ly ury fnfs 0.8 mul sub def
+/sx 5 def
+/tab 2 def
+/x0 0 def
+/y0 0 def
+%%EndSetup
+
+%%Page: (1) 1
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(1) # (#!/usr/bin/env Rscript) c n
+(2) # () N
+(3) # (################################################################################) N
+(4) # (# This file is part of polap.) N
+(5) # (#) N
+(6) # (# polap is free software: you can redistribute it and/or modify it under the) N
+(7) # (# terms of the GNU General Public License as published by the Free Software) N
+(8) # (# Foundation, either version 3 of the License, or \(at your option\) any later) N
+(9) # (# version.) N
+(10) # (#) N
+(11) # (# polap is distributed in the hope that it will be useful, but WITHOUT ANY) N
+(12) # (# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR) N
+(13) # (# A PARTICULAR PURPOSE. See the GNU General Public License for more details.) N
+(14) # (#) N
+(15) # (# You should have received a copy of the GNU General Public License along with) N
+(16) # (# polap. If not, see <https://www.gnu.org/licenses/>.) N
+(17) # (################################################################################) N
+(18) # () N
+(19) # (# polaplib/run-polap-r-pairs.R) N
+(20) # (# Check: 2025-06-17) N
+(21) # () N
+(22) # (################################################################################) N
+(23) # (# NOTE: this is the first of the two read-selection scripts.) N
+(24) # (# This script selects reads using some of minimap2 output files.) N
+(25) # (# We have multiple scripts that selects reads.) N
+(26) # (# This is the 2nd one.) N
+(27) # (#) N
+(28) # (# 1. run-polap-pairs.R -> the first version used in v0.2.6) N
+(29) # (# 2. run-polap-r-pairs.R -> used in test-reads in oga) N
+(30) # (# 3. run-polap-r-bridge.R -> used in test-reads in oga) N
+(31) # (# 4. run-polap-r-select-reads-polap.R -> the 2nd version not used) N
+(32) # (# 5. run-polap-r-select-reads-ptgaul.R -> a slim version of the 2nd used in dga) N
+(33) # (# 6. run-polap-r-directional.R -> used by an older version of dga) N
+(34) # (#    or _run_polap_original-directional-reads) N
+(35) # (#) N
+(36) # (# Subcommand test-reads uses this script.) N
+(37) # (#) N
+(38) # (# Used by:) N
+(39) # (# function _run_polap_test-reads { # selects reads mapped on a genome assembly) N
+(40) # (#) N
+(41) # (# See Also:) N
+(42) # (# run-polap-pairs.R) N
+(43) # (# run-polap-r-pairs.R) N
+(44) # (# run-polap-r-bridge.R) N
+(45) # (# run-polap-r-select-reads-polap.R) N
+(46) # (# run-polap-r-select-reads-ptgaul.R) N
+(47) # (# run-polap-r-directional.R) N
+(48) # (# run-polap-function-oga.sh) N
+(49) # (# run-polap-function-dga.sh) N
+(50) # (#) N
+(51) # (# Check: 2025-06-17) N
+(run-polap-r-pairs.R) (Page 1/9) ( 7\354M-^[M-^T 03, 25 13:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(run-polap-r-pairs.R) (1/9) (\353\252\251\354M-^ZM-^T\354M-^]\274 7\354M-^[M-^T 03, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (2) 2
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(52) # (################################################################################) c n
+(53) # () N
+(54) # (################################################################################) N
+(55) # (# This script selects reads using minimap2 alignments of the reads on the seed) N
+(56) # (# contigs. It tries to use two main different approaches; one is due to ptGAUL,) N
+(57) # (# another is devised by Polap. Polap's read selection is more stringent in a) N
+(58) # (# way that it selects reads that are mapped on two seed contigs and those that) N
+(59) # (# are mapped completely within a contig.) N
+(60) # (# This has some benefit or better assembly for a smaller dataset; i.e., 10x.) N
+(61) # (# If reads are enough, ptGAUL method seems to work great.) N
+(62) # (#) N
+(63) # (# Check: 2025-06-16) N
+(64) # (################################################################################) N
+(65) # () N
+(66) # (# name: select long reads) N
+(67) # (#) N
+(68) # (# synopsis:) N
+(69) # (# ) S 4 T (run-polap-pairs.R mt.contig.name-1 contig.tab ${MTSEEDSDIR} $SINGLE_MIN $SINGLE_MIN) N
+(70) # (#) N
+(71) # (# requirement: executes Flye) N
+(72) # (# flye --nano-raw "$LR3K" --out-dir "${_arg_outdir}" \\) N
+(73) # (# ) S 4 T (--threads "${_arg_threads}" \\) N
+(74) # (# ) S 4 T (--stop-after contigger \\) N
+(75) # (# ) S 4 T (--asm-coverage 30 \\) N
+(76) # (# ) S 4 T (--genome-size "$EXPECTED_GENOME_SIZE") N
+(77) # (#) N
+(78) # (# input:) N
+(79) # (#   1. mt.contig.name-1 - contig or edge numbers) N
+(80) # (#   2. contig.tab - minimap2 output modified) N
+(81) # (#   3. seeds directory for output) N
+(82) # (#   4. pair minimum length V11: 3000 for MT, 1000 for PT) N
+(83) # (#   5. bridge minimum length V7: depends: 3000 or 5000) N
+(84) # (#   6. single minimum length V11: 3000 for MT, 0 or 1000 for PT) N
+(85) # (#) N
+(86) # (# output:) N
+(87) # (#   single.names and <contig1-contig2.name> files in the output directory) N
+(88) # (#) N
+(89) # (# MTSEEDSDIR="${_arg_outdir}"/60-mt-${STEP4}/o${MR}/seeds) N
+(90) # (# ) S 4 T (run-polap-pairs.R mt.contig.name-1 contig.tab ${MTSEEDSDIR} $PAIR_MIN $BRIDGE_MIN $SINGLE_MIN) N
+(91) # (# ) S 4 T (run-polap-pairs.R mt.contig.name-1 contig.tab ${MTSEEDSDIR} $PAIR_MIN $BRIDGE_MIN) N
+(92) # () N
+(93) # () S
+(suppressPackageStartupMessages\(library\(") p
+(optparse) str
+("\)\)) p n
+(94) # (suppressPackageStartupMessages\(library\(") S
+(dplyr) str
+("\)\)) p n
+(95) # (suppressPackageStartupMessages\(library\(") S
+(readr) str
+("\)\)) p n
+(96) # (suppressPackageStartupMessages\(library\(") S
+(purrr) str
+("\)\)) p n
+(97) # (suppressPackageStartupMessages\(library\(") S
+(tidyr) str
+("\)\)) p n
+(98) # (suppressPackageStartupMessages\(library\(") S
+(ggplot2) str
+("\)\)) p n
+(99) # () N
+(100) # (debug ) S
+(\254) sy
+( Sys.getenv\(") p
+(_POLAP_DEBUG) str
+(", unset = ") p
+(0) str
+("\)) p n
+(101) # () N
+(102) # (parser ) S
+(\254) sy
+( OptionParser\(\)) p n
+(run-polap-r-pairs.R) (Page 2/9) ( 7\354M-^[M-^T 03, 25 13:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(run-polap-r-pairs.R) (2/9) (\353\252\251\354M-^ZM-^T\354M-^]\274 7\354M-^[M-^T 03, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (3) 3
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(103) # (parser ) p
+(\254) sy
+( add_option\(parser, c\(") p
+(-t) str
+(", ") p
+(--table) str
+("\),) p n
+(104) # (  action = ") S
+(store) str
+(",) p n
+(105) # (  help = ") S
+(minimap2 PAF) str
+(",) p n
+(106) # (  metavar = ") S
+(<FILE>) str
+(") p n
+(107) # (\)) N
+(108) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(-m) str
+(", ") p
+(--mtcontigname) str
+("\),) p n
+(109) # (  action = ") S
+(store) str
+(",) p n
+(110) # (  help = ") S
+(mt.contig.name-1) str
+(",) p n
+(111) # (  metavar = ") S
+(<FILE>) str
+(") p n
+(112) # (\)) N
+(113) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(-o) str
+(", ") p
+(--out) str
+("\),) p n
+(114) # (  action = ") S
+(store) str
+(",) p n
+(115) # (  help = ") S
+(output directory) str
+(") p n
+(116) # (\)) N
+(117) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(-r) str
+(", ") p
+(--pair-min) str
+("\),) p n
+(118) # (  type = ") S
+(integer) str
+(",) p n
+(119) # (  default = 3000,) N
+(120) # (  help = ") S
+(Minimum length of pair-mapping alignment) str
+(",) p n
+(121) # (  metavar = ") S
+(number) str
+(") p n
+(122) # (\)) N
+(123) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(-w) str
+(", ") p
+(--single-min) str
+("\),) p n
+(124) # (  type = ") S
+(integer) str
+(",) p n
+(125) # (  default = 3000,) N
+(126) # (  help = ") S
+(Minimum length of single-mapping alignment) str
+(",) p n
+(127) # (  metavar = ") S
+(number) str
+(") p n
+(128) # (\)) N
+(129) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(-x) str
+(", ") p
+(--bridge-min) str
+("\),) p n
+(130) # (  type = ") S
+(integer) str
+(",) p n
+(131) # (  default = 3000,) N
+(132) # (  help = ") S
+(Minimum length of bridging reads) str
+(",) p n
+(133) # (  metavar = ") S
+(number) str
+(") p n
+(134) # (\)) N
+(135) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(--intra-base-ratio) str
+("\),) p n
+(136) # (  type = ") S
+(double) str
+(",) p n
+(137) # (  default = 0.7,) N
+(138) # (  help = ") S
+(Minimum of V10/V11) str
+(",) p n
+(139) # (  metavar = ") S
+(number) str
+(") p n
+(140) # (\)) N
+(141) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(--intra-read-ratio) str
+("\),) p n
+(142) # (  type = ") S
+(double) str
+(",) p n
+(143) # (  default = 0.7,) N
+(144) # (  help = ") S
+(Minimum of \(V4-V3\)/V2) str
+(",) p n
+(145) # (  metavar = ") S
+(number) str
+(") p n
+(146) # (\)) N
+(147) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(--inter-base-ratio) str
+("\),) p n
+(148) # (  type = ") S
+(double) str
+(",) p n
+(149) # (  default = 0.7,) N
+(150) # (  help = ") S
+(Minimum of V10/V11) str
+(",) p n
+(151) # (  metavar = ") S
+(number) str
+(") p n
+(152) # (\)) N
+(153) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(--create-ptgaul) str
+("\),) p n
+(run-polap-r-pairs.R) (Page 3/9) ( 7\354M-^[M-^T 03, 25 13:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(run-polap-r-pairs.R) (3/9) (\353\252\251\354M-^ZM-^T\354M-^]\274 7\354M-^[M-^T 03, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (4) 4
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(154) # (  action = ") p
+(store_true) str
+(",) p n
+(155) # (  default = ) S
+(FALSE) K
+(, help = ") p
+(will create ptgaul.names) str
+(") p n
+(156) # (\)) N
+(157) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(--create-single) str
+("\),) p n
+(158) # (  action = ") S
+(store_true) str
+(",) p n
+(159) # (  default = ) S
+(FALSE) K
+(, help = ") p
+(will create single.names) str
+(") p n
+(160) # (\)) N
+(161) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(--create-pair) str
+("\),) p n
+(162) # (  action = ") S
+(store_true) str
+(",) p n
+(163) # (  default = ) S
+(FALSE) K
+(, help = ") p
+(will create pair.names) str
+(") p n
+(164) # (\)) N
+(165) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(--create-combined) str
+("\),) p n
+(166) # (  action = ") S
+(store_true) str
+(",) p n
+(167) # (  default = ) S
+(FALSE) K
+(, help = ") p
+(will create combined.names) str
+(") p n
+(168) # (\)) N
+(169) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(--all) str
+("\),) p n
+(170) # (  action = ") S
+(store_true) str
+(",) p n
+(171) # (  default = ) S
+(FALSE) K
+(, help = ") p
+(will create all the 4 names files.) str
+(") p n
+(172) # (\)) N
+(173) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(--outptgaul) str
+("\),) p n
+(174) # (  action = ") S
+(store) str
+(",) p n
+(175) # (  default = ") S
+(ptgaul.names) str
+(",) p n
+(176) # (  help = ") S
+(ptgaul output file) str
+(") p n
+(177) # (\)) N
+(178) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(--outsingle) str
+("\),) p n
+(179) # (  action = ") S
+(store) str
+(",) p n
+(180) # (  default = ") S
+(single.names) str
+(",) p n
+(181) # (  help = ") S
+(single output file) str
+(") p n
+(182) # (\)) N
+(183) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(--outpair) str
+("\),) p n
+(184) # (  action = ") S
+(store) str
+(",) p n
+(185) # (  default = ") S
+(pair.names) str
+(",) p n
+(186) # (  help = ") S
+(pair output file) str
+(") p n
+(187) # (\)) N
+(188) # (parser ) S
+(\254) sy
+( add_option\(parser, c\(") p
+(--outcombined) str
+("\),) p n
+(189) # (  action = ") S
+(store) str
+(",) p n
+(190) # (  default = ") S
+(combined.names) str
+(",) p n
+(191) # (  help = ") S
+(combined output file) str
+(") p n
+(192) # (\)) N
+(193) # () N
+(194) # (args1 ) S
+(\254) sy
+( parse_args\(parser\)) p n
+(195) # () N
+(196) # () S
+(if) K
+( \(is_null\(args1$table\)\) {) p n
+(197) # (  s ) S
+(\254) sy
+( ") p
+(bioprojects) str
+(") p n
+(198) # (  o ) S
+(\254) sy
+( ") p
+(PRJNA817235-Canavalia_ensiformis) str
+(") p n
+(199) # () N
+(200) # (  input_dir0 ) S
+(\254) sy
+( file.path\(") p
+(.) str
+("\)) p n
+(201) # (  input1 ) S
+(\254) sy
+( file.path\(input_dir0, ") p
+(contig.tab) str
+("\)) p n
+(202) # (  input2 ) S
+(\254) sy
+( file.path\(input_dir0, ") p
+(mt.contig.name-1) str
+("\)) p n
+(203) # (  output1 ) S
+(\254) sy
+( file.path\(input_dir0, ") p
+(02-reads) str
+("\)) p n
+(204) # () N
+(run-polap-r-pairs.R) (Page 4/9) ( 7\354M-^[M-^T 03, 25 13:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(run-polap-r-pairs.R) (4/9) (\353\252\251\354M-^ZM-^T\354M-^]\274 7\354M-^[M-^T 03, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (5) 5
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(205) # (  args1 ) p
+(\254) sy
+( parse_args\(parser, args = c\() p n
+(206) # (    ") S
+(--table) str
+(", input1,) p n
+(207) # (    ") S
+(--mtcontigname) str
+(", input2,) p n
+(208) # (    ") S
+(-o) str
+(", output1,) p n
+(209) # (    ") S
+(-r) str
+(", 10000,) p n
+(210) # (    ") S
+(-w) str
+(", 10000,) p n
+(211) # (    ") S
+(-x) str
+(", 10000,) p n
+(212) # (    ") S
+(--all) str
+(",) p n
+(213) # (    ") S
+(--intra-base-ratio) str
+(", 0.7,) p n
+(214) # (    ") S
+(--intra-read-ratio) str
+(", 0.7,) p n
+(215) # (    ") S
+(--inter-base-ratio) str
+(", 0.7) p n
+(216) # (  \)\)) N
+(217) # (}) N
+(218) # () N
+(219) # () S
+(# mt.contig.name-x) c n
+(220) # () S
+(x1 ) p
+(\254) sy
+( as_tibble\(read.table\(args1$mtcontigname\)\)) p n
+(221) # () N
+(222) # () S
+(# https://lh3.github.io/minimap2/minimap2.html) c n
+(223) # (# Li 2008 - "OUTPUT FORMAT: Minimap2 outputs mapping positions in the) N
+(224) # (# Pairwise mApping Format \(PAF\) by default. PAF is a TAB-delimited text format) N
+(225) # (# with each line consisting of at least 12 fields as are described in the) N
+(226) # (# following table:) N
+(227) # (#) N
+(228) # (# Col) S 6 T (Type) S 12 T (Description) N
+(229) # (# 1) S 4 T (string) S 12 T (Query sequence name) N
+(230) # (# 2) S 4 T (int) S 8 T (Query sequence length) N
+(231) # (# 3) S 4 T (int) S 8 T (Query start coordinate \(0-based\)) N
+(232) # (# 4) S 4 T (int) S 8 T (Query end coordinate \(0-based\)) N
+(233) # (# 5) S 4 T (char) S 10 T (\342M-^@M-^X+\342M-^@M-^Y if query/target on the same strand; \342M-^@M-^X-\342M-^@M-^Y if opposite) N
+(234) # (# 6) S 4 T (string) S 12 T (Target sequence name) N
+(235) # (# 7) S 4 T (int) S 8 T (Target sequence length) N
+(236) # (# 8) S 4 T (int) S 8 T (Target start coordinate on the original strand) N
+(237) # (# 9) S 4 T (int) S 8 T (Target end coordinate on the original strand) N
+(238) # (# 10) S 6 T (int) S 10 T (Number of matching bases in the mapping) N
+(239) # (# 11) S 6 T (int) S 10 T (Number bases, including gaps, in the mapping) N
+(240) # (# 12) S 6 T (int) S 10 T (Mapping quality \(0-255 with 255 for missing\)) N
+(241) # (#) N
+(242) # (# Read in the data with assigned column names) N
+(243) # () S
+(data ) p
+(\254) sy
+( read_tsv\(args1$table,) p n
+(244) # (  show_col_types = ) S
+(FALSE) K
+(,) p n
+(245) # (  col_names = c\() N
+(246) # (    ") S
+(rname) str
+(",) p n
+(247) # (    ") S
+(rlen) str
+(",) p n
+(248) # (    ") S
+(rstart) str
+(",) p n
+(249) # (    ") S
+(rend) str
+(",) p n
+(250) # (    ") S
+(strand) str
+(",) p n
+(251) # (    ") S
+(cname) str
+(",) p n
+(252) # (    ") S
+(clen) str
+(",) p n
+(253) # (    ") S
+(cstart) str
+(",) p n
+(254) # (    ") S
+(cend) str
+(",) p n
+(255) # (    ") S
+(match) str
+(",) p n
+(run-polap-r-pairs.R) (Page 5/9) ( 7\354M-^[M-^T 03, 25 13:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(run-polap-r-pairs.R) (5/9) (\353\252\251\354M-^ZM-^T\354M-^]\274 7\354M-^[M-^T 03, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (6) 6
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(256) # (    ") p
+(base) str
+(") p n
+(257) # (  \)) N
+(258) # (\)) N
+(259) # (mtdir ) S
+(\254) sy
+( args1$out) p n
+(260) # (pair_min ) S
+(\254) sy
+( as.numeric\(args1$`pair-min`\)) p n
+(261) # (brigde_min ) S
+(\254) sy
+( as.numeric\(args1$`bridge-min`\)) p n
+(262) # (single_min ) S
+(\254) sy
+( as.numeric\(args1$`single-min`\)) p n
+(263) # (a ) S
+(\254) sy
+( as.numeric\(args1$`intra-read-ratio`\)) p n
+(264) # (b ) S
+(\254) sy
+( as.numeric\(args1$`intra-base-ratio`\)) p n
+(265) # (c ) S
+(\254) sy
+( as.numeric\(args1$`inter-base-ratio`\)) p n
+(266) # (ptgaul_option_base ) S
+(\254) sy
+( paste\(") p
+(ptgaul) str
+(",) p n
+(267) # (  a,) N
+(268) # (  b,) N
+(269) # (  single_min,) N
+(270) # (  c,) N
+(271) # (  pair_min,) N
+(272) # (  brigde_min,) N
+(273) # (  sep = ") S
+(-) str
+(") p n
+(274) # (\)) N
+(275) # (ptgaul_option_base ) S
+(\254) sy
+( paste0\(ptgaul_option_base, ") p
+(.names) str
+("\)) p n
+(276) # () N
+(277) # (single_option_base ) S
+(\254) sy
+( paste\(") p
+(single) str
+(",) p n
+(278) # (  a,) N
+(279) # (  b,) N
+(280) # (  single_min,) N
+(281) # (  c,) N
+(282) # (  pair_min,) N
+(283) # (  brigde_min,) N
+(284) # (  sep = ") S
+(-) str
+(") p n
+(285) # (\)) N
+(286) # (single_option_base ) S
+(\254) sy
+( paste0\(single_option_base, ") p
+(.names) str
+("\)) p n
+(287) # () N
+(288) # (pair_option_base ) S
+(\254) sy
+( paste\(") p
+(pair) str
+(",) p n
+(289) # (  a,) N
+(290) # (  b,) N
+(291) # (  single_min,) N
+(292) # (  c,) N
+(293) # (  pair_min,) N
+(294) # (  brigde_min,) N
+(295) # (  sep = ") S
+(-) str
+(") p n
+(296) # (\)) N
+(297) # (pair_option_base ) S
+(\254) sy
+( paste0\(pair_option_base, ") p
+(.names) str
+("\)) p n
+(298) # () N
+(299) # (combined_option_base ) S
+(\254) sy
+( paste\(") p
+(combined) str
+(",) p n
+(300) # (  a,) N
+(301) # (  b,) N
+(302) # (  single_min,) N
+(303) # (  c,) N
+(304) # (  pair_min,) N
+(305) # (  brigde_min,) N
+(306) # (  sep = ") S
+(-) str
+(") p n
+(run-polap-r-pairs.R) (Page 6/9) ( 7\354M-^[M-^T 03, 25 13:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(run-polap-r-pairs.R) (6/9) (\353\252\251\354M-^ZM-^T\354M-^]\274 7\354M-^[M-^T 03, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (7) 7
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(307) # (\)) p n
+(308) # (combined_option_base ) S
+(\254) sy
+( paste0\(combined_option_base, ") p
+(.names) str
+("\)) p n
+(309) # () N
+(310) # () S
+(# 0. Check preconditions) c n
+(311) # (# rstart is not greater than rend.) N
+(312) # (# match is not greater than base.) N
+(313) # () S
+(result ) p
+(\254) sy
+( data %>%) p n
+(314) # (  summarize\(all_rows_meet_condition = all\(rstart ) S
+(\243) sy
+( rend & match ) p
+(\243) sy
+( base\)\)) p n
+(315) # () N
+(316) # () S
+(# Check the result) c n
+(317) # () S
+(stopifnot\(result$all_rows_meet_condition\)) p n
+(318) # (stopifnot\(pair_min ) S
+(\263) sy
+( 0, brigde_min ) p
+(\263) sy
+( 0, single_min ) p
+(\263) sy
+( 0\)) p n
+(319) # () N
+(320) # () S
+(# 1. ptGAUL: we use ptGAUL for the case of single edge reference) c n
+(321) # () S
+(if) K
+( \(args1$`create-ptgaul` || args1$all\) {) p n
+(322) # (  ptgaul_file ) S
+(\254) sy
+( file.path\(mtdir, args1$outptgaul\)) p n
+(323) # (  ptgaul_mapped_reads ) S
+(\254) sy
+( data |>) p n
+(324) # (    filter\(match / base > args1$`intra-base-ratio`, base > single_min\) |>) N
+(325) # (    select\(rname\) |>) N
+(326) # (    distinct\(rname\)) N
+(327) # () N
+(328) # (  ptgaul_mapped_reads |>) N
+(329) # (    write.table\() N
+(330) # (      ptgaul_file,) N
+(331) # (      row.names = ) S
+(FALSE) K
+(,) p n
+(332) # (      col.names = ) S
+(FALSE) K
+(,) p n
+(333) # (      quote = ) S
+(FALSE) K n
+(334) # () S
+(    \)) p n
+(335) # (  ptgaul_option_file ) S
+(\254) sy
+( file.path\(mtdir, ptgaul_option_base\)) p n
+(336) # (  print\(ptgaul_file\)) N
+(337) # (  file.copy\(ptgaul_file, ptgaul_option_file\)) N
+(338) # (  ) S
+(# file.copy\(ptgaul_file, ptgaul_option_file, showWarnings = FALSE\)) c n
+(339) # () S
+(}) p n
+(340) # () N
+(341) # () S
+(# 2. intra-contig mapping) c n
+(342) # () S
+(if) K
+( \(args1$`create-single` || args1$all\) {) p n
+(343) # (  single_file ) S
+(\254) sy
+( file.path\(mtdir, args1$outsingle\)) p n
+(344) # (  intra_contig_mapped_reads ) S
+(\254) sy
+( data |>) p n
+(345) # (    filter\() N
+(346) # (      \(rend - rstart\) / rlen > args1$`intra-read-ratio`,) N
+(347) # (      match / base > args1$`intra-base-ratio`,) N
+(348) # (      base > single_min) N
+(349) # (    \) |>) N
+(350) # (    select\(rname\) |>) N
+(351) # (    distinct\(rname\)) N
+(352) # () N
+(353) # (  intra_contig_mapped_reads |>) N
+(354) # (    write.table\(single_file, row.names = ) S
+(FALSE) K
+(, col.names = ) p
+(FALSE) K
+(, quote = ) p
+(FALSE) K
+(\)) p n
+(355) # () N
+(356) # (  single_option_file ) S
+(\254) sy
+( file.path\(mtdir, single_option_base\)) p n
+(357) # (  print\(single_file\)) N
+(run-polap-r-pairs.R) (Page 7/9) ( 7\354M-^[M-^T 03, 25 13:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(run-polap-r-pairs.R) (7/9) (\353\252\251\354M-^ZM-^T\354M-^]\274 7\354M-^[M-^T 03, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (8) 8
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(358) # (  file.copy\(single_file, single_option_file\)) p n
+(359) # (  ) S
+(# file.copy\(single_file, single_option_file, showWarnings = FALSE\)) c n
+(360) # () S
+(}) p n
+(361) # () N
+(362) # () S
+(if) K
+( \(nrow\(x1\) > 1\) {) p n
+(363) # (  y ) S
+(\254) sy
+( t\(combn\(x1$V1, 2\)\)) p n
+(364) # () N
+(365) # (  orders ) S
+(\254) sy
+( ) p
+(function) K
+(\(y\) {) p n
+(366) # (    stopifnot\(length\(y\) ) S
+(\272) sy
+( 2\)) p n
+(367) # (    z ) S
+(\254) sy
+( as.numeric\(gsub\(") p
+(\\\\D) str
+(", "", y\)\)) p n
+(368) # (    bname ) S
+(\254) sy
+( paste0\(z[1], ") p
+(_) str
+(", z[2]\)) p n
+(369) # (    oname ) S
+(\254) sy
+( paste0\(mtdir, ") p
+(/) str
+(", bname, ") p
+(.name) str
+("\)) p n
+(370) # (    y1 ) S
+(\254) sy
+( data |>) p n
+(371) # (      filter\() N
+(372) # (        cname ) S
+(\272) sy
+( y[1],) p n
+(373) # (        match / base > args1$`inter-base-ratio`,) N
+(374) # (        base > pair_min,) N
+(375) # (        rlen > brigde_min) N
+(376) # (      \) |>) N
+(377) # (      select\(rname\) |>) N
+(378) # (      distinct\(rname\)) N
+(379) # (    y2 ) S
+(\254) sy
+( data |>) p n
+(380) # (      filter\() N
+(381) # (        cname ) S
+(\272) sy
+( y[2],) p n
+(382) # (        match / base > args1$`inter-base-ratio`,) N
+(383) # (        base > pair_min,) N
+(384) # (        rlen > brigde_min) N
+(385) # (      \) |>) N
+(386) # (      select\(rname\) |>) N
+(387) # (      distinct\(rname\)) N
+(388) # (    intersect\(y1, y2\) |>) N
+(389) # (      write.table\(oname, row.names = ) S
+(FALSE) K
+(, col.names = ) p
+(FALSE) K
+(, quote = ) p
+(FALSE) K
+(\)) p n
+(390) # (  }) N
+(391) # () N
+(392) # () N
+(393) # (  ) S
+(# 3. inter-contig mapping: individual pair) c n
+(394) # () S
+(  ) p
+(if) K
+( \(args1$all\) {) p n
+(395) # (    apply\(y, 1, orders\)) N
+(396) # (  }) N
+(397) # () N
+(398) # (  ) S
+(# 4. inter-contig mapping) c n
+(399) # () S
+(  ) p
+(#) c n
+(400) # () S
+(  ) p
+(# Filter data based on the given criteria) c n
+(401) # () N
+(402) # () S
+(  ) p
+(if) K
+( \(args1$`create-pair` || args1$all\) {) p n
+(403) # (    inter_contig_mapped_reads ) S
+(\254) sy
+( data |>) p n
+(404) # (      ) S
+(# Calculate the match/base ratio) c n
+(405) # () S
+(      mutate\(match_base_ratio = match / base\) |>) p n
+(406) # (      ) S
+(# Filter for match/base > 0.7 and base > 3000) c n
+(407) # () S
+(      filter\() p n
+(408) # (        match_base_ratio > args1$`inter-base-ratio`,) N
+(run-polap-r-pairs.R) (Page 8/9) ( 7\354M-^[M-^T 03, 25 13:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(run-polap-r-pairs.R) (8/9) (\353\252\251\354M-^ZM-^T\354M-^]\274 7\354M-^[M-^T 03, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+%%Page: (9) 9
+%%BeginPageSetup
+/pagesave save def
+sh 0 translate 90 rotate
+%%EndPageSetup
+iso1dict begin
+gsave
+llx lly 12 add translate
+/v 0 store
+/x0 x v get 4.015896 add sx cw mul add store
+/y0 y v get bfs th add sub store
+x0 y0 moveto
+(409) # (        base > pair_min,) p n
+(410) # (        rlen > brigde_min) N
+(411) # (      \) |>) N
+(412) # (      ) S
+(# Count the number of contigs for each read) c n
+(413) # () S
+(      group_by\(rname\) |>) p n
+(414) # (      ) S
+(# Keep only those reads that are mapped to at least two contigs) c n
+(415) # () S
+(      filter\(n_distinct\(cname\) ) p
+(\263) sy
+( 2\) |>) p n
+(416) # (      ) S
+(# Select unique reads) c n
+(417) # () S
+(      distinct\(rname\) |>) p n
+(418) # (      ungroup\(\)) N
+(419) # () N
+(420) # (    pair_file ) S
+(\254) sy
+( file.path\(mtdir, args1$outpair\)) p n
+(421) # (    inter_contig_mapped_reads |>) N
+(422) # (      write.table\() N
+(423) # (        pair_file,) N
+(424) # (        row.names = ) S
+(FALSE) K
+(,) p n
+(425) # (        col.names = ) S
+(FALSE) K
+(,) p n
+(426) # (        quote = ) S
+(FALSE) K n
+(427) # () S
+(      \)) p n
+(428) # (    pair_option_file ) S
+(\254) sy
+( file.path\(mtdir, pair_option_base\)) p n
+(429) # (    print\(pair_file\)) N
+(430) # (    file.copy\(pair_file, pair_option_file\)) N
+(431) # (    ) S
+(# file.copy\(pair_file, pair_option_file, showWarnings = FALSE\)) c n
+(432) # () S
+(  }) p n
+(433) # () N
+(434) # (  ) S
+(# 5. combined: single + pair) c n
+(435) # () S
+(  ) p
+(if) K
+( \(args1$`create-combined` || args1$all\) {) p n
+(436) # (    combined_mapped_reads ) S
+(\254) sy
+( bind_rows\() p n
+(437) # (      inter_contig_mapped_reads,) N
+(438) # (      intra_contig_mapped_reads) N
+(439) # (    \) |>) N
+(440) # (      distinct\(rname, .keep_all = ) S
+(TRUE) K
+(\)) p n
+(441) # () N
+(442) # (    combined_file ) S
+(\254) sy
+( file.path\(mtdir, args1$outcombined\)) p n
+(443) # (    combined_mapped_reads |>) N
+(444) # (      write.table\() N
+(445) # (        combined_file,) N
+(446) # (        row.names = ) S
+(FALSE) K
+(,) p n
+(447) # (        col.names = ) S
+(FALSE) K
+(,) p n
+(448) # (        quote = ) S
+(FALSE) K n
+(449) # () S
+(      \)) p n
+(450) # (    combined_option_file ) S
+(\254) sy
+( file.path\(mtdir, combined_option_base\)) p n
+(451) # (    print\(combined_file\)) N
+(452) # (    file.copy\(combined_file, combined_option_file\)) N
+(453) # (    ) S
+(# file.copy\(combined_file, combined_option_file, showWarnings = FALSE\)) c n
+(454) # () S
+(  }) p n
+(455) # (}) N
+(run-polap-r-pairs.R) (Page 9/9) ( 7\354M-^[M-^T 03, 25 13:43) title
+border
+grestore
+(Printed by Sang Chul Choi) rhead
+(run-polap-r-pairs.R) (9/9) (\353\252\251\354M-^ZM-^T\354M-^]\274 7\354M-^[M-^T 03, 2025) footer
+end % of iso1dict
+pagesave restore
+showpage
+
+%%Trailer
+end
+%%EOF

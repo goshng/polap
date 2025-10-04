@@ -93,6 +93,7 @@ function _run_polap_prepare-seeds { # prepare seed contigs in a not usual way
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
+	local i=0
 
 	help_message=$(
 		cat <<HEREDOC
@@ -249,6 +250,7 @@ function _run_polap_map-reads { # selects reads mapped on a genome assembly
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
+	local i=0
 
 	help_message=$(
 		cat <<HEREDOC
@@ -500,6 +502,7 @@ function _run_polap_test-reads { # selects reads mapped on a genome assembly
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
+	local i=0
 
 	help_message=$(
 		cat <<HEREDOC
@@ -635,8 +638,10 @@ HEREDOC
 		# Create header for output file with an index column
 		echo -e "index\tsize\tbases\tfragments\tdepth" >"$output_file"
 
+		_polap_log0 "i: $i"
 		# Split values from file1 into lines, combine with file2 and file3, and output to file
 		awk '{ for (i=1; i<=NF; i++) print $i }' "$file1" | paste - "$file2" "$file3" "$file4" | awk '{ print NR-1 "\t" $0 }' >>"$output_file"
+		_polap_log0 "i: $i"
 
 		_polap_log0_column "$output_file"
 
@@ -1074,6 +1079,7 @@ function _run_polap_select-reads { # selects reads mapped on a genome assembly
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
+	local i=0
 
 	help_message=$(
 		cat <<HEREDOC
@@ -1182,6 +1188,7 @@ function _run_polap_flye2 { # executes Flye for an organelle-genome assembly
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
+	local i=0
 
 	if [[ "${_arg_menu[1]}" == "infile" ]]; then
 		_arg_menu[1]="ptgaul-reads"
@@ -1304,6 +1311,7 @@ function _run_polap_flye-polishing { # finish a Flye organelle-genome assembly u
 
 	MTDIR="${_arg_outdir}"/${_arg_jnum}
 	MTSEEDSDIR="${MTDIR}"/seeds
+	local i=0
 
 	help_message=$(
 		cat <<HEREDOC
@@ -1381,6 +1389,7 @@ function _run_polap_report-assembly { # report an organelle-genome assembly resu
 	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
+	local i=0
 
 	# Help message
 	local help_message=$(

@@ -87,6 +87,11 @@ _polap_lib_annotate-edges-stats() {
 		return $RETURN_FAIL
 	fi
 
+	if ! command -v gfatools &>/dev/null; then
+		_polap_log0 "[ERROR] Required command gfatools not found in PATH."
+		_polap_lib_conda-ensure_conda_env polap || exit 1
+	fi
+
 	# if [ -s "${_polap_var_ga_gfa_all}" ] && [ "${_arg_redo}" = "off" ]; then
 	# 	_polap_log1 "    found: ${_polap_var_ga_gfa_all}, so skipping ..."
 	# else

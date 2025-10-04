@@ -169,10 +169,13 @@ else
 	if [[ -s "${_arg_long_reads}" ]]; then
 		_polap_log1 "Execute polap command"
 		if [[ "${_arg_plastid}" == "on" ]]; then
+			# plastid genome assembly
 			_run_polap_readassemble
 		else
+			# mitochondrial genome assembly: ptDNA and then mtDNA assembly
 			_arg_plastid="on"
 			_run_polap_readassemble
+			# mtDNA assembly
 			_arg_plastid="off"
 			_arg_noncoding="on"
 			_run_polap_readassemble

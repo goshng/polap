@@ -268,6 +268,7 @@ _brg_help="off"
 _brg_preset=""
 _brg_config_dir="$HOME/.polap/profiles"
 _brg_config_path=""
+_brg_default_target_dir="${opt_m_arg}"
 
 print_help() {
 
@@ -290,6 +291,9 @@ commands:
   run                  Run tools
   download             Download data.
   help                 Print help message for commands and others.
+  config               Config view, add, etc.
+  benchmark            Benchmark GetOrganelle, ptGAUL, TIPPo, and Oatk.
+  clean (delete, rm)   Remove unnecessary folders.
 
 options:
   -h, --help           Show this help message and exit.
@@ -300,11 +304,6 @@ options:
   -t <arg>             Set value for -t option (default: ${opt_t_arg})
   -m <arg>             Set value for -m option figure folder (default: ${_brg_default_target_dir})
   --version            Show the polap-data-${_bolap_type} version number and exit.
-
-other commands:
-  config               Config view, add, etc.
-  benchmark            Benchmark GetOrganelle, ptGAUL, PMAT, TIPPo, and Oatk.
-  clean (delete, rm)   Remove unnecessary folders.
 HEREDOC
 	)
 
@@ -389,9 +388,9 @@ parse_commandline() {
 			shift
 			;;
 		--version)
-			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			print_version
-			print_version_git_message
+			_polap_lib_version
+			# print_version
+			# print_version_git_message
 			exit
 			;;
 		-q | --quiet)
@@ -435,9 +434,10 @@ assign_positional_args() {
 
 parse_preset_commandline "$@"
 
-# if [[ -z "${_brg_config_path}" ]]; then
-# 	_brg_config_path="${_brg_config_dir}/${_brg_preset}.yaml"
-# fi
+if [[ -z "${_brg_config_path}" ]]; then
+	_brg_config_path="${_brg_config_dir}/${_brg_preset}.yaml"
+fi
+
 if [[ -n "${_brg_config_path}" && ! -f "${_brg_config_path}" ]]; then
 	echo "[info] new profile (${_brg_preset}): ${_brg_config_path}" >&2
 	touch "${_brg_config_path}"

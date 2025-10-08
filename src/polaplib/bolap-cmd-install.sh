@@ -40,6 +40,55 @@ fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
+concat_until_zero() {
+	local sep="${1:-/}" # default separator = "/"
+	shift || true       # ignore if no array follows
+
+	local result=""
+	local val
+
+	for val in "$@"; do
+		[[ "$val" == "0" ]] && break
+		[[ -n "$result" ]] && result+="$sep"
+		result+="$val"
+	done
+
+	printf '%s\n' "$result"
+}
+
+concat_until_zero_or_dash() {
+	local sep="${1:-/}" # separator (default "/")
+	shift || true
+
+	local result=""
+	local val
+	for val in "$@"; do
+		[[ "$val" == "0" || "$val" == "--" ]] && break
+		[[ -n "$result" ]] && result+="$sep"
+		result+="$val"
+	done
+	printf '%s\n' "$result"
+}
+
+get_after_dash_until_zero() {
+	shift || true
+	local arr=("$@")
+
+	local found_dash=0
+	local val
+	local result=()
+
+	for val in "${arr[@]}"; do
+		if [[ "$val" == "--" ]]; then
+			found_dash=1
+			continue
+		fi
+		[[ "$val" == "0" ]] && break
+		((found_dash)) && result+=("$val")
+	done
+
+	printf '%s\n' "${result[@]}"
+}
 function _run_bolap_install {
 	local _brg_outdir="${_brg_menu[1]}"
 	local _brg_sindex="${_brg_menu[2]:-0}"
@@ -210,13 +259,10 @@ Description:
   bolap ${bolap_cmd} uses a tool to execute something. TOOL includes:
 readassemble,
 disassemble,
-syncassemble,
 getorganelle,
 ptgaul,
-tippo,
-oatk,
-pmat,
-
+tippo, and
+oatk.
 
 Examples:
   Execute polap readassemble:
@@ -224,9 +270,6 @@ Examples:
 
   Execute polap disassemble:
     bolap ${bolap_cmd} disassemble Vigna_radiata
-
-  Execute polap syncassemble:
-    bolap ${bolap_cmd} syncassemble Vigna_radiata
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -242,6 +285,13 @@ EOF
 		subcmd1="${_brg_menu[1]}"
 		_subcmd1_clean="run_${subcmd1//-/_}"
 		declare -n ref="help_message_${_subcmd1_clean}"
+		if [[ -z ${ref+x} ]]; then
+			# echo "unbound"
+			declare -n ref="help_message"
+		elif [[ -z $ref ]]; then
+			# echo "set but empty"
+			declare -n ref="help_message"
+		fi
 		local manfile=$(_polap_lib_man-convert_help_message "$ref" "${_brg_menu[0]}-${_brg_menu[1]}")
 		man "$manfile"
 		rm -f "$manfile"
@@ -362,7 +412,7 @@ function _run_bolap_config {
 	local _brg_outdir="${_brg_menu[1]}"
 	local _brg_sindex="${_brg_menu[2]:-0}"
 
-	local bolap_cmd="${_brg_menu[1]}"
+	local bolap_cmd="${_brg_menu[0]}"
 	help_message=$(
 		cat <<EOF
 Name:
@@ -379,6 +429,9 @@ Examples:
     bolap ${bolap_cmd} view
 
   List long and short columns of all:
+    bolap config view platform,long
+
+  List long and short columns of all:
     bolap config view long,short
 
   List long and short columns of key with Salix:
@@ -393,6 +446,9 @@ Examples:
 
   Add a new field to all rows:
     bolap -c a.csv config add-field fieldname value a.csv 
+
+  List ONT datasets:
+    bolap config view platform,long | grep ONT | grep -- -0 | sort | nl
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -794,24 +850,43 @@ EOF
 }
 
 function _run_bolap_man {
-	local _brg_outdir="${_brg_menu[1]}"
-	local _brg_sindex="${_brg_menu[2]:-0}"
+	# local _brg_outdir="${_brg_menu[1]}"
+	# local _brg_sindex="${_brg_menu[2]}"
 
 	local bolap_cmd="${FUNCNAME##*_}"
 	help_message=$(
 		cat <<EOF
 Name:
-  bolap ${bolap_cmd} - 
 
+bolap ${bolap_cmd} - write up the manuscript
 Synopsis:
-  bolap ${bolap_cmd} 
+  bolap ${bolap_cmd} <subcommand>
 
 Description:
-  bolap ${bolap_cmd} 
+  bolap ${bolap_cmd} creates a template markdown file, add tables and figures,
+and uses pandoc to create a PDF file for the polap data analyses.
 
 Examples:
-  Setup polap:
-    bolap ${bolap_cmd}
+  Initialize:
+    bolap man init
+
+  Update:
+    bolap man update
+
+  Tables:
+    bolap man table
+
+  Figures:
+    bolap man figure
+
+  TeX PDF:
+    bolap man pdf
+
+  Finalize the manuscript:
+    bolap man final
+
+  Test table:
+    bolap man table test -y -f -c 1.csv -t v3 -m md -v -v --preset hifi -- arg1 arg2
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -823,14 +898,27 @@ EOF
 	)
 
 	# Display help message
-	if [[ ${_brg_menu[1]} == "help" || "${_brg_help}" == "on" ]]; then
+	if [[ ${_brg_menu[1]} == "help" || "${_brg_help}" == "on" || "${_brg_menu[1]}" == "0" ]]; then
 		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_brg_menu[0]}")
 		man "$manfile"
 		rm -f "$manfile"
 		return
 	fi
 
-	"${bolap_cmd}_genus_species" ${_positionals[@]:1}
+	# local _brg_outdir="${_brg_menu[1]}"
+	# local _brg_sindex="${_brg_menu[2]:-0}"
+	# local _brg_outdir="${_brg_menu[1]}"
+	# local _brg_sindex="${_brg_menu[2]}"
+
+	local bolap_cmd=$(concat_until_zero_or_dash "-" "${_brg_menu[@]}")
+	local bolap_args=$(get_after_dash_until_zero "-" "${_brg_menu[@]}")
+
+	subcmd1="${bolap_cmd}"
+	# echo "${bolap_cmd}_genus_species" ${bolap_args[@]}
+
+	if declare -f "${bolap_cmd}_genus_species" >/dev/null 2>&1; then
+		${bolap_cmd}_genus_species ${bolap_args[@]}
+	fi
 
 	# store them
 	# rest=("${_positionals[@]:1}")

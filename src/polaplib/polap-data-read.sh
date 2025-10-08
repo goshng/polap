@@ -230,7 +230,18 @@ source <(echo 'export QT_QPA_PLATFORM=minimal')
 # NOTE: globaly defined in polap-lib-data.sh
 #
 # _polap_data_csv="$(basename "$0" .sh).csv"
-_polap_data_csv="$(basename ${BASH_SOURCE[0]%.sh}.csv)"
+if [[ "${opt_c_arg}" == "off" ]]; then
+	_polap_data_csv="$(basename ${BASH_SOURCE[0]%.sh}.csv)"
+else
+	_polap_data_csv="${opt_c_arg}"
+fi
+
+if [[ "${opt_m_arg}" == "off" ]]; then
+	_polap_data_md="md"
+else
+	_polap_data_md="${opt_m_arg}"
+fi
+
 # _polap_data_data="$(basename "$0" .sh).data"
 # _polap_data_txt="$(basename "$0" .sh).txt"
 
@@ -552,25 +563,35 @@ HEREDOC
 
 help_message_example=$(
 	cat <<HEREDOC
-Main example for polap-data read:
+# Main routine
+• List species directories for test ONT dataset
+bolap config view platform,long | grep ONT | grep -- -0 | sort | nl
+• Assemble plant organelle genomes with the ONT datasets
+bolap run polap-readassemble <species_dir> <INT:0> [-f] [-v]
+• Benchmark organelle genome assemblies using ptGAUL, TIPPo, Oatk.
+bolap benchmark <species_dir>
+• Summary of the results
+bolap man
+
+# Main example for polap-data read:
 • For plastid (ptDNA) assembly, use polap readassemble.
 • For PacBio HiFi datasets, try Oatk, TIPPo, or Polap, in that order-falling back if the earlier one fails.
-• For ONT mitochondrial (mtDNA) data, rely on either a reference dataset or SyncAsm to guide seed selection.
+• For ONT mitochondrial (mtDNA) data, rely on either a reference dataset or miniasm to guide seed selection.
 
-General data preparation
+• General data preparation
 bolap run data-long
 bolap run summary-data
 bolap run estimate-genomesize
 
-Download reference organelle genomes
+• Download reference organelle genomes
 bolap download ptdna   # plastid reference
 bolap download mtdna   # mitochondrial reference
 
-Organelle genome assembly: Plastid (ptDNA)
+• Organelle genome assembly: Plastid (ptDNA)
 bolap run ptgaul
 bolap run mtgaul
 
-Assemblers by data type
+# Assemblers by data type
 • HiFi reads (PacBio CCS)
 bolap run oatk    # first choice
 bolap run tippo   # fallback if oatk fails
@@ -579,7 +600,6 @@ bolap run polap   # alternative if needed
 • ONT reads (Nanopore)
 bolap run polap-readassemble-pt   # plastid assembly
 bolap run polap-readassemble-nt   # mitochondrial assembly
-bolap run polap-readassemble <species_dir> <INT:0> [-f] [-v]
 
 Others:
   bolap run-polap-readassemble Vitis_vinifera [0] pt 1500 [no]
@@ -1124,6 +1144,7 @@ main_genus_species() {
 man-init_genus_species() {
 	if [[ ! -d "man" ]]; then
 		cp -pr "${_POLAPLIB_DIR}"/man .
+		echo "create man (manuscript) directory"
 	else
 		if [[ "${opt_y_flag}" == false ]]; then
 			read -p "Do you want to delete and initialize the man folder? (yes/no): " confirm
@@ -2836,6 +2857,65 @@ man-table-benchmark_genus_species_for() {
 	printf "dummy\n"
 }
 
+man-table-test_genus_species() {
+	local _brg_outdir="${1:-some}"
+	local _brg_inum="${2:-0}"
+
+	_log_echo0 "$_brg_outdir $_brg_inum"
+
+	_log_echo0 "_brg_verbose: $_brg_verbose"
+	_log_echo0 "_brg_verbose_str: $_brg_verbose_str"
+	_log_echo0 "opt_c_arg: $opt_c_arg"
+	_log_echo0 "opt_t_arg: $opt_t_arg"
+	_log_echo0 "opt_m_arg: $opt_m_arg"
+	_log_echo0 "opt_y_flag: $opt_y_flag"
+	_log_echo0 "opt_f_flag: $opt_f_flag"
+	_log_echo0 "opt_e_arg: $opt_e_arg"
+	_log_echo0 "_brg_help: $_brg_help"
+	_log_echo0 "_brg_preset: $_brg_preset"
+	_log_echo0 "_brg_config_path: $_brg_config_path"
+	_log_echo0 "_brg_default_target_dir: $_brg_default_target_dir"
+
+	_log_echo0 "_polap_data_csv: $_polap_data_csv"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	# bash "${_POLAPLIB_DIR}/polap-bash-report.sh" tables
+	# bash "${_POLAPLIB_DIR}/polap-bash-report.sh" tables
+	conda deactivate
+
+	# bash "${_POLAPLIB_DIR}/polap-bash-make-dataset-summary.sh"
+}
+
+# Table S1. Datasets
+man-table-dataset_genus_species() {
+	local _brg_outdir="${1:-some}"
+	local _brg_inum="${2:-0}"
+
+	_log_echo0 "$_brg_outdir $_brg_inum"
+
+	_log_echo0 "_brg_verbose: $_brg_verbose"
+	_log_echo0 "_brg_verbose_str: $_brg_verbose_str"
+	_log_echo0 "opt_c_arg: $opt_c_arg"
+	_log_echo0 "opt_t_arg: $opt_t_arg"
+	_log_echo0 "opt_m_arg: $opt_m_arg"
+	_log_echo0 "opt_y_flag: $opt_y_flag"
+	_log_echo0 "opt_f_flag: $opt_f_flag"
+	_log_echo0 "opt_e_arg: $opt_e_arg"
+	_log_echo0 "_brg_help: $_brg_help"
+	_log_echo0 "_brg_preset: $_brg_preset"
+	_log_echo0 "_brg_config_path: $_brg_config_path"
+	_log_echo0 "_brg_default_target_dir: $_brg_default_target_dir"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	bash "${_POLAPLIB_DIR}/polap-bash-report.sh" tables \
+		--csv "${_polap_data_csv}" \
+		--out "${_polap_data_md}"
+	# bash "${_POLAPLIB_DIR}/polap-bash-report.sh" tables
+	conda deactivate
+
+	# bash "${_POLAPLIB_DIR}/polap-bash-make-dataset-summary.sh"
+}
+
 # Table 1's row for a given outdir and inum.
 #
 # arg1: outdir
@@ -3108,10 +3188,6 @@ man-table-benchmark-summary_genus_species() {
 	if [[ "${_brg_type}" == "data" ]]; then
 		cat "${table_md_data}"
 	fi
-}
-
-man-table-test_genus_species() {
-	echo "We execute: $FUNCNAME"
 }
 
 man-figure-test_genus_species() {

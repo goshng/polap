@@ -1514,9 +1514,10 @@ assign_positional_args() {
 
 parse_preset_commandline "$@"
 
-# if [[ -z "${_arg_config_path}" ]]; then
-# 	_arg_config_path="${_arg_config_dir}/${_arg_preset}.yaml"
-# fi
+if [[ -z "${_arg_config_path}" ]]; then
+	_arg_config_path="${_arg_config_dir}/${_arg_preset}.yaml"
+fi
+
 if [[ -n "${_arg_config_path}" && ! -f "${_arg_config_path}" ]]; then
 	echo "[info] new profile (${_arg_preset}): ${_arg_config_path}" >&2
 	touch "${_arg_config_path}"

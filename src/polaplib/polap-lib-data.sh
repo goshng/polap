@@ -71,6 +71,7 @@ _polap_data_cmd="$(basename "$0" .sh)"
 _polap_data_csv="$(basename "$0" .sh).csv"
 _polap_data_data="$(basename "$0" .sh).data"
 _polap_data_txt="$(basename "$0" .sh).txt"
+_polap_data_md="man"
 
 # _log_echo() {
 # 	if [[ -d "${_brg_outdir}" ]]; then
@@ -281,6 +282,12 @@ HEREDOC
 )
 
 ##### INSERT_HELP_HERE #####
+help_message_bolap=$(
+	cat <<HEREDOC
+bolap help
+HEREDOC
+)
+
 help_message_do_mv=$(
 	cat <<HEREDOC
 
@@ -2133,6 +2140,7 @@ run-polap-readassemble_genus_species() {
 	local _brg_type="miniasm"
 	local _brg_omega="1500"
 	local _brg_downsample="no-downsample"
+	local _brg_redo="off"
 
 	# parse options
 	while [[ $# -gt 0 ]]; do
@@ -2146,6 +2154,10 @@ run-polap-readassemble_genus_species() {
 			shift 2
 			;;
 		-f)
+			shift
+			;;
+		--redo)
+			_brg_redo="on"
 			shift
 			;;
 		-d)
@@ -2169,6 +2181,13 @@ run-polap-readassemble_genus_species() {
 
 	# redefine
 	local _brg_rundir="${_brg_outdir_i}/${_brg_title}-1-${_brg_type}"
+
+	_log_echo0 "_brg_redo: ${_brg_redo}"
+	_log_echo0 "-s ${_brg_rundir}/mt.1.gfa"
+	if [[ "${_brg_redo}" == "off" && -s "${_brg_rundir}/mt.1.gfa" ]]; then
+		_log_echo "We have already done the assembly. Use --redo if you redo it."
+		return 0
+	fi
 
 	mkdir -p "${_brg_outdir_i}"
 
@@ -2287,14 +2306,14 @@ run-polap-readassemble_genus_species() {
 	rsync -azuq --max-size=5M \
 		"${_brg_target}/" "${_brg_rundir}/"
 
-	if [[ -s "${long_sra}".fastq ]]; then
-		_log_echo1 rm -f "${long_sra}".fastq
-		rm -f "${long_sra}".fastq
-	fi
-	# if [[ -d "${_brg_target}" ]]; then
-	# 	_log_echo1 rm -rf "${_brg_target}"
-	# 	rm -rf "${_brg_target}"
+	# if [[ -s "${long_sra}".fastq ]]; then
+	# 	_log_echo1 rm -f "${long_sra}".fastq
+	# 	rm -f "${long_sra}".fastq
 	# fi
+	if [[ -d "${_brg_target}" ]]; then
+		_log_echo1 rm -rf "${_brg_target}"
+		rm -rf "${_brg_target}"
+	fi
 }
 
 run-polap-readassemble-animal-mt_genus_species() {
@@ -7941,7 +7960,7 @@ run-summary-data_genus_species() {
 
 	# Start memory logger
 
-	command time -v seqkit stats -T \
+	command time -v seqkit stats -Ta \
 		"${_brg_tmpdir}/l.fq" \
 		-o "${_brg_rundir}/l.fq.stats" \
 		>>"${_stdout_txt}" \
@@ -11928,6 +11947,7 @@ data-long_genus_species() {
 	resolved_fastq=""
 	if check_and_prepare_fastq "$long_sra" "$_media_dir" "$_media1_dir" "$_local_host" false resolved_fastq; then
 		echo "$resolved_fastq" >"${_brg_outdir}/${_brg_inum}/l.fastq.path.txt"
+		echo "$resolved_fastq"
 	else
 		echo "FASTQ file not found or extracted"
 	fi
@@ -12460,7 +12480,7 @@ data-downsample-short_genus_species() {
 # BEGIN: common manuscript functions
 #
 man_genus_species() {
-	local first_arg="$1"
+	local first_arg="${1}"
 	local remaining_args=("${@:2}")
 
 	man-${first_arg}_genus_species "${remaining_args[@]}"
@@ -12496,6 +12516,9 @@ man-table_genus_species() {
 
 	case "${first_arg}" in
 	benchmark)
+		man-table-${first_arg}_genus_species "${remaining_args[@]}"
+		;;
+	dataset)
 		man-table-${first_arg}_genus_species "${remaining_args[@]}"
 		;;
 	*)

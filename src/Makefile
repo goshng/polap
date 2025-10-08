@@ -1,55 +1,215 @@
-# Variables
-CC = gcc
-CFLAGS = -Wall -g
-SRC_DIR = .
-BUILD_DIR = ../build/src
-POLAP_DATA = polap polap-data-aflye polap-data-cflye polap-data-dflye polap-data-taxon bolap
-SRCS = $(wildcard $(SRC_DIR)/*.c)
-# OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS),$(POLAP_DATA))
-OBJS = $($(POLAP_DATA))
+# polap/src/Makefile
+# Single-tier (v6) workflow: species-root → manifest (v6) → Table S1
 
-# Default target
-# all: $(BUILD_DIR) $(OBJS)
-all: $(BUILD_DIR) $(POLAP_DATA)
-	chmod +x $(POLAP_DATA)
+SHELL := /usr/bin/env bash
 
-# Create the build directory if it doesn't exist
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+# Source base (this Makefile's dir) and polaplib
+POLAP_SRC    := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+POLAPLIB_DIR := $(POLAP_SRC)/polaplib
+export POLAP_SRC POLAPLIB_DIR
 
-# Rule to compile source files into object files in the build directory
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
+# Species root defaults to where you run make
+SPECIES_ROOT ?= $(CURDIR)
+SR := $(abspath $(SPECIES_ROOT))
 
-polap: polap.sh
-	sed 's/_POLAP_RELEASE:=0/_POLAP_RELEASE:=1/' $< > $@
+# Defaults (single tier)
+SET            ?= some
+INUM           ?= 0
+TIER           ?= v6
 
-polap-data-aflye: polap-data-v1.sh polaplib/polap-data-v1.csv polaplib/polap-bash-figure-latex.sh
-	sed 's/_POLAP_RELEASE:=0/_POLAP_RELEASE:=1/' $< > $@
-	cp -p polaplib/polap-data-v1.csv polaplib/polap-data-aflye.csv
+# Trim (kill any trailing spaces/newlines)
+SET_CLEAN   := $(strip $(SET))
+INUM_CLEAN  := $(strip $(INUM))
+TIER_CLEAN  := $(strip $(TIER))
 
-polap-data-cflye: polap-data-v2.sh polaplib/polap-data-v2.csv polaplib/polap-bash-figure-latex.sh
-	sed 's/_POLAP_RELEASE:=0/_POLAP_RELEASE:=1/' $< > $@
-	cp -p polaplib/polap-data-v2.csv polaplib/polap-data-cflye.csv
+# Outputs under the species root
+MANIFEST_DIR := $(SR)/md
+MANIFEST_V6  := $(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json
+TABLE_S1_TSV := $(SR)/md/tableS1-dataset-summary.tsv
+TABLE_S1_MD  := $(TABLE_S1_TSV:.tsv=.md)
 
-polap-data-taxon: polap-data-v3.sh polaplib/polap-data-v3.csv polaplib/polap-bash-figure-latex.sh
-	sed 's/_POLAP_RELEASE:=0/_POLAP_RELEASE:=1/' $< > $@
-	cp -p polaplib/polap-data-v3.csv polaplib/polap-data-taxon.csv
+.PHONY: help print-vars check-env manifests table-s1 table_s1 clean
 
-polap-data-dflye: polap-data-v4.sh polaplib/polap-data-v4.csv polaplib/polap-bash-figure-latex.sh
-	sed 's/_POLAP_RELEASE:=0/_POLAP_RELEASE:=1/' $< > $@
-	cp -p polaplib/polap-data-v4.csv polaplib/polap-data-dflye.csv
+.DEFAULT_GOAL := help
+help:
+	@echo "Single-tier (v6) workflow"
+	@echo "Use from anywhere (SPECIES_ROOT defaults to $$PWD):"
+	@echo "  make -f $(POLAP_SRC)/Makefile manifests"
+	@echo "  make -f $(POLAP_SRC)/Makefile table-s1"
+	@echo ""
+	@echo "Vars you can override: SPECIES_ROOT=/abs/species-root  SET=auto|file:/abs/list.txt|<species>  INUM=0  TIER=v6"
 
-bolap: bolap.sh
-	sed 's/_POLAP_RELEASE:=0/_POLAP_RELEASE:=1/' $< > $@
+print-vars:
+	@echo "SPECIES_ROOT=$(SR)"
+	@echo "POLAP_SRC=$(POLAP_SRC)"
+	@echo "POLAPLIB_DIR=$(POLAPLIB_DIR)"
+	@echo "SET=$(SET_CLEAN)  INUM=$(INUM_CLEAN)  TIER=$(TIER_CLEAN)"
+	@echo "MANIFEST=$(MANIFEST_V6)"
+	@echo "TABLE_S1_TSV=$(TABLE_S1_TSV)"
 
-# Clean build files
+check-env:
+	@command -v bash >/dev/null 2>&1 || { echo "[ERR] bash missing" >&2; exit 2; }
+	@command -v python3 >/dev/null 2>&1 || { echo "[ERR] python3 missing" >&2; exit 2; }
+	@true
+
+# 1) Build the single manifest (v6)
+.PHONY: manifests
+manifests: $(MANIFEST_V6)
+
+$(MANIFEST_V6): check-env
+	@mkdir -p "$(MANIFEST_DIR)"
+	@echo "[INFO] Building manifest tier=$(TIER_CLEAN) set=$(SET_CLEAN) in $(SR)"
+	@cd "$(SR)" && \
+	  bash "$(POLAPLIB_DIR)/polap-bash-make-manifest.sh" \
+	    --set "$(SET_CLEAN)" \
+	    --tier "$(TIER_CLEAN)" \
+	    --inum "$(INUM_CLEAN)" \
+	    --out "$(abspath $@)" \
+	    --pretty \
+	    2> "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).log" \
+	  || { echo "[ERR] See $(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).log"; exit 1; }
+	@echo "[INFO] Wrote: $(abspath $@)"
+
+# 2) Make Table S1 from that single manifest
+.PHONY: table-s1 table_s1
+table_s1: table-s1
+
+table-s1: $(TABLE_S1_TSV) $(TABLE_S1_MD)
+
+$(TABLE_S1_TSV): $(MANIFEST_V6) check-env
+	@mkdir -p "$(dir $@)"
+	@echo "[INFO] Building Table S1 from $(MANIFEST_V6)"
+	@python3 "$(POLAPLIB_DIR)/scripts/make_table_dataset_summary.py" \
+	  --manifest "$(MANIFEST_V6)" \
+	  --out "$(TABLE_S1_TSV)" \
+	  --markdown
+	@echo "[OK] Wrote: $(TABLE_S1_TSV) and $(TABLE_S1_MD)"
+
+$(TABLE_S1_MD): $(TABLE_S1_TSV)
+	@true
+
+.PHONY: figure-assembly
+figure-assembly:
+	Rscript $(POLAPLIB_DIR)/scripts/make_assembly_figure.R \
+	  --input $(SR)/md/manifest-v6-some.json \
+	  --output $(SR)/md/figure-assembly-v6-some.pdf
+
+.PHONY: figure-assemblies-pdf
+figure-assemblies-pdf:
+	Rscript -e 'sessionInfo()' >/dev/null 2>&1 || true
+	bash "$(POLAPLIB_DIR)/polap-bash-assemble-png-pdf.sh" \
+		--manifest "$(SR)/md/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
+		--out "$(SR)/md/assemblies-$(TIER_CLEAN)-$(SET_CLEAN).pdf" \
+		--rows 8 --cols 5 \
+		--page-width-in 8.5 --page-height-in 11 --margin-in 0.7 \
+		--cell-pad 1.5 \
+		--organelle mt \
+		--title "Assemblies 1.5 0.7 ($(TIER_CLEAN))"
+
+.PHONY: figure-assemblies-both
+figure-assemblies-both:
+	bash "$(POLAPLIB_DIR)/polap-bash-assemble-png-pdf.sh" \
+	  --manifest "$(SR)/md/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
+	  --out "$(SR)/md/assemblies-$(TIER_CLEAN)-$(SET_CLEAN)-both.pdf" \
+	  --organelle both \
+	  --rows 12 --cols 6 \
+	  --page-width-in 8.5 --page-height-in 11 --margin-in 0.5 \
+	  --gap-mm 4 --label-cex 0.55 \
+	  --title "Organelle Assemblies ($(TIER_CLEAN): mt + pt)"
+
+.PHONY: figure-assemblies-two-pages
+figure-assemblies-two-pages:
+	bash "$(POLAPLIB_DIR)/polap-bash-assemble-png-pdf-two-pages.sh" \
+	  --manifest "$(SR)/md/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
+	  --out "$(SR)/md/assemblies-$(TIER_CLEAN)-$(SET_CLEAN)-pt-mt.pdf" \
+	  --rows 8 --cols 5 \
+	  --page-width-in 11 --page-height-in 17 --margin-in 0.5 \
+	  --gap-mm 4.0 --label-cex 0.55 --title-cex 1.0 --label-strip-frac 0.16 \
+	  --pt-title "Plastid assemblies ($(TIER_CLEAN))" \
+	  --mt-title "Mitochondrial assemblies ($(TIER_CLEAN))"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# NEW TARGETS (distinct names):
+#   anno-scan      → build md/anno-mt.csv and md/anno-pt.csv from manifest
+#   sheet-ptmt     → two-page PDF (page 1 = PT, page 2 = MT) with annotations
+# ──────────────────────────────────────────────────────────────────────────────
+
+.PHONY: anno-scan
+anno-scan:
+	@bash "$(POLAPLIB_DIR)/polap-bash-anno-scan.sh" \
+	  --manifest "$(SR)/md/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
+	  --out-dir "$(SR)/md" \
+	  --tier "$(TIER_CLEAN)" --inum "$(INUM_CLEAN)"
+
+.PHONY: sheet-ptmt
+sheet-ptmt: anno-scan
+	@bash "$(POLAPLIB_DIR)/polap-bash-ptmt-sheet.sh" \
+	  --manifest "$(SR)/md/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
+	  --annot-pt "$(SR)/md/anno-pt.csv" \
+	  --annot-mt "$(SR)/md/anno-mt.csv" \
+	  --out "$(SR)/md/sheet-$(TIER_CLEAN)-$(SET_CLEAN)-pt-mt.pdf" \
+	  --rows 8 --cols 5 \
+	  --page-width-in 11 --page-height-in 17 --margin-in 0.5 \
+	  --gap-mm 4.0 --label-cex 0.55 --title-cex 1.0 --label-strip-frac 0.16 \
+	  --pt-title "Plastid assemblies ($(TIER_CLEAN))" \
+	  --mt-title "Mitochondrial assemblies ($(TIER_CLEAN))"
+
+.PHONY: fig1-puml
+fig1-puml:
+	@plantuml -tsvg "$(POLAPLIB_DIR)/figure1-pipeline.puml" -o "$(SR)/md"
+	@plantuml -tpng "$(POLAPLIB_DIR)/figure1-pipeline.puml" -o "$(SR)/md"
+	@echo "[OK] Wrote: $(SR)/md/figure1-pipeline.svg and .png"
+
+.PHONY: fig1-r
+fig1-r:
+	Rscript "$(POLAPLIB_DIR)/polap-r-figure1-pipeline.R"
+
+###############################################################################
+# Manuscript builder: polap-md-project00.md -> man/Polap-manuscript.pdf
+# Requires: pandoc (and LaTeX installed; e.g., TeX Live). Optional: rsvg, citeproc, pandoc-crossref.
+###############################################################################
+
+# Inputs / outputs (override on CLI if desired)
+DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-project00.md
+DOC_OUT_PDF     ?= $(SR)/man/polap-manuscript.pdf
+FIG_DIR         ?= $(SR)/man/figures
+MAN_DIR         ?= $(SR)/man
+
+# Pandoc engine and common flags
+PANDOC          ?= pandoc
+PDF_ENGINE      ?= xelatex
+
+# Resource search path: allow images in md/, man/, man/figures/
+PANDOC_RPATH    ?= $(SR):$(SR)/md:$(MAN_DIR):$(FIG_DIR)
+
+.PHONY: manuscript
+manuscript: $(DOC_OUT_PDF)
+
+$(DOC_OUT_PDF): $(DOC_MD)
+	@command -v $(PANDOC) >/dev/null 2>&1 || { echo "[ERR] pandoc not found"; exit 2; }
+	@mkdir -p "$(MAN_DIR)"
+	@echo "[INFO] Building PDF: $@"
+	@{ \
+	  BIB_OPT=""; CSL_OPT=""; XREF_OPT=""; \
+	  BIB="$(MAN_DIR)/references.bib"; \
+	  CSL="$(MAN_DIR)/style.csl"; \
+	  if [ -s "$$BIB" ]; then BIB_OPT="--citeproc --bibliography=$$BIB"; fi; \
+	  if [ -s "$$CSL" ]; then CSL_OPT="--csl=$$CSL"; fi; \
+	  if command -v pandoc-crossref >/dev/null 2>&1; then XREF_OPT="--filter pandoc-crossref"; fi; \
+	  $(PANDOC) "$(DOC_MD)" \
+	    --pdf-engine="$(PDF_ENGINE)" \
+	    --resource-path="$(PANDOC_RPATH)" \
+	    --toc --toc-depth=2 \
+	    --number-sections \
+	    --metadata=link-citations=true \
+	    $$BIB_OPT $$CSL_OPT $$XREF_OPT \
+	    -V geometry:margin=1in \
+	    -o "$(DOC_OUT_PDF)"; \
+	}
+	@echo "[OK] Wrote: $(DOC_OUT_PDF)"
+
 clean:
-	rm -rf $(BUILD_DIR) $(POLAP_DATA)
-	rm -f polap*~
-	@echo "Cleaned $(BUILD_DIR) in subdir1."
-	@echo "Cleaned $(POLAP_DATA) in subdir1."
-
-# Phony targets
-.PHONY: all clean
-
+	@rm -f "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
+	       "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).log" \
+	       "$(TABLE_S1_TSV)" "$(TABLE_S1_MD)" || true
+	@echo "[OK] Cleaned"

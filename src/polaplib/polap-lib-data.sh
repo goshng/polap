@@ -2120,12 +2120,7 @@ run-polap-downsample_genus_species() {
 
 }
 
-# two positional arguments: outdir and index
-# optiotns
-# type: -t pt|mt|nt
-# omega: -w 1500
-# downsample: -d
-run-polap-readassemble_genus_species() {
+run-polap-aflye_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
 	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
@@ -2137,10 +2132,11 @@ run-polap-readassemble_genus_species() {
 	fi
 
 	# defaults
-	local _brg_type="miniasm"
+	local _brg_type="aflye"
 	local _brg_omega="1500"
 	local _brg_downsample="no-downsample"
 	local _brg_redo="off"
+	local _brg_cleanup="on"
 
 	# parse options
 	while [[ $# -gt 0 ]]; do
@@ -2158,6 +2154,10 @@ run-polap-readassemble_genus_species() {
 			;;
 		--redo)
 			_brg_redo="on"
+			shift
+			;;
+		--no-cleanup)
+			_brg_cleanup="off"
 			shift
 			;;
 		-d)
@@ -2182,10 +2182,192 @@ run-polap-readassemble_genus_species() {
 	# redefine
 	local _brg_rundir="${_brg_outdir_i}/${_brg_title}-1-${_brg_type}"
 
+	local mtn="${_mtn["$_brg_target"]}"
+	local ptn="${_ptn["$_brg_target"]}"
+	local short_sra="${_short["$_brg_target"]}"
+
+	# _log_echo0 "mtn: ${mtn}"
+	# _log_echo0 "ptn: ${ptn}"
+	# return 0
+
 	_log_echo0 "_brg_redo: ${_brg_redo}"
 	_log_echo0 "-s ${_brg_rundir}/mt.1.gfa"
 	if [[ "${_brg_redo}" == "off" && -s "${_brg_rundir}/mt.1.gfa" ]]; then
-		_log_echo "We have already done the assembly. Use --redo if you redo it."
+		_log_echo0 "We have already done the assembly. Use --redo if you redo it."
+		return 0
+	fi
+
+	mkdir -p "${_brg_outdir_i}"
+
+	local platform="${_platform["$_brg_target"]}"
+
+	local _brg_coverage="50m"
+
+	local option_data_type="--nano-raw"
+	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
+		option_data_type="--pacbio-hifi"
+		if [[ "${_brg_type}" == "pt" ]]; then
+			lib-polap-readassemble-hifi-pt-brg-coverage
+		else
+			lib-polap-readassemble-hifi-brg-coverage
+		fi
+	elif [[ "${platform}" == "PACBIO_CLR" ]]; then
+		option_data_type="--pacbio-raw"
+		if [[ "${_brg_type}" == "pt" ]]; then
+			lib-polap-readassemble-clr-pt-brg-coverage
+		else
+			lib-polap-readassemble-clr-brg-coverage
+		fi
+	elif [[ "${platform}" == "ONT" ]]; then
+		if [[ "${_brg_type}" == "pt" ]]; then
+			lib-polap-readassemble-pt-brg-coverage
+		else
+			lib-polap-readassemble-brg-coverage
+		fi
+	fi
+
+	_log_echo1 "Do: assemble pt/mt DNA using seed reads of coverage (${_brg_coverage}) with ${option_data_type}: ${_brg_rundir}"
+
+	rm -rf "${_brg_target}"
+	mkdir -p "${_brg_target}"
+
+	# Start memory logger
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	# check out input data
+	# ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
+	# _brg_input_data="${long_sra}.fastq"
+	if [[ ! -s "${long_sra}".fastq ]]; then
+		data-long_genus_species "${_brg_outdir}"
+	fi
+
+	if [[ ! -s "${short_sra}_1.fastq" ]]; then
+		data-short_genus_species "${_brg_outdir}"
+	fi
+
+	local resolved_fastq="${long_sra}.fastq"
+
+	_log_echo2 "plant mt $_brg_verbose_str"
+
+	${_polap_cmd} assemble1 \
+		"${option_data_type}" \
+		-l "${resolved_fastq}" \
+		-a "${short_sra}_1.fastq" \
+		-b "${short_sra}_2.fastq" \
+		${_brg_verbose_str} \
+		-o "${_brg_target}"
+
+	_log_echo0 ${_polap_cmd} assemble2 \
+		"${option_data_type}" \
+		-l "${resolved_fastq}" \
+		-a "${short_sra}_1.fastq" \
+		-b "${short_sra}_2.fastq" \
+		${_brg_verbose_str} \
+		-o "${_brg_target}"
+
+	conda deactivate
+
+	# Summarize results after job (with previously defined summary function)
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+	# Save some results
+	rsync -azuq --max-size=5M \
+		"${_brg_target}/" "${_brg_rundir}/"
+
+	# if [[ -s "${long_sra}".fastq ]]; then
+	# 	_log_echo1 rm -f "${long_sra}".fastq
+	# 	rm -f "${long_sra}".fastq
+	# fi
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		if [[ -d "${_brg_target}" ]]; then
+			_log_echo1 rm -rf "${_brg_target}"
+			rm -rf "${_brg_target}"
+		fi
+	fi
+}
+
+# two positional arguments: outdir and index
+# optiotns
+# type: -t pt|mt|nt
+# omega: -w 1500
+# downsample: -d
+run-polap-readassemble_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	if [[ "$#" -gt 1 ]]; then
+		shift 2
+	else
+		shift
+	fi
+
+	# defaults
+	local _brg_type="miniasm"
+	local _brg_omega="1500"
+	local _brg_downsample="no-downsample"
+	local _brg_redo="off"
+	local _brg_cleanup="on"
+
+	# parse options
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--type)
+			_brg_type="$2"
+			shift 2
+			;;
+		-w)
+			_brg_omega="$2"
+			shift 2
+			;;
+		-f)
+			shift
+			;;
+		--redo)
+			_brg_redo="on"
+			shift
+			;;
+		--no-cleanup)
+			_brg_cleanup="off"
+			shift
+			;;
+		-d)
+			_brg_downsample="downsample"
+			shift
+			;;
+		--dry-run)
+			_brg_dry="on"
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			_log_echo "Unknown option: $1"
+			return 1
+			;;
+		esac
+	done
+
+	# redefine
+	local _brg_rundir="${_brg_outdir_i}/${_brg_title}-1-${_brg_type}"
+
+	local mtn="${_mtn["$_brg_target"]}"
+	local ptn="${_ptn["$_brg_target"]}"
+
+	# _log_echo0 "mtn: ${mtn}"
+	# _log_echo0 "ptn: ${ptn}"
+	# return 0
+
+	_log_echo0 "_brg_redo: ${_brg_redo}"
+	_log_echo0 "-s ${_brg_rundir}/mt.1.gfa"
+	if [[ "${_brg_redo}" == "off" && -s "${_brg_rundir}/mt.1.gfa" ]]; then
+		_log_echo0 "We have already done the assembly. Use --redo if you redo it."
 		return 0
 	fi
 
@@ -2259,11 +2441,13 @@ run-polap-readassemble_genus_species() {
 		_log_echo0 ${_polap_cmd} readassemble \
 			"${option_data_type}" \
 			-l "${resolved_fastq}" \
+			--readassemble-mtn "${mtn}" \
 			${_brg_verbose_str} \
 			-o "${_brg_target}"
 		${_polap_cmd} readassemble \
 			"${option_data_type}" \
 			-l "${resolved_fastq}" \
+			--readassemble-mtn "${mtn}" \
 			${_brg_verbose_str} \
 			-o "${_brg_target}"
 	elif [[ "${_brg_type}" == "nt" ]]; then
@@ -2310,9 +2494,11 @@ run-polap-readassemble_genus_species() {
 	# 	_log_echo1 rm -f "${long_sra}".fastq
 	# 	rm -f "${long_sra}".fastq
 	# fi
-	if [[ -d "${_brg_target}" ]]; then
-		_log_echo1 rm -rf "${_brg_target}"
-		rm -rf "${_brg_target}"
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		if [[ -d "${_brg_target}" ]]; then
+			_log_echo1 rm -rf "${_brg_target}"
+			rm -rf "${_brg_target}"
+		fi
 	fi
 }
 
@@ -5949,6 +6135,16 @@ config-add-field_genus_species() {
 	print_species_field_summary --add-field="${first_arg}=${second_arg}" \
 		--values --out="${third_arg}"
 	echo cp -p "${third_arg}" "${_POLAPLIB_DIR}/${_polap_data_csv}"
+}
+
+config-update-field_genus_species() {
+	local first_arg="$1"
+	local second_arg="${2:-0}"
+	local third_arg="${3:-0}"
+	local csv_arg="${4:-out.csv}"
+	print_species_field_summary --set-field="${first_arg}:${second_arg}:${third_arg}" \
+		--values --out="${csv_arg}"
+	echo cp -p "${csv_arg}" "${_POLAPLIB_DIR}/${_polap_data_csv}"
 }
 
 config_genus_species() {
@@ -12484,6 +12680,32 @@ man_genus_species() {
 	local remaining_args=("${@:2}")
 
 	man-${first_arg}_genus_species "${remaining_args[@]}"
+}
+
+man-table-s1_genus_species() {
+	local args=("$@")
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	make -f "${_POLAPLIB_DIR}/../Makefile" manifests
+	make -f "${_POLAPLIB_DIR}/../Makefile" table-s1
+	conda deactivate
+}
+
+man-figure-assembly_genus_species() {
+	local args=("$@")
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	make -f "${_POLAPLIB_DIR}/../Makefile" manifests
+	make -f "${_POLAPLIB_DIR}/../Makefile" figure-assemblies-two-pages
+	conda deactivate
+}
+
+man-man_genus_species() {
+	local args=("$@")
+
+	_polap_lib_conda-ensure_conda_env polap-man || exit 1
+	make -f "${_POLAPLIB_DIR}/../Makefile" manuscript.pdf
+	conda deactivate
 }
 
 man-minimap2_genus_species() {

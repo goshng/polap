@@ -4,8 +4,8 @@
 # Author  : Sang Chul Choi (POLAP)
 # License : GPL-3.0+
 
+library(optparse)
 suppressPackageStartupMessages({
-  library(optparse)
   library(readr)
   library(png)
   library(grid)

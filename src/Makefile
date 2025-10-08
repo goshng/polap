@@ -23,9 +23,10 @@ INUM_CLEAN  := $(strip $(INUM))
 TIER_CLEAN  := $(strip $(TIER))
 
 # Outputs under the species root
-MANIFEST_DIR := $(SR)/md
+MANIFEST_DIR := $(SR)/man/md
+FIGURE_DIR := $(SR)/man/figures
 MANIFEST_V6  := $(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json
-TABLE_S1_TSV := $(SR)/md/tableS1-dataset-summary.tsv
+TABLE_S1_TSV := $(SR)/man/md/tableS1-dataset-summary.tsv
 TABLE_S1_MD  := $(TABLE_S1_TSV:.tsv=.md)
 
 .PHONY: help print-vars check-env manifests table-s1 table_s1 clean
@@ -137,17 +138,19 @@ figure-assemblies-two-pages:
 .PHONY: anno-scan
 anno-scan:
 	@bash "$(POLAPLIB_DIR)/polap-bash-anno-scan.sh" \
-	  --manifest "$(SR)/md/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
-	  --out-dir "$(SR)/md" \
+	  --base-dir "." \
+	  --manifest "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
+	  --out-dir "$(MANIFEST_DIR)" \
 	  --tier "$(TIER_CLEAN)" --inum "$(INUM_CLEAN)"
 
 .PHONY: sheet-ptmt
 sheet-ptmt: anno-scan
 	@bash "$(POLAPLIB_DIR)/polap-bash-ptmt-sheet.sh" \
-	  --manifest "$(SR)/md/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
-	  --annot-pt "$(SR)/md/anno-pt.csv" \
-	  --annot-mt "$(SR)/md/anno-mt.csv" \
-	  --out "$(SR)/md/sheet-$(TIER_CLEAN)-$(SET_CLEAN)-pt-mt.pdf" \
+	  --base-dir "." \
+	  --manifest "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
+	  --annot-pt "$(MANIFEST_DIR)/anno-pt.csv" \
+	  --annot-mt "$(MANIFEST_DIR)/anno-mt.csv" \
+	  --out "$(FIGURE_DIR)/sheet-$(TIER_CLEAN)-$(SET_CLEAN)-pt-mt.pdf" \
 	  --rows 8 --cols 5 \
 	  --page-width-in 11 --page-height-in 17 --margin-in 0.5 \
 	  --gap-mm 4.0 --label-cex 0.55 --title-cex 1.0 --label-strip-frac 0.16 \
@@ -185,7 +188,10 @@ PANDOC_RPATH    ?= $(SR):$(SR)/md:$(MAN_DIR):$(FIG_DIR)
 .PHONY: manuscript
 manuscript: $(DOC_OUT_PDF)
 
-$(DOC_OUT_PDF): $(DOC_MD)
+expanded.md: table-s1
+	@bash man/sh/replace_include.sh "$(DOC_MD)" >expanded.md
+
+$(DOC_OUT_PDF): $(DOC_MD) expanded.md sheet-ptmt
 	@command -v $(PANDOC) >/dev/null 2>&1 || { echo "[ERR] pandoc not found"; exit 2; }
 	@mkdir -p "$(MAN_DIR)"
 	@echo "[INFO] Building PDF: $@"
@@ -196,7 +202,7 @@ $(DOC_OUT_PDF): $(DOC_MD)
 	  if [ -s "$$BIB" ]; then BIB_OPT="--citeproc --bibliography=$$BIB"; fi; \
 	  if [ -s "$$CSL" ]; then CSL_OPT="--csl=$$CSL"; fi; \
 	  if command -v pandoc-crossref >/dev/null 2>&1; then XREF_OPT="--filter pandoc-crossref"; fi; \
-	  $(PANDOC) "$(DOC_MD)" \
+	  $(PANDOC) expanded.md \
 	    --pdf-engine="$(PDF_ENGINE)" \
 	    --resource-path="$(PANDOC_RPATH)" \
 	    --toc --toc-depth=2 \
@@ -207,6 +213,9 @@ $(DOC_OUT_PDF): $(DOC_MD)
 	    -o "$(DOC_OUT_PDF)"; \
 	}
 	@echo "[OK] Wrote: $(DOC_OUT_PDF)"
+
+manuscript.pdf: $(DOC_OUT_PDF)
+	@pdfunite "$(DOC_OUT_PDF)" $(FIGURE_DIR)/sheet-v6-some-pt-mt.pdf manuscript.pdf
 
 clean:
 	@rm -f "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \

@@ -10,6 +10,7 @@ IFS=$'\n\t'
 _POLAPLIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export _POLAPLIB_DIR
 
+BASE_DIR=""
 MANIFEST=""
 OUTPDF=""
 ANN_PT=""
@@ -40,6 +41,10 @@ EOF
 
 while (($#)); do
 	case "$1" in
+	--base-dir)
+		BASE_DIR="${2:?}"
+		shift 2
+		;;
 	--manifest)
 		MANIFEST="${2:?}"
 		shift 2
@@ -122,7 +127,7 @@ done
 }
 mkdir -p "$(dirname "$OUTPDF")"
 
-SR="$(cd "$(dirname "$MANIFEST")/.." && pwd)"
+SR="$(cd "$(dirname "$BASE_DIR")" && pwd)"
 PT_TSV="$(mktemp -t ptlist.XXXXXX.tsv)"
 MT_TSV="$(mktemp -t mtlist.XXXXXX.tsv)"
 PT_CSV="$(mktemp -t ptlist.XXXXXX.csv)"

@@ -19,6 +19,7 @@ AWK_CORE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts/polap-awk-anno-s
 	exit 2
 }
 
+BASE_DIR=""
 MANIFEST="" OUT_DIR="." TIER="" INUM=""
 usage() {
 	cat <<EOF
@@ -28,6 +29,10 @@ EOF
 }
 while (($#)); do
 	case "$1" in
+	--base-dir)
+		BASE_DIR="${2:?}"
+		shift 2
+		;;
 	--manifest)
 		MANIFEST="${2:?}"
 		shift 2
@@ -62,7 +67,7 @@ done
 }
 mkdir -p "$OUT_DIR"
 
-SR="$(cd "$(dirname "$MANIFEST")/.." && pwd)"
+SR="$(cd "$(dirname "$BASE_DIR")" && pwd)"
 
 MT_OUT="$OUT_DIR/anno-mt.csv"
 PT_OUT="$OUT_DIR/anno-pt.csv"

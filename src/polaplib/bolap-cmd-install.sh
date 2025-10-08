@@ -447,6 +447,9 @@ Examples:
   Add a new field to all rows:
     bolap -c a.csv config add-field fieldname value a.csv 
 
+  Update a field of a particular species key:
+    bolap config-update-field mtn Punica_granatum-0 3 out.csv -c out.csv
+
   List ONT datasets:
     bolap config view platform,long | grep ONT | grep -- -0 | sort | nl
 
@@ -887,6 +890,11 @@ Examples:
 
   Test table:
     bolap man table test -y -f -c 1.csv -t v3 -m md -v -v --preset hifi -- arg1 arg2
+
+  Make tables and figures:
+    bolap man table-s1
+    bolap man figure-assembly
+    bolap man man
 
 Copyright:
   Copyright © 2025 Sang Chul Choi

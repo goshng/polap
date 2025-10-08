@@ -85,6 +85,7 @@ _positionals=()
 _arg_menu=("assemble" "infile" "outfile" "thirdfile" "fourthfile")
 # THE DEFAULTS INITIALIZATION - OPTIONALS
 _arg_long_reads="l.fq"
+_arg_long_reads_original="l.fq"
 _arg_long_reads_is="off"
 # NOTE: some output directories and files are created automatically.
 # the default out directory o is created in polap-variables-main.sh
@@ -265,6 +266,9 @@ _arg_directional_i=1
 # 100 for pacbio
 _arg_readassemble_n=100
 _arg_readassemble_t=100000
+_arg_readassemble_mtn=2
+_arg_readassemble_ptn=1
+_arg_readassemble_use_all_long_read="off"
 
 # flye options
 _arg_data_type="nano-raw"
@@ -438,6 +442,7 @@ parse_commandline() {
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_long_reads="$2"
 			_arg_long_reads_is="on"
+			_arg_long_reads_original="${_arg_long_reads}"
 			shift
 			;;
 		--long-reads=*)
@@ -594,6 +599,22 @@ parse_commandline() {
 			;;
 		--threads-fmlrc=*)
 			_arg_threads_fmlrc="${_key##--threads-fmlrc=}"
+			;;
+		--readassemble-ptn)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_readassemble_ptn="$2"
+			shift
+			;;
+		--readassemble-ptn=*)
+			_arg_readassemble_ptn="${_key##--readassemble-ptn=}"
+			;;
+		--readassemble-mtn)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_readassemble_mtn="$2"
+			shift
+			;;
+		--readassemble-mtn=*)
+			_arg_readassemble_mtn="${_key##--readassemble-mtn=}"
 			;;
 		--readassemble-n)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -902,6 +923,10 @@ parse_commandline() {
 		--no-readassemble-mtseed | --readassemble-mtseed)
 			_arg_readassemble_mtseed="on"
 			test "${1:0:5}" = "--no-" && _arg_readassemble_mtseed="off"
+			;;
+		--no-readassemble-use-all-long-read | --readassemble-use-all-long-read)
+			_arg_readassemble_use_all_long_read="on"
+			test "${1:0:5}" = "--no-" && _arg_readassemble_use_all_long_read="off"
 			;;
 			# Add options of on and off
 			#

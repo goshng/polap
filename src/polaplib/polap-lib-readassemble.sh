@@ -952,7 +952,7 @@ _polap_lib_readassemble-annotated() {
 	fi
 
 	local i
-	for ((i = 0; i < 1; i++)); do
+	for ((i = 0; i < ${_arg_readassemble_mtn}; i++)); do
 		local j=$((i + 1))
 		_polap_log0 "i: $i"
 

@@ -170,6 +170,12 @@ EOF
 				else
 					_arg_long_reads="${_arg_outdir}/ld.fq"
 				fi
+
+				# use the original long-read input data
+				if [[ "${_arg_readassemble_use_all_long_read}" == "on" ]]; then
+					_arg_long_reads="${_arg_long_reads_original}"
+				fi
+
 				_arg_plastid="off"
 				_arg_menu[1]="annotate"
 				if [[ "${_arg_readassemble_mtseed}" == "on" ]]; then

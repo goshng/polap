@@ -104,6 +104,7 @@ print_species_field_summary() {
 	local markdown=false
 	local count_missing=false
 	local -a selected_fields=()
+	local -a set_field_updates=()
 	local add_field=""
 
 	# Parse arguments
@@ -126,6 +127,8 @@ print_species_field_summary() {
 		--match=*) match_pattern="${arg#--match=}" ;;
 		--sort-by=*) sort_field="${arg#--sort-by=}" ;;
 		--add-field=*) add_field="${arg#--add-field=}" ;;
+		--set-field=*) set_field_updates+=("${arg#--set-field=}") ;;
+
 		*)
 			echo "[ERROR] Unknown option: $arg" >&2
 			return 1
@@ -182,6 +185,15 @@ print_species_field_summary() {
 		echo "[WARNING] No species entries." >&2
 		return
 	}
+
+	# Apply any --set-field=field:species:value updates
+	for entry in "${set_field_updates[@]}"; do
+		IFS=':' read -r field species value <<<"$entry"
+		[[ "$field" != _* ]] && field="_$field"
+		declare -gA "$field"
+		_species["$species"]="$species" # allow adding new species if necessary
+		eval "${field}[\$species]=\"\$value\""
+	done
 
 	local sep=","
 	[[ "$output_format" == "tsv" ]] && sep=$'\t'

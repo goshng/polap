@@ -12,10 +12,10 @@
 #   as TSV (and optionally Markdown) for manuscripts.
 #
 # Input JSON fields (under each item["data"]):
-#   total_bases, read_count, mean_length, N50, avg_qual, gc_content
+#   total_bases, read_count, mean_length, N50, avg_qual
 #
 # Output TSV columns:
-#   species  total_bases  read_count  mean_length  N50  avg_qual  gc_content
+#   species  total_bases  read_count  mean_length  N50  avg_qual
 #
 # Usage :
 #   python scripts/make_table_dataset_summary.py \
@@ -65,7 +65,6 @@ def main():
         "mean_length",
         "N50",
         "avg_qual",
-        "gc_content",
     ]
     rows = []
     for it in items:
@@ -79,7 +78,6 @@ def main():
             d.get("mean_length", "NA"),
             d.get("N50", "NA"),
             d.get("avg_qual", "NA"),
-            d.get("gc_content", "NA"),
         ]
         rows.append(row)
 

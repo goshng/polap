@@ -565,48 +565,36 @@ help_message_example=$(
 	cat <<HEREDOC
 # Main routine
 • List species directories for test ONT dataset
-bolap config view platform,long | grep ONT | grep -- -0 | sort | nl
+  bolap config view platform,long | grep ONT | grep -- -0 | sort | nl
 • Assemble plant organelle genomes with the ONT datasets
-bolap run polap-readassemble <species_dir> <INT:0> [-f] [-v]
+  bolap run polap-readassemble <species_dir> <INT:0> [-f] [-v]
+• MTPT analysis of plant organelle genomes assembled with the ONT datasets
+  bolap run polap-readassemble-mtpt <species_dir> <INT:0> [-f] [-v]
 • Benchmark organelle genome assemblies using ptGAUL, TIPPo, Oatk.
-bolap benchmark <species_dir>
+  bolap benchmark <species_dir>
 • Summary of the results
-bolap man
-
-# Main example for polap-data read:
-• For plastid (ptDNA) assembly, use polap readassemble.
-• For PacBio HiFi datasets, try Oatk, TIPPo, or Polap, in that order-falling back if the earlier one fails.
-• For ONT mitochondrial (mtDNA) data, rely on either a reference dataset or miniasm to guide seed selection.
+  bolap man
 
 • General data preparation
-bolap run data-long
-bolap run summary-data
-bolap run estimate-genomesize
+  bolap run data-long
+  bolap run summary-data
+  bolap run estimate-genomesize
 
 • Download reference organelle genomes
-bolap download ptdna   # plastid reference
-bolap download mtdna   # mitochondrial reference
-
-• Organelle genome assembly: Plastid (ptDNA)
-bolap run ptgaul
-bolap run mtgaul
+  bolap download ptdna   # plastid reference
+  bolap download mtdna   # mitochondrial reference
 
 # Assemblers by data type
+• ptGAUL method reads
+  bolap run ptgaul
+  bolap run mtgaul
 • HiFi reads (PacBio CCS)
-bolap run oatk    # first choice
-bolap run tippo   # fallback if oatk fails
-bolap run polap   # alternative if needed
+  bolap run oatk    # first choice
+  bolap run tippo   # fallback if oatk fails
+  bolap run polap   # alternative if needed
 
 • ONT reads (Nanopore)
-bolap run polap-readassemble-pt   # plastid assembly
-bolap run polap-readassemble-nt   # mitochondrial assembly
-
-Others:
-  bolap run-polap-readassemble Vitis_vinifera [0] pt 1500 [no]
-  bolap benchmark Vitis_vinifera
-  bolap man table benchmark some
-  bolap man figure
-  bolap man pdf
+  bolap run polap-readassemble-nt   # homology-based mtDNA assembly
 HEREDOC
 )
 

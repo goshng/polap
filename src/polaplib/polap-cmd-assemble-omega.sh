@@ -153,6 +153,8 @@ EOF
 		_polap_log0 "ERROR: no such file: ${_polap_var_mtcontigname}"
 	fi
 
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
 	_run_polap_map-reads
 
 	_polap_lib_oga-estimate-omega
@@ -175,6 +177,8 @@ EOF
 		_arg_redo="on"
 		_run_polap_assemble2
 	fi
+
+	conda deactivate
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

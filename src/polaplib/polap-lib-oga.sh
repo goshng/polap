@@ -177,9 +177,14 @@ function _polap_lib_oga-estimate-read-sampling-rate {
 			return
 		fi
 
-		if (($(echo "$_rate < 0.1" | bc -l))); then
+		# 2025-10-09
+		# 0.1 ~ 0.5 -> should be changed to 1.0.
+		# 0.5 ~ 1.5
+		# if (($(echo "$_rate < 0.1" | bc -l))); then
+		# elif (($(echo "$_rate > 0.5" | bc -l))); then
+		if (($(echo "$_rate < 0.5" | bc -l))); then
 			rate_lfq=$(echo "scale=9; ${rate_lfq}/2" | bc)
-		elif (($(echo "$_rate > 0.5" | bc -l))); then
+		elif (($(echo "$_rate > 1.5" | bc -l))); then
 			rate_lfq=$(echo "scale=9; ${rate_lfq}*2" | bc)
 
 			if (($(echo "${rate_lfq} >= 2.0" | bc -l))); then

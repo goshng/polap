@@ -40,7 +40,7 @@ fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
-function _run_polap_template {
+function _run_polap_test1 {
 	# Enable debugging if _POLAP_DEBUG is set
 	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -105,26 +105,14 @@ EOF
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
 
-	echo "verbose level: ${_arg_verbose}" >&2
-	echoall "command: $0"
-	echoall "function: $FUNCNAME"
-	echoall "menu2: [$1]"
-	echoall "menu3: [$2]"
-	echoerr "LOG: echoerr"
-	echoall "LOG: echoall"
+	# Bash-only failure (Bash stack should print)
+	# bash "${_POLAPLIB_DIR}"/polap-bash-test1.sh bash
 
-	echoerr "LOG: echoerr"
-	verbose_echo 0 "Log level   - screen        polap.log file" 1>&2
-	_polap_log0 "Log level 0 - nothing        minimal log - --quiet"
-	_polap_log1 "Log level 1 - minimal        step info and main io files"
-	_polap_log2 "Log level 2 - main io files  inside of function: file input/output --verbose"
-	_polap_log3 "Log level 3 - files inside   all log or details of file contents --verbose --verbose"
-	_polap_log0_file "log0.file: main assembly input/output"
-	_polap_log1_file "log1.file: step main input/output"
-	_polap_log2_file "log2.file: inside detail input/output"
-	_polap_log3_file "log3.file: all input/output"
+	# Python failure (Python stack, then Bash caller stack)
+	# bash "${_POLAPLIB_DIR}"/polap-bash-test1.sh python
 
-	_polap_log0 "var: ${_polap_var_apple}"
+	# R failure (R stack, then Bash caller stack)
+	bash "${_POLAPLIB_DIR}"/polap-bash-test1.sh r
 
 	conda deactivate
 

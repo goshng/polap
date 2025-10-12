@@ -162,6 +162,11 @@ function _polap_lib_man-main-convert_help_message() {
 				echo ".SH OPTIONS"
 				continue
 				;;
+			"Positional arguments:"*)
+				section="POSITIONAL ARGUMENTS"
+				echo ".SH POSITIONAL ARGUMENTS"
+				continue
+				;;
 			"Advanced usage:"*)
 				section="ADVANCED USAGE"
 				echo ".SH ADVANCED USAGE"
@@ -207,6 +212,11 @@ function _polap_lib_man-main-convert_help_message() {
 				echo ".SH TODO"
 				continue
 				;;
+			"Notes:"*)
+				section="NOTES"
+				echo ".SH NOTES"
+				continue
+				;;
 			"Bugs:"*)
 				section="BUGS"
 				echo ".SH BUGS"
@@ -235,7 +245,7 @@ function _polap_lib_man-main-convert_help_message() {
 			esac
 
 			case "$section" in
-			NAME | DESCRIPTION | ADVANCED\ USAGE | ENVIRONMENT | DIAGNOSTICS | EXAMPLES | INPUTS | OUTPUTS | MENUS | VIEW | TODO | BUGS | COPYRIGHT | SEE\ ALSO | AUTHOR)
+			NAME | DESCRIPTION | POSITIONAL\ ARGUMENTS | ADVANCED\ USAGE | ENVIRONMENT | DIAGNOSTICS | EXAMPLES | INPUTS | OUTPUTS | MENUS | VIEW | TODO | NOTES | BUGS | COPYRIGHT | SEE\ ALSO | AUTHOR)
 				echo "$line"
 				;;
 			SYNOPSIS)

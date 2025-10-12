@@ -2502,6 +2502,130 @@ run-polap-readassemble_genus_species() {
 	fi
 }
 
+run-polap-readassemble-mtpt_genus_species() {
+	local _brg_outdir="$1"
+	local _brg_sindex="${2:-0}"
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	if [[ "$#" -gt 1 ]]; then
+		shift 2
+	else
+		shift
+	fi
+
+	# defaults
+	local _brg_type="mtpt"
+	local _brg_omega="1500"
+	local _brg_downsample="no-downsample"
+	local _brg_redo="off"
+	local _brg_cleanup="on"
+
+	# parse options
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--type)
+			_brg_type="$2"
+			shift 2
+			;;
+		-w)
+			_brg_omega="$2"
+			shift 2
+			;;
+		-f)
+			shift
+			;;
+		--redo)
+			_brg_redo="on"
+			shift
+			;;
+		--no-cleanup)
+			_brg_cleanup="off"
+			shift
+			;;
+		-d)
+			_brg_downsample="downsample"
+			shift
+			;;
+		--dry-run)
+			_brg_dry="on"
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			_log_echo "Unknown option: $1"
+			return 1
+			;;
+		esac
+	done
+
+	# redefine
+	local _brg_miniasm="${_brg_outdir_i}/polap-readassemble-1-miniasm"
+	local _brg_rundir="${_brg_outdir_i}/${_brg_title}"
+
+	mkdir -p "${_brg_outdir_i}"
+
+	local platform="${_platform["$_brg_target"]}"
+
+	mkdir -p "${_brg_target}"
+
+	# copy mt.1.gfa
+	cp -p "${_brg_miniasm}/mt.1.gfa" \
+		"${_brg_target}"
+
+	if [[ -s "${_brg_miniasm}/mt.1.txt" ]]; then
+		cp -p "${_brg_miniasm}/mt.1.txt" \
+			"${_brg_target}"
+	fi
+
+	cp -p "${_brg_miniasm}/pt-pt.1.gfa" \
+		"${_brg_target}/pt.1.gfa"
+
+	if [[ -s "${_brg_miniasm}/mt.1.txt" ]]; then
+		${_polap_cmd} convert gfa2fasta \
+			"${_brg_target}/mt.1.gfa" \
+			"${_brg_target}/mt.1.fa" \
+			--ids "${_brg_target}/mt.1.txt"
+	else
+		${_polap_cmd} convert gfa2fasta \
+			"${_brg_target}/mt.1.gfa" \
+			"${_brg_target}/mt.1.fa"
+	fi
+
+	${_polap_cmd} convert gfa2fasta \
+		"${_brg_target}/pt.1.gfa" \
+		"${_brg_target}/pt.1.fa"
+
+	${_polap_cmd} polish2 \
+		-l "${long_sra}.fastq" \
+		-p "${_brg_target}/pt.1.fa" \
+		-f "${_brg_target}/pt.1.fasta"
+
+	${_polap_cmd} polish2 \
+		-l "${long_sra}.fastq" \
+		-p "${_brg_target}/mt.1.fa" \
+		-f "${_brg_target}/mt.1.fasta"
+
+	${_polap_cmd} isomer \
+		-l "${long_sra}.fastq" \
+		-o "${_brg_target}" \
+		--pt-ref "${_brg_target}/pt.1.fasta" \
+		--mt-ref "${_brg_target}/mt.1.fasta"
+
+	# Save some results
+	rsync -azuq --max-size=5M \
+		"${_brg_target}/" "${_brg_rundir}/"
+
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		if [[ -d "${_brg_target}" ]]; then
+			_log_echo1 rm -rf "${_brg_target}"
+			rm -rf "${_brg_target}"
+		fi
+	fi
+}
+
 run-polap-readassemble-animal-mt_genus_species() {
 	local _brg_outdir="$1"
 	local _brg_sindex="${2:-0}"
@@ -10545,7 +10669,82 @@ install-sim_genus_species() {
 	fi
 }
 
+# Wrapper that uses your _polap_lib_conda-* helpers
+# Installs “abc” into env 'polap-abc' with a sensible default stack.
 install-abc_genus_species() {
+	local want_env="polap-abc"
+	local -a pkgs=(
+		python=3.11
+		samtools mummer4 blast
+		biopython pysam
+		r-base r-data.table r-ggplot2 r-gridextra
+		abc
+	)
+
+	# Confirm (honors opt_y_flag if you set it elsewhere)
+	local confirm
+	if [[ "${opt_y_flag-}" == "true" ]]; then
+		confirm="yes"
+	else
+		read -r -p "Do you want to install abc in the ${want_env} conda environment? (y/N): " confirm
+	fi
+
+	if [[ "${confirm,,}" == "y" || "${confirm,,}" == "yes" ]]; then
+		# Create/upgrade env (channels first for R/bioconda harmony)
+		_polap_lib_conda-create-env \
+			"$want_env" "${pkgs[@]}" \
+			--channel conda-forge --channel bioconda -y || return 1
+
+		# Quick sanity check that key tools are on PATH
+		local t
+		for t in python samtools nucmer blastn R abc; do
+			if ! command -v "$t" >/dev/null 2>&1; then
+				echo "WARNING: '$t' not found in '$want_env' PATH." >&2
+			fi
+		done
+	else
+		echo "abc installation is canceled."
+		echo "Check: https://github.com/maickrau/abc"
+		echo "conda install -c bioconda abc"
+		echo "Execute: abc"
+	fi
+}
+
+install-polish_genus_species() {
+	local want_env="polap-polish"
+	local -a pkgs=(
+		minimap2 racon gfatools fmlrc2 ropebwt2 bwa-mem2 samtools polypolish
+		seqtk
+		meryl merqury r-base python
+	)
+
+	# Confirm (honors opt_y_flag if you set it elsewhere)
+	local confirm
+	if [[ "${opt_y_flag-}" == "true" ]]; then
+		confirm="yes"
+	else
+		read -r -p "Do you want to install polish in the ${want_env} conda environment? (y/N): " confirm
+	fi
+
+	if [[ "${confirm,,}" == "y" || "${confirm,,}" == "yes" ]]; then
+		# Create/upgrade env (channels first for R/bioconda harmony)
+		_polap_lib_conda-create-env \
+			"$want_env" "${pkgs[@]}" \
+			--channel conda-forge --channel bioconda -y || return 1
+
+		# Quick sanity check that key tools are on PATH
+		local t
+		for t in merqury.sh; do
+			if ! command -v "$t" >/dev/null 2>&1; then
+				echo "WARNING: '$t' not found in '$want_env' PATH." >&2
+			fi
+		done
+	else
+		echo "polap-polish env is not created"
+	fi
+}
+
+install-abc-old-version_genus_species() {
 	if [[ "${opt_y_flag}" == false ]]; then
 		read -p "Do you want to install abc in the polap-abc conda environment? (y/N): " confirm
 	else
@@ -10553,32 +10752,157 @@ install-abc_genus_species() {
 	fi
 
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
-		# Check current conda environment
-		# Initialize Conda for non-interactive shells
-		source "$(conda info --base)/etc/profile.d/conda.sh"
-		if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
-			echo "You're not in the base environment. Chaniging 'base'..."
-			conda activate base
+
+		# --- Conda bootstrap (works under `set -u`) ---
+		# Try to make `conda activate` work in a non-interactive shell
+		if ! command -v conda >/dev/null 2>&1; then
+			for d in "$HOME/miniconda3" "$HOME/mambaforge" "$HOME/anaconda3" "/opt/conda"; do
+				if [[ -f "$d/etc/profile.d/conda.sh" ]]; then
+					# shellcheck disable=SC1090
+					source "$d/etc/profile.d/conda.sh"
+					break
+				fi
+			done
+		fi
+		# Enable `conda activate` regardless of how Conda is installed
+		command -v conda >/dev/null 2>&1 && eval "$(conda shell.bash hook)" || {
+			echo "ERROR: Could not initialize Conda in this shell." >&2
+			exit 1
+		}
+
+		# Helper: robust current env name (safe with `set -u`)
+		_current_env() {
+			if [[ -n "${CONDA_PREFIX-}" ]]; then
+				basename -- "$CONDA_PREFIX"
+			elif [[ -n "${CONDA_DEFAULT_ENV-}" ]]; then
+				printf '%s' "$CONDA_DEFAULT_ENV"
+			else
+				printf ''
+			fi
+		}
+
+		want_env="polap-abc"
+		cur_env="$(_current_env)"
+
+		# We don't need to hop to 'base' first; Conda can switch directly.
+		if [[ "$cur_env" != "$want_env" && -n "$cur_env" ]]; then
+			echo "You're in '$cur_env'. Switching to '$want_env' (no stacking)."
 		fi
 
-		if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
-			echo "You're in the base environment. Creating 'polap-abc'..."
-			if conda env list | awk '{print $1}' | grep -qx "polap-abc"; then
-				echo "ERROR: Conda environment 'polap-abc' already exists."
-			else
-				echo conda create -y --name polap-abc abc
-				echo conda activate polap-sim
-				echo conda install -y seqkit seqtk
-			fi
+		# Create env if missing
+		if ! conda env list | awk '{print $1}' | grep -qx "$want_env"; then
+			echo "Creating Conda environment '$want_env'..."
+			# Prefer creating with all packages at once; add -c conda-forge for R stack
+			conda create -y -n "$want_env" \
+				python=3.11 \
+				samtools mummer4 blast \
+				biopython pysam \
+				r-base r-data.table r-ggplot2 r-gridextra
 		else
-			echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
-			exit 1
+			echo "Conda environment '$want_env' already exists."
 		fi
+
+		# Activate and verify
+		conda activate "$want_env" || {
+			echo "ERROR: Failed to activate '$want_env'." >&2
+			exit 1
+		}
+
+		echo "Activated env: $(_current_env)"
+
+		# (optional) quick sanity check that core tools are on PATH
+		for tool in python samtools nucmer blastn R; do
+			command -v "$tool" >/dev/null 2>&1 || {
+				echo "WARNING: '$tool' not found in '$want_env' PATH." >&2
+			}
+		done
+
 	else
 		echo "abc installation is canceled."
 		echo "Check: https://github.com/maickrau/abc"
 		echo "conda install -c bioconda abc"
 		echo "Execute: abc"
+	fi
+}
+
+install-evo_genus_species() {
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to install evo in the polap-evo conda environment? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
+	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+
+		# --- Conda bootstrap (works under `set -u`) ---
+		# Try to make `conda activate` work in a non-interactive shell
+		if ! command -v conda >/dev/null 2>&1; then
+			for d in "$HOME/miniconda3" "$HOME/mambaforge" "$HOME/anaconda3" "/opt/conda"; do
+				if [[ -f "$d/etc/profile.d/conda.sh" ]]; then
+					# shellcheck disable=SC1090
+					source "$d/etc/profile.d/conda.sh"
+					break
+				fi
+			done
+		fi
+		# Enable `conda activate` regardless of how Conda is installed
+		command -v conda >/dev/null 2>&1 && eval "$(conda shell.bash hook)" || {
+			echo "ERROR: Could not initialize Conda in this shell." >&2
+			exit 1
+		}
+
+		# Helper: robust current env name (safe with `set -u`)
+		_current_env() {
+			if [[ -n "${CONDA_PREFIX-}" ]]; then
+				basename -- "$CONDA_PREFIX"
+			elif [[ -n "${CONDA_DEFAULT_ENV-}" ]]; then
+				printf '%s' "$CONDA_DEFAULT_ENV"
+			else
+				printf ''
+			fi
+		}
+
+		want_env="polap-evo"
+		cur_env="$(_current_env)"
+
+		# We don't need to hop to 'base' first; Conda can switch directly.
+		if [[ "$cur_env" != "$want_env" && -n "$cur_env" ]]; then
+			echo "You're in '$cur_env'. Switching to '$want_env' (no stacking)."
+		fi
+
+		# Create env if missing
+		if ! conda env list | awk '{print $1}' | grep -qx "$want_env"; then
+			echo "Creating Conda environment '$want_env'..."
+			# Prefer creating with all packages at once; add -c conda-forge for R stack
+			conda create -y -n "$want_env" \
+				python=3.11 \
+				samtools mummer4 blast minimap2 \
+				biopython pysam \
+				r-base r-data.table r-ggplot2 r-gridextra
+		else
+			echo "Conda environment '$want_env' already exists."
+		fi
+
+		# Activate and verify
+		conda activate "$want_env" || {
+			echo "ERROR: Failed to activate '$want_env'." >&2
+			exit 1
+		}
+
+		echo "Activated env: $(_current_env)"
+
+		# (optional) quick sanity check that core tools are on PATH
+		for tool in python samtools nucmer blastn R; do
+			command -v "$tool" >/dev/null 2>&1 || {
+				echo "WARNING: '$tool' not found in '$want_env' PATH." >&2
+			}
+		done
+
+	else
+		echo "evo installation is canceled."
+		echo "Check: https://github.com/maickrau/evo"
+		echo "conda install -c bioconda evo"
+		echo "Execute: evo"
 	fi
 }
 

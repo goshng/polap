@@ -85,6 +85,7 @@ _positionals=()
 _arg_menu=("assemble" "infile" "outfile" "thirdfile" "fourthfile")
 # THE DEFAULTS INITIALIZATION - OPTIONALS
 _arg_long_reads="l.fq"
+_arg_l_fastq="${_arg_long_reads}"
 _arg_long_reads_original="l.fq"
 _arg_long_reads_is="off"
 # NOTE: some output directories and files are created automatically.
@@ -100,13 +101,17 @@ _arg_anotherdir="o"
 _arg_archive="a"
 _arg_archive_is="off"
 _arg_short_read1="s1.fq"
+_arg_1_fastq="s1.fq"
 _arg_short_read1_is="off"
 _arg_short_read2="s2.fq"
+_arg_2_fastq="s2.fq"
 _arg_short_read2_is="off"
+_arg_ids=""
 _arg_dry="off"
 _arg_sra=
 _arg_unpolished_fasta="mt.0.fasta"
 _arg_final_assembly="mt.1.fa"
+_arg_f_fasta="$_arg_final_assembly"
 _arg_reference="ref.gfa"
 _arg_table_format="tsv"
 _arg_outfile="outfile.txt"
@@ -443,15 +448,20 @@ parse_commandline() {
 			_arg_long_reads="$2"
 			_arg_long_reads_is="on"
 			_arg_long_reads_original="${_arg_long_reads}"
+			_arg_l_fastq="${_arg_long_reads}"
 			shift
 			;;
 		--long-reads=*)
 			_arg_long_reads="${_key##--long-reads=}"
 			_arg_long_reads_is="on"
+			_arg_long_reads_original="${_arg_long_reads}"
+			_arg_l_fastq="${_arg_long_reads}"
 			;;
 		-l*)
 			_arg_long_reads="${_key##-l}"
 			_arg_long_reads_is="on"
+			_arg_long_reads_original="${_arg_long_reads}"
+			_arg_l_fastq="${_arg_long_reads}"
 			;;
 		-o | --outdir)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -489,29 +499,35 @@ parse_commandline() {
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_short_read1="$2"
 			_arg_short_read1_is="on"
+			_arg_1_fastq="$_arg_short_read1"
 			shift
 			;;
 		--short-read1=*)
 			_arg_short_read1="${_key##--short-read1=}"
 			_arg_short_read1_is="on"
+			_arg_1_fastq="$_arg_short_read1"
 			;;
 		-a*)
 			_arg_short_read1="${_key##-a}"
 			_arg_short_read1_is="on"
+			_arg_1_fastq="$_arg_short_read1"
 			;;
 		-b | --short-read2)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_short_read2="$2"
 			_arg_short_read2_is="on"
+			_arg_2_fastq="$_arg_short_read2"
 			shift
 			;;
 		--short-read2=*)
 			_arg_short_read2="${_key##--short-read2=}"
 			_arg_short_read2_is="on"
+			_arg_2_fastq="$_arg_short_read2"
 			;;
 		-b*)
 			_arg_short_read2="${_key##-b}"
 			_arg_short_read2_is="on"
+			_arg_2_fastq="$_arg_short_read2"
 			;;
 		--sra)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -520,6 +536,14 @@ parse_commandline() {
 			;;
 		--sra=*)
 			_arg_sra="${_key##--sra=}"
+			;;
+		--ids)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_ids="$2"
+			shift
+			;;
+		--ids=*)
+			_arg_ids="${_key##--ids=}"
 			;;
 		--downsample)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -533,6 +557,7 @@ parse_commandline() {
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_unpolished_fasta="$2"
 			_arg_pt_ref="$2"
+			_arg_p_fasta="$2"
 			shift
 			;;
 		--unpolished-fasta=*)
@@ -540,17 +565,22 @@ parse_commandline() {
 			;;
 		-p*)
 			_arg_unpolished_fasta="${_key##-p}"
+			_arg_pt_ref="$2"
+			_arg_p_fasta="$2"
 			;;
 		-f | --final-assembly)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_final_assembly="$2"
+			_arg_f_fasta="$2"
 			shift
 			;;
 		--final-assembly=*)
 			_arg_final_assembly="${_key##--final-assembly=}"
+			_arg_f_fasta="$2"
 			;;
 		-f*)
 			_arg_final_assembly="${_key##-f}"
+			_arg_f_fasta="$2"
 			;;
 		--reference)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

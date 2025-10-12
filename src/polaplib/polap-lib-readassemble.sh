@@ -314,11 +314,22 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 			-l "${_arg_long_reads}" \
 			-w "${_arg_single_min}" \
 			-i pt$i -j pt$j
+
 		_polap_lib_file-cleanup -d "${annotatedir}/pt$j" -s 5M -a rm
 
 		ptdna0_gfa="${annotatedir}/pt$j/30-contigger/graph_final.gfa"
+		ptdna0_fasta="${annotatedir}/pt$j/30-contigger/graph_final.fasta"
 
-		if [[ -s "${ptdna0_gfa}" ]]; then
+		if [[ ! -s "${ptdna0_fasta}" ]]; then
+			rm -rf "${annotatedir}/pt$j"
+			_polap_lib_assemble-omega \
+				-o "${annotatedir}" \
+				-l "${_arg_long_reads}" \
+				-t pt \
+				-i pt$i -j pt$j
+		fi
+
+		if [[ -s "${ptdna0_fasta}" ]]; then
 			_polap_lib_pt-extract-dna \
 				"${ptdna0_gfa}" \
 				"${annotatedir}/pt$j/ptdna"

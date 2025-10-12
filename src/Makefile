@@ -173,7 +173,8 @@ fig1-r:
 ###############################################################################
 
 # Inputs / outputs (override on CLI if desired)
-DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-project00.md
+# DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-project00.md
+DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-man00.md
 DOC_OUT_PDF     ?= $(SR)/man/polap-manuscript.pdf
 FIG_DIR         ?= $(SR)/man/figures
 MAN_DIR         ?= $(SR)/man
@@ -197,7 +198,7 @@ $(DOC_OUT_PDF): $(DOC_MD) expanded.md sheet-ptmt
 	@echo "[INFO] Building PDF: $@"
 	@{ \
 	  BIB_OPT=""; CSL_OPT=""; XREF_OPT=""; \
-	  BIB="$(MAN_DIR)/references.bib"; \
+	  BIB="$(MAN_DIR)/j-polap-copy.bib"; \
 	  CSL="$(MAN_DIR)/style.csl"; \
 	  if [ -s "$$BIB" ]; then BIB_OPT="--citeproc --bibliography=$$BIB"; fi; \
 	  if [ -s "$$CSL" ]; then CSL_OPT="--csl=$$CSL"; fi; \
@@ -208,7 +209,9 @@ $(DOC_OUT_PDF): $(DOC_MD) expanded.md sheet-ptmt
 	    --toc --toc-depth=2 \
 	    --number-sections \
 	    --metadata=link-citations=true \
-	    $$BIB_OPT $$CSL_OPT $$XREF_OPT \
+			$$XREF_OPT \
+	    $$BIB_OPT \
+			$$CSL_OPT \
 	    -V geometry:margin=1in \
 	    -o "$(DOC_OUT_PDF)"; \
 	}
@@ -216,6 +219,7 @@ $(DOC_OUT_PDF): $(DOC_MD) expanded.md sheet-ptmt
 
 manuscript.pdf: $(DOC_OUT_PDF)
 	@pdfunite "$(DOC_OUT_PDF)" $(FIGURE_DIR)/sheet-v6-some-pt-mt.pdf manuscript.pdf
+	@cp -p manuscript.pdf $(CURDIR)/polap/src/polaplib/
 
 clean:
 	@rm -f "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \

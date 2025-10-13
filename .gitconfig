@@ -1,0 +1,4 @@
+[alias]
+  localhub = !git push origin HEAD
+  github = !git push github HEAD --tags
+  publish  = !b=$(git rev-parse --abbrev-ref HEAD); echo \"Pushing $b to GitHub…\"; git push github HEAD --tags

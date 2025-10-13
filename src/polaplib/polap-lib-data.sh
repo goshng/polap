@@ -13006,15 +13006,6 @@ man_genus_species() {
 	man-${first_arg}_genus_species "${remaining_args[@]}"
 }
 
-man-table-s1_genus_species() {
-	local args=("$@")
-
-	_polap_lib_conda-ensure_conda_env polap || exit 1
-	make -f "${_POLAPLIB_DIR}/../Makefile" manifests
-	make -f "${_POLAPLIB_DIR}/../Makefile" table-s1
-	conda deactivate
-}
-
 man-figure-assembly_genus_species() {
 	local args=("$@")
 

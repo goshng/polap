@@ -3254,3 +3254,28 @@ man-man_genus_species() {
 	make -f "${_POLAPLIB_DIR}/Makefile.read" manuscript.pdf
 	conda deactivate
 }
+
+man-table-s1_genus_species() {
+	local args=("$@")
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	make -f "${_POLAPLIB_DIR}/Makefile.read" manifests
+	make -f "${_POLAPLIB_DIR}/Makefile.read" table-s1
+	conda deactivate
+}
+
+man-pt-table_genus_species() {
+	local args=("$@")
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	make -f "${_POLAPLIB_DIR}/Makefile.read" pt-table
+	conda deactivate
+}
+
+man-manifest_genus_species() {
+	local args=("$@")
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	make -f "${_POLAPLIB_DIR}/Makefile.read" manifests
+	conda deactivate
+}

@@ -32,6 +32,7 @@ TABLE_S1_TSV := $(SR)/man/md/table-s1-dataset-summary.tsv
 # take whatever TABLE_S1_TSV is and replace .tsv with .md
 TABLE_S1_MD  := $(TABLE_S1_TSV:.tsv=.md)
 
+
 # This target is not a file, always run its recipe.
 .PHONY: help print-vars check-env table-s1 table_s1 clean
 
@@ -145,7 +146,7 @@ figure-assemblies-two-pages:
 anno-scan:
 	@bash "$(POLAPLIB_DIR)/polap-bash-anno-scan.sh" \
 	  --base-dir "." \
-	  --manifest "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
+	  --manifest "$(MANIFEST_V6)" \
 	  --out-dir "$(MANIFEST_DIR)" \
 	  --tier "$(TIER_CLEAN)" --inum "$(INUM_CLEAN)"
 
@@ -153,7 +154,7 @@ anno-scan:
 sheet-ptmt: anno-scan
 	@bash "$(POLAPLIB_DIR)/polap-bash-ptmt-sheet.sh" \
 	  --base-dir "." \
-	  --manifest "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
+	  --manifest "$(MANIFEST_V6)" \
 	  --annot-pt "$(MANIFEST_DIR)/anno-pt.csv" \
 	  --annot-mt "$(MANIFEST_DIR)/anno-mt.csv" \
 	  --out "$(FIGURE_DIR)/sheet-$(TIER_CLEAN)-$(SET_CLEAN)-pt-mt.pdf" \
@@ -227,6 +228,35 @@ $(DOC_OUT_PDF): $(DOC_MD) $(EXP_MD) sheet-ptmt
 manuscript.pdf: $(DOC_OUT_PDF)
 	@pdfunite "$(DOC_OUT_PDF)" "$(FIG_DIR)/sheet-v6-some-pt-mt.pdf" manuscript.pdf
 	@cp -p manuscript.pdf "$(CURDIR)/polap/src/polaplib/"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Plastid summary (manifest → Markdown table)
+# ──────────────────────────────────────────────────────────────────────────────
+SPECIES_ROOT ?= $(CURDIR)
+SR := $(abspath $(SPECIES_ROOT))
+
+POLAPLIB_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+MAN_DIR      ?= $(SR)/man
+MANIFEST_DIR ?= $(SR)/man/md
+
+TIER_CLEAN ?= v6
+INUM_CLEAN ?= 0
+SET_CLEAN  ?= some
+
+MANIFEST_V6  := $(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN).json
+PT_TABLE_MD  := $(MANIFEST_DIR)/pt-summary-$(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN).md
+CODES_TXT    ?= $(POLAPLIB_DIR)/species-codes.txt
+
+.PHONY: pt-table
+pt-table: $(PT_TABLE_MD)
+
+$(PT_TABLE_MD): $(MANIFEST_V6)
+	@mkdir -p "$(dir $@)"
+	@echo "[INFO] PT summary (MD) from $(MANIFEST_V6)"
+	@bash "$(POLAPLIB_DIR)/polap-bash-pt-table-md.sh" \
+	  --manifest "$(MANIFEST_V6)" \
+	  --out "$(PT_TABLE_MD)"
+	@echo "[OK] Wrote: $(PT_TABLE_MD)"
 
 clean:
 	@rm -f "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \

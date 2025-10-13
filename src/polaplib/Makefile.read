@@ -1,11 +1,13 @@
 # polap/src/Makefile
-# Single-tier (v6) workflow: species-root → manifest (v6) → Table S1
+# Single-tier (v6) workflow: species-root →  manifest (v6) →  Table S1
 
+# Use Bash for all recipe commands, and find it via the user’s PATH.
 SHELL := /usr/bin/env bash
 
 # Source base (this Makefile's dir) and polaplib
-POLAP_SRC    := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-POLAPLIB_DIR := $(POLAP_SRC)/polaplib
+# Figure out the absolute path to the directory where this Makefile lives.
+POLAPLIB_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+POLAP_SRC    := $(POLAPLIB_DIR)/..
 export POLAP_SRC POLAPLIB_DIR
 
 # Species root defaults to where you run make
@@ -25,18 +27,22 @@ TIER_CLEAN  := $(strip $(TIER))
 # Outputs under the species root
 MANIFEST_DIR := $(SR)/man/md
 FIGURE_DIR := $(SR)/man/figures
-MANIFEST_V6  := $(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json
-TABLE_S1_TSV := $(SR)/man/md/tableS1-dataset-summary.tsv
+MANIFEST_V6  := $(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(INUM)-$(SET_CLEAN).json
+TABLE_S1_TSV := $(SR)/man/md/table-s1-dataset-summary.tsv
+# take whatever TABLE_S1_TSV is and replace .tsv with .md
 TABLE_S1_MD  := $(TABLE_S1_TSV:.tsv=.md)
 
-.PHONY: help print-vars check-env manifests table-s1 table_s1 clean
+# This target is not a file, always run its recipe.
+.PHONY: help print-vars check-env table-s1 table_s1 clean
 
+# like the first target: all
 .DEFAULT_GOAL := help
+
 help:
 	@echo "Single-tier (v6) workflow"
 	@echo "Use from anywhere (SPECIES_ROOT defaults to $$PWD):"
-	@echo "  make -f $(POLAP_SRC)/Makefile manifests"
-	@echo "  make -f $(POLAP_SRC)/Makefile table-s1"
+	@echo "  make -f $(POLAPLIB_DIR)/Makefile manifests"
+	@echo "  make -f $(POLAPLIB_DIR)/Makefile table-s1"
 	@echo ""
 	@echo "Vars you can override: SPECIES_ROOT=/abs/species-root  SET=auto|file:/abs/list.txt|<species>  INUM=0  TIER=v6"
 
@@ -175,6 +181,7 @@ fig1-r:
 # Inputs / outputs (override on CLI if desired)
 # DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-project00.md
 DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-man00.md
+EXP_MD          ?= $(SR)/man/expanded.md
 DOC_OUT_PDF     ?= $(SR)/man/polap-manuscript.pdf
 FIG_DIR         ?= $(SR)/man/figures
 MAN_DIR         ?= $(SR)/man
@@ -184,31 +191,31 @@ PANDOC          ?= pandoc
 PDF_ENGINE      ?= xelatex
 
 # Resource search path: allow images in md/, man/, man/figures/
-PANDOC_RPATH    ?= $(SR):$(SR)/md:$(MAN_DIR):$(FIG_DIR)
+# PANDOC_RPATH    ?= $(SR):$(SR)/md:$(MAN_DIR):$(FIG_DIR)
+PANDOC_RPATH    ?= $(SR)/md:$(MAN_DIR)
 
 .PHONY: manuscript
 manuscript: $(DOC_OUT_PDF)
 
-expanded.md: table-s1
-	@bash man/sh/replace_include.sh "$(DOC_MD)" >expanded.md
+$(EXP_MD): table-s1
+	@bash "$(MAN_DIR)/sh/replace_include.sh" "$(DOC_MD)" >"$(EXP_MD)"
 
-$(DOC_OUT_PDF): $(DOC_MD) expanded.md sheet-ptmt
+$(DOC_OUT_PDF): $(DOC_MD) $(EXP_MD) sheet-ptmt
 	@command -v $(PANDOC) >/dev/null 2>&1 || { echo "[ERR] pandoc not found"; exit 2; }
 	@mkdir -p "$(MAN_DIR)"
 	@echo "[INFO] Building PDF: $@"
-	@{ \
+	{ \
 	  BIB_OPT=""; CSL_OPT=""; XREF_OPT=""; \
-	  BIB="$(MAN_DIR)/j-polap-copy.bib"; \
+	  BIB="$(MAN_DIR)/j-polap.bib"; \
 	  CSL="$(MAN_DIR)/style.csl"; \
 	  if [ -s "$$BIB" ]; then BIB_OPT="--citeproc --bibliography=$$BIB"; fi; \
 	  if [ -s "$$CSL" ]; then CSL_OPT="--csl=$$CSL"; fi; \
 	  if command -v pandoc-crossref >/dev/null 2>&1; then XREF_OPT="--filter pandoc-crossref"; fi; \
-	  $(PANDOC) expanded.md \
+	  $(PANDOC) "$(EXP_MD)" \
 	    --pdf-engine="$(PDF_ENGINE)" \
 	    --resource-path="$(PANDOC_RPATH)" \
 	    --toc --toc-depth=2 \
 	    --number-sections \
-	    --metadata=link-citations=true \
 			$$XREF_OPT \
 	    $$BIB_OPT \
 			$$CSL_OPT \
@@ -218,8 +225,8 @@ $(DOC_OUT_PDF): $(DOC_MD) expanded.md sheet-ptmt
 	@echo "[OK] Wrote: $(DOC_OUT_PDF)"
 
 manuscript.pdf: $(DOC_OUT_PDF)
-	@pdfunite "$(DOC_OUT_PDF)" $(FIGURE_DIR)/sheet-v6-some-pt-mt.pdf manuscript.pdf
-	@cp -p manuscript.pdf $(CURDIR)/polap/src/polaplib/
+	@pdfunite "$(DOC_OUT_PDF)" "$(FIG_DIR)/sheet-v6-some-pt-mt.pdf" manuscript.pdf
+	@cp -p manuscript.pdf "$(CURDIR)/polap/src/polaplib/"
 
 clean:
 	@rm -f "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \

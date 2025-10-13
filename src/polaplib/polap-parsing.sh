@@ -122,6 +122,12 @@ _arg_threads_fmlrc=4 # for some fmlrc
 _arg_log="polap.log"
 _arg_log_is="off"
 _arg_log_stderr="off"
+_arg_l_max="10000000000"
+_arg_pt_l_max="${_arg_l_max}"
+_arg_mt_l_max="20000000000"
+_arg_omega="3000"
+_arg_pt_w="1000"
+_arg_mt_w="3000"
 _arg_coverage_is="off"
 _arg_coverage="50" # 2024-10-29 was change to 50
 # NOTE: 2025-05-15
@@ -729,6 +735,32 @@ parse_commandline() {
 		-w*)
 			_arg_single_min="${_key##-w}"
 			;;
+		--pt-w)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_pt_w="$2"
+			shift
+			;;
+		--mt-w)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_mt_w="$2"
+			shift
+			;;
+		--l-max)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_l_max="$2"
+			shift
+			;;
+		--pt-l-max)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_pt_l_max="$2"
+			shift
+			;;
+		--mt-l-max)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_mt_l_max="$2"
+			shift
+			;;
+
 		--rw)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_pair_min="$2"
@@ -1567,6 +1599,32 @@ assign_positional_args() {
 	done
 }
 
+parse_commandline_postprocess() {
+	_arg_omega="${_arg_single_min}"
+}
+
+commandline_unit_conversion() {
+	# unit conversion if needed
+	if [[ -n "${_arg_pt_l_max}" ]]; then
+		_arg_pt_l_max=$(_polap_lib_unit-convert_to_int ${_arg_pt_l_max})
+	fi
+	if [[ -n "${_arg_mt_l_max}" ]]; then
+		_arg_mt_l_max=$(_polap_lib_unit-convert_to_int ${_arg_mt_l_max})
+	fi
+	if [[ -n "${_arg_l_max}" ]]; then
+		_arg_l_max=$(_polap_lib_unit-convert_to_int ${_arg_l_max})
+	fi
+	if [[ -n "${_arg_omega}" ]]; then
+		_arg_omega=$(_polap_lib_unit-convert_to_int ${_arg_omega})
+	fi
+	if [[ -n "${_arg_pt_w}" ]]; then
+		_arg_pt_w=$(_polap_lib_unit-convert_to_int ${_arg_pt_w})
+	fi
+	if [[ -n "${_arg_mt_w}" ]]; then
+		_arg_mt_w=$(_polap_lib_unit-convert_to_int ${_arg_mt_w})
+	fi
+}
+
 parse_preset_commandline "$@"
 
 if [[ -z "${_arg_config_path}" ]]; then
@@ -1598,6 +1656,9 @@ fi
 # reset options not affected by config
 _arg_verbose=1
 parse_commandline "$@"
+parse_commandline_postprocess
+source "${_POLAPLIB_DIR}/polap-lib-unit.sh"
+commandline_unit_conversion
 
 if [[ -n "${_arg_config_path}" && -s "${_arg_config_path}" ]]; then
 	# source "${_POLAPLIB_DIR}/polap-lib-config.sh"

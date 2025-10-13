@@ -13024,14 +13024,6 @@ man-figure-assembly_genus_species() {
 	conda deactivate
 }
 
-man-man_genus_species() {
-	local args=("$@")
-
-	_polap_lib_conda-ensure_conda_env polap-man || exit 1
-	make -f "${_POLAPLIB_DIR}/../Makefile" manuscript.pdf
-	conda deactivate
-}
-
 man-minimap2_genus_species() {
 	local args=("$@")
 

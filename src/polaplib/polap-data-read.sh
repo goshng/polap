@@ -3240,3 +3240,17 @@ archive_genus_species() {
 
 # END: manuscript
 ################################################################################
+
+################################################################################
+# BEGIN
+# Use:
+# pandoc
+# quarto
+
+man-man_genus_species() {
+	local args=("$@")
+
+	_polap_lib_conda-ensure_conda_env polap-man || exit 1
+	make -f "${_POLAPLIB_DIR}/Makefile.read" manuscript.pdf
+	conda deactivate
+}

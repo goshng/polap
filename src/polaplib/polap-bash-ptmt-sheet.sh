@@ -1,37 +1,37 @@
 #!/usr/bin/env bash
 # polap-bash-ptmt-sheet.sh
-# Version : v1.0.0  (2025-10-07)
+# Version : v1.2.0  (2025-10-14)
 # Author  : Sang Chul Choi (POLAP)
 # License : GPL-3.0+
-
+#
+# Build two-page PDF: page 1 = PT, page 2 = MT, from a manifest JSON.
+# Ordered by species sequence in species-codes.txt (code species, space-delimited).
+# Accepts an explicit --base-dir to set the working root for relative PNG paths.
+#
 set -euo pipefail
 IFS=$'\n\t'
 
 _POLAPLIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export _POLAPLIB_DIR
 
+# -----------------------------------------------------------------------------#
+# Defaults and CLI args
+# -----------------------------------------------------------------------------#
 BASE_DIR=""
-MANIFEST=""
-OUTPDF=""
-ANN_PT=""
-ANN_MT=""
-ROWS=0
-COLS=0
-PW=11
-PH=8.5
-MG=0.45
-GAP=4.0
-LABEL_CEX=0.55
-TITLE_CEX=1.0
-LABEL_STRIP=0.16
+MANIFEST="" OUTPDF=""
+ANN_PT="" ANN_MT=""
+ROWS=0 COLS=0 PW=11 PH=8.5 MG=0.45 GAP=4.0
+LABEL_CEX=0.55 TITLE_CEX=1.0 LABEL_STRIP=0.16
 PT_TITLE="Plastid assemblies (pt)"
 MT_TITLE="Mitochondrial assemblies (mt)"
+CODES_FILE="${_POLAPLIB_DIR}/species-codes.txt" # code species (space-delimited)
 
 usage() {
 	cat <<EOF
 Usage:
   $(basename "$0") --manifest md/manifest.json --out out.pdf
                    --annot-pt md/anno-pt.csv --annot-mt md/anno-mt.csv
+                   [--base-dir <dir>]
                    [--rows N] [--cols N]
                    [--page-width-in IN] [--page-height-in IN] [--margin-in IN]
                    [--gap-mm MM] [--label-cex CEX] [--title-cex CEX] [--label-strip-frac FRAC]
@@ -125,44 +125,88 @@ done
 	echo "[ERR] need --annot-pt and --annot-mt CSVs" >&2
 	exit 2
 }
+
 mkdir -p "$(dirname "$OUTPDF")"
 
-SR="$(cd "$(dirname "$BASE_DIR")" && pwd)"
-PT_TSV="$(mktemp -t ptlist.XXXXXX.tsv)"
-MT_TSV="$(mktemp -t mtlist.XXXXXX.tsv)"
+# -----------------------------------------------------------------------------#
+# Determine species root (SR)
+# -----------------------------------------------------------------------------#
+if [[ -n "$BASE_DIR" ]]; then
+	SR="$(cd "$(dirname "$BASE_DIR")" && pwd)"
+else
+	SR="$(cd "$(dirname "$MANIFEST")/.." && pwd)"
+fi
+
+# -----------------------------------------------------------------------------#
+# Temp files
+# -----------------------------------------------------------------------------#
+PT_TSV_UN="$(mktemp -t ptlist.unordered.XXXXXX.tsv)"
+MT_TSV_UN="$(mktemp -t mtlist.unordered.XXXXXX.tsv)"
+PT_TSV="$(mktemp -t ptlist.ordered.XXXXXX.tsv)"
+MT_TSV="$(mktemp -t mtlist.ordered.XXXXXX.tsv)"
 PT_CSV="$(mktemp -t ptlist.XXXXXX.csv)"
 MT_CSV="$(mktemp -t mtlist.XXXXXX.csv)"
-trap 'rm -f "$PT_TSV" "$MT_TSV" "$PT_CSV" "$MT_CSV"' EXIT
+ORDER_FILE="$(mktemp -t species.order.XXXXXX.txt)"
+trap 'rm -f "$PT_TSV_UN" "$MT_TSV_UN" "$PT_TSV" "$MT_TSV" "$PT_CSV" "$MT_CSV" "$ORDER_FILE"' EXIT
 
-echo -e "species\tpng" >"$PT_TSV"
-echo -e "species\tpng" >"$MT_TSV"
+# -----------------------------------------------------------------------------#
+# Species order file from species-codes.txt
+# -----------------------------------------------------------------------------#
+if [[ -s "$CODES_FILE" ]]; then
+	awk 'NR==1{next} NF>=2 {print $2}' "$CODES_FILE" >"$ORDER_FILE"
+fi
+
+# -----------------------------------------------------------------------------#
+# Build unordered lists from manifest
+# -----------------------------------------------------------------------------#
+echo -e "species\tpng" >"$PT_TSV_UN"
+echo -e "species\tpng" >"$MT_TSV_UN"
 
 if command -v jq >/dev/null 2>&1; then
-	jq -r --arg SR "$SR" '.items[] | {species} + {png: (.pt.png // "")}
-    | [ .species, (if .png=="" then "" else ($SR + "/" + .png) end) ] | @tsv' "$MANIFEST" >>"$PT_TSV"
-	jq -r --arg SR "$SR" '.items[] | {species} + {png: (.mt.png // "")}
-    | [ .species, (if .png=="" then "" else ($SR + "/" + .png) end) ] | @tsv' "$MANIFEST" >>"$MT_TSV"
+	jq -r --arg SR "$SR" '
+    .items[] | {species} + {png: (.pt.png // .pt.file.png // "")} |
+    [ .species, (if .png=="" then "" else ($SR + "/" + .png) end) ] | @tsv
+  ' "$MANIFEST" >>"$PT_TSV_UN"
+
+	jq -r --arg SR "$SR" '
+    .items[] | {species} + {png: (.mt.png // .mt.file.png // "")} |
+    [ .species, (if .png=="" then "" else ($SR + "/" + .png) end) ] | @tsv
+  ' "$MANIFEST" >>"$MT_TSV_UN"
 else
-	awk -F'"' -v SR="$SR" '
-    /"species"[[:space:]]*:/ { species=$4; mt=""; pt=""; start=1 }
-    /"png"[[:space:]]*:/ {
-      p=$4; if (p !~ /^\//) p=SR "/" p
-      if (p ~ /\/mt[._]/) mt=p
-      if (p ~ /\/pt[._]/) pt=p
-    }
-    /},[[:space:]]*{/ || /\}[[:space:]]*\][[:space:]]*\}/ {
-      if (start && species!="") {
-        printf "%s\t%s\n", species, pt >> "'"$PT_TSV"'"
-        printf "%s\t%s\n", species, mt >> "'"$MT_TSV"'"
-      }
-      start=0
-    }
-  ' "$MANIFEST"
+	echo "[ERR] jq required" >&2
+	exit 2
 fi
+
+# -----------------------------------------------------------------------------#
+# Reorder to match species-codes.txt
+# -----------------------------------------------------------------------------#
+reorder_tsv() {
+	local order="$1" unordered="$2" out="$3"
+	echo -e "species\tpng" >"$out"
+	if [[ -s "$order" ]]; then
+		awk -F'\t' -v OFS='\t' '
+      NR==FNR { if($0!~/^[[:space:]]*$/){ n++; ord[n]=$0; want[$0]=1 } next }
+      FNR==1 { next }
+      { lines[$1]=$0 }
+      END {
+        for(i=1;i<=n;i++){ s=ord[i]; if(s in lines) print lines[s] }
+        for(s in lines) if(!(s in want)) print lines[s]
+      }
+    ' "$order" "$unordered" >>"$out"
+	else
+		tail -n +2 "$unordered" >>"$out"
+	fi
+}
+
+reorder_tsv "$ORDER_FILE" "$PT_TSV_UN" "$PT_TSV"
+reorder_tsv "$ORDER_FILE" "$MT_TSV_UN" "$MT_TSV"
 
 awk -F'\t' 'BEGIN{OFS=","} NR==1{print "species","png"; next} {print $1,$2}' "$PT_TSV" >"$PT_CSV"
 awk -F'\t' 'BEGIN{OFS=","} NR==1{print "species","png"; next} {print $1,$2}' "$MT_TSV" >"$MT_CSV"
 
+# -----------------------------------------------------------------------------#
+# Render with R
+# -----------------------------------------------------------------------------#
 Rscript "${_POLAPLIB_DIR}/scripts/polap-r-ptmt-sheet.R" \
 	--pt-list "$PT_CSV" --mt-list "$MT_CSV" \
 	--annot-pt "$ANN_PT" --annot-mt "$ANN_MT" \

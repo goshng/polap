@@ -317,6 +317,31 @@ harvest_one() {
 			[[ -n "$msc" ]] && append_fact "$sp" "$TIER" "$INUM" "mt" "file" "qc_scatter" "$msc"
 		fi
 
+		# NCBI MT accession/length from ncbi-mtdna/00-bioproject
+		local biomt="${sp}/${TIER}/${INUM}/ncbi-mtdna/00-bioproject"
+		if [[ -d "$biomt" ]]; then
+			local mstats
+			mstats="$(first_match "${biomt}/1-mtdna.fasta.stats")"
+			[[ -z "$mstats" ]] && mstats="$(first_match "${biomt}/mtdna.fasta.stats")"
+			[[ -z "$mstats" ]] && mstats="$(first_match "${biomt}"/*fasta.stats)"
+			if [[ -n "$mstats" ]]; then
+				local macc mlen
+				macc="$(awk 'NR==2{print $1; exit}' "$mstats")"
+				mlen="$(awk 'NR==2{print $NF; exit}' "$mstats")"
+				[[ -n "$macc" ]] && append_fact "$sp" "$TIER" "$INUM" "mt" "attr" "ncbi_accession" "$macc"
+				[[ -n "$mlen" ]] && append_fact "$sp" "$TIER" "$INUM" "mt" "attr" "ncbi_len_bp" "$mlen"
+			else
+				local maccf
+				maccf="$(first_match "${biomt}/2-mtdna.accession")"
+				[[ -z "$maccf" ]] && maccf="$(first_match "${biomt}"/*.accession)"
+				if [[ -n "$maccf" ]]; then
+					local macc
+					macc="$(head -n1 "$maccf" | tr -d '\r\n')"
+					[[ -n "$macc" ]] && append_fact "$sp" "$TIER" "$INUM" "mt" "attr" "ncbi_accession" "$macc"
+				fi
+			fi
+		fi
+
 	} || true
 }
 

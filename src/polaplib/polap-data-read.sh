@@ -3264,6 +3264,30 @@ man-table-s1_genus_species() {
 	conda deactivate
 }
 
+man-mt-figure_genus_species() {
+	local args=("$@")
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	make -f "${_POLAPLIB_DIR}/Makefile.read" mt-figure
+	conda deactivate
+}
+
+man-pt-figure_genus_species() {
+	local args=("$@")
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	make -f "${_POLAPLIB_DIR}/Makefile.read" pt-figure
+	conda deactivate
+}
+
+man-mt-table_genus_species() {
+	local args=("$@")
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	make -f "${_POLAPLIB_DIR}/Makefile.read" mt-table
+	conda deactivate
+}
+
 man-pt-table_genus_species() {
 	local args=("$@")
 

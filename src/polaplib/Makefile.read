@@ -230,7 +230,7 @@ manuscript.pdf: $(DOC_OUT_PDF)
 	@cp -p manuscript.pdf "$(CURDIR)/polap/src/polaplib/"
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Plastid summary (manifest → Markdown table)
+# Plastid summary (manifest →  Markdown table)
 # ──────────────────────────────────────────────────────────────────────────────
 SPECIES_ROOT ?= $(CURDIR)
 SR := $(abspath $(SPECIES_ROOT))
@@ -257,6 +257,43 @@ $(PT_TABLE_MD): $(MANIFEST_V6)
 	  --manifest "$(MANIFEST_V6)" \
 	  --out "$(PT_TABLE_MD)"
 	@echo "[OK] Wrote: $(PT_TABLE_MD)"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Edit:
+# polap-data-read.sh: add bolap command with make target
+# Makefile.read: add a target
+# polap-bash-make-manifest.sh: prepare the manifests
+# scripts/manifest_assemble.sh
+# polap-bash-table-xxx.sh: create tsv and markdown files
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Mitochondrial genome summary (manifest ->  TSV -> Markdown table)
+# Makefile.read: add target mt-table
+# polap-bash-mt-table.sh
+# scripts/manifest_assemble.sh if necessary
+# polap-bash-make-manifest.sh if necessary
+# columns: species code, SRA, input (Gb), mean read length (bases),
+# NCBI accession, NCBI length, Assembly segments, Assembly bases
+# ──────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
+# Mitochondrial summary (manifest -> TSV -> Markdown table)
+# ──────────────────────────────────────────────────────────────────────────────
+MT_TABLE_TSV := $(MANIFEST_DIR)/mt-summary-$(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN).tsv
+MT_TABLE_MD  := $(MANIFEST_DIR)/mt-summary-$(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN).md
+MANIFEST_V6  ?= $(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN).json
+
+.PHONY: mt-table
+mt-table: $(MT_TABLE_TSV) $(MT_TABLE_MD)
+	@echo "[OK] MT table: $(MT_TABLE_TSV) and $(MT_TABLE_MD)"
+
+$(MT_TABLE_TSV) $(MT_TABLE_MD): $(MANIFEST_V6)
+	@mkdir -p "$(dir $(MT_TABLE_TSV))"
+	@echo "[INFO] MT summary from $(MANIFEST_V6)"
+	@bash "$(POLAPLIB_DIR)/polap-bash-table-mt.sh" \
+	  --manifest "$(MANIFEST_V6)" \
+	  --tsv "$(MT_TABLE_TSV)" \
+	  --md  "$(MT_TABLE_MD)"
 
 clean:
 	@rm -f "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \

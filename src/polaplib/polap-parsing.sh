@@ -333,6 +333,8 @@ _polap_command_string=polap
 
 _arg_use_oatk="off"
 
+declare -a _arg_unknown_opts=()
+
 print_help() {
 
 	help_message=$(
@@ -1558,6 +1560,13 @@ parse_commandline() {
 		-h)
 			print_help
 			exit 0
+			;;
+		-*)
+			_arg_unknown_opts+=("$1")
+			shift || true
+			if [[ $# -gt 0 ]]; then
+				_arg_unknown_opts+=("$1")
+			fi
 			;;
 		*)
 			_last_positional="$1"

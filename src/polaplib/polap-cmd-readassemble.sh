@@ -140,9 +140,9 @@ EOF
 			local pt_fa="${_arg_long_reads%.*}.pt.fa"
 			local pt_gfa="${_arg_long_reads%.*}.pt.gfa"
 			local pt_png="${_arg_long_reads%.*}.pt.png"
-			cp -p "${_arg_outdir}/pt-pt.1.fa" "${pt_fa}"
-			cp -p "${_arg_outdir}/pt-pt.1.gfa" "${pt_gfa}"
-			cp -p "${_arg_outdir}/pt-pt.1.png" "${pt_png}"
+			cp -p "${_arg_outdir}/pt.1.fa" "${pt_fa}"
+			cp -p "${_arg_outdir}/pt.1.gfa" "${pt_gfa}"
+			cp -p "${_arg_outdir}/pt.1.png" "${pt_png}"
 			_polap_log0 "output fasta: ${pt_fa}"
 			_polap_log0 "output assembly graph: ${pt_gfa}"
 			_polap_log0 "output assembly graph figure: ${pt_png}"
@@ -172,17 +172,19 @@ EOF
 				fi
 
 				# use the original long-read input data
-				if [[ "${_arg_readassemble_use_all_long_read}" == "on" ]]; then
-					_arg_long_reads="${_arg_long_reads_original}"
-				fi
+				# if [[ "${_arg_readassemble_use_all_long_read}" == "on" ]]; then
+				# 	_arg_long_reads="${_arg_long_reads_original}"
+				# fi
+				_arg_long_reads="${_arg_long_reads_original}"
 
 				_arg_plastid="off"
 				_arg_menu[1]="annotate"
 				if [[ "${_arg_readassemble_mtseed}" == "on" ]]; then
 					_run_polap_mtseed
 				fi
+
 				_arg_menu[1]="fast"
-				_arg_pt_ref="${_arg_outdir}/pt-pt.1.fa"
+				_arg_pt_ref="${_arg_outdir}/pt.1.fa"
 				_polap_assert '[[ -s "${_arg_pt_ref}" ]]' \
 					"pt ref must exist, '${_arg_pt_ref}'"
 				# _arg_steps_include="1-9"
@@ -235,9 +237,7 @@ _polap_readassemble-pt() {
 	# downsampling
 	# number of bases
 	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
-
 		if [[ "${_arg_reduction_reads}" == "on" ]]; then
-
 			mkdir -p "${_arg_outdir}/genomesize"
 			_polap_lib_genomesize-estimate -l "${_arg_long_reads}" \
 				-o "${_arg_outdir}/genomesize"
@@ -255,7 +255,6 @@ _polap_readassemble-pt() {
 		else
 			ln -s "$(realpath "${_arg_long_reads}")" "${_arg_outdir}/ld.fq"
 		fi
-
 	elif [[ "${_arg_data_type}" == "pacbio-raw" ]]; then
 		seqkit seq -m 3000 "${_arg_long_reads}" -o "${_arg_outdir}/ld.fq"
 	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then

@@ -2563,7 +2563,7 @@ EOF
 	fi
 }
 
-run-polap-mtpt_genus_species() {
+run-polap-polish_genus_species() {
 	local bolap_cmd="${FUNCNAME%%_*}"
 
 	help_message=$(
@@ -2724,6 +2724,193 @@ EOF
 		-l "${long_sra}.fastq" \
 		-p "${_brg_target}/mt.1.fa" \
 		-f "${_brg_target}/mt.1.fasta"
+
+	# ${_polap_cmd} isomer \
+	# 	-l "${long_sra}.fastq" \
+	# 	-o "${_brg_target}" \
+	# 	--pt-ref "${_brg_target}/pt.1.fasta" \
+	# 	--mt-ref "${_brg_target}/mt.1.fasta"
+
+	# Save some results
+	rsync -azuq --max-size=5M \
+		"${_brg_target}/" "${_brg_rundir}/"
+
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		if [[ -d "${_brg_target}" ]]; then
+			_log_echo1 rm -rf "${_brg_target}"
+			rm -rf "${_brg_target}"
+		fi
+	fi
+}
+
+run-polap-mtpt_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - $bolap_cmd
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Execute what?:
+    bolap syncassemble -s Vigna_radiata
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# defaults
+	local _brg_type="mtpt"
+	local _brg_omega="1500"
+	local _brg_downsample="no-downsample"
+	local _brg_redo="off"
+	local _brg_cleanup="on"
+
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--type)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_type="$2"
+					shift || true
+				fi
+				;;
+			-w)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_omega="$2"
+					shift || true
+				fi
+				;;
+			--redo)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_redo="on"
+					shift || true
+				fi
+				;;
+			--no-cleanup)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_cleanup="off"
+					shift || true
+				fi
+				;;
+			-d)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_downsample="downsample"
+					shift || true
+				fi
+				;;
+			--dry-run)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_dry="on"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+	local long_sra="${_long["$_brg_target"]}"
+
+	parse_commandline
+
+	# main
+
+	# redefine
+	local _brg_miniasm="${_brg_outdir_i}/polap-readassemble"
+	local _brg_polish="${_brg_outdir_i}/polap-polish"
+	local _brg_rundir="${_brg_outdir_i}/${_brg_title}"
+
+	mkdir -p "${_brg_outdir_i}"
+
+	local platform="${_platform["$_brg_target"]}"
+
+	mkdir -p "${_brg_target}"
+
+	# copy mt.1.gfa
+	# cp -p "${_brg_miniasm}/mt.1.gfa" \
+	# 	"${_brg_target}"
+	#
+	# if [[ -s "${_brg_miniasm}/mt.1.txt" ]]; then
+	# 	cp -p "${_brg_miniasm}/mt.1.txt" \
+	# 		"${_brg_target}"
+	# fi
+	#
+	# cp -p "${_brg_miniasm}/pt-pt.1.gfa" \
+	# 	"${_brg_target}/pt.1.gfa"
+	#
+	# if [[ -s "${_brg_miniasm}/mt.1.txt" ]]; then
+	# 	${_polap_cmd} convert gfa2fasta \
+	# 		"${_brg_target}/mt.1.gfa" \
+	# 		"${_brg_target}/mt.1.fa" \
+	# 		--ids "${_brg_target}/mt.1.txt"
+	# else
+	# 	${_polap_cmd} convert gfa2fasta \
+	# 		"${_brg_target}/mt.1.gfa" \
+	# 		"${_brg_target}/mt.1.fa"
+	# fi
+	#
+	# ${_polap_cmd} convert gfa2fasta \
+	# 	"${_brg_target}/pt.1.gfa" \
+	# 	"${_brg_target}/pt.1.fa"
+	#
+	# ${_polap_cmd} polish2 \
+	# 	-l "${long_sra}.fastq" \
+	# 	-p "${_brg_target}/pt.1.fa" \
+	# 	-f "${_brg_target}/pt.1.fasta"
+	#
+	# ${_polap_cmd} polish2 \
+	# 	-l "${long_sra}.fastq" \
+	# 	-p "${_brg_target}/mt.1.fa" \
+	# 	-f "${_brg_target}/mt.1.fasta"
+
+	# copy mt.1.gfa
+	cp -p "${_brg_polish}/mt.1.fasta" \
+		"${_brg_target}"
+	cp -p "${_brg_polish}/pt.1.fasta" \
+		"${_brg_target}"
 
 	${_polap_cmd} isomer \
 		-l "${long_sra}.fastq" \

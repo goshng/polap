@@ -162,3 +162,67 @@ _polap_lib_assemble-omega() {
 
 	return 0
 }
+
+# polap-bash-ptdna-recruit-subsample-flye.sh"
+_polap_lib_assemble-sub() {
+
+	_polap_log1 "Assemble using seed contigs by subsampling"
+
+	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
+
+	if ! _polap_gfatools-gfa2fasta; then
+		_polap_error_message $?
+	fi
+
+	check_file_existence "${_polap_var_mtcontigname}"
+	check_file_existence "${_polap_var_ga_contigger_edges_fasta}"
+
+	# seed contigs in fasta
+	seqkit grep \
+		-f "${_polap_var_mtcontigname}" \
+		"${_polap_var_ga_contigger_edges_fasta}" \
+		-o "${_polap_var_oga_contig}/contig.fa" \
+		2>${_polap_output_dest}
+
+	local reads="${_arg_long_reads}"
+	local seeds="${_polap_var_oga_contig}/contig.fa"
+	local outdir="${_arg_outdir}/${_arg_jnum}"
+	local minlen="${_arg_omega}"
+	local threads="${_arg_threads}"
+	local gsize="200000"
+	local cov=200
+	local window=2000
+	local asm_cov=200
+	local memthod="auto"
+
+	# create seed contigs in fasta
+	local wrapper="${_POLAPLIB_DIR}/polap-bash-ptdna-recruit-subsample-flye.sh"
+	local args=(
+		--seeds "$seeds"
+		--reads "$reads"
+		--outdir "$outdir"
+		--cov "$cov"
+		--minlen "$minlen"
+		--threads "$threads"
+		--window "$window"
+	)
+
+	[[ -n "$gsize" ]] && args+=(--gsize "$gsize")
+	[[ -n "$asm_cov" ]] && args+=(--asm-coverage "$asm_cov")
+	# [[ "$no_assemble" -eq 1 ]] && args+=(--no-assemble)
+	# [[ "$keep_intermediate" -eq 1 ]] && args+=(--keep-intermediate)
+	# [[ -n "$mapper_opts" ]] && args+=(--mapper-opts "$mapper_opts")
+	# args+=(--method "$method")
+
+	_polap_log1 "[RUN] $wrapper ${args[*]}"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	_polap_log0 bash "$wrapper" "${args[@]}"
+	bash "$wrapper" "${args[@]}"
+
+	conda deactivate
+
+	return 0
+}

@@ -100,99 +100,6 @@ _polap_lib_readassemble-annotate-read-pt() {
 		--min-mapq ${_arg_annotate_read_min_mapq} \
 		--min-identity ${_arg_annotate_read_min_identity}
 
-	# local annotatedir1="${_arg_outdir}/annotate-read-${type}-1"
-	# rm -rf "${annotatedir1}"
-	# mkdir -p "${annotatedir1}/at"
-	#
-	# _polap_log3_cmdout bash "${_POLAPLIB_DIR}"/polap-r-reads.sh \
-	# 	--mt "${annotatedir}"/mt.paf \
-	# 	--pt "${annotatedir}"/pt.paf \
-	# 	--output "${annotatedir1}" \
-	# 	--min-mapq ${_arg_annotate_read_min_mapq} \
-	# 	--min-identity ${_arg_annotate_read_min_identity}
-
-	# --min-pt 1
-}
-
-_polap_lib_readassemble-get-annotated-read() {
-	local type="${1:-pt}"
-
-	local annotatedir="${_arg_outdir}/annotate-read-${type}"
-
-	local pt_table mt_table at_table all_table
-	_polap_lib_readassemble-common-variables \
-		annotatedir pt_table mt_table at_table all_table
-
-	#######################################################################
-	# BEGIN: function _run_polap_assemble-annotated-read
-	#
-	# _polap_log3_cmdout Rscript --vanilla "${_POLAPLIB_DIR}"/polap-r-filter-organelle-reads.R \
-	# 	--table "${pt_table}" \
-	# 	--length 3e+7 \
-	# 	--output "${annotatedir}"/pt.id.txt
-
-	# tail -n +2 "${pt_table}" | cut -f1 >"${annotatedir}"/pt.id.txt
-	bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
-		-t "${pt_table}" \
-		-l 3e+7 \
-		-o "${annotatedir}/pt"
-	# 2025-09-10
-	# I do not know why I used this all not 3e+7 size limited one.
-	cp "${annotatedir}/pt/pt-contig-annotation-depth-table.txt.pt.filtered.all.txt" \
-		"${annotatedir}"/pt.id.all.txt
-	#
-	# because we want to recruit more intergenic reads.
-	# cp "${annotatedir}/pt/pt-contig-annotation-depth-table.txt.pt.id.txt" \
-	# 	"${annotatedir}"/pt.id.all.txt
-
-	# _polap_log3_cmdout Rscript --vanilla "${_POLAPLIB_DIR}"/polap-r-filter-organelle-reads.R \
-	# 	--table "${mt_table}" \
-	# 	--length 1e+8 \
-	# 	--output "${annotatedir}"/mt0.id.txt
-
-	bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
-		-t "${mt_table}" \
-		-l 1e+8 \
-		-o "${annotatedir}/mt"
-	# 2025-09-10
-	# I do not know why I used this all not 3e+7 size limited one.
-	# cp "${annotatedir}/pt/pt-contig-annotation-depth-table.txt.pt.filtered.all.txt" \
-	cp "${annotatedir}/mt/contig-annotation-depth-table.txt.pt.filtered.all.txt" \
-		"${annotatedir}"/mt.id.all.txt
-	#
-	# because we want to recruit more intergenic reads.
-	# cp "${annotatedir}/mt/contig-annotation-depth-table.txt.pt.id.txt" \
-	# 	"${annotatedir}"/mt.id.all.txt
-}
-
-# used for polap mtseed annotate command
-_polap_lib_readassemble-select-organelle-reads() {
-	local type="${1:-pt}"
-
-	local annotatedir="${_arg_outdir}/annotate-read-${type}"
-
-	local pt_table mt_table at_table all_table
-	_polap_lib_readassemble-common-variables \
-		annotatedir pt_table mt_table at_table all_table
-
-	_polap_lib_readassemble-annotate-read-pt "${type}"
-
-	bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
-		-t "${pt_table}" \
-		-l 1e+12 \
-		--disp-pt 2000 \
-		-o "${annotatedir}/pt"
-
-	cp "${annotatedir}/pt/pt-contig-annotation-depth-table.txt.pt.filtered.all.txt" \
-		"${annotatedir}"/pt.id.all.txt
-
-	bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
-		-t "${mt_table}" \
-		-l 1e+12 \
-		-o "${annotatedir}/mt"
-
-	cp "${annotatedir}/mt/contig-annotation-depth-table.txt.pt.filtered.all.txt" \
-		"${annotatedir}"/mt.id.all.txt
 }
 
 # input: _arg_long_reads
@@ -309,25 +216,31 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 			return
 		fi
 
-		_polap_lib_assemble-rate \
+		_polap_lib_assemble-sub \
 			-o "${annotatedir}" \
 			-l "${_arg_long_reads}" \
 			-w "${_arg_single_min}" \
 			-i pt$i -j pt$j
+
+		# _polap_lib_assemble-rate \
+		# 	-o "${annotatedir}" \
+		# 	-l "${_arg_long_reads}" \
+		# 	-w "${_arg_single_min}" \
+		# 	-i pt$i -j pt$j
 
 		_polap_lib_file-cleanup -d "${annotatedir}/pt$j" -s 5M -a rm
 
 		ptdna0_gfa="${annotatedir}/pt$j/30-contigger/graph_final.gfa"
 		ptdna0_fasta="${annotatedir}/pt$j/30-contigger/graph_final.fasta"
 
-		if [[ ! -s "${ptdna0_fasta}" ]]; then
-			rm -rf "${annotatedir}/pt$j"
-			_polap_lib_assemble-omega \
-				-o "${annotatedir}" \
-				-l "${_arg_long_reads}" \
-				-t pt \
-				-i pt$i -j pt$j
-		fi
+		# if [[ ! -s "${ptdna0_fasta}" ]]; then
+		# 	rm -rf "${annotatedir}/pt$j"
+		# 	_polap_lib_assemble-omega \
+		# 		-o "${annotatedir}" \
+		# 		-l "${_arg_long_reads}" \
+		# 		-t pt \
+		# 		-i pt$i -j pt$j
+		# fi
 
 		if [[ -s "${ptdna0_fasta}" ]]; then
 			_polap_lib_pt-extract-dna \
@@ -373,22 +286,94 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 
 	# final link
 	ln -sf "annotate-read-${type}/pt.0.fa" \
-		"${_arg_outdir}/${type}-pt.0.fa"
+		"${_arg_outdir}/pt.0.fa"
 
 	ln -sf "annotate-read-${type}/pt.0.gfa" \
-		"${_arg_outdir}/${type}-pt.0.gfa"
+		"${_arg_outdir}/pt.0.gfa"
 
 	ln -sf "annotate-read-${type}/pt.0.png" \
-		"${_arg_outdir}/${type}-pt.0.png"
+		"${_arg_outdir}/pt.0.png"
 
 	ln -sf "annotate-read-${type}/pt.$j.fa" \
-		"${_arg_outdir}/${type}-pt.1.fa"
+		"${_arg_outdir}/pt.1.fa"
 
 	ln -sf "annotate-read-${type}/pt.$j.gfa" \
-		"${_arg_outdir}/${type}-pt.1.gfa"
+		"${_arg_outdir}/pt.1.gfa"
 
 	ln -sf "annotate-read-${type}/pt.$j.png" \
-		"${_arg_outdir}/${type}-pt.1.png"
+		"${_arg_outdir}/pt.1.png"
+}
+
+_polap_lib_readassemble-get-annotated-read() {
+	local type="${1:-pt}"
+
+	local annotatedir="${_arg_outdir}/annotate-read-${type}"
+
+	local pt_table mt_table at_table all_table
+	_polap_lib_readassemble-common-variables \
+		annotatedir pt_table mt_table at_table all_table
+
+	#######################################################################
+	# BEGIN: function _run_polap_assemble-annotated-read
+	#
+	# _polap_log3_cmdout Rscript --vanilla "${_POLAPLIB_DIR}"/polap-r-filter-organelle-reads.R \
+	# 	--table "${pt_table}" \
+	# 	--length 3e+7 \
+	# 	--output "${annotatedir}"/pt.id.txt
+
+	# tail -n +2 "${pt_table}" | cut -f1 >"${annotatedir}"/pt.id.txt
+	bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
+		-t "${pt_table}" \
+		-l 3e+7 \
+		-o "${annotatedir}/pt"
+	# 2025-09-10
+	# I do not know why I used this all not 3e+7 size limited one.
+	cp "${annotatedir}/pt/pt-contig-annotation-depth-table.txt.pt.filtered.all.txt" \
+		"${annotatedir}"/pt.id.all.txt
+
+	bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
+		-t "${mt_table}" \
+		-l 1e+8 \
+		-o "${annotatedir}/mt"
+	# 2025-09-10
+	# I do not know why I used this all not 3e+7 size limited one.
+	# cp "${annotatedir}/pt/pt-contig-annotation-depth-table.txt.pt.filtered.all.txt" \
+	cp "${annotatedir}/mt/contig-annotation-depth-table.txt.pt.filtered.all.txt" \
+		"${annotatedir}"/mt.id.all.txt
+	#
+	# because we want to recruit more intergenic reads.
+	# cp "${annotatedir}/mt/contig-annotation-depth-table.txt.pt.id.txt" \
+	# 	"${annotatedir}"/mt.id.all.txt
+}
+
+# used for polap mtseed annotate command
+_polap_lib_readassemble-select-organelle-reads() {
+	local type="${1:-pt}"
+
+	local annotatedir="${_arg_outdir}/annotate-read-${type}"
+
+	local pt_table mt_table at_table all_table
+	_polap_lib_readassemble-common-variables \
+		annotatedir pt_table mt_table at_table all_table
+
+	_polap_lib_readassemble-annotate-read-pt "${type}"
+
+	bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
+		-t "${pt_table}" \
+		-l 1e+12 \
+		--disp-pt 2000 \
+		-o "${annotatedir}/pt"
+
+	cp "${annotatedir}/pt/pt-contig-annotation-depth-table.txt.pt.filtered.all.txt" \
+		"${annotatedir}"/pt.id.all.txt
+
+	bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
+		-t "${mt_table}" \
+		-l 1e+12 \
+		-o "${annotatedir}/mt"
+
+	cp "${annotatedir}/mt/contig-annotation-depth-table.txt.pt.filtered.all.txt" \
+		"${annotatedir}"/mt.id.all.txt
 }
 
 ################################################################################

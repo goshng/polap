@@ -71,7 +71,12 @@ echo "CMD: $CMD"
 
 # Print all the global variables from polap-parsing.sh.
 for var in $(compgen -v _arg_); do
-	echo "$var=${!var}"
+	# echo "$var"
+	set +u
+	echo "val=${var}"
+	val="${!var-}"
+	set -u
+	# echo "$var=${!var}"
 done
 
 # Options

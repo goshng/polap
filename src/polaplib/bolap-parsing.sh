@@ -293,6 +293,7 @@ commands:
   use                  Use one of benchmark analysis datasets: read, cflye, aflye
   install/setup/update Install, setup, update tools using conda environments.
   uninstall            Uninstall tools.
+  conda                Manage conda environments.
   list (search)        List or search for tools.
   run                  Run tools
   download             Download data.

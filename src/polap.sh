@@ -19,6 +19,12 @@ _polap_script_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 # ───────────────────────────────────────────────────────────────────────────────
 _POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
 
+# Source the helper and ensure profiles exist
+if [[ -r "${_POLAPLIB_DIR}/polap-lib-profiles.sh" ]]; then
+	source "${_POLAPLIB_DIR}/polap-lib-profiles.sh"
+	_polap_ensure_profiles_dir
+fi
+
 source "${_POLAPLIB_DIR}/polap-parsing.sh"
 
 # ── NEW: autoloader ────────────────────────────────────────────

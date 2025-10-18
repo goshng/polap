@@ -7678,6 +7678,179 @@ run-direct-dga_genus_species() {
 	# run-direct-dflye_genus_species "${_brg_outdir}" "${_brg_sindex}" "${_brg_inum}" "${_brg_jnum}"
 }
 
+conda_genus_species() {
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - $bolap_cmd
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  Clean-up conda environments. Recreate them.
+    bolap $bolap_cmd --cleanup
+    bolap $bolap_cmd --export polap
+    bolap $bolap_cmd --export-all
+    bolap $bolap_cmd --recreate
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local _export=""
+	local _export_all=0
+	local _cleanup=0
+	local _recreate=0
+
+	parse_commandline() {
+		set -- "${_brg_args[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			# _log_echo0 "$#: $_key"
+			case "$_key" in
+			--export-all)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_export=1
+				fi
+				;;
+			--export)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_export="$2"
+				fi
+				shift || true
+				;;
+			--cleanup)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_cleanup="1"
+				fi
+				;;
+			--recreate)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_recreate="1"
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				_log_echo0 "[POS] arg: $1"
+				;;
+			esac
+			shift || true
+		done
+		# _log_echo0 "p:cleanup: $_cleanup"
+		# _log_echo0 "p:export: $_export"
+		# _log_echo0 "p:recreate: $_recreate"
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	parse_commandline
+
+	_log_echo0 "cleanup: $_cleanup"
+	_log_echo0 "export: $_export"
+	_log_echo0 "export-all: $_export_all"
+	_log_echo0 "recreate: $_recreate"
+
+	_polap_lib_conda-ensure_conda_env base || exit 1
+
+	if [[ "$_cleanup" == "1" ]]; then
+		if _polap_lib_dialog-yes-no "Delete all polap conda environments?" "y"; then
+			make -f "${_POLAPLIB_DIR}"/Makefile.env clean-envs
+		else
+			echo "[SKIP] User declined."
+		fi
+	fi
+
+	if [[ "$_export_all" == "1" ]]; then
+		if _polap_lib_dialog-yes-no "Export all conda environments?" "y"; then
+			make -f "${_POLAPLIB_DIR}"/Makefile.env export
+		else
+			echo "[SKIP] User declined."
+		fi
+	fi
+
+	if [[ -n "$_export" ]]; then
+		if _polap_lib_dialog-yes-no "Export a conda environments: $_export?" "y"; then
+			make -f "${_POLAPLIB_DIR}"/Makefile.env export "$_export"
+		else
+			echo "[SKIP] User declined."
+		fi
+	fi
+
+	if [[ "$_recreate" == "1" ]]; then
+		if _polap_lib_dialog-yes-no "Recreate all polap conda environments?" "y"; then
+			make -f "${_POLAPLIB_DIR}"/Makefile.env recreate-skip
+		else
+			echo "[SKIP] User declined."
+		fi
+	fi
+
+	conda deactivate
+}
+
+conda-clean_genus_species() {
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - $bolap_cmd
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  It deletes all polap-related environments.
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	make -f "${_POLAPLIB_DIR}"/Makefile.env clean-envs
+}
+
 install-latex_genus_species() {
 	local missing=()
 
@@ -16497,6 +16670,8 @@ Description:
   Edit polap-lib-data.sh to add a new command
 
   Makefile.read to add man commands
+
+  rsync -a -v thorne:/home/goshng/all/polap/github/src/ /home/goshng/all/polap/github/src/
 
 See also:
   Makefile.read

@@ -50,6 +50,7 @@ source "${_POLAPLIB_DIR}/polap-lib-command.sh"
 source "${_POLAPLIB_DIR}/polap-lib-bolap-compat.sh"
 source "${_POLAPLIB_DIR}/polap-lib-seqkit.sh"
 source "${_POLAPLIB_DIR}/polap-lib-dataset.sh"
+source "${_POLAPLIB_DIR}/polap-lib-dialog.sh"
 
 # MAIN
 if [ $# -eq 0 ]; then

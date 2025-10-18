@@ -42,4 +42,6 @@ dependencies:
   - plantuml
   - r-rsvg
   - qsv
+  - filtlong
+  - rasusa
 prefix: /home/goshng/miniconda3/envs/polap

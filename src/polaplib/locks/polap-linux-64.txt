@@ -72,6 +72,7 @@ https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.5-h2d0b736_3.conda#47e
 https://conda.anaconda.org/conda-forge/linux-64/oniguruma-6.9.10-hb9d3cd8_0.conda#6ce853cb231f18576d2db5c2d4cb473e
 https://conda.anaconda.org/conda-forge/linux-64/openssl-3.5.4-h26f9b46_0.conda#14edad12b59ccbfa3910d42c72adc2a0
 https://conda.anaconda.org/conda-forge/linux-64/pthread-stubs-0.4-hb9d3cd8_1002.conda#b3c17d95b5a10c6e64a21fa17573e70e
+https://conda.anaconda.org/bioconda/linux-64/rasusa-2.2.2-hc1c3326_0.conda#62ae6f73cac7b6ebc59772381e781aad
 https://conda.anaconda.org/bioconda/linux-64/raxml-8.2.13-h7b50bb2_3.tar.bz2#48880314905ab03663a8fb4d97c835ff
 https://conda.anaconda.org/conda-forge/linux-64/sed-4.9-h6688a6e_0.conda#171afc5f7ca0408bbccbcb69ade85f92
 https://conda.anaconda.org/conda-forge/linux-64/xorg-libice-1.1.2-hb9d3cd8_0.conda#fb901ff28063514abb6046c9ec2c4a45
@@ -92,6 +93,7 @@ https://conda.anaconda.org/bioconda/linux-64/cd-hit-4.8.1-h5ca1c30_13.tar.bz2#8b
 https://conda.anaconda.org/bioconda/linux-64/cdbtools-0.99-h077b44d_12.tar.bz2#6b938da47db28f06ca9258f92d80e7cb
 https://conda.anaconda.org/bioconda/linux-64/clustalw-2.1-h9948957_12.tar.bz2#5989fcb871dabc90d1bb5de3d5c79185
 https://conda.anaconda.org/conda-forge/linux-64/expat-2.7.1-hecca717_0.conda#6033d8c2bb9b460929d00ba54154614c
+https://conda.anaconda.org/bioconda/linux-64/filtlong-0.3.1-h077b44d_0.conda#37b1d0998bbb32ed09fedd9e5e8b69bd
 https://conda.anaconda.org/conda-forge/linux-64/fribidi-1.0.10-h36c2ea0_0.tar.bz2#ac7bc6a654f8f41b352b38f4051135f8
 https://conda.anaconda.org/bioconda/linux-64/gfastats-1.3.11-h077b44d_0.tar.bz2#0a7a9697802b6f7f89dc9045cd691af0
 https://conda.anaconda.org/bioconda/linux-64/gfatools-0.5.5-h577a1d6_0.tar.bz2#21ec2f323593e958ef72935d018215a9

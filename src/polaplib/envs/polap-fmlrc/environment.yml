@@ -1,0 +1,11 @@
+name: polap-fmlrc
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconda::fmlrc[version='>=1.0.0']
+  - bioconda::ropebwt2[version='>=r187']
+  - kbchoi::msbwt[version='>=0.2.9']
+  - python=2.7
+prefix: /home/goshng/miniconda3/envs/polap-fmlrc

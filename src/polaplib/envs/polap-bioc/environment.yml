@@ -1,0 +1,12 @@
+name: polap-bioc
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconductor-biostrings
+  - bioconductor-genbankr
+  - bioconductor-iranges
+  - cd-hit
+  - r-optparse
+prefix: /home/goshng/miniconda3/envs/polap-bioc

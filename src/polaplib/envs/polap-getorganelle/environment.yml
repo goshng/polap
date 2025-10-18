@@ -1,0 +1,8 @@
+name: polap-getorganelle
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - getorganelle
+prefix: /home/goshng/miniconda3/envs/polap-getorganelle

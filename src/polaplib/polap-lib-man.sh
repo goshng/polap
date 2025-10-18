@@ -101,7 +101,7 @@ Diagnostics:
     1  error
     2  warning
 
-  Examples:
+Examples:
     file: not in gzip format
     file already exists; do you wish to overwrite (y or n)?
     gunzip: corrupt input

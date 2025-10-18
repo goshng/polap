@@ -1,0 +1,9 @@
+name: polap-dflye
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - goshng::dflye
+  - flye=2.9.5
+prefix: /home/goshng/miniconda3/envs/polap-dflye

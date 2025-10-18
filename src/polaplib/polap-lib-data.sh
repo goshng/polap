@@ -51,9 +51,11 @@ fi
 # TODO: Check
 # _POLAP_RELEASE
 if [[ "${_POLAP_RELEASE}" == "1" ]]; then
-	_polap_var_memtracker_time_interval=60
+	_polap_var_memtracker_time_interval=120
+	_polap_var_oatk_memtracker_time_interval=12
 else
-	_polap_var_memtracker_time_interval=30
+	_polap_var_memtracker_time_interval=60
+	_polap_var_oatk_memtracker_time_interval=6
 fi
 
 source "${_POLAPLIB_DIR}/polap-lib-conda.sh"
@@ -2296,15 +2298,37 @@ run-polap-aflye_genus_species() {
 # omega: -w 1500
 # downsample: -d
 run-polap-readassemble_genus_species() {
-	local _brg_outdir="$1"
-	local _brg_sindex="${2:-0}"
-	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+	local bolap_cmd="${FUNCNAME%%_*}"
 
-	if [[ "$#" -gt 1 ]]; then
-		shift 2
-	else
-		shift
-	fi
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - $bolap_cmd
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Execute polap readassemble:
+    bolap readassemble -s Vigna_radiata
+
+  Execute polap disassemble:
+    bolap disassemble -s Vigna_radiata
+
+  Execute polap syncassemble:
+    bolap syncassemble -s Vigna_radiata
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
 
 	# defaults
 	local _brg_type="miniasm"
@@ -2313,52 +2337,93 @@ run-polap-readassemble_genus_species() {
 	local _brg_redo="off"
 	local _brg_cleanup="on"
 
-	# parse options
-	while [[ $# -gt 0 ]]; do
-		case "$1" in
-		--type)
-			_brg_type="$2"
-			shift 2
-			;;
-		-w)
-			_brg_omega="$2"
-			shift 2
-			;;
-		-f)
-			shift
-			;;
-		--redo)
-			_brg_redo="on"
-			shift
-			;;
-		--no-cleanup)
-			_brg_cleanup="off"
-			shift
-			;;
-		-d)
-			_brg_downsample="downsample"
-			shift
-			;;
-		--dry-run)
-			_brg_dry="on"
-			shift
-			;;
-		--)
-			shift
-			break
-			;;
-		*)
-			_log_echo "Unknown option: $1"
-			return 1
-			;;
-		esac
-	done
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--type)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_type="$2"
+					shift || true
+				fi
+				;;
+			-w)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_omega="$2"
+					shift || true
+				fi
+				;;
+			--redo)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_redo="on"
+					shift || true
+				fi
+				;;
+			--no-cleanup)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_cleanup="off"
+					shift || true
+				fi
+				;;
+			-d)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_downsample="downsample"
+					shift || true
+				fi
+				;;
+			--dry-run)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_dry="on"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+	local long_sra="${_long["$_brg_target"]}"
+
+	parse_commandline
 
 	# redefine
-	local _brg_rundir="${_brg_outdir_i}/${_brg_title}-1-${_brg_type}"
+	# local _brg_rundir="${_brg_outdir_i}/${_brg_title}-1-${_brg_type}"
 
-	local mtn="${_mtn["$_brg_target"]}"
-	local ptn="${_ptn["$_brg_target"]}"
+	_log_echo0 "target: $_brg_target"
+	# local mtn="${_mtn["$_brg_target"]}"
+	# local ptn="${_ptn["$_brg_target"]}"
+	local mtn=3
+	local ptn=2
 
 	# _log_echo0 "mtn: ${mtn}"
 	# _log_echo0 "ptn: ${ptn}"
@@ -2378,30 +2443,22 @@ run-polap-readassemble_genus_species() {
 	local _brg_coverage="50m"
 
 	local option_data_type="--nano-raw"
-	if [[ "${platform}" == "PACBIO_SMRT" ]]; then
-		option_data_type="--pacbio-hifi"
-		if [[ "${_brg_type}" == "pt" ]]; then
-			lib-polap-readassemble-hifi-pt-brg-coverage
-		else
-			lib-polap-readassemble-hifi-brg-coverage
-		fi
-	elif [[ "${platform}" == "PACBIO_CLR" ]]; then
-		option_data_type="--pacbio-raw"
-		if [[ "${_brg_type}" == "pt" ]]; then
-			lib-polap-readassemble-clr-pt-brg-coverage
-		else
-			lib-polap-readassemble-clr-brg-coverage
-		fi
-	elif [[ "${platform}" == "ONT" ]]; then
-		if [[ "${_brg_type}" == "pt" ]]; then
-			lib-polap-readassemble-pt-brg-coverage
-		else
-			lib-polap-readassemble-brg-coverage
-		fi
-	fi
+	# [[ "${platform}" == "ONT" ]]
+	# pt: 10g
+	# mt: 10g or more
+	# if [[ "${_brg_type}" == "pt" ]]; then
+	# 	lib-polap-readassemble-pt-brg-coverage
+	# else
+	# 	lib-polap-readassemble-brg-coverage
+	# fi
 
-	_log_echo1 "Do: assemble ${_brg_type}DNA using seed reads of coverage (${_brg_coverage}) with ${option_data_type}: ${_brg_rundir}"
+	_log_echo1 "Asemble organelle genome sequences with ${option_data_type}"
 
+	# Always redo
+	rm -rf "${_brg_rundir}"
+	mkdir -p "${_brg_rundir}"
+
+	# Always redo
 	rm -rf "${_brg_target}"
 	mkdir -p "${_brg_target}"
 
@@ -2420,65 +2477,69 @@ run-polap-readassemble_genus_species() {
 
 	local resolved_fastq="${long_sra}.fastq"
 
-	if [[ "${_brg_type}" == "pt" ]]; then
-		${_polap_cmd} readassemble \
-			"${option_data_type}" \
-			--plastid \
-			--no-reduction-reads \
-			-w "${_brg_omega}" \
-			--downsample "${_brg_coverage}" \
-			-l "${resolved_fastq}" \
-			-o "${_brg_target}"
-	elif [[ "${_brg_type}" == "animal" ]]; then
-		${_polap_cmd} readassemble \
-			"${option_data_type}" \
-			--animal \
-			--downsample "${_brg_coverage}" \
-			-l "${resolved_fastq}" \
-			-o "${_brg_target}"
-	elif [[ "${_brg_type}" == "miniasm" ]]; then
-		_log_echo2 "plant mt $_brg_verbose_str"
-		_log_echo0 ${_polap_cmd} readassemble \
-			"${option_data_type}" \
-			-l "${resolved_fastq}" \
-			--readassemble-mtn "${mtn}" \
-			${_brg_verbose_str} \
-			-o "${_brg_target}"
-		${_polap_cmd} readassemble \
-			"${option_data_type}" \
-			-l "${resolved_fastq}" \
-			--readassemble-mtn "${mtn}" \
-			${_brg_verbose_str} \
-			-o "${_brg_target}"
-	elif [[ "${_brg_type}" == "nt" ]]; then
-		# plant mt
-		${_polap_cmd} readassemble \
-			"${option_data_type}" \
-			--downsample "${_brg_coverage}" \
-			-l "${resolved_fastq}" \
-			-o "${_brg_target}"
-	elif [[ "${_brg_type}" == "nt-no-noncoding" ]]; then
-		# plant mt
-		${_polap_cmd} readassemble \
-			"${option_data_type}" \
-			--no-noncoding \
-			--downsample "${_brg_coverage}" \
-			-l "${resolved_fastq}" \
-			-o "${_brg_target}"
-	else
-		# plant mt
-		# use hifi100k.sh and ont100k.sh
-		# assemble ptDNA first
-		${_polap_cmd} readassemble \
-			"${option_data_type}" \
-			--no-noncoding \
-			--readassemble-t 300000 \
-			--readassemble-n 100 \
-			-w "${_brg_omega}" \
-			--downsample "${_brg_coverage}" \
-			-l "${resolved_fastq}" \
-			-o "${_brg_target}"
-	fi
+	# if [[ "${_brg_type}" == "pt" ]]; then
+	# 	${_polap_cmd} readassemble \
+	# 		"${option_data_type}" \
+	# 		--plastid \
+	# 		--no-reduction-reads \
+	# 		-w "${_brg_omega}" \
+	# 		--downsample "${_brg_coverage}" \
+	# 		-l "${resolved_fastq}" \
+	# 		-o "${_brg_target}"
+	# elif [[ "${_brg_type}" == "animal" ]]; then
+	# 	${_polap_cmd} readassemble \
+	# 		"${option_data_type}" \
+	# 		--animal \
+	# 		--downsample "${_brg_coverage}" \
+	# 		-l "${resolved_fastq}" \
+	# 		-o "${_brg_target}"
+
+	# elif [[ "${_brg_type}" == "miniasm" ]]; then
+	_log_echo2 "plant mt $_brg_verbose_str"
+
+	_log_echo0 ${_polap_cmd} readassemble \
+		"${option_data_type}" \
+		-l "${resolved_fastq}" \
+		--readassemble-mtn "${mtn}" \
+		${_brg_verbose_str} \
+		-o "${_brg_target}"
+
+	${_polap_cmd} readassemble \
+		"${option_data_type}" \
+		-l "${resolved_fastq}" \
+		--readassemble-mtn "${mtn}" \
+		${_brg_verbose_str} \
+		-o "${_brg_target}"
+
+	# elif [[ "${_brg_type}" == "nt" ]]; then
+	# 	# plant mt
+	# 	${_polap_cmd} readassemble \
+	# 		"${option_data_type}" \
+	# 		--downsample "${_brg_coverage}" \
+	# 		-l "${resolved_fastq}" \
+	# 		-o "${_brg_target}"
+	# elif [[ "${_brg_type}" == "nt-no-noncoding" ]]; then
+	# 	# plant mt
+	# 	${_polap_cmd} readassemble \
+	# 		"${option_data_type}" \
+	# 		--no-noncoding \
+	# 		--downsample "${_brg_coverage}" \
+	# 		-l "${resolved_fastq}" \
+	# 		-o "${_brg_target}"
+	# else
+	# 	# plant mt
+	# 	# use hifi100k.sh and ont100k.sh
+	# 	# assemble ptDNA first
+	# 	${_polap_cmd} readassemble \
+	# 		"${option_data_type}" \
+	# 		--no-noncoding \
+	# 		--readassemble-t 300000 \
+	# 		--readassemble-n 100 \
+	# 		-w "${_brg_omega}" \
+	# 		--downsample "${_brg_coverage}" \
+	# 		-l "${resolved_fastq}" \
+	# 		-o "${_brg_target}"
+	# fi
 
 	conda deactivate
 
@@ -2502,16 +2563,32 @@ run-polap-readassemble_genus_species() {
 	fi
 }
 
-run-polap-readassemble-mtpt_genus_species() {
-	local _brg_outdir="$1"
-	local _brg_sindex="${2:-0}"
-	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+run-polap-mtpt_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
 
-	if [[ "$#" -gt 1 ]]; then
-		shift 2
-	else
-		shift
-	fi
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - $bolap_cmd
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Execute what?:
+    bolap syncassemble -s Vigna_radiata
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
 
 	# defaults
 	local _brg_type="mtpt"
@@ -2520,49 +2597,89 @@ run-polap-readassemble-mtpt_genus_species() {
 	local _brg_redo="off"
 	local _brg_cleanup="on"
 
-	# parse options
-	while [[ $# -gt 0 ]]; do
-		case "$1" in
-		--type)
-			_brg_type="$2"
-			shift 2
-			;;
-		-w)
-			_brg_omega="$2"
-			shift 2
-			;;
-		-f)
-			shift
-			;;
-		--redo)
-			_brg_redo="on"
-			shift
-			;;
-		--no-cleanup)
-			_brg_cleanup="off"
-			shift
-			;;
-		-d)
-			_brg_downsample="downsample"
-			shift
-			;;
-		--dry-run)
-			_brg_dry="on"
-			shift
-			;;
-		--)
-			shift
-			break
-			;;
-		*)
-			_log_echo "Unknown option: $1"
-			return 1
-			;;
-		esac
-	done
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--type)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_type="$2"
+					shift || true
+				fi
+				;;
+			-w)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_omega="$2"
+					shift || true
+				fi
+				;;
+			--redo)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_redo="on"
+					shift || true
+				fi
+				;;
+			--no-cleanup)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_cleanup="off"
+					shift || true
+				fi
+				;;
+			-d)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_downsample="downsample"
+					shift || true
+				fi
+				;;
+			--dry-run)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_dry="on"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+	local long_sra="${_long["$_brg_target"]}"
+
+	parse_commandline
+
+	# main
 
 	# redefine
-	local _brg_miniasm="${_brg_outdir_i}/polap-readassemble-1-miniasm"
+	local _brg_miniasm="${_brg_outdir_i}/polap-readassemble"
 	local _brg_rundir="${_brg_outdir_i}/${_brg_title}"
 
 	mkdir -p "${_brg_outdir_i}"
@@ -6282,25 +6399,309 @@ config_genus_species() {
 }
 
 config-view_genus_species() {
-	local first_arg="${1:-all}"
-	local second_arg="${2:-any}"
+	# _log_echo0 "outdir: $_brg_outdir"
+	# _log_echo0 "sindex: $_brg_sindex"
+
+	local bolap_cmd="${FUNCNAME##*_}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - config view
+
+Synopsis:
+  bolap config view --fields long,short --match Anthoceros 
+
+Description:
+  bolap
+
+Examples:
+  View config:
+    bolap config view --fields long,short --match Anthoceros 
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local _fields="all"
+	local _match="any"
+
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--fields)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_fields="$2"
+					shift || true
+				fi
+				;;
+			--match)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_match="$2"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	parse_commandline
 
 	echo "reading data config ..." >&2
 
 	# print_species_field_summary --add-field=fruit=banana --values
-	if [[ "${first_arg}" == "all" ]]; then
-		if [[ "${second_arg}" == "any" ]]; then
+	if [[ "${_fields}" == "all" ]]; then
+		if [[ "${_match}" == "any" ]]; then
 			print_species_field_summary --values
 		else
-			print_species_field_summary --values --match="${second_arg}"
+			print_species_field_summary --values --match="${_match}"
 		fi
 	else
-		if [[ "${second_arg}" == "any" ]]; then
-			print_species_field_summary --values --fields="${first_arg}"
+		if [[ "${_match}" == "any" ]]; then
+			print_species_field_summary --values --fields="${_fields}"
 		else
-			print_species_field_summary --values --match="${second_arg}" --fields="${first_arg}"
+			print_species_field_summary --values --match="${_match}" --fields="${_fields}"
 		fi
 	fi
+
+}
+
+#-------------------------------------------------------------------------------
+# dataset
+dataset-import_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - tutorial
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Topic:
+    bolap $bolap_cmd --topic 38
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local infile=""
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--infile)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					infile="$2"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	parse_commandline
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	if [[ -s "$infile" ]]; then
+		# Basic import (key defaults to 'species', stores everything as strings)
+		dataset-import-csv "$infile"
+	else
+		_log_echo0 "No such file: $infile"
+	fi
+	conda deactivate
+
+}
+
+dataset-view_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - dataset view
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local infile=""
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while (($#)) && [[ $1 == --* ]]; do
+			case "$1" in
+			--fields=*) fields_csv="${1#--fields=}" ;;
+			--match=*) match="${1#--match=}" ;;
+			--na=*) na="${1#--na=}" ;;
+			--sep=*) sep="${1#--sep=}" ;;
+			--no-header) header=false ;;
+			*)
+				echo "[ERROR] Unknown option: $1" >&2
+				return 1
+				;;
+			esac
+			shift
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	# parse_commandline
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	dataset-view-table ${_brg_unknown_opts[@]}
+	conda deactivate
+
+}
+
+dev_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - development
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  Edit bolap-parsing.sh for bolap -h
+
+  Edit polap-data-read.sh for bolap help
+
+  Edit polap-lib-data.sh to add a new command
+
+  Makefile.read to add man commands
+
+See also:
+  Makefile.read
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local _brg_topic=""
+
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--topic)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_topic="$2"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	parse_commandline
+
+	echo "$ref"
 }
 
 demo_genus_species() {
@@ -8245,77 +8646,132 @@ uninstall-efg_genus_species() {
 }
 
 run-summary-data_genus_species() {
-	local _brg_outdir="$1"
-	local _brg_sindex="${2:-0}"
+
+	# _log_echo0 "_brg_outdir: $_brg_outdir"
+	# _log_echo0 "_brg_sindex: $_brg_sindex"
+	local bolap_cmd="${FUNCNAME##*_}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - summary-data
+
+Synopsis:
+  bolap run-summary-data
+
+Description:
+  bolap
+
+Examples:
+  Execute:
+    bolap run-summary-data -s Vigna_radiata
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local _data_long_cleanup=false
+	local _data_long_redo=false
+
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--data-long-cleanup)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'."
+				else
+					_data_long_cleanup="$2"
+					shift || true
+				fi
+				;;
+			--data-long-redo)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'."
+				else
+					_data_long_redo="$2"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	parse_commandline
+
+	# source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+	# local long_sra="${_long["$_brg_target"]}"
+
+	# redownload
 	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
-
-	# Set the run title
-	local full_name="${FUNCNAME[0]}"
-	local middle_part="${full_name#run-}"
-	local _run_title="${middle_part%%_*}"
-
-	# Folders
-	# local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-	# local _run_dir="${_brg_outdir}-${_run_title}"
-
-	# mkdir -p "${_run_dir}"
 
 	mkdir -p "${_brg_rundir}"
 
-	# local target_index="${_brg_outdir}-${_brg_inum}"
-
 	local short_sra="${_short["$_brg_target"]}"
 
-	# Activate a conda environment
 	_polap_lib_conda-ensure_conda_env polap || exit 1
 
-	# Files for memtracker
-	# local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}.txt"
-	# local _timing_txt="${_brg_outdir_i}/timing-${_run_title}.txt"
-	# local _memlog_file="${_brg_outdir_i}/memlog-${_run_title}.csv"
-	# local _summary_file="${_brg_outdir_i}/summary-${_run_title}.txt"
+	_log_echo0 _polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
 
 	rm -f "${_stdout_txt}"
 	rm -f "${_timing_txt}"
 
-	# Start memory logger
+	if [[ -s "${_brg_tmpdir}/l.fq.gz" ]]; then
+		_polap_lib_seqkit-stats \
+			--in "${_brg_tmpdir}/l.fq.gz" \
+			--out "${_brg_rundir}/l.fq.seqkit.stats.ta.txt"
 
-	command time -v seqkit stats -Ta \
-		"${_brg_tmpdir}/l.fq" \
-		-o "${_brg_rundir}/l.fq.stats" \
-		>>"${_stdout_txt}" \
-		2>>"${_timing_txt}"
+		ln -sf \
+			$(realpath --relative-to "${_brg_tmpdir}" "${_brg_rundir}/l.fq.seqkit.stats.ta.txt") \
+			"${_brg_tmpdir}/l.fq.seqkit.stats.ta.txt"
 
-	command time -v seqkit stats -Ta \
-		"${_brg_tmpdir}/l.fq" \
-		-o "${_brg_rundir}/l.fq.stats.all.txt" \
-		>>"${_stdout_txt}" \
-		2>>"${_timing_txt}"
-
-	if [[ -s "${_brg_tmpdir}/s_1.fq" ]]; then
-		command time -v seqkit stats -T \
-			"${_brg_tmpdir}/s_1.fq" \
-			-o "${_brg_rundir}/s1.fq.stats" \
-			>>"${_stdout_txt}" \
-			2>>"${_timing_txt}"
-
-		command time -v seqkit stats -T \
-			"${_brg_tmpdir}/s_2.fq" \
-			-o "${_brg_rundir}/s1.fq.stats" \
-			>>"${_stdout_txt}" \
-			2>>"${_timing_txt}"
 	fi
 
+	local i
+	for i in 1 2; do
+		if [[ -s "${_brg_tmpdir}/s_$i.fq.gz" ]]; then
+			_polap_lib_seqkit-stats \
+				--in "${_brg_tmpdir}/s_$i.fq.gz" \
+				--out "${_brg_rundir}/s_$i.fq.seqkit.stats.ta.txt"
+
+			ln -sf \
+				$(realpath --relative-to "${_brg_tmpdir}" "${_brg_rundir}/s_$i.fq.seqkit.stats.ta.txt") \
+				"${_brg_tmpdir}/s_$i.fq.seqkit.stats.ta.txt"
+		fi
+	done
+
 	# Save system info
-	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+	# _polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
 
 	conda deactivate
-
-	# Save results
-	# rsync -azuq "${_run_dir}"/ "${_brg_rundir}"/
-
-	# Clean-up
-	# rm -rf "${_run_dir}"
 }
 
 install-man_genus_species() {
@@ -9151,234 +9607,6 @@ run-pmat_genus_species() {
 	rm -rf "${_run_dir}"
 }
 
-x_run-tippo_genus_species() {
-	local _brg_outdir="${1}"
-	local _brg_inum="${2:-0}"
-	local _brg_type="${3:-nextdenovo}"
-
-	local _run_title="tippo-${_brg_type}"
-
-	# Directory without a slash
-	_brg_outdir="${_brg_outdir%/}"
-
-	# Folders
-	# brg: outdir_t -> outdir_i -> rundir
-	# run_dir
-	local _brg_outdir_t="${_brg_outdir}/${opt_t_arg}"
-	local _brg_outdir_i="${_brg_outdir_t}/${_brg_inum}"
-	local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-	local _run_dir="${_brg_outdir}-${_run_title}"
-	local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
-
-	# Create folders
-	mkdir -p "${_brg_rundir}"
-	rm -rf "${_run_dir}"
-	mkdir -p "${_run_dir}"
-
-	local target_index="${_brg_outdir}-${_brg_inum}"
-	local long_sra="${_long["$target_index"]}"
-	if [[ -z "$long_sra" ]]; then
-		echo "Error: no long SRA for ${_brg_outdir}-${_brg_inum}"
-		echo "Info: skipping tippo-nextdenovo on ${_brg_outdir}-${_brg_inum}"
-		return
-	fi
-
-	local _brg_input_data="${_brg_outdir_i}"/cns.fa
-	if [[ "${_brg_type}" == "ont" ]]; then
-		_brg_input_data="${long_sra}.fastq"
-	fi
-
-	_polap_lib_conda-ensure_conda_env polap-tippo || exit 1
-
-	# local fc_list=()
-	# # local _brg_fc="hifi,clr,ont,onthq"
-	# local _brg_fc="onthq,ont"
-	# if [[ "${_brg_fc}" == *,* ]]; then
-	#   IFS=',' read -ra fc_list <<<"$_brg_fc"
-	# else
-	#   fc_list=("$_brg_fc")
-	# fi
-
-	# TIPPo has no option for output directory
-	local _tippo_actual_outdir="cns.fa.organelle"
-
-	for _fc in "${_polap_tippo_options[@]}"; do
-		_log_echo "tippo on ${_brg_rundir} using the nextDenovo-polished data: ${_brg_outdir_i}/cns.fa with -p ${_fc}"
-
-		# https://github.com/Wenfei-Xian/TIPP
-
-		# Files for memtracker
-		local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}-${_fc}.txt"
-		local _timing_txt="${_brg_outdir_i}/timing-${_run_title}-${_fc}.txt"
-		local _memlog_file="${_brg_outdir_i}/memlog-${_run_title}-${_fc}.csv"
-		local _summary_file="${_brg_outdir_i}/summary-${_run_title}-${_fc}.txt"
-
-		rm -f "${_stdout_txt}"
-		rm -f "${_timing_txt}"
-
-		# Start memory logger
-		_polap_lib_process-start_memtracker "${_memlog_file}" \
-			"${_polap_var_memtracker_time_interval}"
-
-		rm -rf "${_tippo_actual_outdir}"
-
-		# if [[ "${_brg_fc}" == "1" ]]; then
-		command time -v timeout 6h TIPPo.v2.4.pl \
-			-f "${_brg_input_data}" \
-			-t ${_brg_threads} \
-			-p ${_fc} \
-			>"${_stdout_txt}" \
-			2>"${_timing_txt}"
-
-		# Save results
-		mkdir -p "${_brg_rundir}/${_fc}"
-		rsync -azuq "${_tippo_actual_outdir}"/ "${_brg_rundir}/${_fc}"/
-
-		# Save system info
-		_polap_lib_timing-get_system_info >>"${_timing_txt}"
-
-		_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
-
-	done
-
-	conda deactivate
-
-	# Output files
-	# cns.fa.chloroplast.fasta.filter.800.round1.edge_*.edge_*.edge_*.organelle.chloroplast.fasta
-	# cns.fa.mitochondrial.fasta.filter.fasta.flye/assembly_graph.gfa
-
-	# Clean-up
-	rm -rf "${_run_dir}"
-	rm -rf "${_tippo_actual_outdir}"
-}
-
-# type: nextdenovo, hifi, ont
-run-tippo-type_genus_species() {
-	local _brg_outdir="${1}"
-	local _brg_sindex="${2:-0}"
-	local _brg_type="${3:-hifi}"
-
-	local _run_title="tippo-${_brg_type}"
-
-	# Directory without a slash
-	_brg_outdir="${_brg_outdir%/}"
-
-	if [[ "${_brg_outdir}" == "-h" || "${_brg_outdir}" == "--help" ]]; then
-		echo "$help_message_run_oatk"
-		return
-	fi
-
-	local _brg_inum=0
-	local _brg_adir _brg_title _brg_target _brg_rundir _brg_outdir_i
-	local _timing_txt _stdout_txt _memlog_file _summary_file
-	brg_common_setup \
-		_brg_outdir _brg_sindex _brg_adir _brg_title \
-		_brg_target _brg_rundir _brg_outdir_i \
-		_timing_txt _stdout_txt _memlog_file _summary_file
-	# Extra folders
-	local _brg_outdir_t="${_brg_outdir}/${opt_t_arg}"
-	local _brg_titledir="${_brg_outdir_i}/${_brg_title}"
-	local _brg_runtitledir="${_brg_rundir}-${_brg_title}"
-
-	if [[ -v _long["$_brg_target"] ]]; then
-		local long_sra="${_long["$_brg_target"]}"
-	else
-		echo "Error: ${_brg_target} because it is not in the CSV."
-		return
-	fi
-
-	# Folders
-	# brg: outdir_t -> outdir_i -> rundir
-	# run_dir
-	local _brg_outdir_t="${_brg_outdir}/${opt_t_arg}"
-	local _brg_outdir_i="${_brg_outdir_t}/${_brg_inum}"
-	local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-	local _run_dir="${_brg_outdir}-${_run_title}"
-	local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
-
-	# Create folders
-	# mkdir -p "${_brg_rundir}"
-	# rm -rf "${_run_dir}"
-	# mkdir -p "${_run_dir}"
-	mkdir -p "${_brg_titledir}"
-	rm -rf "${_brg_runtitledir}"
-	mkdir -p "${_brg_runtitledir}"
-
-	local _brg_input_data="${long_sra}.fastq"
-	if [[ "${_brg_type}" == "nextdenovo" ]]; then
-		_brg_input_data="${_brg_outdir_i}"/cns.fa
-	fi
-
-	# TIPPo has no option for output directory
-	local _tippo_actual_outdir="${_brg_input_data}.organelle"
-
-	local polap_tippo_options
-	if [[ "${_brg_type}" == "hifi" ]]; then
-		local polap_tippo_options=("${_polap_tippo_hifi_options[@]}")
-	elif [[ "${_brg_type}" == "nextdenovo" ]]; then
-		local polap_tippo_options=("${_polap_tippo_ont_options[@]}")
-	elif [[ "${_brg_type}" == "clr" ]]; then
-		local polap_tippo_options=("${_polap_tippo_clr_options[@]}")
-	else
-		local polap_tippo_options=("${_polap_tippo_ont_options[@]}")
-	fi
-
-	for _fc in "${polap_tippo_options[@]}"; do
-		_log_echo "tippo on ${_brg_rundir} with -p ${_fc}"
-
-		# https://github.com/Wenfei-Xian/TIPP
-
-		# Files for memtracker
-		local _stdout_txt="${_brg_outdir_i}/stdout-${_run_title}-${_fc}.txt"
-		local _timing_txt="${_brg_outdir_i}/timing-${_run_title}-${_fc}.txt"
-		local _memlog_file="${_brg_outdir_i}/memlog-${_run_title}-${_fc}.csv"
-		local _summary_file="${_brg_outdir_i}/summary-${_run_title}-${_fc}.txt"
-
-		rm -f "${_stdout_txt}"
-		rm -f "${_timing_txt}"
-
-		# Start memory logger
-		_polap_lib_process-start_memtracker "${_memlog_file}" \
-			"${_polap_var_memtracker_time_interval}"
-
-		rm -rf "${_tippo_actual_outdir}"
-
-		_polap_lib_conda-ensure_conda_env polap-tippo || exit 1
-
-		# if [[ "${_brg_fc}" == "1" ]]; then
-		#
-		# -g organelle
-		# -g chloroplast \
-		command time -v timeout 6h TIPPo.v2.4.pl \
-			-f "${_brg_input_data}" \
-			-t ${_brg_threads} \
-			-g organelle \
-			-p ${_fc} \
-			>"${_stdout_txt}" \
-			2>"${_timing_txt}"
-
-		conda deactivate
-
-		# Save results
-		mkdir -p "${_brg_titledir}/${_fc}"
-		rsync -azuq "${_tippo_actual_outdir}"/ "${_brg_titledir}/${_fc}"/
-
-		# Save system info
-		_polap_lib_timing-get_system_info >>"${_timing_txt}"
-
-		_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
-
-	done
-	# Output files
-	# cns.fa.chloroplast.fasta.filter.800.round1.edge_*.edge_*.edge_*.organelle.chloroplast.fasta
-	# cns.fa.mitochondrial.fasta.filter.fasta.flye/assembly_graph.gfa
-
-	# Clean-up
-	rm -rf "${_brg_runtitledir}"
-	rm -rf "${_tippo_actual_outdir}"
-	rm -f "${long_sra}.fastq.fasta"
-}
-
 # 2025-09-04
 #
 # Usage: /home/goshng/miniconda3/envs/polap-tippo/bin/TIPPo.v2.4.pl [options]
@@ -9397,18 +9625,21 @@ run-tippo-type_genus_species() {
 #   --trf: remove the reads are tandem repeats, only avaliable for reference-free and hifi/onthq reads
 #   -v: version.
 run-tippo_genus_species() {
-	local _brg_outdir="${1}"
-	local _brg_sindex="${2:-0}"
 	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
 
+	# Always redo
 	rm -rf "${_brg_target}"
 	mkdir -p "${_brg_target}"
+
+	# Always redo
+	rm -rf "${_brg_rundir}"
 	mkdir -p "${_brg_rundir}"
 
-	ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
+	# ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
 	_brg_input_data="${long_sra}.fastq"
 
 	if [[ ! -s "${_brg_input_data}" ]]; then
+		_log_echo0 "[ERROR] no inut data: ${_brg_input_data}"
 		return 1
 	fi
 
@@ -9424,7 +9655,10 @@ run-tippo_genus_species() {
 		"${_polap_var_memtracker_time_interval}"
 
 	local platform="${_platform["$_brg_target"]}"
+
 	if [[ "$platform" == "ONT" ]]; then
+		local _fc="ont"
+	elif [[ "$platform" == "ONTHQ" ]]; then
 		local _fc="onthq"
 	elif [[ "${platform}" == "PACBIO_SMRT" ]]; then
 		local _fc="hifi"
@@ -9447,7 +9681,12 @@ run-tippo_genus_species() {
 		-g organelle \
 		-p ${_fc} \
 		>"${_stdout_txt}" \
-		2>"${_timing_txt}"
+		2>"${_timing_txt}" || rc=$?
+
+	if [[ "${rc:-0}" -ne 0 ]]; then
+		printf '[ERR] oatk failed (rc=%d)\n' "$rc" >&2
+		# decide: exit "$rc" / continue
+	fi
 
 	conda deactivate
 
@@ -9472,18 +9711,14 @@ run-tippo_genus_species() {
 
 # 2025-09-04
 run-oatk_genus_species() {
-	local _brg_outdir="$1"
-	local _brg_sindex="${2:-0}"
 	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
-
-	# subcmd1="${_brg_title}"
 
 	# Create folders
 	rm -rf "${_brg_target}"
 	mkdir -p "${_brg_target}"
 	mkdir -p "${_brg_outdir_i}"
 
-	ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
+	# ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
 	_brg_input_data="${long_sra}.fastq"
 
 	# check the input
@@ -9492,6 +9727,7 @@ run-oatk_genus_species() {
 	_polap_lib_conda-ensure_conda_env polap-oatk || exit 1
 
 	local _fc=30
+	local formatted_fc=$(printf "%02d" "${_fc}")
 
 	_log_echo "oatk on ${_brg_rundir} with -c ${_fc}"
 	local formatted_fc=$(printf "%02d" "${_fc}")
@@ -9501,10 +9737,12 @@ run-oatk_genus_species() {
 
 	# Start memory logger
 	_polap_lib_process-start_memtracker "${_memlog_file}" \
-		"${_polap_var_memtracker_time_interval}"
+		"${_polap_var_oatk_memtracker_time_interval}"
 
 	# https://github.com/c-zhou/oatk
 	# NOTE: oatk threads 56 -> seg. fault.
+	# Either way, it is still very fast.
+	local rc
 	local _oatk_threads=8
 	command time -v timeout 6h oatk \
 		-k 1001 \
@@ -9515,7 +9753,12 @@ run-oatk_genus_species() {
 		-o "${_brg_target}/oatk-${formatted_fc}" \
 		"${_brg_input_data}" \
 		>"${_stdout_txt}" \
-		2>"${_timing_txt}"
+		2>"${_timing_txt}" || rc=$?
+
+	if [[ "${rc:-0}" -ne 0 ]]; then
+		printf '[ERR] oatk failed (rc=%d)\n' "$rc" >&2
+		# decide: exit "$rc" / continue
+	fi
 
 	# Save system info
 	_polap_lib_timing-get_system_info >>"${_timing_txt}"
@@ -9783,16 +10026,15 @@ run-polish-ptdna-ptgaul_genus_species() {
 }
 
 run-ptgaul_genus_species() {
-	local _brg_outdir="$1"
-	local _brg_sindex="${2:-0}"
+	local _brg_type="${1:-pt}"
+	local _brg_title="${_brg_type}gaul"
 	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
 
-	local platform="${_platform["$_brg_target"]}"
-
+	# Always redo
 	rm -f "${_timing_txt}"
 	rm -f "${_stdout_txt}"
 
-	# Create the output folder
+	# Always redo
 	rm -rf "${_brg_target}"
 	mkdir -p "${_brg_target}"
 
@@ -9804,13 +10046,13 @@ run-ptgaul_genus_species() {
 	_polap_lib_process-start_memtracker "${_memlog_file}" \
 		"${_polap_var_memtracker_time_interval}"
 
-	local genome_size=$(seqkit stats -T "${_brg_outdir_i}"/ncbi-ptdna/ptdna-reference.fa | awk 'NR==2 {print $7/1}')
+	local genome_size=$(seqkit stats -T "${_brg_outdir_i}/ncbi-${_brg_type}dna/${_brg_type}dna-reference.fa" | awk 'NR==2 {print $7/1}')
 
 	command time -v bash ${_POLAPLIB_DIR}/polap-ptGAUL1.sh \
 		-o ${_brg_target} \
-		-r ${_brg_outdir_i}/ncbi-ptdna/ptdna-reference.fa \
+		-r "${_brg_outdir_i}/ncbi-${_brg_type}dna/${_brg_type}dna-reference.fa" \
 		-g "${genome_size}" \
-		-l ${_brg_tmpdir}/l.fq \
+		-l ${_brg_tmpdir}/l.fq.gz \
 		-t ${_brg_threads} \
 		>"${_stdout_txt}" \
 		2>"${_timing_txt}"
@@ -9832,134 +10074,16 @@ run-ptgaul_genus_species() {
 }
 
 run-mtgaul_genus_species() {
-	local _brg_outdir="$1"
-	local _brg_sindex="${2:-0}"
-	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
-
-	local platform="${_platform["$_brg_target"]}"
-
-	rm -f "${_timing_txt}"
-	rm -f "${_stdout_txt}"
-
-	# Create the output folder
-	rm -rf "${_brg_target}"
-	mkdir -p "${_brg_target}"
-
-	# Initialize Conda
-	_polap_lib_conda-ensure_conda_env polap || exit 1
-
-	# Start memory logger
-	# GetOrganelle takes not much time to finish, and we use 10 seconds of interval for memlog
-	_polap_lib_process-start_memtracker "${_memlog_file}" \
-		"${_polap_var_memtracker_time_interval}"
-
-	local genome_size=$(seqkit stats -T "${_brg_outdir_i}"/ncbi-mtdna/mtdna-reference.fa | awk 'NR==2 {print $7/1}')
-
-	command time -v bash ${_POLAPLIB_DIR}/polap-ptGAUL1.sh \
-		-o ${_brg_target} \
-		-r ${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa \
-		-g "${genome_size}" \
-		-l ${_brg_tmpdir}/l.fq \
-		-t ${_brg_threads} \
-		>"${_stdout_txt}" \
-		2>"${_timing_txt}"
-
-	# End with summary of the system usage
-	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
-
-	# Save system info
-	_polap_lib_timing-get_system_info >>"${_timing_txt}"
-
-	conda deactivate
-
-	# Save some results
-	rsync -azuq --max-size=5M \
-		"${_brg_target}"/result_3000/ \
-		"${_brg_rundir}"/
-
-	rm -rf "${_brg_target}"
-}
-
-# NOTE: we use _brg_rundir not _run_dir to download the data.
-download-ptdna_genus_species() {
-	local _brg_outdir="$1"
-	local _brg_inum="${2:-0}"
-
-	# Directory without a slash
-	_brg_outdir="${_brg_outdir%/}"
-
-	local _run_title="ncbi-ptdna"
-	local target_index="${_brg_outdir}-${_brg_inum}"
-	local _brg_outdir_t="${_brg_outdir}/${opt_t_arg}"
-	local _brg_outdir_i="${_brg_outdir_t}/${_brg_inum}"
-	local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-	local _run_dir="${_brg_outdir}-${_run_title}"
-	local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
-	local _species=${_taxon[$target_index]}
-	local _ref_species=${_ptgaul_ref[$target_index]}
-	local species_name="${_species//_/ }"
-
-	mkdir -p "${_brg_rundir}"
-
-	# Initialize Conda
-	_polap_lib_conda-ensure_conda_env polap || exit 1
-
-	if [[ "${_ref_species}" != "NA" ]]; then
-		species_name="${_ref_species}"
-		echo "No ptDNA for ${_brg_outdir}, so we use ${species_name}"
-	fi
-
-	if [[ -s "${_brg_outdir_i}/ptdna-reference.fa" ]]; then
-		echo "found: ptDNA reference: ${_brg_outdir}/ptdna-reference.fa"
-	else
-
-		${_polap_cmd} get-mtdna \
-			--plastid \
-			--species "${species_name}" \
-			-o ${_brg_rundir}
-
-		if [[ -s "${_brg_rundir}/00-bioproject/2-mtdna.fasta" ]]; then
-			echo "copy ${_brg_rundir}/00-bioproject/2-mtdna.fasta ${_brg_rundir}/ptdna-reference.fa"
-			cp -p "${_brg_rundir}/00-bioproject/2-mtdna.fasta" \
-				"${_brg_rundir}/ptdna-reference.fa"
-		else
-			echo "No such file: ${_brg_rundir}/ptdna-reference.fa"
-			local _genus_name=$(echo ${species_name} | awk '{print $1}')
-			echo "  trying to search NCBI plastid genomes for genus name only: ${_genus_name}"
-			${_polap_cmd} get-mtdna \
-				--plastid \
-				--species "${_genus_name}" \
-				-o ${_brg_rundir}
-			if [[ -s "${_brg_rundir}/00-bioproject/2-mtdna.fasta" ]]; then
-				echo "copy ${_brg_rundir}/00-bioproject/2-mtdna.fasta ${_brg_rundir}/ptdna-reference.fa"
-				cp -p "${_brg_rundir}/00-bioproject/2-mtdna.fasta" \
-					"${_brg_rundir}/ptdna-reference.fa"
-			else
-				echo "  we could not find one even in the genus level."
-				echo "No such file: ${_brg_rundir}/ptdna-reference.fa"
-			fi
-		fi
-	fi
-
-	conda deactivate
+	run-ptgaul_genus_species "mt"
 }
 
 download-mtdna_genus_species() {
-	local _brg_outdir="$1"
-	local _brg_inum="${2:-0}"
+	local _brg_type="${1:-mtdna}"
 
-	# Directory without a slash
-	_brg_outdir="${_brg_outdir%/}"
+	local _brg_title="ncbi-${_brg_type}"
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
 
-	local _run_title="ncbi-mtdna"
-	local target_index="${_brg_outdir}-${_brg_inum}"
-	local _brg_outdir_t="${_brg_outdir}/${opt_t_arg}"
-	local _brg_outdir_i="${_brg_outdir_t}/${_brg_inum}"
-	local _brg_rundir="${_brg_outdir_i}/${_run_title}"
-	local _run_dir="${_brg_outdir}-${_run_title}"
-	local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
-	local _species=${_taxon[$target_index]}
-	local _ref_species=${_taxon[$target_index]}
+	local _species=${_taxon[$_brg_target]}
 	local species_name="${_species//_/ }"
 
 	mkdir -p "${_brg_rundir}"
@@ -9967,42 +10091,45 @@ download-mtdna_genus_species() {
 	# Initialize Conda
 	_polap_lib_conda-ensure_conda_env polap || exit 1
 
-	if [[ "${_ref_species}" != "NA" ]]; then
-		species_name="${_ref_species}"
-		echo "No mtDNA for ${_brg_outdir}, so we use ${species_name}"
-	fi
-
-	if [[ -s "${_brg_outdir_i}/mtdna-reference.fa" ]]; then
-		echo "found: mtDNA reference: ${_brg_outdir}/mtdna-reference.fa"
+	if [[ -s "${_brg_rundir}/${_brg_type}-reference.fa" ]]; then
+		echo "found: ${_brg_type} reference: ${_brg_outdir_i}/${_brg_type}-reference.fa"
 	else
 
 		${_polap_cmd} get-mtdna \
+			$([[ "${_brg_type}" == "ptdna" ]] && echo "--plastid") \
 			--species "${species_name}" \
-			-o ${_brg_rundir}
+			-o "${_brg_rundir}"
 
 		if [[ -s "${_brg_rundir}/00-bioproject/2-mtdna.fasta" ]]; then
-			echo "copy ${_brg_rundir}/mtdna-reference.fa"
+			echo "${_brg_type} of ${species_name}: ${_brg_rundir}/${_brg_type}-reference.fa"
 			cp -p "${_brg_rundir}/00-bioproject/2-mtdna.fasta" \
-				"${_brg_rundir}/mtdna-reference.fa"
+				"${_brg_rundir}/${_brg_type}-reference.fa"
 		else
-			echo "No such file: ${_brg_rundir}/mtdna-reference.fa"
 			local _genus_name=$(echo ${species_name} | awk '{print $1}')
+			echo "No ${_brg_type} of the species name: ${species_name}"
 			echo "  trying to search NCBI plastid genomes for genus name only: ${_genus_name}"
+
 			${_polap_cmd} get-mtdna \
-				--species "${_genus_name}" \
-				-o ${_brg_rundir}
+				$([[ "${_brg_type}" == "ptdna" ]] && echo "--plastid") \
+				--species "${species_name}" \
+				-o "${_brg_rundir}"
+
 			if [[ -s "${_brg_rundir}/00-bioproject/2-mtdna.fasta" ]]; then
-				echo "copy ${_brg_rundir}/mtdna-reference.fa"
+				echo "${_brg_type} of ${_genus_name}: ${_brg_rundir}/${_brg_type}-reference.fa"
 				cp -p "${_brg_rundir}/00-bioproject/2-mtdna.fasta" \
-					"${_brg_rundir}/mtdna-reference.fa"
+					"${_brg_rundir}/${_brg_type}-reference.fa"
 			else
 				echo "  we could not find one even in the genus level."
-				echo "No such file: ${_brg_rundir}/mtdna-reference.fa"
+				echo "No such file: ${_brg_rundir}/${_brg_type}-reference.fa"
 			fi
 		fi
 	fi
 
 	conda deactivate
+}
+
+download-ptdna_genus_species() {
+	download-mtdna_genus_species "ptdna"
 }
 
 run-msbwt_genus_species() {
@@ -10507,11 +10634,88 @@ clean_input_lines() {
 #   list_genus_species "<query>" [any|end|start]
 # ------------------------------------------------------------------------------
 list_genus_species() {
-	local _brg_query="${1:-.*}"
-	local _brg_where="${2:-any}"
 
 	# Where to look
-	local _files=("${_POLAPLIB_DIR}/polap-lib-data.sh" "$0")
+	local _files=(
+		"${_POLAPLIB_DIR}/polap-lib-data.sh"
+		"${_POLAPLIB_DIR}/polap-data-read.sh"
+		"$0"
+	)
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - search commands
+
+Synopsis:
+  bolap ${bolap_cmd} --query STR --where STR
+
+Description:
+  --query STR
+
+  --where any|end|start
+
+Examples:
+  Search command:
+    bolap ${bolap_cmd} --query data --where any
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local _brg_query=".*"
+	local _brg_where="any"
+
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--query)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_query="$2"
+					shift || true
+				fi
+				;;
+			--where)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_where="$2"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	parse_commandline
 
 	# Build a regex according to where-to-match semantics
 	local _re
@@ -10555,6 +10759,146 @@ list_genus_species() {
 		# Extract 'XXX' from lines like:   XXX_genus_species() {
 		# Accept leading spaces; allow [A-Za-z0-9_]+ in the XXX part.
 		# Then apply the same where-to-match rule to the extracted XXX.
+		# for f in "${_files[@]}"; do
+		# 	[[ -f "$f" ]] || continue
+		# 	awk -v re="${_re}" '
+		# 		BEGIN { OFS="\n" }
+		# 		# Match function headers:
+		# 		#   ^\s* (NAME) _genus_species () {   with flexible spaces
+		# 		# Capture group 1 = NAME (prefix before _genus_species)
+		# 		match($0, /^[[:space:]]*([[:alnum:]_]+)_genus_species[[:space:]]*\(\)[[:space:]]*\{/, m) {
+		# 			name = m[1]
+		# 			if (name ~ re) print name
+		# 		}
+		# 	' "$f"
+		# done
+
+		# 		for f in "${_files[@]}"; do
+		# 			[[ -f "$f" ]] || continue
+		# 			# 	awk -v re="${_re}" '
+		# 			#   BEGIN { OFS="\n" }
+		# 			#   # Match function headers like:
+		# 			#   #   name_genus_species() {            # classic
+		# 			#   #   function name_genus_species() {   # with "function" keyword
+		# 			#   # NAME may include letters, digits, underscore, and hyphen.
+		# 			#   match($0, /^[[:space:]]*(function[[:space:]]+)?([[:alnum:]_-]+)_genus_species[[:space:]]*\(\)[[:space:]]*\{/, m) {
+		# 			#     name = m[2]
+		# 			#     if (name ~ re) print name
+		# 			#   }
+		# 			# ' "$f"
+		#
+		# 			awk -v re="${_re}" '
+		#   function norm(s){ gsub(/-/, "_", s); return s }
+		#   match($0, /^[[:space:]]*(function[[:space:]]+)?([[:alnum:]_-]+)_genus_species[[:space:]]*\(\)[[:space:]]*\{/, m) {
+		#     name = m[2]
+		#     if (name ~ re || norm(name) ~ re) print name
+		#   }
+		# ' "$f"
+		# 		done
+
+		for f in "${_files[@]}"; do
+			[[ -f "$f" ]] || continue
+			awk -v re="${_re}" -f "${_POLAPLIB_DIR}/scripts/extract_genus_species_prefixes.awk" "$f"
+		done
+	} | sort -u
+}
+
+v0_list_genus_species() {
+	# Files to search
+	local _files=("${_POLAPLIB_DIR}/polap-lib-data.sh" "$0")
+	local bolap_cmd="${FUNCNAME##*_}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - search commands
+
+Synopsis:
+  bolap ${bolap_cmd} [--query REGEX] [--where any|start|end]
+
+Description:
+  Enumerates available command prefixes (the part before "_genus_species")
+  from polap-lib-data.sh and the current script. Matches are filtered by
+  a regular expression and anchoring mode.
+
+Examples:
+  bolap ${bolap_cmd} --query data --where any
+  bolap ${bolap_cmd} data              # legacy shorthand (same as above)
+  bolap ${bolap_cmd} --where start --query '^read'
+EOF
+	)
+
+	local _brg_query=".*"
+	local _brg_where="any"
+
+	# Local, isolated unknowns (don’t rely on global collector)
+	local -a _unknown=()
+	# Back-compat: lone positional → --query
+	if [[ $# -eq 1 && "$1" != -* ]]; then
+		set -- --query "$1" --where any
+	fi
+
+	while (($#)); do
+		case "$1" in
+		--query)
+			shift
+			_brg_query="${1:-.*}"
+			[[ $# -gt 0 ]] && shift || true
+			;;
+		--where)
+			shift
+			_brg_where="${1:-any}"
+			[[ $# -gt 0 ]] && shift || true
+			;;
+		--help | -h)
+			declare -n ref="help_message"
+			local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+			man "$manfile"
+			rm -f "$manfile"
+			return 0
+			;;
+		-*)
+			_unknown+=("$1")
+			shift
+			;;
+		*) # extra positionals ignored (future use)
+			shift ;;
+		esac
+	done
+
+	# Build anchor once
+	local _re
+	case "${_brg_where}" in
+	start) _re="^${_brg_query}" ;;
+	end) _re="${_brg_query}\$" ;;
+	*) _re="${_brg_query}" ;;
+	esac
+
+	# AWK to extract function headers once; grep for data-lines once.
+	{
+		# for f in "${_files[@]}"; do
+		# 	[[ -f "$f" ]] || continue
+		#
+		# 	# Source A: data lines (whatever your project encodes as "commands" in data).
+		# 	# Keep your original heuristic if those lines end with ')', without '('.
+		# 	# Match anywhere vs anchored via _re.
+		# 	if grep -qE . "$f"; then
+		# 		# Clean (optional) then filter
+		# 		if declare -F clean_input_lines >/dev/null 2>&1; then
+		# 			clean_input_lines <"$f" | grep -E ')$' | grep -v '(' | grep -E "${_re}" || true
+		# 		else
+		# 			grep -E ')$' "$f" | grep -v '(' | grep -E "${_re}" || true
+		# 		fi
+		# 	fi
+		#
+		# 	# Source B: function headers NAME_genus_species() {
+		# 	awk -v re="${_re}" '
+		#       match($0, /^[[:space:]]*([[:alnum:]_]+)_genus_species[[:space:]]*\(\)[[:space:]]*\{/, m) {
+		#         name = m[1]
+		#         if (name ~ re) print name
+		#       }' "$f"
+		# done
+
 		for f in "${_files[@]}"; do
 			[[ -f "$f" ]] || continue
 			awk -v re="${_re}" '
@@ -10962,6 +11306,7 @@ install-ncbitools_genus_species() {
 				conda activate polap-ncbitools
 				conda install -y seqtk seqkit
 				conda install -y busco
+				conda install -y conda-forge::pv
 			fi
 		else
 			echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
@@ -10971,6 +11316,7 @@ install-ncbitools_genus_species() {
 	else
 		echo "ncbitools installation is canceled."
 		echo "conda install -c bioconda blast entrez-direct sra-tools"
+		echo "https://www.ivarch.com/programs/pv.shtml"
 	fi
 }
 
@@ -12442,8 +12788,8 @@ check_and_prepare_fastq() {
 }
 
 data-long_genus_species() {
-	local _brg_outdir="$1"
-	local _brg_inum="${2:-0}"
+	# local _brg_outdir="$1"
+	# local _brg_inum="${2:-0}"
 	local target_index="${_brg_outdir}-${_brg_inum}"
 
 	local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
@@ -12545,9 +12891,181 @@ x_data-long_genus_species() {
 	fi
 }
 
+# test
+# template
+run-a-b-c_genus_species() {
+	_log_echo0 "outdir: $_brg_outdir"
+	_log_echo0 "sindex: $_brg_sindex"
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	_log_echo0 dataset-get-field "$_brg_target" long
+	local long_sra1=$(dataset-get-field "$_brg_target" long)
+	_log_echo0 "long SRA1: $long_sra1"
+
+	# dataset-cache-fields long
+	# _log_echo0 "${_dataset["$_brg_target|long"]}"
+	# local long_sra="${_dataset["$_brg_target|long"]}"
+	# _log_echo0 "long SRA: $long_sra"
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - $bolap_cmd
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Execute polap readassemble:
+    bolap readassemble -s Vigna_radiata
+
+  Execute polap disassemble:
+    bolap disassemble -s Vigna_radiata
+
+  Execute polap syncassemble:
+    bolap syncassemble -s Vigna_radiata
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local _abc_arg1=1
+	local _abc_arg2=1
+
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--abc-arg1)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_abc_arg1="$2"
+					shift || true
+				fi
+				;;
+			--abc-arg2)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_abc_arg2="$2"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	_log_echo0 "A: abc-arg1: $_abc_arg1"
+	parse_commandline
+
+	_log_echo0 "abc-arg1: $_abc_arg1"
+	_log_echo0 "abc-arg2: $_abc_arg2"
+}
+
 run-data-long_genus_species() {
-	local _brg_outdir="$1"
-	local _brg_sindex="${2:-0}"
+	local bolap_cmd="${FUNCNAME##*_}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - prepare long-read data at a species directory
+
+Synopsis:
+  bolap run-data-long
+
+Description:
+  bolap
+
+Examples:
+  Execute polap readassemble:
+    bolap run-data-long -s Vigna_radiata
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local _data_long_cleanup=false
+	local _data_long_redo=false
+
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--data-long-cleanup)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'."
+				else
+					_data_long_cleanup="$2"
+					shift || true
+				fi
+				;;
+			--data-long-redo)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'."
+				else
+					_data_long_redo="$2"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	parse_commandline
+
 	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
 
 	# check long-read in the following order
@@ -12569,9 +13087,177 @@ run-data-long_genus_species() {
 	#
 
 	_polap_lib_conda-ensure_conda_env polap-ncbitools || exit 1
-	bash "${_POLAPLIB_DIR}/polap-bash-run-data-long.sh" \
-		-l "${long_sra}" \
+	# bash "${_POLAPLIB_DIR}/polap-bash-run-data-long.sh" \
+	# 	-l "${long_sra}" \
+	# 	-o "${_brg_outdir}"
+	# bash "${_POLAPLIB_DIR}/polap-bash-run-data-long.sh" \
+	# 	-l "${long_sra}" \
+	# 	-o "${_brg_outdir}" \
+	# 	$([[ "${_data_long_redo:-false}" != "false" ]] && printf -- '--redo') \
+	# 	$([[ "${_data_long_cleanup:-false}" != "false" ]] && printf -- '--redo')
+
+	args=(
+		-l "${long_sra}"
 		-o "${_brg_outdir}"
+	)
+
+	# Safe defaults under `set -u`
+	_data_long_redo="${_data_long_redo:-false}"
+	_data_long_cleanup="${_data_long_cleanup:-false}"
+
+	if [[ "${_brg_redo,,}" != "false" ]]; then
+		args+=(--redo)
+	elif [[ "${_brg_cleanup,,}" != "false" ]]; then
+		args+=(--cleanup)
+	fi
+
+	if [[ "${_brg_dry_run,,}" != "false" ]]; then
+		args+=(--dry-run)
+	fi
+
+	_log_echo0 bash "${_POLAPLIB_DIR}/polap-bash-run-data-long.sh" "${args[@]}"
+	bash "${_POLAPLIB_DIR}/polap-bash-run-data-long.sh" "${args[@]}"
+
+	conda deactivate
+
+	# redownload
+
+}
+
+# Version: v0.1.0
+run-data-short_genus_species() {
+	# _log_echo0 "outdir: $_brg_outdir"
+	# _log_echo0 "sindex: $_brg_sindex"
+	# return 0
+
+	local bolap_cmd="${FUNCNAME##*_}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - prepare short-read data at a species directory
+
+Synopsis:
+  bolap ${bolap_cmd} -s Genus_species [-i 0] [--data-short-redo BOOL] [--data-short-cleanup BOOL]
+
+Description:
+  Prepare paired short-read FASTQ as:
+    sfolder/tmp/s1.fq
+    sfolder/tmp/s2.fq   (if present)
+  Record SRA IDs to:
+    sfolder/tmp/s.sra.txt
+    sfolder/v< tier >/< inum >/summary-data/s.sra.txt
+  Emit seqkit stats (-Ta) to:
+    sfolder/v< tier >/< inum >/summary-data/s1.fq.seqkit.stats.ta.txt
+    sfolder/v< tier >/< inum >/summary-data/s2.fq.seqkit.stats.ta.txt (if present)
+
+Options:
+  -s, --species   Species folder (e.g., Vigna_radiata)
+  -i, --inum      Instance index (default: 0)
+  --tier          Tier string (default: v6)
+  --threads N     Threads for seqkit (default: 4)
+  --data-short-redo BOOL
+  --data-short-cleanup BOOL
+
+Notes:
+  Short-read SRA ID is taken from mapping: _short["<sfolder>-<inum>"].
+EOF
+	)
+
+	local _tier="v6" _threads="4"
+	local _data_short_redo="false" _data_short_cleanup="false"
+
+	# Parse args from your global collector
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+		while (($#)); do
+			case "$1" in
+			-s | --species)
+				_brg_outdir="${2:?}"
+				shift 2
+				;;
+			-i | --inum)
+				_brg_inum="${2:?}"
+				shift 2
+				;;
+			--tier)
+				_tier="${2:?}"
+				shift 2
+				;;
+			--threads)
+				_threads="${2:?}"
+				shift 2
+				;;
+			--data-short-redo)
+				_data_short_redo="${2:?}"
+				shift 2
+				;;
+			--data-short-cleanup)
+				_data_short_cleanup="${2:?}"
+				shift 2
+				;;
+			-h | --help)
+				declare -n ref="help_message"
+				local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+				man "$manfile"
+				rm -f "$manfile"
+				return 0
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such option: $1"
+				return 2
+				;;
+			*) break ;;
+			esac
+		done
+	}
+
+	if [[ "${_brg_help:-off}" == "on" ]]; then
+		declare -n ref="help_message"
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return 0
+	fi
+
+	# _log_echo0 "outdir: $_brg_outdir"
+	# _log_echo0 "sindex: $_brg_sindex"
+	parse_commandline
+
+	# _log_echo0 "outdir: $_brg_outdir"
+	# _log_echo0 "sindex: $_brg_sindex"
+
+	# Load variables (expects _short map, _media_dir*, _local_host, etc.)
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	if [[ -z "${_brg_outdir}" ]]; then
+		_log_echo0 "[ERROR] --species is required"
+		return 2
+	fi
+
+	local short_sra="${_short["$_brg_target"]:-}"
+
+	if [[ -z "$short_sra" ]]; then
+		_log_echo0 "[ERROR] No short-read SRA for ${_brg_target}"
+		return 3
+	fi
+
+	# Build args for the worker script
+	# local -a args=(-s "${short_sra}" -o "${_brg_outdir}" -i "${_brg_sindex}" --tier "${_tier}" --threads "${_threads}")
+	local -a args=(-s "${short_sra}" -o "${_brg_outdir}" --threads "${_threads}")
+	if [[ "${_brg_redo:-false}" != "false" || "${_data_short_redo}" != "false" ]]; then
+		args+=(--redo)
+	fi
+	if [[ "${_brg_cleanup:-false}" != "false" || "${_data_short_cleanup}" != "false" ]]; then
+		args+=(--cleanup)
+	fi
+	if [[ "${_brg_dry_run:-false}" != "false" ]]; then
+		args+=(--dry-run)
+	fi
+
+	_polap_lib_conda-ensure_conda_env polap-ncbitools || return 1
+	# _log_echo0 bash "${_POLAPLIB_DIR}/polap-bash-run-data-short.sh" "${args[@]}"
+	bash "${_POLAPLIB_DIR}/polap-bash-run-data-short.sh" "${args[@]}"
 	conda deactivate
 }
 
@@ -12819,18 +13505,45 @@ run-downsample-long-data_genus_species() {
 }
 
 data-downsample-long_genus_species() {
-	local _brg_outdir="$1"
-	local _brg_inum="${2:-0}"
-	local _brg_coverage="${3:-0.1}"
-	local _brg_random_seed="${4:--1}"
-	local _brg_dry="${5:-off}"
 
-	local target_index="${_brg_outdir}-${_brg_inum}"
-	local long_sra="${_long["$target_index"]}"
-	local random_seed="${_random_seed["$target_index"]}"
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+	local long_sra="${_long["$_brg_target"]}"
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - downsample long-read data 
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Downsample the fastq to 10g:
+    bolap data downsample-long -s Vigna_radiata --coverage 10g
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local _brg_random_seed="-1"
+	local _brg_coverage="10g"
+	local _brg_dry="off"
+
+	local long_sra="${_long["$_brg_target"]}"
+	local _brg_random_seed="${_random_seed["$_brg_target"]}"
+
 	if [[ "${_brg_random_seed}" != "-1" ]]; then
 		random_seed="${_brg_random_seed}"
-		local _brg_outdir_i="${_brg_outdir}/${_brg_inum}"
 	fi
 
 	local _dry=""
@@ -12838,41 +13551,97 @@ data-downsample-long_genus_species() {
 		_dry="--dry"
 	fi
 
-	mkdir -p "${_brg_outdir_i}"
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
 
-	# Step 1. check input fastq data
-	mkdir -p "${_brg_outdir}/tmp"
-	if [[ -s "${long_sra}.fastq" ]]; then
-		# echo "found: ${long_sra}.fastq"
-		if [[ ! -s "${_brg_outdir}/tmp/${long_sra}.fastq" ]]; then
-			mv "${long_sra}.fastq" "${_brg_outdir}"/tmp
-		fi
-	else
-		if [[ ! -s "${_brg_outdir}/tmp/${long_sra}.fastq" ]]; then
-			echo "no such file: ${long_sra}.fastq"
-			return
-		fi
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--coverage)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_coverage="$2"
+					shift || true
+				fi
+				;;
+			--random-seed)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_random_seed="$2"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
 	fi
 
+	parse_commandline
+
+	mkdir -p "${_brg_outdir_i}"
+
+	local l_fq_gz="${_brg_outdir}/tmp/l.fq.gz"
+	local s_1_fq_gz="${_brg_outdir}/tmp/s_1.fq.gz"
+	local s_2_fq_gz="${_brg_outdir}/tmp/s_2.fq.gz"
+
+	# check if the files exist.
+	if ! [[ -e "$l_fq_gz" && -s "$l_fq_gz" ]]; then
+		echo "$l_fq_gz missing, empty, or broken link"
+		echo "run data-long"
+		return 0
+	fi
+
+	# if [[ -s "${long_sra}.fastq" ]]; then
+	# 	# echo "found: ${long_sra}.fastq"
+	# 	if [[ ! -s "${_brg_outdir}/tmp/${long_sra}.fastq" ]]; then
+	# 		mv "${long_sra}.fastq" "${_brg_outdir}"/tmp
+	# 	fi
+	# else
+	# 	if [[ ! -s "${_brg_outdir}/tmp/${long_sra}.fastq" ]]; then
+	# 		echo "no such file: ${long_sra}.fastq"
+	# 		return
+	# 	fi
+	# fi
+
 	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
 
 	if [[ "$CONDA_DEFAULT_ENV" == "polap" ]]; then
 
 		# Step 2. Estimate the genome size
-		local _genome_size="0"
-		if [[ -v _platform["$_brg_target"] ]]; then
-			_genome_size=$(
-				estimate-genomesize-platform_genus_species \
-					"${_brg_outdir}" \
-					"${_brg_inum}" | tail -1
-			)
-		else
-			_genome_size=$(
-				estimate-genomesize_genus_species \
-					"${_brg_outdir}" \
-					"${_brg_inum}" | tail -1
-			)
-		fi
+		# local _genome_size="0"
+		# if [[ -v _platform["$_brg_target"] ]]; then
+		# 	_genome_size=$(
+		# 		estimate-genomesize-platform_genus_species \
+		# 			"${_brg_outdir}" \
+		# 			"${_brg_inum}" | tail -1
+		# 	)
+		# else
+		# 	_genome_size=$(
+		# 		estimate-genomesize_genus_species \
+		# 			"${_brg_outdir}" \
+		# 			"${_brg_inum}" | tail -1
+		# 	)
+		# fi
 
 		# echo "Genome size estimate: $(_polap_lib_unit-convert_bp ${_genome_size})"
 
@@ -12884,7 +13653,7 @@ data-downsample-long_genus_species() {
 			# echo "output: ${long_sra}.fastq"
 			# echo "sampling size: ${_brg_coverage}"
 			${_polap_cmd} fastq-sample-to -v \
-				-l "${_brg_outdir}/tmp/${long_sra}.fastq" \
+				-l "${l_fq_gz}" \
 				--outfile "${long_sra}.fastq" \
 				-g "${_brg_coverage}" \
 				--random-seed "${random_seed}" \
@@ -12897,8 +13666,8 @@ data-downsample-long_genus_species() {
 			# echo "output: ${long_sra}.fastq"
 			# echo "genome size: ${_genome_size}"
 			# echo "sampling rate: ${_brg_coverage}x"
-			${_polap_cmd} fastq subsample --redo -v ${_dry} \
-				"${_brg_outdir}/tmp/${long_sra}.fastq" \
+			${_polap_cmd} fastq subsample --redo -v \
+				"${l_fq_gz}" \
 				"${long_sra}.fastq" \
 				-c "${_brg_coverage}" \
 				-o "${_brg_outdir_i}" \
@@ -12908,11 +13677,9 @@ data-downsample-long_genus_species() {
 			# _log_echo "log: ${_brg_outdir_i}/l${_brg_coverage}x.txt"
 			# cat "${_brg_outdir_i}/l${_brg_coverage}x.txt"
 		fi
-		# ls -lh "${_brg_outdir}/tmp/${long_sra}.fastq"
-		# ls -lh "${long_sra}.fastq"
-		#
-		# _log_echo "downsample (${_brg_coverage}) ${_brg_outdir}/tmp/${long_sra}.fastq -> ${long_sra}.fastq"
 	fi
+
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
 
 	conda deactivate
 }
@@ -15522,4 +16289,234 @@ function _polap_lib_data-execute-common-subcommand {
 	esac
 
 	[[ $handled -eq 1 ]] && return 0 || return 1
+}
+
+dev_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - development
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  Edit bolap-parsing.sh for bolap -h
+
+  Edit polap-data-read.sh for bolap help
+
+  Edit polap-lib-data.sh to add a new command
+
+  Makefile.read to add man commands
+
+See also:
+  Makefile.read
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local _brg_topic=""
+
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--topic)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_topic="$2"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	parse_commandline
+
+	echo "$ref"
+}
+
+tutorial_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - tutorial
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Topic:
+    bolap $bolap_cmd --topic 38
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	help_message_38=$(
+		cat <<EOF
+Name:
+  bolap - the 38 datasets
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Execute polap syncassemble:
+    bolap dataset view --fields=long,short --match=Zea
+
+  Search for the species with SRA accession:
+    bolap config view long,short | grep ERR6210790
+
+  Get data at sfolder/tmp:
+    bolap run data-long -s Brassica_rapa
+
+    bolap run data-short -s Brassica_rapa
+
+  Summary of the data at sfolder/tmp:
+    bolap run summary-data -s Brassica_rapa
+
+  Downsample long-read data:
+    bolap data downsample long -s Brassica_rapa --coverage 10g
+
+  Get a reference mtDNA from NCBI:
+    bolap download mtdna -s Brassica_rapa
+
+  Get a reference ptDNA from NCBI:
+    bolap download ptdna -s Brassica_rapa
+
+  Get a reference mtDNA from NCBI:
+    bolap download mtdna -s Brassica_rapa
+
+  Run ptGAUL:
+    bolap run ptgaul -s Brassica_rapa
+
+  Run ptGAUL for mtDNA assembly:
+    bolap run mtgaul -s Brassica_rapa
+
+  Run TIPPo for organelle genome assemblies:
+    bolap run tippo -s Brassica_rapa
+
+  Run Oatk for organelle genome assemblies:
+    bolap run oatk -s Brassica_rapa
+
+  Run polap for organelle genome assemblies:
+    bolap run polap-readassemble -s Brassica_rapa
+
+  Run polap for organelle genome assemblies:
+    bolap run polap-mtpt -s Brassica_rapa
+
+  Report:
+    bolap man init
+    bolap man manifest
+    bolap man sheet-ptmt
+    bolap man table-data
+    bolap man pt-table
+    bolap man mt-table
+    bolap man table-s1
+    bolap man man
+
+    bolap man figure
+    bolap man pt-figure
+    bolap man mt-figure
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local _brg_topic="38"
+
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--topic)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_topic="$2"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	parse_commandline
+
+	case "$_brg_topic" in
+	38)
+		declare -n ref="help_message_38"
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		;;
+	*)
+		_log_echo0 "No such topic: $_brg_topic"
+		;;
+	esac
 }

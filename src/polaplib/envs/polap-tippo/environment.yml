@@ -1,0 +1,9 @@
+name: polap-tippo
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.8
+  - bioconda::tipp
+prefix: /home/goshng/miniconda3/envs/polap-tippo

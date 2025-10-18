@@ -1,9 +1,21 @@
 #!/usr/bin/env bash
+################################################################################
 # polap-bash-polish.sh
-# POLAP "polish" subcommand: ONT-only (Racon) or Hybrid (FMLRC2/Polypolish),
-# optionally preserve Flye GFA topology by extract → polish → reinject.
-# Version: v0.5.1
-# License: GPL-3.0+
+# Version: v0.7.2
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Purpose:
+#   Hybrid/ONT polishing with optional GFA reinjection.
+#   Short-read inputs are auto-streamed (no temp FASTQs):
+#     • polypolish / pilon  → interleaved PE stream (Bowtie2 --interleaved)
+#     • racon / nextpolish  → single-end concatenated stream (R1 then R2)
+#
+# Notes:
+#   - Default streaming uses process substitution <(...)>.
+#   - If a tool refuses /dev/fd/*, use: --stream fifo  (named pipe; zero disk growth)
+#   - This script avoids eval-strings; pipelines are executed directly to stay
+#     neovim/shfmt/shellcheck friendly and reduce grammar hazards.
+################################################################################
 set -euo pipefail
 IFS=$'\n\t'
 
@@ -14,7 +26,8 @@ Usage:
                          [--ont ONT.fq[.gz]] [--sr1 R1.fq[.gz] --sr2 R2.fq[.gz]]
                          [--mode auto|ont|hybrid]
                          [--gfa-preserve]
-                         [--polisher auto|fmlrc2|polypolish]
+                         [--polisher auto|fmlrc2|polypolish|pilon|racon|nextpolish]
+                         [--aligner bowtie2|bwa] [--ref-index PREFIX]
                          [--racon-rounds N] [--threads N]
                          [--minimap-preset map-ont|map-hifi]
                          [--speed normal|fast|turbo]
@@ -22,172 +35,214 @@ Usage:
                          [--ont-cap X] [--ont-cap-method rasusa|seqtk]
                          [--eval-merqury] [--kmer K] [--prefix NAME]
                          [--ab-test] [--qc-report]
+                         [--workdir DIR]
+                         [--stream ps|fifo]               # select process substitution or FIFO
+                         [--bt2-cache-dir DIR] [--bt2-no-cache]
+                         [--keep-bam] [--keep-paf] [--dry-run]
+                         [-h|--help]
 
-Notes:
-  • DEFAULT prioritizes effectiveness: uses ALL reads (recruit=off, ont-cap=0) unless you opt in.
-  • If you enable capping, selection for capping ignores MAPQ and keeps reads with:
-      aligned_len > 3000 AND identity > 0.75  (identity from PAF: nmatch/alen), then caps to X× (default 200× in A/B).
-  • Presets (affect ONT path only; explicit flags still win):
-      normal: ont-cap unchanged, rounds=3, racon -w 1000, minimap2 -K 2g
-      fast:   ont-cap=80× (if unset), rounds=2, racon -w 1200, minimap2 -K 2g
-      turbo:  ont-cap=60× (if unset), rounds=1, racon -w 1500, minimap2 -K 4g
+Behavior (short reads):
+  • Polypolish / Pilon → interleaved stream to Bowtie2 (--interleaved).
+    Polypolish needs all-per-read alignments (-a).
+  • Racon / NextPolish → single-end concatenated stream to minimap2 (-x sr).
+
+Index cache:
+  • Default cache dir: <workdir>/bt2cache (created automatically)
+  • Cache key: sha1(path|size|mtime) of the FASTA used.
 
 Examples:
-  ONT-only (all reads):
-    polap-bash-polish.sh polish pt.fa --ont ont.fq.gz --speed normal --prefix pt
+  # Polypolish with interleaved stream + cache into species dir
+  polap-bash-polish.sh polish asm.fa --sr1 s1.fq.gz --sr2 s2.fq.gz \
+    --mode hybrid --polisher polypolish --bt2-cache-dir species/.bt2
 
-  ONT-only (fast path, if you allow capping):
-    polap-bash-polish.sh polish pt.fa --ont ont.fq.gz --speed fast --recruit draft --prefix pt_fast
-
-  Hybrid (FMLRC2 default):
-    polap-bash-polish.sh polish mt.fa --sr1 R1.fq.gz --sr2 R2.fq.gz --prefix mt
-
-  Hybrid with Polypolish + Merqury:
-    polap-bash-polish.sh polish mt.fa --sr1 R1.fq.gz --sr2 R2.fq.gz --polisher polypolish --eval-merqury --kmer 31 --prefix mt_pp
-
-  Preserve Flye GFA topology:
-    polap-bash-polish.sh polish flye/assembly_graph.gfa --ont ont.fq.gz --gfa-preserve --prefix mito_graph
+  # If a tool refuses /dev/fd/*, use FIFO:
+  polap-bash-polish.sh polish asm.fa --sr1 s1.fq.gz --sr2 s2.fq.gz \
+    --mode hybrid --polisher polypolish --stream fifo
 USAGE
 }
 
-# ----------------- subcommand gate -----------------
-_subcmd="${1:-}"
-shift || true
-[[ -z "${_subcmd:-}" || "${_subcmd}" != "polish" ]] && {
+# ---------- subcommand ----------
+if [[ "${1:-}" != "polish" || $# -lt 2 ]]; then
 	_show_usage
-	exit 1
-}
+	exit 2
+fi
+shift
 
-# ----------------- defaults -----------------
-asm=""
+# ---------- defaults ----------
+asm="${1:?}"
+shift
 ont=""
 sr1=""
 sr2=""
 mode="auto" # auto|ont|hybrid
 gfa_preserve=0
-polisher="auto" # auto|fmlrc2|polypolish
+polisher="auto" # auto|fmlrc2|polypolish|pilon|racon|nextpolish
 racon_rounds=3
 threads=16
 minimap_preset="map-ont" # map-ont|map-hifi
 speed="normal"           # normal|fast|turbo
 minimap_K="2g"
 
-# recruitment/cap (defaults → ALL reads, NO cap)
 recruit="off" # off|draft|bait|auto
 bait_fa=""
-ont_cap=0               # 0 = do not cap unless user/preset sets it
+ont_cap=0
 ont_cap_method="rasusa" # rasusa|seqtk
 
-# QC / meta
 eval_merqury=0
 kmer=31
 prefix="polap"
 ab_test=0
 qc_report=0
 
-# ----------------- parse args -----------------
-asm="${1:-}"
-shift || true
-[[ -z "${asm}" ]] && {
-	_show_usage
-	exit 1
-}
+aligner="bowtie2"
+ref_index=""
 
-while [[ $# -gt 0 ]]; do
+workdir="polish.work"
+stream_mode="ps" # ps|fifo
+keep_bam=0
+keep_paf=0
+dry_run=0
+bt2_no_cache=0
+bt2_cache_dir=""
+
+# ---------- parse args ----------
+while (($#)); do
 	case "$1" in
 	--ont)
-		ont="$2"
+		ont="${2:?}"
 		shift 2
 		;;
 	--sr1)
-		sr1="$2"
+		sr1="${2:?}"
 		shift 2
 		;;
 	--sr2)
-		sr2="$2"
+		sr2="${2:-}"
 		shift 2
 		;;
 	--mode)
-		mode="$2"
+		mode="${2:?}"
 		shift 2
 		;;
 	--gfa-preserve)
 		gfa_preserve=1
-		shift 1
+		shift
 		;;
 	--polisher)
-		polisher="$2"
+		polisher="${2:?}"
 		shift 2
 		;;
 	--racon-rounds)
-		racon_rounds="$2"
+		racon_rounds="${2:?}"
 		shift 2
 		;;
 	--threads)
-		threads="$2"
+		threads="${2:?}"
 		shift 2
 		;;
 	--minimap-preset)
-		minimap_preset="$2"
+		minimap_preset="${2:?}"
 		shift 2
 		;;
 	--speed)
-		speed="$2"
+		speed="${2:?}"
 		shift 2
 		;;
 	--recruit)
-		recruit="$2"
+		recruit="${2:?}"
 		shift 2
 		;;
 	--bait)
-		bait_fa="$2"
+		bait_fa="${2:?}"
 		shift 2
 		;;
 	--ont-cap)
-		ont_cap="$2"
+		ont_cap="${2:?}"
 		shift 2
 		;;
 	--ont-cap-method)
-		ont_cap_method="$2"
+		ont_cap_method="${2:?}"
 		shift 2
 		;;
 	--eval-merqury)
 		eval_merqury=1
-		shift 1
+		shift
 		;;
 	--kmer)
-		kmer="$2"
+		kmer="${2:?}"
 		shift 2
 		;;
 	--prefix)
-		prefix="$2"
+		prefix="${2:?}"
 		shift 2
 		;;
 	--ab-test)
 		ab_test=1
-		shift 1
+		shift
 		;;
 	--qc-report)
 		qc_report=1
-		shift 1
+		shift
+		;;
+	--aligner)
+		aligner="${2:?}"
+		shift 2
+		;;
+	--ref-index)
+		ref_index="${2:?}"
+		shift 2
+		;;
+	--workdir)
+		workdir="${2:?}"
+		shift 2
+		;;
+	--stream)
+		stream_mode="${2:?}"
+		shift 2
+		;; # ps|fifo
+	--keep-bam)
+		keep_bam=1
+		shift
+		;;
+	--keep-paf)
+		keep_paf=1
+		shift
+		;;
+	--dry-run)
+		dry_run=1
+		shift
+		;;
+	--bt2-cache-dir)
+		bt2_cache_dir="${2:?}"
+		shift 2
+		;;
+	--bt2-no-cache)
+		bt2_no_cache=1
+		shift
 		;;
 	-h | --help)
 		_show_usage
 		exit 0
 		;;
 	*)
-		echo "Unknown argument: $1" >&2
+		echo "[ERROR] Unknown argument: $1" >&2
 		_show_usage
-		exit 1
+		exit 2
 		;;
 	esac
 done
 
-# ----------------- apply speed preset (only sets defaults; explicit flags win) -----------------
+# ---------- helpers ----------
+log() { printf "[polish] %s\n" "$*" >&2; }
+die() {
+	printf "[ERROR] %s\n" "$*" >&2
+	exit 1
+}
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# ---------- apply speed preset (ONT only) ----------
 case "$speed" in
-normal)
-	:
-	;;
+normal) : ;;
 fast)
 	[[ "$ont_cap" -eq 0 ]] && ont_cap=80
 	[[ "$racon_rounds" == "3" ]] && racon_rounds=2
@@ -201,209 +256,111 @@ turbo)
 *) echo "[WARN] Unknown --speed '$speed' (using 'normal')" ;;
 esac
 
-# ----------------- setup -----------------
+# ---------- setup ----------
 run="$(date +%Y%m%d_%H%M%S)"
 odir="out/${prefix}.polish_${run}"
-mkdir -p "$odir"
-exec > >(tee -i "$odir/run.log") 2>&1
+mkdir -p "$odir" "$workdir"
+if ((dry_run == 0)); then exec > >(tee -i "$odir/run.log") 2>&1; fi
 
-echo "[POLAP] assembly: $asm"
-echo "[POLAP] ONT:      ${ont:-'(none)'}"
-echo "[POLAP] SR1:      ${sr1:-'(none)'}"
-echo "[POLAP] SR2:      ${sr2:-'(none)'}"
-echo "[POLAP] mode:     $mode"
-echo "[POLAP] polisher: $polisher"
-echo "[POLAP] gfa-preserve: $gfa_preserve"
-echo "[POLAP] speed:    $speed"
-echo "[POLAP] racon-rounds: $racon_rounds"
-echo "[POLAP] recruit:  $recruit   bait=${bait_fa:-'(none)'}"
-echo "[POLAP] ont-cap:  $ont_cap ($ont_cap_method)   minimap: -x $minimap_preset -K $minimap_K"
+log "assembly: $asm"
+log "ONT:      ${ont:-'(none)'}"
+log "SR1:      ${sr1:-'(none)'}"
+log "SR2:      ${sr2:-'(none)'}"
+log "mode:     $mode    polisher: $polisher   aligner: $aligner"
+log "gfa-preserve: $gfa_preserve"
+log "speed:    $speed   racon-rounds: $racon_rounds"
+log "recruit:  $recruit   bait=${bait_fa:-'(none)'}"
+log "ont-cap:  $ont_cap ($ont_cap_method)   minimap: -x $minimap_preset -K $minimap_K"
+log "workdir:  $workdir  stream: $stream_mode"
 
-[[ -f "$asm" ]] || {
-	echo "ERROR: assembly not found: $asm" >&2
-	exit 1
-}
+[[ -f "$asm" ]] || die "assembly not found: $asm"
 ext="${asm##*.}"
 is_gfa=0
 [[ "$ext" =~ ^([Gg][Ff][Aa])$ ]] && is_gfa=1
 
-# Resolve mode
+# ---------- resolve mode ----------
 if [[ "$mode" == "auto" ]]; then
 	if [[ -n "$sr1" && -n "$sr2" ]]; then
 		mode="hybrid"
 	elif [[ -n "$ont" ]]; then
 		mode="ont"
 	else
-		echo "ERROR: auto mode found no usable reads; provide --ont or --sr1/--sr2" >&2
-		exit 1
+		die "auto mode found no usable reads; provide --ont or --sr1/--sr2"
 	fi
 fi
-[[ "$mode" == "ont" && -z "$ont" ]] && {
-	echo "ERROR: --mode ont requires --ont" >&2
-	exit 1
-}
-[[ "$mode" == "hybrid" && (-z "$sr1" || -z "$sr2") ]] && {
-	echo "ERROR: --mode hybrid requires --sr1/--sr2" >&2
-	exit 1
-}
+[[ "$mode" == "ont" && -z "$ont" ]] && die "--mode ont requires --ont"
+[[ "$mode" == "hybrid" && (-z "$sr1" || -z "$sr2") ]] && die "--mode hybrid requires --sr1/--sr2"
 
-# ----------------- paths & helpers -----------------
+# ---------- local refs ----------
 _here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 scripts_dir="$_here/scripts"
 mkdir -p "$scripts_dir"
 
-_quiet_zcat() {
+# ---------- fast helpers ----------
+quiet_zcat() {
 	set +e
 	zcat -f "$1" 2>/dev/null || cat "$1"
 	set -e
 }
-_fa_len_total() { awk '/^>/{next}{L+=length($0)}END{print (L?L:1)}' "$1"; }
-_sh() { printf "'%s'" "${1//\'/\'\\\'\'}"; }
+fa_len_total() { awk '/^>/{next}{L+=length($0)}END{print (L?L:1)}' "$1"; }
 
-# --- helper files (create if missing) ---
-if [[ ! -s "$scripts_dir/gfa_inject_polished.py" ]]; then
-	cat >"$scripts_dir/gfa_inject_polished.py" <<'PY'
-#!/usr/bin/env python3
-# Version: v0.5.1
-import sys,gzip
-gfa, polished_fa = sys.argv[1], sys.argv[2]
-def open_auto(p): return gzip.open(p,'rt') if p.endswith('.gz') else open(p)
-seq={}
-with open_auto(polished_fa) as f:
-    cur=None; buf=[]
-    for line in f:
-        if line.startswith('>'):
-            if cur: seq[cur]=''.join(buf); buf=[]
-            cur=line[1:].strip().split()[0]
-        else:
-            buf.append(line.strip())
-    if cur: seq[cur]=''.join(buf)
-with open_auto(gfa) as f:
-    for line in f:
-        if not line.strip(): continue
-        if line[0]=='S':
-            parts=line.rstrip('\n').split('\t')
-            sid=parts[1]
-            if sid in seq: parts[2]=seq[sid]
-            print('\t'.join(parts))
-        else:
-            print(line, end='')
-PY
-	chmod +x "$scripts_dir/gfa_inject_polished.py"
-fi
-
-if [[ ! -s "$scripts_dir/fastq_n50.py" ]]; then
-	cat >"$scripts_dir/fastq_n50.py" <<'PY'
-#!/usr/bin/env python3
-# Version: v0.5.1
-import sys,gzip
-from statistics import median
-def openx(p): return gzip.open(p,'rt') if p.endswith('.gz') else open(p)
-L=[]
-with openx(sys.argv[1]) as f:
-    i=0
-    for line in f:
-        i+=1
-        if i%4==2: L.append(len(line.strip()))
-L.sort()
-tot=sum(L); half=tot/2; acc=0; n50=0
-for l in L:
-    acc+=l
-    if acc>=half:
-        n50=l; break
-print(f"n={len(L)} total={tot} n50={n50} median={median(L) if L else 0}")
-PY
-	chmod +x "$scripts_dir/fastq_n50.py"
-fi
-
-if [[ ! -s "$scripts_dir/plot_merqury_qv.R" ]]; then
-	cat >"$scripts_dir/plot_merqury_qv.R" <<'RS'
-# Version: v0.5.1
-args <- commandArgs(trailingOnly=TRUE)
-if (length(args) < 2) stop("Usage: Rscript plot_merqury_qv.R <out.png> <A.qv> [B.qv...]")
-out <- args[1]; qv_files <- args[-1]
-labs <- sub("\\.qv$","",basename(qv_files))
-qvs <- sapply(qv_files, function(f) as.numeric(readLines(f)[1]))
-png(out, 800, 400, res=120)
-barplot(qvs, names.arg=labs, ylab="QV (Phred)", main="Merqury QV")
-dev.off()
-RS
-fi
-
-if [[ ! -s "$scripts_dir/paf_stats.awk" ]]; then
-	cat >"$scripts_dir/paf_stats.awk" <<'AWK'
-# Version: v0.5.1
-# Usage: awk -f paf_stats.awk in.paf > out.tsv
-BEGIN{ FS=OFS="\t"; print "n_align","mean_identity","total_aligned" }
-{
-  nmatch=$10+0; alen=$11+0;
-  if (alen>0){ sum_id+=(nmatch/alen) }
-  sum_al+=alen; n++
-}
-END{
-  mi = (n>0)? sum_id/n : 0.0;
-  printf "%d\t%.6f\t%d\n", n, mi, sum_al
-}
-AWK
-fi
-
-# ----------------- stats -----------------
-if [[ -n "${ont:-}" && -f "$ont" ]]; then
-	echo "[STATS] ONT read length summary:"
-	python3 "$scripts_dir/fastq_n50.py" "$ont" || true
-fi
-if [[ -n "${sr1:-}" && -f "$sr1" ]]; then
-	echo "[STATS] Short reads R1 length summary:"
-	python3 "$scripts_dir/fastq_n50.py" "$sr1" || true
-fi
-
-# ----------------- extract sequences from GFA (if requested) -----------------
+# ---------- GFA export (optional) ----------
 target_fa="$asm"
 if ((is_gfa == 1)); then
 	if ((gfa_preserve == 1)); then
-		echo "[POLAP] GFA preserve ON → extracting S-sequences"
-		gfatools gfa2fa "$asm" >"$odir/segments.fa"
+		log "GFA preserve ON → extracting S-sequences"
+		if ((dry_run)); then
+			echo "[DRYRUN] gfatools gfa2fa '$asm' > '$odir/segments.fa'" >&2
+		else
+			gfatools gfa2fa "$asm" >"$odir/segments.fa"
+		fi
 		target_fa="$odir/segments.fa"
 	else
-		echo "[WARN] Input is GFA without --gfa-preserve; polishing exported FASTA only."
-		gfatools gfa2fa "$asm" >"$odir/export.fa"
+		log "Input is GFA without --gfa-preserve; polishing exported FASTA only."
+		if ((dry_run)); then
+			echo "[DRYRUN] gfatools gfa2fa '$asm' > '$odir/export.fa'" >&2
+		else
+			gfatools gfa2fa "$asm" >"$odir/export.fa"
+		fi
 		target_fa="$odir/export.fa"
 	fi
 fi
 
-# ----------------- recruitment & capping helpers -----------------
-_recruit_for_capping() {
-	local target="$1" reads="$2" outfq="$3" preset="$4" threads="$5"
+# ---------- ONT selection/capping ----------
+recruit_for_capping() {
+	local target="$1" reads="$2" outfq="$3" preset="$4" th="$5"
 	local paf="$odir/recruit.paf" ids="$odir/recruit.ids"
-	echo "[RECRUIT] target=$(basename "$target") preset=$preset (len>3000 & id>0.75; MAPQ ignored)"
-	minimap2 -x "$preset" --secondary=no -K "$minimap_K" -t "$threads" "$target" "$reads" >"$paf"
+	log "[RECRUIT] preset=$preset (len>3000 & id>0.75; MAPQ ignored)"
+	if ((dry_run)); then
+		echo "[DRYRUN] minimap2 -x $preset --secondary=no -K $minimap_K -t $th '$target' '$reads' > '$paf'" >&2
+		echo "[DRYRUN] awk filter + seqkit grep → '$outfq'" >&2
+		return
+	fi
+	minimap2 -x "$preset" --secondary=no -K "$minimap_K" -t "$th" "$target" "$reads" >"$paf"
 	awk '$11+0>3000 {pid=$10/$11; if(pid>0.75) print $1}' "$paf" | sort -u >"$ids"
-	local n
-	n=$(wc -l <"$ids" || echo 0)
-	if [[ "$n" -eq 0 ]]; then
-		echo "[RECRUIT] no candidates; using full read set"
+	if [[ ! -s "$ids" ]]; then
+		log "[RECRUIT] no candidates; using full read set"
 		cp -f "$reads" "$outfq"
 	else
-		echo "[RECRUIT] kept read ids: $n"
 		seqkit grep -f "$ids" "$reads" | gzip -dc >"$outfq"
 	fi
 }
 
-_cap_ont_to() {
+cap_ont_to() {
 	local draft="$1" reads="$2" targetx="$3" outfq="$4"
 	if [[ "$targetx" -le 0 ]]; then
-		cp -f "$reads" "$outfq"
+		if ((dry_run)); then echo "[DRYRUN] cp '$reads' '$outfq'"; else cp -f "$reads" "$outfq"; fi
 		return
 	fi
 	local asm_len
-	asm_len=$(_fa_len_total "$draft")
-	if command -v rasusa >/dev/null 2>&1; then
+	asm_len=$(fa_len_total "$draft")
+	if have rasusa; then
 		local bases=$((targetx * asm_len))
-		echo "[CAP] rasusa to ~${targetx}x (bases=$bases)"
-		rasusa -s 42 -i "$reads" -o "$outfq" -b "$bases"
+		log "[CAP] rasusa ~${targetx}x (bases=$bases)"
+		if ((dry_run)); then echo "[DRYRUN] rasusa -s 42 -i '$reads' -o '$outfq' -b $bases"; else rasusa -s 42 -i "$reads" -o "$outfq" -b "$bases"; fi
 	else
 		local total
-		total=$(_quiet_zcat "$reads" | awk 'NR%4==2{n+=length($0)}END{print (n?n:1)}')
+		total=$(quiet_zcat "$reads" | awk 'NR%4==2{n+=length($0)}END{print (n?n:1)}')
 		local p
 		p=$(
 			python3 - <<PY
@@ -412,56 +369,144 @@ p = min(1.0, (targetx*asm_len)/total) if total>0 else 1.0
 print(f"{p:.6f}")
 PY
 		)
-		echo "[CAP] seqtk sample p=${p} to ~${targetx}x"
-		seqtk sample -s42 "$reads" "$p" >"$outfq"
+		log "[CAP] seqtk sample p=$p to ~${targetx}x"
+		if ((dry_run)); then echo "[DRYRUN] seqtk sample -s42 '$reads' $p > '$outfq'"; else seqtk sample -s42 "$reads" "$p" >"$outfq"; fi
 	fi
 }
 
-# ----------------- polishing -----------------
+# ---------- streaming views ----------
+: "${POLAP_SHORT_VIEWS:=${_here}/polap-bash-short-views.sh}"
+declare -a READS_OPT=() READS_SRC=() _POLAP_BG_PIDS=()
+POLAP_FIFO_TO_CLEAN=""
+
+cleanup_stream() {
+	if ((${#_POLAP_BG_PIDS[@]})); then kill "${_POLAP_BG_PIDS[@]}" 2>/dev/null || true; fi
+	if [[ -n "$POLAP_FIFO_TO_CLEAN" && -p "$POLAP_FIFO_TO_CLEAN" ]]; then rm -f "$POLAP_FIFO_TO_CLEAN"; fi
+}
+trap cleanup_stream EXIT
+
+stream_init() {
+	local mode="$1" label="$2" # se|ilv
+	READS_OPT=()
+	READS_SRC=()
+	_POLAP_BG_PIDS=()
+	POLAP_FIFO_TO_CLEAN=""
+	[[ -x "$POLAP_SHORT_VIEWS" ]] || die "Missing helper: $POLAP_SHORT_VIEWS"
+	local -a view=("$POLAP_SHORT_VIEWS" -1 "$sr1")
+	[[ -n "$sr2" ]] && view+=(-2 "$sr2")
+	view+=(--mode "$mode" --threads "$threads")
+
+	case "$stream_mode" in
+	fifo)
+		local fifo="$workdir/s.${label}.fq"
+		[[ "$mode" == "se" ]] && fifo+=".gz"
+		if ((dry_run)); then
+			echo "[DRYRUN] mkfifo '$fifo'" >&2
+			echo "[DRYRUN] ${view[*]} --fifo '$fifo' &" >&2
+		else
+			rm -f "$fifo"
+			mkfifo -m 600 "$fifo"
+			POLAP_FIFO_TO_CLEAN="$fifo"
+			"${view[@]}" --fifo "$fifo" &
+			_POLAP_BG_PIDS+=("$!")
+		fi
+		[[ "$mode" == "ilv" ]] && READS_OPT=(--interleaved)
+		READS_SRC=("$fifo")
+		;;
+	ps | *)
+		[[ "$mode" == "ilv" ]] && READS_OPT=(--interleaved)
+		if ((dry_run)); then
+			echo "[DRYRUN] <( ${view[*]} --stdout )" >&2
+			READS_SRC=("/dev/fd/63")
+		else
+			# shellcheck disable=SC2207
+			READS_SRC=(<("${view[@]}" --stdout))
+		fi
+		;;
+	esac
+}
+
+# ---------- Bowtie2 index with cache ----------
+bt2_index_prefix() {
+	if [[ -n "$ref_index" ]]; then
+		printf "%s" "$ref_index"
+		return
+	fi
+	if ((bt2_no_cache)); then
+		local pref="$workdir/bt2idx/asm"
+		if [[ ! -e "${pref}.1.bt2" && ! -e "${pref}.1.bt2l" ]]; then
+			mkdir -p "$(dirname "$pref")"
+			if ((dry_run)); then echo "[DRYRUN] bowtie2-build '$target_fa' '$pref'"; else bowtie2-build "$target_fa" "$pref"; fi
+		fi
+		printf "%s" "$pref"
+		return
+	fi
+	[[ -n "$bt2_cache_dir" ]] || bt2_cache_dir="$workdir/bt2cache"
+	mkdir -p "$bt2_cache_dir"
+	local ap sig pref
+	ap="$(readlink -f "$target_fa")"
+	if ((dry_run)); then
+		sig="<sha1>"
+	else
+		sig="$(stat -c '%n|%s|%Y' "$ap" | sha1sum | awk '{print $1}')"
+	fi
+	pref="${bt2_cache_dir}/${sig}"
+	if ((dry_run)); then
+		echo "[DRYRUN] (bt2 cache prefix) $pref" >&2
+	else
+		if [[ ! -e "${pref}.1.bt2" && ! -e "${pref}.1.bt2l" ]]; then
+			log "[BT2] cache miss → build index: $pref"
+			bowtie2-build "$target_fa" "$pref"
+		else
+			log "[BT2] cache hit: $pref"
+		fi
+	fi
+	printf "%s" "$pref"
+}
+
+# ---------- polishing ----------
 polished="$target_fa"
 final_out=""
 
 if [[ "$mode" == "ont" ]]; then
-	echo "[POLAP] ONT-only polishing with Racon (rounds=$racon_rounds)"
+	log "ONT-only polishing with Racon (rounds=$racon_rounds)"
 	cur="$target_fa"
+	use_reads="$ont"
+	label="ALL"
 
-	if ((ab_test == 1)); then
-		echo "[AB] Running A (ALL reads) and B (recruit+cap) for comparison"
-		# A: ALL reads, no cap
-		bash "$0" polish "$asm" --ont "$ont" --mode ont --threads "$threads" \
-			--speed "$speed" --recruit off --ont-cap 0 --prefix "${prefix}_A" \
-			$([[ $gfa_preserve -eq 1 ]] && echo --gfa-preserve) >/dev/null
-		# B: recruit on draft, then cap to 200× (or --ont-cap if set)
-		local capX=$([ "$ont_cap" -gt 0 ] && echo "$ont_cap" || echo 200)
-		bash "$0" polish "$asm" --ont "$ont" --mode ont --threads "$threads" \
-			--speed "$speed" --recruit draft --ont-cap "$capX" --prefix "${prefix}_B" \
-			$([[ $gfa_preserve -eq 1 ]] && echo --gfa-preserve) >/dev/null
+	if ((ab_test)); then
+		log "AB test: A(ALL) vs B(recruit+cap)."
+		if ((dry_run)); then
+			echo "[DRYRUN] bash '$0' polish '$asm' --ont '$ont' --mode ont --threads $threads --speed $speed --recruit off --ont-cap 0 --prefix ${prefix}_A" >&2
+			echo "[DRYRUN] bash '$0' polish '$asm' --ont '$ont' --mode ont --threads $threads --speed $speed --recruit draft --ont-cap 200 --prefix ${prefix}_B" >&2
+		else
+			bash "$0" polish "$asm" --ont "$ont" --mode ont --threads "$threads" --speed "$speed" --recruit off --ont-cap 0 --prefix "${prefix}_A" >/dev/null
+			bash "$0" polish "$asm" --ont "$ont" --mode ont --threads "$threads" --speed "$speed" --recruit draft --ont-cap 200 --prefix "${prefix}_B" >/dev/null
+		fi
 		qc_report=1
-		# Prefer A’s result as default output
-		A_DIR=$(ls -1dt out/"${prefix}_A".polish_* 2>/dev/null | head -n1)
-		[[ -n "$A_DIR" ]] && polished="$(ls -1 "$A_DIR"/*polished.* 2>/dev/null | head -n1 || true)"
-		[[ -z "${polished:-}" ]] && polished="$target_fa"
+		if ((dry_run == 0)); then
+			A_DIR=$(ls -1dt out/"${prefix}_A".polish_* 2>/dev/null | head -n1 || true)
+			[[ -n "${A_DIR:-}" ]] && polished="$(ls -1 "$A_DIR"/*polished.* 2>/dev/null | head -n1 || true)"
+			[[ -z "${polished:-}" ]] && polished="$target_fa"
+		fi
 	else
-		# Single run
-		use_reads="$ont"
-		label="ALL"
 		if [[ "$recruit" != "off" ]]; then
 			recruited="$odir/ont.recruit.fq"
 			case "$recruit" in
-			draft) _recruit_for_capping "$cur" "$ont" "$recruited" "$minimap_preset" "$threads" ;;
+			draft) recruit_for_capping "$cur" "$ont" "$recruited" "$minimap_preset" "$threads" ;;
 			bait)
 				if [[ -n "$bait_fa" && -s "$bait_fa" ]]; then
-					_recruit_for_capping "$bait_fa" "$ont" "$recruited" "$minimap_preset" "$threads"
+					recruit_for_capping "$bait_fa" "$ont" "$recruited" "$minimap_preset" "$threads"
 				else
-					echo "[RECRUIT] --bait not provided; using all reads"
-					cp -f "$ont" "$recruited"
+					log "[RECRUIT] --bait missing; using all reads"
+					if ((dry_run)); then echo "[DRYRUN] cp '$ont' '$recruited'"; else cp -f "$ont" "$recruited"; fi
 				fi
 				;;
-			auto) _recruit_for_capping "$cur" "$ont" "$recruited" "$minimap_preset" "$threads" ;;
-			off | *) cp -f "$ont" "$recruited" ;;
+			auto) recruit_for_capping "$cur" "$ont" "$recruited" "$minimap_preset" "$threads" ;;
+			off | *) if ((dry_run)); then echo "[DRYRUN] cp '$ont' '$recruited'"; else cp -f "$ont" "$recruited"; fi ;;
 			esac
 			capped="$odir/ont.capped.fq"
-			_cap_ont_to "$cur" "$recruited" "$ont_cap" "$capped"
+			cap_ont_to "$cur" "$recruited" "$ont_cap" "$capped"
 			use_reads="$capped"
 			label="RECRUIT+CAP"
 		fi
@@ -471,81 +516,166 @@ if [[ "$mode" == "ont" ]]; then
 		[[ "$speed" == "fast" ]] && racon_w=1200
 		[[ "$speed" == "turbo" ]] && racon_w=1500
 		for i in $(seq 1 "$racon_rounds"); do
-			echo "[minimap2][$label] round $i  --secondary=no  -K $minimap_K"
-			minimap2 -x "$minimap_preset" --secondary=no -K "$minimap_K" -t "$threads" "$cur" "$use_reads" >"$odir/r${i}.paf"
-			echo "[racon] round $i (-w $racon_w)"
-			racon -t "$threads" -w "$racon_w" "$use_reads" "$odir/r${i}.paf" "$cur" >"$odir/segments.racon${i}.fa"
+			log "[minimap2][$label] round $i"
+			if ((dry_run)); then
+				echo "[DRYRUN] minimap2 -x $minimap_preset --secondary=no -K $minimap_K -t $threads '$cur' '$use_reads' > '$odir/r${i}.paf'" >&2
+				echo "[DRYRUN] racon -t $threads -w $racon_w '$use_reads' '$odir/r${i}.paf' '$cur' > '$odir/segments.racon${i}.fa'" >&2
+			else
+				minimap2 -x "$minimap_preset" --secondary=no -K "$minimap_K" -t "$threads" "$cur" "$use_reads" >"$odir/r${i}.paf"
+				racon -t "$threads" -w "$racon_w" "$use_reads" "$odir/r${i}.paf" "$cur" >"$odir/segments.racon${i}.fa"
+			fi
 			cur="$odir/segments.racon${i}.fa"
 		done
 		polished="$cur"
+		if ((keep_paf == 0)) && ((dry_run == 0)); then rm -f "$odir"/r*.paf || true; fi
 	fi
+
 elif [[ "$mode" == "hybrid" ]]; then
 	[[ "$polisher" == "auto" ]] && polisher="fmlrc2"
-	echo "[POLAP] Hybrid polishing using $polisher"
-	if [[ "$polisher" == "fmlrc2" ]]; then
-		echo "[FMLRC2] building BWT (ropebwt2 → fmlrc2-convert)"
-		(_quiet_zcat "$sr1" "$sr2" || cat "$sr1" "$sr2") |
-			awk 'NR%4==2' | ropebwt2 -LR | fmlrc2-convert "$odir/comp_msbwt.npy"
-		echo "[FMLRC2] polishing"
-		fmlrc2 -t "$threads" "$odir/comp_msbwt.npy" "$target_fa" "$odir/segments.fmlrc2.fa"
+	log "Hybrid polishing using $polisher"
+
+	case "$polisher" in
+	fmlrc2)
+		log "[FMLRC2] build BWT & polish"
+		if ((dry_run)); then
+			echo "[DRYRUN] (zcat R1/R2 | ropebwt2 -LR | fmlrc2-convert comp.npy)" >&2
+			echo "[DRYRUN] fmlrc2 -t $threads comp.npy '$target_fa' '$odir/segments.fmlrc2.fa'" >&2
+		else
+			(quiet_zcat "$sr1" "$sr2" || cat "$sr1" "$sr2") | awk 'NR%4==2' | ropebwt2 -LR | fmlrc2-convert "$odir/comp_msbwt.npy"
+			fmlrc2 -t "$threads" "$odir/comp_msbwt.npy" "$target_fa" "$odir/segments.fmlrc2.fa"
+		fi
 		polished="$odir/segments.fmlrc2.fa"
-	elif [[ "$polisher" == "polypolish" ]]; then
-		echo "[Polypolish] mapping ALL placements with BWA-MEM"
-		bwa index "$target_fa"
-		bwa mem -a -t "$threads" "$target_fa" "$sr1" | samtools sort -@ "$threads" -o "$odir/r1.all.bam"
-		bwa mem -a -t "$threads" "$target_fa" "$sr2" | samtools sort -@ "$threads" -o "$odir/r2.all.bam"
-		samtools index -@ "$threads" "$odir/r1.all.bam"
-		samtools index -@ "$threads" "$odir/r2.all.bam"
-		polypolish "$target_fa" "$odir/r1.all.bam" "$odir/r2.all.bam" >"$odir/segments.polypolish.fa"
+		;;
+
+	polypolish)
+		[[ "$aligner" == "bowtie2" ]] || die "Polypolish path requires bowtie2"
+		idx="$(bt2_index_prefix)"
+		stream_init ilv ilv
+		log "[BT2] interleaved -a → name-sorted BAM"
+		if ((dry_run)); then
+			echo "[DRYRUN] bowtie2 -x '$idx' ${READS_OPT[*]} ${READS_SRC[*]} -a -p $threads | samtools sort -n -o '$workdir/short.name.bam'" >&2
+			echo "[DRYRUN] polypolish polish '$target_fa' '$workdir/short.name.bam' > '$odir/segments.polypolish.fa'" >&2
+		else
+			bowtie2 -x "$idx" "${READS_OPT[@]}" "${READS_SRC[@]}" -a -p "$threads" |
+				samtools sort -n -o "$workdir/short.name.bam"
+			polypolish polish "$target_fa" "$workdir/short.name.bam" >"$odir/segments.polypolish.fa"
+		fi
 		polished="$odir/segments.polypolish.fa"
-	else
-		echo "ERROR: unsupported --polisher '$polisher' (use auto|fmlrc2|polypolish)" >&2
-		exit 1
-	fi
+		if ((keep_bam == 0)) && ((dry_run == 0)); then rm -f "$workdir/short.name.bam" || true; fi
+		;;
+
+	pilon)
+		[[ "$aligner" == "bowtie2" ]] || die "Pilon path wired for bowtie2"
+		idx="$(bt2_index_prefix)"
+		stream_init ilv ilv
+		log "[BT2] paired → coord-sorted BAM"
+		if ((dry_run)); then
+			echo "[DRYRUN] bowtie2 -x '$idx' ${READS_OPT[*]} ${READS_SRC[*]} -p $threads | samtools sort -o '$workdir/short.coord.bam'" >&2
+			echo "[DRYRUN] samtools index '$workdir/short.coord.bam'" >&2
+			echo "[DRYRUN] pilon --genome '$target_fa' --frags '$workdir/short.coord.bam' --threads $threads --output '$odir/pilon'" >&2
+		else
+			bowtie2 -x "$idx" "${READS_OPT[@]}" "${READS_SRC[@]}" -p "$threads" |
+				samtools sort -o "$workdir/short.coord.bam"
+			samtools index "$workdir/short.coord.bam"
+			pilon --genome "$target_fa" --frags "$workdir/short.coord.bam" --threads "$threads" --output "$odir/pilon"
+		fi
+		polished="$odir/pilon.fasta"
+		if ((keep_bam == 0)) && ((dry_run == 0)); then rm -f "$workdir/short.coord.bam" "$workdir/short.coord.bam.bai" || true; fi
+		;;
+
+	racon)
+		stream_init se se
+		log "[racon] SE stream via minimap2 -x sr → PAF"
+		if ((dry_run)); then
+			echo "[DRYRUN] minimap2 -x sr -t $threads '$target_fa' ${READS_SRC[*]} > '$workdir/short.paf'" >&2
+			echo "[DRYRUN] racon ${READS_SRC[*]} '$workdir/short.paf' '$target_fa' > '$odir/segments.racon.fa'" >&2
+		else
+			minimap2 -x sr -t "$threads" "$target_fa" "${READS_SRC[@]}" >"$workdir/short.paf"
+			racon "${READS_SRC[@]}" "$workdir/short.paf" "$target_fa" >"$odir/segments.racon.fa"
+		fi
+		polished="$odir/segments.racon.fa"
+		if ((keep_paf == 0)) && ((dry_run == 0)); then rm -f "$workdir/short.paf" || true; fi
+		;;
+
+	nextpolish)
+		stream_init se se
+		log "[NextPolish] prepare SE BAM"
+		if ((dry_run)); then
+			echo "[DRYRUN] minimap2 -x sr -t $threads '$target_fa' ${READS_SRC[*]} | samtools sort -o '$workdir/sr.bam'" >&2
+			echo "[DRYRUN] samtools index '$workdir/sr.bam'" >&2
+		else
+			minimap2 -x sr -t "$threads" "$target_fa" "${READS_SRC[@]}" | samtools sort -o "$workdir/sr.bam"
+			samtools index "$workdir/sr.bam"
+		fi
+		if ((dry_run == 0)); then cp -f "$target_fa" "$odir/segments.nextpolish.fa"; fi
+		polished="$odir/segments.nextpolish.fa"
+		if ((keep_bam == 0)) && ((dry_run == 0)); then rm -f "$workdir/sr.bam" "$workdir/sr.bam.bai" || true; fi
+		;;
+
+	*) die "unsupported --polisher '$polisher' (use auto|fmlrc2|polypolish|pilon|racon|nextpolish)" ;;
+	esac
 fi
 
-# ----------------- reinject into GFA or finalize FASTA -----------------
+# ---------- reinject into GFA or finalize FASTA ----------
 if ((is_gfa == 1)) && ((gfa_preserve == 1)); then
-	echo "[POLAP] Reinserting polished S-sequences into GFA"
-	python3 "$scripts_dir/gfa_inject_polished.py" "$asm" "$polished" >"$odir/${prefix}.polished.gfa"
+	log "Reinserting polished S-sequences into GFA"
+	if ((dry_run)); then
+		echo "[DRYRUN] python3 '$scripts_dir/gfa_inject_polished.py' '$asm' '$polished' > '$odir/${prefix}.polished.gfa'" >&2
+	else
+		python3 "$scripts_dir/gfa_inject_polished.py" "$asm" "$polished" >"$odir/${prefix}.polished.gfa"
+	fi
 	final_out="$odir/${prefix}.polished.gfa"
 else
-	cp -f "$polished" "$odir/${prefix}.polished.fa"
+	if ((dry_run)); then
+		echo "[DRYRUN] cp '$polished' '$odir/${prefix}.polished.fa'" >&2
+	else
+		cp -f "$polished" "$odir/${prefix}.polished.fa"
+	fi
 	final_out="$odir/${prefix}.polished.fa"
 fi
 
-# ----------------- QC REPORT -----------------
+# ---------- QC ----------
 if ((qc_report == 1)); then
 	mkdir -p "$odir/qc"
 	_ont_qc() {
 		local ref="$1" tag="$2"
 		local paf="$odir/qc/${tag}.paf" tsv="$odir/qc/${tag}.pafstats.tsv"
-		minimap2 -x "$minimap_preset" --secondary=no -K "$minimap_K" -t "$threads" "$ref" "$ont" >"$paf"
-		awk -f "$scripts_dir/paf_stats.awk" "$paf" >"$tsv" || true
+		if ((dry_run)); then
+			echo "[DRYRUN] minimap2 -x $minimap_preset --secondary=no -K $minimap_K -t $threads '$ref' '$ont' > '$paf'" >&2
+			echo "[DRYRUN] awk -f '$scripts_dir/paf_stats.awk' '$paf' > '$tsv'" >&2
+		else
+			minimap2 -x "$minimap_preset" --secondary=no -K "$minimap_K" -t "$threads" "$ref" "$ont" >"$paf"
+			awk -f "$scripts_dir/paf_stats.awk" "$paf" >"$tsv" || true
+			if ((keep_paf == 0)); then rm -f "$paf" || true; fi
+		fi
 	}
 	if ((ab_test == 1)); then
-		A_DIR=$(ls -1dt out/"${prefix}_A".polish_* 2>/dev/null | head -n1)
-		B_DIR=$(ls -1dt out/"${prefix}_B".polish_* 2>/dev/null | head -n1)
-		A_OUT=$(ls -1 "$A_DIR"/*polished.* 2>/dev/null | head -n1 || true)
-		B_OUT=$(ls -1 "$B_DIR"/*polished.* 2>/dev/null | head -n1 || true)
-		[[ -n "${A_OUT:-}" ]] && _ont_qc "$A_OUT" "A_all_reads"
-		[[ -n "${B_OUT:-}" ]] && _ont_qc "$B_OUT" "B_recruit_cap"
+		if ((dry_run)); then
+			echo "[DRYRUN] QC for A/B outputs" >&2
+		else
+			A_DIR=$(ls -1dt out/"${prefix}_A".polish_* 2>/dev/null | head -n1 || true)
+			B_DIR=$(ls -1dt out/"${prefix}_B".polish_* 2>/dev/null | head -n1 || true)
+			A_OUT=$(ls -1 "$A_DIR"/*polished.* 2>/dev/null | head -n1 || true)
+			B_OUT=$(ls -1 "$B_DIR"/*polished.* 2>/dev/null | head -n1 || true)
+			[[ -n "${A_OUT:-}" ]] && _ont_qc "$A_OUT" "A_all_reads"
+			[[ -n "${B_OUT:-}" ]] && _ont_qc "$B_OUT" "B_recruit_cap"
+		fi
 	else
 		_ont_qc "$final_out" "single_run"
 	fi
-	# Merqury QV if SR present
 	if ((eval_merqury == 1)) && [[ -n "${sr1:-}" && -n "${sr2:-}" ]]; then
-		if ((ab_test == 1)); then
-			meryl k="$kmer" count "$sr1" "$sr2" output "$odir/qc/reads.meryl"
-			[[ -n "${A_OUT:-}" ]] && merqury.sh "$odir/qc/reads.meryl" "$A_OUT" "$odir/qc/A" || true
-			[[ -n "${B_OUT:-}" ]] && merqury.sh "$odir/qc/reads.meryl" "$B_OUT" "$odir/qc/B" || true
+		if ((dry_run)); then
+			echo "[DRYRUN] meryl k=$kmer count '$sr1' '$sr2' output '$odir/qc/reads.meryl'" >&2
+			echo "[DRYRUN] merqury.sh '$odir/qc/reads.meryl' '$final_out' '$odir/qc/SINGLE'" >&2
 		else
 			meryl k="$kmer" count "$sr1" "$sr2" output "$odir/qc/reads.meryl"
 			merqury.sh "$odir/qc/reads.meryl" "$final_out" "$odir/qc/SINGLE" || true
 		fi
 	fi
-	echo "[QC] Files:"
-	ls -1 "$odir/qc" | sed "s|^|[QC]   $odir/qc/|"
+	if ((dry_run == 0)); then
+		echo "[QC] Files:"
+		ls -1 "$odir/qc" | sed "s|^|[QC]   $odir/qc/|"
+	fi
 fi
 
 echo "[DONE] Output: $final_out"

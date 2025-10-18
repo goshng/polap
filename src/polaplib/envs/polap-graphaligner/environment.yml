@@ -1,0 +1,8 @@
+name: polap-graphaligner
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - graphaligner
+prefix: /home/goshng/miniconda3/envs/polap-graphaligner

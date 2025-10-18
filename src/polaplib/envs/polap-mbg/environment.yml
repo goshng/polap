@@ -1,0 +1,8 @@
+name: polap-mbg
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - mbg
+prefix: /home/goshng/miniconda3/envs/polap-mbg

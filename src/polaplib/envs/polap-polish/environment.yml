@@ -1,0 +1,20 @@
+name: polap-polish
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bwa-mem2
+  - fmlrc2
+  - gfatools
+  - merqury
+  - meryl
+  - minimap2
+  - polypolish
+  - python
+  - r-base
+  - racon
+  - ropebwt2
+  - samtools
+  - seqtk
+prefix: /home/goshng/miniconda3/envs/polap-polish

@@ -1,0 +1,8 @@
+name: polap-flye
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - flye
+prefix: /home/goshng/miniconda3/envs/polap-flye

@@ -31,11 +31,32 @@
 # opt_t_arg
 
 _brg_outdir="${_brg_outdir%/}"
+
+# if [[ -z "${_brg_title}" ]]; then
+# 	if [[ "${FUNCNAME[1]}" == run-* ]]; then
+# 		local _brg_title="${FUNCNAME[1]#run-}"
+# 	fi
+# 	_brg_title="${_brg_title%%_*}"
+# fi
+
+# _brg_title: may or may not be set
+# FUNCNAME[1]: e.g. "run-ptgaul_genus_species"
+
+if [[ -z "${_brg_title:-}" ]]; then
+	_brg_title="${FUNCNAME[1]}"
+
+	# remove suffix like _genus_species
+	_brg_title="${_brg_title%%_*}"
+
+	# remove prefix run- if present
+	if [[ "${_brg_title}" == run-* ]]; then
+		_brg_title="${_brg_title#run-}"
+	fi
+fi
+
 local _brg_tmpdir="${_brg_outdir}/tmp"
 local _brg_target="${_brg_outdir}-${_brg_sindex}"
 local _brg_adir="${opt_t_arg:-t1}"
-local _brg_title="${FUNCNAME[1]#run-}"
-_brg_title="${_brg_title%%_*}"
 local subcmd1="${_brg_title}"
 local _brg_outdir_t="${_brg_outdir}/${opt_t_arg}"
 local _brg_outdir_0="${_brg_outdir_t}/0"

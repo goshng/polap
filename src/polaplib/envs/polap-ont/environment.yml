@@ -1,0 +1,14 @@
+name: polap-ont
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - medaka
+  - porechop_abi
+  - bbmap
+  - seqkit
+  - seqtk
+  - yacrd
+  - cd-hit
+prefix: /home/goshng/miniconda3/envs/polap-ont

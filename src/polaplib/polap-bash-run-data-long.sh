@@ -1,567 +1,333 @@
-################################################################################
-# This file is part of polap.
-#
-# polap is free software: you can redistribute it and/or modify it under the
-# terms of the GNU General Public License as published by the Free Software
-# Foundation, either version 3 of the License, or (at your option) any later
-# version.
-#
-# polap is distributed in the hope that it will be useful, but WITHOUT ANY
-# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along with
-# polap. If not, see <https://www.gnu.org/licenses/>.
-################################################################################
-
 #!/usr/bin/env bash
+################################################################################
 # polap-bash-run-data-long.sh
-# Normalize a long-read dataset to: $outdir/tmp/l.fq
-# Extension priority: .fastq, .fq, .fastq.gz, .fq.gz, .fastq.tar.gz, .fq.tar.gz, -10x.fastq.tar.gz
-# Directory order: $PWD first, then --media, --media1, --media2, then remote (if provided).
+# Version: v0.3.0
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Prepare a long-read FASTQ under <sfolder>/tmp/ as:
+#   - l.fq.gz              (default)
+#   - or l.fq              (with --as-fq / --as-fastq)
+#
+# Policy (mirrors short-read script):
+#   • If the FASTQ exists on *this* machine ➜ create a symlink (gz mode).
+#     - In --as-fq: decompress into a local l.fq (keep /media gz intact).
+#   • Else if it exists on a remote ➜ scp to tmp (gz mode keeps gz; --as-fq gunzips).
+#   • Else ➜ download from NCBI via `polap-ncbitools fetch sra <SRR>` (fallback: fasterq-dump).
+#       - default gz mode: if .fastq, compress to .fq.gz; if .gz given, keep .gz.
+#       - --as-fq: save as plain .fq
+#
+# Notes
+#   • Only symlink when source is local *and* the requested suffix matches (gz mode).
+#   • When only *.fastq (not .gz) exists locally and gz mode is requested:
+#       - we avoid recompressing media; we link as l.fq and warn.
+#   • Records SRA ID to <sfolder>/tmp/l.sra.txt
+################################################################################
 set -euo pipefail
+IFS=$'\n\t'
 
 usage() {
 	cat <<'EOF'
 Usage:
-  polap-bash-run-data-long.sh -l <SRA_ID> -o <outdir> [options]
+  polap-bash-run-data-long.sh -l SRRxxxxxx -o <sfolder>
+                              [--as-fq | --as-fastq]
+                              [--threads N]
+                              [--remote user@host]
+                              [--redo] [--cleanup]
+                              [-h|--help]
 
-Required:
-  -l, --long-sra  SRA accession (e.g., SRR123456)
-  -o, --outdir    Output directory (final file: outdir/tmp/l.fq)
+Inputs:
+  -l, --long-sra   SRA accession for the long reads (single), e.g., SRR10190639
+  -o, --outdir     Species folder (we write to <outdir>/tmp/)
 
-Optional:
-  --media         First media directory (searched after $PWD)
-  --media1        Second media directory
-  --media2        Third media directory
-  -r, --remote    Remote host for ssh/scp (e.g., user@host)
-  -n, --dry-run   Print actions without making changes
-  -h, --help      Show this help
+Options:
+  --as-fq | --as-fastq  Write plain l.fq (decompress if needed). Default: l.fq.gz
+  --threads N           Threads for pigz/gzip (default: 4)
+  --remote HOST         Remote host alias (default: $_local_host if set)
+  --redo                Re-create outputs even if they already exist
+  --cleanup             Remove transient files fetched into tmp (e.g., .tmp files)
+  -h, --help            Show this help
 
-Exit codes:
-  0  success
-  2  usage error
-  3  required tool missing
-  20 fetch produced no files
-  21 fetch failed
-  22 normalize failed
+Outputs:
+  <outdir>/tmp/l.fq.gz  (default)   or   <outdir>/tmp/l.fq  (with --as-fq)
+  <outdir>/tmp/l.sra.txt  (contains the SRR)
 EOF
 }
 
-# -------- parse args
-long_sra=""
-outdir=""
-media_dir="/media/h2/sra"
-media1_dir="/media/h1/sra"
-media2_dir="/media/h2/sra"
-remote_host="thorne"
-dry_run="false"
+# ---- defaults / environment ---------------------------------------------------
+LONG_SRA=""
+OUTDIR=""
+AS_FQ=0
+THREADS=4
+REMOTE="${_local_host:-}" # optional override
+REDO=0
+CLEANUP=0
 
-while (("$#")); do
+# site-local media hints (optional)
+: "${_media_dir:=/media/h2/sra}"
+: "${_media1_dir:=/media/h1/sra}"
+: "${_media2_dir:=/media/h2/sra}"
+
+# ---- args ---------------------------------------------------------------------
+while (($#)); do
 	case "$1" in
 	-l | --long-sra)
-		long_sra="${2:?}"
+		LONG_SRA="${2:?}"
 		shift 2
 		;;
 	-o | --outdir)
-		outdir="${2:?}"
+		OUTDIR="${2:?}"
 		shift 2
 		;;
-	--media)
-		media_dir="${2:-}"
+	--as-fq | --as-fastq)
+		AS_FQ=1
+		shift
+		;;
+	--threads)
+		THREADS="${2:?}"
 		shift 2
 		;;
-	--media1)
-		media1_dir="${2:-}"
+	--remote)
+		REMOTE="${2:?}"
 		shift 2
 		;;
-	--media2)
-		media2_dir="${2:-}"
-		shift 2
+	--redo)
+		REDO=1
+		shift
 		;;
-	-r | --remote)
-		remote_host="${2:-}"
-		shift 2
-		;;
-	-n | --dry-run)
-		dry_run="true"
+	--cleanup)
+		CLEANUP=1
 		shift
 		;;
 	-h | --help)
 		usage
 		exit 0
 		;;
-	--)
-		shift
-		break
-		;;
-	-*)
-		echo "Error: Unknown option $1" >&2
-		usage
-		exit 2
-		;;
 	*)
-		echo "Error: Unexpected positional $1" >&2
+		echo "[ERROR] Unknown option: $1" >&2
 		usage
 		exit 2
 		;;
 	esac
 done
 
-[[ -n "$long_sra" ]] || {
-	echo "Error: -l|--long-sra is required." >&2
+[[ -n "$LONG_SRA" ]] || {
+	echo "[ERROR] --long-sra required" >&2
 	usage
 	exit 2
 }
-[[ -n "$outdir" ]] || {
-	echo "Error: -o|--outdir is required." >&2
+[[ -n "$OUTDIR" ]] || {
+	echo "[ERROR] --outdir required" >&2
 	usage
 	exit 2
 }
 
-# tools (optional here; we’ll guard fetch calls anyway)
-need_tool() { command -v "$1" >/dev/null 2>&1 || return 1; }
+TMP="$OUTDIR/tmp"
+mkdir -p "$TMP"
 
-# -------- paths & helpers
-tmpd="${outdir%/}/tmp"
-mkdir -p "$tmpd"
-norm="${tmpd}/l.fq"
-work="${tmpd}/.${long_sra}.work.$$"
-mkdir -p "$work"
+# ---- helpers ------------------------------------------------------------------
+have() { command -v "$1" >/dev/null 2>&1; }
+pigz_dc() { if have pigz; then pigz -dc -p "$THREADS"; else gzip -dc; fi; }
+pigz_c() { if have pigz; then pigz -c -p "$THREADS" -"${1:-6}"; else gzip -c -"${1:-6}"; fi; }
+show() { printf '[long] %s\n' "$*" >&2; }
 
-log() { printf '[polap-long] %s\n' "$*" >&2; }
-maybe() { if [[ "$dry_run" == "true" ]]; then log "(dry-run) $*"; else eval "$@"; fi; }
-
-cleanup() {
-	rm -rf -- "$work"
-}
-trap cleanup EXIT
-
-# ---- OpenSSL mismatch guard ----------------------------------------------
-# Runs a command; on failure, if stderr includes "OpenSSL version mismatch",
-# warns and returns 100 (skip), otherwise returns the real non-zero code.
-openssl_mismatch_guard() {
-	local stderrf="${work}/.stderr.$RANDOM"
-	set +e
-	"$@" 2>"$stderrf"
-	local rc=$?
-	set -e
-	if ((rc != 0)); then
-		if grep -qi 'OpenSSL version mismatch' "$stderrf"; then
-			log "WARN(OpenSSL mismatch): $* — skipping this step"
-			rm -f "$stderrf"
-			return 100
-		fi
-		cat "$stderrf" >&2
-		rm -f "$stderrf"
-		return $rc
-	fi
-	rm -f "$stderrf"
-	return 0
-}
-
-# -------- normalization helpers
-concat_to_norm() {
-	# args: files... (mix of .fastq/.fq and gz)
-	if [[ "$dry_run" == "true" ]]; then
-		log "(dry-run) would concatenate ${#@} file(s) -> $norm"
-		return 0
-	fi
-	: >"$norm"
-	local f
-	for f in "$@"; do
-		if [[ "$f" == *.gz ]]; then
-			gzip -dc -- "$f" >>"$norm"
-		else
-			cat -- "$f" >>"$norm"
-		fi
-	done
-}
-
-emit_from_one_file() {
-	# copy/decompress into fixed filename $norm (final name is literally l.fq)
-	local src="$1"
-
-	# size of the source file (human-readable)
-	if [[ -f "$src" ]]; then
-		log "Source $src size: $(du -h "$src" | awk '{print $1}')"
-	else
-		log "WARN: source $src not found"
-	fi
-
-	case "$src" in
-	*.fq | *.fastq)
-		maybe "cat -- '$src' > '$norm'"
-		;;
-	*.fq.gz | *.fastq.gz)
-		log "Decompressing gzip -> $norm"
-		maybe "gzip -dc -- '$src' > '$norm'"
-		;;
-	*)
-		return 1
-		;;
-	esac
-
-	# size of the normalized file (human-readable)
-	if [[ -f "$norm" ]]; then
-		log "Created $norm size: $(du -h "$norm" | awk '{print $1}')"
-	else
-		log "WARN: $norm not created"
-	fi
-}
-
-emit_from_tar() {
-	local tarpath="$1"
-	log "Extracting archive: $tarpath"
-	if [[ "$dry_run" == "true" ]]; then
-		log "(dry-run) would 'tar -tzf' and 'tar -zxf' into $work, then concat *.{fq,fastq}[.gz] -> $norm"
-		return 0
-	fi
-	tar -tzf "$tarpath" >/dev/null || {
-		log "Archive list failed: $tarpath"
-		return 1
-	}
-	tar -zxf "$tarpath" -C "$work"
-	mapfile -t files < <(find "$work" -type f \( -iname "*.fq" -o -iname "*.fastq" -o -iname "*.fq.gz" -o -iname "*.fastq.gz" \) | sort -V)
-	((${#files[@]} > 0)) || {
-		log "No FASTQ found inside archive: $tarpath"
-		return 1
-	}
-	concat_to_norm "${files[@]}"
-}
-
-emit_from_tar() {
-	# Extract an archive to $work and concat FASTQs to $norm.
-	# Supports: .tar.gz (gzipped tar), .tar (plain), .zip. Logs sizes before/after.
-	# Uses globals: dry_run, work, norm, log(), concat_to_norm()
-
-	local apath="$1"
-	[[ -f "$apath" ]] || {
-		log "ERROR: archive not found: $apath"
-		return 1
-	}
-
-	# Human-readable source size
-	local src_size
-	src_size="$(du -h -- "$apath" | awk '{print $1}')" || src_size="?"
-	log "Extracting archive: $apath"
-	log "Archive size: $src_size"
-
-	# Identify container
-	local mt
-	mt="$(file -b --mime-type -- "$apath" 2>/dev/null || true)"
-	# Common mimes: application/x-gzip, application/gzip, application/x-tar, application/zip
-	[[ -z "$mt" ]] && mt="(unknown)"
-
-	# Dry-run: try to list members anyway for better UX
-	if [[ "${dry_run:-false}" == "true" ]]; then
-		case "$mt" in
-		application/gzip | application/x-gzip)
-			if tar -tzf -- "$apath" >/dev/null 2>&1; then
-				local n
-				n="$(tar -tzf -- "$apath" |
-					awk 'BEGIN{IGNORECASE=1} /\.f(ast)?q(\.gz)?$/ {c++} END{print c+0}')"
-				log "(dry-run) would extract to: $work"
-				log "(dry-run) would find ${n} FASTQ files and concat → $norm"
-			else
-				log "(dry-run) would try: tar -tzf (list) then tar -zxf (extract) → $work → $norm"
-			fi
+# locate first existing path among candidates
+first_existing() {
+	local p
+	for p in "$@"; do
+		[[ -s "$p" ]] && {
+			printf '%s' "$p"
 			return 0
-			;;
-		application/x-tar)
-			if tar -tf -- "$apath" >/dev/null 2>&1; then
-				local n
-				n="$(tar -tf -- "$apath" |
-					awk 'BEGIN{IGNORECASE=1} /\.f(ast)?q(\.gz)?$/ {c++} END{print c+0}')"
-				log "(dry-run) would extract to: $work"
-				log "(dry-run) would find ${n} FASTQ files and concat → $norm"
-			else
-				log "(dry-run) would try: tar -tf (list) then tar -xf (extract) → $work → $norm"
-			fi
-			return 0
-			;;
-		application/zip)
-			if unzip -l -- "$apath" >/dev/null 2>&1; then
-				local n
-				n="$(unzip -l -- "$apath" 2>/dev/null |
-					awk 'BEGIN{IGNORECASE=1} /\.f(ast)?q(\.gz)?$/ {c++} END{print c+0}')"
-				log "(dry-run) would unzip to: $work ; find ${n} FASTQ files → concat → $norm"
-			else
-				log "(dry-run) would try: unzip -l then unzip → $work → $norm"
-			fi
-			return 0
-			;;
-		*)
-			log "(dry-run) unknown mime-type: $mt ; would attempt tar -tzf → tar -tf → unzip -l."
-			return 0
-			;;
-		esac
-	fi
-
-	# Real run: list → extract with fallbacks
-	mkdir -p -- "$work"
-
-	local listed=0
-	case "$mt" in
-	application/gzip | application/x-gzip)
-		# Verify gzip integrity; if OK, try tar -tzf, else maybe it's a single .fastq.gz misnamed.
-		log "tar -xzf $apath -C $work"
-		tar -xzf "$apath" -C "$work"
-		# if ! tar -tzf "$apath" 2>/dev/null 2>&1; then
-		# 	log "ERROR: gzip integrity check failed (corrupt .gz?): $apath"
-		# 	return 1
-		# fi
-		# if tar -tzf -- "$apath" >/dev/null 2>&1; then
-		# 	listed=1
-		# 	tar -zxf -- "$apath" -C "$work"
-		# else
-		# 	# Not a tarball inside gzip (e.g., just a single .fastq.gz, misnamed .tar.gz)
-		# 	log "WARN: gzip OK but not a tarball; treating as a single gzipped FASTQ"
-		# 	local fastq_out="$work/$(basename "${apath%.tar.gz}").fastq"
-		# 	log "tar -xOzf $apath >$fastq_out"
-		# 	log tar -xOzf "$apath" >"$fastq_out"
-		# fi
-		;;
-	application/x-tar)
-		if tar -tf -- "$apath" >/dev/null 2>&1; then
-			listed=1
-			tar -xf -- "$apath" -C "$work"
-		else
-			log "ERROR: tar list failed (plain tar): $apath"
-			return 1
-		fi
-		;;
-	application/zip)
-		if unzip -l -- "$apath" >/dev/null 2>&1; then
-			listed=1
-			unzip -q -- "$apath" -d "$work"
-		else
-			log "ERROR: unzip list failed (zip): $apath"
-			return 1
-		fi
-		;;
-	*)
-		# Fallback probe order if mime-type was unknown/misleading
-		if tar -tzf -- "$apath" >/dev/null 2>&1; then
-			listed=1
-			tar -zxf -- "$apath" -C "$work"
-		elif tar -tf -- "$apath" >/dev/null 2>&1; then
-			listed=1
-			tar -xf -- "$apath" -C "$work"
-		elif unzip -l -- "$apath" >/dev/null 2>&1; then
-			listed=1
-			unzip -q -- "$apath" -d "$work"
-		else
-			log "ERROR: could not recognize or list archive format: $apath"
-			return 1
-		fi
-		;;
-	esac
-
-	# Gather FASTQs (case-insensitive), then concat → $norm
-	# This finds all FASTQ/FASTQ.GZ files under $work, sorts them naturally
-	# (version-aware), and saves the list into the Bash array files.
-	mapfile -t files < <(
-		find "$work" -type f \( -iname "*.fq" -o -iname "*.fastq" -o -iname "*.fq.gz" -o -iname "*.fastq.gz" \) \
-			-print0 | xargs -0 -I{} printf "%s\n" "{}" | sort -V
-	)
-	if ((${#files[@]} == 0)); then
-		log "No FASTQ files found after extraction: $apath"
-		return 1
-	fi
-
-	log "Found ${#files[@]} FASTQ files; concatenating → $norm"
-	concat_to_norm "${files[@]}"
-
-	if [[ -s "$norm" ]]; then
-		local out_size
-		out_size="$(du -h -- "$norm" | awk '{print $1}')" || out_size="?"
-		log "Created $norm size: $out_size"
-		return 0
-	else
-		log "❌ Normalized output missing or empty: $norm"
-		return 1
-	fi
-}
-
-# search functions (exact-name only, in priority order)
-exts=(
-	".fastq"
-	".fq"
-	".fastq.gz"
-	".fq.gz"
-	".fastq.tar.gz"
-	".fq.tar.gz"
-	"-10x.fastq.tar.gz" # NEW
-)
-
-try_exact_in_dir() {
-	local dir="$1" p
-	for ext in "${exts[@]}"; do
-		p="${dir%/}/${long_sra}${ext}"
-		if [[ -s "$p" ]]; then
-			log "Found: $p"
-			case "$p" in
-			*.tar.gz) emit_from_tar "$p" ;;
-			*) emit_from_one_file "$p" ;;
-			esac
-			return 0
-		fi
+		}
 	done
 	return 1
 }
 
-try_exact_remote_dir() {
-	local dir="$1" rp base local_copy
-	[[ -z "$remote_host" ]] && return 1
-	for ext in "${exts[@]}"; do
-		rp="${dir%/}/${long_sra}${ext}"
-		# Check existence on remote (guarded)
-		set +e
-		openssl_mismatch_guard ssh "$remote_host" "test -s '$rp'"
-		local rc=$?
-		set -e
-		if ((rc == 0)); then
-			log "Found remote: ${remote_host}:$rp"
-			base="$(basename "$rp")"
-			local_copy="${work}/${base}"
-			# Copy (guarded)
-			set +e
-			openssl_mismatch_guard scp "$remote_host:$rp" "$local_copy"
-			rc=$?
-			set -e
-			if ((rc == 0)); then
-				case "$local_copy" in
-				*.tar.gz) emit_from_tar "$local_copy" ;;
-				*) emit_from_one_file "$local_copy" ;;
-				esac
-				return 0
-			elif ((rc == 100)); then
-				# OpenSSL mismatch during scp → warn already printed; skip remote
-				return 1
-			else
-				# other scp error: keep searching other patterns/dirs
-				continue
-			fi
-		elif ((rc == 100)); then
-			# OpenSSL mismatch on ssh; skip remote entirely for this dir
-			return 1
-		fi
-	done
+# remote test
+remote_has() {
+	local path="$1"
+	[[ -n "$REMOTE" ]] || return 1
+	ssh -o BatchMode=yes -o ConnectTimeout=5 "$REMOTE" "test -s '$path'" 2>/dev/null
+}
+
+# scp helper
+pull_remote() {
+	local rpath="$1" lpath="$2"
+	mkdir -p "$(dirname "$lpath")"
+	show "scp: $REMOTE:$rpath -> $lpath"
+	scp -q "$REMOTE":"$rpath" "$lpath"
+}
+
+# choose output based on mode
+target_path() {
+	if ((AS_FQ)); then
+		printf '%s' "$TMP/l.fq"
+	else
+		printf '%s' "$TMP/l.fq.gz"
+	fi
+}
+
+# verify existence unless REDO
+check_skip() {
+	local t="$1"
+	if ((REDO == 0)) && [[ -s "$t" ]]; then
+		show "exists: $(basename "$t") (use --redo to rebuild)"
+		return 0
+	fi
 	return 1
 }
 
-finalize_and_check() {
-	if [[ -s "$norm" ]]; then
-		log "OK -> $norm"
-		printf '%s\n' "$norm"
-		return 0
+# write from gz/plain sources
+write_from_gz() { # src.gz -> dst(.fq or .fq.gz)
+	local src="$1" dst="$2"
+	if [[ "$dst" == *.gz ]]; then
+		ln -sf "$src" "$dst"
+	else
+		show "gunzip -> $(basename "$dst")"
+		pigz_dc <"$src" >"$dst"
 	fi
-	log "❌ Normalized output missing or empty: $norm"
-	return 22
 }
 
-# -------- NCBI fetch (prefetch → vdb-validate → fasterq-dump), guarded
-fetch_from_ncbi() {
-	log "Fetching from NCBI: $long_sra"
-	if [[ "$dry_run" == "true" ]]; then
-		log "(dry-run) prefetch '$long_sra' --quiet --max-size u"
-		log "(dry-run) vdb-validate '$long_sra' --quiet 2>/dev/null"
-		log "(dry-run) fasterq-dump '$long_sra' --quiet 2>/dev/null"
-		return 0
+write_from_fastq() { # src.fastq -> dst(.fq or .fq.gz)
+	local src="$1" dst="$2"
+	if [[ "$dst" == *.gz ]]; then
+		show "gzip -> $(basename "$dst")"
+		pigz_c 6 <"$src" >"$dst"
+	else
+		ln -sf "$src" "$dst"
 	fi
-
-	local rc
-
-	# prefetch
-	set +e
-	openssl_mismatch_guard prefetch "$long_sra" --quiet --max-size u
-	rc=$?
-	set -e
-	if ((rc == 100)); then
-		# OpenSSL mismatch → skip fetch path
-		return 20
-	elif ((rc != 0)); then
-		return 21
-	fi
-
-	# vdb-validate (non-fatal; guard for mismatch)
-	set +e
-	openssl_mismatch_guard vdb-validate "$long_sra" --quiet
-	rc=$?
-	set -e
-	# rc==100 -> mismatch warned; continue anyway
-	# rc!=0 and !=100 -> validation error, but keep going (as before)
-
-	# fasterq-dump
-	set +e
-	openssl_mismatch_guard fasterq-dump "$long_sra" --quiet
-	rc=$?
-	set -e
-	if ((rc == 100)); then
-		return 20
-	elif ((rc != 0)); then
-		return 21
-	fi
-
-	# Collect outputs from CWD (SRA tools default)
-	mapfile -t outs < <(find . -maxdepth 1 -type f \( \
-		-name "${long_sra}.fastq" -o \
-		-name "${long_sra}.fq" -o \
-		-name "${long_sra}_1.fastq" -o -name "${long_sra}_2.fastq" -o \
-		-name "${long_sra}_1.fq" -o -name "${long_sra}_2.fq" \
-		\) | sed 's#^\./##' | sort -V)
-
-	if ((${#outs[@]} == 0)); then
-		log "No FASTQ produced by fasterq-dump."
-		return 20
-	fi
-
-	concat_to_norm "${outs[@]}"
 }
 
-# ==================== MAIN FLOW ====================
+# normalize downloaded names to our l.fq(.gz)
+normalize_downloaded_into() {
+	local base="$1" dst="$2"
+	local cand_gz="$TMP/${base}.fastq.gz"
+	local cand_fq="$TMP/${base}.fastq"
+	if [[ -s "$cand_gz" ]]; then
+		write_from_gz "$cand_gz" "$dst"
+		((CLEANUP)) && rm -f -- "$cand_gz"
+	elif [[ -s "$cand_fq" ]]; then
+		write_from_fastq "$cand_fq" "$dst"
+		((CLEANUP)) && rm -f -- "$cand_fq"
+	else
+		return 1
+	fi
+}
 
-# 1) PWD first
-if try_exact_in_dir "$PWD"; then
-	finalize_and_check
-	exit $?
+# ---- main ---------------------------------------------------------------------
+# record SRA
+printf '%s\n' "$LONG_SRA" >"$TMP/l.sra.txt"
+
+TDST="$(target_path)"
+check_skip "$TDST" && {
+	show "done: $(basename "$TDST")"
+	exit 0
+}
+
+base="${LONG_SRA}"
+local_gz="$(first_existing "./${base}.fastq.gz" \
+	"${_media_dir}/${base}.fastq.gz" \
+	"${_media1_dir}/${base}.fastq.gz" \
+	"${_media_dir}/${base}-10x.fastq.gz" \
+	"${_media1_dir}/${base}-10x.fastq.gz" \
+	"${_media2_dir}/${base}.fastq.gz")" || true
+local_fq="$(first_existing "./${base}.fastq" \
+	"${_media_dir}/${base}.fastq" \
+	"${_media1_dir}/${base}.fastq" \
+	"${_media_dir}/${base}-10x.fastq" \
+	"${_media1_dir}/${base}-10x.fastq" \
+	"${_media2_dir}/${base}.fastq")" || true
+
+# 1) LOCAL
+if [[ -n "$local_gz" ]]; then
+	if ((AS_FQ)); then
+		show "local -> $(basename "$TDST") (gunzip copy)"
+		pigz_dc <"$local_gz" >"$TDST"
+	else
+		show "local -> symlink $(basename "$TDST")"
+		ln -sf "$local_gz" "$TDST"
+	fi
+	show "done: $(basename "$TDST")"
+	exit 0
 fi
 
-# 2) media dirs (if provided)
-for d in "${media_dir:-}" "${media1_dir:-}" "${media2_dir:-}"; do
-	[[ -n "$d" ]] || continue
-	if try_exact_in_dir "$d"; then
-		finalize_and_check
-		exit $?
+if [[ -n "$local_fq" ]]; then
+	if ((AS_FQ)); then
+		show "local -> symlink $(basename "$TDST")"
+		ln -sf "$local_fq" "$TDST"
+	else
+		show "WARN: only *.fastq found locally; linking as uncompressed l.fq"
+		ln -sf "$local_fq" "$TMP/l.fq"
 	fi
-done
+	show "done: $(basename "$(target_path)")"
+	exit 0
+fi
 
-# 3) remote (same dir order)
-if [[ -n "$remote_host" ]]; then
-	for d in "${media_dir:-}" "${media1_dir:-}" "${media2_dir:-}"; do
-		[[ -n "$d" ]] || continue
-		if try_exact_remote_dir "$d"; then
-			finalize_and_check
-			exit $?
+# 2) REMOTE
+if [[ -n "$REMOTE" ]]; then
+	for r in "${_media_dir}/${base}.fastq.gz" \
+		"${_media1_dir}/${base}.fastq.gz" \
+		"${_media2_dir}/${base}.fastq.gz"; do
+		if remote_has "$r"; then
+			tmpgz="$TMP/.${base}.fastq.gz.tmp"
+			pull_remote "$r" "$tmpgz"
+			if ((AS_FQ)); then
+				show "gunzip -> $(basename "$TDST")"
+				pigz_dc <"$tmpgz" >"$TDST"
+				((CLEANUP)) && rm -f -- "$tmpgz"
+			else
+				mv -f "$tmpgz" "$TDST"
+			fi
+			show "done: $(basename "$TDST")"
+			exit 0
+		fi
+	done
+	for r in "${_media_dir}/${base}.fastq" \
+		"${_media1_dir}/${base}.fastq" \
+		"${_media2_dir}/${base}.fastq"; do
+		if remote_has "$r"; then
+			tmpfq="$TMP/.${base}.fastq.tmp"
+			pull_remote "$r" "$tmpfq"
+			if ((AS_FQ)); then
+				mv -f "$tmpfq" "$TDST"
+			else
+				show "gzip -> $(basename "$TDST")"
+				pigz_c 6 <"$tmpfq" >"$TDST"
+				((CLEANUP)) && rm -f -- "$tmpfq"
+			fi
+			show "done: $(basename "$TDST")"
+			exit 0
 		fi
 	done
 fi
 
-# 4) fetch from NCBI (guarded)
-# Run fetch in a temporary work subdir to avoid cluttering PWD
+# 3) NCBI: fallback download into TMP then normalize
+show "NCBI fetch: ${LONG_SRA}"
+if command -v _polap_lib_conda-ensure_conda_env >/dev/null 2>&1; then
+	_polap_lib_conda-ensure_conda_env polap-ncbitools || true
+fi
 (
-	cd "$work"
-	fetch_from_ncbi
+	cd "$TMP"
+	if command -v polap-ncbitools >/dev/null 2>&1; then
+		polap-ncbitools fetch sra "${LONG_SRA}"
+	else
+		if command -v fasterq-dump >/dev/null 2>&1; then
+			fasterq-dump -e "$THREADS" -p "${LONG_SRA}"
+			# compress if gz mode requested
+			if ((AS_FQ == 0)); then
+				[[ -s "${LONG_SRA}.fastq" ]] && pigz -p "$THREADS" "${LONG_SRA}.fastq" || true
+			fi
+		else
+			echo "[ERROR] neither polap-ncbitools nor fasterq-dump found" >&2
+			exit 3
+		fi
+	fi
 )
-rc=$?
-if ((rc == 0)); then
-	finalize_and_check
-	exit $?
-elif ((rc == 20)); then
-	log "Fetch skipped or produced no files (likely OpenSSL mismatch)."
-	exit 21
+
+if normalize_downloaded_into "${LONG_SRA}" "$TDST"; then
+	show "done: $(basename "$TDST")"
 else
-	log "❌ NCBI fetch failed."
-	exit 21
+	echo "[ERROR] could not locate downloaded ${LONG_SRA}.fastq[.gz]" >&2
+	exit 4
 fi
+
+exit 0

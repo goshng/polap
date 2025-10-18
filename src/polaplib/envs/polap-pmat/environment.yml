@@ -1,0 +1,11 @@
+name: polap-pmat
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - apptainer
+  - blast
+  - canu
+  - nextdenovo
+prefix: /home/goshng/miniconda3/envs/polap-pmat

@@ -1,0 +1,8 @@
+name: polap-racon
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - racon
+prefix: /home/goshng/miniconda3/envs/polap-racon

@@ -115,7 +115,7 @@ for sp in "${SP[@]}"; do
 	inum="${INUM:-$(jq -r --arg s "$sp" '.items[] | select(.species==$s) | .inum' "$MANIFEST" 2>/dev/null | head -n1)}"
 	[[ -z "$tier" || "$tier" == "null" ]] && tier="v6"
 	[[ -z "$inum" || "$inum" == "null" ]] && inum="0"
-	run="$base/$tier/$inum/polap-readassemble-1-miniasm"
+	run="$base/$tier/$inum/polap-readassemble"
 
 	########################################################################
 	# MT table

@@ -1,0 +1,9 @@
+name: polap-fmlrc2
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - fmlrc2
+  - rust
+prefix: /home/goshng/miniconda3/envs/polap-fmlrc2

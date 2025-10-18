@@ -263,6 +263,10 @@ _polap_readassemble-pt() {
 			_polap_log0 "use --downsample 1g for ONT reads"
 			return
 		fi
+		_polap_log0 _polap_lib_fastq-sample-to \
+			"${_arg_long_reads}" \
+			"${_arg_outdir}/ld.fq" \
+			"${_arg_downsample}"
 		_polap_lib_fastq-sample-to \
 			"${_arg_long_reads}" \
 			"${_arg_outdir}/ld.fq" \

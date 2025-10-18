@@ -241,6 +241,9 @@ Ssome=(
 	Vitis_vinifera
 )
 
+_brg_dry_run=false
+_brg_redo=false
+_brg_cleanup=false
 _bolap_command_string=bolap
 
 if [[ -s "${HOME}/.bolaprc" ]]; then
@@ -253,6 +256,8 @@ else
 	echo "${_bolap_type}" >"${HOME}/.bolaprc"
 fi
 
+_brg_outdir=""
+_brg_sindex=0
 _brg_verbose=1
 _brg_verbose_str=""
 opt_c_arg="off"
@@ -269,6 +274,7 @@ _brg_preset=""
 _brg_config_dir="$HOME/.polap/profiles"
 _brg_config_path=""
 _brg_default_target_dir="${opt_m_arg}"
+declare -a _blg_unknown_opts=()
 
 print_help() {
 
@@ -277,7 +283,7 @@ print_help() {
 BOLAP - Benchmarking of organelle DNA long-read assembly pipeline.
 Version: ${_polap_version}, Analysis: ${_bolap_type}
 
-Usage: ${_bolap_command_string} [-hyvf] [-c CSV] [--version] [command] [--help|-h]
+Usage: ${_bolap_command_string} [command] [options] -s species_name
 
 bolap is a tool for data analysis of plant plastid genome assembly
 by annotating long reads with organelle genome sequences and selecting those
@@ -296,24 +302,17 @@ commands:
   clean (delete, rm)   Remove unnecessary folders.
 
 options:
-  -h, --help           Show this help message and exit.
-  -y                   Enable YES to any question.
-  -v                   Enable verbose mode.
-  -f                   Enable profiling.
+  -s STR               Set species folder (default: ${_brg_outdir})
+  -i INT               Set species index (default: ${_brg_sindex})
   -c <arg>             Set value for -c option (default: ${opt_c_arg})
   -t <arg>             Set value for -t option (default: ${opt_t_arg})
-  -m <arg>             Set value for -m option figure folder (default: ${_brg_default_target_dir})
+  -f                   Enable profiling.
+  -v                   Enable verbose mode.
   --version            Show the polap-data-${_bolap_type} version number and exit.
+  -h, --help           Show this help message and exit.
 HEREDOC
 	)
 
-	# get                  Get results.
-	# archive              Archive results.
-	# man                  Generate reports.
-	# build (assemble)     Build plastid or mitochondrial genomes.
-	# print-help-all       List all help messages.
-
-	# Display help message
 	echo "${help_message}"
 }
 
@@ -349,6 +348,16 @@ parse_commandline() {
 	while test $# -gt 0; do
 		_key="$1"
 		case "$_key" in
+		-s)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_brg_outdir="${2%/}"
+			shift
+			;;
+		-i)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_brg_sindex="$2"
+			shift
+			;;
 		-c)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			opt_c_arg="$2"
@@ -365,6 +374,15 @@ parse_commandline() {
 			opt_m_arg="$2"
 			_brg_default_target_dir="${opt_m_arg}"
 			shift
+			;;
+		--dry-run)
+			_brg_dry_run=true
+			;;
+		--redo)
+			_brg_redo=true
+			;;
+		--cleanup)
+			_brg_cleanup=true
 			;;
 		-y)
 			opt_y_flag=true
@@ -406,13 +424,20 @@ parse_commandline() {
 			print_help
 			exit
 			;;
+		-*)
+			_brg_unknown_opts+=("$1")
+			shift || true
+			if [[ $# -gt 0 ]]; then
+				_brg_unknown_opts+=("$1")
+			fi
+			;;
 		*)
 			_last_positional="$1"
 			_positionals+=("$_last_positional")
 			_positionals_count=$((_positionals_count + 1))
 			;;
 		esac
-		shift
+		shift || true
 	done
 }
 
@@ -476,6 +501,7 @@ fi
 _brg_adir="${opt_t_arg:-t5}"
 
 _brg_verbose=1
+_brg_args=("$@")
 parse_commandline "$@"
 
 handle_passed_args_count

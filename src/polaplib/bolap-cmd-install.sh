@@ -56,7 +56,7 @@ concat_until_zero() {
 	printf '%s\n' "$result"
 }
 
-concat_until_zero_or_dash() {
+v1_concat_until_zero_or_dash() {
 	local sep="${1:-/}" # separator (default "/")
 	shift || true
 
@@ -67,6 +67,32 @@ concat_until_zero_or_dash() {
 		[[ -n "$result" ]] && result+="$sep"
 		result+="$val"
 	done
+	printf '%s\n' "$result"
+}
+
+v1_concat_until_zero_or_anydash() {
+	local sep="${1:-/}" # Separator, default "/"
+	shift || true
+
+	local result=""
+	local val
+	for val in "$@"; do
+		# Stop completely if the sentinel 0 appears
+		if [[ "$val" == "0" ]]; then
+			break
+		fi
+
+		# If token begins with "-" (single or double), stop *after* including it
+		if [[ "$val" == -* ]]; then
+			break
+		fi
+
+		# Include items up to and including a dash-starting token (- or --something)
+		[[ -n "$result" ]] && result+="$sep"
+		result+="$val"
+
+	done
+
 	printf '%s\n' "$result"
 }
 
@@ -89,6 +115,7 @@ get_after_dash_until_zero() {
 
 	printf '%s\n' "${result[@]}"
 }
+
 function _run_bolap_install {
 	local _brg_outdir="${_brg_menu[1]}"
 	local _brg_sindex="${_brg_menu[2]:-0}"
@@ -1012,39 +1039,28 @@ EOF
 	return 0
 }
 
-function _run_bolap {
+function v1_run_bolap {
 
-	local bolap_cmd="${_brg_menu[0]}"
-	local subcmd1="${_brg_menu[0]}"
 	help_message=$(
 		cat <<EOF
 Name:
-  bolap ${bolap_cmd} - execute tools such as organelle genome assembly pipeline.
+  bolap - execute tools such as organelle genome assembly pipeline.
 
 Synopsis:
-  bolap ${bolap_cmd} TOOL
+  bolap command 
 
 Description:
-  bolap ${bolap_cmd} uses a tool to execute something. TOOL includes:
-readassemble,
-disassemble,
-syncassemble,
-getorganelle,
-ptgaul,
-tippo,
-oatk,
-pmat,
-
+  bolap
 
 Examples:
   Execute polap readassemble:
-    bolap ${bolap_cmd} readassemble Vigna_radiata
+    bolap readassemble -s Vigna_radiata
 
   Execute polap disassemble:
-    bolap ${bolap_cmd} disassemble Vigna_radiata
+    bolap disassemble -s Vigna_radiata
 
   Execute polap syncassemble:
-    bolap ${bolap_cmd} syncassemble Vigna_radiata
+    bolap syncassemble -s Vigna_radiata
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -1055,27 +1071,101 @@ Author:
 EOF
 	)
 
-	# Display help message
-	if [[ "${_brg_help}" == "on" || ${_brg_menu[1]} == "0" ]]; then
-		subcmd1="${_brg_menu[0]}"
-		_subcmd1_clean="${subcmd1//-/_}"
-		declare -n ref="help_message_${_subcmd1_clean}"
-		if [[ -v ref ]]; then
-			local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${_brg_menu[0]}")
-			man "$manfile"
-			rm -f "$manfile"
-		else
-			_log_echo0 "No such menu: $subcmd1"
-		fi
+	local bolap_cmd=$(concat_until_zero_or_anydash "-" "${_brg_menu[@]}")
+	local bolap_args=$(get_after_dash_until_zero "-" "${_brg_menu[@]}")
 
-		return
-	fi
+	subcmd1="${bolap_cmd}"
+	# echo "${bolap_cmd}_genus_species" ${bolap_args[@]}
+
+	case "$bolap_cmd" in
+	search)
+		bolap_cmd="list"
+		;;
+	esac
 
 	if declare -f "${bolap_cmd}_genus_species" >/dev/null 2>&1; then
-		"${bolap_cmd}_genus_species" ${_positionals[@]:1}
+		_log_echo0 ${bolap_cmd}_genus_species ${bolap_args[@]}
+		${bolap_cmd}_genus_species ${bolap_args[@]}
+	else
+		_log_echo0 "No such menu: ${bolap_cmd}_genus_species"
 	fi
+
+	# if declare -f "${bolap_cmd}_genus_species" >/dev/null 2>&1; then
+	# 	"${bolap_cmd}_genus_species" ${_positionals[@]:1}
+	# fi
 
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+	return 0
+}
+
+function _run_bolap {
+	# shellcheck disable=SC2154  # _brg_menu provided by parser
+	help_message=$(
+		cat <<'EOF'
+Name:
+  bolap - execute tools such as organelle genome assembly pipeline.
+
+Synopsis:
+  bolap command [subparts...] [-- flags...]
+
+Description:
+  Dispatches to <command>_genus_species. Supports both the new flag style and
+  legacy positional style for certain commands (e.g., "bolap list data").
+
+Examples:
+  bolap readassemble -s Vigna_radiata
+  bolap disassemble -s Vigna_radiata
+  bolap syncassemble -s Vigna_radiata
+  bolap list --query data --where start
+  bolap list data                # legacy back-compat → --query data --where any
+EOF
+	)
+
+	# Defensive copy of parsed menu (nounset-safe)
+	local -a _menu=()
+	if [[ ${_brg_menu+x} ]]; then
+		((${#_brg_menu[@]})) && _menu=("${_brg_menu[@]}")
+	fi
+
+	# Apply legacy-compat rewrites in-place
+	bolap_compat_rewrite_menu _menu
+
+	local bolap_cmd
+	bolap_cmd="$(concat_until_zero_or_anydash "-" "${_menu[@]}")"
+	subcmd1="${bolap_cmd}"
+
+	local -a bolap_args=()
+	if ((${#_menu[@]})); then
+		mapfile -t bolap_args < <(get_after_dash_until_zero "${_menu[@]}")
+	fi
+
+	if [[ -z "${bolap_cmd}" ]]; then
+		_log_echo0 "No command detected. Try: bolap list --help"
+		return 2
+	fi
+
+	local target="${bolap_cmd}_genus_species"
+	if declare -F "${target}" >/dev/null 2>&1; then
+		_log_echo0 "${target} ${bolap_args[*]:-}"
+		"${target}" "${bolap_args[@]:-}"
+	else
+		_log_echo0 "No such menu: ${target}"
+		local -a candidates=()
+		if declare -F list_genus_species >/dev/null 2>&1; then
+			mapfile -t candidates < <(list_genus_species --query ".*" --where any 2>/dev/null || true)
+		fi
+		if ((${#candidates[@]})); then
+			local suggestions
+			suggestions="$(_polap_suggest_closest "${bolap_cmd}" "${candidates[@]}")"
+			if [[ -n "${suggestions}" ]]; then
+				_log_echo0 "Did you mean:"
+				while IFS= read -r s; do _log_echo0 "  - $s"; done <<<"${suggestions}"
+			fi
+		fi
+		return 127
+	fi
+
+	[ "${_POLAP_DEBUG:-0}" -eq 1 ] && set +x || true
 	return 0
 }

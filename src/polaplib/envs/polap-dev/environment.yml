@@ -1,0 +1,32 @@
+name: polap-dev
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bedtools[version='>=2.30.0']
+  - bioawk[version='>=1.0']
+  - bioconda::jellyfish[version='>=2.2.10']
+  - blast[version='>=2.12.0']
+  - clustalw[version='>=2.1']
+  - csvtk[version='>=0.26.0']
+  - entrez-direct[version='>=15.6']
+  - flye[version='>=2.9.2']
+  - gfastats[version='>=1.3.6']
+  - minimap2[version='>=2.24']
+  - python==3.10.13
+  - seqkit[version='>=2.3.1']
+  - seqtk[version='>=1.3']
+  - sra-tools[version='>=3.0.0']
+  - r-base
+  - conda-forge::r-dplyr
+  - conda-forge::r-readr
+  - conda-forge::r-optparse
+  - samtools
+  - bash=5.0
+  - bioconda::orthofinder
+  - conda-forge::r-stringr
+  - conda-forge::r-tidyr
+  - bioconda::bioconductor-ggtree
+  - conda-build
+prefix: /home/goshng/miniconda3/envs/polap-dev

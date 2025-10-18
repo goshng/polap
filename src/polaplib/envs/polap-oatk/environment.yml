@@ -1,0 +1,24 @@
+name: polap-oatk
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconda::oatk
+  - biopython
+  - entrez-direct
+  - hmmer
+  - mafft
+  - parallel
+  - seqtk
+  - hifiasm
+  - minimap2
+  - samtools
+  - rust-mdbg
+  - gfatools
+  - ntcard
+  - seqkit
+  - racon
+  - bbmap
+  - filtlong
+prefix: /home/goshng/miniconda3/envs/polap-oatk

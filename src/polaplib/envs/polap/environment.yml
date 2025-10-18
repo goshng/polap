@@ -1,0 +1,45 @@
+name: polap
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconda::polap
+  - bbmap
+  - bioconductor-genomeinfodb
+  - genomescope2
+  - pbsim3
+  - r-biocmanager
+  - r-ellipse
+  - r-ggforce
+  - r-mass
+  - r-patchwork
+  - r-pracma
+  - r-r.utils
+  - r-rmarkdown
+  - r-robustbase
+  - r-sp
+  - r-uwot
+  - porechop
+  - r-tidyverse
+  - cd-hit
+  - meryl
+  - busco
+  - miniasm
+  - racon
+  - pyarrow
+  - pbgcpp
+  - medaka
+  - pbmm2
+  - pbtk
+  - mummer
+  - ntcard
+  - mosdepth
+  - pyfastx
+  - r-hexbin
+  - conda-forge::pv
+  - r-ggrepel
+  - plantuml
+  - r-rsvg
+  - qsv
+prefix: /home/goshng/miniconda3/envs/polap

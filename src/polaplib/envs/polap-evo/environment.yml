@@ -1,0 +1,18 @@
+name: polap-evo
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - biopython
+  - blast
+  - mummer4
+  - pysam
+  - python=3.11
+  - r-base
+  - r-data.table
+  - r-ggplot2
+  - r-gridextra
+  - samtools
+  - minimap2
+prefix: /home/goshng/miniconda3/envs/polap-evo

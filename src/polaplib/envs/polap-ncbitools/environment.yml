@@ -1,0 +1,11 @@
+name: polap-ncbitools
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - blast
+  - entrez-direct
+  - sra-tools
+  - busco
+prefix: /home/goshng/miniconda3/envs/polap-ncbitools

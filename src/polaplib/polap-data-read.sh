@@ -561,17 +561,23 @@ help_message_development=$(
 HEREDOC
 )
 
+# bolap help
 help_message_example=$(
 	cat <<HEREDOC
 # Main routine
+
 • List species directories for test ONT dataset
-  bolap config view platform,long | grep ONT | grep -- -0 | sort | nl
+  bolap config view --fields platform,long | grep ONT | grep -- -0 | sort | nl
+
 • Assemble plant organelle genomes with the ONT datasets
-  bolap run polap-readassemble <species_dir> <INT:0> [-f] [-v]
+  bolap run polap-readassemble -s <species_dir> -i <INT:0> [-f] [-v]
+
 • MTPT analysis of plant organelle genomes assembled with the ONT datasets
-  bolap run polap-readassemble-mtpt <species_dir> <INT:0> [-f] [-v]
+  bolap run polap-mtpt -s <species_dir> -i <INT:0> [-f] [-v]
+
 • Benchmark organelle genome assemblies using ptGAUL, TIPPo, Oatk.
   bolap benchmark <species_dir>
+
 • Summary of the results
   bolap man
 
@@ -3251,6 +3257,7 @@ man-man_genus_species() {
 	local args=("$@")
 
 	_polap_lib_conda-ensure_conda_env polap-man || exit 1
+	# make --trace -f "${_POLAPLIB_DIR}/Makefile.read" manuscript.pdf
 	make -f "${_POLAPLIB_DIR}/Makefile.read" manuscript.pdf
 	conda deactivate
 }
@@ -3301,5 +3308,21 @@ man-manifest_genus_species() {
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
 	make -f "${_POLAPLIB_DIR}/Makefile.read" manifests
+	conda deactivate
+}
+
+man-table-data_genus_species() {
+	local args=("$@")
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	make -f "${_POLAPLIB_DIR}/Makefile.read" table-data
+	conda deactivate
+}
+
+man-sheet-ptmt_genus_species() {
+	local args=("$@")
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+	make -f "${_POLAPLIB_DIR}/Makefile.read" sheet-ptmt
 	conda deactivate
 }

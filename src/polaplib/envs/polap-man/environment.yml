@@ -1,0 +1,14 @@
+name: polap-man
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - pandoc
+  - pandoc-crossref
+  - r-base
+  - r-optparse
+  - r-readr
+  - r-png
+  - r-dplyr
+prefix: /home/goshng/miniconda3/envs/polap-man

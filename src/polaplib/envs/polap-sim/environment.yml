@@ -1,0 +1,13 @@
+name: polap-sim
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - seqkit
+  - seqtk
+  - badread
+  - nanosim
+  - busco
+  - pbsim3
+prefix: /home/goshng/miniconda3/envs/polap-sim

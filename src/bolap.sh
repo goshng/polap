@@ -37,10 +37,7 @@ for arg in "$@"; do
 	esac
 done
 
-# Version early (optional; autoloader will load again if needed)
 source "${_POLAPLIB_DIR}/polap-lib-version.sh"
-
-# Parse args for bolap (kept as you had)
 source "${_POLAPLIB_DIR}/bolap-parsing.sh"
 _polap_output_dest="/dev/null"
 
@@ -49,15 +46,21 @@ source "${_POLAPLIB_DIR}/polap-bash-bolap-autoload-min.sh"
 : "${_bolap_type:=read}"
 bolap_autoload_min "${_POLAPLIB_DIR}" "${_bolap_type}"
 
+source "${_POLAPLIB_DIR}/polap-lib-command.sh"
+source "${_POLAPLIB_DIR}/polap-lib-bolap-compat.sh"
+source "${_POLAPLIB_DIR}/polap-lib-seqkit.sh"
+source "${_POLAPLIB_DIR}/polap-lib-dataset.sh"
+
 # MAIN
 if [ $# -eq 0 ]; then
 	print_help
 	exit 0
 fi
 
+_run_bolap
 # Dispatch
-if declare -f "_run_bolap_${_brg_menu[0]}" >/dev/null 2>&1; then
-	_run_bolap_${_brg_menu[0]}
-else
-	_run_bolap "${_brg_menu[0]}"
-fi
+# if declare -f "_run_bolap_${_brg_menu[0]}" >/dev/null 2>&1; then
+# 	_run_bolap_${_brg_menu[0]}
+# else
+# 	_run_bolap "${_brg_menu[0]}"
+# fi

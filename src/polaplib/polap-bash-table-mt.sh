@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# polap-bash-mt-table.sh
-# Version : v0.1.0  (2025-10-14)
+# polap-bash-table-mt.sh
+# Version : v0.3.0  (2025-10-15)
 # Author  : Sang Chul Choi (POLAP)
 # License : GPL-3.0+
 #
 # Mitochondrial genome summary: manifest -> TSV -> Markdown table
-# TSV header has no spaces; Markdown is pretty.
+# Output TSV uses tabs (no commas, no quotes).
 #
-# Columns (TSV, 8 columns, no spaces):
-#   species,code,sra,input_gb,mean_read_len_bases,ncbi_acc,ncbi_len_bp,asm_segments,asm_bases
+# TSV columns:
+#   code	sra	input_gb	mean_read_len_bases	ncbi_acc	ncbi_len_bp	asm_segments	asm_bases
 #
-# Columns (Markdown, same content, headings with spaces):
-#   Species | Code | SRA | Input Gb | Mean read length (bases) | NCBI accession | NCBI length | Assembly segments | Assembly bases
+# Markdown columns:
+#   Code | SRA | Input Gb | Mean read length (bases) | NCBI accession | NCBI length | Assembly segments | Assembly bases
 #
 set -euo pipefail
 IFS=$'\n\t'
@@ -63,34 +63,33 @@ done
 	echo "[ERR] --md required" >&2
 	exit 2
 }
+
 mkdir -p "$(dirname "$TSV_OUT")" "$(dirname "$MD_OUT")"
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
-# ------------------------------ TSV (no spaces) -------------------------------
-# Header: species,code,sra,input_gb,mean_read_len_bases,ncbi_acc,ncbi_len_bp,asm_segments,asm_bases
+# ------------------------------------------------------------------------------
+# TSV (tab-separated, no quotes)
+# ------------------------------------------------------------------------------
 {
-	echo "species,code,sra,input_gb,mean_read_len_bases,ncbi_acc,ncbi_len_bp,asm_segments,asm_bases"
+	echo -e "code\tsra\tinput_gb\tmean_read_len_bases\tncbi_acc\tncbi_len_bp\tasm_segments\tasm_bases"
 } >"$TSV_OUT"
 
 if have jq; then
-	# build TSV rows via jq; compute input_gb preferring bytes; else total_bases
 	jq -r '
     .items[] |
     {
-      species: (.species // "NA"),
-      code:    (.code2   // ""),
-      sra:     (.data.sra_id // "NA"),
-      bytes:   (.data.data_file_bytes // "NA"),
-      sum:     (.data.total_bases     // "NA"),
-      meanlen: (.data.mean_length     // "NA"),
-      acc:     (.mt.ref.ncbi_accession // "NA"),
-      nlen:    (.mt.ref.ncbi_len_bp    // "NA"),
-      nseg:    (.mt.stats.n_segments   // "NA"),
-      asmlen:  (.mt.stats.total_len    // "NA")
+      code:   (.code2 // ""),
+      sra:    (.data.sra_id // "NA"),
+      bytes:  (.data.data_file_bytes // "NA"),
+      sum:    (.data.total_bases // "NA"),
+      meanlen:(.data.mean_length // "NA"),
+      acc:    (.mt.ref.ncbi_accession // "NA"),
+      nlen:   (.mt.ref.ncbi_len_bp // "NA"),
+      nseg:   (.mt.stats.n_segments // "NA"),
+      asmlen: (.mt.stats.total_len // "NA")
     } |
     [
-      .species,
       .code,
       .sra,
       ( if (.bytes|tostring)!="NA" and (.bytes|tonumber)>0
@@ -103,21 +102,22 @@ if have jq; then
       .nlen,
       .nseg,
       .asmlen
-    ] | @csv
+    ] | @tsv
   ' "$MANIFEST" >>"$TSV_OUT"
 else
 	echo "[ERR] jq required" >&2
 	exit 2
 fi
 
-# --------------------------- Markdown (pretty) --------------------------------
+# ------------------------------------------------------------------------------
+# Markdown (human-readable)
+# ------------------------------------------------------------------------------
 {
-	echo '| Species | Code | SRA | Input Gb | Mean read length (bases) | NCBI accession | NCBI length | Assembly segments | Assembly bases |'
-	echo '|:--|:--:|:--:|--:|--:|:--|--:|--:|--:|'
+	echo '| Code | SRA | Input Gb | Mean read length (bases) | NCBI accession | NCBI length | Assembly segments | Assembly bases |'
+	echo '|:--:|:--:|--:|--:|:--|--:|--:|--:|'
 } >"$MD_OUT"
 
-# stream TSV rows, pretty-print numeric columns
-tail -n +2 "$TSV_OUT" | while IFS=',' read -r species code sra input_gb meanlen acc nlen nseg asmbases; do
+tail -n +2 "$TSV_OUT" | while IFS=$'\t' read -r code sra input_gb meanlen acc nlen nseg asmbases; do
 	# numeric formatting
 	fmt_gb="$input_gb"
 	[[ "$input_gb" != "NA" ]] && fmt_gb=$(awk -v v="$input_gb" 'BEGIN{printf "%.2f", v}')
@@ -130,7 +130,7 @@ tail -n +2 "$TSV_OUT" | while IFS=',' read -r species code sra input_gb meanlen 
 	fmt_asmb="$asmbases"
 	[[ "$asmbases" != "NA" ]] && fmt_asmb=$(awk -v v="$asmbases" 'BEGIN{printf "%.0f", v}')
 
-	echo "| ${species//_/ } | ${code} | ${sra} | ${fmt_gb} | ${fmt_mean} | ${acc} | ${fmt_nlen} | ${fmt_nseg} | ${fmt_asmb} |" >>"$MD_OUT"
+	echo "| ${code} | ${sra} | ${fmt_gb} | ${fmt_mean} | ${acc} | ${fmt_nlen} | ${fmt_nseg} | ${fmt_asmb} |" >>"$MD_OUT"
 done
 
 echo "[OK] Wrote TSV    : $TSV_OUT"

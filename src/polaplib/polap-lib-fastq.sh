@@ -144,13 +144,117 @@ _polap_lib_fastq-pacbio-type() {
 
 }
 
+# Version: v0.1.0
+# Usage: seqkit_stats_outname /path/to/abc.fq[.gz] | /path/to/abc.fastq[.gz]
+# Prints: /path/to/abc.fq.seqkit.stats.ta.txt
+seqkit_stats_outname() {
+	local infile="${1-}"
+	if [[ -z "$infile" ]]; then
+		echo "Usage: seqkit_stats_outname /path/to/abc.fq[.gz]|.fastq[.gz]" >&2
+		return 2
+	fi
+
+	# Split path without external commands (safe under `set -euo pipefail`)
+	local base="${infile##*/}" # filename
+	local dir="${infile%/*}"   # directory (may be same as infile if no '/')
+	[[ "$dir" == "$infile" ]] && dir="."
+
+	# Normalize base name: drop .gz, then drop .fastq or .fq
+	local stem="$base"
+	stem="${stem%.gz}"
+	stem="${stem%.fastq}"
+	stem="${stem%.fq}"
+
+	# Compose desired output name
+	printf '%s\n' "${dir%/}/${stem}.fq.seqkit.stats.ta.txt"
+}
+
+# _polap_compress_or_decompress
+# Version: v0.2.0
+# Adaptive decompression / compression / linking with pv progress
+# ---------------------------------------------------------------
+# Behavior:
+#   infile .gz  -> outfile plain  → decompress (gzip -dc)
+#   infile plain -> outfile .gz   → compress   (gzip -c)
+#   both .gz or both plain        → make symlink (ln -sf)
+#
+# Example:
+#   _polap_compress_or_decompress sample.fq.gz sample.fq
+#   _polap_compress_or_decompress sample.fq sample.fq.gz
+#   _polap_compress_or_decompress sample.fq.gz copy.fq.gz
+#   _polap_compress_or_decompress sample.fq copy.fq
+#
+_polap_compress_or_decompress() {
+	local infile="$1"
+	local outfile="$2"
+
+	[[ -r "$infile" ]] || {
+		echo "[ERR] input not readable: $infile" >&2
+		return 2
+	}
+	mkdir -p "$(dirname "$outfile")"
+
+	# detect compression by extension
+	local in_is_gz=0 out_is_gz=0
+	[[ "$infile" =~ \.gz$ ]] && in_is_gz=1
+	[[ "$outfile" =~ \.gz$ ]] && out_is_gz=1
+
+	# pick pv (with file size) or cat
+	local -a pv_cmd
+	if command -v pv >/dev/null 2>&1; then
+		local size
+		size=$(stat -c %s "$infile" 2>/dev/null || stat -f %z "$infile" 2>/dev/null || echo "")
+		if [[ -n "$size" ]]; then
+			pv_cmd=(pv -pterb -s "$size" "$infile")
+		else
+			pv_cmd=(pv -pterb "$infile")
+		fi
+	else
+		pv_cmd=(cat "$infile")
+	fi
+
+	echo "[INFO] infile=$infile → outfile=$outfile" >&2
+
+	# same compression type → symlink
+	if ((in_is_gz == out_is_gz)); then
+		echo "[INFO] same type → creating symlink" >&2
+		ln -sf "$(realpath -s "$infile")" "$outfile"
+		return 0
+	fi
+
+	# decompress
+	if ((in_is_gz == 1 && out_is_gz == 0)); then
+		echo "[INFO] decompressing (.gz → plain)" >&2
+		"${pv_cmd[@]}" | gzip -dc >"$outfile"
+		return 0
+	fi
+
+	# compress
+	if ((in_is_gz == 0 && out_is_gz == 1)); then
+		echo "[INFO] compressing (plain → .gz)" >&2
+		"${pv_cmd[@]}" | gzip -c >"$outfile"
+		return 0
+	fi
+
+	# fallback (weird combination)
+	echo "[WARN] unknown combination, copying" >&2
+	"${pv_cmd[@]}" >"$outfile"
+}
+
 # infile outfile size
 _polap_lib_fastq-sample-to() {
 	local infile="${1}"
 	local outfile="${2}"
 	local max_size="${3}"
 
-	local sum_size=$(seqkit stats -T "${infile}" | awk 'NR==2 {print $5}')
+	# check if seqkit stats -Ta output exists.
+	local infile_seqkit_stats=$(seqkit_stats_outname "$infile")
+	_polap_log0 "infile_seqkit_stats: $infile_seqkit_stats"
+	if [[ ! -s "$infile_seqkit_stats" ]]; then
+		seqkit stats -Ta "${infile}" -o "${infile_seqkit_stats}"
+	fi
+	local sum_size=$(cat "${infile_seqkit_stats}" | awk 'NR==2 {print $5}')
+
 	_polap_log2 "sum_size: ${sum_size}"
 	max_size=$(_polap_lib_unit-convert_to_int ${max_size})
 	_polap_log2 "max_size: ${max_size}"
@@ -184,7 +288,24 @@ _polap_lib_fastq-sample-to() {
 	else
 		# ln -fs $(basename "${infile}") "${outfile}"
 		# ln -fs "${infile}" "${outfile}"
-		_polap_lib_filepath-smart_ln_s2 "${infile}" "${outfile}"
+		# _polap_lib_filepath-smart_ln_s2 "${infile}" "${outfile}"
+
+		# differently for the output file name and the input file name
+		_polap_compress_or_decompress "$infile" "$outfile"
+
+		# progress-aware decompression
+		# if command -v pv >/dev/null 2>&1; then
+		# 	size=$(stat -c %s "$infile" 2>/dev/null || stat -f %z "$infile" 2>/dev/null || echo "")
+		# 	if [[ -n "$size" ]]; then
+		# 		pv -pterb -s "$size" "$infile" | gzip -dc >"$outfile"
+		# 	else
+		# 		pv -pterb "$infile" | gzip -dc >"$outfile"
+		# 	fi
+		# else
+		# 	_polap_log2 "[WARN] pv not found; extracting without progress bar."
+		# 	gzip -dc "$infile" >"$outfile"
+		# fi
+
 		_polap_log2 "No sampling because the rate is greater than 1."
 	fi
 }

@@ -1,51 +1,99 @@
-# polap/src/Makefile
-# Single-tier (v6) workflow: species-root →  manifest (v6) →  Table S1
+# polap/src/Makefile  —  Single-tier (v6) workflow
+# version: v0.2.0
 
-# Use Bash for all recipe commands, and find it via the user’s PATH.
+# Use Bash for all recipes
 SHELL := /usr/bin/env bash
 
-# Source base (this Makefile's dir) and polaplib
-# Figure out the absolute path to the directory where this Makefile lives.
+# ------------------------------------------------------------------------------
+# Base paths
+# ------------------------------------------------------------------------------
 POLAPLIB_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-POLAP_SRC    := $(POLAPLIB_DIR)/..
+POLAP_SRC    := $(abspath $(POLAPLIB_DIR)/..)
 export POLAP_SRC POLAPLIB_DIR
 
-# Species root defaults to where you run make
+# Species root defaults to current working dir (can override: SPECIES_ROOT=/abs/path)
 SPECIES_ROOT ?= $(CURDIR)
 SR := $(abspath $(SPECIES_ROOT))
 
-# Defaults (single tier)
-SET            ?= some
-INUM           ?= 0
-TIER           ?= v6
+# ------------------------------------------------------------------------------
+# Tier/Set (single tier)
+# ------------------------------------------------------------------------------
+SET   ?= some     # auto|some|file:/abs/list.txt|<species>
+INUM  ?= 0
+TIER  ?= v6
 
-# Trim (kill any trailing spaces/newlines)
-SET_CLEAN   := $(strip $(SET))
-INUM_CLEAN  := $(strip $(INUM))
-TIER_CLEAN  := $(strip $(TIER))
+SET_CLEAN  := $(strip $(SET))
+INUM_CLEAN := $(strip $(INUM))
+TIER_CLEAN := $(strip $(TIER))
 
-# Outputs under the species root
-MANIFEST_DIR := $(SR)/man/md
-FIGURE_DIR := $(SR)/man/figures
-MANIFEST_V6  := $(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(INUM)-$(SET_CLEAN).json
-TABLE_S1_TSV := $(SR)/man/md/table-s1-dataset-summary.tsv
-# take whatever TABLE_S1_TSV is and replace .tsv with .md
-TABLE_S1_MD  := $(TABLE_S1_TSV:.tsv=.md)
+# ------------------------------------------------------------------------------
+# Outputs
+# ------------------------------------------------------------------------------
+MAN_DIR       ?= $(SR)/man
+FIGURE_DIR    ?= $(SR)/man/figures
+MANIFEST_DIR  ?= $(SR)/man/md
+
+# Common manifest tag reused across all tier/inum/set combinations
+MANIFEST_TAG := $(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN)
+
+# Paths built from the tag
+MANIFEST_V6  := $(MANIFEST_DIR)/manifest-$(MANIFEST_TAG).json
+MANIFEST_LOG := $(MANIFEST_DIR)/manifest-$(MANIFEST_TAG).log
+
+# Derived summaries
+PT_TABLE_TSV  := $(MANIFEST_DIR)/pt-summary-$(MANIFEST_TAG).tsv
+PT_TABLE_MD   := $(PT_TABLE_TSV:.tsv=.md)
+MT_TABLE_TSV  := $(MANIFEST_DIR)/mt-summary-$(MANIFEST_TAG).tsv
+MT_TABLE_MD   := $(MT_TABLE_TSV:.tsv=.md)
+DATA_TABLE_PREFIX := $(MANIFEST_DIR)/data-summary-$(MANIFEST_TAG)
+DATA_TABLE_TSV    := $(DATA_TABLE_PREFIX).tsv
+DATA_TABLE_MD     := $(DATA_TABLE_PREFIX).md
+
+# Table S1
+TABLE_S1_TSV  := $(MANIFEST_DIR)/table-s1-$(MANIFEST_TAG).tsv
+TABLE_S1_MD   := $(TABLE_S1_TSV:.tsv=.md)
+
+# Optional species codes file (used by manifest/table scripts)
+CODES_TXT    ?= $(POLAPLIB_DIR)/species-codes.txt
+
+# Inputs / outputs (override on CLI if desired)
+# DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-project00.md
+DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-man00.md
+EXP_MD          ?= $(SR)/man/expanded.md
+DOC_OUT_PDF     ?= $(SR)/man/polap-manuscript.pdf
+
+# Pandoc engine and common flags
+PANDOC          ?= pandoc
+PDF_ENGINE      ?= xelatex
+
+# Resource search path: allow images in md/, man/, man/figures/
+# PANDOC_RPATH    ?= $(SR):$(SR)/md:$(MAN_DIR):$(FIG_DIR)
+PANDOC_RPATH    ?= $(SR)/md:$(MAN_DIR)
 
 
-# This target is not a file, always run its recipe.
-.PHONY: help print-vars check-env table-s1 table_s1 clean
+# ------------------------------------------------------------------------------
+# Phony targets and default goal
+# ------------------------------------------------------------------------------
+.PHONY: help print-vars check-env manifests table-s1 pt-table mt-table table-data \
+        figure-assembly figure-assemblies-pdf figure-assemblies-both \
+        figure-assemblies-two-pages anno-scan sheet-ptmt fig1-puml fig1-r \
+        clean
 
-# like the first target: all
 .DEFAULT_GOAL := help
 
+# ------------------------------------------------------------------------------
+# Help / diagnostics
+# ------------------------------------------------------------------------------
 help:
 	@echo "Single-tier (v6) workflow"
-	@echo "Use from anywhere (SPECIES_ROOT defaults to $$PWD):"
+	@echo "Run from anywhere (SPECIES_ROOT defaults to $$PWD). Examples:"
 	@echo "  make -f $(POLAPLIB_DIR)/Makefile manifests"
 	@echo "  make -f $(POLAPLIB_DIR)/Makefile table-s1"
+	@echo "  make -f $(POLAPLIB_DIR)/Makefile pt-table"
+	@echo "  make -f $(POLAPLIB_DIR)/Makefile mt-table"
+	@echo "  make -f $(POLAPLIB_DIR)/Makefile table-data"
 	@echo ""
-	@echo "Vars you can override: SPECIES_ROOT=/abs/species-root  SET=auto|file:/abs/list.txt|<species>  INUM=0  TIER=v6"
+	@echo "Override vars: SPECIES_ROOT=/abs/root  SET=auto|file:/abs/list.txt|<species>  INUM=0  TIER=v6"
 
 print-vars:
 	@echo "SPECIES_ROOT=$(SR)"
@@ -53,15 +101,15 @@ print-vars:
 	@echo "POLAPLIB_DIR=$(POLAPLIB_DIR)"
 	@echo "SET=$(SET_CLEAN)  INUM=$(INUM_CLEAN)  TIER=$(TIER_CLEAN)"
 	@echo "MANIFEST=$(MANIFEST_V6)"
-	@echo "TABLE_S1_TSV=$(TABLE_S1_TSV)"
 
 check-env:
-	@command -v bash >/dev/null 2>&1 || { echo "[ERR] bash missing" >&2; exit 2; }
+	@command -v bash    >/dev/null 2>&1 || { echo "[ERR] bash missing"    >&2; exit 2; }
 	@command -v python3 >/dev/null 2>&1 || { echo "[ERR] python3 missing" >&2; exit 2; }
 	@true
 
-# 1) Build the single manifest (v6)
-.PHONY: manifests
+# ------------------------------------------------------------------------------
+# Manifest (single v6)
+# ------------------------------------------------------------------------------
 manifests: $(MANIFEST_V6)
 
 $(MANIFEST_V6): check-env
@@ -69,19 +117,19 @@ $(MANIFEST_V6): check-env
 	@echo "[INFO] Building manifest tier=$(TIER_CLEAN) set=$(SET_CLEAN) in $(SR)"
 	@cd "$(SR)" && \
 	  bash "$(POLAPLIB_DIR)/polap-bash-make-manifest.sh" \
-	    --set "$(SET_CLEAN)" \
+	    --set  "$(SET_CLEAN)" \
 	    --tier "$(TIER_CLEAN)" \
 	    --inum "$(INUM_CLEAN)" \
-	    --out "$(abspath $@)" \
+	    --out  "$(abspath $@)" \
 	    --pretty \
-	    2> "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).log" \
-	  || { echo "[ERR] See $(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).log"; exit 1; }
+	    2> "$(MANIFEST_LOG)" \
+	  || { echo "[ERR] See $(abspath $(MANIFEST_LOG))"; exit 1; }
 	@echo "[INFO] Wrote: $(abspath $@)"
+	@echo "[INFO] Log:   $(abspath $(MANIFEST_LOG))"
 
-# 2) Make Table S1 from that single manifest
-.PHONY: table-s1 table_s1
-table_s1: table-s1
-
+# ------------------------------------------------------------------------------
+# Table S1 (manifest → TSV + MD via Python script)
+# ------------------------------------------------------------------------------
 table-s1: $(TABLE_S1_TSV) $(TABLE_S1_MD)
 
 $(TABLE_S1_TSV): $(MANIFEST_V6) check-env
@@ -96,13 +144,58 @@ $(TABLE_S1_TSV): $(MANIFEST_V6) check-env
 $(TABLE_S1_MD): $(TABLE_S1_TSV)
 	@true
 
-.PHONY: figure-assembly
+# ------------------------------------------------------------------------------
+# PT summary (manifest → TSV → MD)
+# ------------------------------------------------------------------------------
+pt-table: $(PT_TABLE_MD)
+
+$(PT_TABLE_MD): $(MANIFEST_V6)
+	@mkdir -p "$(dir $@)"
+	@echo "[INFO] PT summary (MD) from $(MANIFEST_V6)"
+	@bash "$(POLAPLIB_DIR)/polap-bash-table-pt.sh" \
+	  --manifest "$(MANIFEST_V6)" \
+	  --tsv "$(PT_TABLE_TSV)" \
+	  --md  "$(PT_TABLE_MD)"
+	@echo "[OK] Wrote: $(PT_TABLE_MD)"
+
+# ------------------------------------------------------------------------------
+# MT summary (manifest → TSV → MD)
+# ------------------------------------------------------------------------------
+mt-table: $(MT_TABLE_TSV) $(MT_TABLE_MD)
+	@echo "[OK] MT table: $(MT_TABLE_TSV) and $(MT_TABLE_MD)"
+
+$(MT_TABLE_TSV) $(MT_TABLE_MD): $(MANIFEST_V6)
+	@mkdir -p "$(dir $(MT_TABLE_TSV))"
+	@echo "[INFO] MT summary from $(MANIFEST_V6)"
+	@bash "$(POLAPLIB_DIR)/polap-bash-table-mt.sh" \
+	  --manifest "$(MANIFEST_V6)" \
+	  --tsv "$(MT_TABLE_TSV)" \
+	  --md  "$(MT_TABLE_MD)"
+
+# ------------------------------------------------------------------------------
+# Data summary (long/short) (manifest → TSV → MD)
+# ------------------------------------------------------------------------------
+table-data: $(DATA_TABLE_MD)
+
+$(DATA_TABLE_MD): $(MANIFEST_V6)
+	@mkdir -p "$(dir $@)"
+	@echo "[INFO] Data summary (TSV/MD) from $(MANIFEST_V6)"
+	@bash "$(POLAPLIB_DIR)/polap-bash-table-data.sh" \
+	  --manifest "$(MANIFEST_V6)" \
+	  --out-tsv  "$(DATA_TABLE_TSV)" \
+	  --out-md   "$(DATA_TABLE_MD)" \
+	  --sort     "code2"
+	@echo "[OK] Wrote: $(DATA_TABLE_TSV)"
+	@echo "[OK] Wrote: $(DATA_TABLE_MD)"
+
+# ------------------------------------------------------------------------------
+# Figures / sheets (optional; kept as-is)
+# ------------------------------------------------------------------------------
 figure-assembly:
 	Rscript $(POLAPLIB_DIR)/scripts/make_assembly_figure.R \
 	  --input $(SR)/md/manifest-v6-some.json \
 	  --output $(SR)/md/figure-assembly-v6-some.pdf
 
-.PHONY: figure-assemblies-pdf
 figure-assemblies-pdf:
 	Rscript -e 'sessionInfo()' >/dev/null 2>&1 || true
 	bash "$(POLAPLIB_DIR)/polap-bash-assemble-png-pdf.sh" \
@@ -114,7 +207,6 @@ figure-assemblies-pdf:
 		--organelle mt \
 		--title "Assemblies 1.5 0.7 ($(TIER_CLEAN))"
 
-.PHONY: figure-assemblies-both
 figure-assemblies-both:
 	bash "$(POLAPLIB_DIR)/polap-bash-assemble-png-pdf.sh" \
 	  --manifest "$(SR)/md/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
@@ -125,7 +217,6 @@ figure-assemblies-both:
 	  --gap-mm 4 --label-cex 0.55 \
 	  --title "Organelle Assemblies ($(TIER_CLEAN): mt + pt)"
 
-.PHONY: figure-assemblies-two-pages
 figure-assemblies-two-pages:
 	bash "$(POLAPLIB_DIR)/polap-bash-assemble-png-pdf-two-pages.sh" \
 	  --manifest "$(SR)/md/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
@@ -136,13 +227,9 @@ figure-assemblies-two-pages:
 	  --pt-title "Plastid assemblies ($(TIER_CLEAN))" \
 	  --mt-title "Mitochondrial assemblies ($(TIER_CLEAN))"
 
-# ──────────────────────────────────────────────────────────────────────────────
-# NEW TARGETS (distinct names):
-#   anno-scan      → build md/anno-mt.csv and md/anno-pt.csv from manifest
-#   sheet-ptmt     → two-page PDF (page 1 = PT, page 2 = MT) with annotations
-# ──────────────────────────────────────────────────────────────────────────────
-
-.PHONY: anno-scan
+#-------------------------------------------------------------------------------
+# PT/MT assembly graphs
+#-------------------------------------------------------------------------------
 anno-scan:
 	@bash "$(POLAPLIB_DIR)/polap-bash-anno-scan.sh" \
 	  --base-dir "." \
@@ -150,27 +237,29 @@ anno-scan:
 	  --out-dir "$(MANIFEST_DIR)" \
 	  --tier "$(TIER_CLEAN)" --inum "$(INUM_CLEAN)"
 
-.PHONY: sheet-ptmt
 sheet-ptmt: anno-scan
 	@bash "$(POLAPLIB_DIR)/polap-bash-ptmt-sheet.sh" \
 	  --base-dir "." \
 	  --manifest "$(MANIFEST_V6)" \
 	  --annot-pt "$(MANIFEST_DIR)/anno-pt.csv" \
 	  --annot-mt "$(MANIFEST_DIR)/anno-mt.csv" \
-	  --out "$(FIGURE_DIR)/sheet-$(TIER_CLEAN)-$(SET_CLEAN)-pt-mt.pdf" \
+	  --out "$(FIGURE_DIR)/sheet-ptmt-$(MANIFEST_TAG).pdf" \
 	  --rows 8 --cols 5 \
 	  --page-width-in 11 --page-height-in 17 --margin-in 0.5 \
 	  --gap-mm 4.0 --label-cex 0.55 --title-cex 1.0 --label-strip-frac 0.16 \
 	  --pt-title "Plastid assemblies ($(TIER_CLEAN))" \
 	  --mt-title "Mitochondrial assemblies ($(TIER_CLEAN))"
+	@cp "$(FIGURE_DIR)/sheet-ptmt-$(MANIFEST_TAG).pdf" \
+		"$(POLAPLIB_DIR)/figures"
 
-.PHONY: fig1-puml
+#-------------------------------------------------------------------------------
+# pipeline schematic figure
+#-------------------------------------------------------------------------------
 fig1-puml:
 	@plantuml -tsvg "$(POLAPLIB_DIR)/figure1-pipeline.puml" -o "$(SR)/md"
 	@plantuml -tpng "$(POLAPLIB_DIR)/figure1-pipeline.puml" -o "$(SR)/md"
 	@echo "[OK] Wrote: $(SR)/md/figure1-pipeline.svg and .png"
 
-.PHONY: fig1-r
 fig1-r:
 	Rscript "$(POLAPLIB_DIR)/polap-r-figure1-pipeline.R"
 
@@ -178,22 +267,6 @@ fig1-r:
 # Manuscript builder: polap-md-project00.md -> man/Polap-manuscript.pdf
 # Requires: pandoc (and LaTeX installed; e.g., TeX Live). Optional: rsvg, citeproc, pandoc-crossref.
 ###############################################################################
-
-# Inputs / outputs (override on CLI if desired)
-# DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-project00.md
-DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-man00.md
-EXP_MD          ?= $(SR)/man/expanded.md
-DOC_OUT_PDF     ?= $(SR)/man/polap-manuscript.pdf
-FIG_DIR         ?= $(SR)/man/figures
-MAN_DIR         ?= $(SR)/man
-
-# Pandoc engine and common flags
-PANDOC          ?= pandoc
-PDF_ENGINE      ?= xelatex
-
-# Resource search path: allow images in md/, man/, man/figures/
-# PANDOC_RPATH    ?= $(SR):$(SR)/md:$(MAN_DIR):$(FIG_DIR)
-PANDOC_RPATH    ?= $(SR)/md:$(MAN_DIR)
 
 .PHONY: manuscript
 manuscript: $(DOC_OUT_PDF)
@@ -226,77 +299,17 @@ $(DOC_OUT_PDF): $(DOC_MD) $(EXP_MD) sheet-ptmt
 	@echo "[OK] Wrote: $(DOC_OUT_PDF)"
 
 manuscript.pdf: $(DOC_OUT_PDF)
-	@pdfunite "$(DOC_OUT_PDF)" "$(FIG_DIR)/sheet-v6-some-pt-mt.pdf" manuscript.pdf
+	@pdfunite "$(DOC_OUT_PDF)" "$(FIGURE_DIR)/sheet-ptmt-$(MANIFEST_TAG).pdf" manuscript.pdf
 	@cp -p manuscript.pdf "$(CURDIR)/polap/src/polaplib/"
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Plastid summary (manifest →  Markdown table)
-# ──────────────────────────────────────────────────────────────────────────────
-SPECIES_ROOT ?= $(CURDIR)
-SR := $(abspath $(SPECIES_ROOT))
-
-POLAPLIB_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-MAN_DIR      ?= $(SR)/man
-MANIFEST_DIR ?= $(SR)/man/md
-
-TIER_CLEAN ?= v6
-INUM_CLEAN ?= 0
-SET_CLEAN  ?= some
-
-MANIFEST_V6  := $(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN).json
-PT_TABLE_MD  := $(MANIFEST_DIR)/pt-summary-$(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN).md
-CODES_TXT    ?= $(POLAPLIB_DIR)/species-codes.txt
-
-.PHONY: pt-table
-pt-table: $(PT_TABLE_MD)
-
-$(PT_TABLE_MD): $(MANIFEST_V6)
-	@mkdir -p "$(dir $@)"
-	@echo "[INFO] PT summary (MD) from $(MANIFEST_V6)"
-	@bash "$(POLAPLIB_DIR)/polap-bash-pt-table-md.sh" \
-	  --manifest "$(MANIFEST_V6)" \
-	  --out "$(PT_TABLE_MD)"
-	@echo "[OK] Wrote: $(PT_TABLE_MD)"
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Edit:
-# polap-data-read.sh: add bolap command with make target
-# Makefile.read: add a target
-# polap-bash-make-manifest.sh: prepare the manifests
-# scripts/manifest_assemble.sh
-# polap-bash-table-xxx.sh: create tsv and markdown files
-# ──────────────────────────────────────────────────────────────────────────────
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Mitochondrial genome summary (manifest ->  TSV -> Markdown table)
-# Makefile.read: add target mt-table
-# polap-bash-mt-table.sh
-# scripts/manifest_assemble.sh if necessary
-# polap-bash-make-manifest.sh if necessary
-# columns: species code, SRA, input (Gb), mean read length (bases),
-# NCBI accession, NCBI length, Assembly segments, Assembly bases
-# ──────────────────────────────────────────────────────────────────────────────
-# ──────────────────────────────────────────────────────────────────────────────
-# Mitochondrial summary (manifest -> TSV -> Markdown table)
-# ──────────────────────────────────────────────────────────────────────────────
-MT_TABLE_TSV := $(MANIFEST_DIR)/mt-summary-$(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN).tsv
-MT_TABLE_MD  := $(MANIFEST_DIR)/mt-summary-$(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN).md
-MANIFEST_V6  ?= $(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN).json
-
-.PHONY: mt-table
-mt-table: $(MT_TABLE_TSV) $(MT_TABLE_MD)
-	@echo "[OK] MT table: $(MT_TABLE_TSV) and $(MT_TABLE_MD)"
-
-$(MT_TABLE_TSV) $(MT_TABLE_MD): $(MANIFEST_V6)
-	@mkdir -p "$(dir $(MT_TABLE_TSV))"
-	@echo "[INFO] MT summary from $(MANIFEST_V6)"
-	@bash "$(POLAPLIB_DIR)/polap-bash-table-mt.sh" \
-	  --manifest "$(MANIFEST_V6)" \
-	  --tsv "$(MT_TABLE_TSV)" \
-	  --md  "$(MT_TABLE_MD)"
-
+# ------------------------------------------------------------------------------
+# Clean
+# ------------------------------------------------------------------------------
 clean:
-	@rm -f "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).json" \
-	       "$(MANIFEST_DIR)/manifest-$(TIER_CLEAN)-$(SET_CLEAN).log" \
-	       "$(TABLE_S1_TSV)" "$(TABLE_S1_MD)" || true
+	@rm -f -- "$(MANIFEST_V6)" "$(MANIFEST_LOG)" \
+	         "$(TABLE_S1_TSV)" "$(TABLE_S1_MD)" \
+	         "$(PT_TABLE_TSV)" "$(PT_TABLE_MD)" \
+	         "$(MT_TABLE_TSV)" "$(MT_TABLE_MD)" \
+	         "$(DATA_TABLE_TSV)" "$(DATA_TABLE_MD)" || true
 	@echo "[OK] Cleaned"
+

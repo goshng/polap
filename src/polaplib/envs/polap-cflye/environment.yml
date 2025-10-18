@@ -1,0 +1,8 @@
+name: polap-cflye
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - goshng::cflye
+prefix: /home/goshng/miniconda3/envs/polap-cflye

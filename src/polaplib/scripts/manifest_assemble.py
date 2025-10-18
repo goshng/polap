@@ -1,28 +1,66 @@
 #!/usr/bin/env python3
 # scripts/manifest_assemble.py
 #
-# Version : v0.2.3
+# Version : v0.2.4
 # Author  : Sang Chul Choi (POLAP)
-# Date    : 2025-10-13
+# Date    : 2025-10-15
 # License : GPL-3.0+
 #
-# Purpose:
-#   Read a TSV facts table produced by Bash and build a structured JSON manifest.
-#   Adds:
-#     - GFA stats for each organelle via scripts/gfa_stats_json.py (if present)
-#     - Dataset metrics from seqkit stats (data.*)
-#     - Organellar attributes (pt.ref.ncbi_accession, ncbi_len_bp, etc.)
-#     - (NEW) Optional species 2-letter codes via --codes file ("code species")
+# Purpose
+# -------
+# Read a TSV "facts" table (columns: species, tier, inum, organelle, kind, key, value)
+# and build a structured JSON manifest.
 #
-import os, sys, csv, json, argparse, subprocess, time
+# What’s new (v0.2.4)
+# -------------------
+# • Properly marshal short-read metric blocks:
+#     short1data  -> {total_bases, read_count, mean_length, N50, avg_qual, gc_content, …}
+#     short2data  -> { … }
+#   These are handled identically to the long-read “data” block.
+# • Keep existing behavior for PT/MT/PTPT files and attributes (ncbi_* to .ref, others to .meta).
+# • Optional species two-letter codes via --codes (space-delimited “code species”).
+# • Attach GFA stats to pt/ptpt/mt (if scripts/gfa_stats_json.py exists).
+#
+import os
+import sys
+import csv
+import json
+import argparse
+import subprocess
+import time
 
 
+# ----------------------------- IO helpers -------------------------------------
 def read_facts(path: str):
+    """Read TSV into list of dicts (expects header)."""
     with open(path, newline="") as f:
         return list(csv.DictReader(f, delimiter="\t"))
 
 
+def load_codes(path: str):
+    """
+    Read a space-delimited mapping with header 'code species' or comment lines.
+    Returns dict: species -> code
+    """
+    mapping = {}
+    if not path or not os.path.isfile(path):
+        return mapping
+    with open(path) as fh:
+        for ln in fh:
+            ln = ln.strip()
+            if not ln or ln.startswith("#") or ln.lower().startswith("code species"):
+                continue
+            parts = ln.split()
+            if len(parts) < 2:
+                continue
+            code, species = parts[0], parts[1]
+            mapping[species] = code
+    return mapping
+
+
+# ----------------------------- GFA stats --------------------------------------
 def call_gfa_stats_json(gfa_path: str):
+    """Call scripts/gfa_stats_json.py --gfa <path> and return parsed JSON (or None)."""
     if not gfa_path or not os.path.isfile(gfa_path):
         return None
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,9 +69,10 @@ def call_gfa_stats_json(gfa_path: str):
         return None
     try:
         out = subprocess.check_output(
-            [sys.executable, helper, "--gfa", gfa_path], text=True
-        )
-        out = out.strip()
+            [sys.executable, helper, "--gfa", gfa_path],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
         if out and out != "{}":
             return json.loads(out)
     except Exception:
@@ -42,6 +81,7 @@ def call_gfa_stats_json(gfa_path: str):
 
 
 def attach_stats(block: dict):
+    """Attach .stats to a block if it has a 'gfa' file and helper is available."""
     gfa = block.get("gfa")
     if not gfa:
         return
@@ -50,77 +90,82 @@ def attach_stats(block: dict):
         block["stats"] = st
 
 
-def load_codes(path: str):
-    """
-    Read a space-delimited mapping file with header 'code species'.
-    Returns dict: species -> code
-    """
-    m = {}
-    if not path or not os.path.isfile(path):
-        return m
-    with open(path) as f:
-        for ln in f:
-            ln = ln.strip()
-            if not ln:
-                continue
-            # skip header and comments
-            if ln.lower().startswith("code species") or ln.startswith("#"):
-                continue
-            parts = ln.split()
-            if len(parts) < 2:
-                continue
-            code, species = parts[0], parts[1]
-            m[species] = code
-    return m
+# ----------------------------- value coercion ---------------------------------
+def maybe_number(s: str):
+    """Convert numeric-looking strings to int/float; keep 'NA'/'', etc. as-is/None."""
+    if s is None:
+        return None
+    s = str(s).strip()
+    if s in ("", "NA", "na", "NaN", "nan", "None"):
+        return None
+    try:
+        v = float(s)
+        return int(v) if v.is_integer() else v
+    except Exception:
+        return s
 
 
+# ----------------------------- main -------------------------------------------
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--facts", required=True)
-    ap.add_argument("--set", required=True)
-    ap.add_argument("--tier", required=True)
-    ap.add_argument("--inum", required=True)
-    ap.add_argument("--out", required=True)
-    ap.add_argument("--pretty", action="store_true", default=False)
-    # NEW: optional codes file (space-delimited: "code species")
+    ap = argparse.ArgumentParser(
+        description="Assemble manifest JSON from harvested TSV facts."
+    )
+    ap.add_argument("--facts", required=True, help="Input TSV facts")
+    ap.add_argument("--set", required=True, help="Set label used for harvesting")
+    ap.add_argument("--tier", required=True, help="Tier (e.g., v6)")
+    ap.add_argument("--inum", required=True, help="Instance number (stringified)")
+    ap.add_argument("--out", required=True, help="Output JSON path")
+    ap.add_argument("--pretty", action="store_true", default=False, help="Pretty JSON")
     ap.add_argument(
         "--codes",
         default=None,
         help="Optional mapping file (space-delimited: 'code species')",
     )
-    a = ap.parse_args()
+    args = ap.parse_args()
 
-    codes_map = load_codes(a.codes)
-    rows = read_facts(a.facts)
-    data = {}
+    rows = read_facts(args.facts)
+    codes_map = load_codes(args.codes)
+
+    # Root and accumulation
     root = dict(
-        version="v0.2.3",
+        version="v0.2.4",
         generated_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        set=a.set,
-        tier=a.tier,
-        inum=str(a.inum),
+        set=args.set,
+        tier=args.tier,
+        inum=str(args.inum),
         items=[],
     )
+    # species -> item(dict)
+    items_by_species = {}
 
-    for row in rows:
-        sp = row["species"]
-        org = row["organelle"]
-        kind = row["kind"]
-        key = row["key"]
-        val = row["value"]
+    # Organelles that are metric/attribute blocks (all keys flattened into dict)
+    ATTR_BLOCKS = {"data", "short1data", "short2data"}
 
-        if sp not in data:
-            item = dict(species=sp, tier=a.tier, inum=str(a.inum))
-            # inject code2 if available
+    for r in rows:
+        sp = r.get("species", "")
+        tier = r.get("tier", args.tier)
+        inum = str(r.get("inum", args.inum))
+        org = r.get("organelle", "")
+        kind = r.get("kind", "")
+        key = r.get("key", "")
+        val = r.get("value", "")
+
+        if sp not in items_by_species:
+            item = dict(species=sp, tier=tier, inum=inum)
             if sp in codes_map:
                 item["code2"] = codes_map[sp]
-            data[sp] = item
+            items_by_species[sp] = item
 
-        if org not in data[sp]:
-            data[sp][org] = {}
-        blk = data[sp][org]
+        item = items_by_species[sp]
+        # Ensure block container exists
+        if org and org not in item:
+            # For metric blocks, initialize as plain dict; for others, also dict
+            item[org] = {}
+
+        blk = item.get(org, {})
 
         if kind == "file":
+            # file paths
             if key in ("gfa", "png"):
                 blk[key] = val
             elif key == "qc_scatter":
@@ -131,48 +176,51 @@ def main():
                 blk.setdefault("circular", {}).setdefault("fasta", []).append(val)
 
         elif kind == "attr":
-            v = val
-            try:
-                if "." in val:
-                    v = float(val)
-                else:
-                    v = int(val)
-            except Exception:
-                pass
+            v = maybe_number(val)
 
-            if key.startswith("circular_"):
-                blk.setdefault("circular", {})[key.split("_", 1)[1]] = v
-            elif key.startswith("gene_"):
-                blk.setdefault("annotation", {})[key.split("_", 1)[1]] = v
-            elif org == "data":
-                # Dataset metrics & tags (sra_id, data_file_bytes, total_bases, etc.)
+            # metric blocks (long reads + short mates)
+            if org in ATTR_BLOCKS:
                 blk[key] = v
-            elif org in ("pt", "mt"):
-                # Normalize organellar attributes: ncbi_* -> .ref, others -> .meta
+
+            # organelle-specific attributes
+            elif org in {"pt", "mt"}:
+                # Normalize ncbi_* under .ref ; others under .meta
                 if key.startswith("ncbi_"):
                     blk.setdefault("ref", {})[key] = v
                 else:
                     blk.setdefault("meta", {})[key] = v
 
-    # attach GFA stats when gfa present
-    for sp, item in data.items():
-        for org in ("pt", "ptpt", "mt"):
-            if org in item:
-                attach_stats(item[org])
+            elif org == "ptpt":
+                # keep as plain attributes
+                blk[key] = v
 
-    # items[] in order of appearance in facts
+        # write-back (in case blk was created)
+        if org:
+            item[org] = blk
+
+    # Attach stats where applicable
+    for sp, item in items_by_species.items():
+        for sect in ("pt", "ptpt", "mt"):
+            if sect in item and isinstance(item[sect], dict):
+                attach_stats(item[sect])
+
+    # Preserve order of appearance in facts
     seen = set()
-    for row in rows:
-        sp = row["species"]
-        if sp not in seen:
-            root["items"].append(data[sp])
+    for r in rows:
+        sp = r.get("species", "")
+        if sp and sp not in seen and sp in items_by_species:
+            root["items"].append(items_by_species[sp])
             seen.add(sp)
 
-    with open(a.out, "w") as f:
-        if a.pretty:
+    # Write JSON
+    os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+    with open(args.out, "w") as f:
+        if args.pretty:
             json.dump(root, f, indent=2)
         else:
             json.dump(root, f, separators=(",", ":"))
+
+    return 0
 
 
 if __name__ == "__main__":

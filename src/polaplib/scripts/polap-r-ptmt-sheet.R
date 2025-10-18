@@ -151,7 +151,7 @@ draw_page <- function(df, annot, title_text, org = c("pt", "mt")) {
         }
       } else {
         if (!is.na(gkb)) {
-          ann <- sprintf("len=%.0f kb, MT=%.0f, PT=%.0f", gkb, mtg %||% NA, ptg %||% NA)
+          ann <- sprintf("MT=%.0f, PT=%.0f, len=%.0f kb", mtg %||% NA, ptg %||% NA, gkb)
         } else {
           ann <- sprintf("MT=%.0f, PT=%.0f", mtg %||% NA, ptg %||% NA)
         }

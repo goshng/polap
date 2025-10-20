@@ -595,7 +595,7 @@ def main(argv=None) -> int:
         "--cycle-ramp",
         type=float,
         default=0.0015,
-        help="Per-cycle increase in substitution probability from 5'→3' (Illumina)",
+        help="Per-cycle increase in substitution probability from 5'→ ' (Illumina)",
     )
     p.add_argument(
         "--pe-orientation",

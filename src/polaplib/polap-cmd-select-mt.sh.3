@@ -435,7 +435,7 @@ polap_cmd_select_mt() {
 	fi
 
 	# 4) Fast syncmer dump for PPR using run_syncfilter v0.7.0 (emit-read-syncmers)
-	echo "[step] dump read→syncmers on mt-band reads (run_syncfilter v0.7.0)"
+	echo "[step] dump read→ yncmers on mt-band reads (run_syncfilter v0.7.0)"
 	"$RUN_SF" --mode quickview -k "$PPR_K" -s "$PPR_S" -t "$THREADS" -v "$SFV" \
 		--emit-read-syncmers "${OUT}.xcover.mt" \
 		-o "${OUT}.xcover.mt.pprprep" \

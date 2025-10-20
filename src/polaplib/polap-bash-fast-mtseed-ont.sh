@@ -242,6 +242,7 @@ mm2_mode="${mm2_mode:-0}" # hybrid (edge-first)
 map_mode="${map_mode:-0}"
 use_parallel=0
 do_shuffle=0
+do_polap=1
 
 steps=""
 
@@ -378,7 +379,15 @@ while [[ $# -gt 0 ]]; do
 		keep_scan_paf=1
 		shift
 		;;
-	--do_shuffle)
+	--no-do-polap)
+		do_polap=0
+		shift
+		;;
+	--do-polap)
+		do_polap=1
+		shift
+		;;
+	--do-shuffle)
 		do_shuffle=1
 		shift
 		;;
@@ -1128,7 +1137,7 @@ _refilter_once_eweight_loop() {
 # Env knobs (optional):
 #   INDEX_OPTS=""      # extra flags for 'minimap2 -d'
 #   MAP_OPTS=""        # extra flags for mapping
-#   EDGE_DUMP="polap-py-edge-dump.py"   # path to your edge dumper (PAF→TSV)
+#   EDGE_DUMP="polap-py-edge-dump.py"   # path to your edge dumper (PAF→ SV)
 #
 # Output:
 #   OUTDIR/03-partvspart/
@@ -1886,8 +1895,10 @@ if _should_run 7; then
 	contigger_dir="${FDIR}/30-contigger"
 	mkdir -p "${contigger_dir}"
 	sed 's/LN:i/dp:i/' "${ADIR}/miniasm.gfa" >"${contigger_dir}/graph_final.gfa"
-	note1 "7b) polap readassemble using miniasm seeds"
-	bash "${_POLAPLIB_DIR}/../polap.sh" readassemble annotated -o "${outdir}" -i "${FDIR_NAME}" -l "${reads}"
+	note1 "7b) polap readassemble using miniasm seeds ..."
+	if ((do_shuffle == 1)); then
+		bash "${_POLAPLIB_DIR}/../polap.sh" readassemble annotated -o "${outdir}" -i "${FDIR_NAME}" -l "${reads}"
+	fi
 fi
 
 note0 "Step8: clean up $outdir"

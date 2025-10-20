@@ -142,6 +142,8 @@ get_species_list() {
 Anthoceros_agrestis
 Anthoceros_angustus
 Arabidopsis_thaliana
+Codonopsis_lanceolata
+Eucalyptus_pauciflora
 __SOME__
 		;;
 	file:*)

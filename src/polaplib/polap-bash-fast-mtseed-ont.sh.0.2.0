@@ -12,7 +12,7 @@
 #   3) Select mito-enriched reads (nuclear-aware if --nuc-ids given) from overlapness
 #   4) Assemble selected reads (miniasm | raven)
 #   5) Intergenic filtering (miniprot vs mito CDS; read-recruit median gate)
-#   6) Map reads→seeds (if iterating)
+#   6) Map reads→ eeds (if iterating)
 #   7) Stop when Δ|M| < threshold (if iterating)
 #
 # Required helpers (must exist; not embedded here):
@@ -534,17 +534,17 @@ PY
 	((!DRY)) && { [[ -s "$ISO_B" ]] && dbld "$ISO_B" "$DBL_B" || true; }
 	prof_end
 
-	# Map reads→doubled A/B
+	# Map reads→ oubled A/B
 	PAF_A="$outdir/map/formA.paf"
 	PAF_B="$outdir/map/formB.paf"
 	mkdir -p "$outdir/map"
 	prof_start "map_ptA"
-	note "Step1: map reads→isomerA.double > $PAF_A"
+	note "Step1: map reads→ somerA.double > $PAF_A"
 	cmd minimap2 -x map-ont --secondary=yes -N 50 -t "$threads" "$DBL_A" "$reads" >"$PAF_A"
 	prof_end
 	if [[ -s "$DBL_B" ]]; then
 		prof_start "map_ptB"
-		note "Step1: map reads→isomerB.double > $PAF_B"
+		note "Step1: map reads→ somerB.double > $PAF_B"
 		cmd minimap2 -x map-ont --secondary=yes -N 50 -t "$threads" "$DBL_B" "$reads" >"$PAF_B"
 		prof_end
 	fi

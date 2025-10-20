@@ -35,7 +35,7 @@ set -euo pipefail
 #      Select the candidate with MAX plus-coverage (must be ≥ --min-cov).
 #      Ties: larger (plus_aligned_bases × plus_weighted_identity), then larger plus_best_bitscore.
 #   4) Rotate the chosen candidate so that reference position 1 aligns to candidate position 1
-#      (by projecting ref pos1 via BLAST ref→cand).
+#      (by projecting ref pos1 via BLAST ref→ and).
 #   5) MAFFT global alignment of (ref, rotated-cand).
 #   6) Print global percent identity over UNGAPPED columns, to stdout (e.g. 99.932%).
 #

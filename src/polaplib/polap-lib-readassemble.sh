@@ -914,6 +914,220 @@ _polap_lib_readassemble-assemble-annotated-read-mt() {
 }
 
 # be called
+_polap_lib_readassemble-miniasm() {
+	# local type="${1:-pt}"
+	# local annotatedir="${_arg_outdir}/annotate-read-${type}"
+
+	local mt="${_arg_inum}"
+	local annotatedir="${_arg_outdir}"
+
+	# local annotatedir_pt="${_arg_outdir}"/annotate-read-pt
+
+	#######################################################################
+	# BEGIN: function readassemble-ont-pt-iterate_genus_species
+	#
+	if [[ -s "${annotatedir}/$mt/30-contigger/graph_final.gfa" ]]; then
+		_polap_lib_bandage \
+			"${annotatedir}/$mt/30-contigger/graph_final.gfa" \
+			"${annotatedir}/$mt/30-contigger/graph_final.png"
+
+		ln -sf "$mt/30-contigger/graph_final.gfa" \
+			"${annotatedir}/mt.0.gfa"
+
+		ln -sf "$mt/30-contigger/graph_final.png" \
+			"${annotatedir}/mt.0.png"
+
+	else
+		_polap_log0 "No mtDNA assembly stage 0"
+	fi
+
+	# use mt as mt0
+	_polap_log0 "Name the start i"
+	ln -sf $mt "${annotatedir}"/mt0
+
+	# polap command: filter reference hifi
+	local resolved_fastq="${_arg_long_reads}"
+	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+		if [[ -s "${_arg_outdir}/pt.0.gfa" ]]; then
+			_polap_log3 "      polap command filter hifi data by ptDNA reference"
+			_polap_lib_filter-reads-by-reference \
+				-o "${annotatedir}" \
+				-l "${_arg_long_reads}" \
+				--reference "${_arg_outdir}"/pt.0.gfa
+			resolved_fastq="${annotatedir}/kmer/ref-filtered.fastq"
+		else
+			_polap_log0 "No ptDNA for filtering: ${_arg_outdir}/pt.0.gfa"
+		fi
+	fi
+
+	local i
+	for ((i = 0; i < ${_arg_readassemble_mtn}; i++)); do
+		local j=$((i + 1))
+		_polap_log0 "i: $i"
+
+		# NOTE: annotate for seeding
+		# select connected components of the mt contigs only
+		_polap_lib_annotate \
+			-o "${annotatedir}" \
+			-i mt$i
+
+		_polap_log0 "i: $i"
+		# NOTE: mito seed
+		_polap_lib_seed-mito \
+			-o "${annotatedir}" \
+			-i mt$i -j mt$j
+
+		_polap_log0 "i: $i"
+		if [[ ! -s "${annotatedir}/mt$i/mt.contig.name-mt$j" ]]; then
+			_polap_log0 "No mt seed at mt$i for mt$j"
+			break
+		fi
+
+		# polap command: assemble-rate
+		if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+			_polap_log1 "use then input long reads filtered to remove reads from ptDNA for mtDNA assembly"
+			_polap_lib_assemble-rate \
+				-o "${annotatedir}" \
+				-l "${resolved_fastq}" \
+				-w "${_arg_single_min}" \
+				-t mt \
+				-i mt$i -j mt$j
+		elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+			_polap_log1 "use the only selected long reads using organelle gene annotation for mtDNA assembly"
+			_polap_log0 "i: $i"
+			_polap_lib_assemble-omega \
+				-o "${annotatedir}" \
+				-l "${_arg_long_reads}" \
+				-t mt \
+				-i mt$i -j mt$j
+			_polap_log0 "i: $i"
+
+			# _polap_lib_assemble-rate \
+			# 	-o "${annotatedir}" \
+			# 	-l "${_arg_long_reads}" \
+			# 	-w "${_arg_single_min}" \
+			# 	-t mt \
+			# 	-i mt$i -j mt$j
+		fi
+		_polap_log0 "i: $i"
+		_polap_lib_file-cleanup -d "${annotatedir}/mt$j" -s 5M -a rm
+
+		_polap_log0 "i: $i"
+		if [[ -s "${annotatedir}/mt$j/assembly_graph.gfa" ]]; then
+			# _polap_lib_mt-extract-dna \
+			# 	"${annotatedir}/mt$j/assembly_graph.gfa" \
+			# 	"${annotatedir}/mt$j/mtdna"
+
+			_polap_lib_bandage \
+				"${annotatedir}/mt$j/assembly_graph.gfa" \
+				"${annotatedir}/mt$j/assembly_graph.png"
+			_polap_log0 "i: $i"
+
+			ln -sf "mt$j/mtdna/mt.0.fa" \
+				"${annotatedir}/mt.$j.fa"
+
+			ln -sf "mt$j/assembly_graph.gfa" \
+				"${annotatedir}/mt.$j.gfa"
+
+			ln -sf "mt$j/assembly_graph.png" \
+				"${annotatedir}/mt.$j.png"
+
+			_polap_log0 "i: $i"
+			_polap_log0 "mtDNA assembly: ${annotatedir}/mt.$j.gfa"
+		else
+			_polap_log0 "No mt assembly $j"
+		fi
+
+	done
+
+	_polap_log0 "after the for-loop"
+	_polap_log0 "i: $i"
+	_polap_log0 "j: $j"
+
+	#
+	# END: function readassemble-ont-pt-iterate_genus_species
+	#######################################################################
+
+	# why mt2 not mt1?
+
+	# use the generated reference to assemble a mitochondrial genome.
+	local j=$((i + 1))
+	_polap_log0 "after the j update"
+	_polap_log0 "i: $i"
+	_polap_log0 "j: $j"
+	# polap command: annotate
+	_polap_log0 _polap_lib_annotate \
+		-o "${annotatedir}" \
+		-i mt$i
+	_polap_lib_annotate \
+		-o "${annotatedir}" \
+		-i mt$i
+
+	# polap command: seed-mito
+	_polap_lib_seed-mito \
+		-o "${annotatedir}" \
+		-i mt$i -j mt$j
+
+	if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
+		# --reference "${annotatedir_pt}"/pt.3.gfa \
+		_polap_log1 "use then input long reads filtered to remove reads from ptDNA for mtDNA assembly"
+		_polap_lib_assemble-rate \
+			-o "${annotatedir}" \
+			-l "${resolved_fastq}" \
+			-w "${_arg_single_min}" \
+			-i mt$i -j mt$j
+	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+		# -l "${_arg_long_reads}" \
+		# -l "${annotatedir}"/mt.fq \
+		_polap_log1 "use then input long reads with an adjusted omega for the final stage mtDNA assembly"
+		_polap_lib_assemble-omega \
+			-o "${annotatedir}" \
+			-l "${_arg_long_reads}" \
+			-t mt \
+			-i mt$i -j mt$j
+	fi
+	_polap_lib_file-cleanup -d "${annotatedir}/mt$j" -s 5M -a rm
+
+	_polap_lib_annotate \
+		-o "${annotatedir}" \
+		-i mt$j
+
+	_polap_log0_column "${annotatedir}/mt$j/contig-annotation-depth-table.txt"
+
+	if [[ -s "${annotatedir}/mt$j/assembly_graph.gfa" ]]; then
+		_polap_lib_bandage \
+			"${annotatedir}/mt$j/assembly_graph.gfa" \
+			"${annotatedir}/mt$j/assembly_graph.png"
+
+		ln -sf "mt$j/assembly_graph.gfa" \
+			"${annotatedir}/mt.$j.gfa"
+
+		ln -sf "mt$j/assembly_graph.png" \
+			"${annotatedir}/mt.$j.png"
+
+		_polap_log0 "mtDNA assembly: ${annotatedir}/mt.$j.gfa"
+	else
+		_polap_log0 "No MT assembly $j"
+	fi
+
+	# extract mtDNA sequence if you can
+	#
+
+	# final link
+	i=$((j - 1))
+	ln -sf "mtseed/mt.$i.gfa" \
+		"${_arg_outdir}/../mt.0.gfa"
+
+	ln -sf "mtseed/mt.$i.png" \
+		"${_arg_outdir}/../mt.0.png"
+
+	ln -sf "mtseed/mt.$j.gfa" \
+		"${_arg_outdir}/../mt.1.gfa"
+
+	ln -sf "mtseed/mt.$j.png" \
+		"${_arg_outdir}/../mt.1.png"
+}
+
 _polap_lib_readassemble-annotated() {
 	# local type="${1:-pt}"
 	# local annotatedir="${_arg_outdir}/annotate-read-${type}"

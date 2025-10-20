@@ -2720,7 +2720,9 @@ EOF
 	# ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
 	# _brg_input_data="${long_sra}.fastq"
 	if [[ ! -s "${long_sra}".fastq ]]; then
-		data-long_genus_species "${_brg_outdir}"
+		# data-long_genus_species "${_brg_outdir}"
+		_log_echo0 "No input data: ${long_sra}.fastq"
+		return 0
 	fi
 
 	local resolved_fastq="${long_sra}.fastq"
@@ -2735,7 +2737,7 @@ EOF
 		${_brg_verbose_str} \
 		-o "${_brg_target}"
 
-	${_polap_cmd} miniassemble \
+	_log_echo0 ${_polap_cmd} miniassemble \
 		"${option_data_type}" \
 		-l "${resolved_fastq}" \
 		--readassemble-mtn "${mtn}" \

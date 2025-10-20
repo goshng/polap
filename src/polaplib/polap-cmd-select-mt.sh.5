@@ -350,7 +350,7 @@ polap_cmd_select_mt() {
 		local PPR_READS_MT="${OUT}.xcover.mt.fastq"
 		seqtk subseq "$READS" "${OUT}.xcover.mt.names" >"$PPR_READS_MT"
 
-		echo "[step] dump read→syncmers (mt)"
+		echo "[step] dump read→ yncmers (mt)"
 		"$RUN_SF" --mode quickview -k "$PPR_K" -s "$PPR_S" -t "$THREADS" -v "$SFV" \
 			--emit-read-syncmers "${OUT}.xcover.mt" \
 			-o "${OUT}.xcover.mt.pprprep" \
@@ -416,7 +416,7 @@ polap_cmd_select_mt() {
 		local PPR_READS_PT="${OUT}.xcover.pt.fastq"
 		seqtk subseq "$READS" "${OUT}.xcover.pt.names" >"$PPR_READS_PT"
 
-		echo "[step] dump read→syncmers (pt)"
+		echo "[step] dump read→ yncmers (pt)"
 		"$RUN_SF" --mode quickview -k "$PPR_K" -s "$PPR_S" -t "$THREADS" -v "$SFV" \
 			--emit-read-syncmers "${OUT}.xcover.pt" \
 			-o "${OUT}.xcover.pt.pprprep" \

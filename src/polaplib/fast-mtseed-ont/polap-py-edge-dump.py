@@ -58,7 +58,7 @@ def parse_args():
 
 
 def dump_edges(args):
-    # If dedup: pair→ alen,ident,weight)
+    # If dedup: pair → alen,ident,weight)
     keep = {} if args.dedup else None
     out = openw(args.out)
     wrote_header = False

@@ -11,7 +11,7 @@
 #
 # Refs (for methods used):
 #   - Minimap2 & PAF fields: Li 2018, Bioinformatics 34(18):3094–3100.
-#   - Miniprot (protein→genome): Li 2023 (preprint/documentation).
+#   - Miniprot (protein → genome): Li 2023 (preprint/documentation).
 #   - BUSCO lineage protein sets: Manni et al., Mol. Biol. Evol. 38(10):4647–4654.
 #
 # NOTE:
@@ -222,7 +222,7 @@ _polap_log1 "All-vs-all on R1 (one time only)"
 _run "minimap2 -x ${PRESET_AVA} -t 16 --secondary=yes -N 50 --mask-level 0.50 '${R1}' '${R1}' > '${PAF_ALL}'"
 
 # -------------------------
-# 2) Gauge coverage from M-seed_0 (map R1→M-seed_0; samtools depth)
+# 2) Gauge coverage from M-seed_0 (map R1 → M-seed_0; samtools depth)
 # -------------------------
 STAGE2="${_outdir}/02_gauge"
 mkdir -p "$STAGE2"

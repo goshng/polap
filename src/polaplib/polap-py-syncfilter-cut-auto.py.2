@@ -130,7 +130,7 @@ def z_for_tail(t: float) -> float:
     """
     One-sided right-tail z for probability t, i.e. z = Phi^{-1}(1 - t).
     Works for any t in (0,1). For t<=0 -> +inf; for t>=1 -> 0.
-    Examples: t=0.05→ .64485, t=0.10→ .28155, t=0.5→ .
+    Examples: t=0.05 → .64485, t=0.10 → .28155, t=0.5 → .
     """
     t = float(t)
     if t <= 0.0:

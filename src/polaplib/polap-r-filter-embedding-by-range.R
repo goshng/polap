@@ -13,8 +13,10 @@ option_list <- list(
   make_option(c("--x-max"), type = "double", default = Inf),
   make_option(c("--y-min"), type = "double", default = -Inf),
   make_option(c("--y-max"), type = "double", default = Inf),
-  make_option(c("--invert"), action = "store_true", default = FALSE,
-              help = "Invert selection (keep rows outside the range)")
+  make_option(c("--invert"),
+    action = "store_true", default = FALSE,
+    help = "Invert selection (keep rows outside the range)"
+  )
 )
 
 # === Parse CLI args ===
@@ -39,4 +41,4 @@ if (opt$invert) {
 
 # === Save ===
 write_tsv(filtered, output_file)
-cat("✅ Filtered", nrow(filtered), ifelse(opt$invert, "(inverted)", ""), "rows →", output_file, "\n")
+cat("✅ Filtered", nrow(filtered), ifelse(opt$invert, "(inverted)", ""), "rows → ", output_file, "\n")

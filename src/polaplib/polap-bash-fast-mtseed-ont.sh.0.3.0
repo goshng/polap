@@ -14,7 +14,7 @@
 #      Then select mito-enriched reads from overlapness (nuclear-aware if labels).
 #   4) Assemble selected reads (miniasm | raven).
 #   5) (Optional) Use miniasm GFA as seeds to run 'polap readassemble' finisher.
-#   6) Map reads→ eeds (if iterating)
+#   6) Map reads → eeds (if iterating)
 #   7) Stop when Δ|M| < threshold (if iterating)
 #
 # Required helpers (must exist; not embedded here):
@@ -489,7 +489,7 @@ PY
 	((!DRY)) && { [[ -s "$ISO_B" ]] && dbld "$ISO_B" "$DBL_B" || true; }
 	prof_end
 
-	note0 "1c) Map reads→ doubled A/B"
+	note0 "1c) Map reads → doubled A/B"
 	MAP_DIR="$outdir/02-map"
 	mkdir -p "$MAP_DIR"
 	PAF_A="$MAP_DIR/formA.paf"

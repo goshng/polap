@@ -1007,7 +1007,7 @@ EOF
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
-# _polap_lib_syncasm (monolith, oatk + GNU parallel, c→a→k→s)
+# _polap_lib_syncasm (monolith, oatk + GNU parallel, c → a→ k→ s)
 # ──────────────────────────────────────────────────────────────────────────────
 _polap_lib_syncasm() {
 	# CLI defaults (renamed to _crg_)
@@ -1281,7 +1281,7 @@ _polap_lib_syncasm() {
 
 	reads_hpc="${step0_hpc}"
 
-	# STEP 2: grid over c→a→k→s (GNU parallel; oatk direct; per-job -t 8)
+	# STEP 2: grid over c → a→ k→ s (GNU parallel; oatk direct; per-job -t 8)
 	local grid_root="${workdir}/grid"
 	if [[ "${_crg_redo}" == true ]]; then
 		rm -rf "$grid_root"

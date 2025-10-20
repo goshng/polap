@@ -395,7 +395,7 @@ Options:
   -t INT       Threads (default: ${_arg_threads:-16})
   -k INT       k-mer for Merqury QV if short reads exist and --eval (default: 31)
   --eval       Run Merqury QV if short reads are available (writes QV report alongside outputs)
-  --polisher   Hybrid polisher: auto|fmlrc2|polypolish (default: auto→fmlrc2)
+  --polisher   Hybrid polisher: auto|fmlrc2|polypolish (default: auto → fmlrc2)
 
 Speed presets (passed to backend; ONT-only path):
   --speed {normal|fast|turbo}   normal=100×,3r,-w1000 ; fast=80×,2r,-w1200 ; turbo=60×,1r,-w1500
@@ -621,7 +621,7 @@ Options:
   -t INT       Threads (default: ${_arg_threads:-16})
   -k INT       k-mer for Merqury QV if short reads exist and --eval (default: 31)
   --eval       Run Merqury QV if short reads are available (writes QV report alongside outputs)
-  --polisher   Hybrid polisher: auto|fmlrc2|polypolish (default: auto→ fmlrc2)
+  --polisher   Hybrid polisher: auto|fmlrc2|polypolish (default: auto → fmlrc2)
 
 Examples:
   ONT-only polishing (Racon×3):

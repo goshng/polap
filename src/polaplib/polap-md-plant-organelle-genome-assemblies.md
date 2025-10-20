@@ -49,7 +49,7 @@ The companion framework **bolap** standardizes benchmarking across these routes 
 
 ### Read selection & decontamination: why it matters and how to do it
 
-Misassigned reads propagate into graph artifacts. In practice, **protein‑guided alignment** against curated organelle gene sets is powerful for selecting organelle reads from WGS, with **miniprot** providing fast, accurate protein→genome mappings; **minimap2** remains the workhorse for DNA→DNA alignments. Complementary **k‑mer profiling** can estimate copy‑number/coverage enrichments and heterozygosity (useful for catching nuclear contamination and polyploid signals), while **BUSCO** offers an ortholog‑based lens on residual nuclear content.([Oxford Academic][3]) ([Nature][6]) ([Oxford Academic][4])
+Misassigned reads propagate into graph artifacts. In practice, **protein‑guided alignment** against curated organelle gene sets is powerful for selecting organelle reads from WGS, with **miniprot** providing fast, accurate protein → genome mappings; **minimap2** remains the workhorse for DNA → DNA alignments. Complementary **k‑mer profiling** can estimate copy‑number/coverage enrichments and heterozygosity (useful for catching nuclear contamination and polyploid signals), while **BUSCO** offers an ortholog‑based lens on residual nuclear content.([Oxford Academic][3]) ([Nature][6]) ([Oxford Academic][4])
 
 ### Assemblers and organelle‑aware post‑processing
 
@@ -94,7 +94,7 @@ After graph construction, **graph‑level inspection** (e.g., **Bandage**) helps
 
 #### Notes for readers who will reproduce these results
 
-- **Protein‑guided selection.** We prefer **miniprot** for read triage against curated pt/mt protein sets because it’s genuinely protein→genome (unlike DNA‑only mappers). Minimap2 remains our default for DNA‑level mapping and coverage checks.([Oxford Academic][3])
+- **Protein‑guided selection.** We prefer **miniprot** for read triage against curated pt/mt protein sets because it’s genuinely protein → genome (unlike DNA‑only mappers). Minimap2 remains our default for DNA‑level mapping and coverage checks.([Oxford Academic][3])
 - **“Closure” versus “representation.”** For plant mitochondria, we report **graphs and supported isoforms** (with coverage) rather than forcing a single circular representation. This aligns with recent critiques of the “master circle” model.([PMC][15])
 
 ---

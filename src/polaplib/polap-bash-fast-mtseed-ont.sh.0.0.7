@@ -558,7 +558,7 @@ for round in $(seq 1 "$rounds_max"); do
 	# Step 6: compute |M| and stopping
 	if _should_run x; then
 		MIDS="${RDIR}/M_reads.ids"
-		note "Step6: conservative PAF→  read IDs via awk+py → $MIDS"
+		note "Step6: conservative PAF →  read IDs via awk+py → $MIDS"
 		((!DRY)) && bash "$PAF2MREADS_SH" "$PAFM" "$AWK_CONS" \
 			"$SEEDREADSPY" "$MIDS"
 

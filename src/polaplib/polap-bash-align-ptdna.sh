@@ -32,7 +32,7 @@ set -euo pipefail
 #            B = LSC + IR + rc(SSC) + rc(IR)
 #          Include reverse-complements → up to 4 candidates total.
 #        - GFA (1 seg) or FASTA: forward + RC → 2 candidates.
-#   3) For each candidate, BLAST candidate→reference:
+#   3) For each candidate, BLAST candidate → reference:
 #        - Compute REFERENCE coverage using ONLY PLUS-strand HSPs
 #          (union on subject coordinates).
 #        - Keep candidates with coverage ≥ --min-cov (default 0.90).
@@ -41,7 +41,7 @@ set -euo pipefail
 #            tie #1 : plus_aligned_bases × plus_weighted_identity (higher)
 #            tie #2 : plus_best_bitscore (higher)
 #   4) Rotate chosen candidate so REF position 1 aligns to CANDIDATE position 1
-#      using BLAST(ref→candidate) to map coordinates.
+#      using BLAST(ref → candidate) to map coordinates.
 #   5) MAFFT global alignment (ref, rotated-cand).
 #   6) Print global percent identity over UNGAPPED columns.
 #
@@ -437,7 +437,7 @@ done
 
 cp "$canddir/$best_cand" "$prefix.best.raw.fa"
 
-# ---------------------------- rotation (ref→candidate) ----------------------------
+# ---------------------------- rotation (ref → candidate) ----------------------------
 log "Mapping ref position 1 to chosen candidate for rotation..."
 run_cmd blastn -task megablast -query "$prefix.ref.fa" -subject "$prefix.best.raw.fa" \
 	-num_threads "$threads" \

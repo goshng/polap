@@ -2,14 +2,14 @@
 # polap-bash-mt-isomers-mtpt.sh
 # Version : v1.1.0
 # Purpose : (A) Mitochondrial isomer evidence (repeats → junctions → ONT bridges)
-#           (B) MTPT turnover (cp→mt tracts, recency bins)
+#           (B) MTPT turnover (cp → mt tracts, recency bins)
 #           with step-by-step execution control.
 #
 # STEPS (select with --step):
 #   1) Repeat discovery (MUMmer/BLAST)                      → repeats.tsv / repeats.bed
 #   2) Junction synthesis (DIR/INV; flank)                  → junctions.fasta / junctions.tsv / network.gfa
 #   3) Junction-bridge counting (ONT → junction templates)  → junction_support.tsv
-#   4) MTPT scan (cp→mt BLAST; collapse; bin by PID)        → mtpt/mtpt.tsv / mtpt/mtpt.bed
+#   4) MTPT scan (cp → mt BLAST; collapse; bin by PID)        → mtpt/mtpt.tsv / mtpt/mtpt.bed
 #   5) MTPT–repeat enrichment (permutation; ±window)        → enrichment/mtpt_repeat_enrichment.tsv
 #   6) Report PDF (compact overview)                        → report/report.pdf
 #
@@ -28,8 +28,8 @@
 #   --min-mapq INT         [20]         bridge MAPQ filter
 #   --min-span INT         [200]        required span per side (bp)
 #   --prefer mummer|blast  [mummer]     backend for Step 1
-#   --mtpt-min-len INT     [100]        minimum cp→mt tract length (bp)
-#   --mtpt-min-pid INT     [85]         minimum cp→mt PID for hits
+#   --mtpt-min-len INT     [100]        minimum cp → mt tract length (bp)
+#   --mtpt-min-pid INT     [85]         minimum cp → mt PID for hits
 #   --mtpt-recent INT      [97]         PID bin: recent ≥ this
 #   --mtpt-intermediate INT[90]         PID bin: intermediate ≥ this
 #   --enrich-window INT    [1000]       ±bp window for MTPT–repeat enrichment
@@ -311,14 +311,14 @@ if step_enabled 3; then
 fi
 
 # =========================================================
-# STEP 4: MTPT (cp→mt) scan & bins
+# STEP 4: MTPT (cp → mt) scan & bins
 # =========================================================
 if step_enabled 4; then
 	[[ -z "$cpfa" ]] && {
 		loge "Step 4 needs cp FASTA (-c/--cp)"
 		exit 1
 	}
-	logi "Step 4/6: MTPT scan (cp→mt) with min_len=$mtpt_min_len, min_pid=$mtpt_min_pid"
+	logi "Step 4/6: MTPT scan (cp → mt) with min_len=$mtpt_min_len, min_pid=$mtpt_min_pid"
 	makeblastdb -in "$asm" -dbtype nucl -out "$out/mtpt/mt" >/dev/null 2>&1 || true
 	blastn -task megablast -db "$out/mtpt/mt" -query "$cpfa" -evalue 1e-20 -dust no -soft_masking false \
 		-perc_identity "$mtpt_min_pid" -word_size 28 \

@@ -1137,7 +1137,7 @@ _refilter_once_eweight_loop() {
 # Env knobs (optional):
 #   INDEX_OPTS=""      # extra flags for 'minimap2 -d'
 #   MAP_OPTS=""        # extra flags for mapping
-#   EDGE_DUMP="polap-py-edge-dump.py"   # path to your edge dumper (PAF→ SV)
+#   EDGE_DUMP="polap-py-edge-dump.py"   # path to your edge dumper (PAF → SV)
 #
 # Output:
 #   OUTDIR/03-partvspart/

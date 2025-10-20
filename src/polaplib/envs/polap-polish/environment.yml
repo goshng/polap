@@ -5,16 +5,22 @@ channels:
   - defaults
 dependencies:
   - bwa-mem2
+  - cmake=3.26
   - fmlrc2
+  - gcc=12
   - gfatools
+  - git
+  - gxx=12
+  - make
   - merqury
   - meryl
   - minimap2
+  - ninja
   - polypolish
   - python
   - r-base
-  - racon
   - ropebwt2
   - samtools
   - seqtk
+  - zlib
 prefix: /home/goshng/miniconda3/envs/polap-polish

@@ -27,6 +27,11 @@ _polap_script_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 }
 _POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
 
+if [[ -r "${_POLAPLIB_DIR}/polap-lib-profiles.sh" ]]; then
+	source "${_POLAPLIB_DIR}/polap-lib-profiles.sh"
+	_polap_ensure_profiles_dir
+fi
+
 # ── NEW: trace-load flag
 for arg in "$@"; do
 	case "$arg" in
@@ -49,7 +54,7 @@ bolap_autoload_min "${_POLAPLIB_DIR}" "${_bolap_type}"
 source "${_POLAPLIB_DIR}/polap-lib-command.sh"
 source "${_POLAPLIB_DIR}/polap-lib-bolap-compat.sh"
 source "${_POLAPLIB_DIR}/polap-lib-seqkit.sh"
-source "${_POLAPLIB_DIR}/polap-lib-dataset.sh"
+source "${_POLAPLIB_DIR}/bolap-lib-dataset.sh"
 source "${_POLAPLIB_DIR}/polap-lib-dialog.sh"
 
 # MAIN

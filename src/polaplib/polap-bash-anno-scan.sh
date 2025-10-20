@@ -21,6 +21,7 @@ AWK_CORE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts/polap-awk-anno-s
 
 BASE_DIR=""
 MANIFEST="" OUT_DIR="." TIER="" INUM=""
+MANIFEST_TAG=""
 usage() {
 	cat <<EOF
 Usage:
@@ -35,6 +36,10 @@ while (($#)); do
 		;;
 	--manifest)
 		MANIFEST="${2:?}"
+		shift 2
+		;;
+	--manifest-tag)
+		MANIFEST_TAG="${2:?}"
 		shift 2
 		;;
 	--out-dir)
@@ -69,8 +74,8 @@ mkdir -p "$OUT_DIR"
 
 SR="$(cd "$(dirname "$BASE_DIR")" && pwd)"
 
-MT_OUT="$OUT_DIR/anno-mt.csv"
-PT_OUT="$OUT_DIR/anno-pt.csv"
+MT_OUT="$OUT_DIR/${MANIFEST_TAG}-anno-mt.csv"
+PT_OUT="$OUT_DIR/${MANIFEST_TAG}-anno-pt.csv"
 echo "species,mt_genes,pt_genes,genome_kb" >"$MT_OUT"
 echo "species,mt_genes,pt_genes,genome_kb" >"$PT_OUT"
 

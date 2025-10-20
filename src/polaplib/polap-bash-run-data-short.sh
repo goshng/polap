@@ -162,7 +162,7 @@ pull_remote() {
 	local rpath="$1" lpath="$2"
 	mkdir -p "$(dirname "$lpath")"
 	show "scp: $REMOTE:$rpath -> $lpath"
-	scp -q "$REMOTE":"$rpath" "$lpath"
+	scp "$REMOTE":"$rpath" "$lpath"
 }
 
 # choose outputs based on mode
@@ -216,10 +216,12 @@ normalize_downloaded_into() {
 	local cand_fq="$TMP/${base}_${mate}.fastq"
 	if [[ -s "$cand_gz" ]]; then
 		write_from_gz "$cand_gz" "$dst"
-		((CLEANUP)) && rm -f -- "$cand_gz"
+		if ((CLEANUP)); then rm -f -- "$cand_gz"; fi
+		return 0
 	elif [[ -s "$cand_fq" ]]; then
 		write_from_fastq "$cand_fq" "$dst"
-		((CLEANUP)) && rm -f -- "$cand_fq"
+		if ((CLEANUP)); then rm -f -- "$cand_fq"; fi
+		return 0
 	else
 		return 1
 	fi
@@ -325,9 +327,16 @@ process_mate() {
 			if command -v fasterq-dump >/dev/null 2>&1; then
 				fasterq-dump -e "$THREADS" -p "${SHORT_SRA}"
 				# gzip outputs to save space if default gz mode requested
-				if ((AS_FQ == 0)); then
-					[[ -s "${SHORT_SRA}_1.fastq" ]] && pigz -p "$THREADS" "${SHORT_SRA}_1.fastq" || true
-					[[ -s "${SHORT_SRA}_2.fastq" ]] && pigz -p "$THREADS" "${SHORT_SRA}_2.fastq" || true
+				if command -v pigz >/dev/null 2>&1; then
+					if ((AS_FQ == 0)); then
+						[[ -s "${SHORT_SRA}_1.fastq" ]] && pigz -p "$THREADS" "${SHORT_SRA}_1.fastq" || true
+						[[ -s "${SHORT_SRA}_2.fastq" ]] && pigz -p "$THREADS" "${SHORT_SRA}_2.fastq" || true
+					fi
+				else
+					if ((AS_FQ == 0)); then
+						[[ -s "${SHORT_SRA}_1.fastq" ]] && gzip "${SHORT_SRA}_1.fastq" || true
+						[[ -s "${SHORT_SRA}_2.fastq" ]] && gzip "${SHORT_SRA}_2.fastq" || true
+					fi
 				fi
 			else
 				echo "[ERROR] neither polap-ncbitools nor fasterq-dump found" >&2

@@ -42,6 +42,7 @@ _brg_outdir="${_brg_outdir%/}"
 # _brg_title: may or may not be set
 # FUNCNAME[1]: e.g. "run-ptgaul_genus_species"
 
+local _brg_title
 if [[ -z "${_brg_title:-}" ]]; then
 	_brg_title="${FUNCNAME[1]}"
 

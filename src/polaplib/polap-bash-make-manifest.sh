@@ -95,6 +95,41 @@ mkdir -p "$(dirname "$OUT")"
 have() { command -v "$1" >/dev/null 2>&1; }
 first_match() { compgen -G "$1" >/dev/null 2>&1 && ls $1 2>/dev/null | head -n1 || true; }
 
+# Br Brassica_rapa
+# Cb Cinchona_pubescens
+# Ce Canavalia_ensiformis
+# Cl Codonopsis_lanceolata
+# Cp Carex_pseudochinensis
+# Cs Cucumis_sativus_var_hardwickii
+# Dj Dioscorea_japonica
+# Dt Dunaliella_tertiolecta
+# Ea Euonymus_alatus
+# Ep Eucalyptus_pauciflora
+# Gh Gossypium_herbaceum
+# Je Juncus_effusus
+# Ji Juncus_inflexus
+# Jr Juncus_roemerianus
+# Jv Juncus_validus
+# Ld Leiosporoceros_dussii
+# Lp Lolium_perenne
+# Ma Musa_acuminata_subsp_malaccensis
+# Mj Macadamia_jansenii
+# Mt Macadamia_tetraphylla
+# No Notothylas_orbicularis
+# Ol Ophrys_lutea
+# Or Oryza_rufipogon
+# Pc Phaeomegaceros_chiloensis
+# Pg Punica_granatum
+# Pm Prunus_mandshurica
+# Ps Populus_x_sibirica
+# Sd Salix_dunnii
+# Sl Solanum_lycopersicum
+# Sp Spirodela_polyrhiza
+# Tm Taraxacum_mongolicum
+# Tp Trifolium_pratense
+# Vf Vitis_vinifera
+# Vr Vigna_radiata
+# Vv Vaccinium_vitis_idaea
 get_species_list() {
 	case "$SET" in
 	auto)
@@ -105,6 +140,8 @@ get_species_list() {
 	some)
 		cat <<'__SOME__'
 Anthoceros_agrestis
+Anthoceros_angustus
+Arabidopsis_thaliana
 __SOME__
 		;;
 	file:*)

@@ -37,20 +37,20 @@ MANIFEST_DIR  ?= $(SR)/man/md
 MANIFEST_TAG := $(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN)
 
 # Paths built from the tag
-MANIFEST_V6  := $(MANIFEST_DIR)/manifest-$(MANIFEST_TAG).json
-MANIFEST_LOG := $(MANIFEST_DIR)/manifest-$(MANIFEST_TAG).log
+MANIFEST_V6  := $(MANIFEST_DIR)/$(MANIFEST_TAG)-manifest.json
+MANIFEST_LOG := $(MANIFEST_DIR)/$(MANIFEST_TAG)-manifest.log
 
 # Derived summaries
-PT_TABLE_TSV  := $(MANIFEST_DIR)/pt-summary-$(MANIFEST_TAG).tsv
+PT_TABLE_TSV  := $(MANIFEST_DIR)/$(MANIFEST_TAG)-pt-summary.tsv
 PT_TABLE_MD   := $(PT_TABLE_TSV:.tsv=.md)
-MT_TABLE_TSV  := $(MANIFEST_DIR)/mt-summary-$(MANIFEST_TAG).tsv
+MT_TABLE_TSV  := $(MANIFEST_DIR)/$(MANIFEST_TAG)-mt-summary.tsv
 MT_TABLE_MD   := $(MT_TABLE_TSV:.tsv=.md)
-DATA_TABLE_PREFIX := $(MANIFEST_DIR)/data-summary-$(MANIFEST_TAG)
+DATA_TABLE_PREFIX := $(MANIFEST_DIR)/$(MANIFEST_TAG)-data-summary
 DATA_TABLE_TSV    := $(DATA_TABLE_PREFIX).tsv
 DATA_TABLE_MD     := $(DATA_TABLE_PREFIX).md
 
 # Table S1
-TABLE_S1_TSV  := $(MANIFEST_DIR)/table-s1-$(MANIFEST_TAG).tsv
+TABLE_S1_TSV  := $(MANIFEST_DIR)/$(MANIFEST_TAG)-table-s1.tsv
 TABLE_S1_MD   := $(TABLE_S1_TSV:.tsv=.md)
 
 # Optional species codes file (used by manifest/table scripts)
@@ -110,12 +110,12 @@ check-env:
 # ------------------------------------------------------------------------------
 # Manifest (single v6)
 # ------------------------------------------------------------------------------
-manifests: $(MANIFEST_V6)
+manifest: $(MANIFEST_V6)
 
 $(MANIFEST_V6): check-env
 	@mkdir -p "$(MANIFEST_DIR)"
 	@echo "[INFO] Building manifest tier=$(TIER_CLEAN) set=$(SET_CLEAN) in $(SR)"
-	@cd "$(SR)" && \
+	cd "$(SR)" && \
 	  bash "$(POLAPLIB_DIR)/polap-bash-make-manifest.sh" \
 	    --set  "$(SET_CLEAN)" \
 	    --tier "$(TIER_CLEAN)" \
@@ -234,6 +234,7 @@ anno-scan:
 	@bash "$(POLAPLIB_DIR)/polap-bash-anno-scan.sh" \
 	  --base-dir "." \
 	  --manifest "$(MANIFEST_V6)" \
+	  --manifest-tag "$(MANIFEST_TAG)" \
 	  --out-dir "$(MANIFEST_DIR)" \
 	  --tier "$(TIER_CLEAN)" --inum "$(INUM_CLEAN)"
 
@@ -241,15 +242,15 @@ sheet-ptmt: anno-scan
 	@bash "$(POLAPLIB_DIR)/polap-bash-ptmt-sheet.sh" \
 	  --base-dir "." \
 	  --manifest "$(MANIFEST_V6)" \
-	  --annot-pt "$(MANIFEST_DIR)/anno-pt.csv" \
-	  --annot-mt "$(MANIFEST_DIR)/anno-mt.csv" \
-	  --out "$(FIGURE_DIR)/sheet-ptmt-$(MANIFEST_TAG).pdf" \
+	  --annot-pt "$(MANIFEST_DIR)/$(MANIFEST_TAG)-anno-pt.csv" \
+	  --annot-mt "$(MANIFEST_DIR)/$(MANIFEST_TAG)-anno-mt.csv" \
+	  --out "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
 	  --rows 8 --cols 5 \
 	  --page-width-in 11 --page-height-in 17 --margin-in 0.5 \
 	  --gap-mm 4.0 --label-cex 0.55 --title-cex 1.0 --label-strip-frac 0.16 \
 	  --pt-title "Plastid assemblies ($(TIER_CLEAN))" \
 	  --mt-title "Mitochondrial assemblies ($(TIER_CLEAN))"
-	@cp "$(FIGURE_DIR)/sheet-ptmt-$(MANIFEST_TAG).pdf" \
+	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
 		"$(POLAPLIB_DIR)/figures"
 
 #-------------------------------------------------------------------------------
@@ -274,7 +275,7 @@ manuscript: $(DOC_OUT_PDF)
 $(EXP_MD): table-s1
 	@bash "$(MAN_DIR)/sh/replace_include.sh" "$(DOC_MD)" >"$(EXP_MD)"
 
-$(DOC_OUT_PDF): $(DOC_MD) $(EXP_MD) sheet-ptmt
+$(DOC_OUT_PDF): $(DOC_MD) $(EXP_MD) sheet-ptmt table-data pt-table mt-table table-s1
 	@command -v $(PANDOC) >/dev/null 2>&1 || { echo "[ERR] pandoc not found"; exit 2; }
 	@mkdir -p "$(MAN_DIR)"
 	@echo "[INFO] Building PDF: $@"
@@ -299,7 +300,7 @@ $(DOC_OUT_PDF): $(DOC_MD) $(EXP_MD) sheet-ptmt
 	@echo "[OK] Wrote: $(DOC_OUT_PDF)"
 
 manuscript.pdf: $(DOC_OUT_PDF)
-	@pdfunite "$(DOC_OUT_PDF)" "$(FIGURE_DIR)/sheet-ptmt-$(MANIFEST_TAG).pdf" manuscript.pdf
+	@pdfunite "$(DOC_OUT_PDF)" "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" manuscript.pdf
 	@cp -p manuscript.pdf "$(CURDIR)/polap/src/polaplib/"
 
 # ------------------------------------------------------------------------------

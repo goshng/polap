@@ -40,7 +40,7 @@ fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
-function _run_polap_isomer {
+function _run_polap_mtpt {
 	# Enable debugging if _POLAP_DEBUG is set
 	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -105,35 +105,9 @@ EOF
 
 	_polap_lib_conda-ensure_conda_env polap-evo || exit 1
 
-	# _polap_log0 bash "${_POLAPLIB_DIR}/polap-bash-mt-stoich-fractions.sh" \
-	# 	-f "${_arg_mt_ref}" \
-	# 	-l "${_arg_long_reads}" \
-	# 	-o "${_arg_outdir}/stoich/" \
-	# 	--label S1 \
-	# 	--threads 12 \
-	# 	--min-repeat-len 1000 \
-	# 	--min-repeat-pid 90 \
-	# 	--flank 800 \
-	# 	--min-mapq 20 \
-	# 	--min-span 250 \
-	# 	--prefer mummer \
-	# 	--step all
-	#
-	# _polap_log0 bash "${_POLAPLIB_DIR}/polap-bash-mt-isomers-mtpt.sh" \
-	# 	-f "${_arg_mt_ref}" \
-	# 	-c "${_arg_pt_ref}" \
-	# 	-l "${_arg_long_reads}" \
-	# 	-o "${_arg_outdir}/mtpt/" \
-	# 	--label S1 --threads 12 \
-	# 	--min-repeat-len 1000 --min-repeat-pid 90 \
-	# 	--flank 800 --min-mapq 20 --min-span 250 --prefer mummer \
-	# 	--mtpt-min-len 150 --mtpt-min-pid 85 --mtpt-recent 97 --mtpt-intermediate 90 \
-	# 	--enrich-window 1000 --enrich-perm 2000 --step all
-	# edit these three paths
-
 	local MT="${_arg_mt_ref}"
 	local CP="${_arg_pt_ref}"
-	local OUT="${_arg_outdir}/mtpt"
+	local OUT="${_arg_outdir}"
 
 	mkdir -p "$OUT/mtpt"
 	makeblastdb -in "$MT" -dbtype nucl -out "$OUT/mtpt/mt"
@@ -152,6 +126,22 @@ EOF
 		--recent 97 --intermediate 90 \
 		--out-tsv "$OUT/mtpt/mtpt.tsv" \
 		--out-bed "$OUT/mtpt/mtpt.bed"
+
+	python3 "$_POLAPLIB_DIR/polap-py-mtpt-verify-prepare.py" \
+		--fasta "$MT" \
+		--reads "${_arg_long_reads}" \
+		--mtpt-tsv "$OUT/mtpt/mtpt.tsv" \
+		--flank 800 \
+		--threads 12 \
+		--preset map-ont \
+		--out "$OUT/mtpt/verify"
+
+	python3 "$_POLAPLIB_DIR/polap-py-mtpt-verify-batch.py" \
+		--fasta "$MT" \
+		--reads "${_arg_long_reads}" \
+		--mtpt-tsv "$OUT/mtpt/mtpt.tsv" \
+		--out "$OUT/mtpt" \
+		--mode both
 
 	conda deactivate
 

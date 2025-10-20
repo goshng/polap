@@ -8,4 +8,5 @@ dependencies:
   - entrez-direct
   - sra-tools
   - busco
+  - pigz
 prefix: /home/goshng/miniconda3/envs/polap-ncbitools

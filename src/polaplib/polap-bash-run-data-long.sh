@@ -154,7 +154,7 @@ pull_remote() {
 	local rpath="$1" lpath="$2"
 	mkdir -p "$(dirname "$lpath")"
 	show "scp: $REMOTE:$rpath -> $lpath"
-	scp -q "$REMOTE":"$rpath" "$lpath"
+	scp "$REMOTE":"$rpath" "$lpath"
 }
 
 # choose output based on mode
@@ -197,17 +197,22 @@ write_from_fastq() { # src.fastq -> dst(.fq or .fq.gz)
 	fi
 }
 
-# normalize downloaded names to our l.fq(.gz)
+# polap-bash-normalize-downloaded.sh
+# Version: v0.1.0
+# GPL-3.0+
 normalize_downloaded_into() {
 	local base="$1" dst="$2"
 	local cand_gz="$TMP/${base}.fastq.gz"
 	local cand_fq="$TMP/${base}.fastq"
+
 	if [[ -s "$cand_gz" ]]; then
-		write_from_gz "$cand_gz" "$dst"
-		((CLEANUP)) && rm -f -- "$cand_gz"
+		write_from_gz "$cand_gz" "$dst" || return 2
+		if ((CLEANUP)); then rm -f -- "$cand_gz"; fi
+		return 0
 	elif [[ -s "$cand_fq" ]]; then
-		write_from_fastq "$cand_fq" "$dst"
-		((CLEANUP)) && rm -f -- "$cand_fq"
+		write_from_fastq "$cand_fq" "$dst" || return 3
+		if ((CLEANUP)); then rm -f -- "$cand_fq"; fi
+		return 0
 	else
 		return 1
 	fi
@@ -314,7 +319,11 @@ fi
 			fasterq-dump -e "$THREADS" -p "${LONG_SRA}"
 			# compress if gz mode requested
 			if ((AS_FQ == 0)); then
-				[[ -s "${LONG_SRA}.fastq" ]] && pigz -p "$THREADS" "${LONG_SRA}.fastq" || true
+				if command -v pigz >/dev/null 2>&1; then
+					[[ -s "${LONG_SRA}.fastq" ]] && pigz -p "$THREADS" "${LONG_SRA}.fastq" || true
+				else
+					[[ -s "${LONG_SRA}.fastq" ]] && gzip "${LONG_SRA}.fastq" || true
+				fi
 			fi
 		else
 			echo "[ERROR] neither polap-ncbitools nor fasterq-dump found" >&2

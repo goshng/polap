@@ -260,6 +260,7 @@ _brg_outdir=""
 _brg_sindex=0
 _brg_verbose=1
 _brg_verbose_str=""
+_brg_dataset="${_POLAPLIB_DIR}/polap-dataset-${_bolap_type}.json"
 opt_c_arg="off"
 opt_t_arg="v5"
 if [[ "${_bolap_type}" == "read" ]]; then
@@ -275,6 +276,7 @@ _brg_config_dir="$HOME/.polap/profiles"
 _brg_config_path=""
 _brg_default_target_dir="${opt_m_arg}"
 declare -a _blg_unknown_opts=()
+declare -a _brg_outdir_list=()
 
 print_help() {
 
@@ -352,11 +354,17 @@ parse_commandline() {
 		-s)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_brg_outdir="${2%/}"
+			_brg_outdir_list+=("$_brg_outdir") # append to array
 			shift
 			;;
 		-i)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_brg_sindex="$2"
+			shift
+			;;
+		-j)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_brg_dataset="$2"
 			shift
 			;;
 		-c)

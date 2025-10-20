@@ -791,6 +791,13 @@ _polap_lib_readassemble-assemble-annotated-read-mt() {
 				-t mt \
 				-i mt$i -j mt$j
 		elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+			_polap_log1 "use assemble-sub for mtDNA assembly"
+			_polap_lib_assemble-sub \
+				-o "${annotatedir}" \
+				-l "${_arg_long_reads}" \
+				-w "${_arg_single_min}" \
+				-i mt$i -j mt$j
+		else
 			_polap_log1 "use the only selected long reads using organelle gene annotation for mtDNA assembly"
 			_polap_lib_assemble-rate \
 				-o "${annotatedir}" \
@@ -850,6 +857,12 @@ _polap_lib_readassemble-assemble-annotated-read-mt() {
 			-w "${_arg_single_min}" \
 			-i mt$i -j mt$j
 	elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
+		_polap_lib_assemble-sub \
+			-o "${annotatedir}" \
+			-l "${_arg_long_reads}" \
+			-w "${_arg_single_min}" \
+			-i mt$i -j mt$j
+	else
 		# -l "${_arg_long_reads}" \
 		# -l "${annotatedir}"/mt.fq \
 		_polap_log1 "use then input long reads with an adjusted omega for the final stage mtDNA assembly"
@@ -966,7 +979,7 @@ _polap_lib_readassemble-annotated() {
 
 		_polap_log0 "i: $i"
 		if [[ ! -s "${annotatedir}/mt$i/mt.contig.name-mt$j" ]]; then
-			_polap_log0 "No mt seed for mt$j"
+			_polap_log0 "No mt seed at mt$i for mt$j"
 			break
 		fi
 

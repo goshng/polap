@@ -144,6 +144,7 @@ Anthoceros_angustus
 Arabidopsis_thaliana
 Codonopsis_lanceolata
 Eucalyptus_pauciflora
+Juncus_roemerianus
 __SOME__
 		;;
 	file:*)

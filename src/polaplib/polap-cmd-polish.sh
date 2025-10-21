@@ -206,7 +206,6 @@ EOF
 	else
 		local sr_r2=""
 	fi
-	_polap_log0 "s1: $sr_r1"
 
 	local racon_rounds="${_arg_racon_round:-3}"
 	local threads="${_arg_threads:-16}"
@@ -242,7 +241,6 @@ EOF
 	fi
 
 	# Mode resolution if auto
-	_polap_log0 "mode1: $mode"
 	if [[ "$mode" == "auto" ]]; then
 		if [[ -n "$sr_r1" && -n "$sr_r2" ]]; then
 			mode="hybrid"
@@ -254,8 +252,6 @@ EOF
 			return $EXIT_ERROR
 		fi
 	fi
-
-	_polap_log0 "mode2: $mode"
 
 	[[ "$mode" == "ont" && -z "$ont_fq" ]] && {
 		_polap_log0 "ERROR: mode=ont requires -l."

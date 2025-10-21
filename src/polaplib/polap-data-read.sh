@@ -2155,7 +2155,7 @@ benchmark-command_genus_species_for() {
 	run-data-long_genus_species
 	run-data-short_genus_species
 	run-summary-data_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
-	data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex_0}" --coverage 10g
+	data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex_0}" --coverage 30g
 
 	download-ptdna_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 	if [[ -s "${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa" ]]; then
@@ -2537,24 +2537,17 @@ benchmark_genus_species_for() {
 # Each polap data analysis has its own command such as benchmark and man.
 # Common commands are in polap-lib-data.sh; they are install, update, run, command etc.
 benchmark_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
 
 	help_message=$(
 		cat <<EOF
 Name:
-  bolap - development
+  bolap - $bolap_cmd benchmark - Benchmarking organelle genome assembly pipelines
 
 Synopsis:
   bolap $bolap_cmd
 
 Description:
-  Edit bolap-parsing.sh for bolap -h
-
-  Edit polap-data-read.sh for bolap help
-
-  Edit polap-lib-data.sh to add a new command
-
-  Makefile.read to add man commands
-
   rsync -a -v thorne:/home/goshng/all/polap/github/src/ /home/goshng/all/polap/github/src/
 
 See also:
@@ -2603,6 +2596,11 @@ EOF
 	fi
 
 	parse_commandline
+
+	if (( ${#_brg_outdir_list[@]} == 0 )); then
+	  _log_echo0 "[ERROR] bolap -s <species1>"
+		_log_echo0 "bolap -h for help"
+fi
 
 	local outdir
 	for outdir in "${_brg_outdir_list[@]}"; do
@@ -3711,16 +3709,72 @@ parse_commandline_man() {
 man-man_genus_species() {
 	local args=("$@")
 
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - generate a PDF report document 
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Topic:
+    bolap $bolap_cmd --set some
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
 	local set="some"
 	parse_commandline_man
 
 	_polap_lib_conda-ensure_conda_env polap-man || exit 1
-	make -f "${_POLAPLIB_DIR}/Makefile.read" manuscript.pdf
+	make SET="$set" -f "${_POLAPLIB_DIR}/Makefile.read" manuscript.pdf
 	conda deactivate
 }
 
 man-manifest_genus_species() {
 	local args=("$@")
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - generate a PDF report document 
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Topic:
+    bolap $bolap_cmd --set some
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (1998–2018)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
 
 	local set="some"
 	parse_commandline_man
@@ -3952,13 +4006,15 @@ EOF
 		done
 	}
 
-	declare -n ref="help_message"
-	if [[ "${_brg_help}" == "on" ]]; then
-		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
-		man "$manfile"
-		rm -f "$manfile"
-		return
-	fi
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return
+
+	# declare -n ref="help_message"
+	# if [[ "${_brg_help}" == "on" ]]; then
+	# 	local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+	# 	man "$manfile"
+	# 	rm -f "$manfile"
+	# 	return
+	# fi
 
 	parse_commandline
 

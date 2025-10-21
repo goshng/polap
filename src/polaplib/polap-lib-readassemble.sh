@@ -995,19 +995,18 @@ _polap_lib_readassemble-miniasm() {
 		elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
 			_polap_log1 "use the only selected long reads using organelle gene annotation for mtDNA assembly"
 			_polap_log0 "i: $i"
+			_polap_log0 _polap_lib_assemble-omega \
+				-o "${annotatedir}" \
+				-l "${annotatedir}/06-miniasm/top_reads.fa.gz" \
+				-t mt \
+				-i mt$i -j mt$j
 			_polap_lib_assemble-omega \
 				-o "${annotatedir}" \
-				-l "${_arg_long_reads}" \
+				-l "${annotatedir}/06-miniasm/top_reads.fa.gz" \
 				-t mt \
 				-i mt$i -j mt$j
 			_polap_log0 "i: $i"
 
-			# _polap_lib_assemble-rate \
-			# 	-o "${annotatedir}" \
-			# 	-l "${_arg_long_reads}" \
-			# 	-w "${_arg_single_min}" \
-			# 	-t mt \
-			# 	-i mt$i -j mt$j
 		fi
 		_polap_log0 "i: $i"
 		_polap_lib_file-cleanup -d "${annotatedir}/mt$j" -s 5M -a rm
@@ -1082,7 +1081,7 @@ _polap_lib_readassemble-miniasm() {
 		_polap_log1 "use then input long reads with an adjusted omega for the final stage mtDNA assembly"
 		_polap_lib_assemble-omega \
 			-o "${annotatedir}" \
-			-l "${_arg_long_reads}" \
+			-l "${annotatedir}/06-miniasm/top_reads.fa.gz" \
 			-t mt \
 			-i mt$i -j mt$j
 	fi

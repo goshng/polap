@@ -235,6 +235,39 @@ HEREDOC
 		compgen -v | grep '^PCFG_'
 	fi
 
+	if [[ "${_arg_menu[1]}" == "step" ]]; then
+		local _include="${_arg_steps_include}"
+		local _exclude="${_arg_steps_exclude}" # Optional range or list of steps to exclude
+		local _step_array=()
+
+		_step_array=($(_polap_parse_steps "${_include}" "${_exclude}"))
+		_rstatus="$?"
+		if [[ "${_rstatus}" -ne 0 ]]; then
+			_polap_log0 "ERROR: Error parsing steps."
+			return "${_POLAP_ERR_CMD_OPTION_STEPS}"
+		fi
+
+		if _polap_contains_step 1 "${_step_array[@]}"; then
+			_polap_log0 "step 1"
+		fi
+
+		if _polap_contains_step 2 "${_step_array[@]}"; then
+			_polap_log0 "step 2"
+		fi
+
+		if _polap_contains_step 3 "${_step_array[@]}"; then
+			_polap_log0 "step 3"
+		fi
+
+		if _polap_contains_step 4 "${_step_array[@]}"; then
+			_polap_log0 "step 4"
+		fi
+
+		if _polap_contains_step 5 "${_step_array[@]}"; then
+			_polap_log0 "step 5"
+		fi
+	fi
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

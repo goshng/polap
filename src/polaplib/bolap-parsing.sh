@@ -283,7 +283,8 @@ print_help() {
 	help_message=$(
 		cat <<HEREDOC
 BOLAP - Benchmarking of organelle DNA long-read assembly pipeline.
-Version: ${_polap_version}, Analysis: ${_bolap_type}
+Version: ${_polap_version}
+Type: ${_bolap_type}
 
 Usage: ${_bolap_command_string} [command] [options] -s species_name
 
@@ -292,25 +293,27 @@ by annotating long reads with organelle genome sequences and selecting those
 originating from organelle genomes.
 
 commands:
-  use                  Use one of benchmark analysis datasets: read, cflye, aflye
+  benchmark (default)  Benchmark GetOrganelle, ptGAUL, TIPPo, and Oatk.
   install/setup/update Install, setup, update tools using conda environments.
-  uninstall            Uninstall tools.
-  conda                Manage conda environments.
-  list (search)        List or search for tools.
   run                  Run tools
   download             Download data.
+  uninstall            Uninstall tools.
+  use                  Use one of benchmark analysis datasets: read, cflye, aflye
+  conda                Manage conda environments.
+  list (search)        List or search for tools.
   help                 Print help message for commands and others.
   config               Config view, add, etc.
-  benchmark            Benchmark GetOrganelle, ptGAUL, TIPPo, and Oatk.
   clean (delete, rm)   Remove unnecessary folders.
 
 options:
-  -s STR               Set species folder (default: ${_brg_outdir})
+  -s STR               Set species folder (REQUIRED).
   -i INT               Set species index (default: ${_brg_sindex})
-  -c <arg>             Set value for -c option (default: ${opt_c_arg})
-  -t <arg>             Set value for -t option (default: ${opt_t_arg})
+  -c FILE              Set value for -c option (default: ${opt_c_arg})
+  -t STR               Set value for -t option (default: ${opt_t_arg})
   -f                   Enable profiling.
+  -y                   Yes for all questions.
   -v                   Enable verbose mode.
+  --remote STR         Set the remote cental server (default: none).
   --version            Show the polap-data-${_bolap_type} version number and exit.
   -h, --help           Show this help message and exit.
 HEREDOC
@@ -512,6 +515,17 @@ _brg_adir="${opt_t_arg:-t5}"
 _brg_verbose=1
 _brg_args=("$@")
 parse_commandline "$@"
+
+# if [ "${_brg_help}" == "on" ]; then
+# 	print_help
+# 	exit 0
+# fi
+
+# if [[ -z "${_brg_outdir}" ]]; then
+# 	echo "[error] -s species_name is required." >&2
+# 	echo "Use '${_bolap_command_string} --help' for more information." >&2
+# 	exit 1
+# fi
 
 handle_passed_args_count
 set +u

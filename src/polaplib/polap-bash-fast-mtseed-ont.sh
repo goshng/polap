@@ -1896,13 +1896,15 @@ if _should_run 7; then
 	mkdir -p "${contigger_dir}"
 	sed 's/LN:i/dp:i/' "${ADIR}/miniasm.gfa" >"${contigger_dir}/graph_final.gfa"
 	note1 "7b) polap readassemble using miniasm seeds ..."
-	if ((do_shuffle == 1)); then
+	if ((do_polap == 1)); then
 		bash "${_POLAPLIB_DIR}/../polap.sh" readassemble annotated -o "${outdir}" -i "${FDIR_NAME}" -l "${reads}"
 	fi
 fi
 
-note0 "Step8: clean up $outdir"
-_polap_lib_file-cleanup -d "${outdir}" -s 5M -a rm
+# if ((do_polap == 1)); then
+# 	note0 "Step8: clean up $outdir"
+# 	_polap_lib_file-cleanup -d "${outdir}" -s 5M -a rm
+# fi
 
 # Finalize
 # if ((!DRY)); then

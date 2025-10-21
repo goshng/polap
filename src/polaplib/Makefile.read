@@ -18,7 +18,7 @@ SR := $(abspath $(SPECIES_ROOT))
 # ------------------------------------------------------------------------------
 # Tier/Set (single tier)
 # ------------------------------------------------------------------------------
-SET   ?= some     # auto|some|file:/abs/list.txt|<species>
+SET   ?= auto     # auto|some|file:/abs/list.txt|<species>
 INUM  ?= 0
 TIER  ?= v6
 

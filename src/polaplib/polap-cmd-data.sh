@@ -106,10 +106,11 @@ EOF
 	if [[ "${_arg_menu[1]}" == "busco" ]]; then
 		# wget https://data.orthodb.org/current/download/odb12v1_cds_fasta.gz
 
+		_polap_lib_conda-ensure_conda_env polap-ncbitools || exit 1
 		# busco nuclear gene sets
 		# busco --download
 		# busco_downloads/lineages/viridiplantae_odb12
-		# busco --download viridiplantae_odb12
+		busco --download viridiplantae_odb12
 		cut -f1 busco_downloads/lineages/viridiplantae_odb12/links_to_ODB12.txt >busco_ids.txt
 
 		echo bash "${_POLAPLIB_DIR}/polap-bash-orthodb-viridi-busco-cds.sh" \
@@ -117,6 +118,8 @@ EOF
 			--cds odb12v1_cds_fasta.gz \
 			--download \
 			-o viridi_busco >&3
+
+		conda deactivate
 	fi
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"

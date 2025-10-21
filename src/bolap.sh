@@ -1,4 +1,20 @@
 #!/usr/bin/env bash
+################################################################################
+# This file is part of polap.
+#
+# polap is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# polap is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# polap. If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
 set -euo pipefail
 
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
@@ -6,6 +22,17 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
 	return 1 2>/dev/null || exit 1
 fi
 
+# We want to set the environment variable, _POLAP_DEBUG.
+# _POLAP_DEBUG=1 bash polap.sh
+# If _POLAP_DEBUG is not already set, set it to 0. Then make sure it is visible to all subprocesses.
+# The leading colon (:) is simply a no-op command to wrap that parameter expansion safely:
+# The following two are equivalent.
+# 1)
+# : "${_POLAP_DEBUG:=0}"
+# 2)
+# if [[ -z "${_POLAP_DEBUG}" ]]; then
+#     _POLAP_DEBUG=0
+# fi
 : "${_POLAP_DEBUG:=0}"
 export _POLAP_DEBUG
 : "${_POLAP_RELEASE:=0}"
@@ -20,19 +47,21 @@ _media2_dir="/media/h2/sra"
 : "${_LOCAL_HOST:=thorne}"
 : "${_MEDIA_DIR:=/media/h2/sra}"
 
-# Determine base
+# Determine the base directory of the bolap command.
+# We use _POLAPLIB_DIR in everywhere in the code.
 _polap_script_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
 	echo "Couldn't determine the script's running directory, bailing out" >&2
 	exit 2
 }
 _POLAPLIB_DIR="${_polap_script_bin_dir}/polaplib"
 
+# Create $HOME/.polap/profiles if it is absent.
 if [[ -r "${_POLAPLIB_DIR}/polap-lib-profiles.sh" ]]; then
 	source "${_POLAPLIB_DIR}/polap-lib-profiles.sh"
 	_polap_ensure_profiles_dir
 fi
 
-# ── NEW: trace-load flag
+# Display what bash libraries are loaded.
 for arg in "$@"; do
 	case "$arg" in
 	--trace-load)
@@ -42,31 +71,21 @@ for arg in "$@"; do
 	esac
 done
 
+# Load bash libraries.
 source "${_POLAPLIB_DIR}/polap-lib-version.sh"
 source "${_POLAPLIB_DIR}/bolap-parsing.sh"
-_polap_output_dest="/dev/null"
-
-# ── NEW: Use the bolap autoloader
-source "${_POLAPLIB_DIR}/polap-bash-bolap-autoload-min.sh"
+# Set if the bolap type is not set in the command-line options.
 : "${_bolap_type:=read}"
+_polap_output_dest="/dev/null"
+source "${_POLAPLIB_DIR}/polap-bash-bolap-autoload-min.sh"
 bolap_autoload_min "${_POLAPLIB_DIR}" "${_bolap_type}"
-
+# Load more if not loaded by the autoloader.
 source "${_POLAPLIB_DIR}/polap-lib-command.sh"
 source "${_POLAPLIB_DIR}/polap-lib-bolap-compat.sh"
 source "${_POLAPLIB_DIR}/polap-lib-seqkit.sh"
 source "${_POLAPLIB_DIR}/bolap-lib-dataset.sh"
 source "${_POLAPLIB_DIR}/polap-lib-dialog.sh"
+source "${_POLAPLIB_DIR}/polap-lib-help.sh"
 
-# MAIN
-if [ $# -eq 0 ]; then
-	print_help
-	exit 0
-fi
-
+# Main
 _run_bolap
-# Dispatch
-# if declare -f "_run_bolap_${_brg_menu[0]}" >/dev/null 2>&1; then
-# 	_run_bolap_${_brg_menu[0]}
-# else
-# 	_run_bolap "${_brg_menu[0]}"
-# fi

@@ -119,6 +119,8 @@ _polap_lib_assemble-omega() {
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 	local i=0
 
+	_polap_log0 "$FUNCNAME: -l ${_arg_long_reads}"
+
 	if ! _polap_gfatools-gfa2fasta; then
 		_polap_error_message $?
 	fi

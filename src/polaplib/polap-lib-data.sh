@@ -2737,7 +2737,7 @@ EOF
 		${_brg_verbose_str} \
 		-o "${_brg_target}"
 
-	_log_echo0 ${_polap_cmd} miniassemble \
+	${_polap_cmd} miniassemble \
 		"${option_data_type}" \
 		-l "${resolved_fastq}" \
 		--readassemble-mtn "${mtn}" \
@@ -10798,19 +10798,20 @@ run-msbwt_genus_species() {
 }
 
 run_genus_species() {
-	local first_arg="$1"
-	local remaining_args=("${@:2}")
+  benchmark_genus_species 
+	# local first_arg="$1"
+	# local remaining_args=("${@:2}")
 
-	# Remove trailing slash from the first element
-	if [[ -n "${remaining_args[0]}" ]]; then
-		remaining_args[0]="${remaining_args[0]%/}"
-	fi
+	# # Remove trailing slash from the first element
+	# if [[ -n "${remaining_args[0]}" ]]; then
+	# 	remaining_args[0]="${remaining_args[0]%/}"
+	# fi
 
-	if declare -F run-${first_arg}_genus_species >/dev/null; then
-		run-${first_arg}_genus_species "${remaining_args[@]}"
-	else
-		echo "$help_message_run"
-	fi
+	# if declare -F run-${first_arg}_genus_species >/dev/null; then
+	# 	run-${first_arg}_genus_species "${remaining_args[@]}"
+	# else
+	# 	echo "$help_message_run"
+	# fi
 }
 
 run-getorganelle_genus_species() {
@@ -14329,6 +14330,7 @@ EOF
 	parse_commandline
 
 	mkdir -p "${_brg_outdir_i}"
+	mkdir -p "${_brg_target}"
 
 	local l_fq_gz="${_brg_outdir}/tmp/l.fq.gz"
 	local s_1_fq_gz="${_brg_outdir}/tmp/s_1.fq.gz"
@@ -14341,18 +14343,6 @@ EOF
 		return 0
 	fi
 
-	# if [[ -s "${long_sra}.fastq" ]]; then
-	# 	# echo "found: ${long_sra}.fastq"
-	# 	if [[ ! -s "${_brg_outdir}/tmp/${long_sra}.fastq" ]]; then
-	# 		mv "${long_sra}.fastq" "${_brg_outdir}"/tmp
-	# 	fi
-	# else
-	# 	if [[ ! -s "${_brg_outdir}/tmp/${long_sra}.fastq" ]]; then
-	# 		echo "no such file: ${long_sra}.fastq"
-	# 		return
-	# 	fi
-	# fi
-
 	_polap_lib_conda-ensure_conda_env polap || exit 1
 
 	_log_echo0 _polap_lib_process-start_memtracker "${_memlog_file}" \
@@ -14360,45 +14350,16 @@ EOF
 	_polap_lib_process-start_memtracker "${_memlog_file}" \
 		"${_polap_var_memtracker_time_interval}"
 
-	# Step 2. Estimate the genome size
-	# local _genome_size="0"
-	# if [[ -v _platform["$_brg_target"] ]]; then
-	# 	_genome_size=$(
-	# 		estimate-genomesize-platform_genus_species \
-	# 			"${_brg_outdir}" \
-	# 			"${_brg_inum}" | tail -1
-	# 	)
-	# else
-	# 	_genome_size=$(
-	# 		estimate-genomesize_genus_species \
-	# 			"${_brg_outdir}" \
-	# 			"${_brg_inum}" | tail -1
-	# 	)
-	# fi
-
-	# echo "Genome size estimate: $(_polap_lib_unit-convert_bp ${_genome_size})"
-
-	# coverage: 0.1x -> genome size 0.1
-	# coverage: 0.1g -> 0.1 Gb
 	if [[ "${_brg_coverage}" =~ [gGkKmM]$ ]]; then
-		# echo "downsampling ... ${long_sra}"
-		# echo "input: ${_brg_outdir}/tmp/${long_sra}.fastq"
-		# echo "output: ${long_sra}.fastq"
-		# echo "sampling size: ${_brg_coverage}"
 		${_polap_cmd} fastq-sample-to -v \
 			-l "${l_fq_gz}" \
 			--outfile "${long_sra}.fastq" \
 			-g "${_brg_coverage}" \
 			--random-seed "${random_seed}" \
 			>"${_brg_outdir_i}/l-${_brg_coverage}.txt"
-	else
 
-		# Step 3.
-		# echo "downsampling ... ${long_sra}"
-		# echo "input: ${_brg_outdir}/tmp/${long_sra}.fastq"
-		# echo "output: ${long_sra}.fastq"
-		# echo "genome size: ${_genome_size}"
-		# echo "sampling rate: ${_brg_coverage}x"
+		echo ${_polap_cmd} fastq-sample-to >"${_brg_target}/${long_sra}.fq.downsample.txt"
+	else
 		${_polap_cmd} fastq subsample --redo -v \
 			"${l_fq_gz}" \
 			"${long_sra}.fastq" \
@@ -14407,13 +14368,20 @@ EOF
 			--random-seed "${random_seed}" \
 			--genomesize "${_genome_size}" \
 			>"${_brg_outdir_i}/l-${_brg_coverage}x.txt"
-		# _log_echo "log: ${_brg_outdir_i}/l${_brg_coverage}x.txt"
-		# cat "${_brg_outdir_i}/l${_brg_coverage}x.txt"
+		echo ${_polap_cmd} fastq subsample >"${_brg_target}/${long_sra}.fq.downsample.txt"
 	fi
+
+	# seqkit stats -Ta
+	echo "input: ${l_fq_gz}" >>"${_brg_target}/${long_sra}.fq.downsample.txt"
+	echo "coverage: ${_brg_coverage}" >>"${_brg_target}/${long_sra}.fq.downsample.txt"
+	seqkit stats -Ta "${long_sra}.fastq" >"${_brg_target}/${long_sra}.fq.seqkit.stats.ta.tsv"
 
 	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
 
 	conda deactivate
+
+	rsync -azuq --max-size=5M \
+		"${_brg_target}/" "${_brg_rundir}/"
 }
 
 data-downsample-short_genus_species() {

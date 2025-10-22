@@ -2597,10 +2597,10 @@ EOF
 
 	parse_commandline
 
-	if (( ${#_brg_outdir_list[@]} == 0 )); then
-	  _log_echo0 "[ERROR] bolap -s <species1>"
+	if ((${#_brg_outdir_list[@]} == 0)); then
+		_log_echo0 "[ERROR] bolap -s <species1>"
 		_log_echo0 "bolap -h for help"
-fi
+	fi
 
 	local outdir
 	for outdir in "${_brg_outdir_list[@]}"; do
@@ -3683,6 +3683,7 @@ archive_genus_species() {
 parse_commandline_man() {
 	set -- "${_brg_unknown_opts[@]}"
 
+	set="auto"
 	# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
 	while test $# -gt 0; do
 		_key="$1"
@@ -3722,6 +3723,20 @@ Synopsis:
 Description:
   bolap
 
+  Output Figure/Table Section
+
+  sheet-ptmt.pdf Fig. 2 Results – Assembly overview
+
+  tableS1-dataset-summary.tsv Table 1 Methods – Input datasets
+
+  anno-pt.csv, anno-mt.csv Fig. 4, Table 2 Results – Genome variation
+
+  contig-annotation-depth-table.txt Fig. 3, Table S2 Results – Coverage uniformity
+
+  Benchmark logs Fig. 5, Table S1 Results – Performance
+
+  manifest-v6-some.json Supplementary metadata Data availability
+
 Examples:
   Topic:
     bolap $bolap_cmd --set some
@@ -3737,11 +3752,11 @@ EOF
 
 	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
 
-	local set="some"
+	local set=""
 	parse_commandline_man
 
 	_polap_lib_conda-ensure_conda_env polap-man || exit 1
-	make SET="$set" -f "${_POLAPLIB_DIR}/Makefile.read" manuscript.pdf
+	make SET="$set" -f "${_POLAPLIB_DIR}/Makefile.read" manuscript
 	conda deactivate
 }
 
@@ -3776,7 +3791,7 @@ EOF
 
 	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
 
-	local set="some"
+	local set=""
 	parse_commandline_man
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
@@ -3788,7 +3803,7 @@ EOF
 man-sheet-ptmt_genus_species() {
 	local args=("$@")
 
-	local set="some"
+	local set=""
 	parse_commandline_man
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
@@ -3799,7 +3814,7 @@ man-sheet-ptmt_genus_species() {
 man-table-data_genus_species() {
 	local args=("$@")
 
-	local set="some"
+	local set=""
 	parse_commandline_man
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
@@ -3810,7 +3825,7 @@ man-table-data_genus_species() {
 man-pt-table_genus_species() {
 	local args=("$@")
 
-	local set="some"
+	local set=""
 	parse_commandline_man
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
@@ -3821,7 +3836,7 @@ man-pt-table_genus_species() {
 man-mt-table_genus_species() {
 	local args=("$@")
 
-	local set="some"
+	local set=""
 	parse_commandline_man
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
@@ -3832,7 +3847,7 @@ man-mt-table_genus_species() {
 man-table-s1_genus_species() {
 	local args=("$@")
 
-	local set="some"
+	local set=""
 	parse_commandline_man
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
@@ -3844,7 +3859,7 @@ man-table-s1_genus_species() {
 man-mt-figure_genus_species() {
 	local args=("$@")
 
-	local set="some"
+	local set=""
 	parse_commandline_man
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
@@ -3855,7 +3870,7 @@ man-mt-figure_genus_species() {
 man-pt-figure_genus_species() {
 	local args=("$@")
 
-	local set="some"
+	local set=""
 	parse_commandline_man
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1

@@ -30,6 +30,8 @@ export _POLAPLIB_DIR
 SET="some" # auto|some|file:/path|<Species_Name>
 TIER="v6"
 INUM="0"
+# This codes should be from the manifest.
+SPECIES_CODES_TXT="polap-species-codes-read.txt"
 OUT="md/manifest.json"
 INCLUDE_PTPT=0
 PRETTY=0
@@ -48,6 +50,10 @@ EOF
 
 while (($#)); do
 	case "$1" in
+	--species-codes)
+		SPECIES_CODES_TXT="${2:?}"
+		shift 2
+		;;
 	--set)
 		SET="${2:?}"
 		shift 2
@@ -430,11 +436,10 @@ done < <(get_species_list)
 }
 
 # assemble
-CODES_FILE="${_POLAPLIB_DIR}/species-codes.txt"
 python3 "${_POLAPLIB_DIR}/scripts/manifest_assemble.py" \
 	--facts "$FACTS" \
 	--set "$SET" --tier "$TIER" --inum "$INUM" \
 	--out "$OUT" $([[ $PRETTY -eq 1 ]] && echo --pretty) \
-	--codes "$CODES_FILE"
+	--species-codes "${SPECIES_CODES_TXT}"
 
 [[ "$QUIET" -eq 1 ]] || echo "[INFO] Wrote: $OUT"

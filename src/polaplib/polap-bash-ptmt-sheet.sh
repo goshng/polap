@@ -18,19 +18,22 @@ export _POLAPLIB_DIR
 # Defaults and CLI args
 # -----------------------------------------------------------------------------#
 BASE_DIR=""
-MANIFEST="" OUTPDF=""
-ANN_PT="" ANN_MT=""
+MANIFEST=""
+OUTPDF=""
+ANN_PT=""
+ANN_MT=""
 ROWS=0 COLS=0 PW=11 PH=8.5 MG=0.45 GAP=4.0
 LABEL_CEX=0.55 TITLE_CEX=1.0 LABEL_STRIP=0.16
 PT_TITLE="Plastid assemblies (pt)"
 MT_TITLE="Mitochondrial assemblies (mt)"
-CODES_FILE="${_POLAPLIB_DIR}/species-codes.txt" # code species (space-delimited)
+SPECIES_CODES_TXT="${_POLAPLIB_DIR}/polap-species-codes-read.txt"
 
 usage() {
 	cat <<EOF
 Usage:
   $(basename "$0") --manifest md/manifest.json --out out.pdf
                    --annot-pt md/anno-pt.csv --annot-mt md/anno-mt.csv
+                   --species-codes polap-species-codes-read.txt
                    [--base-dir <dir>]
                    [--rows N] [--cols N]
                    [--page-width-in IN] [--page-height-in IN] [--margin-in IN]
@@ -41,6 +44,10 @@ EOF
 
 while (($#)); do
 	case "$1" in
+	--species-codes)
+		SPECIES_CODES_TXT="${2:?}"
+		shift 2
+		;;
 	--base-dir)
 		BASE_DIR="${2:?}"
 		shift 2
@@ -152,8 +159,8 @@ trap 'rm -f "$PT_TSV_UN" "$MT_TSV_UN" "$PT_TSV" "$MT_TSV" "$PT_CSV" "$MT_CSV" "$
 # -----------------------------------------------------------------------------#
 # Species order file from species-codes.txt
 # -----------------------------------------------------------------------------#
-if [[ -s "$CODES_FILE" ]]; then
-	awk 'NR==1{next} NF>=2 {print $2}' "$CODES_FILE" >"$ORDER_FILE"
+if [[ -s "$SPECIES_CODES_TXT" ]]; then
+	awk 'NR==1{next} NF>=2 {print $2}' "$SPECIES_CODES_TXT" >"$ORDER_FILE"
 fi
 
 # -----------------------------------------------------------------------------#

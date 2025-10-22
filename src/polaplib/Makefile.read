@@ -5,6 +5,11 @@
 SHELL := /usr/bin/env bash
 
 # ------------------------------------------------------------------------------
+# Bolap type: read (aflye, cflye for Makefile.aflye, and Makefile.cflye)
+# ------------------------------------------------------------------------------
+BOLAP_TYPE  ?= read
+
+# ------------------------------------------------------------------------------
 # Base paths
 # ------------------------------------------------------------------------------
 POLAPLIB_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -54,7 +59,7 @@ TABLE_S1_TSV  := $(MANIFEST_DIR)/$(MANIFEST_TAG)-table-s1.tsv
 TABLE_S1_MD   := $(TABLE_S1_TSV:.tsv=.md)
 
 # Optional species codes file (used by manifest/table scripts)
-CODES_TXT    ?= $(POLAPLIB_DIR)/species-codes.txt
+SPECIES_CODES_TXT ?= $(POLAPLIB_DIR)/polap-species-codes-$(BOLAP_TYPE).txt
 
 # Inputs / outputs (override on CLI if desired)
 # DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-project00.md
@@ -117,6 +122,7 @@ $(MANIFEST_V6): check-env
 	@echo "[INFO] Building manifest tier=$(TIER_CLEAN) set=$(SET_CLEAN) in $(SR)"
 	cd "$(SR)" && \
 	  bash "$(POLAPLIB_DIR)/polap-bash-make-manifest.sh" \
+	    --species-codes  "$(SPECIES_CODES_TXT)" \
 	    --set  "$(SET_CLEAN)" \
 	    --tier "$(TIER_CLEAN)" \
 	    --inum "$(INUM_CLEAN)" \
@@ -242,6 +248,7 @@ sheet-ptmt: anno-scan
 	@bash "$(POLAPLIB_DIR)/polap-bash-ptmt-sheet.sh" \
 	  --base-dir "." \
 	  --manifest "$(MANIFEST_V6)" \
+	  --species-codes  "$(SPECIES_CODES_TXT)" \
 	  --annot-pt "$(MANIFEST_DIR)/$(MANIFEST_TAG)-anno-pt.csv" \
 	  --annot-mt "$(MANIFEST_DIR)/$(MANIFEST_TAG)-anno-mt.csv" \
 	  --out "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
@@ -270,7 +277,7 @@ fig1-r:
 ###############################################################################
 
 .PHONY: manuscript
-manuscript: $(DOC_OUT_PDF)
+manuscript: manuscript.pdf
 
 $(EXP_MD): table-s1
 	@bash "$(MAN_DIR)/sh/replace_include.sh" "$(DOC_MD)" >"$(EXP_MD)"
@@ -299,7 +306,7 @@ $(DOC_OUT_PDF): $(DOC_MD) $(EXP_MD) sheet-ptmt table-data pt-table mt-table tabl
 	}
 	@echo "[OK] Wrote: $(DOC_OUT_PDF)"
 
-manuscript.pdf: $(DOC_OUT_PDF)
+manuscript.pdf: $(DOC_OUT_PDF) sheet-ptmt
 	@pdfunite "$(DOC_OUT_PDF)" "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" manuscript.pdf
 	@cp -p manuscript.pdf "$(CURDIR)/polap/src/polaplib/"
 

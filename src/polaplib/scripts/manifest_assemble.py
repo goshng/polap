@@ -117,14 +117,14 @@ def main():
     ap.add_argument("--out", required=True, help="Output JSON path")
     ap.add_argument("--pretty", action="store_true", default=False, help="Pretty JSON")
     ap.add_argument(
-        "--codes",
+        "--species-codes",
         default=None,
         help="Optional mapping file (space-delimited: 'code species')",
     )
     args = ap.parse_args()
 
     rows = read_facts(args.facts)
-    codes_map = load_codes(args.codes)
+    codes_map = load_codes(args.species_codes)
 
     # Root and accumulation
     root = dict(

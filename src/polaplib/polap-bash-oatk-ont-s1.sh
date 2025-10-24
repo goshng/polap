@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # polap-bash-oatk-ont-s1.sh
 # Stage-1 ONT prefilters for organelle assembly:
-#  trim → scrub → lenfilt → HMM (mt-bait / pt-drop) → duplex → rare-k (kmc) → correction
+#  trim -> scrub -> lenfilt -> HMM (mt-bait / pt-drop) -> duplex -> rare-k (kmc) -> correction
 #  NEW: filtlong ref-bias + add-back of non-mapping reads to guard junctions
 set -euo pipefail
 

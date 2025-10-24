@@ -215,22 +215,11 @@ EOF
 }
 
 _polap_readassemble-nt() {
-	# if [[ "${_arg_data_type}" == "pacbio-hifi" ]]; then
-	# 	_polap_log0 "Not Yet implemented!"
-	# 	return
-	# fi
 	if [[ -s "${_arg_outdir}/pt-pt.1.gfa" ]]; then
 		_polap_readassemble-pt
 	fi
 	_polap_lib_readassemble-annotate-read-nt
 	_polap_lib_readassemble-assemble-annotated-read-nt
-}
-
-_polap_readassemble-pt-v1() {
-	# downsampling
-	# number of bases
-	_polap_lib_readassemble-annotate-read-pt
-	_polap_lib_readassemble-assemble-annotated-read-pt
 }
 
 _polap_readassemble-pt() {
@@ -262,7 +251,7 @@ _polap_readassemble-pt() {
 			_polap_log0 "use --downsample 1g for ONT reads"
 			return
 		fi
-		_polap_log0 _polap_lib_fastq-sample-to \
+		_polap_log1 _polap_lib_fastq-sample-to \
 			"${_arg_long_reads}" \
 			"${_arg_outdir}/ld.fq" \
 			"${_arg_downsample}"

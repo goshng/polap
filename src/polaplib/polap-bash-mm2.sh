@@ -168,7 +168,7 @@ fi
 
 # Pre-count reads for progress bar (if possible)
 TOTAL_READS="$(count_reads "$IN" || true)"
-# pv config: line mode (-l). For FASTQ, 4 lines per read → set -s to 4*reads
+# pv config: line mode (-l). For FASTQ, 4 lines per read -> set -s to 4*reads
 PV_OPTS=(-l --eta --rate --progress)
 
 if [[ -n "$TOTAL_READS" && "$TOTAL_READS" =~ ^[0-9]+$ ]]; then
@@ -181,8 +181,8 @@ fi
 
 # Run
 # - pv runs on the decompressed FASTQ stream
-# - minimap2 stderr → LOG; pv progress goes to stderr automatically
-# - output → OUT
+# - minimap2 stderr -> LOG; pv progress goes to stderr automatically
+# - output -> OUT
 {
 	decompress "$IN" |
 		pv "${PV_OPTS[@]}" |

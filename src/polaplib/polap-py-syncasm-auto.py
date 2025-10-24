@@ -13,7 +13,7 @@ Key features:
       - Default: DO NOT scale k/s
       - Use --hpc-scale to scale k/s by the HPC factor while roughly preserving (k - s + 1); clamp s<=31
   • Unified -c/--c (one value = override; multiple values = sweep list)
-  • Auto-c sweep for mixed data (default): seed draft → minimap2 → depth histogram valley → c-band
+  • Auto-c sweep for mixed data (default): seed draft -> minimap2 -> depth histogram valley -> c-band
   • Parallel execution (GNU parallel preferred; ThreadPool fallback)
   • Skip detection via <run>/syncasm.asm.utg.gfa
   • Per-job logs: job.out / job.err
@@ -150,13 +150,13 @@ def summarize_utg_gfa(utg: Path) -> Tuple[Optional[int], Optional[int]]:
 
 
 # ─────────────────────────────
-# Mixed-data auto-c (seed draft → depth valley)
+# Mixed-data auto-c (seed draft -> depth valley)
 
 
 def auto_c_for_mixed(
     reads: Path, k_max: int, tech: str, outroot: Path, min_floor: int = 10
 ) -> List[int]:
-    """Seed a rough draft → depth histogram → find valley → propose a small c sweep."""
+    """Seed a rough draft -> depth histogram -> find valley -> propose a small c sweep."""
     if not (okexe("minimap2") and okexe("samtools")):
         # Fallback: assume ~100x coverage
         e = TECH_ERROR[tech]
@@ -229,7 +229,7 @@ def auto_c_for_mixed(
         stderr=subprocess.DEVNULL,
     )
 
-    # depth → histogram (clip tail), smooth
+    # depth -> histogram (clip tail), smooth
     depths = []
     with subprocess.Popen(
         ["samtools", "depth", str(bam)], stdout=subprocess.PIPE, text=True
@@ -301,7 +301,7 @@ def main():
         default=os.cpu_count() or 8,
         help="Number of parallel jobs [default: CPU count]",
     )
-    # sequencing technology → error model
+    # sequencing technology -> error model
     ap.add_argument(
         "--tech",
         choices=list(TECH_ERROR.keys()),
@@ -316,7 +316,7 @@ def main():
         "--c",
         type=int,
         nargs="+",
-        help="One or more c values; one → override, many → sweep list",
+        help="One or more c values; one -> override, many -> sweep list",
     )
     ap.add_argument(
         "--ascending-c",
@@ -343,7 +343,7 @@ def main():
     )
     # HPC
     ap.add_argument(
-        "--hpc", action="store_true", help="Use seqtk hpc → <out>/reads.hpc.fastq"
+        "--hpc", action="store_true", help="Use seqtk hpc -> <out>/reads.hpc.fastq"
     )
     ap.add_argument(
         "--hpc-scale",
@@ -368,7 +368,7 @@ def main():
             print("ERROR: seqtk not found for --hpc", file=sys.stderr)
             sys.exit(2)
         hpc_reads = outroot / "reads.hpc.fastq"
-        print(f"# [hpc] compressing {reads} → {hpc_reads}")
+        print(f"# [hpc] compressing {reads} -> {hpc_reads}")
         with open(hpc_reads, "w") as out:
             subprocess.run(["seqtk", "hpc", str(reads)], stdout=out, check=True)
         _, m_raw = readlen_sample(reads, limit=20000)

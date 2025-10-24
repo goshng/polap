@@ -28,7 +28,7 @@ Outputs:
     <prefix>.plastid.R1.fastq.gz,   <prefix>.plastid.R2.fastq.gz
 
 Optional truth (all platforms):
-  --truth-tsv FILE  → per-read (per-end for Illumina) TSV with:
+  --truth-tsv FILE  -> per-read (per-end for Illumina) TSV with:
     read_id, platform, compartment, circular, ref_len, start, frag_len,
     pre_len, post_len, n_sub, n_ins, n_del, n_hp_events
 
@@ -595,7 +595,7 @@ def main(argv=None) -> int:
         "--cycle-ramp",
         type=float,
         default=0.0015,
-        help="Per-cycle increase in substitution probability from 5' → ' (Illumina)",
+        help="Per-cycle increase in substitution probability from 5' -> ' (Illumina)",
     )
     p.add_argument(
         "--pe-orientation",
@@ -747,9 +747,9 @@ def main(argv=None) -> int:
         )
         + f" qconst={args.qconst if args.qconst is not None else 'derived'}\n"
         f"[sim] circularity: nuc={args.nuc_circ} mt={args.mt_circ} pt={args.pt_circ}\n"
-        f"[sim] nuclear: {nuc_size} bp @ {args.nuc_depth:.2f}× → ~{nuc_target} bp\n"
-        f"[sim] mito   : {mt_size}  bp @ {args.mt_depth:.2f}× → ~{mt_target} bp\n"
-        f"[sim] plastid: {pt_size}  bp @ {args.pt_depth:.2f}× → ~{pt_target} bp\n"
+        f"[sim] nuclear: {nuc_size} bp @ {args.nuc_depth:.2f}× -> ~{nuc_target} bp\n"
+        f"[sim] mito   : {mt_size}  bp @ {args.mt_depth:.2f}× -> ~{mt_target} bp\n"
+        f"[sim] plastid: {pt_size}  bp @ {args.pt_depth:.2f}× -> ~{pt_target} bp\n"
     )
 
     # Initialize truth collector

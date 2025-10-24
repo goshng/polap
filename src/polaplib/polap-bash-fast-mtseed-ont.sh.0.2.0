@@ -4,15 +4,15 @@
 #
 # Pipeline outline (ONT):
 #   1) Remove plastid-origin reads (PT) using isoform A/B + identity cutoff
-#      (auto-learned or --identity-min override) → reads.nonpt.fq.gz
+#      (auto-learned or --identity-min override) -> reads.nonpt.fq.gz
 #      [optional: --profiling, --miniprot-sample for nuclear label speedups]
 #   2) All-vs-all overlap:
 #        • default (classic) OR
-#        • --overlap-mode scan+stream+edges  (light scan → shortlist → streamed edges)
+#        • --overlap-mode scan+stream+edges  (light scan -> shortlist -> streamed edges)
 #   3) Select mito-enriched reads (nuclear-aware if --nuc-ids given) from overlapness
 #   4) Assemble selected reads (miniasm | raven)
 #   5) Intergenic filtering (miniprot vs mito CDS; read-recruit median gate)
-#   6) Map reads → eeds (if iterating)
+#   6) Map reads -> eeds (if iterating)
 #   7) Stop when Δ|M| < threshold (if iterating)
 #
 # Required helpers (must exist; not embedded here):
@@ -534,17 +534,17 @@ PY
 	((!DRY)) && { [[ -s "$ISO_B" ]] && dbld "$ISO_B" "$DBL_B" || true; }
 	prof_end
 
-	# Map reads → oubled A/B
+	# Map reads -> oubled A/B
 	PAF_A="$outdir/map/formA.paf"
 	PAF_B="$outdir/map/formB.paf"
 	mkdir -p "$outdir/map"
 	prof_start "map_ptA"
-	note "Step1: map reads → somerA.double > $PAF_A"
+	note "Step1: map reads -> somerA.double > $PAF_A"
 	cmd minimap2 -x map-ont --secondary=yes -N 50 -t "$threads" "$DBL_A" "$reads" >"$PAF_A"
 	prof_end
 	if [[ -s "$DBL_B" ]]; then
 		prof_start "map_ptB"
-		note "Step1: map reads → somerB.double > $PAF_B"
+		note "Step1: map reads -> somerB.double > $PAF_B"
 		cmd minimap2 -x map-ont --secondary=yes -N 50 -t "$threads" "$DBL_B" "$reads" >"$PAF_B"
 		prof_end
 	fi
@@ -597,7 +597,7 @@ PY
 			esac
 		done <"$PT_VARS"
 	fi
-	note "Step1: PT thresholds → ident_min=${ident_min_out}  alen_min=${alen_min}"
+	note "Step1: PT thresholds -> ident_min=${ident_min_out}  alen_min=${alen_min}"
 
 	# Write non-PT FASTQ
 	prof_start "write_nonPT"
@@ -618,7 +618,7 @@ fi
 }
 
 # ────────────────────────────────────────────────────────────────────
-# Step 2: all-vs-all → (PAF or streamed edges/overlapness)
+# Step 2: all-vs-all -> (PAF or streamed edges/overlapness)
 # ────────────────────────────────────────────────────────────────────
 ST1="$outdir/01_allvsall"
 mkdir -p "$ST1"
@@ -701,7 +701,7 @@ if _should_run 2; then
 	# 10% miniprot map for getting nuclear reads
 	if [[ -n "$nprot" ]]; then
 		NPAF="${ST0}/nuc_miniprot.paf"
-		note "Step0: miniprot proteins →  reads > $NPAF"
+		note "Step0: miniprot proteins ->  reads > $NPAF"
 		if ((!DRY)); then
 			if [[ ! -s "$reads.mpi" ]]; then
 				miniprot -d "$reads.mpi" "$reads"
@@ -714,7 +714,7 @@ if _should_run 2; then
 				"$reads.mpi" "$nprot" >"$NPAF"
 		fi
 		NIDS="${ST0}/nuc.ids"
-		note "Step0: nuc_ids_from_paf_miniprot →  $NIDS"
+		note "Step0: nuc_ids_from_paf_miniprot ->  $NIDS"
 		if ((!DRY)); then
 			nuc_ids_from_paf_miniprot "$NPAF" "$NIDS"
 		fi
@@ -729,10 +729,10 @@ mkdir -p "$RDIR"
 if _should_run 3; then
 	OTSV="$RDIR/overlapness.tsv"
 	if [[ "$overlap_mode" == "scan+stream+edges" ]]; then
-		note "Step3: reuse refined overlapness → $OTSV"
+		note "Step3: reuse refined overlapness -> $OTSV"
 		((!DRY)) && cp -f "$OTSV_GLOBAL" "$OTSV"
 	else
-		note "Step3: compute overlapness from PAF → $OTSV"
+		note "Step3: compute overlapness from PAF -> $OTSV"
 		((!DRY)) && python "$OLPY" "$PAFALL" \
 			--min_olen "$min_olen" --min_ident "$min_ident" --w_floor "$w_floor" \
 			>"$OTSV"
@@ -776,24 +776,24 @@ if _should_run 4; then
 		fi
 		SUBPAF="$RDIR/top_overlaps.paf.gz"
 		if [[ "$overlap_mode" != "scan+stream+edges" ]]; then
-			note "Step4: filter PAF by selected ids → $SUBPAF"
+			note "Step4: filter PAF by selected ids -> $SUBPAF"
 			((!DRY)) && python "$FILTPY" "$PAFALL" "$RDIR/select_ids.txt" -o "$SUBPAF"
 		fi
 		TOPFA="$RDIR/top_reads.fa.gz"
-		note "Step4: extract selected reads → $TOPFA"
+		note "Step4: extract selected reads -> $TOPFA"
 		((!DRY)) && seqkit fq2fa "$R1" | seqkit grep -f "$RDIR/select_ids.txt" -o "$TOPFA"
 		GFA="$RDIR/miniasm.gfa"
 		note "Step4: run miniasm"
 		((!DRY)) && miniasm -f "$TOPFA" <(zcat -f "$SUBPAF" 2>/dev/null || true) >"$GFA" || true
 		SEEDS_ROUND="$RDIR/m_seeds_raw.fa"
-		note "Step4: extract contigs from GFA → $SEEDS_ROUND"
+		note "Step4: extract contigs from GFA -> $SEEDS_ROUND"
 		((!DRY)) && awk '/^S/{print ">"$2"\n"$3}' "$GFA" >"$SEEDS_ROUND" || :
 	else
 		TOPFQ="$RDIR/top_reads.fq.gz"
-		note "Step4: extract selected reads (fq) → $TOPFQ"
+		note "Step4: extract selected reads (fq) -> $TOPFQ"
 		((!DRY)) && seqkit grep -f "$RDIR/select_ids.txt" "$R1" -o "$TOPFQ"
 		SEEDS_ROUND="$RDIR/raven_contigs.fasta"
-		note "Step4: raven --disable-polishing → $SEEDS_ROUND"
+		note "Step4: raven --disable-polishing -> $SEEDS_ROUND"
 		((!DRY)) && raven --threads "$threads" --disable-polishing -o "$SEEDS_ROUND" "$TOPFQ"
 	fi
 fi
@@ -821,7 +821,7 @@ fi
 if ((!DRY)); then
 	FINAL_DIR="$(dirname "$SEEDS_CUR")"
 	FINAL_SEEDS="$FINAL_DIR/m_seeds_final.fa"
-	note "Finalize: cp $SEEDS_CUR → $FINAL_SEEDS"
+	note "Finalize: cp $SEEDS_CUR -> $FINAL_SEEDS"
 	cp "$SEEDS_CUR" "$FINAL_SEEDS"
 	note "Done. Final seeds: $FINAL_SEEDS"
 else

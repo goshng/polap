@@ -112,7 +112,7 @@ def build_edge(
     write_fasta(junc_fa, (("JLEFT", jleft), ("JRIGHT", jright)))
     write_fasta(jwhole_fa, (("JWHOLE", jwhole),))
 
-    # Map reads → BAMs (names expected by your verifier)
+    # Map reads -> BAMs (names expected by your verifier)
     junc_bam = os.path.join(rd_dir, f"junc.edge_{seqid}.{start}.{end}.bam")
     jwhole_bam = os.path.join(rd_dir, f"jwhole.edge_{seqid}.{start}.{end}.bam")
 

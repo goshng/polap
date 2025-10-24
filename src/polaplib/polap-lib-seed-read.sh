@@ -90,7 +90,7 @@ _polap_lib_seed-plastid() {
 		_polap_log1 "No mitochondrial contigs found in the gfa file."
 		return 1
 	fi
-	_polap_log1 "ptcontigname set: ${ptcontignameset}"
+	_polap_log2 "ptcontigname set: ${ptcontignameset}"
 
 	cp -p "${ptcontignameset}" "${_polap_var_mtcontigname}"
 }

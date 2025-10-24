@@ -5,13 +5,13 @@
 # Output:  M-seed_k (final seeds after stopping by delta threshold)
 #
 # Core ideas:
-#   • Do ONE all-vs-all overlap (minimap2 → PAF) on filtered reads R1.
+#   • Do ONE all-vs-all overlap (minimap2 -> PAF) on filtered reads R1.
 #   • Per round: bin reads to current seeds, sample bridge paths between seed bins, pick high-frequency “middle anchors”, assemble them, update seeds.
 #   • Stop when |M| grows by < --delta-stop (e.g., 5%).
 #
 # Refs (for methods used):
 #   - Minimap2 & PAF fields: Li 2018, Bioinformatics 34(18):3094–3100.
-#   - Miniprot (protein → genome): Li 2023 (preprint/documentation).
+#   - Miniprot (protein -> genome): Li 2023 (preprint/documentation).
 #   - BUSCO lineage protein sets: Manni et al., Mol. Biol. Evol. 38(10):4647–4654.
 #
 # NOTE:
@@ -190,14 +190,14 @@ STAGE0="${_outdir}/00_subtract"
 mkdir -p "$STAGE0"
 
 # Plastid removal
-_polap_log1 "Plastid subtraction with minimap2 → remove confident plastid-origin reads"
+_polap_log1 "Plastid subtraction with minimap2 -> remove confident plastid-origin reads"
 PT_PAF="${STAGE0}/plastid.paf"
 PT_IDS="${STAGE0}/plastid.ids"
 _run "minimap2 -x ${PRESET_MAP_PT} --secondary=yes -N 5 -t 8 '${_pref}' '${_reads}' > '${PT_PAF}'"
 # Keep confident hits (ID>=0.9, qcov>=0.3, MAPQ>=20). Adjust if needed.
 _run "awk 'BEGIN{FS=OFS=\"\\t\"} { if(NF>=12){ident=\$10>0?\$9/\$10:0; qcov=(\$4-\$3)/\$2; if(ident>=0.9 && qcov>=0.3 && \$12>=20) print \$1} }' '${PT_PAF}' | sort -u > '${PT_IDS}'"
 
-# Nuclear removal via miniprot (protein → reads)
+# Nuclear removal via miniprot (protein -> reads)
 _polap_log1 "Nuclear (BUSCO) subtraction with miniprot"
 NUC_PAF="${STAGE0}/nuc_miniprot.paf"
 NUC_IDS="${STAGE0}/nuc.ids"
@@ -213,7 +213,7 @@ _run "seqkit grep -f '${TMP_KEEP}' '${_reads}' -o '${R1}'"
 _polap_log1 "R1 built: $(seqkit stats -T '${R1}' | awk 'NR==2{print \$4\" reads, \"\$6\" bp\"}')"
 
 # -------------------------
-# 1) ONE all-vs-all on R1 → PAF (used for ALL rounds)
+# 1) ONE all-vs-all on R1 -> PAF (used for ALL rounds)
 # -------------------------
 STAGE1="${_outdir}/01_allvsall"
 mkdir -p "$STAGE1"
@@ -222,7 +222,7 @@ _polap_log1 "All-vs-all on R1 (one time only)"
 _run "minimap2 -x ${PRESET_AVA} -t 16 --secondary=yes -N 50 --mask-level 0.50 '${R1}' '${R1}' > '${PAF_ALL}'"
 
 # -------------------------
-# 2) Gauge coverage from M-seed_0 (map R1 → M-seed_0; samtools depth)
+# 2) Gauge coverage from M-seed_0 (map R1 -> M-seed_0; samtools depth)
 # -------------------------
 STAGE2="${_outdir}/02_gauge"
 mkdir -p "$STAGE2"
@@ -230,7 +230,7 @@ BAM0="${STAGE2}/r1_vs_mseed0.bam"
 DEP0="${STAGE2}/depth.tsv"
 GAUGE="${STAGE2}/gauge.txt" # contains Cstar (seed coverage gauge)
 
-_polap_log1 "Gauge coverage using R1 → M-seed_0"
+_polap_log1 "Gauge coverage using R1 -> M-seed_0"
 _run "minimap2 -x ${PRESET_MAP_SEED} -a -t 8 '${_mtseed0}' '${R1}' | samtools sort -@4 -o '${BAM0}'"
 _run "samtools index '${BAM0}'"
 _run "samtools depth -a '${BAM0}' > '${DEP0}'"
@@ -432,7 +432,7 @@ for round in $(seq 1 "${_rounds_max}"); do
 	_polap_log1 "== Round ${round} =="
 
 	# 4.1) Bin reads to current seeds (conservative)
-	_polap_log1 "Map R1 → current seeds to form bins"
+	_polap_log1 "Map R1 -> current seeds to form bins"
 	PAF_SEED="${RDIR}/r1_vs_seeds.paf"
 	_run "minimap2 -x ${PRESET_MAP_SEED} -t 8 --secondary=yes -N 10 '${SEEDS_CUR}' '${R1}' > '${PAF_SEED}'"
 
@@ -496,7 +496,7 @@ PY
 	_run "awk -v C=${FREQ_MIN} 'BEGIN{FS=OFS=\"\\t\"} NR>1 && \$2>=C {print \$1}' '${BRIDGE_OUT}/read_frequencies.tsv' | sort -u > '${HF_READS}'"
 	_polap_log1 "High-frequency reads: $(wc -l <"${HF_READS}")"
 
-	# 4.6) Assemble middle anchors (extract reads → run assembler)
+	# 4.6) Assemble middle anchors (extract reads -> run assembler)
 	MID_FQ="${RDIR}/middle_anchors.fq.gz"
 	_run "seqkit grep -f '${HF_READS}' '${R1}' -o '${MID_FQ}'"
 	ASM_DIR="${RDIR}/asm"
@@ -525,7 +525,7 @@ PY
 		_run "cp '${NEW_CONTIGS}' '${NEW_SEEDS}'"
 	fi
 
-	# 4.7) Merge with current seeds → next seeds
+	# 4.7) Merge with current seeds -> next seeds
 	SEEDS_NEXT="${_outdir}/round_${round}/m_seeds_merged.fa"
 	_run "cat '${SEEDS_CUR}' '${NEW_SEEDS}' | seqkit seq -u > '${SEEDS_NEXT}'"
 

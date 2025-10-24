@@ -1,4 +1,3 @@
-#!/bin/bash
 ################################################################################
 # This file is part of polap.
 #
@@ -292,6 +291,9 @@ bolap is a tool for data analysis of plant plastid genome assembly
 by annotating long reads with organelle genome sequences and selecting those
 originating from organelle genomes.
 
+Required arguments:
+  -s STR               Set species folder (REQUIRED).
+
 commands:
   benchmark (default)  Benchmark GetOrganelle, ptGAUL, TIPPo, and Oatk.
   install/setup/update Install, setup, update tools using conda environments.
@@ -300,13 +302,13 @@ commands:
   uninstall            Uninstall tools.
   use                  Use one of benchmark analysis datasets: read, cflye, aflye
   conda                Manage conda environments.
-  list (search)        List or search for tools.
+  list                 List for tools.
   help                 Print help message for commands and others.
+  tutorial             Print tutorial message for bolap usage. 
   config               Config view, add, etc.
-  clean (delete, rm)   Remove unnecessary folders.
+  clean                Remove unnecessary folders.
 
 options:
-  -s STR               Set species folder (REQUIRED).
   -i INT               Set species index (default: ${_brg_sindex})
   -c FILE              Set value for -c option (default: ${opt_c_arg})
   -t STR               Set value for -t option (default: ${opt_t_arg})
@@ -322,6 +324,14 @@ HEREDOC
 	echo "${help_message}"
 }
 
+# --preset, --config-dir, --config-path
+# preset defines a configuration profile name, which helps to save
+# writing long command-lines. Two ways to specify configuration profile:
+# 1) --preset PROFILE_NAME
+#    This will look for a configuration file at ~/.polap/profiles/PROFILE_NAME.yaml
+# 2) --config-path /path/to/configuration.yaml
+#    This will use the specified configuration file directly.
+# If both are specified, --config-path takes precedence.
 parse_preset_commandline() {
 	# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
 	while test $# -gt 0; do
@@ -332,14 +342,14 @@ parse_preset_commandline() {
 			_brg_preset="$2"
 			shift
 			;;
-		--config-dir)
+		--preset-dir)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_brg_config_dir="$2"
+			_brg_preset_dir="$2"
 			shift
 			;;
-		--config-path)
+		--preset-path)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-			_brg_config_path="$2"
+			_brg_preset_path="$2"
 			shift
 			;;
 		*) ;;
@@ -436,13 +446,13 @@ parse_commandline() {
 			print_help
 			exit
 			;;
-		-*)
-			_brg_unknown_opts+=("$1")
-			shift || true
-			if [[ $# -gt 0 ]]; then
-				_brg_unknown_opts+=("$1")
-			fi
-			;;
+		# -*)
+		# 	_brg_unknown_opts+=("$1")
+		# 	shift || true
+		# 	if [[ $# -gt 0 ]]; then
+		# 		_brg_unknown_opts+=("$1")
+		# 	fi
+		# 	;;
 		*)
 			_last_positional="$1"
 			_positionals+=("$_last_positional")
@@ -469,33 +479,127 @@ assign_positional_args() {
 	done
 }
 
+#-------------------------------------------------------------------------------
+# Main
+#-------------------------------------------------------------------------------
+
+# ---------------------------------------------
+# Default preset configuration (can be overridden by env or CLI)
+# ---------------------------------------------
+: "${POLAP_PRESET_DIR:="$HOME/.polap/presets"}"
+: "${POLAP_PRESET:=""}"
+: "${POLAP_PRESET_PATH:=""}"
+
+# CLI overrides
+_brg_preset=""
+_brg_preset_dir=""
+_brg_preset_path=""
+_brg_allow_create="yes"
+_brg_dry_run="no"
+
+# ---------------------------------------------
+# Parse CLI arguments
+# ---------------------------------------------
+
 parse_preset_commandline "$@"
 
-if [[ -z "${_brg_config_path}" ]]; then
-	_brg_config_path="${_brg_config_dir}/${_brg_preset}.yaml"
+# ---------------------------------------------
+# Resolve effective values
+# ---------------------------------------------
+preset_name="${_brg_preset:-${POLAP_PRESET}}"
+preset_dir="${_brg_preset_dir:-${POLAP_PRESET_DIR}}"
+preset_path="${_brg_preset_path:-${POLAP_PRESET_PATH}}"
+
+# Expand ~ early
+if [[ -n "$preset_dir" ]]; then
+	# shellcheck disable=SC2086
+	preset_dir="$(eval printf '%s' "$preset_dir")"
+fi
+if [[ -n "$preset_path" ]]; then
+	# shellcheck disable=SC2086
+	preset_path="$(eval printf '%s' "$preset_path")"
 fi
 
-if [[ -n "${_brg_config_path}" && ! -f "${_brg_config_path}" ]]; then
-	echo "[info] new profile (${_brg_preset}): ${_brg_config_path}" >&2
-	touch "${_brg_config_path}"
-	# echo "[error] no such profile (${_brg_preset}): ${_brg_config_path}" >&2
-	# exit 127
+# Compute effective preset file path
+if [[ -n "$preset_path" ]]; then
+	effective_preset="$preset_path"
+elif [[ -n "$preset_name" ]]; then
+	[[ -n "$preset_dir" ]] || preset_dir="$HOME/.polap/presets"
+	effective_preset="$preset_dir/$preset_name.yaml"
+else
+	effective_preset=""
 fi
 
+# ---------------------------------------------
+# Inform user
+# ---------------------------------------------
+if [[ "$_brg_dry_run" == "yes" ]]; then
+	if [[ -n "$preset_name" ]]; then
+		echo "[info] preset: ${preset_name}" >&2
+	else
+		echo "[info] no preset specified" >&2
+	fi
+
+	if [[ -n "$effective_preset" ]]; then
+		echo "[info] preset file: ${effective_preset}" >&2
+	else
+		echo "[info] no preset file" >&2
+	fi
+	exit 0
+fi
+
+# ---------------------------------------------
+# Ensure file presence / creation
+# ---------------------------------------------
+if [[ -n "$effective_preset" ]]; then
+	if [[ -f "$effective_preset" ]]; then
+		: # OK
+	else
+		if [[ "$_brg_allow_create" == "yes" ]]; then
+			mkdir -p -- "${effective_preset%/*}"
+			{
+				echo "# polap preset (auto-created)"
+				echo "preset_name: ${preset_name}"
+				echo "pipeline:"
+				echo "  example_key: example_value"
+			} >"$effective_preset"
+			echo "[info] created new preset: $effective_preset" >&2
+		else
+			echo "[error] preset not found: $effective_preset (and --no-create given)" >&2
+			exit 127
+		fi
+	fi
+fi
+
+# ---------------------------------------------
+# Load and apply preset configuration
+# ---------------------------------------------
 LOAD_PY="${_POLAPLIB_DIR}/polap-py-config-load.py"
-[[ -f "$LOAD_PY" ]] || {
+if [[ ! -f "$LOAD_PY" ]]; then
 	echo "[error] not found: $LOAD_PY" >&2
 	exit 127
-}
-if [[ -n "${_brg_config_path}" && -s "${_brg_config_path}" ]]; then
-	ENV_LINES=$(python3 "$LOAD_PY" --path "${_brg_config_path}" --format env --prefix "PCFG")
-	eval "$ENV_LINES"
-	source "${_POLAPLIB_DIR}/polap-bash-apply-pcfg.sh"
-	polap_apply_pcfg
 fi
-# echo "[config] preset=${PCFG_PRESET:-}"
-# echo "         name=${PCFG_NAME:-}"
 
+if [[ -n "$effective_preset" && -s "$effective_preset" ]]; then
+	if ! ENV_LINES="$(python3 "$LOAD_PY" --path "$effective_preset" --format env --prefix "PCFG" 2>&1)"; then
+		echo "[error] failed to parse preset YAML: $effective_preset" >&2
+		printf '%s\n' "$ENV_LINES" >&2
+		exit 1
+	fi
+	safe_env=$(printf '%s\n' "$ENV_LINES" | grep -E '^[A-Z0-9_]+=' || true)
+	eval "$safe_env"
+
+	APPLY_SH="${_POLAPLIB_DIR}/polap-bash-apply-pcfg.sh"
+	if [[ -f "$APPLY_SH" ]]; then
+		# shellcheck disable=SC1090
+		source "$APPLY_SH"
+		if declare -F polap_apply_pcfg >/dev/null 2>&1; then
+			polap_apply_pcfg
+		fi
+	fi
+fi
+
+# Polap command
 _polap_cmd="${_polap_script_bin_dir}/polap.sh"
 if [[ "${_POLAP_RELEASE}" == "1" ]]; then
 	_polap_cmd="${_polap_script_bin_dir}/polap"
@@ -503,29 +607,11 @@ else
 	_polap_cmd="${_polap_script_bin_dir}/polap.sh"
 fi
 
-_polap2_cmd="${_polap_script_bin_dir}/polap2.sh"
-if [[ "${_POLAP_RELEASE}" == "1" ]]; then
-	_polap2_cmd="${_polap_script_bin_dir}/polap2"
-else
-	_polap2_cmd="${_polap_script_bin_dir}/polap2.sh"
-fi
-
+# Command-line parsing
 _brg_adir="${opt_t_arg:-t5}"
-
 _brg_verbose=1
 _brg_args=("$@")
 parse_commandline "$@"
-
-# if [ "${_brg_help}" == "on" ]; then
-# 	print_help
-# 	exit 0
-# fi
-
-# if [[ -z "${_brg_outdir}" ]]; then
-# 	echo "[error] -s species_name is required." >&2
-# 	echo "Use '${_bolap_command_string} --help' for more information." >&2
-# 	exit 1
-# fi
 
 handle_passed_args_count
 set +u

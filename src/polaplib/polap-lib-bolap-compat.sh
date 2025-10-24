@@ -8,11 +8,11 @@ set -euo pipefail
 # Usage: bolap_compat_rewrite_menu _brg_menu
 #
 # Supported legacy forms (head ∈ {list, find, search}):
-#   1)  bolap list data                 → list --query data --where any
-#   2)  bolap list data start           → list --query data --where start
-#   3)  bolap list '^read' end -x 1     → list --query '^read' --where end -x 1
-#   4)  bolap find foo ...              → find --query foo --where any ...
-#   5)  bolap search bar start ...      → search --query bar --where start ...
+#   1)  bolap list data                 -> list --query data --where any
+#   2)  bolap list data start           -> list --query data --where start
+#   3)  bolap list '^read' end -x 1     -> list --query '^read' --where end -x 1
+#   4)  bolap find foo ...              -> find --query foo --where any ...
+#   5)  bolap search bar start ...      -> search --query bar --where start ...
 #
 # Notes:
 # - If second positional matches {any,start,end}, it is treated as --where.
@@ -29,7 +29,7 @@ bolap_compat_rewrite_menu() {
 	local head="${__tmp[0]}"
 	case "$head" in
 	list | find | search)
-		# already flag style? (token 2 starts with '-') → do nothing
+		# already flag style? (token 2 starts with '-') -> do nothing
 		if [[ ${#__tmp[@]} -ge 2 && "${__tmp[1]}" != -* ]]; then
 			local q="${__tmp[1]}"
 			local where="any"

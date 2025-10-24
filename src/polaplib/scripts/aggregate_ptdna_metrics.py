@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Version: v0.1.0
-# Purpose: Merge recruited/ds FASTQ stats + (optional) mosdepth window stats → single CSV row
+# Purpose: Merge recruited/ds FASTQ stats + (optional) mosdepth window stats -> single CSV row
 # Usage  : aggregate_ptdna_metrics.py recruited.stats.tsv ds.stats.tsv pre.regions.bed.gz post.regions.bed.gz out.csv [key=val ...]
 import sys, gzip, statistics as st, csv, os
 

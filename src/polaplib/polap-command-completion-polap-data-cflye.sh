@@ -42,7 +42,7 @@ _polap_data_cflye_completions() {
 		return 0
 	fi
 
-	# download species → show folders
+	# download species -> show folders
 	if [[ "$first" == "download" && "$prev" == "species" ]]; then
 		COMPREPLY=($(compgen -d -- "$cur"))
 		return 0

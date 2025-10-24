@@ -196,8 +196,8 @@ _polap_lib_genomesize-estimate() {
 		fi
 
 		if (($(printf "%.0f" "${MEM_GB}") <= 2)); then
-			# low-RAM: ntCard → GenomeScope2
-			echo "[INFO] SR low-RAM mode: ntCard → GenomeScope2 (k=${K}, mem=${MEM_GB}G)"
+			# low-RAM: ntCard -> GenomeScope2
+			echo "[INFO] SR low-RAM mode: ntCard -> GenomeScope2 (k=${K}, mem=${MEM_GB}G)"
 			local NTP="${OUTDIR}/ntc${K}"
 			local NTHIST="${NTP}_k${K}.hist"
 			if ((REDO == 1)) || [[ ! -s "${NTHIST}" ]]; then
@@ -212,7 +212,7 @@ _polap_lib_genomesize-estimate() {
 			awk '($1~/^[0-9]+$/)&&($2~/^[0-9]+$/){print $1"\t"$2}' "${NTHIST}" | sort -k1,1n >"${CLEAN}" || _die "clean hist failed"
 			_hist_to_genomesize "${CLEAN}" "${K}" "${GS_TXT}" || _die "GenomeScope2 failed"
 		else
-			# normal-RAM: Jellyfish → GenomeScope2 (cap -s by mem)
+			# normal-RAM: Jellyfish -> GenomeScope2 (cap -s by mem)
 			local JF="${OUTDIR}/reads.jf"
 			local HIST="${OUTDIR}/reads.histo"
 			# heuristic hash size: ~0.6×mem (GiB), min 0.5G
@@ -231,12 +231,12 @@ _polap_lib_genomesize-estimate() {
 			_hist_to_genomesize "${HIST}" "${K}" "${GS_TXT}" || _die "GenomeScope2 failed"
 		fi
 
-		echo "[OK] genome size → ${GS_TXT}"
+		echo "[OK] genome size -> ${GS_TXT}"
 		cat "${GS_TXT}"
 		return 0
 
 	elif [[ -n "${LR}" ]]; then
-		# Long-read path: ntCard (with prefilter) → GenomeScope2
+		# Long-read path: ntCard (with prefilter) -> GenomeScope2
 		[[ -s "${LR}" ]] || _die "missing file: ${LR}"
 		local K="${K_HIFI}"
 		[[ "${TECH}" == "pbclr" || "${TECH}" == "ont" ]] && K="${K_CLR}"
@@ -245,7 +245,7 @@ _polap_lib_genomesize-estimate() {
 			cat "${GS_TXT}"
 			return 0
 		fi
-		echo "[INFO] LR mode (tech=${TECH}) ntCard → GenomeScope2 (k=${K})"
+		echo "[INFO] LR mode (tech=${TECH}) ntCard -> GenomeScope2 (k=${K})"
 
 		local LR_MIN="${OUTDIR}/lr.min${LR_MINLEN}.fq"
 		if ((REDO == 1)) || [[ ! -s "${LR_MIN}" ]]; then
@@ -263,7 +263,7 @@ _polap_lib_genomesize-estimate() {
 		awk '($1~/^[0-9]+$/)&&($2~/^[0-9]+$/){print $1"\t"$2}' "${NTHIST}" | sort -k1,1n >"${CLEAN}" || _die "clean hist failed"
 		_hist_to_genomesize "${CLEAN}" "${K}" "${GS_TXT}" || _die "GenomeScope2 failed"
 
-		echo "[OK] genome size → ${GS_TXT}"
+		echo "[OK] genome size -> ${GS_TXT}"
 		cat "${GS_TXT}"
 		return 0
 

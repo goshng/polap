@@ -4,8 +4,8 @@
 # License: GPL-3.0+
 #
 # Pipeline (cpDNA):
-#   minimap2 (recruit) → mosdepth (pre) → subsample (rasusa|filtlong|longest) →
-#   mosdepth (post) → optional Flye → aggregate metrics CSV
+#   minimap2 (recruit) -> mosdepth (pre) -> subsample (rasusa|filtlong|longest) ->
+#   mosdepth (post) -> optional Flye -> aggregate metrics CSV
 set -euo pipefail
 IFS=$'\n\t'
 
@@ -121,16 +121,18 @@ done
 if [[ -z "$gsize" ]]; then
 	base_len=$(awk '/^>/ {next} {s+=length($0)} END{print s+0}' "$seeds")
 	gsize=$(awk -v b="$base_len" 'BEGIN{printf "%d", (b*1.9)}')
-	echo "[INFO] Estimated plastome size from seeds: ${base_len} → gsize≈${gsize}"
+	echo "[INFO] Estimated plastome size from seeds: ${base_len} -> gsize≈${gsize}"
 fi
 
 # ---------- compute target bases
 target_bases=$(awk -v c="$cov" -v g="$gsize" 'BEGIN{printf "%d", (c*g)}')
 echo "[INFO] Target bases: cov(${cov}) × gsize(${gsize}) = ${target_bases}"
 
-# ---------- 1) Recruit with minimap2 → PAF (keep all mapped: primary+secondary)
+# ---------- 1) Recruit with minimap2 -> PAF (keep all mapped: primary+secondary)
 echo "[STEP] minimap2 recruit (PAF)"
-minimap2 -x map-ont -t "$threads" $mapper_opts "$seeds" "$reads" >"$tmp/seeds.map.paf"
+minimap2 -x map-ont -t "$threads" $mapper_opts "$seeds" "$reads" \
+	2>"$tmp/seeds.map.err" \
+	>"$tmp/seeds.map.paf"
 
 # (Optional) mapQ filter: keep all mappings (including secondaries) with MAPQ >= 0 (default all)
 # If you want to raise the bar a bit, e.g. MAPQ ≥ 5:
@@ -141,7 +143,9 @@ awk '{print $1}' "$tmp/seeds.map.paf" | sort -u >"$tmp/recruited.names.txt"
 echo "[STEP] extract recruited FASTQ (seqkit/seqtk)"
 if command -v seqkit >/dev/null 2>&1; then
 	# -n match by read name; -f file of names; -o output gz file
-	seqkit grep -f "$tmp/recruited.names.txt" -o "$tmp/recruited.fq.gz" "$reads"
+	seqkit grep -f "$tmp/recruited.names.txt" -o "$tmp/recruited.fq.gz" "$reads" \
+		2>"$tmp/recruited.seqkit.grep.err" \
+		>"$tmp/recruited.seqkit.grep.out"
 elif command -v seqtk >/dev/null 2>&1; then
 	# seqtk needs uncompressed stdout; gzip afterward
 	seqtk subseq "$reads" "$tmp/recruited.names.txt" | gzip >"$tmp/recruited.fq.gz"
@@ -159,14 +163,16 @@ python3 "$py_stats" "$tmp/recruited.fq.gz" >"$tmp/recruited.stats.tsv"
 pre_bed="-"
 if have mosdepth; then
 	echo "[STEP] mosdepth pre"
-	minimap2 -ax map-ont -t "$threads" "$seeds" "$tmp/recruited.fq.gz" |
+	minimap2 -ax map-ont -t "$threads" "$seeds" "$tmp/recruited.fq.gz" 2>"$tmp/pre.map.err" |
 		samtools view -b -F 4 -@ "$threads" |
-		samtools sort -@ "$threads" -o "$tmp/pre.cov.bam"
+		samtools sort -@ "$threads" -o "$tmp/pre.cov.bam" 2>>"$tmp/pre.map.err"
 	samtools index -@ "$threads" "$tmp/pre.cov.bam"
 	mosdepth -n --by "$window" "$tmp/pre.cov" "$tmp/pre.cov.bam"
 	pre_bed="$tmp/pre.cov.regions.bed.gz"
 	if have Rscript; then
-		Rscript "$r_cov" "$pre_bed" "$tmp/pre.cov.csv" "$tmp/pre.cov.png" "Pre-downsample coverage (window=${window})"
+		Rscript --vanilla "$r_cov" \
+			"$pre_bed" "$tmp/pre.cov.csv" "$tmp/pre.cov.png" \
+			"Pre-downsample coverage (window=${window})"
 	fi
 fi
 
@@ -188,7 +194,8 @@ rasusa)
 		--coverage "$cov" \
 		--genome-size "$gsize" \
 		-o "$tmpfq" \
-		"$tmp/recruited.fq.gz"
+		"$tmp/recruited.fq.gz" \
+		2>"$tmp/recruited.rasusa.err"
 	gzip -c "$tmpfq" >"$tmp/ds.fq.gz"
 	rm -f "$tmpfq"
 	;;
@@ -206,9 +213,9 @@ python3 "$py_stats" "$tmp/ds.fq.gz" >"$tmp/ds.stats.tsv"
 post_bed="-"
 if have mosdepth; then
 	echo "[STEP] mosdepth post"
-	minimap2 -ax map-ont -t "$threads" "$seeds" "$tmp/ds.fq.gz" |
+	minimap2 -ax map-ont -t "$threads" "$seeds" "$tmp/ds.fq.gz" 2>"$tmp/ds.map.err" |
 		samtools view -b -F 4 -@ "$threads" |
-		samtools sort -@ "$threads" -o "$tmp/post.cov.bam"
+		samtools sort -@ "$threads" -o "$tmp/post.cov.bam" 2>>"$tmp/ds.map.err"
 	samtools index -@ "$threads" "$tmp/post.cov.bam"
 	mosdepth -n --by "$window" "$tmp/post.cov" "$tmp/post.cov.bam"
 	post_bed="$tmp/post.cov.regions.bed.gz"
@@ -222,7 +229,7 @@ if [[ "$no_assemble" -eq 0 ]]; then
 	echo "[STEP] Flye"
 	local_cov="${asm_cov:-$cov}"
 	mkdir -p "$outdir/flye"
-	flye --nano-raw "$tmp/ds.fq.gz" --asm-coverage "$local_cov" --genome-size 200000 --threads "$threads" --out-dir "$outdir"
+	flye --nano-raw "$tmp/ds.fq.gz" --asm-coverage "$local_cov" --genome-size 200000 --threads "$threads" --out-dir "$outdir" 2>"$outdir/flye.err"
 	# flye --nano-raw "$tmp/ds.fq.gz" --threads "$threads" --out-dir "$outdir/flye"
 fi
 

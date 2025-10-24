@@ -49,7 +49,7 @@ fi
 #
 # Exit code: 134 (SIGABRT-like). Uses kill -ABRT if available.
 
-# Internal: print a compact stack trace (caller → main)
+# Internal: print a compact stack trace (caller -> main)
 _polap__trace() {
 	local i=1
 	# FUNCNAME[0] is _polap__trace, [1] is _polap_assert; start at caller of assert

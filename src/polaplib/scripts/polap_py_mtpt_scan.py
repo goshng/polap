@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Version: v0.8.0
 """
-Collapse cp → t BLAST hits into MTPT tracts; bin by recency.
+Collapse cp -> t BLAST hits into MTPT tracts; bin by recency.
 
 Input:
   --blast6    cp->mt BLAST (outfmt 6): qseqid sseqid pident length qstart qend sstart send qcovs

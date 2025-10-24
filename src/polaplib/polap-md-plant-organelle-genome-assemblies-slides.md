@@ -46,13 +46,13 @@ Plant mitochondria are much larger, dynamic, and often contaminated with nuclear
 
 ### ptDNA assembly
 
-- **ONT:** protein-guided read selection → Flye v2.9.6 [Kolmogorov et al. 2019]
-- **HiFi:** protein-guided read selection → Flye  
+- **ONT:** protein-guided read selection -> Flye v2.9.6 [Kolmogorov et al. 2019]
+- **HiFi:** protein-guided read selection -> Flye  
   OR use **Oatk** [Choi et al. 2025, in prep/published]
 
 ### mtDNA assembly
 
-- **ONT:** remove ptDNA/nuclear reads → seed contigs (Miniasm [Li 2016]) → Flye
+- **ONT:** remove ptDNA/nuclear reads -> seed contigs (Miniasm [Li 2016]) -> Flye
 - **HiFi:** assemble directly with **Oatk**
 
 ::: notes
@@ -109,7 +109,7 @@ These complementary tools ensure we start with clean organelle-origin reads, cho
 
 - **Improved ONT accuracy**
 
-  - Duplex ONT + new basecalling [Oxford Nanopore Tech. 2023] → Oatk viable for ONT
+  - Duplex ONT + new basecalling [Oxford Nanopore Tech. 2023] -> Oatk viable for ONT
 
 - **Automated read partitioning**
 
@@ -138,13 +138,13 @@ Plant mitochondria may be best understood as dynamic isoform collections.
 
 - **Plastid DNA**
 
-  - HiFi → Oatk (preferred)
-  - ONT → protein-guided + Flye
+  - HiFi -> Oatk (preferred)
+  - ONT -> protein-guided + Flye
 
 - **Mitochondrial DNA**
 
-  - HiFi → Oatk (preferred)
-  - ONT → filtering + Miniasm seeds + Flye
+  - HiFi -> Oatk (preferred)
+  - ONT -> filtering + Miniasm seeds + Flye
 
 - Always benchmark with **bolap** to compare strategies
 

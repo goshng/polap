@@ -4,17 +4,17 @@
 #
 # Pipeline outline (ONT):
 #   1) Remove plastid-origin reads (PT) using isoform A/B + identity cutoff
-#      (auto-learned or --identity-min override) → reads.nonpt.fq.gz
+#      (auto-learned or --identity-min override) -> reads.nonpt.fq.gz
 #      [optional: --profiling]
 #   2) All-vs-all overlap (ignore overlap_mode here):
 #        • try scan+stream+edges first (autotune scan), else
-#        • fallback to full minimap2 ava-ont → build overlapness.tsv
+#        • fallback to full minimap2 ava-ont -> build overlapness.tsv
 #      Also: draw scan QC figures/tables via polap-r-scan-autotune-qc.R.
-#   3) BUSCO QC on a 10% subsample (optional) → nuclear label list (sample).
+#   3) BUSCO QC on a 10% subsample (optional) -> nuclear label list (sample).
 #      Then select mito-enriched reads from overlapness (nuclear-aware if labels).
 #   4) Assemble selected reads (miniasm | raven).
 #   5) (Optional) Use miniasm GFA as seeds to run 'polap readassemble' finisher.
-#   6) Map reads → eeds (if iterating)
+#   6) Map reads -> eeds (if iterating)
 #   7) Stop when Δ|M| < threshold (if iterating)
 #
 # Required helpers (must exist; not embedded here):
@@ -489,7 +489,7 @@ PY
 	((!DRY)) && { [[ -s "$ISO_B" ]] && dbld "$ISO_B" "$DBL_B" || true; }
 	prof_end
 
-	note0 "1c) Map reads → doubled A/B"
+	note0 "1c) Map reads -> doubled A/B"
 	MAP_DIR="$outdir/02-map"
 	mkdir -p "$MAP_DIR"
 	PAF_A="$MAP_DIR/formA.paf"
@@ -533,7 +533,7 @@ PY
 		prof_end
 	fi
 
-	note0 "1e) Remove PT reads → R1"
+	note0 "1e) Remove PT reads -> R1"
 	ident_min_out="$identity_min"
 	if [[ -s "$PT_VARS" ]]; then
 		while IFS== read -r kv; do
@@ -636,7 +636,7 @@ if _should_run 2; then
 
 		# shortlist if we have scan TSV; else fallback later
 		if ((!DRY)) && [[ -s "$SCAN_DIR/scan.overlapness.tsv" ]]; then
-			note "2b) shortlist by cum-wdegree 80% rule → scan_keep_frac=${scan_keep_frac_aut}"
+			note "2b) shortlist by cum-wdegree 80% rule -> scan_keep_frac=${scan_keep_frac_aut}"
 			awk 'NR>1{print $1"\t"$3}' "$SCAN_DIR/scan.overlapness.tsv" |
 				sort -k2,2nr |
 				awk -v f="$scan_keep_frac_aut" '{a[NR]=$1} END{lim=int(NR*f); for(i=1;i<=lim;i++) print a[i]}' \
@@ -644,8 +644,8 @@ if _should_run 2; then
 			seqkit grep -f "$SCAN_DIR/shortlist.ids" "$R1" -o "$SCAN_DIR/R1.short.fq.gz"
 		fi
 
-		# 2b) refine streamed → edges + global overlapness
-		note0 "2c) refine streamed → edges + overlapness"
+		# 2b) refine streamed -> edges + global overlapness
+		note0 "2c) refine streamed -> edges + overlapness"
 		prof_start "refine"
 		if ((!DRY)) && [[ -s "$SCAN_DIR/R1.short.fq.gz" ]]; then
 			minimap2 -t "$threads" -x ava-ont \
@@ -662,13 +662,13 @@ if _should_run 2; then
 		prof_end
 
 	else
-		# 2d) Fallback: full ava-ont → PAFALL ; autotune reducer until overlapness is non-empty, then QC
-		note0 "2d) fallback: full ava-ont →  $PAFALL ; compute overlapness with autotune"
+		# 2d) Fallback: full ava-ont -> PAFALL ; autotune reducer until overlapness is non-empty, then QC
+		note0 "2d) fallback: full ava-ont ->  $PAFALL ; compute overlapness with autotune"
 		if ((!DRY)); then
 			minimap2 -x ava-ont -t "$threads" --secondary=yes -N 50 \
 				--mask-level 0.50 "$R1" "$R1" >"$PAFALL"
 
-			# Try reducer settings from strict → loose until nonempty & sane
+			# Try reducer settings from strict -> loose until nonempty & sane
 			# (You can tweak this ladder if you like.)
 			_tiers=(
 				"1200 0.84 0.12"
@@ -829,31 +829,31 @@ if _should_run 4; then
 	SELECT_IDS="$RDIR/select_ids.txt"
 	if [[ "$assembler" == "miniasm" ]]; then
 		TOPFA="$RDIR/top_reads.fa.gz"
-		note0 "4a) extract selected reads → $TOPFA"
+		note0 "4a) extract selected reads -> $TOPFA"
 		((!DRY)) && seqkit fq2fa "$R1" | seqkit grep -f "$SELECT_IDS" -o "$TOPFA"
 		GFA="$RDIR/miniasm.gfa"
 		if [[ "$overlap_mode" != "scan+stream+edges" ]]; then
-			note0 "4b) DEFAULT MODE: filter full PAF to selected overlaps → SUBPAF"
+			note0 "4b) DEFAULT MODE: filter full PAF to selected overlaps -> SUBPAF"
 			SUBPAF="$RDIR/top_overlaps.paf.gz"
 			((!DRY)) && python "$FILTPY" "$PAFALL" "$SELECT_IDS" -o "$SUBPAF"
 			((!DRY)) && miniasm -f "$TOPFA" <(zcat -f "$SUBPAF") >"$GFA"
 		else
-			note0 "4b) STREAMED MODE: recompute overlaps among selected reads → SELPAF"
+			note0 "4b) STREAMED MODE: recompute overlaps among selected reads -> SELPAF"
 			SELPAF="$RDIR/selected_allvsall.paf.gz"
 			((!DRY)) && minimap2 -x ava-ont -t "$threads" --secondary=yes -N 30 \
 				--mask-level 0.60 --min-occ-floor 10 \
 				"$TOPFA" "$TOPFA" | gzip -1 >"$SELPAF"
 			((!DRY)) && miniasm -f "$TOPFA" <(zcat -f "$SELPAF") >"$GFA"
 		fi
-		note0 "4c) extract contigs from GFA → seeds"
+		note0 "4c) extract contigs from GFA -> seeds"
 		SEEDS_ROUND="$RDIR/m_seeds_raw.fa"
 		((!DRY)) && awk '/^S/{print ">"$2"\n"$3}' "$GFA" >"$SEEDS_ROUND" || :
 	else
 		TOPFQ="$RDIR/top_reads.fq.gz"
-		note0 "4b) raven path: extract selected reads (fq) → $TOPFQ"
+		note0 "4b) raven path: extract selected reads (fq) -> $TOPFQ"
 		((!DRY)) && seqkit grep -f "$SELECT_IDS" "$R1" -o "$TOPFQ"
 		SEEDS_ROUND="$RDIR/raven_contigs.fasta"
-		note "raven --disable-polishing → $SEEDS_ROUND"
+		note "raven --disable-polishing -> $SEEDS_ROUND"
 		((!DRY)) && raven --threads "$threads" --disable-polishing -o "$SEEDS_ROUND" "$TOPFQ"
 	fi
 	SEEDS_CUR="$SEEDS_ROUND"
@@ -876,7 +876,7 @@ _polap_lib_file-cleanup -d "${outdir}" -s 5M -a rm
 if ((!DRY)); then
 	FINAL_DIR="$(dirname "$SEEDS_CUR")"
 	FINAL_SEEDS="$FINAL_DIR/m_seeds_final.fa"
-	note "Finalize: cp $SEEDS_CUR → $FINAL_SEEDS"
+	note "Finalize: cp $SEEDS_CUR -> $FINAL_SEEDS"
 	cp "$SEEDS_CUR" "$FINAL_SEEDS"
 	note "Done. Final seeds: $FINAL_SEEDS"
 else

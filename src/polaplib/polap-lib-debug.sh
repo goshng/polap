@@ -42,3 +42,53 @@ if [ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ]; then
 	_polap_output_dest="/dev/stderr"
 fi
 # echo "verbose2: $_arg_verbose"
+
+# Version: v0.2.2
+trace_functions_fline() {
+	local outfd="${1:-2}"
+
+	# Ensure traps run inside functions/command substitutions/subshells
+	# Remember prior state to restore later
+	local prev_functrace
+	prev_functrace="$(set +o | grep -E '^functrace')"
+	set -o functrace # or: set -T
+
+	: "${TRACE_FN_DEPTH:=0}"
+
+	trap '{
+    local depth=${#FUNCNAME[@]}
+    local prev=${TRACE_FN_DEPTH:-0}
+
+    if (( depth > prev )); then
+      local fn="${FUNCNAME[0]:-MAIN}"
+      [[ $fn == trace_functions_fline || $fn == untrace_functions ]] || {
+        local call_file="${BASH_SOURCE[1]:-${BASH_SOURCE[0]:-?}}"
+        local call_line="${BASH_LINENO[0]:-${LINENO}}"
+        local indent; printf -v indent "%*s" $((depth-1)) ""
+        builtin printf "%s→ %s (%s:%s)\n" "${indent// /·}" "$fn" "$call_file" "$call_line" >&'"$outfd"'
+      }
+    fi
+    TRACE_FN_DEPTH=$depth
+  }' DEBUG
+
+	trap '{
+    local fn="${FUNCNAME[0]:-MAIN}"
+    [[ $fn == trace_functions_fline || $fn == untrace_functions ]] && return
+    local depth=${#FUNCNAME[@]}
+    local indent; printf -v indent "%*s" $((depth-1)) ""
+    builtin printf "%s← %s\n" "${indent// /·}" "$fn" >&'"$outfd"'
+  }' RETURN
+
+	# Store how to restore functrace
+	TRACE_FN_PREV_FUNCTRACE="$prev_functrace"
+}
+
+untrace_functions() {
+	trap - DEBUG RETURN
+	# Restore previous functrace setting
+	if [[ -n "${TRACE_FN_PREV_FUNCTRACE:-}" ]]; then
+		eval "$TRACE_FN_PREV_FUNCTRACE" # e.g., "set +o functrace"
+		unset TRACE_FN_PREV_FUNCTRACE
+	fi
+	unset TRACE_FN_DEPTH
+}

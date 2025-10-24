@@ -1,0 +1,428 @@
+# ───────────────────────────────────────────────
+# From: polap-bioc/environment.yml
+# ───────────────────────────────────────────────
+name: polap-bioc
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconductor-biostrings
+  - bioconductor-genbankr
+  - bioconductor-iranges
+  - cd-hit
+  - r-optparse
+prefix: /home/goshng/miniconda3/envs/polap-bioc
+
+
+# ───────────────────────────────────────────────
+# From: polap-cflye/environment.yml
+# ───────────────────────────────────────────────
+name: polap-cflye
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - goshng::cflye
+prefix: /home/goshng/miniconda3/envs/polap-cflye
+
+
+# ───────────────────────────────────────────────
+# From: polap-dev/environment.yml
+# ───────────────────────────────────────────────
+name: polap-dev
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bedtools[version='>=2.30.0']
+  - bioawk[version='>=1.0']
+  - bioconda::jellyfish[version='>=2.2.10']
+  - blast[version='>=2.12.0']
+  - clustalw[version='>=2.1']
+  - csvtk[version='>=0.26.0']
+  - entrez-direct[version='>=15.6']
+  - flye[version='>=2.9.2']
+  - gfastats[version='>=1.3.6']
+  - minimap2[version='>=2.24']
+  - python==3.10.13
+  - seqkit[version='>=2.3.1']
+  - seqtk[version='>=1.3']
+  - sra-tools[version='>=3.0.0']
+  - r-base
+  - conda-forge::r-dplyr
+  - conda-forge::r-readr
+  - conda-forge::r-optparse
+  - samtools
+  - bash=5.0
+  - bioconda::orthofinder
+  - conda-forge::r-stringr
+  - conda-forge::r-tidyr
+  - bioconda::bioconductor-ggtree
+  - conda-build
+prefix: /home/goshng/miniconda3/envs/polap-dev
+
+
+# ───────────────────────────────────────────────
+# From: polap-dflye/environment.yml
+# ───────────────────────────────────────────────
+name: polap-dflye
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - goshng::dflye
+  - flye=2.9.5
+prefix: /home/goshng/miniconda3/envs/polap-dflye
+
+
+# ───────────────────────────────────────────────
+# From: polap/environment.yml
+# ───────────────────────────────────────────────
+name: polap
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconda::polap
+  - bbmap
+  - bioconductor-genomeinfodb
+  - genomescope2
+  - pbsim3
+  - r-biocmanager
+  - r-ellipse
+  - r-ggforce
+  - r-mass
+  - r-patchwork
+  - r-pracma
+  - r-r.utils
+  - r-rmarkdown
+  - r-robustbase
+  - r-sp
+  - r-uwot
+  - porechop
+  - r-tidyverse
+  - cd-hit
+  - meryl
+  - busco
+  - miniasm
+  - racon
+  - pyarrow
+  - pbgcpp
+  - medaka
+  - pbmm2
+  - pbtk
+  - mummer
+  - ntcard
+  - mosdepth
+  - pyfastx
+  - r-hexbin
+  - conda-forge::pv
+  - r-ggrepel
+  - plantuml
+  - r-rsvg
+  - qsv
+  - filtlong
+  - rasusa
+prefix: /home/goshng/miniconda3/envs/polap
+
+
+# ───────────────────────────────────────────────
+# From: polap-evo/environment.yml
+# ───────────────────────────────────────────────
+name: polap-evo
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - biopython
+  - blast
+  - mummer4
+  - pysam
+  - python=3.11
+  - r-base
+  - r-data.table
+  - r-ggplot2
+  - r-gridextra
+  - samtools
+  - minimap2
+prefix: /home/goshng/miniconda3/envs/polap-evo
+
+
+# ───────────────────────────────────────────────
+# From: polap-flye/environment.yml
+# ───────────────────────────────────────────────
+name: polap-flye
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - flye
+prefix: /home/goshng/miniconda3/envs/polap-flye
+
+
+# ───────────────────────────────────────────────
+# From: polap-fmlrc2/environment.yml
+# ───────────────────────────────────────────────
+name: polap-fmlrc2
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - fmlrc2
+  - rust
+prefix: /home/goshng/miniconda3/envs/polap-fmlrc2
+
+
+# ───────────────────────────────────────────────
+# From: polap-fmlrc/environment.yml
+# ───────────────────────────────────────────────
+name: polap-fmlrc
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconda::fmlrc[version='>=1.0.0']
+  - bioconda::ropebwt2[version='>=r187']
+  - kbchoi::msbwt[version='>=0.2.9']
+  - python=2.7
+prefix: /home/goshng/miniconda3/envs/polap-fmlrc
+
+
+# ───────────────────────────────────────────────
+# From: polap-getorganelle/environment.yml
+# ───────────────────────────────────────────────
+name: polap-getorganelle
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - getorganelle
+prefix: /home/goshng/miniconda3/envs/polap-getorganelle
+
+
+# ───────────────────────────────────────────────
+# From: polap-graphaligner/environment.yml
+# ───────────────────────────────────────────────
+name: polap-graphaligner
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - graphaligner
+prefix: /home/goshng/miniconda3/envs/polap-graphaligner
+
+
+# ───────────────────────────────────────────────
+# From: polap-man/environment.yml
+# ───────────────────────────────────────────────
+name: polap-man
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - pandoc
+  - pandoc-crossref
+  - r-base
+  - r-optparse
+  - r-readr
+  - r-png
+  - r-dplyr
+prefix: /home/goshng/miniconda3/envs/polap-man
+
+
+# ───────────────────────────────────────────────
+# From: polap-mbg/environment.yml
+# ───────────────────────────────────────────────
+name: polap-mbg
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - mbg
+prefix: /home/goshng/miniconda3/envs/polap-mbg
+
+
+# ───────────────────────────────────────────────
+# From: polap-ncbitools/environment.yml
+# ───────────────────────────────────────────────
+name: polap-ncbitools
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - blast
+  - entrez-direct
+  - sra-tools
+  - busco
+  - pigz
+prefix: /home/goshng/miniconda3/envs/polap-ncbitools
+
+
+# ───────────────────────────────────────────────
+# From: polap-oatk/environment.yml
+# ───────────────────────────────────────────────
+name: polap-oatk
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconda::oatk
+  - biopython
+  - entrez-direct
+  - hmmer
+  - mafft
+  - parallel
+  - seqtk
+  - hifiasm
+  - minimap2
+  - samtools
+  - rust-mdbg
+  - gfatools
+  - ntcard
+  - seqkit
+  - racon
+  - bbmap
+  - filtlong
+prefix: /home/goshng/miniconda3/envs/polap-oatk
+
+
+# ───────────────────────────────────────────────
+# From: polap-ont/environment.yml
+# ───────────────────────────────────────────────
+name: polap-ont
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - medaka
+  - porechop_abi
+  - bbmap
+  - seqkit
+  - seqtk
+  - yacrd
+  - cd-hit
+prefix: /home/goshng/miniconda3/envs/polap-ont
+
+
+# ───────────────────────────────────────────────
+# From: polap-pmat/environment.yml
+# ───────────────────────────────────────────────
+name: polap-pmat
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - apptainer
+  - blast
+  - canu
+  - nextdenovo
+prefix: /home/goshng/miniconda3/envs/polap-pmat
+
+
+# ───────────────────────────────────────────────
+# From: polap-polish/environment.yml
+# ───────────────────────────────────────────────
+name: polap-polish
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bwa-mem2
+  - cmake=3.26
+  - fmlrc2
+  - gcc=12
+  - gfatools
+  - git
+  - gxx=12
+  - make
+  - merqury
+  - meryl
+  - minimap2
+  - ninja
+  - polypolish
+  - python
+  - r-base
+  - ropebwt2
+  - samtools
+  - seqtk
+  - zlib
+prefix: /home/goshng/miniconda3/envs/polap-polish
+
+
+# ───────────────────────────────────────────────
+# From: polap-racon/environment.yml
+# ───────────────────────────────────────────────
+name: polap-racon
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - racon
+prefix: /home/goshng/miniconda3/envs/polap-racon
+
+
+# ───────────────────────────────────────────────
+# From: polap-sim/environment.yml
+# ───────────────────────────────────────────────
+name: polap-sim
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - seqkit
+  - seqtk
+  - badread
+  - nanosim
+  - busco
+  - pbsim3
+prefix: /home/goshng/miniconda3/envs/polap-sim
+
+
+# ───────────────────────────────────────────────
+# From: polap-test/environment.yml
+# ───────────────────────────────────────────────
+name: polap-test
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - polap
+  - goshng::cflye
+prefix: /home/goshng/miniconda3/envs/polap-test
+
+
+# ───────────────────────────────────────────────
+# From: polap-tippo/environment.yml
+# ───────────────────────────────────────────────
+name: polap-tippo
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.8
+  - bioconda::tipp
+prefix: /home/goshng/miniconda3/envs/polap-tippo
+
+

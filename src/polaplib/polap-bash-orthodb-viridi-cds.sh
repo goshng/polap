@@ -110,7 +110,7 @@ gunzip -c "$OUTDIR/raw/${files[genes]}" |
     }' |
 	LC_ALL=C sort -S 1G -T "$OUTDIR/tmp" >"$OUTDIR/tmp/genes_organism_gene.tsv"
 
-# 3b) Join to Viridiplantae organism ids → Viridi gene ids
+# 3b) Join to Viridiplantae organism ids -> Viridi gene ids
 LC_ALL=C join -t $'\t' -o 2.2 \
 	<(LC_ALL=C sort "$OUTDIR/tmp/viridi.organism_ids.txt") \
 	<(cut -f1,2 "$OUTDIR/tmp/genes_organism_gene.tsv" | LC_ALL=C sort) |

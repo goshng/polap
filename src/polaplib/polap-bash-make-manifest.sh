@@ -170,7 +170,7 @@ append_fact() {
 	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n" "$1" "$2" "$3" "$4" "$5" "$6" "$7" >>"$FACTS" || true
 }
 
-# Parse a single “seqkit stats -T/-Ta” table → prints: num  sum  avg  n50  avgQ  gc
+# Parse a single “seqkit stats -T/-Ta” table -> prints: num  sum  avg  n50  avgQ  gc
 parse_seqkit_ta() {
 	local f="$1"
 	awk '

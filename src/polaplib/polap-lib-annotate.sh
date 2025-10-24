@@ -77,19 +77,25 @@ _polap_lib_annotate-edges-stats() {
 	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 
-	_polap_log1 "  creating edges_stats.txt from graph_final.gfa ..."
-	_polap_log1 "  creating GFA without sequence data: ${_polap_var_ga_gfa_all}"
-	_polap_log2 "    input: ${_polap_var_ga_contigger_edges_gfa}"
-	_polap_log2 "    output: ${_polap_var_ga_gfa_all}"
+	_polap_log2 "  creating edges_stats.txt from graph_final.gfa ..."
+	_polap_log2 "  creating GFA without sequence data: ${_polap_var_ga_gfa_all}"
+	_polap_log3 "    input: ${_polap_var_ga_contigger_edges_gfa}"
+	_polap_log3 "    output: ${_polap_var_ga_gfa_all}"
 
 	if [[ ! -s "${_polap_var_ga_contigger_edges_gfa}" ]]; then
 		_polap_log0 "ERROR: no such file: ${_polap_var_ga_contigger_edges_gfa}"
 		return $RETURN_FAIL
 	fi
 
-	if ! command -v gfatools &>/dev/null; then
+	# if ! command -v gfatools &>/dev/null; then
+	if ! command -v gfatools >/dev/null 2>&1; then
 		_polap_log0 "[ERROR] Required command gfatools not found in PATH."
+		_polap_log0 "[Conda environment before conda activate] ${CONDA_DEFAULT_ENV:-}"
 		_polap_lib_conda-ensure_conda_env polap || exit 1
+		_polap_log0 "[Conda environment after conda activate] ${CONDA_DEFAULT_ENV:-}"
+	# else
+	# 	_polap_log1 "[INFO] Required command gfatools found in PATH."
+	# 	_polap_log1 "[Conda environment] ${CONDA_DEFAULT_ENV:-}"
 	fi
 
 	# if [ -s "${_polap_var_ga_gfa_all}" ] && [ "${_arg_redo}" = "off" ]; then
@@ -141,7 +147,7 @@ _polap_lib_annotate-count-gene() { # count MT and PT genes using edges_stats.txt
 	source "${_POLAPLIB_DIR}/polap-variables-option.sh"
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 
-	_polap_log1 "  counting mitochondrial and plastid genes on the assembly number ${_arg_inum} ..."
+	_polap_log2 "  counting mitochondrial and plastid genes on the assembly number ${_arg_inum} ..."
 
 	# Checks the output files earlier than the input.
 	# if [[ -s "${_polap_var_ga_annotation_all}" ]] &&
@@ -199,9 +205,9 @@ _polap_lib_annotate-blast-genome() {
 	local MTAA="${_POLAPLIB_DIR}"/polap-mt.1.c70.3.faa
 	local PTAA="${_POLAPLIB_DIR}"/polap-pt.2.c70.3.faa
 
-	_polap_log1 "  blasting edge contigs with mitochondrial and plastid genes on the assembly number ${_arg_inum} ..."
-	_polap_log2 "    input1: ${_polap_var_ga_contigger_edges_stats}"
-	_polap_log2 "    input2: ${_polap_var_ga_contigger_edges_fasta}"
+	_polap_log2 "  blasting edge contigs with mitochondrial and plastid genes on the assembly number ${_arg_inum} ..."
+	_polap_log3 "    input1: ${_polap_var_ga_contigger_edges_stats}"
+	_polap_log3 "    input2: ${_polap_var_ga_contigger_edges_fasta}"
 
 	# Checks the output files earlier than the input.
 	# if [[ -s "${_polap_var_ann_MTGENECOUNT}" ]] &&
@@ -313,7 +319,7 @@ _polap_lib_annotate-blast-genome() {
 	_polap_log2 "  deleting folder: ${_polap_var_ann_MTAABLASTBED}"
 	_polap_log3_cmd rm -rf "${_polap_var_ann_MTAABED}"
 
-	_polap_log1 "  output1: ${_polap_var_ann_MTGENECOUNT}"
+	_polap_log2 "  output1: ${_polap_var_ann_MTGENECOUNT}"
 
 	# Plastid gene annotation and counts
 	_polap_log2 "    BLAST of the plastid proteins against ${_polap_var_ann_CONTIGDB}"
@@ -372,7 +378,7 @@ _polap_lib_annotate-blast-genome() {
 	_polap_log2 "  deleting folder: ${_polap_var_ann_PTAABLASTBED}"
 	_polap_log3_cmd rm -rf "${_polap_var_ann_PTAABED}"
 
-	_polap_log1 "  output2: ${_polap_var_ann_PTGENECOUNT}"
+	_polap_log2 "  output2: ${_polap_var_ann_PTGENECOUNT}"
 
 	return 0
 }

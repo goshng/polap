@@ -167,7 +167,7 @@ filter_ont_unmapped_by_ref() {
 		return 2
 	fi
 
-	# 1) Map reads → PAF (no secondary alignments)
+	# 1) Map reads -> PAF (no secondary alignments)
 
 	minimap2 -t "$threads" -x "${_arg_minimap2_data_type}" --secondary=no "$ref" "$reads" >"${out}.paf"
 
@@ -365,14 +365,14 @@ _polap_lib_syncseed-run() {
 	[[ -s "$BACKBONE" ]] || die "backbone unitigs not found: $BACKBONE"
 
 	#############################################
-	# Bait: backbone-based k-mer bait → subset
+	# Bait: backbone-based k-mer bait -> subset
 	#############################################
 	mkdir -p bait
 	SUBSET="bait/ont.mt.fq"
 
 	if [[ "$BAIT_METHOD" == "bbduk" ]]; then
 		need "$BBDUK_BIN"
-		log 1 "[bait] bbduk: ref=$BACKBONE → $SUBSET"
+		log 1 "[bait] bbduk: ref=$BACKBONE -> $SUBSET"
 		"$BBDUK_BIN" in="$CUR" outm="$SUBSET" outu=bait/nonmt.fq ref="$BACKBONE" k=31 hdist=1 threads="$THREADS"
 	else
 		need meryl
@@ -387,7 +387,7 @@ _polap_lib_syncseed-run() {
 	log 1 "[bait] subset size: $( (wc -c <"$SUBSET") 2>/dev/null || echo 0) bytes"
 
 	#############################################
-	# Stage-2: lift OR polish → annotate → PF → summary
+	# Stage-2: lift OR polish -> annotate -> PF -> summary
 	#############################################
 	if [[ $USE_LIFT -eq 1 ]]; then
 		# Lifter (RLE) + 1× polish after lift
@@ -457,7 +457,7 @@ _polap_lib_syncseed-run() {
 	# seqtk hpc
 	local CUR="${OUT}"
 	local HPC_FILE="${HPC_OUT:-$OUT/reads.hpc.fa}"
-	_polap_log1 "[hpc] seqtk hpc → $HPC_FILE"
+	_polap_log1 "[hpc] seqtk hpc -> $HPC_FILE"
 	seqtk hpc "$CUR" >"$HPC_FILE"
 
 	# syncasm

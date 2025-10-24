@@ -127,14 +127,14 @@ digraph polap_assembly {
   ptref [label="Protein homology panel\\n(e.g., miniprot/minimap2)"];
   nukes [label="Remove nuclear reads\\n(e.g., BUSCO/miniprot/minimap2)"];
 
-  # ONT → ptDNA
+  # ONT -> ptDNA
   subgraph cluster_pt_ont {
     label="Case 1: ptDNA from ONT"; color="${EDGE}";
     s1   [label="Select pt-origin reads\\nvia protein homology", shape=box, fillcolor="${BG}"];
     s2   [label="Assemble ptDNA\\nFlye v2.9.6", shape=box, fillcolor="${ACC}", fontcolor="white"];
   }
 
-  # ONT → mtDNA
+  # ONT -> mtDNA
   subgraph cluster_mt_ont {
     label="Case 2: mtDNA from ONT"; color="${EDGE}";
     m1   [label="Filter pt & nuclear reads\\n(minimize contamination)", shape=box];
@@ -142,14 +142,14 @@ digraph polap_assembly {
     m3   [label="Assemble mtDNA\\nFlye v2.9.6", shape=box, fillcolor="${ACC}", fontcolor="white"];
   }
 
-  # HiFi → ptDNA
+  # HiFi -> ptDNA
   subgraph cluster_pt_hifi {
     label="Case 3: ptDNA from HiFi"; color="${EDGE}";
     h1a  [label="Option A: protein-homology read selection\\nthen Flye v2.9.6", shape=box, fillcolor="${ACC}", fontcolor="white"];
     h1b  [label="Option B: Oatk (syncasm + pathfinder)", shape=box, fillcolor="${ACC3}", fontcolor="white"];
   }
 
-  # HiFi → mtDNA
+  # HiFi -> mtDNA
   subgraph cluster_mt_hifi {
     label="Case 4: mtDNA from HiFi"; color="${EDGE}";
     h2   [label="Oatk (syncasm + pathfinder)", shape=box, fillcolor="${ACC3}", fontcolor="white"];

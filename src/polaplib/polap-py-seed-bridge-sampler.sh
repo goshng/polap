@@ -3,7 +3,7 @@
 minimap2 -x ava-pb -t 32 --secondary=yes -N 50 --mask-level 0.50 \
 	reads.fq.gz reads.fq.gz >allvsall.paf
 
-# 2) Provide your seed → eads grouping (seed_groups.tsv):
+# 2) Provide your seed -> eads grouping (seed_groups.tsv):
 # seedA   read123
 # seedA   read987
 # seedB   read555

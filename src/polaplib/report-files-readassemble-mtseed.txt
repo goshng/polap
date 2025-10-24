@@ -1,0 +1,96 @@
+# mtseed - MT assembly main folder in polap-readassemble
+
+mtseed/mt.0.gfa - mt0 assembly graph
+mtseed/mt.0.png - mt0 assembly graph png file
+mtseed/mt.1.gfa - mt1 assembly graph
+mtseed/mt.1.png - mt1 assembly graph png
+mtseed/mt.1.fa - mt1 assembly in fasta
+mtseed/mt.2.gfa - mt2 assembly graph
+mtseed/mt.2.png - mt2 assembly graph png
+mtseed/mt.2.fa - mt2 assembly in fasta
+mtseed/mt.3.gfa - mt3 assembly graph
+mtseed/mt.3.png - mt3 assembly graph png
+mtseed/mt.3.fa - mt3 assembly in fasta
+
+mtseed/keep.nonpt.ids - read IDs after PT read filter-out
+mtseed/pt.ids - PT read IDs
+mtseed/reads.nonpt.fq.gz.seqkit.stats.T.txt - read seqkit stats after PT read filter-out
+mtseed/pt_thresh.diag.tsv
+
+mtseed/pipeline.log
+mtseed/pt_thresh.vars - pt read selection cutoff
+
+mtseed/01-panel
+mtseed/01-panel/ir.pick.tsv - IR detection of the ptDNA
+
+mtseed/02-map
+mtseed/02-map/all.ids - All read IDs
+mtseed/02-map/pt.ids.sorted - PT read IDs
+
+mtseed/03-allvsall
+mtseed/03-allvsall/overlapness.tsv - overlapness of the reads after PT reads filter-out
+mtseed/03-allvsall/overlapness_strict.tsv
+mtseed/03-allvsall/04-qc
+mtseed/03-allvsall/04-qc/overlap_qc.vars - overlap stats
+mtseed/03-allvsall/04-qc/scan_wdegree_hist.pdf - include it in HTML
+mtseed/03-allvsall/04-qc/scan_cum_wdegree.pdf - include it in HTML
+mtseed/03-allvsall/04-qc/scan_degree_hist.pdf - include it in HTML
+
+mtseed/05-round/select_ids.txt - reads after nuclear reads filter-out using BUSCO
+
+mtseed/06-miniasm/m_seeds_raw.fa - selected reads as seeds for 07-flye run
+mtseed/06-miniasm/miniasm.gfa - miniasm assembly
+mtseed/06-miniasm/miniasm.png - miniasm assembly png file (not yet created)
+
+mtseed/07-flye - flye conversion of 06-miniasm
+mtseed/07-flye/assembly_info_organelle_annotation_count-all.txt - 06-miniasm contigs annotation table
+mtseed/07-flye/assembly_info_organelle_annotation_count.txt - 06-miniasm contigs annotation table 
+mtseed/07-flye/contig-annotation-depth-table.txt - MT candidate seeds from 06-miniasm
+mtseed/07-flye/pt-contig-annotation-depth-table.txt - PT candidate seeds from 06-miniasm 
+mtseed/07-flye/mt.contig.name-mt1 - MT seed contigs from 06-miniasm
+mtseed/07-flye/30-contigger/graph_final.gfa - same as mtseed/06-miniasm/miniasm.gfa
+mtseed/07-flye/30-contigger/graph_final.fasta - almost same as mtseed/06-miniasm/m_seeds_raw.fa
+mtseed/07-flye/30-contigger/graph_final.png - same as mtseed/06-miniasm/miniasm.png
+
+
+mtseed/mt0 - equivalent to 07-flye and actually 06-minisam
+
+mtseed/mt1 - mt1 assembly using mt0 as seeds
+mtseed/mt1/assembly_info_organelle_annotation_count-all.txt
+mtseed/mt1/assembly_info_organelle_annotation_count.txt
+mtseed/mt1/pt-contig-annotation-depth-table.txt
+mtseed/mt1/contig-annotation-depth-table.txt
+mtseed/mt1/contig-annotation-table.txt
+
+mtseed/mt1/mt.contig.name-mt2
+
+mtseed/mt1/03-seeds
+mtseed/mt1/03-seeds/ptgaul-reads
+mtseed/mt1/03-seeds/ptgaul-reads/0.fq.len
+
+mtseed/mt1/00-assembly
+mtseed/mt1/assembly_graph.png - mt1 flye assembly graph png
+mtseed/mt1/assembly_graph.gfa - mt1 flye assembly graph
+mtseed/mt1/assembly.fasta
+
+# seed selection and test flye assembly
+mtseed/mt1/01-contig
+mtseed/mt1/01-contig/contig_total_length.txt
+mtseed/mt1/01-contig/contig.fa
+mtseed/mt1/02-reads
+mtseed/mt1/04-subsample
+mtseed/mt1/05-flye
+mtseed/mt1/06-summary
+mtseed/mt1/07-plot
+
+# flye assembly folders
+mtseed/mt1/10-consensus
+mtseed/mt1/20-repeat
+mtseed/mt1/30-contigger
+mtseed/mt1/40-polishing
+
+mtseed/mt1/50-annotation
+
+# these mt2 and mt3 have the similar file structures as mt1.
+mtseed/mt2 - mt2 assembly using mt1 as seeds
+mtseed/mt3 - mt3 assembly using mt2 as seeds

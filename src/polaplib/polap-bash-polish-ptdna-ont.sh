@@ -113,7 +113,7 @@ READS="${ARGS[1]}"
 if [[ -z "$OUTDIR" ]]; then
 	base="$(basename -- "$ASM_IN")"
 	OUTDIR="${base%.*}"
-	# Also strip a second extension if present (e.g., .fa.gz → .fa)
+	# Also strip a second extension if present (e.g., .fa.gz -> .fa)
 	case "$OUTDIR" in
 	*.fa | *.fna | *.fasta) OUTDIR="${OUTDIR%.*}" ;;
 	esac

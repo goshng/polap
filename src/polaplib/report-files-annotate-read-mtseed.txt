@@ -1,0 +1,11 @@
+annotate-read-mtseed: mt and pt reads selection main folder
+
+annotate-read-mtseed/assembly_info_organelle_annotation_count-all.txt - all read MT/PT gene counts 
+annotate-read-mtseed/contig-annotation-depth-table.txt - MT origin reads candidates
+annotate-read-mtseed/pt-contig-annotation-depth-table.txt - PT origin reads candidiates
+
+annotate-read-mtseed/pt.id.all.txt - PT read IDs
+annotate-read-mtseed/pt/pt-contig-annotation-depth-table.txt.scatter.pdf - put this PDF on the HTML
+
+annotate-read-mtseed/mt.id.all.txt - MT read IDs
+annotate-read-mtseed/mt/contig-annotation-depth-table.txt.scatter.pdf - put this PDF on the HTML

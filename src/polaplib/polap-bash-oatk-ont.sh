@@ -430,7 +430,7 @@ step_lift() {
 	need minimap2
 	command -v "$LIFT_BIN" >/dev/null 2>&1 || die "missing lifter $LIFT_BIN"
 	mkdir -p lift
-	log 1 "[lift] RAW → PC PAF with cs (reads-map=${READS_MAP##*/})"
+	log 1 "[lift] RAW -> PC PAF with cs (reads-map=${READS_MAP##*/})"
 	mm2_map k1/unitigs.fa "$READS_MAP" lift/raw_vs_hpc.paf paf "--cs=long" $MM2_EXTRA
 	log 1 "[lift] lifter on PAF"
 	"$LIFT_BIN" --hpc-fa k1/unitigs.fa --paf lift/raw_vs_hpc.paf \
@@ -537,7 +537,7 @@ eval_pathfinder() {
 		done
 	fi
 	echo -e "TOTAL\t${total_n}\t${total_bp}\t${total_nc}\t${total_bc}\t${noted}" >>"$out"
-	log 1 "[summary] PF summary → $out"
+	log 1 "[summary] PF summary -> $out"
 }
 
 step_summary() {

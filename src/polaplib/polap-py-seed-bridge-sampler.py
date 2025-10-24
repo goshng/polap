@@ -5,7 +5,7 @@ polap-py-seed-bridge-sampler.py
 
 One mapping only:
   1) Build a read–read overlap graph from a single all-vs-all minimap2 PAF.
-  2) Take precomputed seed → reads groupings (no remapping).
+  2) Take precomputed seed -> reads groupings (no remapping).
   3) For each unordered seed pair, sample random walks between a random read
      from group A and a random read from group B.
   4) Summarize per-read frequencies; high-frequency reads are candidate
@@ -353,7 +353,7 @@ def main():
     except Exception as e:
         print(f"[warn] cannot write GEXF: {e}", file=sys.stderr)
 
-    # 2) Load seed → reads and intersect with graph nodes
+    # 2) Load seed -> reads and intersect with graph nodes
     groups_all = load_seed_groups(args.seed_groups)
     if args.only_seeds:
         keep = set([x.strip() for x in args.only_seeds.split(",") if x.strip()])

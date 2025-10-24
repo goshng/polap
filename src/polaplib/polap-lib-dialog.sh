@@ -59,11 +59,11 @@ fi
 #
 # Behavior:
 #   • If stdin is a terminal, prompt the user and read the answer.
-#   • Accept "y", "yes" (case-insensitive) → return 0.
-#   • Anything else (including Enter or EOF) → return 1.
+#   • Accept "y", "yes" (case-insensitive) -> return 0.
+#   • Anything else (including Enter or EOF) -> return 1.
 #   • In non-interactive mode (no TTY):
-#       - If POLAP_ASSUME_YES=1 → return 0.
-#       - Else POLAP_ASSUME_NO=1 → return 1.
+#       - If POLAP_ASSUME_YES=1 -> return 0.
+#       - Else POLAP_ASSUME_NO=1 -> return 1.
 #       - Otherwise: log a warning and return 1 (safe default: NO).
 #
 

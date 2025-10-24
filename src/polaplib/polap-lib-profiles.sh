@@ -43,7 +43,7 @@ This directory holds your Polap profiles.
 
 - profiles/default.env  : default environment for polap/bolap (bash syntax)
 - profiles/current      : symlink to the active profile (sourced by your wrapper if you wire it)
-To add a new profile, copy default.env → mylab.env and retarget 'current' to it.
+To add a new profile, copy default.env -> mylab.env and retarget 'current' to it.
 TXT
 	fi
 

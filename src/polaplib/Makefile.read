@@ -53,6 +53,9 @@ MT_TABLE_MD   := $(MT_TABLE_TSV:.tsv=.md)
 DATA_TABLE_PREFIX := $(MANIFEST_DIR)/$(MANIFEST_TAG)-data-summary
 DATA_TABLE_TSV    := $(DATA_TABLE_PREFIX).tsv
 DATA_TABLE_MD     := $(DATA_TABLE_PREFIX).md
+DATA_TABLE_NO_BASE_PREFIX := $(MANIFEST_DIR)/$(MANIFEST_TAG)-data-summary-no-base
+DATA_TABLE_NO_BASE_TSV    := $(DATA_TABLE_NO_BASE_PREFIX).tsv
+DATA_TABLE_NO_BASE_MD     := $(DATA_TABLE_NO_BASE_PREFIX).md
 
 # Table S1
 TABLE_S1_TSV  := $(MANIFEST_DIR)/$(MANIFEST_TAG)-table-s1.tsv
@@ -134,14 +137,16 @@ $(MANIFEST_V6): check-env
 	@echo "[INFO] Log:   $(abspath $(MANIFEST_LOG))"
 
 # ------------------------------------------------------------------------------
-# Table S1 (manifest → TSV + MD via Python script)
+# Table S1 (manifest -> TSV + MD via Python script)
 # ------------------------------------------------------------------------------
+#	polap-bash-format-table-dataset-summary.sh" \
+.PHONY: table-s1
 table-s1: $(TABLE_S1_TSV) $(TABLE_S1_MD)
 
-$(TABLE_S1_TSV): $(MANIFEST_V6) check-env
+$(TABLE_S1_TSV): $(MANIFEST_V6)
 	@mkdir -p "$(dir $@)"
 	@echo "[INFO] Building Table S1 from $(MANIFEST_V6)"
-	@python3 "$(POLAPLIB_DIR)/scripts/make_table_dataset_summary.py" \
+	python3 "$(POLAPLIB_DIR)/scripts/make_table_dataset_summary.py" \
 	  --manifest "$(MANIFEST_V6)" \
 	  --out "$(TABLE_S1_TSV)" \
 	  --markdown
@@ -151,8 +156,9 @@ $(TABLE_S1_MD): $(TABLE_S1_TSV)
 	@true
 
 # ------------------------------------------------------------------------------
-# PT summary (manifest → TSV → MD)
+# PT summary (manifest -> TSV -> MD)
 # ------------------------------------------------------------------------------
+
 pt-table: $(PT_TABLE_MD)
 
 $(PT_TABLE_MD): $(MANIFEST_V6)
@@ -165,7 +171,7 @@ $(PT_TABLE_MD): $(MANIFEST_V6)
 	@echo "[OK] Wrote: $(PT_TABLE_MD)"
 
 # ------------------------------------------------------------------------------
-# MT summary (manifest → TSV → MD)
+# MT summary (manifest -> TSV -> MD)
 # ------------------------------------------------------------------------------
 mt-table: $(MT_TABLE_TSV) $(MT_TABLE_MD)
 	@echo "[OK] MT table: $(MT_TABLE_TSV) and $(MT_TABLE_MD)"
@@ -179,7 +185,7 @@ $(MT_TABLE_TSV) $(MT_TABLE_MD): $(MANIFEST_V6)
 	  --md  "$(MT_TABLE_MD)"
 
 # ------------------------------------------------------------------------------
-# Data summary (long/short) (manifest → TSV → MD)
+# Data summary (long/short) (manifest -> TSV -> MD)
 # ------------------------------------------------------------------------------
 table-data: $(DATA_TABLE_MD)
 
@@ -191,8 +197,11 @@ $(DATA_TABLE_MD): $(MANIFEST_V6)
 	  --out-tsv  "$(DATA_TABLE_TSV)" \
 	  --out-md   "$(DATA_TABLE_MD)" \
 	  --sort     "code2"
-	@echo "[OK] Wrote: $(DATA_TABLE_TSV)"
-	@echo "[OK] Wrote: $(DATA_TABLE_MD)"
+	@cut -f1,2,3,5 "$(DATA_TABLE_TSV)" > "$(DATA_TABLE_NO_BASE_TSV)"
+	@tr '\t' ',' < "$(DATA_TABLE_NO_BASE_TSV)" > "$(DATA_TABLE_NO_BASE_TSV).csv"
+	@pandoc "$(DATA_TABLE_NO_BASE_TSV).csv" -f csv -t markdown_mmd -o "$(DATA_TABLE_NO_BASE_MD)" 
+	@echo "[OK] Wrote: $(DATA_TABLE_NO_BASE_TSV)"
+	@echo "[OK] Wrote: $(DATA_TABLE_NO_BASE_MD)"
 
 # ------------------------------------------------------------------------------
 # Figures / sheets (optional; kept as-is)
@@ -236,7 +245,7 @@ figure-assemblies-two-pages:
 #-------------------------------------------------------------------------------
 # PT/MT assembly graphs
 #-------------------------------------------------------------------------------
-anno-scan:
+anno-scan: $(MANIFEST_V6)
 	@bash "$(POLAPLIB_DIR)/polap-bash-anno-scan.sh" \
 	  --base-dir "." \
 	  --manifest "$(MANIFEST_V6)" \
@@ -279,10 +288,10 @@ fig1-r:
 .PHONY: manuscript
 manuscript: manuscript.pdf
 
-$(EXP_MD): table-s1
+$(EXP_MD): $(DOC_MD) sheet-ptmt table-s1 table-data pt-table mt-table
 	@bash "$(MAN_DIR)/sh/replace_include.sh" "$(DOC_MD)" >"$(EXP_MD)"
 
-$(DOC_OUT_PDF): $(DOC_MD) $(EXP_MD) sheet-ptmt table-data pt-table mt-table table-s1
+$(DOC_OUT_PDF): $(EXP_MD) 
 	@command -v $(PANDOC) >/dev/null 2>&1 || { echo "[ERR] pandoc not found"; exit 2; }
 	@mkdir -p "$(MAN_DIR)"
 	@echo "[INFO] Building PDF: $@"

@@ -42,7 +42,7 @@ fi
 
 # Version: v0.1.0
 # File   : polaplib/polap-subcmd-ptdna-subassemble.sh
-# Role   : Polap dispatcher shim -> recruit → subsample → (optional) Flye for cpDNA
+# Role   : Polap dispatcher shim -> recruit -> subsample -> (optional) Flye for cpDNA
 _run_polap_ptdna-subassemble() {
 	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: ${FUNCNAME[0]}"
@@ -67,8 +67,8 @@ Synopsis:
                           [--mapper-opts "…"]
 
 Description:
-  1) minimap2 recruit (keep primary+secondary+supplementary) → 2) subsample to target coverage
-  (rasusa/filtlong/longest fallback) → 3) pre/post coverage QC (mosdepth if present) →
+  1) minimap2 recruit (keep primary+secondary+supplementary) -> 2) subsample to target coverage
+  (rasusa/filtlong/longest fallback) -> 3) pre/post coverage QC (mosdepth if present) ->
   4) optional Flye assembly. Writes a single CSV of metrics.
 
 Options:
@@ -199,7 +199,7 @@ USAGE
 			shift 2
 			;;
 
-		# unknown option starting with '-'  → error (no silent shift)
+		# unknown option starting with '-'  -> error (no silent shift)
 		-*)
 			_die "Unknown option: $1"
 			;;

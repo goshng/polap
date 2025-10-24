@@ -242,7 +242,7 @@ _polap__expand_series_k1() {
 }
 
 # If you still want the generic dispatcher, add a k-mode shim:
-#   _polap__expand_series_k "251,101,5" → calls _polap__expand_series_k1
+#   _polap__expand_series_k "251,101,5" -> calls _polap__expand_series_k1
 _polap__expand_series_k() {
 	_polap__expand_series_k1 "$1"
 }
@@ -492,7 +492,7 @@ EOF
 		_info "[HPC] using provided HPC reads: $hpc"
 	else
 		hpc="${outprefix}.reads.hpc.fastq"
-		_info "[HPC] generating HPC reads → $hpc"
+		_info "[HPC] generating HPC reads -> $hpc"
 		seqtk hpc "$raw" >"$hpc" || {
 			_polap_log0 "[ERROR] seqtk hpc failed"
 			return 2
@@ -500,14 +500,14 @@ EOF
 	fi
 
 	# map
-	_info "[map] minimap2 -x ${preset} -k ${kmer} (HPC reads → HPC contigs)"
+	_info "[map] minimap2 -x ${preset} -k ${kmer} (HPC reads -> HPC contigs)"
 	minimap2 -t "$threads" -x "$preset" -k "$kmer" --secondary=yes -c \
 		"$contigs" "$hpc" >"$paf" || {
 		_polap_log0 "[ERROR] minimap2 failed"
 		return 2
 	}
 
-	# filter PAF → IDs (identity, qcov, alnlen)
+	# filter PAF -> IDs (identity, qcov, alnlen)
 	_info "[map] filtering PAF: min_id=${min_id}, min_qcov=${min_qcov}, min_aln_len=${min_aln_len}"
 	awk -v ID="$min_id" -v QC="$min_qcov" -v ML="$min_aln_len" '
     # PAF: 1=qname 2=qlen 3=qstart 4=qend 6=tname 8=tstart 9=tend 10=nmatch 11=alnlen
@@ -524,14 +524,14 @@ EOF
 	_info "[map] mapped HPC read IDs: $nmap"
 
 	# subset RAW reads by IDs
-	_info "[raw] extracting mapped RAW reads →  $raw_mapped"
+	_info "[raw] extracting mapped RAW reads ->  $raw_mapped"
 	seqtk subseq "$raw" "$mapped_ids" | gzip -c >"$raw_mapped" ||
 		{
 			_polap_log0 "[ERROR] seqtk subseq (mapped) failed"
 			return 2
 		}
 
-	_info "[raw] computing unmapped RAW reads →  $raw_unmapped"
+	_info "[raw] computing unmapped RAW reads ->  $raw_unmapped"
 	if [[ "$raw" =~ \.gz$ ]]; then
 		zcat -- "$raw" | awk 'NR%4==1{print substr($1,2)}' | sort -u >"$tmp_all_ids"
 	else
@@ -1007,7 +1007,7 @@ EOF
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
-# _polap_lib_syncasm (monolith, oatk + GNU parallel, c → a→ k→ s)
+# _polap_lib_syncasm (monolith, oatk + GNU parallel, c -> a-> k-> s)
 # ──────────────────────────────────────────────────────────────────────────────
 _polap_lib_syncasm() {
 	# CLI defaults (renamed to _crg_)
@@ -1205,7 +1205,7 @@ _polap_lib_syncasm() {
 	local reads_hpc="${workdir}/reads.hpc.fa"
 	if _polap_contains_step x "${_stage_array[@]}"; then
 		if [[ "$_crg_no_hpc" == "false" ]]; then
-			((_crg_verbose)) && _polap_log1 "[STEP 1] seqtk hpc →  ${reads_hpc}"
+			((_crg_verbose)) && _polap_log1 "[STEP 1] seqtk hpc ->  ${reads_hpc}"
 			if [[ -s "${reads_hpc}" ]]; then
 				_polap_log0 "[STEP 1] reuse HPC: $reads_hpc"
 			else
@@ -1243,7 +1243,7 @@ _polap_lib_syncasm() {
 
 	if _polap_contains_step 1 "${_stage_array[@]}"; then
 		if [[ ! -s "${step0_hpc}" ]]; then
-			((_crg_verbose)) && _polap_log1 "[STEP 0] porechop_abi + filtlong + HPC → ${step0_hpc}"
+			((_crg_verbose)) && _polap_log1 "[STEP 0] porechop_abi + filtlong + HPC -> ${step0_hpc}"
 
 			# sanity: tools
 			for _exe in seqkit filtlong; do
@@ -1281,7 +1281,7 @@ _polap_lib_syncasm() {
 
 	reads_hpc="${step0_hpc}"
 
-	# STEP 2: grid over c → a→ k→ s (GNU parallel; oatk direct; per-job -t 8)
+	# STEP 2: grid over c -> a-> k-> s (GNU parallel; oatk direct; per-job -t 8)
 	local grid_root="${workdir}/grid"
 	if [[ "${_crg_redo}" == true ]]; then
 		rm -rf "$grid_root"
@@ -1407,7 +1407,7 @@ _polap_lib_syncasm() {
 	fi
 
 	# ────────────────────────────────────────────────────────────────
-	# STEP 4: Merge/decide → ≥10kb → dedup → rename edge_#
+	# STEP 4: Merge/decide -> ≥10kb -> dedup -> rename edge_#
 	# Requirements: gfatools, seqkit
 	# Outputs:
 	#   ${final_dir}/final10kb.edge.fa  (numbered edge_1..N, description kept)
@@ -1490,7 +1490,7 @@ _polap_lib_syncasm() {
 			_polap_log1 "[STEP 4] merged:   $(grep -c '^>' "$merged_raw") entries"
 			_polap_log1 "[STEP 4] ≥${min_len}bp: $(grep -c '^>' "$filtered_fa") entries"
 			_polap_log1 "[STEP 4] unique:   $(grep -c '^>' "$dedup_fa") entries"
-			_polap_log1 "[STEP 4] final:    $(grep -c '^>' "$final_fa") entries →  $final_fa"
+			_polap_log1 "[STEP 4] final:    $(grep -c '^>' "$final_fa") entries ->  $final_fa"
 		}
 	fi
 

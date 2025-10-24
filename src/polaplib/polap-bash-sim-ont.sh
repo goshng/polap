@@ -352,7 +352,7 @@ vlog 2 "Args: mt=$SIM_MT_REF pt=$SIM_PT_REF nuc=${SIM_NUC_REF:-<synthetic>} tech
 
 make_nuclear() {
 	local outfa="$1" size="$2"
-	vlog 1 "[nuclear] generating synthetic ${size} bp → ${outfa}"
+	vlog 1 "[nuclear] generating synthetic ${size} bp -> ${outfa}"
 	python3 - "$size" >"$outfa" <<'PY'
 import sys, random
 n=int(sys.argv[1]); rng=random.Random(1); b='ACGT'
@@ -586,7 +586,7 @@ sim_badread() {
 		make_circular_ref_rot "$REF_PT" "pt.circ2.fa" "$SIM_JUNC_MARGIN" "$SIM_CIRC_SEED"
 		REF_MT="mt.circ2.fa"
 		REF_PT="pt.circ2.fa"
-		# doubled ref → double the x to preserve effective depth on the original circle
+		# doubled ref -> double the x to preserve effective depth on the original circle
 		QTY_MT="$(scale_quantity_x "$QTY_MT" 2.0)"
 		QTY_PT="$(scale_quantity_x "$QTY_PT" 2.0)"
 		vlog 1 "[circular] mt/pt rotated with margin=${SIM_JUNC_MARGIN}, quantities: mt=${QTY_MT} pt=${QTY_PT}"
@@ -595,19 +595,19 @@ sim_badread() {
 	fi
 
 	# nuclear
-	vlog 1 "[sim] Badread → nuclear ${QTY_NUC}"
+	vlog 1 "[sim] Badread -> nuclear ${QTY_NUC}"
 	run_badread_parallel_one "$REF_NUC" "${QTY_NUC}" "${SIM_LEN_MEAN}" "${SIM_LEN_SD}" \
 		"${SIM_ERR_MODEL}" "${SIM_QS_MODEL}" "${SIM_SEED_NUC}" "nuc.fq" \
 		"${ident_opts[@]}"
 
 	# mito
-	vlog 1 "[sim] Badread → mito ${QTY_MT}"
+	vlog 1 "[sim] Badread -> mito ${QTY_MT}"
 	run_badread_parallel_one "$REF_MT" "${QTY_MT}" "${SIM_LEN_MEAN}" "${SIM_LEN_SD}" \
 		"${SIM_ERR_MODEL}" "${SIM_QS_MODEL}" "${SIM_SEED_MT}" "mt.fq" \
 		"${ident_opts[@]}"
 
 	# plastid
-	vlog 1 "[sim] Badread → plastid ${QTY_PT}"
+	vlog 1 "[sim] Badread -> plastid ${QTY_PT}"
 	run_badread_parallel_one "$REF_PT" "${QTY_PT}" "${SIM_LEN_MEAN}" "${SIM_LEN_SD}" \
 		"${SIM_ERR_MODEL}" "${SIM_QS_MODEL}" "${SIM_SEED_PT}" "pt.fq" \
 		"${ident_opts[@]}"

@@ -317,7 +317,7 @@ CUR="$READS_PRE"
 CUR_ASM="$CUR"
 if [[ $HPC_ENABLE -eq 1 ]]; then
 	HPC_FILE="${HPC_OUT:-$OUT/stage2/reads.hpc.fa}"
-	log 1 "[hpc] seqtk hpc → $HPC_FILE"
+	log 1 "[hpc] seqtk hpc -> $HPC_FILE"
 	if [[ "$CUR" =~ \.gz$ ]]; then
 		seqtk seq -A <(gzip -dc "$CUR") | seqtk hpc - >"$HPC_FILE"
 	else
@@ -348,12 +348,12 @@ bash "$CORE" \
 BACKBONE="$OUT/ont_stage1/k1/unitigs.fa"
 [[ -s "$BACKBONE" ]] || die "backbone not found: $BACKBONE"
 
-# ───────── Bait: backbone → ONT subset ─────────
+# ───────── Bait: backbone -> ONT subset ─────────
 mkdir -p bait
 SUBSET="$OUT/stage2/bait/ont.mt.fq"
 mkdir -p "$(dirname "$SUBSET")"
 if [[ "$BAIT_METHOD" == "bbduk" ]]; then
-	log 1 "[bait] bbduk: ref=$(basename "$BACKBONE") → $SUBSET"
+	log 1 "[bait] bbduk: ref=$(basename "$BACKBONE") -> $SUBSET"
 	"$BBDUK_BIN" in="$READS_PRE" outm="$SUBSET" outu="$OUT/stage2/bait/nonmt.fq" ref="$BACKBONE" k=31 hdist=1 threads="$THREADS"
 else
 	log 1 "[bait] meryl k=$MERYL_K"
@@ -377,7 +377,7 @@ if [[ $USE_LIFT -eq 1 ]]; then
 	need minimap2
 	command -v "$LIFT_BIN" >/dev/null 2>&1 || die "missing lifter: $LIFT_BIN"
 	log 1 "[recover] LIFT (RLE) on backbone + 1× polish"
-	# map RAW → HPC contigs (cs tag helpful)
+	# map RAW -> HPC contigs (cs tag helpful)
 	mm2_map "$BACKBONE" "$SUBSET" recov/raw_vs_hpc.paf paf "--cs=long" $MM2_EXTRA
 	"$LIFT_BIN" --hpc-fa "$BACKBONE" --paf recov/raw_vs_hpc.paf \
 		--out-fa recov/unitigs.lifted.fa \

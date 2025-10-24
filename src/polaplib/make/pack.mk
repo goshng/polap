@@ -24,7 +24,7 @@ version.bump:
 		p="$${R#*.}"
 		p="$$(($$p+1))"
 		echo "$${M}.$${m}.$${p}" > "$(VERSION_FILE)"
-		echo "[INFO] bumped version $$V → $$(cat "$(VERSION_FILE)")"
+		echo "[INFO] bumped version $$V -> $$(cat "$(VERSION_FILE)")"
 	fi
 
 pack:

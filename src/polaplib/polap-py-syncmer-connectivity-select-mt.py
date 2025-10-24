@@ -1017,7 +1017,7 @@ def main():
         eprint("[error] none of the anchors found in dump")
         return 2
 
-    # BFS → subgraph
+    # BFS -> subgraph
     v(1, "[step] BFS candidate expansion …")
     cand = bfs_expand(adj, seed_idx, steps)
     sub_adj = {

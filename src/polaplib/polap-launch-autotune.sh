@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # polap-launch-autotune.sh
-# Load a flat YAML config → apply CLI overrides (CLI wins) → call polap-bash-autotune-oatk.sh.
+# Load a flat YAML config -> apply CLI overrides (CLI wins) -> call polap-bash-autotune-oatk.sh.
 #
 # Addressing (one of):
 #   --config-path FILE.yaml
@@ -99,7 +99,7 @@ if [[ -z "$CFG_PATH" && -z "$CONFIG_DIR" ]]; then
 	oatk_log 2 "default CONFIG_DIR=${CONFIG_DIR}"
 fi
 
-# ---------- load YAML → PCFG_* ----------
+# ---------- load YAML -> PCFG_* ----------
 RESOLVED_CFG=""
 if [[ -n "$CFG_PATH" ]]; then
 	oatk_log 1 "loading YAML --config-path ${CFG_PATH}"

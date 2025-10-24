@@ -318,13 +318,13 @@ prof_end
 PAF_A="$OUTDIR/map/formA.paf"
 PAF_B="$OUTDIR/map/formB.paf"
 prof_start "map_ptA"
-note "Map reads → isomerA.double > $PAF_A"
+note "Map reads -> isomerA.double > $PAF_A"
 ((!DRY)) && minimap2 -x map-ont --secondary=yes -N 50 -t "$THREADS" \
 	"$DBL_A" "$READS" >"$PAF_A"
 prof_end
 if [[ -s "$DBL_B" ]]; then
 	prof_start "map_ptB"
-	note "Map reads → isomerB.double > $PAF_B"
+	note "Map reads -> isomerB.double > $PAF_B"
 	((!DRY)) && minimap2 -x map-ont --secondary=yes -N 50 -t "$THREADS" \
 		"$DBL_B" "$READS" >"$PAF_B"
 	prof_end
@@ -413,7 +413,7 @@ if ((NUCLEAR_DEPLETE)); then
 	mkdir -p "$AVA_DIR"
 	PAF_ALL="$AVA_DIR/allvsall.paf"
 	prof_start "allvsall"
-	note "All-vs-all on non-PT reads → $PAF_ALL"
+	note "All-vs-all on non-PT reads -> $PAF_ALL"
 	((!DRY)) && minimap2 -x ava-ont -t "$THREADS" \
 		-k19 -w7 --secondary=yes -N 30 --mask-level 0.60 \
 		--min-occ-floor=10 -I4g $AVA_OPTS \
@@ -451,7 +451,7 @@ if ((NUCLEAR_DEPLETE)); then
 		sort -u "$OUTDIR/sample.ids" -o "$OUTDIR/sample.ids"
 		seqkit grep -f "$OUTDIR/sample.ids" "$R1" -o "$OUTDIR/reads.sample.fq.gz"
 
-		# miniprot on sample only → nuc.sample.ids
+		# miniprot on sample only -> nuc.sample.ids
 		miniprot -d "$OUTDIR/nonpt.sample.mpi" "$OUTDIR/reads.sample.fq.gz"
 		miniprot -t "$THREADS" -S -N 3 --outc 0.4 \
 			"$OUTDIR/nonpt.sample.mpi" "$BUSCO" >"$OUTDIR/nonpt.sample.busco.paf"

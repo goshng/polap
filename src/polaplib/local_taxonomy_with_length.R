@@ -29,7 +29,7 @@ lineage_parsed <- lineage %>%
       if (length(hits) > 0) tail(hits, 1) else NA_character_
     }, character(1)),
 
-    # Genus is first word of species (e.g., Arabidopsis thaliana → Arabidopsis)
+    # Genus is first word of species (e.g., Arabidopsis thaliana -> Arabidopsis)
     genus = word(species, 1),
 
     # Extract first matching family/order
@@ -37,7 +37,6 @@ lineage_parsed <- lineage %>%
       fx <- x[str_detect(x, "aceae$")]
       if (length(fx) > 0) fx[1] else NA_character_
     }, character(1)),
-
     order = vapply(lineage_split, function(x) {
       ox <- x[str_detect(x, "ales$")]
       if (length(ox) > 0) ox[1] else NA_character_
@@ -65,4 +64,3 @@ final_dedup <- final %>%
 
 # ---- Step 7: Write to file ----
 write_tsv(final_dedup, "taxonomy_deduplicated.tsv")
-

@@ -322,7 +322,7 @@ polap_cmd_select_mt() {
 	mv -f "${OUT}.syncfilter.tsv" "${OUT}.quickview.tsv"
 
 	# 2) Coverage bands via cut-auto
-	echo "[step] coverage banding (anchors → mt/pt bands)"
+	echo "[step] coverage banding (anchors -> mt/pt bands)"
 	python3 "$CUT_AUTO" \
 		-i "${OUT}.quickview.tsv" \
 		--method "$XMETHOD" --tail "$XTAIL" \
@@ -344,7 +344,7 @@ polap_cmd_select_mt() {
 		local PPR_READS_MT="${OUT}.xcover.mt.fastq"
 		seqtk subseq "$READS" "${OUT}.xcover.mt.names" >"$PPR_READS_MT"
 
-		echo "[step] dump read → yncmers (mt)"
+		echo "[step] dump read -> yncmers (mt)"
 		"$RUN_SF" --mode quickview -k "$PPR_K" -s "$PPR_S" -t "$THREADS" -v "$SFV" \
 			--emit-read-syncmers "${OUT}.xcover.mt" \
 			-o "${OUT}.xcover.mt.pprprep" \
@@ -395,7 +395,7 @@ polap_cmd_select_mt() {
 		local PPR_READS_PT="${OUT}.xcover.pt.fastq"
 		seqtk subseq "$READS" "${OUT}.xcover.pt.names" >"$PPR_READS_PT"
 
-		echo "[step] dump read → yncmers (pt)"
+		echo "[step] dump read -> yncmers (pt)"
 		"$RUN_SF" --mode quickview -k "$PPR_K" -s "$PPR_S" -t "$THREADS" -v "$SFV" \
 			--emit-read-syncmers "${OUT}.xcover.pt" \
 			-o "${OUT}.xcover.pt.pprprep" \

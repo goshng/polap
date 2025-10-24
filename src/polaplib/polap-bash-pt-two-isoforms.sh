@@ -111,7 +111,7 @@ show-coords -rclT "$NUCPFX".delta >"$NUCPFX".coords
 
 # coords format: start1 end1 start2 end2 len1 len2 %id ...
 # We want reverse-complement matches (inverted) that are long; heuristic:
-#  - orientation is opposite (start2>end2 OR start1>end1) → inverted
+#  - orientation is opposite (start2>end2 OR start1>end1) -> inverted
 #  - take top two longest non-overlapping hits as IRa/IRb
 awk -v MIN="$MIN_IR" '
   NR>5 {

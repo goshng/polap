@@ -143,7 +143,7 @@ def main():
             for v in nodes:
                 g.write(f"{v}\t{deg[v]}\t{wdeg[v]:.6f}\n")
 
-    # top-K nodes by wdegree → stdout (if requested)
+    # top-K nodes by wdegree -> stdout (if requested)
     if args.topk_nodes and args.topk_nodes > 0:
         topk = sorted(wdeg.items(), key=lambda kv: kv[1], reverse=True)[
             : args.topk_nodes

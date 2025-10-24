@@ -318,12 +318,12 @@ cat(paste0("\n- ", bullets, collapse="\n"))
 
 ### what it does
 - **PT**: uses `contig-annotation-depth-table.txt` to check total length, depth evenness (coefficient of variation across the largest contigs), and total MT-gene “leak” on PT contigs.  
-  - If large enough, even, and low MT contamination → “polish and finalize.”  
-  - Otherwise → short, specific tips (small size / uneven depth / MT contamination).
+  - If large enough, even, and low MT contamination -> “polish and finalize.”  
+  - Otherwise -> short, specific tips (small size / uneven depth / MT contamination).
 
 - **MT**: counts contigs with **MT gene count ≥ 3** (ignores tiny contigs) to gauge whether you have multiple strong candidates.  
-  - If yes → suggest advancing to the next round and point to the forward seed file (`mt.contig.name-mt(N+1)`), if it exists.  
-  - If not → suggest recruitment re-tuning or more ONT data.
+  - If yes -> suggest advancing to the next round and point to the forward seed file (`mt.contig.name-mt(N+1)`), if it exists.  
+  - If not -> suggest recruitment re-tuning or more ONT data.
 
 You can **tune thresholds** at the top of the chunk:
 

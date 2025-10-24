@@ -7,7 +7,7 @@
 #
 # Purpose :
 #   Aggressively remove plastid (ptDNA) reads and keep confident mitochondrial
-#   (mtDNA) reads from ONT WGS using minimap2 → pysam classifier → seqtk, with
+#   (mtDNA) reads from ONT WGS using minimap2 -> pysam classifier -> seqtk, with
 #   optional coverage downsampling (rasusa) and QC plots (R).
 ################################################################################
 
@@ -20,7 +20,7 @@ fi
 set -euo pipefail
 IFS=$'\n\t'
 
-# ---- version & tracing wiring (POLAP_DEBUG=1 → set -x)
+# ---- version & tracing wiring (POLAP_DEBUG=1 -> set -x)
 _VERSION="v0.1.3"
 : "${POLAP_DEBUG:=0}"
 if [[ "$POLAP_DEBUG" -eq 1 ]]; then
@@ -55,7 +55,7 @@ Options:
   # NEW (kept off by default):
       --primary-only        only consider primary alignments
       --min-mapq N          [0] ignore alignments with MAPQ < N
-      --margin F            [0.10] tie-break margin (10% → 1.10x)
+      --margin F            [0.10] tie-break margin (10% -> 1.10x)
 
   -h, --help
   -V, --version
@@ -239,7 +239,7 @@ mkdir -p "$out"/{tmp,qc}
 [[ -f "${mt_ref}.mmi" ]] || minimap2 -d "${mt_ref}.mmi" "$mt_ref"
 [[ -f "${pt_ref}.mmi" ]] || minimap2 -d "${pt_ref}.mmi" "$pt_ref"
 
-# ---------- map to pt and mt (SAM → sorted BAM)
+# ---------- map to pt and mt (SAM -> sorted BAM)
 pt_bam="$out/tmp/pt.bam"
 mt_bam="$out/tmp/mt.bam"
 

@@ -3,7 +3,7 @@
 # Version: v0.7.0 (nucmer-based, origin-rotation normalization)
 #
 # Build plastid isoforms from a circular ptDNA reference by locating IRa/IRb
-# with MUMmer4 self-alignment (nucmer → delta-filter → show-coords),
+# with MUMmer4 self-alignment (nucmer -> delta-filter -> show-coords),
 # then **rotate the circle** so the origin lies in LSC, and slice segments
 # from a **single-record doubled** FASTA by (start,len).
 # If IR detection fails, emit a SINGLE form (A only).
@@ -284,7 +284,7 @@ fi
 # Prepare original reference
 # ────────────────────────────────────────────────────────────────────
 refbase="${outdir}/pt.ref"
-note "Copy reference → ${refbase}.fa"
+note "Copy reference -> ${refbase}.fa"
 cp -f "$pt_ref" "${refbase}.fa"
 L=$(seqkit fx2tab -l -n "${refbase}.fa" | cut -f2)
 [[ "$L" =~ ^[0-9]+$ ]] || {
@@ -300,10 +300,10 @@ nucmer --maxmatch -c 100 -l 20 -p "${outdir}/pt_ir" \
 	"${refbase}.fa" "${refbase}.fa" >>"$LOG_FILE" 2>&1
 note "delta-filter by len/id (keep repeats)"
 delta-filter -i 90 -l 500 "${outdir}/pt_ir.delta" >"${outdir}/pt_ir.keep.delta"
-note "show-coords -THcl → coords"
+note "show-coords -THcl -> coords"
 show-coords -THcl "${outdir}/pt_ir.keep.delta" >"${outdir}/pt_ir.coords"
 
-note "Pick IR (wrap-aware) → ir.pick.tsv"
+note "Pick IR (wrap-aware) -> ir.pick.tsv"
 python3 "$PY_PICK" "${outdir}/pt_ir.coords" \
 	--L "$L" --min_ir_len "$min_ir_len" --max_ir_len "$max_ir_len" \
 	--len_rel_diff "$len_rel_diff" --near_diag_pad "$near_diag_pad" \

@@ -285,8 +285,8 @@ export)
 		# exact lock (no activation)
 		conda list -n "$env" --explicit --md5 >"${LOCK_DIR}/${env}-${PLATFORM}.txt"
 
-		_log "  → ${ENV_DIR}/${env}/environment.yml"
-		_log "  → ${LOCK_DIR}/${env}-${PLATFORM}.txt"
+		_log "  -> ${ENV_DIR}/${env}/environment.yml"
+		_log "  -> ${LOCK_DIR}/${env}-${PLATFORM}.txt"
 	done
 	;;
 

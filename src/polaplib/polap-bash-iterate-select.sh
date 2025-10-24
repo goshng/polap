@@ -8,12 +8,12 @@ set -euo pipefail
 #   --config-path FILE.yaml
 #   --config-dir DIR --preset NAME     # resolves DIR/NAME.yaml (default: ~/.polap/profiles)
 #
-# Any flat YAML key can be overridden by CLI (--foo-bar → YAML key foo_bar).
+# Any flat YAML key can be overridden by CLI (--foo-bar -> YAML key foo_bar).
 # Required keys (YAML or CLI): reads, out_prefix, label, (mt_anchors|pt_anchors for first round in WGS)
 #
 # Loop:
 #   A_i = anchors for iteration i (union from previous)
-#   select-mt (with A_i) → C_i (PPR ids)
+#   select-mt (with A_i) -> C_i (PPR ids)
 #   gain = C_i - A_i
 #   A_{i+1} = A_i ∪ C_i
 #   stop if |gain|/|A_{i+1}| < epsilon  or i >= max_iters
@@ -120,7 +120,7 @@ need python3
 [[ -f "$LOAD_PY" ]] || die "not found: $LOAD_PY"
 [[ -f "$SELECT_MT_SH" ]] || die "not found: $SELECT_MT_SH"
 
-# ---------- load YAML → ICFG_* ----------
+# ---------- load YAML -> ICFG_* ----------
 RESOLVED_CFG=""
 if [[ -n "$CFG_PATH" ]]; then
 	oatk_log 1 "loading YAML --config-path ${CFG_PATH}"

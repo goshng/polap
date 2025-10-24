@@ -99,7 +99,7 @@ def parse_coords(path: str) -> Iterable[Hit]:
         except StopIteration:
             raise SystemExit("ERROR: show-coords header found but lacks % IDY")
     else:
-        # No header present → find first non-preamble non-empty line
+        # No header present -> find first non-preamble non-empty line
         data_start = None
         for i, ln in enumerate(lines):
             s = ln.strip()
@@ -112,7 +112,7 @@ def parse_coords(path: str) -> Iterable[Hit]:
             break
         if data_start is None:
             return
-        # Standard MUMmer4 (-T -r -c -l): %IDY is 7th column (1-based) → index 6
+        # Standard MUMmer4 (-T -r -c -l): %IDY is 7th column (1-based) -> index 6
         i_pid = 6
 
     # Fixed numeric fields for -T output:

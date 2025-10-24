@@ -4,7 +4,7 @@
 #
 # v0.5.1 highlights
 #  - Step 2 switches to **edge-first hybrid**:
-#      shortlist×ALL (targets sharded) → per-shard **edge parts** (no PAF),
+#      shortlist×ALL (targets sharded) -> per-shard **edge parts** (no PAF),
 #      combine to a single **edges_loose.tsv.gz**, then **refilter** by a single
 #      edge-weight threshold (eweight ladder) to produce **overlapness.tsv**.
 #  - New CLI defaults (lowercase):
@@ -155,8 +155,8 @@ milli_to_str() {
 # Usage:
 #   sample_min_10pct_or_1gb "$R1" "$SAMP_FQ" ["$seed"]
 # Env:
-#   DRY=1  → dry-run (prints planned ratio but does not execute)
-#   note1  → optional logger function
+#   DRY=1  -> dry-run (prints planned ratio but does not execute)
+#   note1  -> optional logger function
 sample_min_10pct_or_1gb() {
 	local in="$1"
 	local out="$2"
@@ -519,7 +519,7 @@ _add_steps() {
 _should_run() {
 	local s="$1"
 
-	# no --step provided → run everything
+	# no --step provided -> run everything
 	if [[ -z "${steps:-}" ]]; then
 		return 0
 	fi
@@ -527,7 +527,7 @@ _should_run() {
 	# materialize once (or re-materialize if you want to allow updates)
 	if [[ -z "${_step_set:-}" ]]; then
 		_add_steps "$steps" || return 1
-		note2 "Step gating: steps='${steps}' → _step_set='${_step_set}'"
+		note2 "Step gating: steps='${steps}' -> _step_set='${_step_set}'"
 	fi
 
 	# explicit return codes (safe under set -e)
@@ -540,7 +540,7 @@ _should_run() {
 
 if [[ -n "${steps:-}" ]]; then
 	_add_steps "$steps"
-	note2 "Parsed --step: steps='${steps}' → _step_set='${_step_set}'"
+	note2 "Parsed --step: steps='${steps}' -> _step_set='${_step_set}'"
 fi
 
 note2 "Check: tools"
@@ -638,7 +638,7 @@ choose_mm2_preset() {
 		;;
 
 	*)
-		echo "WARN: unknown mm2_mode='$mm2_mode' → using balanced (1)" >&2
+		echo "WARN: unknown mm2_mode='$mm2_mode' -> using balanced (1)" >&2
 		mm2_mode=1
 		hybrid_n_shards=6
 		threads=$((TOTAL_CORES / hybrid_n_shards))
@@ -732,7 +732,7 @@ ST2_pt_map() {
 	local outdir="$1"
 	local reads="$2"
 
-	note1 "1c) Map reads → doubled A/B"
+	note1 "1c) Map reads -> doubled A/B"
 	local MAP_DIR="$outdir/02-map"
 	mkdir -p "$MAP_DIR"
 	local PAF_A="$MAP_DIR/formA.paf"
@@ -782,7 +782,7 @@ ST2_pt_map() {
 		prof_end
 	fi
 
-	note1 "1e) Remove PT reads → R1"
+	note1 "1e) Remove PT reads -> R1"
 	local ident_min_out="${identity_min:-}"
 	if [[ -s "$PT_VARS" ]]; then
 		# robust parsing: read key=value pairs safely
@@ -827,7 +827,7 @@ _ovl_cov() {
 	awk -v a="$nz" -v b="$tot" 'BEGIN{ if (b>0) printf "%.6f", a/b; else print 0 }'
 }
 
-# shortlist top fraction by length → <outdir>/R1.short.fq.gz
+# shortlist top fraction by length -> <outdir>/R1.short.fq.gz
 _build_shortlist_len() {
 	local reads="$1"
 	local outfile="$2"
@@ -885,7 +885,7 @@ _shard_targets_once() {
 
 # MM2_THOROUGH_OPTS="-k 17 -w 5 --secondary=yes -N 40 --mask-level 0.55 --min-occ-floor 8 -I 4g -K 2g"
 
-# 2b) map shortlist×each shard → per-shard edge parts
+# 2b) map shortlist×each shard -> per-shard edge parts
 # _map_edges_parts <indir> <infile> <outdir>
 # Map shortlist (infile) × each shard in indir and dump edges to outdir.
 # Produces outdir/edges_part_XX.tsv.gz for each shard XX.
@@ -925,8 +925,8 @@ _map_edges_parts() {
 	# ---- Clean old parts ----
 	rm -f "$outdir/"*.tsv.gz 2>/dev/null || true
 
-	# ---- Map per shard → edges_part_XX.tsv.gz ----
-	note2 "mapping shortlist × shards (thorough) →  edge parts"
+	# ---- Map per shard -> edges_part_XX.tsv.gz ----
+	note2 "mapping shortlist × shards (thorough) ->  edge parts"
 	if [[ "${use_parallel}" -eq 1 ]]; then
 
 		if command -v parallel >/dev/null 2>&1; then
@@ -968,7 +968,7 @@ _map_edges_parts() {
 			# (re)build the index if missing or older than the shard
 			# if [[ ! -s "$idx" || "$idx" -ot "$shard" ]]; then
 			rm -f "$idx"
-			note2 "hybrid: indexing shard $j2 →  $(basename "$idx")"
+			note2 "hybrid: indexing shard $j2 ->  $(basename "$idx")"
 			if ! minimap2 -x ava-ont $INDEX_OPTS -d "$idx" "$shard"; then
 				note0 "ERR[_map_edges_parts]: index build failed for shard $j2 ($shard)"
 				return 1
@@ -980,7 +980,7 @@ _map_edges_parts() {
 			PART="$outdir/edges_part_${j2}.tsv.gz"
 
 			# map with index, stream-dump edges (NO dedup, NO gates) — low RAM
-			note2 "hybrid: shard $j2/$hybrid_n_shards (map with index → raw edges)"
+			note2 "hybrid: shard $j2/$hybrid_n_shards (map with index -> raw edges)"
 			if ! minimap2 -x ava-ont -t "$TOTAL_CORES" $MAP_OPTS \
 				"$idx" "$infile" |
 				python "$EDGE_DUMP" --paf - --out "$RAW" \
@@ -1019,7 +1019,7 @@ _combine_edges() {
 	local indir="$1"
 	local outfile="$2"
 
-	note2 "hybrid: combine edge parts →  $outfile"
+	note2 "hybrid: combine edge parts ->  $outfile"
 
 	# sanity checks
 	if [[ -z "$indir" || -z "$outfile" ]]; then
@@ -1125,7 +1125,7 @@ _refilter_once_eweight_loop() {
 }
 
 #!/usr/bin/env bash
-# 03-partvspart: randomized sharding + intra-shard mapping → edges.tsv
+# 03-partvspart: randomized sharding + intra-shard mapping -> edges.tsv
 # Deps: minimap2, seqkit, gzip, python (for EDGE_DUMP only)
 # Presets: always use -x ava-ont per your snippet
 #
@@ -1137,7 +1137,7 @@ _refilter_once_eweight_loop() {
 # Env knobs (optional):
 #   INDEX_OPTS=""      # extra flags for 'minimap2 -d'
 #   MAP_OPTS=""        # extra flags for mapping
-#   EDGE_DUMP="polap-py-edge-dump.py"   # path to your edge dumper (PAF → SV)
+#   EDGE_DUMP="polap-py-edge-dump.py"   # path to your edge dumper (PAF -> SV)
 #
 # Output:
 #   OUTDIR/03-partvspart/
@@ -1194,17 +1194,17 @@ ST3_part_vs_part() {
 		local B
 		B="$(_ceil_div "$TOTAL_BASES" "$TARGET_BASES")"
 		[[ "$B" -lt 1 ]] && B=1
-		note1 "[ST3] Total bases ≈ $TOTAL_BASES ; target/shard=${TARGET_BASES} →  B=$B"
+		note1 "[ST3] Total bases ≈ $TOTAL_BASES ; target/shard=${TARGET_BASES} ->  B=$B"
 	fi
 
 	# 2) shuffle once (deterministic) then split equally into B parts
 	local SHUF="${SHUF_DIR}/reads.shuf.fq.gz"
 	if ((do_shuffle == 0)); then
-		note1 "[ST3] no Shuffling reads →  SHUF = $R1"
+		note1 "[ST3] no Shuffling reads ->  SHUF = $R1"
 		SHUF="${outdir}/reads.nonpt.fq.gz"
 	else
 		if [[ ! -s "$SHUF" ]]; then
-			note1 "[ST3] Shuffling reads (seed=$SEED) →  $SHUF"
+			note1 "[ST3] Shuffling reads (seed=$SEED) ->  $SHUF"
 			seqkit shuffle -s "$SEED" "$READS" | gzip -c >"$SHUF"
 		else
 			note1 "[ST3] Using existing shuffle: $SHUF"
@@ -1212,7 +1212,7 @@ ST3_part_vs_part() {
 	fi
 
 	if [[ ! -e "${SHARD_DIR}/shard_000.fq.gz" ]]; then
-		note1 "[ST3] Splitting shuffled reads into $B shards →  $SHARD_DIR"
+		note1 "[ST3] Splitting shuffled reads into $B shards ->  $SHARD_DIR"
 		# seqkit split2 creates reads.shuf.part_001.gz, ...
 		rm -rf "$SHARD_DIR"
 		mkdir -p "$SHARD_DIR"
@@ -1228,7 +1228,7 @@ ST3_part_vs_part() {
 		note1 "[ST3] Found shards in $SHARD_DIR"
 	fi
 
-	# Parallelized per-shard index + map → edges.tsv.gz using GNU parallel
+	# Parallelized per-shard index + map -> edges.tsv.gz using GNU parallel
 	# Requires: GNU parallel. Falls back to serial if not available.
 	# Uses env vars: B, SHARD_DIR, EDGE_DIR, INDEX_OPTS, MAP_OPTS, TOTAL_CORES, EDGE_DUMP, note1
 
@@ -1271,7 +1271,7 @@ ST3_part_vs_part() {
 		done
 	fi
 
-	# 3) per-shard index + map → edge TSV via EDGE_DUMP (no filtering thresholds)
+	# 3) per-shard index + map -> edge TSV via EDGE_DUMP (no filtering thresholds)
 	# note1 "[ST3] Per-shard indexing + mapping with minimap2 (-x ava-ont)"
 	# local i
 	# for ((i = 1; i <= B; i++)); do
@@ -1283,17 +1283,17 @@ ST3_part_vs_part() {
 	# 	local log="${EDGE_DIR}/shard_${idx}.minimap2.log"
 	#
 	# 	if [[ -s "$raw" ]]; then
-	# 		note1 "  [${idx}] exists →  $raw (skip)"
+	# 		note1 "  [${idx}] exists ->  $raw (skip)"
 	# 		continue
 	# 	fi
 	#
-	# 	note1 "  [${idx}] indexing → $idxpath"
+	# 	note1 "  [${idx}] indexing -> $idxpath"
 	# 	if ! minimap2 -x ava-ont $INDEX_OPTS -d "$idxpath" "$shard" 2>"$log"; then
 	# 		note1 "  [${idx}][ERR] minimap2 index failed"
 	# 		continue
 	# 	fi
 	#
-	# 	note1 "  [${idx}] mapping + edge dump →  $raw"
+	# 	note1 "  [${idx}] mapping + edge dump ->  $raw"
 	# 	# Your requested pattern:
 	# 	#   if ! minimap2 -x ava-ont -t "$TOTAL_CORES" $MAP_OPTS "$idx" "$infile" | python "$EDGE_DUMP" ... ; then
 	# 	if ! minimap2 -x ava-ont -t "$TOTAL_CORES" $MAP_OPTS \
@@ -1306,10 +1306,10 @@ ST3_part_vs_part() {
 	# 	fi
 	# done
 
-	# 4) concat per-shard TSV → one big edges.tsv.gz
+	# 4) concat per-shard TSV -> one big edges.tsv.gz
 	local ALL="${EDGE_DIR}/all.edges.tsv.gz"
 	if [[ ! -s "$ALL" ]]; then
-		note1 "[ST3] Concatenating shard edges → $ALL"
+		note1 "[ST3] Concatenating shard edges -> $ALL"
 		# Using zcat (works on .gz files)
 		ls "$EDGE_DIR"/shard_*.edges.tsv.gz | sort -V |
 			xargs zcat |
@@ -1329,7 +1329,7 @@ ST3_part_vs_part() {
 # ST3_run "reads.fastq.gz" "out" 16 1 13
 
 # ────────────────────────────────────────────────────────────────────
-# Step 2: HYBRID (edge-first) → edges_loose.tsv.gz → overlapness (refilter by eweight)
+# Step 2: HYBRID (edge-first) -> edges_loose.tsv.gz -> overlapness (refilter by eweight)
 # ────────────────────────────────────────────────────────────────────
 ST3_all_vs_all() {
 	local outdir="$1"
@@ -1645,12 +1645,12 @@ ST3_overlapness() {
 # 2. miniprot -t "${threads:-8}" …
 #
 # This runs miniprot, a protein-to-genome aligner.
-# 	•	-t "${threads:-8}" → use the number of threads in $threads, or default to 8 if $threads is unset.
-# 	•	-S → output SAM-like secondary alignment tags (depends on version; in miniprot it means “spliced alignment” mode).
-# 	•	-N 3 → keep at most 3 secondary alignments per query.
-# 	•	--outc 0.4 → minimum coverage of the query protein required to report an alignment (40%).
-# 	•	"$RDIR/nonpt.sample.mpi" → the genome index built by miniprot -d.
-# 	•	"$nprot" → the input protein database (e.g. BUSCO protein set).
+# 	•	-t "${threads:-8}" -> use the number of threads in $threads, or default to 8 if $threads is unset.
+# 	•	-S -> output SAM-like secondary alignment tags (depends on version; in miniprot it means “spliced alignment” mode).
+# 	•	-N 3 -> keep at most 3 secondary alignments per query.
+# 	•	--outc 0.4 -> minimum coverage of the query protein required to report an alignment (40%).
+# 	•	"$RDIR/nonpt.sample.mpi" -> the genome index built by miniprot -d.
+# 	•	"$nprot" -> the input protein database (e.g. BUSCO protein set).
 #
 # 3. >"$RDIR/nonpt.sample.busco.paf"
 # 	•	Redirect stdout into a file named nonpt.sample.busco.paf under $RDIR.
@@ -1757,29 +1757,29 @@ ST6_miniasm() {
 	local SEEDS_CUR
 
 	if [[ "$assembler" == "miniasm" ]]; then
-		note1 "4a) extract selected reads → $TOPFA"
+		note1 "4a) extract selected reads -> $TOPFA"
 		((!DRY)) && { seqkit fq2fa "$R1" | seqkit grep -f "$SELECT_IDS" -o "$TOPFA"; }
 
 		GFA="$ADIR/miniasm.gfa"
 
 		# recompute overlaps among selected reads
 		local SELPAF="$ADIR/selected_allvsall.paf.gz"
-		note1 "4b) recompute overlaps among selected reads → $SELPAF"
+		note1 "4b) recompute overlaps among selected reads -> $SELPAF"
 		((!DRY)) && minimap2 -x ava-ont -t "$TOTAL_CORES" \
 			"${MINIASM_MAP_OPTS}" \
 			"$TOPFA" "$TOPFA" | gzip -1 >"$SELPAF"
 
 		((!DRY)) && miniasm -f "$TOPFA" <(zcat -f "$SELPAF") >"$GFA"
 
-		note1 "4c) extract contigs from GFA → seeds"
+		note1 "4c) extract contigs from GFA -> seeds"
 		SEEDS_ROUND="$ADIR/m_seeds_raw.fa"
 		((!DRY)) && awk '/^S/{print ">"$2"\n"$3}' "$GFA" >"$SEEDS_ROUND" || :
 	else
-		note1 "4a) raven : extract selected reads (fq) → $TOPFQ"
+		note1 "4a) raven : extract selected reads (fq) -> $TOPFQ"
 		((!DRY)) && seqkit grep -f "$SELECT_IDS" "$R1" -o "$TOPFQ"
 
 		SEEDS_ROUND="$ADIR/raven_contigs.fasta"
-		note1 "raven --disable-polishing → $SEEDS_ROUND"
+		note1 "raven --disable-polishing -> $SEEDS_ROUND"
 		((!DRY)) && raven --threads "$threads" --disable-polishing -o "$SEEDS_ROUND" "$TOPFQ"
 	fi
 
@@ -1848,7 +1848,7 @@ if _should_run 3; then
 		ST3_part_vs_part "$outdir"
 		;;
 	1)
-		note0 "Step3. (hybrid edge-first): shortlist×ALL (sharded) →  edges; refilter by eweight ladder"
+		note0 "Step3. (hybrid edge-first): shortlist×ALL (sharded) ->  edges; refilter by eweight ladder"
 		ST3_all_vs_all "$outdir"
 		;;
 	esac
@@ -1910,7 +1910,7 @@ fi
 # if ((!DRY)); then
 # 	FINAL_DIR="$(dirname "$SEEDS_CUR")"
 # 	FINAL_SEEDS="$FINAL_DIR/m_seeds_final.fa"
-# 	note0 "Finalize: cp $SEEDS_CUR → $FINAL_SEEDS"
+# 	note0 "Finalize: cp $SEEDS_CUR -> $FINAL_SEEDS"
 # 	cp "$SEEDS_CUR" "$FINAL_SEEDS"
 # 	note0 "Done. Final seeds: $FINAL_SEEDS"
 # else

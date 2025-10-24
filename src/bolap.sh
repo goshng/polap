@@ -74,6 +74,7 @@ done
 # Load bash libraries.
 source "${_POLAPLIB_DIR}/polap-lib-version.sh"
 source "${_POLAPLIB_DIR}/bolap-parsing.sh"
+
 # Set if the bolap type is not set in the command-line options.
 : "${_bolap_type:=read}"
 _polap_output_dest="/dev/null"

@@ -241,7 +241,7 @@ if (has_labels) {
 
   message("[info] wrote: ", pick_txt)
 } else {
-  # no labels → still save the metrics; user can inspect plots
+  # no labels -> still save the metrics; user can inspect plots
   writeLines("# no labels provided; sweep skipped", pick_txt)
 }
 

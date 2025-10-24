@@ -45,7 +45,7 @@ Below is a practical “what changes” + a ready-to-run **ONT recipe** and guar
 ```bash
 # quickview (X) on ONT with HPC
 syncfilter --mode quickview --hpc -k 41 -s 21 -t 16 -o out.qv reads.ont.fq.gz
-# anchors → X-band, PPR (+ X-prior), ensemble
+# anchors -> X-band, PPR (+ X-prior), ensemble
 polap select-mt --preset ont --reads reads.ont.fq.gz --mt anchors/mt.id.all.txt \
   -o out/sel --threads 16 --method hybrid --tail 0.05 --tail-mt 0.30 \
   --ppr-k 41 --ppr-s 21 --max-occ 200 --min-shared 5 --jaccard-min 0.0075 \
@@ -105,9 +105,9 @@ samtools index aln.bam
 
 **Be cautious when:**
 
-- Coverage is very low, or **read N50** is way shorter than repeat spans → fragmentation likely.
-- Extremely NUMT-rich genomes (recent transfers at mt-like depth) → rely heavily on **gene anchors**, **X**, and **post-assembly validation**.
-- Very old ONT runs (pre-Q20) without re-basecalling → polishing becomes essential; consider hybrid.
+- Coverage is very low, or **read N50** is way shorter than repeat spans -> fragmentation likely.
+- Extremely NUMT-rich genomes (recent transfers at mt-like depth) -> rely heavily on **gene anchors**, **X**, and **post-assembly validation**.
+- Very old ONT runs (pre-Q20) without re-basecalling -> polishing becomes essential; consider hybrid.
 
 ---
 

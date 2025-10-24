@@ -96,7 +96,7 @@ IRa_beg=$s1
 IRa_end=$e1
 IRb_beg=$s2
 IRb_end=$e2
-# LSC = between IRb_end → IRa_beg ; SSC = between IRa_end → IRb_beg
+# LSC = between IRb_end -> IRa_beg ; SSC = between IRa_end -> IRb_beg
 extract "${outdir}/pt.double.fa" "$((IRb_end + 1))" "$((IRa_beg - 1))" "LSC" "${outdir}/LSC.fa"
 extract "${outdir}/pt.double.fa" "$((IRa_end + 1))" "$((IRb_beg - 1))" "SSC" "${outdir}/SSC.fa"
 extract "${outdir}/pt.double.fa" "$IRa_beg" "$IRa_end" "IRa" "${outdir}/IRa.fa"

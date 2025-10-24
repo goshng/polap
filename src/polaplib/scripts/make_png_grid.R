@@ -121,7 +121,7 @@ for (r in seq_len(rows)) {
     sp <- df$species[k]
     img_path <- df$png[k]
 
-    # Cell → inner padded viewport = visible gap
+    # Cell -> inner padded viewport = visible gap
     pushViewport(viewport(layout.pos.row = r, layout.pos.col = c))
     pushViewport(viewport(
       x = 0.5, y = 0.5,

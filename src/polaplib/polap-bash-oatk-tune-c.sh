@@ -101,7 +101,7 @@ need python3
 need syncasm
 [[ -f "$LOAD_PY" ]] || die "not found: $LOAD_PY"
 
-# ---------- load YAML → TCFG_* ----------
+# ---------- load YAML -> TCFG_* ----------
 RESOLVED_CFG=""
 if [[ -n "$CFG_PATH" ]]; then
 	oatk_log 1 "loading YAML --config-path ${CFG_PATH}"

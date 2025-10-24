@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # polap-bash-oatk-ont-sidekicks-stage12.sh
 # Stage-1/2: use preprocessed reads from Stage-0, then:
-#   Stage-1: (HPC default ON) → qc,assemble,summary  → backbone
-#   Bait   : backbone-based k-mer bait (bbduk|meryl) → ONT mt-subset
-#   Stage-2: recover (lift OR polish) on subset (chunked minimap2) → annotate → pathfinder → summary
+#   Stage-1: (HPC default ON) -> qc,assemble,summary  -> backbone
+#   Bait   : backbone-based k-mer bait (bbduk|meryl) -> ONT mt-subset
+#   Stage-2: recover (lift OR polish) on subset (chunked minimap2) -> annotate -> pathfinder -> summary
 #
 # Inputs:
 #   --reads-pre  OUT/pre/reads.pre.fq  (or .fa/.fq.gz)
@@ -245,7 +245,7 @@ HPC_FLAG=(--no-hpc)
 CUR_ASM="$CUR"
 if [[ $HPC_ENABLE -eq 1 ]]; then
 	HPC_FILE="${HPC_OUT:-$OUT/stage12/reads.hpc.fa}"
-	log 1 "[hpc] seqtk hpc → $HPC_FILE"
+	log 1 "[hpc] seqtk hpc -> $HPC_FILE"
 	seqtk hpc "$CUR" >"$HPC_FILE"
 	CUR_ASM="$HPC_FILE"
 	HPC_FLAG=(--hpc --hpc-out "$HPC_FILE")
@@ -267,13 +267,13 @@ bash "$ONT_SCRIPT" \
 BACKBONE="$OUT/ont_stage1/k1/unitigs.fa"
 [[ -s "$BACKBONE" ]] || die "backbone unitigs not found: $BACKBONE"
 
-# -------------- Bait: backbone-based → subset --------------
+# -------------- Bait: backbone-based -> subset --------------
 mkdir -p bait
 SUBSET="$OUT/stage12/bait/ont.mt.fq"
 mkdir -p "$(dirname "$SUBSET")"
 
 if [[ "$BAIT_METHOD" == "bbduk" ]]; then
-	log 1 "[bait] bbduk: ref=$BACKBONE → $SUBSET"
+	log 1 "[bait] bbduk: ref=$BACKBONE -> $SUBSET"
 	bbduk.sh in="$READS_PRE" outm="$SUBSET" outu="$OUT/stage12/bait/nonmt.fq" ref="$BACKBONE" k=31 hdist=1 threads="$THREADS"
 else
 	log 1 "[bait] meryl k=$MERYL_K"
@@ -286,7 +286,7 @@ log 1 "[bait] subset size: $( (wc -c <"$SUBSET") 2>/dev/null || echo 0) bytes"
 
 # -------------- Stage-2: recover (lift OR polish) --------------
 if [[ $USE_LIFT -eq 1 ]]; then
-	log 1 "[stage2] LIFT (RLE) + 1× polish → annotate → PF"
+	log 1 "[stage2] LIFT (RLE) + 1× polish -> annotate -> PF"
 	bash "$ONT_SCRIPT" \
 		--reads "$CUR_ASM" \
 		--reads-map "$SUBSET" \
@@ -299,7 +299,7 @@ if [[ $USE_LIFT -eq 1 ]]; then
 		$([[ $NO_MEDAKA -eq 1 ]] && echo --no-medaka || echo --medaka-model "$MEDAKA_MODEL") \
 		-s lift,polish,annotate,pathfinder,summary -v
 else
-	log 1 "[stage2] POLISH (racon/medaka) on subset → annotate → PF"
+	log 1 "[stage2] POLISH (racon/medaka) on subset -> annotate -> PF"
 	bash "$ONT_SCRIPT" \
 		--reads "$CUR_ASM" \
 		--reads-map "$SUBSET" \

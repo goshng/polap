@@ -378,8 +378,8 @@ polap_cmd_select_mt() {
 	"$RUN_SF" --mode quickview $HPC_QV -k "$K_QV" -s "$S_QV" -t "$THREADS" -v "$SFV" -o "$OUT" "$READS"
 	mv -f "${OUT}.syncfilter.tsv" "${OUT}.quickview.tsv"
 
-	# 2) Coverage banding (anchors → mt/pt bands)
-	echo "[step] coverage banding (anchors → mt/pt bands)"
+	# 2) Coverage banding (anchors -> mt/pt bands)
+	echo "[step] coverage banding (anchors -> mt/pt bands)"
 	python3 "$CUT_AUTO" \
 		-i "${OUT}.quickview.tsv" \
 		--method "$XMETHOD" \
@@ -435,7 +435,7 @@ polap_cmd_select_mt() {
 	fi
 
 	# 4) Fast syncmer dump for PPR using run_syncfilter v0.7.0 (emit-read-syncmers)
-	echo "[step] dump read → yncmers on mt-band reads (run_syncfilter v0.7.0)"
+	echo "[step] dump read -> yncmers on mt-band reads (run_syncfilter v0.7.0)"
 	"$RUN_SF" --mode quickview -k "$PPR_K" -s "$PPR_S" -t "$THREADS" -v "$SFV" \
 		--emit-read-syncmers "${OUT}.xcover.mt" \
 		-o "${OUT}.xcover.mt.pprprep" \

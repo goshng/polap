@@ -2,9 +2,9 @@
 # polap-py-autotune-scan.py  v0.3.0
 #
 # Autotune Step 2a (scan) for overlapness with *decoupled* mapping/reducing:
-#   1) run a fast scan with --secondary=no (no -N) → scan.paf.gz
+#   1) run a fast scan with --secondary=no (no -N) -> scan.paf.gz
 #   2) infer reducer gates (min_olen/min_ident/w_floor) from scan PAF
-#   3) run OLPY on scan.paf.gz → scan.overlapness.tsv
+#   3) run OLPY on scan.paf.gz -> scan.overlapness.tsv
 #   4) accept if non-empty & not too sparse; suggest scan_keep_frac/topk_per_q
 #
 # Emits on success (stdout):
@@ -168,7 +168,7 @@ for t in tiers:
     mask = t["mask"]
     occ = t["occ"]
 
-    # 1) run fast scan → scan.paf.gz  (no -N; --secondary=no)
+    # 1) run fast scan -> scan.paf.gz  (no -N; --secondary=no)
     cmd_map = (
         f"{args.minimap2} -t {args.threads} -x ava-ont "
         f"-k {k} -w {w} -N 1 --mask-level {mask} --min-occ-floor {occ} "
@@ -192,7 +192,7 @@ for t in tiers:
     mi = max(0.78, min(0.95, center_ident - 0.05))
     wf = max(0.05, min(0.20, (quantile(wgts, 0.25) or 0.10)))
 
-    # 4) run OLPY on scan PAF with the inferred gates → scan.overlapness.tsv
+    # 4) run OLPY on scan PAF with the inferred gates -> scan.overlapness.tsv
     cmd_reduce = f"python {args.olpy} {scan_paf} --min_olen {mo} --min_ident {mi:.3f} --w_floor {wf:.3f} > {scan_ovl}"
     try:
         run(cmd_reduce, shell=True)
@@ -204,13 +204,13 @@ for t in tiers:
     ok_n = (N_total == 0) or (n >= 0.30 * N_total)
     ok_e = epr >= 3.0 and epr <= 25.0
     if n == 0 or not ok_n:
-        # too sparse → try more sensitive seeding
+        # too sparse -> try more sensitive seeding
         continue
 
     accepted = (t, mo, mi, wf, n, epr, degs)
     break
 
-# Failure: emit nothing, exit 1 → caller falls back to full ava-ont
+# Failure: emit nothing, exit 1 -> caller falls back to full ava-ont
 if accepted is None:
     sys.exit(0)
 

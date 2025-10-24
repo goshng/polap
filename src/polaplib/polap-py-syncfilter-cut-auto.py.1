@@ -4,9 +4,9 @@
 Single-cut estimator from nuclear band (log10(median)).
 
 Methods:
-  mad     : σ ≈ MAD/0.6745 on nuclear band                     → cut = μ + zσ
-  window  : σ = std on [μ - W, μ] (W = --window-width)         → cut = μ + zσ
-  std     : σ = std on nuclear band                            → cut = μ + zσ
+  mad     : σ ≈ MAD/0.6745 on nuclear band                     -> cut = μ + zσ
+  window  : σ = std on [μ - W, μ] (W = --window-width)         -> cut = μ + zσ
+  std     : σ = std on nuclear band                            -> cut = μ + zσ
   valley  : cut = first smoothed-hist local minimum right of μ (no σ)
   hybrid  : min(valley, μ + zσ_window) (prefers valley if present)
 

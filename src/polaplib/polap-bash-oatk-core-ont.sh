@@ -275,7 +275,7 @@ run_syncasm_try() {
 	[[ -n "$UNZIP_ROUND" ]] && cmd+=(--unzip-round "$UNZIP_ROUND")
 	[[ -n "$COV" ]] && cmd+=(-c "$COV")
 
-	log 1 "[assemble] k=$k → ${cmd[*]} ${READS##*/}"
+	log 1 "[assemble] k=$k -> ${cmd[*]} ${READS##*/}"
 
 	# capture stdout & stderr
 	$TIME_BIN -f "TIME(s) %E  RSS(KB) %M" \
@@ -370,7 +370,7 @@ for k in "${KS[@]}"; do
 			UFA_FINAL="$ufa"
 			ln -sf "../${UFA_FINAL}" k1/unitigs.fa 2>/dev/null || cp -f "${UFA_FINAL}" k1/unitigs.fa
 			echo "$K_USED" >k1/USED_K.txt
-			log 1 "[done] PASS at k=$K_USED → k1/unitigs.fa"
+			log 1 "[done] PASS at k=$K_USED -> k1/unitigs.fa"
 			log 1 "[emit] QC table: $SUMMARY"
 			exit 0
 		fi

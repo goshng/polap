@@ -34,7 +34,9 @@ _polap_lib_help-maybe-show() {
 	local msgvar="${2:?}"
 
 	# nothing to do unless help requested
-	[[ "${_brg_help:-off}" == "on" ]] || return 0
+	if [[ "${_brg_help:-off}" == "off" && "${_arg_help:-off}" == "off" ]]; then
+		return 0
+	fi
 
 	# reference to the variable that holds the help_message string
 	declare -n ref="$msgvar"
@@ -42,6 +44,25 @@ _polap_lib_help-maybe-show() {
 	local manfile
 	manfile=$(_bolap_lib_man-convert_help_message "$ref" "$cmd")
 	man "$manfile"
+	rm -f "$manfile"
+	return 1
+}
+
+_polap_lib_help-maybe-show3() {
+	local cmd="${1:?}"
+	local msgvar="${2:?}"
+
+	# nothing to do unless help requested
+	if [[ "${_brg_help:-off}" == "off" && "${_arg_help:-off}" == "off" ]]; then
+		return 0
+	fi
+
+	# reference to the variable that holds the help_message string
+	declare -n ref="$msgvar"
+
+	local manfile
+	manfile=$(_bolap_lib_man-convert_help_message "$ref" "$cmd")
+	man "$manfile" >&3
 	rm -f "$manfile"
 	return 1
 }

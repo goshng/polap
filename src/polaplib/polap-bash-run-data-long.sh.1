@@ -239,7 +239,7 @@ emit_from_archive() {
           log "(dry-run) would try unzip -l/-q -> $work -> concat -> $norm"
         fi
         return 0;;
-      *) log "(dry-run) unknown mime $mt; would probe tar -tzf → tar -tf → unzip -l"; return 0;;
+      *) log "(dry-run) unknown mime $mt; would probe tar -tzf -> tar -tf -> unzip -l"; return 0;;
     esac
   fi
 
@@ -381,7 +381,7 @@ finalize_and_check() {
   return 22
 }
 
-# -------- NCBI fetch (prefetch → vdb-validate → fasterq-dump), guarded
+# -------- NCBI fetch (prefetch -> vdb-validate -> fasterq-dump), guarded
 fetch_from_ncbi() {
   log "Fetching from NCBI: $long_sra"
   if [[ "$dry_run" == "true" ]]; then

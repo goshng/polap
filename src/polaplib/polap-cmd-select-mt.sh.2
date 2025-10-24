@@ -288,7 +288,7 @@ polap_cmd_select_mt() {
 			;;
 
 		--version)
-			echo "select-mt orchestrator (coverage → t-band + PPR) v0.6.0"
+			echo "select-mt orchestrator (coverage -> t-band + PPR) v0.6.0"
 			return 0
 			;;
 		-h | --help)
@@ -374,8 +374,8 @@ polap_cmd_select_mt() {
 	syncfilter --mode quickview $HPC_QV -k "$K_QV" -s "$S_QV" -t "$THREADS" -o "$OUT" "$READS"
 	mv -f "${OUT}.syncfilter.tsv" "${OUT}.quickview.tsv"
 
-	# 2) Coverage banding (anchors → mt/pt bands)
-	echo "[step] coverage banding (anchors → mt/pt bands)"
+	# 2) Coverage banding (anchors -> mt/pt bands)
+	echo "[step] coverage banding (anchors -> mt/pt bands)"
 	python3 "$CUT_AUTO" \
 		-i "${OUT}.quickview.tsv" \
 		--method "$XMETHOD" \

@@ -3,10 +3,10 @@ set -euo pipefail
 
 # polap-bash-autotune-oatk.sh
 # YAML-config + CLI overrides (CLI wins). Orchestrates:
-#   (optional) WGS recruitment via select-mt  →
-#   tune-c (coverage valley)                  →
-#   seed sweep (k/s, -c grid) + scoring       →
-#   optional final pass if --final-if holds   →
+#   (optional) WGS recruitment via select-mt  ->
+#   tune-c (coverage valley)                  ->
+#   seed sweep (k/s, -c grid) + scoring       ->
+#   optional final pass if --final-if holds   ->
 #   summary CSV and provenance.
 #
 # Addressing (one of):
@@ -123,7 +123,7 @@ if [[ -z "$CFG_PATH" && -z "$CONFIG_DIR" ]]; then
 	oatk_log 2 "default CONFIG_DIR=${CONFIG_DIR}"
 fi
 
-# ---------- load YAML → PCFG_* ----------
+# ---------- load YAML -> PCFG_* ----------
 RESOLVED_CFG=""
 if [[ -n "$CFG_PATH" ]]; then
 	oatk_log 1 "loading YAML --config-path ${CFG_PATH}"
@@ -247,7 +247,7 @@ apply_overrides() {
 			continue
 			;;
 
-		# K/V: --foo-bar → PCFG_FOO_BAR
+		# K/V: --foo-bar -> PCFG_FOO_BAR
 		--*)
 			local key="${tok#--}"
 			key="${key//-/_}"

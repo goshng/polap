@@ -4,7 +4,7 @@
 # Author  : Sang Chul Choi (POLAP)
 # License : GPL-3.0+
 #
-# Manifest → TSV + Markdown table summarizing plastid (PT) assemblies.
+# Manifest -> TSV + Markdown table summarizing plastid (PT) assemblies.
 #
 # TSV columns (tab-separated, no quotes, no spaces in header):
 #   code  sra  input_gb  n  mean_len  ncbi_acc  ncbi_kb  asm_kb

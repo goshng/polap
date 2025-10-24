@@ -62,44 +62,66 @@ _polap_lib_readassemble-annotate-read-pt() {
 		annotatedir pt_table mt_table at_table all_table
 
 	rm -rf "${annotatedir}"
-	mkdir -p "${annotatedir}/at"
+	mkdir -p "${annotatedir}"
 
 	local MTAA="${_POLAPLIB_DIR}"/polap-mt.1.c70.3.fna
 	local PTAA="${_POLAPLIB_DIR}"/polap-pt.2.c70.3.fna
 
-	_polap_log2 "    map reads on mitochondrial genes using minimap2"
-	_polap_log3_cmdout minimap2 -cx \
-		${_arg_minimap2_data_type} \
-		"${MTAA}" \
-		"${_arg_long_reads}" \
-		-t ${_arg_threads} \
-		-o "${annotatedir}"/mt.paf
+	_polap_log1 "map reads on mitochondrial genes using minimap2"
+
+	if [[ "${_arg_verbose}" -gt "1" ]] && command -v pv >/dev/null 2>&1; then
+		pv -f -pteb -N "minimap2 of MT reads" "${_arg_long_reads}" 2> >(cat >&4) |
+			minimap2 -x "${_arg_minimap2_data_type}" \
+				"${MTAA}" \
+				- \
+				-t "${_arg_half_threads}" \
+				-o "${annotatedir}/mt.paf" \
+				2>"${annotatedir}/mt.err"
+	else
+		_polap_log3_cmdout minimap2 -x \
+			${_arg_minimap2_data_type} \
+			"${MTAA}" \
+			"${_arg_long_reads}" \
+			-t ${_arg_half_threads} \
+			-o "${annotatedir}/mt.paf"
+	fi
+
 	if [[ ! -s "${annotatedir}"/mt.paf ]]; then
 		_polap_log0 "ERROR: No minimap2 results: ${annotatedir}/mt.paf"
 		return
 	fi
 
-	_polap_log2 "    map reads on plastid genes using minimap2"
-	_polap_log3_cmdout minimap2 -cx \
-		${_arg_minimap2_data_type} \
-		"${PTAA}" \
-		"${_arg_long_reads}" \
-		-t ${_arg_threads} \
-		-o "${annotatedir}"/pt.paf
+	_polap_log1 "map reads on plastid genes using minimap2"
+
+	if [[ "${_arg_verbose}" -gt "1" ]] && command -v pv >/dev/null 2>&1; then
+		pv -f -pteb -N "minimap2 of PT reads" "${_arg_long_reads}" |
+			minimap2 -x "${_arg_minimap2_data_type}" \
+				"${PTAA}" \
+				- \
+				-t "${_arg_half_threads}" \
+				-o "${annotatedir}/pt.paf" \
+				2>"${annotatedir}/pt.err"
+	else
+		_polap_log3_cmdout minimap2 -x \
+			${_arg_minimap2_data_type} \
+			"${PTAA}" \
+			"${_arg_long_reads}" \
+			-t ${_arg_threads} \
+			-o "${annotatedir}/pt.paf"
+	fi
+
 	if [[ ! -s "${annotatedir}"/pt.paf ]]; then
 		_polap_log0 "ERROR: No minimap2 results: ${annotatedir}/pt.paf"
 		return
 	fi
 
-	_polap_log2 "    create the annotation table for mt and pt genes"
-
+	_polap_log1 "create the annotation table for mt and pt genes ... be patient!"
 	_polap_log3_cmdout Rscript --vanilla "${_POLAPLIB_DIR}"/polap-r-reads.R \
 		--mt "${annotatedir}"/mt.paf \
 		--pt "${annotatedir}"/pt.paf \
 		--output "${annotatedir}" \
 		--min-mapq ${_arg_annotate_read_min_mapq} \
 		--min-identity ${_arg_annotate_read_min_identity}
-
 }
 
 # input: _arg_long_reads
@@ -112,38 +134,41 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 	_polap_lib_readassemble-common-variables \
 		annotatedir pt_table mt_table at_table all_table
 
-	#######################################################################
-	# BEGIN: function _run_polap_assemble-annotated-read
-	#
-	# _polap_log3_cmdout Rscript --vanilla "${_POLAPLIB_DIR}"/polap-r-filter-organelle-reads.R \
-	# 	--table "${pt_table}" \
-	# 	--length 3e+7 \
-	# 	--output "${annotatedir}"/pt.id.txt
+	_polap_log1 "PT reads by the cutoff of 30 Mb from organelle gene guided selection: pt.fq"
 
-	# tail -n +2 "${pt_table}" | cut -f1 >"${annotatedir}"/pt.id.txt
-	bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
+	_polap_log3_cmdout bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
 		-t "${pt_table}" \
 		-l 3e+7 \
 		-o "${annotatedir}/pt"
-	cp "${annotatedir}/pt/pt-contig-annotation-depth-table.txt.pt.id.txt" \
+
+	_polap_log3_cmdout cp "${annotatedir}/pt/pt-contig-annotation-depth-table.txt.pt.id.txt" \
 		"${annotatedir}/pt.id.txt"
 
-	seqtk subseq "${_arg_long_reads}" "${annotatedir}"/pt.id.txt >"${annotatedir}"/pt.fq
+	_polap_log3 seqtk subseq "${_arg_long_reads}" "${annotatedir}"/pt.id.txt ">${annotatedir}/pt.fq"
+	seqtk subseq "${_arg_long_reads}" "${annotatedir}"/pt.id.txt >"${annotatedir}/pt.fq"
 
 	# subsample the data so that pt.fq is less than 30Mb
-	rm -f "${annotatedir}"/pt0.fq
+	_polap_log3_cmdout rm -f "${annotatedir}"/pt0.fq
+
+	_polap_log1 "PT reads subsample to 10 Mb: pt0.fq"
 	_polap_lib_fastq-sample-to \
 		"${annotatedir}"/pt.fq "${annotatedir}"/pt0.fq "10m"
 
+	local infile_seqkit_stats_pt0=$(seqkit_stats_outname "${annotatedir}/pt0.fq")
+	_polap_log2 "infile_seqkit_stats_pt0: $infile_seqkit_stats_pt0"
+	if [[ ! -s "$infile_seqkit_stats_pt0" ]]; then
+		seqkit stats -Ta "${annotatedir}/pt0.fq" -o "${infile_seqkit_stats_pt0}"
+	fi
+
 	# flye v2.9.6
 	if _polap_lib_version-check_flye_version; then
-		rm -rf "${annotatedir}"/pt
+		_polap_log3_cmdout rm -rf "${annotatedir}/pt"
 		_polap_log1 "flye 2.9.6 assembly of ptDNA using selected reads: ${annotatedir}/pt0.fq"
 		flye "${_arg_flye_data_type}" \
-			"${annotatedir}"/pt0.fq \
+			"${annotatedir}/pt0.fq" \
 			-t "${_arg_threads}" \
 			--stop-after contigger \
-			--out-dir "${annotatedir}"/pt \
+			--out-dir "${annotatedir}/pt" \
 			2>"${_polap_output_dest}"
 		if [[ -s "${annotatedir}"/pt/30-contigger/graph_final.gfa ]]; then
 			_polap_log2 "    output: PT assembly: ${annotatedir}/pt/30-contigger/graph_final.gfa"
@@ -185,19 +210,22 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 		return
 	fi
 
-	ln -s pt "${annotatedir}"/pt0
+	_polap_log3_cmdout ln -s pt "${annotatedir}/pt0"
 
 	local i=0
 	for ((i = 0; i < 8; i++)); do
 		local j=$((i + 1))
+		_polap_log1 "assembling pt$j using seed pt$i"
 
 		# NOTE: annotate for seeding
 		# select connected components of the pt contigs only
+		_polap_log1 "annotate seed pt$i"
 		_polap_lib_annotate \
 			-o "${annotatedir}" \
 			-i pt$i
 
 		# NOTE: plastid seed
+		_polap_log1 "plastid seed pt$i -> pt$j"
 		_polap_lib_seed-plastid \
 			-o "${annotatedir}" \
 			-i pt$i -j pt$j
@@ -282,7 +310,7 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 			-i pt$j
 	fi
 
-	_polap_log0_column "${annotatedir}/pt$j/pt-contig-annotation-depth-table.txt"
+	_polap_log1_column "${annotatedir}/pt$j/pt-contig-annotation-depth-table.txt"
 
 	# final link
 	ln -sf "annotate-read-${type}/pt.0.fa" \

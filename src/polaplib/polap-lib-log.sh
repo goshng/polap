@@ -261,7 +261,6 @@ function _polap_log0_only {
 # 	fi
 # }
 
-
 # --quiet level
 # log only to the log file
 
@@ -301,8 +300,10 @@ if [[ "${_POLAP_RELEASE}" == "1" ]]; then
 else
 	# Debug mode with func@file:line tags
 	__polap_log_with_tag() {
-		local level="$1"; shift
-		local outlevel="$1"; shift
+		local level="$1"
+		shift
+		local outlevel="$1"
+		shift
 		local func="${FUNCNAME[2]}"
 		local file="$(basename "${BASH_SOURCE[2]}")"
 		local line="${BASH_LINENO[1]}"
@@ -321,7 +322,6 @@ else
 	function _polap_log2 { __polap_log_with_tag 0 3 "$@"; }
 	function _polap_log3 { __polap_log_with_tag 0 4 "$@"; }
 fi
-
 
 if [[ "${_POLAP_DEBUG}" == "1" ]]; then
 	function _polap_log0_dev {
@@ -414,10 +414,10 @@ function _polap_log3_pipe_command {
 	local cmd
 
 	if [[ -t 0 ]]; then
-		# stdin is a terminal → called with arguments like: _polap_log3_pipe_command ls -l
+		# stdin is a terminal -> called with arguments like: _polap_log3_pipe_command ls -l
 		cmd="$*"
 	else
-		# stdin is a pipe → called with heredoc: _polap_log3_pipe_command <<'EOF' ... EOF
+		# stdin is a pipe -> called with heredoc: _polap_log3_pipe_command <<'EOF' ... EOF
 		cmd="$(cat)"
 	fi
 
@@ -427,15 +427,15 @@ function _polap_log3_pipe_command {
 	eval "$cmd"
 }
 
-function _polap_log3_cmdout {
-	local cmd=("$@")
-	local full_cmd="${cmd[*]} >${_polap_output_dest} 2>&1"
-
-	verbose_echo_trim 0 "$full_cmd"
-	verbose_echo_trim 4 "$full_cmd" >&3
-
-	"${cmd[@]}" >"${_polap_output_dest}" 2>&1
-}
+# function _polap_log3_cmdout {
+# 	local cmd=("$@")
+# 	local full_cmd="${cmd[*]} >${_polap_output_dest} 2>&1"
+#
+# 	verbose_echo_trim 0 "$full_cmd"
+# 	verbose_echo_trim 4 "$full_cmd" >&3
+#
+# 	"${cmd[@]}" >"${_polap_output_dest}" 2>&1
+# }
 
 # Run a command and log it at level N (0..3), mirroring _polap_logN behavior.
 # Usage:
@@ -443,10 +443,11 @@ function _polap_log3_cmdout {
 #   (or use wrappers: _polap_log0_cmdout ... _polap_log3_cmdout)
 
 function _polap_log_cmdout {
-	local level="$1"; shift
+	local level="$1"
+	shift
 	local cmd=("$@")
 	local full_cmd="${cmd[*]} >${_polap_output_dest} 2>&1"
-	local outlevel=$(( level + 1 ))
+	local outlevel=$((level + 1))
 
 	if [[ "${_POLAP_RELEASE}" == "1" ]]; then
 		# Release mode: plain
@@ -479,8 +480,7 @@ function _polap_log_cmdout {
 _polap_log0_cmdout() { _polap_log_cmdout 0 "$@"; }
 _polap_log1_cmdout() { _polap_log_cmdout 1 "$@"; }
 _polap_log2_cmdout() { _polap_log_cmdout 2 "$@"; }
-# _polap_log3_cmdout() { _polap_log_cmdout 3 "$@"; }
-
+_polap_log3_cmdout() { _polap_log_cmdout 3 "$@"; }
 
 function _polap_log0_log {
 	_polap_log0 "LOG: $@"

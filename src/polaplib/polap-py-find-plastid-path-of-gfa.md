@@ -8,8 +8,8 @@ Here’s a drop‑in script that:
 - expands `L` links with reverse‑complement twins;
 - for cycles including the seed edge:
 
-  - 1‑segment ring → `seed+`, `seed-`
-  - 3‑segment → classifies IR (seen in both signs in any `L` line); among the other two, **LSC = longer by actual sequence length**, **SSC = shorter**; emits **LSC‑first** valid paths only.
+  - 1‑segment ring -> `seed+`, `seed-`
+  - 3‑segment -> classifies IR (seen in both signs in any `L` line); among the other two, **LSC = longer by actual sequence length**, **SSC = shorter**; emits **LSC‑first** valid paths only.
 
 ```python
 #!/usr/bin/env python3

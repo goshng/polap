@@ -39,7 +39,7 @@ oatk_log_inc_level() {
 oatk_enable_trace_if_needed() {
 	# Enable xtrace with clear PS4 when level >= 2
 	if ((OATK_LOG_LEVEL >= 2)); then
-		# file:function:line → command
+		# file:function:line -> command
 		export PS4='+${BASH_SOURCE##*/}:${FUNCNAME[0]:-main}:${LINENO}: '
 		set -x
 	fi

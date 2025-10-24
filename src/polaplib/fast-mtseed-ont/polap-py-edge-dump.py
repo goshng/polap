@@ -30,7 +30,7 @@ def openw(path):
 
 
 def parse_args():
-    ap = argparse.ArgumentParser(description="PAF → edge list (u v alen ident weight)")
+    ap = argparse.ArgumentParser(description="PAF -> edge list (u v alen ident weight)")
     ap.add_argument("--paf", required=True, help="PAF file (.gz ok) or '-' for stdin")
     ap.add_argument("--out", default="-", help="output TSV (.gz ok) or '-' [stdout]")
     ap.add_argument("--min_olen", type=int, default=0, help="min aligned length [0]")
@@ -58,7 +58,7 @@ def parse_args():
 
 
 def dump_edges(args):
-    # If dedup: pair → alen,ident,weight)
+    # If dedup: pair -> alen,ident,weight)
     keep = {} if args.dedup else None
     out = openw(args.out)
     wrote_header = False

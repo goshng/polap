@@ -3,7 +3,7 @@ set -euo pipefail
 
 # polap-bash-select-mt.sh
 # YAML-config + CLI overrides (CLI wins). Select mt/pt reads via:
-#   syncfilter quickview (coverage X) → cut-auto (bands) → PPR (syncmer connectivity) → ensemble → optional FASTQs
+#   syncfilter quickview (coverage X) -> cut-auto (bands) -> PPR (syncmer connectivity) -> ensemble -> optional FASTQs
 #
 # Subcommands:
 #   select-mt         : run selection pipeline
@@ -13,7 +13,7 @@ set -euo pipefail
 #   --config-path FILE.yaml
 #   --config-dir DIR --preset NAME        # resolves DIR/NAME.yaml (default DIR=~/.polap/profiles)
 #
-# Any YAML key can be overridden by CLI (replace '_' → '-'), e.g.:
+# Any YAML key can be overridden by CLI (replace '_' -> '-'), e.g.:
 #   --reads, --out-prefix, --threads, --k-qv, --s-qv, --hpc-qv, --x-method, --x-tail, --tail-mt, --tail-pt,
 #   --x-win, --band-max, --sigma-floor, --ppr-k, --ppr-s, --ppr-hpc, --max-occ, --min-shared, --jaccard-min,
 #   --edge-norm, --topk-nei, --steps, --ppr-alpha, --ppr-iter, --score-th, --nuc-cut-log10, --x-slope, --ensemble,
@@ -337,7 +337,7 @@ _select_mt() {
 	oatk_run syncfilter --mode quickview $HPC_QV_FLAG -k "$K_QV" -s "$S_QV" -t "$THREADS" -v "$SFV" -o "$OUT" "$READS"
 	[[ -f "${OUT}.syncfilter.tsv" ]] && mv -f "${OUT}.syncfilter.tsv" "${OUT}.quickview.tsv"
 
-	# 2) Coverage banding (anchors → bands)
+	# 2) Coverage banding (anchors -> bands)
 	oatk_log 1 "[step] coverage banding"
 	oatk_run python3 "$CUT_AUTO" \
 		-i "${OUT}.quickview.tsv" \
@@ -367,7 +367,7 @@ _select_mt() {
 		awk 'NF{print $1}' "$IDS" | sort -u >"$NAMES"
 		oatk_run seqtk subseq "$READS" "$NAMES" >"$FASTQ"
 
-		oatk_log 1 "[step] dump read → syncmers (${L})"
+		oatk_log 1 "[step] dump read -> syncmers (${L})"
 		oatk_run syncfilter --mode quickview $PPR_HPC_FLAG -k "$PPR_K" -s "$PPR_S" -t "$THREADS" -v "$SFV" \
 			--emit-read-syncmers "${OUT}.xcover.${L}" \
 			-o "${OUT}.xcover.${L}.pprprep" \

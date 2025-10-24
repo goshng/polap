@@ -144,9 +144,9 @@ function _polap_lib_salign-pt {
 #        - GFA (3 seg): two isomers
 #            A = LSC + IR + SSC + rc(IR)
 #            B = LSC + IR + rc(SSC) + rc(IR)
-#          Include reverse-complements → up to 4 candidates total.
-#        - GFA (1 seg) or FASTA: forward + RC → 2 candidates.
-#   3) For each candidate, BLAST candidate → eference:
+#          Include reverse-complements -> up to 4 candidates total.
+#        - GFA (1 seg) or FASTA: forward + RC -> 2 candidates.
+#   3) For each candidate, BLAST candidate -> eference:
 #        - Compute REFERENCE coverage using ONLY PLUS-strand HSPs
 #          (union on subject coordinates).
 #        - Keep candidates with coverage ≥ --min-cov (default 0.90).
@@ -155,7 +155,7 @@ function _polap_lib_salign-pt {
 #            tie #1 : plus_aligned_bases × plus_weighted_identity (higher)
 #            tie #2 : plus_best_bitscore (higher)
 #   4) Rotate chosen candidate so REF position 1 aligns to CANDIDATE position 1
-#      using BLAST(ref → andidate) to map coordinates.
+#      using BLAST(ref -> andidate) to map coordinates.
 #   5) MAFFT global alignment (ref, rotated-cand).
 #   6) Print global percent identity over UNGAPPED columns.
 #
@@ -536,7 +536,7 @@ ls -1 "$canddir"/*.fa >/dev/null 2>&1 || die "No candidates produced from input2
 # reference: gfa or fasta -> make LSC start
 # query: gfa or fasta -> 4 sequences with LSC starting
 
-# ---------- BLAST candidate → eference, rank by plus-only ref coverage ----------
+# ---------- BLAST candidate -> eference, rank by plus-only ref coverage ----------
 run_cmd makeblastdb -in "${workprefix}.ref.fa" -dbtype nucl
 echo -e "candidate\tplus_cov\tplus_len\tplus_wid\tplus_bestbits\tall_aln" >"${workprefix}.blast.choice.tsv"
 

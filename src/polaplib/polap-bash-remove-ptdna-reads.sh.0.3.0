@@ -173,7 +173,7 @@ require_tools() {
 # 2) Make a doubled FASTA from a single-record FASTA (handle boundary)
 PY_DOUBLE="${HELPDIR}/py_make_doubled_fa.py"
 
-# 3) AWK classifier for PAF → pt.ids
+# 3) AWK classifier for PAF -> pt.ids
 AWK_CLASS="${HELPDIR}/awk_pt_classifier.awk"
 
 # 4) (Optional) tiny R summary (not required by pipeline, included as stub)
@@ -235,13 +235,13 @@ mkdir -p "$MAP_DIR"
 PAF_A="$MAP_DIR/formA.paf"
 PAF_B="$MAP_DIR/formB.paf"
 
-note "Map reads → isomerA.double (minimap2 map-ont)"
+note "Map reads -> isomerA.double (minimap2 map-ont)"
 if [[ ! -s "$PAF_A" ]]; then
 	((!DRY)) && minimap2 -x map-ont --secondary=yes -N 50 -t "$THREADS" \
 		"$DBL_A" "$READS" >"$PAF_A"
 fi
 
-note "Map reads → isomerB.double (minimap2 map-ont)"
+note "Map reads -> isomerB.double (minimap2 map-ont)"
 if [[ ! -s "$PAF_B" ]]; then
 	((!DRY)) && minimap2 -x map-ont --secondary=yes -N 50 -t "$THREADS" \
 		"$DBL_B" "$READS" >"$PAF_B"

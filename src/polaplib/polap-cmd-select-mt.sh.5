@@ -332,7 +332,7 @@ polap_cmd_select_mt() {
 	mv -f "${OUT}.syncfilter.tsv" "${OUT}.quickview.tsv"
 
 	# 2) Coverage bands via cut-auto
-	echo "[step] coverage banding (anchors → mt/pt bands)"
+	echo "[step] coverage banding (anchors -> mt/pt bands)"
 	python3 "$CUT_AUTO" \
 		-i "${OUT}.quickview.tsv" \
 		--method "$XMETHOD" --tail "$XTAIL" \
@@ -350,7 +350,7 @@ polap_cmd_select_mt() {
 		local PPR_READS_MT="${OUT}.xcover.mt.fastq"
 		seqtk subseq "$READS" "${OUT}.xcover.mt.names" >"$PPR_READS_MT"
 
-		echo "[step] dump read → yncmers (mt)"
+		echo "[step] dump read -> yncmers (mt)"
 		"$RUN_SF" --mode quickview -k "$PPR_K" -s "$PPR_S" -t "$THREADS" -v "$SFV" \
 			--emit-read-syncmers "${OUT}.xcover.mt" \
 			-o "${OUT}.xcover.mt.pprprep" \
@@ -376,7 +376,7 @@ polap_cmd_select_mt() {
 		[[ -n "$NUC_CUT_LOG10" ]] && PPR_CMD_MT+=(--x-prior --x-tsv "${OUT}.quickview.tsv" --nuc-cut-log10 "$NUC_CUT_LOG10" --x-slope "$X_SLOPE")
 		"${PPR_CMD_MT[@]}"
 
-		# PPR tool writes: ${OUT}.ppr.mt.mt.ids  → normalize to ${OUT}.ppr.mt.ids
+		# PPR tool writes: ${OUT}.ppr.mt.mt.ids  -> normalize to ${OUT}.ppr.mt.ids
 		[[ -s "${OUT}.ppr.mt.mt.ids" ]] && mv -f "${OUT}.ppr.mt.mt.ids" "${OUT}.ppr.mt.ids"
 		[[ -s "${OUT}.ppr.mt.nuclear.ids" ]] || : >"${OUT}.ppr.mt.nuclear.ids"
 		[[ -s "${OUT}.ppr.mt.scores.tsv" ]] || : >"${OUT}.ppr.mt.scores.tsv"
@@ -389,7 +389,7 @@ polap_cmd_select_mt() {
 			-o "${OUT}.ensemble.mt" \
 			--mode "$ENSEMBLE"
 
-		# Ensemble tool writes ${OUT}.ensemble.mt.mt.ids → normalize
+		# Ensemble tool writes ${OUT}.ensemble.mt.mt.ids -> normalize
 		[[ -s "${OUT}.ensemble.mt.mt.ids" ]] && mv -f "${OUT}.ensemble.mt.mt.ids" "${OUT}.ensemble.mt.ids"
 		[[ -s "${OUT}.ensemble.mt.nuclear.ids" ]] || : >"${OUT}.ensemble.mt.nuclear.ids"
 		[[ -s "${OUT}.ensemble.mt.report.tsv" ]] || : >"${OUT}.ensemble.mt.report.tsv"
@@ -416,7 +416,7 @@ polap_cmd_select_mt() {
 		local PPR_READS_PT="${OUT}.xcover.pt.fastq"
 		seqtk subseq "$READS" "${OUT}.xcover.pt.names" >"$PPR_READS_PT"
 
-		echo "[step] dump read → yncmers (pt)"
+		echo "[step] dump read -> yncmers (pt)"
 		"$RUN_SF" --mode quickview -k "$PPR_K" -s "$PPR_S" -t "$THREADS" -v "$SFV" \
 			--emit-read-syncmers "${OUT}.xcover.pt" \
 			-o "${OUT}.xcover.pt.pprprep" \

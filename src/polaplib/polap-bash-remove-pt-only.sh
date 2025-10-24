@@ -196,7 +196,7 @@ args+=(--fpr "$FPR" --tpr "$TPR")
 # (No BUSCO/miniprot/overlapness invoked by this wrapper)
 
 # ─────────── run ───────────
-note "PT-only wrapper → running: ${args[*]}"
+note "PT-only wrapper -> running: ${args[*]}"
 "${args[@]}"
 
 note "PT-only done. Output: ${OUTDIR}/reads.nonpt.fq.gz (and pt.ids, pt_thresh.*)"

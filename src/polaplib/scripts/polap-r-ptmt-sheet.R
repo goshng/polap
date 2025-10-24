@@ -55,7 +55,7 @@ read_annot <- function(path, org = c("pt", "mt")) {
     col_types = cols(.default = col_character())
   ))
   stopifnot("species" %in% names(d))
-  # If legacy schema {species, genes, genome_kb}, map genes → *_{org}_genes
+  # If legacy schema {species, genes, genome_kb}, map genes -> *_{org}_genes
   if (!("mt_genes" %in% names(d)) && !("pt_genes" %in% names(d)) && ("genes" %in% names(d))) {
     if (org == "mt") d$mt_genes <- d$genes else d$pt_genes <- d$genes
   }

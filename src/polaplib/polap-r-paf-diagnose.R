@@ -50,7 +50,7 @@ extract_tp <- function(row) {
 if (primary_only) {
   # Work only on tag columns (13..n); some rows may be shorter (NA)
   if (ncol(paf) < 13) {
-    # No tags at all → nothing to filter; keep all as primary
+    # No tags at all -> nothing to filter; keep all as primary
     paf$tp <- "P"
   } else {
     tag_mat <- as.matrix(paf[, 13:ncol(paf), drop = FALSE])

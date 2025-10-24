@@ -98,16 +98,20 @@ __log() {
 
 	# Print only if verbosity is high enough
 	if ((_brg_verbose > level)); then
-		local line
-		line="$(date '+%Y-%m-%d %H:%M:%S') [$subcmd1] - $msg"
+		local func="${FUNCNAME[2]}"
+		local file="$(basename "${BASH_SOURCE[2]}")"
+		local line="${BASH_LINENO[1]}"
+		local tag="[$func@$file:$line]"
+		# local log_line="$(date '+%Y-%m-%d %H:%M:%S') $tag [$subcmd1] - $msg"
+		local log_line="$(date '+%H:%M:%S') $tag [$subcmd1] - $msg"
 
 		if [[ -d "${_brg_outdir}" ]]; then
-			echo "$line" >>"${_brg_outdir}/${_polap_data_txt}"
+			echo "$log_line" >>"${_brg_outdir}/${_polap_data_txt}"
 		else
-			echo "$line" >>"./${_polap_data_txt}"
+			echo "$log_line" >>"./${_polap_data_txt}"
 		fi
 
-		echo "$line"
+		echo "$log_line"
 	fi
 }
 
@@ -352,7 +356,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -378,7 +382,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -402,7 +406,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -1129,7 +1133,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -2326,7 +2330,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -2568,8 +2572,17 @@ EOF
 
 # 2025-10-20
 run-polap-miniassemble_genus_species() {
-	local _brg_outdir="${1:-$_brg_outdir}"
-	local _brg_sindex="${2:-$_brg_sindex}"
+	# if [[ -n "${_brg_outdir}" ]]; then
+	# 	_log_echo0 "brg_outdir 1: $_brg_outdir"
+	# fi
+	# local _brg_outdir="${1:-$_brg_outdir}"
+	# local _brg_sindex="${2:-$_brg_sindex}"
+	# if [[ -n "${_brg_outdir}" ]]; then
+	# 	_log_echo0 "brg_outdir 2: $_brg_outdir"
+	# fi
+	#
+	# local _brg_outdir
+	# local _brg_sindex
 
 	local bolap_cmd="${FUNCNAME%%_*}"
 
@@ -2590,7 +2603,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -2605,12 +2618,25 @@ EOF
 	local _brg_cleanup="on"
 
 	parse_commandline() {
-		set -- "${_brg_unknown_opts[@]}"
+		# set -- "${_brg_unknown_opts[@]}"
+		set -- "${_brg_args[@]}"
+		# _log_echo0 "parse: $@"
 
 		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
 		while test $# -gt 0; do
 			_key="$1"
 			case "$_key" in
+			-s)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_brg_outdir="${2%/}"
+				_brg_outdir_list+=("$_brg_outdir") # append to array
+				shift
+				;;
+			-i)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_brg_sindex="$2"
+				shift
+				;;
 			--type)
 				if test $# -lt 2; then
 					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
@@ -2636,6 +2662,7 @@ EOF
 				fi
 				;;
 			--no-cleanup)
+				# _log_echo0 "--no-cleanup"
 				if test $# -lt 1; then
 					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
 				else
@@ -2662,31 +2689,28 @@ EOF
 			-*)
 				_log_echo0 "[INFO] no such options: $1"
 				;;
-			*)
-				break
-				;;
+			*) ;;
 			esac
 			shift || true
 		done
 	}
 
-	declare -n ref="help_message"
-	if [[ "${_brg_help}" == "on" ]]; then
-		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
-		man "$manfile"
-		rm -f "$manfile"
-		return
-	fi
+	# declare -n ref="help_message"
+	# if [[ "${_brg_help}" == "on" ]]; then
+	# 	local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+	# 	man "$manfile"
+	# 	rm -f "$manfile"
+	# 	return
+	# fi
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
 
 	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
 	local long_sra="${_long["$_brg_target"]}"
 
 	parse_commandline
+	_log_echo1 "target: $_brg_target"
 
-	# redefine
-	# local _brg_rundir="${_brg_outdir_i}/${_brg_title}-1-${_brg_type}"
-
-	_log_echo0 "target: $_brg_target"
 	# local mtn="${_mtn["$_brg_target"]}"
 	# local ptn="${_ptn["$_brg_target"]}"
 	local mtn=3
@@ -2722,6 +2746,8 @@ EOF
 	if [[ ! -s "${long_sra}".fastq ]]; then
 		# data-long_genus_species "${_brg_outdir}"
 		_log_echo0 "No input data: ${long_sra}.fastq"
+		_log_echo0 "run data long -s ${_brg_outdir}"
+		_log_echo0 "data downsample long -s ${_brg_outdir}"
 		return 0
 	fi
 
@@ -2730,7 +2756,7 @@ EOF
 	# elif [[ "${_brg_type}" == "miniasm" ]]; then
 	_log_echo2 "plant mt $_brg_verbose_str"
 
-	_log_echo0 ${_polap_cmd} miniassemble \
+	_log_echo1 ${_polap_cmd} miniassemble \
 		"${option_data_type}" \
 		-l "${resolved_fastq}" \
 		--readassemble-mtn "${mtn}" \
@@ -2785,7 +2811,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -2983,7 +3009,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -6793,7 +6819,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -6888,7 +6914,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -6959,7 +6985,7 @@ Description:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -7028,7 +7054,7 @@ See also:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -7882,10 +7908,11 @@ Description:
     bolap $bolap_cmd --export polap
     bolap $bolap_cmd --export-all
     bolap $bolap_cmd --recreate
+    bolap $bolap_cmd --list
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -7898,6 +7925,7 @@ EOF
 	local _cleanup=0
 	local _recreate=0
 	local _create=""
+	local _list=0
 
 	parse_commandline() {
 		set -- "${_brg_args[@]}"
@@ -7935,6 +7963,13 @@ EOF
 					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
 				else
 					_cleanup="1"
+				fi
+				;;
+			--list)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_list="1"
 				fi
 				;;
 			--recreate)
@@ -8034,6 +8069,37 @@ EOF
 		fi
 	fi
 
+	if [[ "$_list" == "1" ]]; then
+		if _polap_lib_dialog-yes-no "List all conda packages (it takes time; be patient!)?" "y"; then
+
+			# Concatenate conda env yaml files.
+			local output_file="man/md/conda-packages.yml"
+			>"$output_file"
+
+			# Find all environment.yml files (depth = 2)
+			find "${_POLAPLIB_DIR}/envs" -mindepth 2 -maxdepth 2 -type f -name "environment.yml" | sort | while read -r file; do
+				dir_name=$(basename "$(dirname "$file")")
+				echo "# ───────────────────────────────────────────────" >>"$output_file"
+				echo "# From: $dir_name/environment.yml" >>"$output_file"
+				echo "# ───────────────────────────────────────────────" >>"$output_file"
+				cat "$file" >>"$output_file"
+				echo -e "\n" >>"$output_file"
+			done
+
+			python "${_POLAPLIB_DIR}/scripts/conda-packages.py" --simple-channel \
+				"${output_file}" >man/md/conda-packages.csv
+
+			pandoc -f csv -t markdown_mmd man/md/conda-packages.csv -o man/md/conda-packages.md
+
+			echo "[INFO] man/md/conda-packages.csv"
+			echo "[INFO] man/md/conda-packages.md"
+
+			# make -f "${_POLAPLIB_DIR}"/Makefile.env recreate-skip
+		else
+			echo "[SKIP] User declined."
+		fi
+	fi
+
 	conda deactivate
 }
 
@@ -8055,7 +8121,7 @@ Description:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -9264,7 +9330,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -10798,7 +10864,7 @@ run-msbwt_genus_species() {
 }
 
 run_genus_species() {
-  benchmark_genus_species 
+	benchmark_genus_species
 	# local first_arg="$1"
 	# local remaining_args=("${@:2}")
 
@@ -11275,7 +11341,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -11445,7 +11511,7 @@ EOF
 
 	# Local, isolated unknowns (don’t rely on global collector)
 	local -a _unknown=()
-	# Back-compat: lone positional →  --query
+	# Back-compat: lone positional ->  --query
 	if [[ $# -eq 1 && "$1" != -* ]]; then
 		set -- --query "$1" --where any
 	fi
@@ -13631,7 +13697,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -13710,7 +13776,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -14262,7 +14328,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -14270,7 +14336,7 @@ EOF
 	)
 
 	local _brg_random_seed="-1"
-	local _brg_coverage="10g"
+	local _brg_coverage="30g"
 	local _brg_dry="off"
 
 	local long_sra="${_long["$_brg_target"]}"
@@ -14347,10 +14413,17 @@ EOF
 
 	_log_echo0 _polap_lib_process-start_memtracker "${_memlog_file}" \
 		"${_polap_var_memtracker_time_interval}"
+
 	_polap_lib_process-start_memtracker "${_memlog_file}" \
 		"${_polap_var_memtracker_time_interval}"
 
 	if [[ "${_brg_coverage}" =~ [gGkKmM]$ ]]; then
+		_log_echo1 ${_polap_cmd} fastq-sample-to -v \
+			-l "${l_fq_gz}" \
+			--outfile "${long_sra}.fastq" \
+			-g "${_brg_coverage}" \
+			--random-seed "${random_seed}"
+
 		${_polap_cmd} fastq-sample-to -v \
 			-l "${l_fq_gz}" \
 			--outfile "${long_sra}.fastq" \
@@ -14382,6 +14455,11 @@ EOF
 
 	rsync -azuq --max-size=5M \
 		"${_brg_target}/" "${_brg_rundir}/"
+
+	if [[ -d "${_brg_target}" ]]; then
+		_log_echo1 rm -rf "${_brg_target}"
+		rm -rf "${_brg_target}"
+	fi
 }
 
 data-downsample-short_genus_species() {
@@ -17018,7 +17096,7 @@ See also:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi

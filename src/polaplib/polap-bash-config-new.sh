@@ -213,7 +213,7 @@ polap_config_edit() {
 			i=$((i + 3))
 			;;
 
-		# generic key value → --kv key=value
+		# generic key value -> --kv key=value
 		--*)
 			local key="${tok#--}"
 			key="${key//-/_}"

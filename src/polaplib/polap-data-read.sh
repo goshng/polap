@@ -880,7 +880,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -2178,6 +2178,7 @@ benchmark-command_genus_species_for() {
 	run-tippo_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 	run-oatk_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 	run-polap-readassemble_genus_species "${_brg_outdir}" "${_brg_sindex}"
+	# run-polap-miniassemble_genus_species "${_brg_outdir}" "${_brg_sindex}"
 	run-polap-polish_genus_species "${_brg_outdir}" "${_brg_sindex}"
 	run-polap-mtpt_genus_species "${_brg_outdir}" "${_brg_sindex}"
 
@@ -2555,7 +2556,7 @@ See also:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -3743,7 +3744,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -3782,7 +3783,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -3850,7 +3851,7 @@ man-table-s1_genus_species() {
 	local set=""
 	parse_commandline_man
 
-	_polap_lib_conda-ensure_conda_env polap || exit 1
+	_polap_lib_conda-ensure_conda_env polap-man || exit 1
 	make SET="$set" -f "${_POLAPLIB_DIR}/Makefile.read" table-s1
 	conda deactivate
 }
@@ -3878,6 +3879,279 @@ man-pt-figure_genus_species() {
 	conda deactivate
 }
 
+report-read-pt_genus_species() {
+	local _brg_outdir="${1:-$_brg_outdir}"
+	local _brg_sindex="${2:-$_brg_sindex}"
+
+	local args=("$@")
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - report readassemble pt
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+A. Step header (what, where, with what)
+• What this step does (1–2 sentences):
+Select plastid-origin reads, assemble with Flye (seed-and-recruit), and evaluate the plastome graph and gene context; prepare A/B isoforms downstream for PT read removal in MT pipeline.
+• Folder: polap-readassemble/annotate-read-pt/
+• Inputs: ONT long reads (tmp/l.fq.gz), PT protein panel (implicit via your scripts).
+• Primary outputs to reference/link:
+• Canonical softlinks: pt.1.gfa, pt.1.png, pt.1.fa
+• Stage dirs and artifacts: pt0/..., pt1/...
+• Read selection & coverage: pt1/tmp/pre.cov.png, pt1/tmp/post.cov.png, pt1/tmp/ds.stats.tsv, pt1/tmp/recruited.stats.tsv
+• Annotation & metrics: pt-contig-annotation-depth-table.txt, pt1/ptdna.metrics.csv, pt1/50-annotation/...
+• Gene counts: pt.gene.count (top-level) and pt1/50-annotation/... tables
+• Isoform/circularization hints: pt1/ptdna/ptdna/circular_path_count.txt
+• Final graph: pt1/30-contigger/graph_final.gfa, graph_final.png, graph_final.fa
+• Seeds: pt1/01-contig/contig.fa
+
+Examples:
+  Topic:
+    bolap $bolap_cmd --set some
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# defaults
+	local _brg_type="mtpt"
+	local _brg_omega="1500"
+	local _brg_downsample="no-downsample"
+	local _brg_redo="off"
+	local _brg_cleanup="on"
+
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--type)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_type="$2"
+					shift || true
+				fi
+				;;
+			-w)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_omega="$2"
+					shift || true
+				fi
+				;;
+			--redo)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_redo="on"
+					shift || true
+				fi
+				;;
+			--no-cleanup)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_cleanup="off"
+					shift || true
+				fi
+				;;
+			-d)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_downsample="downsample"
+					shift || true
+				fi
+				;;
+			--dry-run)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_dry="on"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[INFO] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	local _brg_title="polap-readassemble"
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	parse_commandline
+
+	_polap_lib_conda-ensure_conda_env polap-man || exit 1
+
+	_log_echo0 bash "${_POLAPLIB_DIR}/polap-bash-report-readassemble-pt.sh" \
+		--base-dir "${_brg_rundir}"/annotate-read-pt
+
+	bash "${_POLAPLIB_DIR}/polap-bash-report-readassemble-pt.sh" \
+		--base-dir "${_brg_rundir}"/annotate-read-pt
+
+	bash "${_POLAPLIB_DIR}/polap-bash-report-readassemble-pt-json2html.sh" \
+		--json "${_brg_rundir}/annotate-read-pt/report/pt1-report.json" \
+		--html "${_brg_outdir}-report-pt1.html"
+
+	conda deactivate
+
+}
+
+report-read-mt_genus_species() {
+	local _brg_outdir="${1:-$_brg_outdir}"
+	local _brg_sindex="${2:-$_brg_sindex}"
+
+	local args=("$@")
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - report readassemble pt
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  text.
+
+Examples:
+  Topic:
+    bolap $bolap_cmd --set some
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# defaults
+	local _brg_type="mtpt"
+	local _brg_omega="1500"
+	local _brg_downsample="no-downsample"
+	local _brg_redo="off"
+	local _brg_cleanup="on"
+
+	parse_commandline() {
+		set -- "${_brg_unknown_opts[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--type)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_type="$2"
+					shift || true
+				fi
+				;;
+			-w)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_omega="$2"
+					shift || true
+				fi
+				;;
+			--redo)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_redo="on"
+					shift || true
+				fi
+				;;
+			--no-cleanup)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_cleanup="off"
+					shift || true
+				fi
+				;;
+			-d)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_downsample="downsample"
+					shift || true
+				fi
+				;;
+			--dry-run)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_dry="on"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[INFO] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	local _brg_title="polap-readassemble"
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	parse_commandline
+
+	_polap_lib_conda-ensure_conda_env polap-man || exit 1
+
+	bash "${_POLAPLIB_DIR}/polap-bash-report-readassemble-mt0.sh" \
+		--base-dir "${_brg_rundir}"/annotate-read-mtseed
+
+	bash "${_POLAPLIB_DIR}/polap-bash-report-readassemble-mt0-json2html.sh" \
+		--json "${_brg_rundir}/annotate-read-mtseed/report/mt0-report.json" \
+		--html "${_brg_outdir}-report-mt0.html"
+
+	bash "${_POLAPLIB_DIR}/polap-bash-report-readassemble-mt.sh" \
+		--base-dir "${_brg_rundir}"/mtseed
+
+	bash "${_POLAPLIB_DIR}/polap-bash-report-readassemble-mt-json2html.sh" \
+		--json "${_brg_rundir}/mtseed/report/mt-report.json" \
+		--html "${_brg_outdir}-report-mt.html"
+
+	conda deactivate
+
+}
+
 tutorial_genus_species() {
 	local bolap_cmd="${FUNCNAME%%_*}"
 
@@ -3898,7 +4172,7 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -3911,10 +4185,13 @@ Name:
   bolap - the 38 datasets
 
 Synopsis:
-  bolap $bolap_cmd
+  bolap $bolap_cmd --topic STR
 
 Description:
   bolap
+
+  topic:
+    38, man
 
 Examples:
   Execute polap syncassemble:
@@ -3986,7 +4263,27 @@ Examples:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	help_message_man=$(
+		cat <<EOF
+Name:
+  bolap - the 38 datasets
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+Polap’s workflow is fully scripted, version-controlled, and manifest-driven, ensuring reproducibility and transparency. Every analytical step—from raw reads to final figure panels—is automated using standardized outputs (manifest.json, anno-\*.csv, and sheet-ptmt.pdf). This design facilitates consistent regeneration of results and integration with data repositories such as NCBI BioProject or Zenodo, enabling open and verifiable organelle genome research. The reproducibility and portability of Polap make it particularly suitable for collaborative and large-scale genomic initiatives.
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -4033,15 +4330,23 @@ EOF
 
 	parse_commandline
 
-	case "$_brg_topic" in
-	38)
-		declare -n ref="help_message_38"
-		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+	# declare -n ref="help_message_${_brg_topic}"
+	# if [[ -n "$ref" ]]; then
+	# 	local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+	# 	man "$manfile"
+	# 	rm -f "$manfile"
+	# else
+	# 	_log_echo0 "No such topic: ${_brg_topic}"
+	#
+	# fi
+	#
+	local varname="help_message_${_brg_topic}"
+	if [[ -v $varname ]]; then
+		declare -n ref="$varname"
+		manfile=$(_bolap_lib_man-convert_help_message "$ref" "$_brg_topic")
 		man "$manfile"
 		rm -f "$manfile"
-		;;
-	*)
-		_log_echo0 "No such topic: $_brg_topic"
-		;;
-	esac
+	else
+		echo "[WARN] No help message defined for topic $_brg_topic" >&2
+	fi
 }

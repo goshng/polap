@@ -3,10 +3,10 @@ set -euo pipefail
 
 # polap-bash-oatk-score-seeds.sh
 # YAML-config + CLI overrides (CLI wins). Scores seed contigs by:
-#   minimap2 mapping → coverage (breadth, depth, N50, len_total) →
-#   syncfilter quickview on seeds (X proxy) →
-#   HMM gene content (hmmannot or hmmsearch) →
-#   composite score → append CSV row.
+#   minimap2 mapping -> coverage (breadth, depth, N50, len_total) ->
+#   syncfilter quickview on seeds (X proxy) ->
+#   HMM gene content (hmmannot or hmmsearch) ->
+#   composite score -> append CSV row.
 #
 # Addressing (one of):
 #   --config-path FILE.yaml
@@ -104,7 +104,7 @@ need samtools
 need syncfilter
 [[ -f "$LOAD_PY" ]] || die "not found: $LOAD_PY"
 
-# ---------- load YAML → SCFG_* ----------
+# ---------- load YAML -> SCFG_* ----------
 RESOLVED_CFG=""
 if [[ -n "$CFG_PATH" ]]; then
 	oatk_log 1 "loading YAML --config-path ${CFG_PATH}"

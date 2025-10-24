@@ -7,8 +7,8 @@
 # Purpose:
 #   Hybrid/ONT polishing with optional GFA reinjection.
 #   Short-read inputs are auto-streamed (no temp FASTQs):
-#     • polypolish / pilon  → interleaved PE stream (Bowtie2 --interleaved)
-#     • racon / nextpolish  → single-end concatenated stream (R1 then R2)
+#     • polypolish / pilon  -> interleaved PE stream (Bowtie2 --interleaved)
+#     • racon / nextpolish  -> single-end concatenated stream (R1 then R2)
 #
 # Notes:
 #   - Default streaming uses process substitution <(...)>.
@@ -42,9 +42,9 @@ Usage:
                          [-h|--help]
 
 Behavior (short reads):
-  • Polypolish / Pilon → interleaved stream to Bowtie2 (--interleaved).
+  • Polypolish / Pilon -> interleaved stream to Bowtie2 (--interleaved).
     Polypolish needs all-per-read alignments (-a).
-  • Racon / NextPolish → single-end concatenated stream to minimap2 (-x sr).
+  • Racon / NextPolish -> single-end concatenated stream to minimap2 (-x sr).
 
 Index cache:
   • Default cache dir: <workdir>/bt2cache (created automatically)
@@ -308,7 +308,7 @@ fa_len_total() { awk '/^>/{next}{L+=length($0)}END{print (L?L:1)}' "$1"; }
 target_fa="$asm"
 if ((is_gfa == 1)); then
 	if ((gfa_preserve == 1)); then
-		log "GFA preserve ON → extracting S-sequences"
+		log "GFA preserve ON -> extracting S-sequences"
 		if ((dry_run)); then
 			echo "[DRYRUN] gfatools gfa2fa '$asm' > '$odir/segments.fa'" >&2
 		else
@@ -333,7 +333,7 @@ recruit_for_capping() {
 	log "[RECRUIT] preset=$preset (len>3000 & id>0.75; MAPQ ignored)"
 	if ((dry_run)); then
 		echo "[DRYRUN] minimap2 -x $preset --secondary=no -K $minimap_K -t $th '$target' '$reads' > '$paf'" >&2
-		echo "[DRYRUN] awk filter + seqkit grep → '$outfq'" >&2
+		echo "[DRYRUN] awk filter + seqkit grep -> '$outfq'" >&2
 		return
 	fi
 	minimap2 -x "$preset" --secondary=no -K "$minimap_K" -t "$th" "$target" "$reads" >"$paf"
@@ -455,7 +455,7 @@ bt2_index_prefix() {
 		echo "[DRYRUN] (bt2 cache prefix) $pref" >&2
 	else
 		if [[ ! -e "${pref}.1.bt2" && ! -e "${pref}.1.bt2l" ]]; then
-			log "[BT2] cache miss → build index: $pref"
+			log "[BT2] cache miss -> build index: $pref"
 			bowtie2-build "$target_fa" "$pref"
 		else
 			log "[BT2] cache hit: $pref"
@@ -551,7 +551,7 @@ elif [[ "$mode" == "hybrid" ]]; then
 		[[ "$aligner" == "bowtie2" ]] || die "Polypolish path requires bowtie2"
 		idx="$(bt2_index_prefix)"
 		stream_init ilv ilv
-		log "[BT2] interleaved -a → name-sorted BAM"
+		log "[BT2] interleaved -a -> name-sorted BAM"
 		if ((dry_run)); then
 			echo "[DRYRUN] bowtie2 -x '$idx' ${READS_OPT[*]} ${READS_SRC[*]} -a -p $threads | samtools sort -n -o '$workdir/short.name.bam'" >&2
 			echo "[DRYRUN] polypolish polish '$target_fa' '$workdir/short.name.bam' > '$odir/segments.polypolish.fa'" >&2
@@ -568,7 +568,7 @@ elif [[ "$mode" == "hybrid" ]]; then
 		[[ "$aligner" == "bowtie2" ]] || die "Pilon path wired for bowtie2"
 		idx="$(bt2_index_prefix)"
 		stream_init ilv ilv
-		log "[BT2] paired → coord-sorted BAM"
+		log "[BT2] paired -> coord-sorted BAM"
 		if ((dry_run)); then
 			echo "[DRYRUN] bowtie2 -x '$idx' ${READS_OPT[*]} ${READS_SRC[*]} -p $threads | samtools sort -o '$workdir/short.coord.bam'" >&2
 			echo "[DRYRUN] samtools index '$workdir/short.coord.bam'" >&2
@@ -585,7 +585,7 @@ elif [[ "$mode" == "hybrid" ]]; then
 
 	racon)
 		stream_init se se
-		log "[racon] SE stream via minimap2 -x sr → PAF"
+		log "[racon] SE stream via minimap2 -x sr -> PAF"
 		if ((dry_run)); then
 			echo "[DRYRUN] minimap2 -x sr -t $threads '$target_fa' ${READS_SRC[*]} > '$workdir/short.paf'" >&2
 			echo "[DRYRUN] racon ${READS_SRC[*]} '$workdir/short.paf' '$target_fa' > '$odir/segments.racon.fa'" >&2

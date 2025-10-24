@@ -1039,66 +1039,6 @@ EOF
 	return 0
 }
 
-function v1_run_bolap {
-
-	help_message=$(
-		cat <<EOF
-Name:
-  bolap - execute tools such as organelle genome assembly pipeline.
-
-Synopsis:
-  bolap command 
-
-Description:
-  bolap
-
-Examples:
-  Execute polap readassemble:
-    bolap readassemble -s Vigna_radiata
-
-  Execute polap disassemble:
-    bolap disassemble -s Vigna_radiata
-
-  Execute polap syncassemble:
-    bolap syncassemble -s Vigna_radiata
-
-Copyright:
-  Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
-
-Author:
-  Sang Chul Choi
-EOF
-	)
-
-	local bolap_cmd=$(concat_until_zero_or_anydash "-" "${_brg_menu[@]}")
-	local bolap_args=$(get_after_dash_until_zero "-" "${_brg_menu[@]}")
-
-	subcmd1="${bolap_cmd}"
-	# echo "${bolap_cmd}_genus_species" ${bolap_args[@]}
-
-	case "$bolap_cmd" in
-	search)
-		bolap_cmd="list"
-		;;
-	esac
-
-	if declare -f "${bolap_cmd}_genus_species" >/dev/null 2>&1; then
-		_log_echo0 ${bolap_cmd}_genus_species ${bolap_args[@]}
-		${bolap_cmd}_genus_species ${bolap_args[@]}
-	else
-		_log_echo0 "No such menu: ${bolap_cmd}_genus_species"
-	fi
-
-	# if declare -f "${bolap_cmd}_genus_species" >/dev/null 2>&1; then
-	# 	"${bolap_cmd}_genus_species" ${_positionals[@]:1}
-	# fi
-
-	# Disable debugging if previously enabled
-	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
-	return 0
-}
-
 function _run_bolap {
 	# shellcheck disable=SC2154  # _brg_menu provided by parser
 	help_message=$(
@@ -1118,7 +1058,7 @@ Examples:
   bolap disassemble -s Vigna_radiata
   bolap syncassemble -s Vigna_radiata
   bolap list --query data --where start
-  bolap list data                # legacy back-compat → --query data --where any
+  bolap list data                # legacy back-compat -> --query data --where any
 EOF
 	)
 
@@ -1147,7 +1087,8 @@ EOF
 
 	local target="${bolap_cmd}_genus_species"
 	if declare -F "${target}" >/dev/null 2>&1; then
-		_log_echo0 "${target} ${bolap_args[*]:-}"
+		# _log_echo1 "${target} ${bolap_args[*]:-}"
+		# _log_echo0 "${target}" "${bolap_args[@]:-}"
 		"${target}" "${bolap_args[@]:-}"
 	else
 		_log_echo0 "No such menu: ${target}"

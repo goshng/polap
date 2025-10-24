@@ -157,14 +157,14 @@ EOF
 		val="${val%"${val##*[![:space:]]}"}"
 		low="${val,,}"
 
-		# Multiline → block scalar
+		# Multiline -> block scalar
 		if [[ "$val" == *$'\n'* ]]; then
 			__emit "${key_lc}: |"
 			while IFS= read -r line; do __emit "  ${line}"; done <<<"$val"
 			continue
 		fi
 
-		# List support: comma-separated → sequence
+		# List support: comma-separated -> sequence
 		if [[ "$val" == *,* ]]; then
 			__emit "${key_lc}:"
 			IFS=',' read -r -a __arr <<<"$val"

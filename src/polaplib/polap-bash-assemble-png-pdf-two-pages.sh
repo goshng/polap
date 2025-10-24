@@ -126,7 +126,7 @@ done
 
 mkdir -p "$(dirname "$OUTPDF")"
 
-# Species root = parent of manifest dir (…/md → …/)
+# Species root = parent of manifest dir (…/md -> …/)
 SR="$(cd "$(dirname "$MANIFEST")/.." && pwd)"
 
 # temp lists
@@ -178,7 +178,7 @@ else
   ' "$MANIFEST"
 fi
 
-# TSV → CSV
+# TSV -> CSV
 awk -F'\t' 'BEGIN{OFS=","} NR==1{print "species","png"; next} {print $1,$2}' "$PT_TSV" >"$PT_CSV"
 awk -F'\t' 'BEGIN{OFS=","} NR==1{print "species","png"; next} {print $1,$2}' "$MT_TSV" >"$MT_CSV"
 

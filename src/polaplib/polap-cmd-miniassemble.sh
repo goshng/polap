@@ -53,6 +53,7 @@ function _run_polap_miniassemble {
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
 
 	local polap_cmd="${FUNCNAME##*_}"
+
 	help_message=$(
 		cat <<EOF
 Name:
@@ -72,25 +73,16 @@ Examples:
   Get organelle genome sequences:
     polap ${polap_cmd} -l l.fq
 
-TODO:
-  Dev.
-
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
 EOF
 	)
 
-	# Display help message
-	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
-		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
-		man "$manfile" >&3
-		rm -f "$manfile"
-		return
-	fi
+	_polap_lib_help-maybe-show3 "$polap_cmd" help_message || return 0
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
@@ -99,12 +91,11 @@ EOF
 		# Disable debugging if previously enabled
 		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
 		return 0
-		exit $EXIT_SUCCESS
 	fi
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
 
-	_arg_steps_include="4,5"
+	_arg_steps_include="1"
 
 	local _include="${_arg_steps_include}"
 	local _exclude="${_arg_steps_exclude}" # Optional range or list of steps to exclude
@@ -117,8 +108,10 @@ EOF
 		return "${_POLAP_ERR_CMD_OPTION_STEPS}"
 	fi
 
+	# exec 19>>trace.log
+	# trace_functions_fline 19 # or: trace_functions_fline 19  (if you open fd 19 to a log file)
+
 	if _polap_contains_step 1 "${_step_array[@]}"; then
-		_polap_log0 "step 1"
 		# assemble pt
 		_arg_plastid="on"
 		if [[ "${_arg_readassemble_pt}" == "on" ]]; then
@@ -127,6 +120,8 @@ EOF
 			_arg_long_reads="${_arg_outdir}/ld.fq"
 		fi
 	fi
+
+	# untrace_functions
 
 	if _polap_contains_step 2 "${_step_array[@]}"; then
 		_polap_log0 "step 2"

@@ -128,7 +128,7 @@ _polap_lib_process-start_memtracker() {
 					top_line="$(printf '%s\n' "$ps_out" | LC_ALL=C sort -nr 2>/dev/null | head -n1 || true)"
 
 					if [[ -n "$top_line" ]]; then
-						# Strip the leading RSS field (+spaces) → leave only the command
+						# Strip the leading RSS field (+spaces) -> leave only the command
 						# no-awk: use sed with character classes
 						max_cmd="$(sed -e 's/^[[:space:]]*[0-9][0-9]*[[:space:]]*//' <<<"$top_line" || true)"
 						[[ -z "$max_cmd" ]] && max_cmd="NA"

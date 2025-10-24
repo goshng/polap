@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # Extract every *.fastq.tar.gz in INDIR:
-#   - 1 FASTQ  → <stem>.fastq.gz
-#   - 2 FASTQs → <stem>_1.fastq.gz and <stem>_2.fastq.gz
-#   - >2 or unusual names → <stem>_<basename>.fastq.gz
+#   - 1 FASTQ  -> <stem>.fastq.gz
+#   - 2 FASTQs -> <stem>_1.fastq.gz and <stem>_2.fastq.gz
+#   - >2 or unusual names -> <stem>_<basename>.fastq.gz
 #
 # pv stages:
 #   scan:<tar>  — listing (bytes through archive; ETA)
@@ -366,13 +366,13 @@ for arc in "${tars[@]}"; do
 	fi
 
 	if ((${#mems[@]} == 0)); then
-		log "  no FASTQ members found → skip"
+		log "  no FASTQ members found -> skip"
 		continue
 	fi
 
 	if ((${#mems[@]} == 1)); then
 		out="$OUTDIR/${stem}.fastq.gz"
-		log "  1 member → $out"
+		log "  1 member -> $out"
 		sz="${SZMAP[${mems[0]}]:-}"
 		stream_member_to_gz "$arc" "${mems[0]}" "$out" "$sz"
 	else
@@ -390,12 +390,12 @@ for arc in "${tars[@]}"; do
 		if [[ -n "$r1" || -n "$r2" ]]; then
 			if [[ -n "$r1" ]]; then
 				out1="$OUTDIR/${stem}_1.fastq.gz"
-				log "  R1 → $out1"
+				log "  R1 -> $out1"
 				stream_member_to_gz "$arc" "$r1" "$out1" "${SZMAP[$r1]:-}"
 			fi
 			if [[ -n "$r2" ]]; then
 				out2="$OUTDIR/${stem}_2.fastq.gz"
-				log "  R2 → $out2"
+				log "  R2 -> $out2"
 				stream_member_to_gz "$arc" "$r2" "$out2" "${SZMAP[$r2]:-}"
 			fi
 			# extras, if any
@@ -404,16 +404,16 @@ for arc in "${tars[@]}"; do
 				base="$(basename "$m")"
 				safe="${base//[^A-Za-z0-9._-]/_}"
 				out="$OUTDIR/${stem}_${safe%.fastq*}.fastq.gz"
-				log "  extra → $out"
+				log "  extra -> $out"
 				stream_member_to_gz "$arc" "$m" "$out" "${SZMAP[$m]:-}"
 			done
 		else
-			# multi-members without _1/_2 → map each to <stem>_<basename>.fastq.gz
+			# multi-members without _1/_2 -> map each to <stem>_<basename>.fastq.gz
 			for m in "${mems[@]}"; do
 				base="$(basename "$m")"
 				safe="${base//[^A-Za-z0-9._-]/_}"
 				out="$OUTDIR/${stem}_${safe%.fastq*}.fastq.gz"
-				log "  member → $out"
+				log "  member -> $out"
 				stream_member_to_gz "$arc" "$m" "$out" "${SZMAP[$m]:-}"
 			done
 		fi
@@ -423,10 +423,10 @@ for arc in "${tars[@]}"; do
 	if ((DRYRUN == 0)); then
 		if [[ -n "$MOVE_ARCHIVES" ]]; then
 			mkdir -p "$MOVE_ARCHIVES"
-			log "  move → $MOVE_ARCHIVES/$base_arc"
+			log "  move -> $MOVE_ARCHIVES/$base_arc"
 			mv -n -- "$arc" "$MOVE_ARCHIVES"/
 		elif ((RM_ARCHIVES)); then
-			log "  remove → $base_arc"
+			log "  remove -> $base_arc"
 			rm -f -- "$arc"
 		fi
 	else

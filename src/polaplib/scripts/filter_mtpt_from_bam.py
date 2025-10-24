@@ -37,7 +37,7 @@ def best_hits_from_bam(bam_path, primary_only=False, min_mapq=0):
         try:
             nm = aln.get_tag("NM")
         except KeyError:
-            # no NM → cannot compute identity robustly; skip this alignment
+            # no NM -> cannot compute identity robustly; skip this alignment
             continue
 
         ident = max(0.0, 1.0 - (nm / max(1, alnlen)))

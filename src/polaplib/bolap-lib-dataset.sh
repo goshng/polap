@@ -262,7 +262,7 @@ dataset-rename-species() {
     .[$n].species2 = $species2
   ' "$DATASET_FILE" | _dataset_save
 
-	echo "[INFO] Renamed $old_id → $new_id (updated fields: species, folder, species2)"
+	echo "[INFO] Renamed $old_id -> $new_id (updated fields: species, folder, species2)"
 }
 
 ########################################
@@ -353,7 +353,7 @@ dataset-import-csv() {
 		mv "${DATASET_FILE}.tmp" "$DATASET_FILE"
 	done
 
-	echo "[INFO] Successfully imported CSV → $DATASET_FILE"
+	echo "[INFO] Successfully imported CSV -> $DATASET_FILE"
 }
 
 ########################################
@@ -648,5 +648,5 @@ dataset-rename-species() {
     .[$n].species2 = $species2
   ' "$DATASET_FILE" | _dataset_save
 
-	echo "[INFO] Renamed $old_id → $new_id (updated fields: species, folder, species2)"
+	echo "[INFO] Renamed $old_id -> $new_id (updated fields: species, folder, species2)"
 }

@@ -41,4 +41,4 @@ if (opt$invert) {
 
 # === Save ===
 write_tsv(filtered, output_file)
-cat("✅ Filtered", nrow(filtered), ifelse(opt$invert, "(inverted)", ""), "rows → ", output_file, "\n")
+cat("✅ Filtered", nrow(filtered), ifelse(opt$invert, "(inverted)", ""), "rows -> ", output_file, "\n")

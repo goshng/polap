@@ -132,7 +132,7 @@ done
 
 mkdir -p "$(dirname "$OUTPDF")"
 
-# Species root = parent of manifest dir (…/md → …/)
+# Species root = parent of manifest dir (…/md -> …/)
 SR="$(cd "$(dirname "$MANIFEST")/.." && pwd)"
 
 # Create temp lists
@@ -200,7 +200,7 @@ else
   ' "$MANIFEST" >>"$LISTTSV"
 fi
 
-# TSV → CSV (keep empty png fields; R handles “No assembly”)
+# TSV -> CSV (keep empty png fields; R handles “No assembly”)
 awk -F'\t' 'BEGIN{OFS=","} NR==1{print "species","png"; next} {print $1,$2}' "$LISTTSV" >"$LISTCSV"
 
 echo "[INFO] First few PNG entries:"

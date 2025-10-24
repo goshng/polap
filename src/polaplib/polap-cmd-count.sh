@@ -295,10 +295,10 @@ _polap_count_filter_kmer() {
 	) >"$LABELS_TSV"
 
 	_polap_log1 "📁 Output files in: ${kmerdir}/"
-	_polap_log0 " - Organelle reads     → $FILTERED"
-	_polap_log1 " - Nuclear reads       → $DISCARDED"
-	_polap_log1 " - Read labels (TSV)   → $LABELS_TSV"
-	_polap_log1 " - Depth report        → ${REPORT_TSV}"
-	_polap_log1 " - Discarded IDs       → ${kmerdir}/${PREFIX}_discarded.ids.txt"
-	_polap_log1 " - k-mer histogram     → $PDF"
+	_polap_log0 " - Organelle reads     -> $FILTERED"
+	_polap_log1 " - Nuclear reads       -> $DISCARDED"
+	_polap_log1 " - Read labels (TSV)   -> $LABELS_TSV"
+	_polap_log1 " - Depth report        -> ${REPORT_TSV}"
+	_polap_log1 " - Discarded IDs       -> ${kmerdir}/${PREFIX}_discarded.ids.txt"
+	_polap_log1 " - k-mer histogram     -> $PDF"
 }

@@ -118,6 +118,9 @@ _arg_outfile="outfile.txt"
 _arg_infile="infile.txt"
 _arg_min_read_length="3000"
 _arg_threads="$(cat /proc/cpuinfo | grep -c processor)"
+_arg_half_threads=$((_arg_threads / 2))
+((_arg_half_threads < 1)) && _arg_half_threads=1 # safety guard
+
 _arg_threads_fmlrc=4 # for some fmlrc
 _arg_log="polap.log"
 _arg_log_is="off"

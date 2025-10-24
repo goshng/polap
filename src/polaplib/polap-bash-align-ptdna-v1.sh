@@ -28,14 +28,14 @@ set -euo pipefail
 #        - GFA (3 seg): two isomers
 #            A = LSC + IR + SSC + rc(IR)
 #            B = LSC + IR + rc(SSC) + rc(IR)
-#          and add reverse complements → up to 4 candidates total.
-#        - GFA (1 seg) or FASTA: forward + RC → 2 candidates.
+#          and add reverse complements -> up to 4 candidates total.
+#        - GFA (1 seg) or FASTA: forward + RC -> 2 candidates.
 #   3) For each candidate, BLAST against the reference; compute REFERENCE coverage
 #      using ONLY plus-strand HSPs (union on subject coords).
 #      Select the candidate with MAX plus-coverage (must be ≥ --min-cov).
 #      Ties: larger (plus_aligned_bases × plus_weighted_identity), then larger plus_best_bitscore.
 #   4) Rotate the chosen candidate so that reference position 1 aligns to candidate position 1
-#      (by projecting ref pos1 via BLAST ref → and).
+#      (by projecting ref pos1 via BLAST ref -> and).
 #   5) MAFFT global alignment of (ref, rotated-cand).
 #   6) Print global percent identity over UNGAPPED columns, to stdout (e.g. 99.932%).
 #
@@ -385,7 +385,7 @@ done
 mapfile -t pass_list < <(awk -v t="$min_cov" -F'\t' 'NR>1 && ($2+0.0)>=t {print $1}' "$prefix.blast.choice.tsv")
 [[ "${#pass_list[@]}" -gt 0 ]] || die "No candidate reached plus-strand reference coverage ≥ ${min_cov}."
 
-# Select MAX plus_cov; tie → max (plus_len*plus_pid); tie → max plus_best
+# Select MAX plus_cov; tie -> max (plus_len*plus_pid); tie -> max plus_best
 best_cand=""
 best_cov="-1"
 best_primary=0

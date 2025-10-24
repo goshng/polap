@@ -174,9 +174,9 @@ seqkit_stats_outname() {
 # Adaptive decompression / compression / linking with pv progress
 # ---------------------------------------------------------------
 # Behavior:
-#   infile .gz  -> outfile plain  → decompress (gzip -dc)
-#   infile plain -> outfile .gz   → compress   (gzip -c)
-#   both .gz or both plain        → make symlink (ln -sf)
+#   infile .gz  -> outfile plain  -> decompress (gzip -dc)
+#   infile plain -> outfile .gz   -> compress   (gzip -c)
+#   both .gz or both plain        -> make symlink (ln -sf)
 #
 # Example:
 #   _polap_compress_or_decompress sample.fq.gz sample.fq
@@ -213,31 +213,31 @@ _polap_compress_or_decompress() {
 		pv_cmd=(cat "$infile")
 	fi
 
-	echo "[INFO] infile=$infile → outfile=$outfile" >&2
+	_polap_log1 "[INFO] infile=$infile -> outfile=$outfile"
 
-	# same compression type → symlink
+	# same compression type -> symlink
 	if ((in_is_gz == out_is_gz)); then
-		echo "[INFO] same type → creating symlink" >&2
+		_polap_log1 "[INFO] same type -> creating symlink"
 		ln -sf "$(realpath -s "$infile")" "$outfile"
 		return 0
 	fi
 
 	# decompress
 	if ((in_is_gz == 1 && out_is_gz == 0)); then
-		echo "[INFO] decompressing (.gz → plain)" >&2
+		_polap_log1 "[INFO] decompressing (.gz -> plain)"
 		"${pv_cmd[@]}" | gzip -dc >"$outfile"
 		return 0
 	fi
 
 	# compress
 	if ((in_is_gz == 0 && out_is_gz == 1)); then
-		echo "[INFO] compressing (plain → .gz)" >&2
+		_polap_log1 "[INFO] compressing (plain -> .gz)"
 		"${pv_cmd[@]}" | gzip -c >"$outfile"
 		return 0
 	fi
 
 	# fallback (weird combination)
-	echo "[WARN] unknown combination, copying" >&2
+	_polap_log1 "[WARN] unknown combination, copying"
 	"${pv_cmd[@]}" >"$outfile"
 }
 
@@ -249,7 +249,7 @@ _polap_lib_fastq-sample-to() {
 
 	# check if seqkit stats -Ta output exists.
 	local infile_seqkit_stats=$(seqkit_stats_outname "$infile")
-	_polap_log0 "infile_seqkit_stats: $infile_seqkit_stats"
+	_polap_log2 "infile_seqkit_stats: $infile_seqkit_stats"
 	if [[ ! -s "$infile_seqkit_stats" ]]; then
 		seqkit stats -Ta "${infile}" -o "${infile_seqkit_stats}"
 	fi
@@ -265,11 +265,11 @@ _polap_lib_fastq-sample-to() {
 		_polap_lib_random-get
 		local seed=${_polap_var_random_number}
 
-		_polap_log1 "  input1: ${infile}"
-		_polap_log1 "  output1: ${outfile}"
-		_polap_log1 "  random seed: ${seed}"
-		_polap_log1 "  long-read: ${max_size} (bp)"
-		_polap_log1 "  sampling rate: ${rate}"
+		_polap_log2 "  input1: ${infile}"
+		_polap_log2 "  output1: ${outfile}"
+		_polap_log2 "  random seed: ${seed}"
+		_polap_log2 "  long-read: ${max_size} (bp)"
+		_polap_log2 "  sampling rate: ${rate}"
 
 		_polap_log2 "sampling using seqkit sample with rate: ${rate}, max_size: ${max_size} and seed: ${seed} for ${infile} -> ${outfile}"
 
@@ -286,25 +286,8 @@ _polap_lib_fastq-sample-to() {
 			exit 1
 		fi
 	else
-		# ln -fs $(basename "${infile}") "${outfile}"
-		# ln -fs "${infile}" "${outfile}"
-		# _polap_lib_filepath-smart_ln_s2 "${infile}" "${outfile}"
-
 		# differently for the output file name and the input file name
 		_polap_compress_or_decompress "$infile" "$outfile"
-
-		# progress-aware decompression
-		# if command -v pv >/dev/null 2>&1; then
-		# 	size=$(stat -c %s "$infile" 2>/dev/null || stat -f %z "$infile" 2>/dev/null || echo "")
-		# 	if [[ -n "$size" ]]; then
-		# 		pv -pterb -s "$size" "$infile" | gzip -dc >"$outfile"
-		# 	else
-		# 		pv -pterb "$infile" | gzip -dc >"$outfile"
-		# 	fi
-		# else
-		# 	_polap_log2 "[WARN] pv not found; extracting without progress bar."
-		# 	gzip -dc "$infile" >"$outfile"
-		# fi
 
 		_polap_log2 "No sampling because the rate is greater than 1."
 	fi

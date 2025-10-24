@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # polap-bash-cov-quickcheck.sh — v0.1.0
-# Quick coverage sanity check: map reads → BAM → contig stats + windowed depth
+# Quick coverage sanity check: map reads -> BAM -> contig stats + windowed depth
 # - Supports ONT/HiFi presets (minimap2)
 # - Uses mosdepth if available (fast); otherwise bedtools genomecov fallback
 # - Emits:
@@ -150,7 +150,7 @@ if [[ ! -s "${assembly}.fai" ]]; then
 	samtools faidx "$assembly"
 fi
 
-# ----------------------------- 2) map → BAM -----------------------------------
+# ----------------------------- 2) map -> BAM -----------------------------------
 bam="${outdir}/map.bam"
 if [[ ! -s "$bam" ]]; then
 	log "# map: minimap2 -x $preset"

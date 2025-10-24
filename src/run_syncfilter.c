@@ -66,7 +66,7 @@ static int makedir_p(const char *path) {
   return 0;
 }
 
-/* nt → 2-bit; -1 for non-ACGT */
+/* nt -> 2-bit; -1 for non-ACGT */
 static inline int nt4(char c) {
   switch (c) {
   case 'A':

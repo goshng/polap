@@ -4,11 +4,11 @@
 # Purpose : Per-repeat recombination usage (isomer stoichiometry) from ONT reads, step-by-step.
 #
 # Steps:
-#   1) Repeat discovery (MUMmer/BLAST) → repeats.tsv/.bed
-#   2) Junction synthesis (parental & recombinant) → junc_parent.fa/.tsv, junc_recomb.fa/.tsv
-#   3) Junction-bridge counting (map ONT → junctions) → junc_parent_support.tsv, junc_recomb_support.tsv
-#   4) Fraction quantification (and optional depth normalization) → repeat_fractions.tsv
-#   5) Summary PDF → report/report.pdf
+#   1) Repeat discovery (MUMmer/BLAST) -> repeats.tsv/.bed
+#   2) Junction synthesis (parental & recombinant) -> junc_parent.fa/.tsv, junc_recomb.fa/.tsv
+#   3) Junction-bridge counting (map ONT -> junctions) -> junc_parent_support.tsv, junc_recomb_support.tsv
+#   4) Fraction quantification (and optional depth normalization) -> repeat_fractions.tsv
+#   5) Summary PDF -> report/report.pdf
 #
 # Example:
 #   bash /path/to/polaplib/polap-bash-mt-stoich-fractions.sh \
@@ -252,7 +252,7 @@ fi
 
 # ========== STEP 2: Junction synthesis (parental/recombinant) ==========
 if step_enabled 2; then
-	logi "Step 2/5: Junction synthesis (flank=${flank}bp) → parental & recombinant"
+	logi "Step 2/5: Junction synthesis (flank=${flank}bp) -> parental & recombinant"
 	python3 "$_POLAPLIB_DIR/scripts/polap_py_synthesize_junctions_full.py" \
 		--assembly "$asm" --repeats "$rep_tsv" --flank "$flank" \
 		--out-parent-fasta "$par_fa" --out-parent-meta "$par_meta" \

@@ -181,11 +181,10 @@ _polap_lib_assemble-sub() {
 	check_file_existence "${_polap_var_ga_contigger_edges_fasta}"
 
 	# seed contigs in fasta
-	seqkit grep \
+	_polap_log3_cmdout seqkit grep \
 		-f "${_polap_var_mtcontigname}" \
 		"${_polap_var_ga_contigger_edges_fasta}" \
-		-o "${_polap_var_oga_contig}/contig.fa" \
-		2>${_polap_output_dest}
+		-o "${_polap_var_oga_contig}/contig.fa"
 
 	local reads="${_arg_long_reads}"
 	local seeds="${_polap_var_oga_contig}/contig.fa"
@@ -212,19 +211,9 @@ _polap_lib_assemble-sub() {
 
 	[[ -n "$gsize" ]] && args+=(--gsize "$gsize")
 	[[ -n "$asm_cov" ]] && args+=(--asm-coverage "$asm_cov")
-	# [[ "$no_assemble" -eq 1 ]] && args+=(--no-assemble)
-	# [[ "$keep_intermediate" -eq 1 ]] && args+=(--keep-intermediate)
-	# [[ -n "$mapper_opts" ]] && args+=(--mapper-opts "$mapper_opts")
-	# args+=(--method "$method")
 
-	_polap_log1 "[RUN] $wrapper ${args[*]}"
-
-	_polap_lib_conda-ensure_conda_env polap || exit 1
-
-	_polap_log0 bash "$wrapper" "${args[@]}"
+	_polap_log1 bash "$wrapper" "${args[@]}"
 	bash "$wrapper" "${args[@]}"
-
-	conda deactivate
 
 	return 0
 }

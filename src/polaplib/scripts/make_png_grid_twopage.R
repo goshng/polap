@@ -6,7 +6,7 @@
 #
 # Render a two-page PDF: page 1 from PT list, page 2 from MT list.
 # Each list is a CSV with columns: species,png (png may be empty).
-# Missing PNG → bold red "No assembly" on white background.
+# Missing PNG -> bold red "No assembly" on white background.
 # Uses same typographic/gap controls as make_png_grid.R v1.1.0.
 
 suppressPackageStartupMessages({

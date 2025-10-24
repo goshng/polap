@@ -38,10 +38,10 @@ pt_anchors: /path/to/pt.id.txt
 
 Strict policy
 -------------
-- If X within mt band → mt
-- elif X within pt band → pt
-- elif X <= cut_nuc_log → nuclear
-- else → nuclear
+- If X within mt band -> mt
+- elif X within pt band -> pt
+- elif X <= cut_nuc_log -> nuclear
+- else -> nuclear
 
 Outputs
 -------
@@ -462,7 +462,7 @@ def main() -> int:
 
     log(
         1,
-        f"μ_nuc={mu_nuc:.4f} σ_nuc={sg_nuc:.4f} tail={tail_nuc} → cut_nuc≈{cut_nuc_lin:.2f}x (log10={cut_nuc_log:.3f})",
+        f"μ_nuc={mu_nuc:.4f} σ_nuc={sg_nuc:.4f} tail={tail_nuc} -> cut_nuc≈{cut_nuc_lin:.2f}x (log10={cut_nuc_log:.3f})",
     )
 
     # bands from anchors (if provided)

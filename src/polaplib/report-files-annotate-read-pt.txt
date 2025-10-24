@@ -1,0 +1,74 @@
+# annotate-read-pt
+
+./pt-contig-annotation-depth-table.txt
+./pt.0.gfa - ptDNA assembly from pt0
+./pt.0.png - ptDNA assembly png of pt0
+./pt.0.fa - pt0 ptDNA in fasta
+./pt.1.gfa - ptDNA assembly from pt1
+./pt.1.png - ptDNA assembly png of pt1
+./pt.1.fa - pt0 ptDNA in fasta
+
+./pt.fq - not saved because too large
+./pt.fq.seqkit.stats.ta.txt - pt0 assembly input data seqkit stats; use this for stats reads selected for an initial ptDNA assembly from pt reads selected using only gene annotation
+./pt0.fq - 10m subsample of pt.fq; may not be saved because it is too large
+./pt0.fq.seqkit.stats.ta.txt - seqkit stats of pt0.fq
+
+./pt.id.txt - PT reads ID
+
+./assembly_info_organelle_annotation_count-all.txt - annotation table for all reads
+./assembly_info_organelle_annotation_count.txt - annotation table for reads
+./contig-annotation-depth-table.txt - annotation table for MT reads
+
+./pt0 - flye assembly of PT reads selected using only gene annotation
+./pt0/assembly_info_organelle_annotation_count.txt - pt0 stage table for all contigs
+./pt0/assembly_info_organelle_annotation_count-all.txt - pt0 stage table for all contigs
+./pt0/contig-annotation-table.txt - pt0 stage table for conttigs pt genes < mt genes
+./pt0/contig-annotation-depth-table.txt - pt0 stage table for cotigs pt genes < mt genes
+./pt0/pt-contig-annotation-depth-table.txt - pt0 stage table for contigs pt genes > mt genes
+
+./pt0/00-assembly - pt0 flye 00-assembly stage folder
+./pt0/10-consensus - pt0 flye 10-consensus stage folder
+./pt0/20-repeat - pt0 flye 20-repeat stage folder
+./pt0/30-contigger - pt0 flye 30-contigger stage folder
+./pt0/30-contigger/graph_final.gfa - pt0 flye 30-contigger assembly graph
+./pt0/30-contigger/graph_final.png - pt0 flye 30-contigger assembly in png
+./pt0/30-contigger/graph_final.fa - pt0 flye 30-contigger assembly in fasta
+./pt0/ptdna - pt0 folder for extracting ptDNA in a single circle in fasta
+./pt0/ptdna/ptdna/circular_path_count.txt - pt0 the number of paths in ptDNA; 4 means a typical ptDNA; LSC,IR,SSC,IR
+
+./pt0/mt.contig.name-pt1 - seed contigs in pt0 for pt1
+./pt0/50-annotation - annotation for pt/mt gene counts in pt0
+
+./pt is the same as pt0 or pt0 points to pt.
+
+./pt1 - flye assembly using pt0 as seeds
+./pt1/assembly_info_organelle_annotation_count.txt - pt1 stage table for all contigs
+./pt1/assembly_info_organelle_annotation_count-all.txt - pt1 stage table for all contigs
+./pt1/contig-annotation-table.txt - pt1 stage table for conttigs pt genes < mt genes
+./pt1/contig-annotation-depth-table.txt - pt1 stage table for cotigs pt genes < mt genes
+./pt1/pt-contig-annotation-depth-table.txt - pt1 stage table for contigs pt genes > mt genes
+
+./pt1/assembly_graph.png - pt1 final assembly graph png
+./pt1/assembly_graph.gfa - pt1 final assembly graph
+./pt1/assembly.fasta - pt1 final assembly in fasta
+
+./pt1/00-assembly - pt1 flye 00-assembly stage folder
+./pt1/10-consensus - pt1 flye 10-consensus stage folder
+./pt1/20-repeat - pt1 flye 20-repeat stage folder
+./pt1/30-contigger - pt1 flye 30-contigger stage folder
+./pt1/30-contigger/graph_final.gfa - pt1 flye 30-contigger assembly graph
+./pt1/30-contigger/graph_final.png - pt1 flye 30-contigger assembly in png
+./pt1/30-contigger/graph_final.fa - pt1 flye 30-contigger assembly in fasta
+./pt1/ptdna - pt1 folder for extracting ptDNA in a single circle in fasta
+./pt1/ptdna/ptdna/circular_path_count.txt - pt1 the number of paths in ptDNA; 4 means a typical ptDNA; LSC,IR,SSC,IR
+
+./pt1/tmp - folder for reads selected for ptDNA assembly, they are mapped on pt0 seeds, but we use mapping quality to selected reads not just percent identity or alignment length; consider these 5 files for files to report
+./pt1/tmp/pre.cov.png
+./pt1/tmp/post.cov.png
+./pt1/tmp/ds.stats.tsv
+./pt1/tmp/recruited.stats.tsv
+./pt1/ptdna.metrics.csv
+
+./pt1/40-polishing - pt1 flye 40-polishing stage folder
+
+./pt1/01-contig/contig.fa - seed contigs in fasta

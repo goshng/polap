@@ -67,7 +67,7 @@ what this main driver does (quick checklist)
 	•	builds the plastid two-isomer panel first (polap-bash-pt-twoforms-from-IR-SSC.sh) so competitive mapping always has the “correct” chloroplast presentation to subtract.
 	•	runs competitive mapping once (round0) against mito seeds ∪ plastid isomers ∪ optional nuclear decoy; only reads whose best hit is the mito target and whose aligned span ≥ TSPAN_MIN (preset-dependent) survive.
 	•	optionally runs the k-mer signature recruiter and/or read-overlap recruiter, each with the 5% incremental stop rule pre-wired and controlled by --rounds.
-	•	ends with a coverage sanity step if polap-bash-cov-quickcheck.sh is present (uses minimap2 → samtools to plot/TSV summary).
+	•	ends with a coverage sanity step if polap-bash-cov-quickcheck.sh is present (uses minimap2 -> samtools to plot/TSV summary).
 
 preset knobs you can tweak
 	•	conservative (default): higher identity, span, qcov — safest when drift is a concern.

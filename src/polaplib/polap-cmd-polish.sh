@@ -115,7 +115,7 @@ EOF
 	return 0
 }
 
-# Rewrite of _run_polap_polish3 → calls polap-bash-polish.sh
+# Rewrite of _run_polap_polish3 -> calls polap-bash-polish.sh
 # - Supports ONT-only or Hybrid polishing (auto-detect)
 # - Accepts ONE short-read file via -s ( interleaved/merged R1+R2 or single-end )
 #   • If two files are available, still accepts -1/-2 (takes precedence over -s)
@@ -155,7 +155,7 @@ Synopsis:
 
 Description:
   Front-end driver that delegates to 'polap-bash-polish.sh' (backend v0.5.1).
-  Automatically selects ONT-only or Hybrid polishing, optionally preserves Flye GFA topology (extract → polish → reinject).
+  Automatically selects ONT-only or Hybrid polishing, optionally preserves Flye GFA topology (extract -> polish -> reinject).
 
 Options (mapped to backend):
   -p FILE      Draft assembly (FASTA or GFA). [default: ${_arg_unpolished_fasta}]
@@ -171,7 +171,7 @@ Options (mapped to backend):
 
 Advanced speed/QC (pass-through):
   --speed normal|fast|turbo
-  --recruit off|draft|bait|auto   (default backend: off → use ALL reads)
+  --recruit off|draft|bait|auto   (default backend: off -> use ALL reads)
   --bait BAITS.fa
   --ont-cap X                     (0=disable; if enabling, selection = len>3000 & id>0.75, MAPQ ignored)
   --ont-cap-method rasusa|seqtk
@@ -343,7 +343,7 @@ EOF
 
 	mkdir -p "$(dirname "$out_final")"
 	cp -f -- "$produced" "$out_final"
-	_polap_log1 "INFO: polished output → $out_final"
+	_polap_log1 "INFO: polished output -> $out_final"
 
 	conda deactivate || true
 	_polap_log3 "Function end: $(echo "$FUNCNAME" | sed 's/_run_polap_//')"
@@ -376,7 +376,7 @@ Synopsis:
 
 Description:
   Automatically selects an ONT-only or Hybrid (short-reads) polishing path and optionally preserves
-  Flye GFA topology (circular paths) via extract → polish → reinject.
+  Flye GFA topology (circular paths) via extract -> polish -> reinject.
 
 Options:
   -p FILE      Draft assembly (FASTA or GFA). [default: ${_arg_unpolished_fasta}]
@@ -385,13 +385,13 @@ Options:
   -s FILE      ONE short-read file (FASTQ[.gz]); supports interleaved/merged or single-end polishing.
   -1 FILE      Short-read R1 (FASTQ[.gz]); if provided with -2, takes precedence over -s.
   -2 FILE      Short-read R2 (FASTQ[.gz]).
-  -g           Preserve GFA topology (if input -p is .gfa): extract S-seqs → polish → reinject.
+  -g           Preserve GFA topology (if input -p is .gfa): extract S-seqs -> polish -> reinject.
   -m MODE      Mode: auto|ont|hybrid  (default: auto)
   -r INT       Racon rounds for ONT-only (default: ${_arg_racon_round:-3})
   -t INT       Threads (default: ${_arg_threads:-16})
   -k INT       k-mer for Merqury QV if short reads exist and --eval (default: 31)
   --eval       Run Merqury QV if short reads are available (writes QV report alongside outputs)
-  --polisher   Hybrid polisher: auto|fmlrc2|polypolish (default: auto → fmlrc2)
+  --polisher   Hybrid polisher: auto|fmlrc2|polypolish (default: auto -> fmlrc2)
 
 Speed presets (passed to backend; ONT-only path):
   --speed {normal|fast|turbo}   normal=100×,3r,-w1000 ; fast=80×,2r,-w1200 ; turbo=60×,1r,-w1500
@@ -510,7 +510,7 @@ EOF
 	# ONT path
 	if [[ -n "$ont_fq" ]]; then
 		args+=("--ont" "$ont_fq" "--racon-rounds" "$racon_rounds")
-		# speed/preset knobs → backend (only add if set to avoid shadowing backend defaults)
+		# speed/preset knobs -> backend (only add if set to avoid shadowing backend defaults)
 		[[ -n "$speed" ]] && args+=("--speed" "$speed")
 		[[ -n "$ont_cap" ]] && args+=("--ont-cap" "$ont_cap")
 		[[ -n "$ont_cap_method" ]] && args+=("--ont-cap-method" "$ont_cap_method")
@@ -570,7 +570,7 @@ EOF
 
 	mkdir -p "$(dirname "$out_final")"
 	cp -f -- "$produced" "$out_final"
-	_polap_log1 "INFO: polished output → $out_final"
+	_polap_log1 "INFO: polished output -> $out_final"
 
 	conda deactivate || true
 	_polap_log3 "Function end: $(echo "$FUNCNAME" | sed 's/_run_polap_//')"
@@ -611,13 +611,13 @@ Options:
   -s FILE      ONE short-read file (FASTQ[.gz]); supports interleaved/merged or single-end polishing.
   -1 FILE      Short-read R1 (FASTQ[.gz]); if provided together with -2, takes precedence over -s.
   -2 FILE      Short-read R2 (FASTQ[.gz]).
-  -g           Preserve GFA topology (if input -p is .gfa): extract S-seqs →  polish →  reinject.
+  -g           Preserve GFA topology (if input -p is .gfa): extract S-seqs ->  polish ->  reinject.
   -m MODE      Mode: auto|ont|hybrid  (default: auto)
   -r INT       Racon rounds for ONT-only (default: ${_arg_racon_round:-3})
   -t INT       Threads (default: ${_arg_threads:-16})
   -k INT       k-mer for Merqury QV if short reads exist and --eval (default: 31)
   --eval       Run Merqury QV if short reads are available (writes QV report alongside outputs)
-  --polisher   Hybrid polisher: auto|fmlrc2|polypolish (default: auto → fmlrc2)
+  --polisher   Hybrid polisher: auto|fmlrc2|polypolish (default: auto -> fmlrc2)
 
 Examples:
   ONT-only polishing (Racon×3):
@@ -802,7 +802,7 @@ EOF
 	mkdir -p "$(dirname "$out_final")"
 	cp -f "$produced" "$out_final"
 
-	_polap_log1 "INFO: polished output → $out_final"
+	_polap_log1 "INFO: polished output -> $out_final"
 
 	conda deactivate || true
 

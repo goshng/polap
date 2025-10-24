@@ -2,9 +2,9 @@
 # polap-bash-oatk-ont-sidekicks.sh
 # Unified ONT preprocessing wrapper for Oatk (two-stage run):
 #   Stage-0 (optional prefilters): trim, scrub, lenfilt, HMM mt-bait/drop plastid, duplex-only, rare-mask, correction
-#   Stage-1: (HPC default ON) → qc,assemble,summary  → backbone
-#   Bait   : backbone-based k-mer bait (bbduk|meryl) → ONT mt-subset (small & fast)
-#   Stage-2: recover with lift (RLE) or polish (racon/medaka) on subset → annotate → pathfinder → summary
+#   Stage-1: (HPC default ON) -> qc,assemble,summary  -> backbone
+#   Bait   : backbone-based k-mer bait (bbduk|meryl) -> ONT mt-subset (small & fast)
+#   Stage-2: recover with lift (RLE) or polish (racon/medaka) on subset -> annotate -> pathfinder -> summary
 #
 # Requirements (checked on demand):
 #   Always: seqkit, awk, grep, polap-bash-oatk-ont.sh
@@ -63,7 +63,7 @@ DO_DUPLEX_ONLY=0  # grep header tag pattern
 DUPLEX_TAG="duplex"
 DO_RARE_MASK=0 # KMC rare k-mer masking (heavy)
 RARE_K=31
-RARE_MAX=1   # <=1 occurrence → rare
+RARE_MAX=1   # <=1 occurrence -> rare
 DO_CORRECT=0 # 1=Canu, 2=Ratatosk
 SHORT_READS=""
 
@@ -470,7 +470,7 @@ if [[ $DO_RARE_MASK -eq 1 ]]; then
 	mkdir -p kmc_tmp
 	kmc -k"${RARE_K}" -t"$THREADS" -ci1 -cs100000000 "$CUR" kmc.db kmc_tmp/
 	kmc_tools transform kmc.db dump -ci1 -cx${RARE_MAX} rare_k.txt
-	log 1 "[rare-k] (placeholder) pass-through reads → reads.mask.fq"
+	log 1 "[rare-k] (placeholder) pass-through reads -> reads.mask.fq"
 	cp "$CUR" reads.mask.fq
 	CUR="$OUT/reads.mask.fq"
 fi
@@ -496,7 +496,7 @@ HPC_FLAG=(--hpc)
 if [[ $HPC_ENABLE -eq 1 ]]; then
 	need seqtk
 	HPC_FILE="${HPC_OUT:-$OUT/reads.hpc.fa}"
-	log 1 "[hpc] seqtk hpc → $HPC_FILE"
+	log 1 "[hpc] seqtk hpc -> $HPC_FILE"
 	seqtk hpc "$CUR" >"$HPC_FILE"
 	CUR_ASM="$HPC_FILE"
 	HPC_FLAG=(--hpc --hpc-out "$HPC_FILE")
@@ -524,14 +524,14 @@ BACKBONE="$OUT/ont_stage1/k1/unitigs.fa"
 [[ -s "$BACKBONE" ]] || die "backbone unitigs not found: $BACKBONE"
 
 #############################################
-# Bait: backbone-based k-mer bait → subset
+# Bait: backbone-based k-mer bait -> subset
 #############################################
 mkdir -p bait
 SUBSET="bait/ont.mt.fq"
 
 if [[ "$BAIT_METHOD" == "bbduk" ]]; then
 	need "$BBDUK_BIN"
-	log 1 "[bait] bbduk: ref=$BACKBONE → $SUBSET"
+	log 1 "[bait] bbduk: ref=$BACKBONE -> $SUBSET"
 	"$BBDUK_BIN" in="$CUR" outm="$SUBSET" outu=bait/nonmt.fq ref="$BACKBONE" k=31 hdist=1 threads="$THREADS"
 else
 	need meryl
@@ -546,7 +546,7 @@ fi
 log 1 "[bait] subset size: $( (wc -c <"$SUBSET") 2>/dev/null || echo 0) bytes"
 
 #############################################
-# Stage-2: lift OR polish → annotate → PF → summary
+# Stage-2: lift OR polish -> annotate -> PF -> summary
 #############################################
 if [[ $USE_LIFT -eq 1 ]]; then
 	# Lifter (RLE) + 1× polish after lift

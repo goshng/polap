@@ -18,7 +18,7 @@
 
 BEGIN {
   OFS = "\n"
-  # If 're' not provided, default to empty → match all
+  # If 're' not provided, default to empty -> match all
   if (re == "") re = ""
 }
 

@@ -379,28 +379,46 @@ _polap_lib_readassemble-select-organelle-reads() {
 	local type="${1:-pt}"
 
 	local annotatedir="${_arg_outdir}/annotate-read-${type}"
+	local annotatedir_pt="${_arg_outdir}/annotate-read-pt"
 
 	local pt_table mt_table at_table all_table
 	_polap_lib_readassemble-common-variables \
 		annotatedir pt_table mt_table at_table all_table
 
-	_polap_lib_readassemble-annotate-read-pt "${type}"
+	if [[ -s "${annotatedir_pt}/mt.paf" ]]; then
+		ln -s ../annotate-read-pt/mt.paf "${annotatedir}/mt.paf"
+	fi
+	if [[ -s "${annotatedir_pt}/pt.paf" ]]; then
+		ln -s ../annotate-read-pt/pt.paf "${annotatedir}/pt.paf"
+	fi
+	if [[ -s "${annotatedir_pt}/contig-annotation-depth-table.txt" ]]; then
+		ln -s ../annotate-read-pt/contig-annotation-depth-table.txt \
+			"${annotatedir}/contig-annotation-depth-table.txt"
+	fi
+	if [[ -s "${annotatedir_pt}/pt-contig-annotation-depth-table.txt" ]]; then
+		ln -s ../annotate-read-pt/pt-contig-annotation-depth-table.txt \
+			"${annotatedir}/pt-contig-annotation-depth-table.txt"
+	fi
 
-	bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
+	_polap_log1 "select PT reads upto 1 Gb: pt.id.all.txt"
+	_polap_log3_cmdout bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
 		-t "${pt_table}" \
-		-l 1e+12 \
+		-l 1e+9 \
 		--disp-pt 2000 \
 		-o "${annotatedir}/pt"
 
-	cp "${annotatedir}/pt/pt-contig-annotation-depth-table.txt.pt.filtered.all.txt" \
+	_polap_log3_cmdout cp \
+		"${annotatedir}/pt/pt-contig-annotation-depth-table.txt.pt.filtered.all.txt" \
 		"${annotatedir}"/pt.id.all.txt
 
+	_polap_log1 "select MT reads upto 1 Gb: mt.id.all.txt"
 	bash "${_POLAPLIB_DIR}"/polap-bash-filter-pt-reads.sh \
 		-t "${mt_table}" \
-		-l 1e+12 \
+		-l 1e+9 \
 		-o "${annotatedir}/mt"
 
-	cp "${annotatedir}/mt/contig-annotation-depth-table.txt.pt.filtered.all.txt" \
+	_polap_log3_cmdout cp \
+		"${annotatedir}/mt/contig-annotation-depth-table.txt.pt.filtered.all.txt" \
 		"${annotatedir}"/mt.id.all.txt
 }
 
@@ -970,8 +988,7 @@ _polap_lib_readassemble-miniasm() {
 	fi
 
 	# use mt as mt0
-	_polap_log0 "Name the start i"
-	ln -sf $mt "${annotatedir}"/mt0
+	_polap_log3_cmdout ln -sf $mt "${annotatedir}/mt0"
 
 	# polap command: filter reference hifi
 	local resolved_fastq="${_arg_long_reads}"
@@ -991,7 +1008,7 @@ _polap_lib_readassemble-miniasm() {
 	local i
 	for ((i = 0; i < ${_arg_readassemble_mtn}; i++)); do
 		local j=$((i + 1))
-		_polap_log0 "i: $i"
+		_polap_log1 "assembling seed mt$i -> mt$j"
 
 		# NOTE: annotate for seeding
 		# select connected components of the mt contigs only
@@ -999,13 +1016,16 @@ _polap_lib_readassemble-miniasm() {
 			-o "${annotatedir}" \
 			-i mt$i
 
-		_polap_log0 "i: $i"
+		if [[ $? -ne "$RETURN_SUCCESS" ]]; then
+			_polap_log0 "[ERROR] No annotation for mt$i"
+			return $RETURN_FAIL
+		fi
+
 		# NOTE: mito seed
 		_polap_lib_seed-mito \
 			-o "${annotatedir}" \
 			-i mt$i -j mt$j
 
-		_polap_log0 "i: $i"
 		if [[ ! -s "${annotatedir}/mt$i/mt.contig.name-mt$j" ]]; then
 			_polap_log0 "No mt seed at mt$i for mt$j"
 			break
@@ -1022,18 +1042,16 @@ _polap_lib_readassemble-miniasm() {
 				-i mt$i -j mt$j
 		elif [[ "${_arg_data_type}" == "nano-raw" ]]; then
 			_polap_log1 "use the only selected long reads using organelle gene annotation for mtDNA assembly"
-			_polap_log0 "i: $i"
-			_polap_log0 _polap_lib_assemble-omega \
+			_polap_log2 _polap_lib_assemble-omega \
 				-o "${annotatedir}" \
-				-l "${annotatedir}/06-miniasm/top_reads.fa.gz" \
+				-l "${annotatedir}/06-miniasm/top_reads.fq.gz" \
 				-t mt \
 				-i mt$i -j mt$j
 			_polap_lib_assemble-omega \
 				-o "${annotatedir}" \
-				-l "${annotatedir}/06-miniasm/top_reads.fa.gz" \
+				-l "${annotatedir}/06-miniasm/top_reads.fq.gz" \
 				-t mt \
 				-i mt$i -j mt$j
-			_polap_log0 "i: $i"
 
 		fi
 		_polap_log0 "i: $i"
@@ -1109,7 +1127,7 @@ _polap_lib_readassemble-miniasm() {
 		_polap_log1 "use then input long reads with an adjusted omega for the final stage mtDNA assembly"
 		_polap_lib_assemble-omega \
 			-o "${annotatedir}" \
-			-l "${annotatedir}/06-miniasm/top_reads.fa.gz" \
+			-l "${annotatedir}/06-miniasm/top_reads.fq.gz" \
 			-t mt \
 			-i mt$i -j mt$j
 	fi
@@ -1204,7 +1222,6 @@ _polap_lib_readassemble-annotated() {
 	local i
 	for ((i = 0; i < ${_arg_readassemble_mtn}; i++)); do
 		local j=$((i + 1))
-		_polap_log0 "i: $i"
 
 		# NOTE: annotate for seeding
 		# select connected components of the mt contigs only

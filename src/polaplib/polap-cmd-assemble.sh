@@ -162,13 +162,15 @@ Author:
 EOF
 	)
 
+	_polap_lib_help-maybe-show3 "assemble1" help_message || return 0
+
 	# Display help message
-	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
-		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
-		man "$manfile" >&3
-		rm -f "$manfile"
-		return
-	fi
+	# if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
+	# 	local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
+	# 	man "$manfile" >&3
+	# 	rm -f "$manfile"
+	# 	return
+	# fi
 
 	# Display help message
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
@@ -188,6 +190,7 @@ EOF
 	fi
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
+
 	_polap_log0 "starting the whole-genome assembly on ${_arg_outdir} ..."
 	_polap_log1 "  output1: ${_polap_var_outdir_s1_fq_stats}"
 	_polap_log1 "  output1: ${_polap_var_outdir_s2_fq_stats}"
@@ -437,9 +440,9 @@ EOF
 	# check_file_existence "${_polap_var_outdir_lk_fq_gz}"
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
-	_polap_log0 "i: $i"
+	_polap_log3 "i: $i"
 	_run_polap_map-reads
-	_polap_log0 "i: $i"
+	_polap_log3 "i: $i"
 	if [[ "${_arg_polap_reads}" == "on" ]]; then
 		_arg_menu[1]="polap-reads"
 
@@ -451,11 +454,11 @@ EOF
 	else
 		_arg_menu[1]="infile"
 	fi
-	_polap_log0 "i: $i"
+	_polap_log3 "i: $i"
 	_run_polap_select-reads
-	_polap_log0 "i: $i"
+	_polap_log3 "i: $i"
 	_run_polap_flye2
-	_polap_log0 "i: $i"
+	_polap_log3 "i: $i"
 
 	_polap_log1 "NEXT: $(basename "$0") prepare-polishing -o ${_arg_outdir} -i ${_arg_inum} -j ${_arg_jnum}"
 

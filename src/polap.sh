@@ -25,6 +25,7 @@ if [[ -r "${_POLAPLIB_DIR}/polap-lib-profiles.sh" ]]; then
 	_polap_ensure_profiles_dir
 fi
 
+source "${_POLAPLIB_DIR}/polap-lib-version.sh"
 source "${_POLAPLIB_DIR}/polap-parsing.sh"
 
 # ── NEW: autoloader ────────────────────────────────────────────
@@ -63,12 +64,31 @@ source "${_POLAPLIB_DIR}/polap-variables-main.sh"
 # see polap-variables-main.sh for the logit function. all message to a log file
 # exec 3>&1 1>> >(logit)
 # Save real stdout as 3
-exec 3>&1
+# exec 3>&1
 # Send stdout through your logger
-exec 1> >(logit)
+# exec 1> >(logit)
 # Tee *all* stderr to log file AND keep showing on screen
-exec 4>&2 # save real stderr (screen)
+# exec 4>&2 # save real stderr (screen)
+# exec 2> >(tee -a "$LOG_FILE" >&4)
+# exec 5> >(tee -a "$LOG_FILE" >&4)
+
+# before your other exec redirects
+exec 3>&1 # real stdout (screen)
+exec 4>&2 # real stderr (screen)
+
+# send parent stdout through logger
+exec 1> >(logit)
+
+# tee parent stderr to log + screen
 exec 2> >(tee -a "$LOG_FILE" >&4)
+
+# Robust FD 5: always tee to log AND real screen, even if FD 4 changes
+if [[ -t 2 ]]; then
+	exec 5> >(tee -a "$LOG_FILE" >/dev/tty)
+else
+	# no tty (cron, pipe). Fallback: tee to whatever stderr currently is.
+	exec 5> >(tee -a "$LOG_FILE" >&2)
+fi
 
 [[ "${_arg_clock}" == "on" ]] && date +"%Y-%m-%d %H:%M:%S" >&3
 CMD="$0 $*"
@@ -76,14 +96,14 @@ echo "POLAP: ${_polap_version}"
 echo "CMD: $CMD"
 
 # Print all the global variables from polap-parsing.sh.
+set +u
 for var in $(compgen -v _arg_); do
 	# echo "$var"
-	set +u
-	echo "val=${var}"
-	val="${!var-}"
-	set -u
-	# echo "$var=${!var}"
+	# echo "val=${var}"
+	# val="${!var-}"
+	echo "$var=${!var}"
 done
+set -u
 
 # Options
 if [[ -n "${_arg_genomesize}" ]]; then

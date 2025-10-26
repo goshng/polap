@@ -1,0 +1,118 @@
+./01-panel/pt.ref.fa
+./01-panel/pt_ir.delta
+./01-panel/pt_ir.keep.delta
+./01-panel/pt_ir.coords
+./01-panel/ir.pick.tsv
+./01-panel/pt.rot.fa
+./01-panel/pt.double.fa
+./01-panel/pt.double.fa.seqkit.fai
+./01-panel/IRa.fa
+./01-panel/IRb.fa
+./01-panel/LSC.fa
+./01-panel/SSC.fa
+./01-panel/pt_isomerA.fa
+./01-panel/log/pt_isoform.log
+./01-panel/SSC_rc.fa
+./01-panel/pt_isomerB.fa
+./01-panel/pt_isomerA.double.fa
+./01-panel/pt_isomerB.double.fa
+./02-map/formA.paf
+./02-map/formB.paf
+./pt_thresh.diag.tsv
+./pt.ids
+./pt_thresh.vars
+./02-map/all.ids
+./02-map/pt.ids.sorted
+./keep.nonpt.ids
+./reads.nonpt.fq.gz
+./reads.nonpt.fq.gz.seqkit.stats.T.txt
+./03-allvsall/01-shards/shard_001.fq.gz
+./03-allvsall/01-shards/shard_002.fq.gz
+./03-allvsall/01-shards/shard_003.fq.gz
+./03-allvsall/01-shards/shard_004.fq.gz
+./03-allvsall/01-shards/shard_005.fq.gz
+./03-allvsall/01-shards/shard_006.fq.gz
+./03-allvsall/01-shards/shard_007.fq.gz
+./03-allvsall/01-shards/shard_008.fq.gz
+./03-allvsall/02-edges/shard_003.mmi
+./03-allvsall/02-edges/shard_001.mmi
+./03-allvsall/02-edges/shard_004.mmi
+./03-allvsall/02-edges/shard_002.mmi
+./03-allvsall/02-edges/shard_002.minimap2.log
+./03-allvsall/02-edges/shard_002.edges.tsv.gz
+./03-allvsall/02-edges/shard_003.minimap2.log
+./03-allvsall/02-edges/shard_003.edges.tsv.gz
+./03-allvsall/02-edges/shard_004.minimap2.log
+./03-allvsall/02-edges/shard_004.edges.tsv.gz
+./03-allvsall/02-edges/shard_001.minimap2.log
+./03-allvsall/02-edges/shard_001.edges.tsv.gz
+./03-allvsall/02-edges/shard_005.mmi
+./03-allvsall/02-edges/shard_007.mmi
+./03-allvsall/02-edges/shard_006.mmi
+./03-allvsall/02-edges/shard_008.mmi
+./03-allvsall/02-edges/shard_005.minimap2.log
+./03-allvsall/02-edges/shard_005.edges.tsv.gz
+./03-allvsall/02-edges/shard_006.minimap2.log
+./03-allvsall/02-edges/shard_006.edges.tsv.gz
+./03-allvsall/02-edges/shard_007.minimap2.log
+./03-allvsall/02-edges/shard_007.edges.tsv.gz
+./03-allvsall/02-edges/shard_008.minimap2.log
+./03-allvsall/02-edges/shard_008.edges.tsv.gz
+./03-allvsall/02-edges/all.edges.tsv.gz
+./03-allvsall/edges_loose.tsv.35.txt
+./03-allvsall/overlapness_strict.tsv
+./03-allvsall/overlapness.tsv
+./03-allvsall/04-qc/scan_degree_hist.pdf
+./03-allvsall/04-qc/scan_wdegree_hist.pdf
+./03-allvsall/04-qc/scan_cum_wdegree.pdf
+./03-allvsall/04-qc/overlap_qc.vars
+./04-busco/reads.nonpt.sample.fq.gz
+./04-busco/nonpt.sample.mpi
+./04-busco/nonpt.sample.busco.paf
+./04-busco/nuc.ids.sample
+./05-round/threshold_from_nuclear.tsv
+./05-round/nuc_thresh.vars
+./05-round/organelle.ids
+./05-round/select_ids.txt
+./06-miniasm/top_reads.fa.gz
+./06-miniasm/selected_allvsall.paf.gz
+./06-miniasm/miniasm.gfa
+./pipeline.log
+./06-miniasm/m_seeds_raw.fa
+./07-flye/30-contigger/graph_final.gfa
+
+# Log
+bolap run polap miniassemble -s Anthoceros_agrestis --no-cleanup -v
+23:33:34 [run-polap-miniassemble_genus_species@polap-lib-data.sh:2712] [polap-miniassemble] - target: Anthoceros_agrestis-0
+23:33:34 [run-polap-miniassemble_genus_species@polap-lib-data.sh:2727] [polap-miniassemble] - Asemble organelle genomes using miniasm as a reference generator with --nano-raw
+23:33:36 [run-polap-miniassemble_genus_species@polap-lib-data.sh:2759] [polap-miniassemble] - /home/goshng/all/polap/read2/polap/src/polap.sh miniassemble --nano-raw -l SRR10190639.fastq --readassemble-mtn 3 -v -o Anthoceros_agrestis-0
+[_run_polap_miniassemble@polap-cmd-miniassemble.sh:137] [RUN] /home/goshng/all/polap/read2/polap/src/polaplib/polap-bash-fast-mtseed-ont.sh
+23:33:40 [polap-bash-fast-mtseed-ont.sh:583] pipeline: outdir=Anthoceros_agrestis-0/mtseed assembler=miniasm threads=56
+23:33:40 [polap-bash-fast-mtseed-ont.sh:1694] Step0. choose presets for minimap2
+23:33:40 [polap-bash-fast-mtseed-ont.sh:1726] Step3. (map reads on themselves) - (part vs part)
+goshng@thorne:~/all/polap/read2$ bl run polap miniassemble -s Anthoceros_agrestis --no-cleanup -v
+23:36:57 [run-polap-miniassemble_genus_species@polap-lib-data.sh:2712] [polap-miniassemble] - target: Anthoceros_agrestis-0
+23:36:57 [run-polap-miniassemble_genus_species@polap-lib-data.sh:2727] [polap-miniassemble] - Asemble organelle genomes using miniasm as a reference generator with --nano-raw
+23:36:59 [run-polap-miniassemble_genus_species@polap-lib-data.sh:2759] [polap-miniassemble] - /home/goshng/all/polap/read2/polap/src/polap.sh miniassemble --nano-raw -l SRR10190639.fastq --readassemble-mtn 3 -v -o Anthoceros_agrestis-0
+[_run_polap_miniassemble@polap-cmd-miniassemble.sh:137] [RUN] /home/goshng/all/polap/read2/polap/src/polaplib/polap-bash-fast-mtseed-ont.sh
+23:37:03 [polap-bash-fast-mtseed-ont.sh:583] pipeline: outdir=Anthoceros_agrestis-0/mtseed assembler=miniasm threads=56
+23:37:03 [polap-bash-fast-mtseed-ont.sh:1694] Step0. choose presets for minimap2
+23:37:03 [polap-bash-fast-mtseed-ont.sh:1726] Step3. (map reads on themselves) - (part vs part)
+23:37:45 [polap-bash-fast-mtseed-ont.sh:1482] 2e) loop over edge weights to get Anthoceros_agrestis-0/mtseed/03-allvsall/overlapness_strict.tsv from Anthoceros_agrestis-0/mtseed/03-allvsall/edges_loose.tsv.gz
+23:39:48 [polap-bash-fast-mtseed-ont.sh:1512] _ovl_cov Anthoceros_agrestis-0/mtseed/03-allvsall/overlapness_strict.tsv SRR10190639.fastq
+23:39:55 [polap-bash-fast-mtseed-ont.sh:1518] hybrid: coverage=64.96% (0.649607) target=35.00% (eweight=0.071165 )
+23:40:01 [polap-bash-fast-mtseed-ont.sh:1527] hybrid: FINAL overlapness=Anthoceros_agrestis-0/mtseed/03-allvsall/overlapness.tsv ; eweight=0.071165  ; coverage=64.96% (target met)
+23:40:38 [polap-bash-fast-mtseed-ont.sh:1735] Step4. Detect nuclear genes
+23:40:38 [polap-bash-fast-mtseed-ont.sh:1561] BUSCO QC on a 10% length-stratified subsample -> Anthoceros_agrestis-0/mtseed/04-busco/nuc.ids.sample
+23:40:44 [polap-bash-fast-mtseed-ont.sh:198] seqkit sample: total_bases=7736691155; ratio_10%=0.10; ratio_1Gb=0.129254; using ratio=0.10
+23:44:47 [polap-bash-fast-mtseed-ont.sh:1745] Step5. Get overlapness
+23:44:47 [polap-bash-fast-mtseed-ont.sh:1596] 3b) selection (prefer BUSCO sample labels) -> Anthoceros_agrestis-0/mtseed/05-round/select_ids.txt
+23:44:47 [polap-bash-fast-mtseed-ont.sh:1608] nuclear-guided selection using Anthoceros_agrestis-0/mtseed/04-busco/nuc.ids.sample
+23:44:59 [polap-bash-fast-mtseed-ont.sh:1755] Step6. assemble selected reads using miniasm
+23:44:59 [polap-bash-fast-mtseed-ont.sh:1657] 4a) extract selected reads -> Anthoceros_agrestis-0/mtseed/06-miniasm/top_reads.fa.gz
+23:47:40 [polap-bash-fast-mtseed-ont.sh:1664] 4b) recompute overlaps among selected reads -> Anthoceros_agrestis-0/mtseed/06-miniasm/selected_allvsall.paf.gz
+00:03:22 [polap-bash-fast-mtseed-ont.sh:1671] 4c) extract contigs from GFA -> seeds
+00:03:22 [polap-bash-fast-mtseed-ont.sh:1768] Step7. assemble mtDNA using selected contigs
+00:03:22 [polap-bash-fast-mtseed-ont.sh:1769] 7a) convert miniasm gfa for flye run
+00:03:22 [polap-bash-fast-mtseed-ont.sh:1774] 7b) polap readassemble using miniasm seeds ...
+

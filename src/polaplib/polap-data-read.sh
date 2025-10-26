@@ -4209,7 +4209,10 @@ Examples:
     bolap run summary-data -s Brassica_rapa
 
   Downsample long-read data:
-    bolap data downsample long -s Brassica_rapa --coverage 10g
+    bolap run downsample long -s Brassica_rapa --coverage 10g
+
+  No sample long-read data:
+    bolap run downsample long -s Brassica_rapa --coverage 0g
 
   Get a reference mtDNA from NCBI:
     bolap download mtdna -s Brassica_rapa

@@ -293,6 +293,115 @@ HEREDOC
 		return 0
 	fi
 
+	if [[ "${_arg_menu[1]}" == "sample2-to" ]]; then
+
+		local _infile1="${_arg_menu[2]}"
+		local _infile2="${_arg_menu[3]}"
+		local _outfile1="${_arg_menu[4]}"
+		local _outfile2="${_arg_menu[5]}"
+		local _rate
+		local _seed
+
+		_polap_lib_conda-ensure_conda_env polap || exit 1
+		_polap_log0 "subsample the paired-read data using a given target size: ${_arg_genomesize}"
+
+		local _v="${_arg_genomesize}"
+		local _rate
+		if [[ "${_arg_genomesize}" == "0" ]]; then
+			_rate=1
+		else
+			# Compute the size of a paired-read data
+			if [[ ! -s "${_arg_outdir}/s1.fq.txt" ]]; then
+				_polap_lib_fastq-total-length-of "${_infile1}" "${_arg_outdir}/s1.fq.txt"
+			fi
+			if [[ ! -s "${_arg_outdir}/s2.fq.txt" ]]; then
+				_polap_lib_fastq-total-length-of "${_infile2}" "${_arg_outdir}/s2.fq.txt"
+			fi
+
+			local _s1=$(<"${_arg_outdir}/s1.fq.txt")
+			local _s2=$(<"${_arg_outdir}/s2.fq.txt")
+			local _s=$((_s1 + _s2))
+			if [[ "${_s1}" == "${_s2}" ]]; then
+				_polap_log1 "Two of the pair are the same in the number of reads."
+			else
+				_polap_log0 "  short-read1: ${_s1} (bp)"
+				_polap_log0 "  short-read2: ${_s2} (bp)"
+				_polap_log0 "ERROR: two of the pair are different in the number of reads."
+			fi
+
+			_rate=$(echo "scale=5; ${_v} / ${_s}" | bc)
+		fi
+
+		_polap_lib_random-get
+		local _seed=${_polap_var_random_number}
+
+		_polap_log1 "  arg1: ${_arg_species}"
+		_polap_log1 "  input1: ${_infile1}"
+		_polap_log1 "  input2: ${_infile2}"
+		_polap_log1 "  output1: ${_outfile1}"
+		_polap_log1 "  output2: ${_outfile2}"
+		_polap_log1 "  random seed: ${_seed}"
+
+		if [[ "${_arg_genomesize}" != "0" ]]; then
+			_polap_log1 "  short-read1: ${_s1} (bp)"
+			_polap_log1 "  short-read2: ${_s2} (bp)"
+			_polap_log1 "  short-read: ${_s} (bp)"
+			_polap_log1 "  target size: ${_v} (bp)"
+		fi
+
+		_polap_log1 "  sampling rate: ${_rate}"
+
+		local result=$(echo "$_rate < 1" | bc)
+
+		if [[ "$result" -eq 1 ]]; then
+			# echo "The rate value is less than 1"
+
+			# Example:
+			# seqtk sample -s100 read1.fq 0.1 >sub1.fq
+			# seqtk sample -s100 read2.fq 0.1 >sub2.fq
+
+			rm -f "${_outfile1}"
+			rm -f "${_outfile2}"
+			if [[ "${_arg_dry}" == "off" ]]; then
+
+				seqtk sample \
+					-s"${_seed}" \
+					"${_infile1}" \
+					"${_rate}" \
+					>"${_outfile1}"
+
+				seqtk sample \
+					-s"${_seed}" \
+					"${_infile2}" \
+					"${_rate}" \
+					>"${_outfile2}"
+
+				# gzip "${_outfile1}"
+				# gzip "${_outfile2}"
+			fi
+		else
+			# echo "The value is not less than 1"
+			_polap_log1 "  sampling rate is not less than 1: ${_rate}"
+			_polap_log1 "  no subsampling of input: ${_infile1}"
+			_polap_log1 "  no subsampling of input: ${_infile2}"
+			_polap_log1 "  no subsampling: ${_outfile1}"
+			_polap_log1 "  no subsampling: ${_outfile2}"
+			gzip -dc "${_infile1}" >"${_outfile1}"
+			gzip -dc "${_infile2}" >"${_outfile2}"
+
+			# _polap_lib_make_relative_symlink "${_infile1}" "${_outfile1}"
+			# _polap_lib_make_relative_symlink "${_infile2}" "${_outfile2}"
+			# ln -s "$(realpath ${_infile1})" "$(realpath -m ${_outfile1})"
+			# ln -s "$(realpath ${_infile2})" "$(realpath -m ${_outfile2})"
+		fi
+
+		conda deactivate
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+		return 0
+	fi
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
@@ -385,6 +494,9 @@ Options:
 Examples:
   Sample data:
     polap fastq-sample-to -l l.fq -g 30m --outfile o.fq
+
+  No sample data:
+    polap fastq-sample-to -l l.fq -g 0 --outfile o.fq
 
 TODO:
   Dev.

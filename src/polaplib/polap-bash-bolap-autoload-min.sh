@@ -61,7 +61,9 @@ bolap_autoload_min() {
 	}
 
 	local L
-	for L in "${ALLOW_LIBS[@]}"; do _resolve_and_source "$L"; done
+	for L in "${ALLOW_LIBS[@]}"; do
+		_resolve_and_source "$L"
+	done
 
 	# 2) Commands (UI first, then engine commands if you want them available)
 	if [[ $new_layout -eq 1 && -d "$cmddir" ]]; then

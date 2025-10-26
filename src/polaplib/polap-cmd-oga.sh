@@ -277,9 +277,9 @@ HEREDOC
 	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
 
 	_polap_log1 "mapping long-read data on the seed contigs ..."
-	_polap_log1 "  assembly: ${_arg_inum} (source) -> ${_arg_jnum} (target) ..."
-	_polap_log1 "  input1: ${_polap_var_mtcontigname}"
-	_polap_log1 "  input2: ${_polap_var_ga_contigger_edges_fasta}"
+	_polap_log2 "  assembly: ${_arg_inum} (source) -> ${_arg_jnum} (target) ..."
+	_polap_log2 "  input1: ${_polap_var_mtcontigname}"
+	_polap_log2 "  input2: ${_polap_var_ga_contigger_edges_fasta}"
 
 	if [[ -s "${_polap_var_oga_contig}/contig.tab" ]] && [[ "${_arg_redo}" == "on" ]]; then
 		_polap_log0 "  found: ${_polap_var_oga_reads}/contig.tab, so skipping mapping long-read data ..."
@@ -562,7 +562,7 @@ HEREDOC
 		return
 	fi
 
-	_polap_log0 "test read-selection ..."
+	_polap_log1 "test read-selection ..."
 
 	declare -A _menu_type_dict
 	_menu_type_dict["ptgaul"]="ptgaul-intra-base-length"
@@ -758,13 +758,13 @@ HEREDOC
 		die "No such name file for ${_pread_sel}"
 	fi
 
-	_polap_log1 "  argument1: ${_pread_sel}"
-	_polap_log1 "  argument2: ${_read_names}"
+	_polap_log2 "  argument1: ${_pread_sel}"
+	_polap_log2 "  argument2: ${_read_names}"
 
 	##############################################################################
 	# Main input files: seed contigs and long-read data to map on the contigs
 	#   The Minimap2 mapping should have been completed
-	_polap_log1 "  input1: ${_polap_var_oga_contig}"
+	_polap_log2 "  input1: ${_polap_var_oga_contig}"
 
 	if [[ ! -d "${_polap_var_oga_contig}" ]]; then
 		_polap_log0 "Do map-reads before test-reads"
@@ -777,11 +777,11 @@ HEREDOC
 	local CONTIG_LENGTH=$(<"${_polap_var_oga_contig}/contig_total_length.txt")
 	_polap_log2_cat "${_polap_var_oga_contig}/contig_total_length.txt"
 
-	_polap_log1 "  determines which long-read data to use ..."
+	_polap_log2 "  determines which long-read data to use ..."
 	local _source_long_reads_fq=""
 	_polap_oga_determine-long-read-file _source_long_reads_fq
 
-	_polap_log1 "  input2: ${_source_long_reads_fq}"
+	_polap_log2 "  input2: ${_source_long_reads_fq}"
 	if [[ -s "${_source_long_reads_fq}" ]]; then
 		_polap_log2 "  input1: ${_source_long_reads_fq} for a source of long-read data"
 	else
@@ -1230,11 +1230,11 @@ HEREDOC
 		_polap_log3_cmd rm -rf "${_polap_var_oga}"/{00-assembly,10-consensus,20-repeat,30-contigger,40-polishing}
 	fi
 
-	_polap_log0 "flye2 runs on the assembly ${_arg_jnum}"
+	_polap_log1 "flye2 runs on the assembly ${_arg_jnum}"
 	local _contig_fa="${_polap_var_oga_contig}/contig.fa"
 	local _long_reads="${_polap_var_oga_subsample}/${_pread_sel}/0.fq.gz"
-	_polap_log1 "  input1: ${_polap_var_oga_contig}/contig.fa"
-	_polap_log1 "  input2: ${_polap_var_oga_subsample}/${_pread_sel}/0.fq.gz"
+	_polap_log2 "  input1: ${_polap_var_oga_contig}/contig.fa"
+	_polap_log2 "  input2: ${_polap_var_oga_subsample}/${_pread_sel}/0.fq.gz"
 
 	if [ ! -s "${_contig_fa}" ]; then
 		_polap_log0 "ERROR: no selected-contig file: ${_contig_fa}"
@@ -1250,12 +1250,12 @@ HEREDOC
 	_polap_log2_cat "${_polap_var_oga_contig}/contig_total_length.txt"
 	local _contig_length_bp=$(_polap_utility_convert_bp ${_CONTIG_LENGTH})
 
-	_polap_log1 "  organelle genome size based on the seed contig selection: ${_contig_length_bp}"
+	_polap_log2 "  organelle genome size based on the seed contig selection: ${_contig_length_bp}"
 
-	_polap_log1 "  executing the organelle-genome assembly using flye on ${_arg_jnum} ..."
-	_polap_log1 "    input1: ${_long_reads}"
-	_polap_log1 "    output1: ${_polap_var_oga}/30-contigger/graph_final.gfa"
-	_polap_log1 "    output2: ${_polap_var_oga}/assembly_graph.gfa"
+	_polap_log2 "  executing the organelle-genome assembly using flye on ${_arg_jnum} ..."
+	_polap_log2 "    input1: ${_long_reads}"
+	_polap_log2 "    output1: ${_polap_var_oga}/30-contigger/graph_final.gfa"
+	_polap_log2 "    output2: ${_polap_var_oga}/assembly_graph.gfa"
 	# if [[ "${_arg_plastid}" == "on" ]]; then
 	# 	_CONTIG_LENGTH=$((_CONTIG_LENGTH * 3))
 	# fi
@@ -1271,9 +1271,9 @@ HEREDOC
 
 	rm -f "${_polap_var_output_oga_gfa}"
 	ln -sf "${_polap_var_oga_assembly_graph_gfa}" "${_polap_var_output_oga_gfa}"
-	_polap_log0 "  output: the assembly graph: ${_polap_var_oga_contigger_edges_gfa}"
-	_polap_log0 "  output: the assembly graph: ${_polap_var_oga_assembly_graph_gfa}"
-	_polap_log0 "  output: the assembly graph: ${_polap_var_output_oga_gfa}"
+	_polap_log1 "  output: the assembly graph: ${_polap_var_oga_contigger_edges_gfa}"
+	_polap_log1 "  output: the assembly graph: ${_polap_var_oga_assembly_graph_gfa}"
+	_polap_log1 "  output: the assembly graph: ${_polap_var_output_oga_gfa}"
 	jnum_next=$(_polap_lib_string-increment_label "${_arg_jnum}")
 	# jnum_next=$((_arg_jnum + 1))
 	_polap_log1 "  create and edit ${_arg_outdir}/${_arg_jnum}/mt.contig.name-${jnum_next} and rerun assemble2"

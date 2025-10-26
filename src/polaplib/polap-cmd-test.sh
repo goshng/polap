@@ -268,6 +268,22 @@ HEREDOC
 		fi
 	fi
 
+	if [[ "${_arg_menu[1]}" == "math" ]]; then
+		local v=$(_polap_lib_math-percentify 0.87345)
+		_polap_log0 "0.87345 -> $v"
+		local v=$(_polap_lib_math-percentify 0.87345 3 floor) # 87.345  (floor to 3)
+		_polap_log0 "0.87345 -> $v"
+		_polap_lib_math-percentify 1e-3 1 ceil # 0.1     (ceil to 1)
+		# _polap_lib_math-percentify -0.1            # ERROR with caller file:line (exits 1)
+		# _polap_lib_math-percentify 1.2 # ERROR (out of [0,1])
+	fi
+
+	if [[ "${_arg_menu[1]}" == "fastq-estimate" ]]; then
+		local v=$(_polap_lib_fastq-estimate-bases ${_arg_long_reads})
+		local v_str=$(_polap_lib_unit-convert_bp ${v})
+		_polap_log0 "${_arg_long_reads} size: $v ($v_str)"
+	fi
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

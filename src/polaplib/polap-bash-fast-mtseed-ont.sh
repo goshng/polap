@@ -14,11 +14,19 @@
 #
 set -euo pipefail
 
+# options to adjust to have a smaller number of mito reads
+#
+# ../SRRxxx -> all of the reads
+# mtseed/keep.nonpt.ids -> number of nuclear and mito reads
+# mtseed/05-round/select_ids.txt -> number of mito reads
+# then, miniasm plus minimap2
+
 # ────────────────────────────────────────────────────────────────────
 # Paths & environment
 # ────────────────────────────────────────────────────────────────────
 _POLAPLIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${_POLAPLIB_DIR}/polap-lib-conda.sh" || true
+source "${_POLAPLIB_DIR}/polap-lib-math.sh" || true
 
 # Helpers (fast-mtseed)
 HELP="${_POLAPLIB_DIR}/fast-mtseed-ont"
@@ -66,8 +74,9 @@ _note_base() {
 	local src="${BASH_SOURCE[2]##*/}"
 	local ln="${BASH_LINENO[1]}"
 	local ts
-	ts="$(date +'%F %T')"
-	local line="[$ts][${src}:${ln}] $msg"
+	# ts="$(date +'%F %T')"
+	ts="$(date +'%T')"
+	local line="$ts [${src}:${ln}] $msg"
 	if [[ "${VERBOSE:-0}" -gt "$lvl" ]]; then
 		if [[ "${_arg_log_stderr:-off}" == "off" ]]; then
 			printf "%s\n" "$line" >&3 || printf "%s\n" "$line" >&2
@@ -151,60 +160,81 @@ milli_to_str() {
 	printf '%s%d.%03d\n' "$sgn" $((m / 1000)) $((m % 1000))
 }
 
-# Sample either 10% of reads or ~1 Gbp of sequence, whichever is smaller.
-# Usage:
-#   sample_min_10pct_or_1gb "$R1" "$SAMP_FQ" ["$seed"]
-# Env:
-#   DRY=1  -> dry-run (prints planned ratio but does not execute)
-#   note1  -> optional logger function
-sample_min_10pct_or_1gb() {
-	local in="$1"
-	local out="$2"
-	local seed="${3:-13}"
+# Version: v0.1.1
+# exists FILE
+# Exit 2 if FILE does not exist or is empty.
+# Version: v0.2.0
+# exists FILE
+# Check if a file exists and is non-empty.
+# If missing or empty, print an error message including caller info and exit 2.
 
-	# sanity checks
-	if [[ -z "$in" || ! -s "$in" ]]; then
-		echo "ERR: input reads missing: $in" >&2
+exists() {
+	local file="$1"
+
+	if [[ ! -s "$file" ]]; then
+		# --- caller info ---
+		local caller_func="${FUNCNAME[1]:-MAIN}"
+		local caller_file="$(basename "${BASH_SOURCE[1]:-unknown}")"
+		local caller_line="${BASH_LINENO[0]:-?}"
+
+		printf "ERR: missing or empty file: %s\n" "$file" >&2
+		printf "     (called from %s() in %s:%s)\n" \
+			"$caller_func" "$caller_file" "$caller_line" >&2
+		exit 2
+	fi
+}
+
+# Version: v0.1.0
+# have CMD
+# Check if a command exists in PATH.
+# Returns 0 if found, otherwise prints error and returns 2.
+#
+# examples:
+# have seqkit || return 2
+# have bc || return 2
+have() {
+	local cmd="$1"
+	if ! command -v "$cmd" >/dev/null 2>&1; then
+		echo "ERR: $cmd not found" >&2
 		return 2
 	fi
-	if ! command -v seqkit >/dev/null 2>&1; then
-		echo "ERR: seqkit not found in PATH" >&2
-		return 3
+}
+
+count_bases() {
+	local seqkit_stats_ta_tsv="${1}.seqkit.stats.ta.tsv"
+	if [[ ! -s "$seqkit_stats_ta_tsv" ]]; then
+		seqkit stats -Ta "$1" -o "$seqkit_stats_ta_tsv"
 	fi
+	awk 'NR==2 {print $5}' "$seqkit_stats_ta_tsv"
+}
 
-	# estimate total bases (FASTA/FASTQ; gz/plain). Column 5 = sum_len
-	local total_bases
-	total_bases=$(seqkit stats -T "$in" 2>/dev/null | awk 'NR==2 {print $5}')
-	if [[ -z "$total_bases" || "$total_bases" -le 0 ]]; then
-		echo "ERR: could not estimate total bases for: $in" >&2
-		return 4
+# Sample either 10% of reads or ~1 Gbp of sequence, whichever is smaller.
+# Version: v0.1.0
+# sample_min_10pct_or_1gb IN_FASTQ OUT_FASTQ [SEED]
+# Subsample to the smaller of 10% or 1 GB of bases, without using awk.
+# Requires: seqkit, bc
+sample_min_10pct_or_1gb() {
+	local in="$1" out="$2" seed="${3:-13}"
+
+	if [[ -z "$in" || -z "$out" ]]; then
+		echo "usage: sample_min_10pct_or_1gb IN OUT [SEED]" >&2
+		return 2
 	fi
+	have seqkit || return 2
+	have bc || return 2
 
-	# ratios: 10% vs 1e9 / total_bases
-	local ratio10="0.10"
-	local ratio1g
-	ratio1g=$(awk -v tb="$total_bases" 'BEGIN{
-    if (tb<=0) {print 1.0; exit}
-    r=1e9/tb; if (r>1) r=1; printf("%.6f", r)
-  }')
+	# total bases from seqkit stats (TSV): header line then data line; col 5 = sum_len
+	local total_bases="$(count_bases "$in")"
+	# r1g = min(1.0, 1e9 / total_bases), scale to 6 decimals
+	local r1g="$(bc -l <<<"scale=6; r=(10^9)/$total_bases; if (r>1) r=1; r")"
+	# ratio = min(0.10, r1g) using bc only (no awk)
+	local ratio="$(bc -l <<<"scale=6; a=0.10; b=$r1g; if (a<b) a else b")"
 
-	# pick smaller ratio
-	local ratio
-	ratio=$(awk -v r1="$ratio10" -v r2="$ratio1g" 'BEGIN{ if (r1<r2) print r1; else print r2 }')
-
-	# log
-	if declare -F note1 >/dev/null 2>&1; then
-		note1 "seqkit sample: total_bases=${total_bases}; ratio_10%=${ratio10}; ratio_1Gb=${ratio1g}; using ratio=${ratio}"
-	else
-		echo "[INFO] seqkit sample ratio=${ratio} (min of 10% and 1Gb/total=${ratio1g})"
-	fi
-
-	# run
-	if ((${DRY:-0} == 0)); then
-		seqkit sample -s "${seed}" -p "${ratio}" "$in" -o "$out"
-	else
-		echo "[DRY] seqkit sample -s ${seed} -p ${ratio} \"$in\" -o \"$out\""
-	fi
+	note2 "total_bases: $total_bases"
+	note2 "r1g: $r1g"
+	note2 "ratio: $ratio"
+	note1 seqkit sample -s "$seed" -p "$ratio" "$in" -o "$out"
+	seqkit sample -s "$seed" -p "$ratio" "$in" -o "$out"
 }
 
 # ────────────────────────────────────────────────────────────────────
@@ -277,6 +307,7 @@ Usage: $0 -r reads.fq.gz -p pt_ref.fa -o outdir [options]
 EOF
 }
 
+# Command-line processing
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 	-r | --reads)
@@ -293,6 +324,7 @@ while [[ $# -gt 0 ]]; do
 		;;
 	-t | --threads)
 		threads="$2"
+		TOTAL_CORES="$2"
 		shift 2
 		;;
 	--ava-mode)
@@ -661,6 +693,14 @@ choose_mm2_preset() {
 	fi
 }
 
+ST0_check() {
+	local outdir="$1"
+
+	echo 1 >&2
+
+	exists "$nprot"
+}
+
 # ST1: Build plastid (PT) isoforms and doubled single-record references
 # Usage:
 #   ST1_pt_isoform "$outdir"
@@ -673,7 +713,7 @@ choose_mm2_preset() {
 ST1_pt_isoform() {
 	local outdir="$1"
 
-	note1 "1a) Build PT isoforms A/B"
+	note2 "1a) Build PT isoforms A/B"
 	mkdir -p "$PANEL_DIR"
 	prof_start "pt_isoform"
 	cmd bash "$PT_ISOFORM_SH" -r "$pt_ref" -o "$PANEL_DIR" -t "$threads"
@@ -687,7 +727,7 @@ ST1_pt_isoform() {
 		exit 3
 	fi
 
-	note1 "1b) Double isoforms (single-record)"
+	note2 "1b) Double isoforms (single-record)"
 	dbld() {
 		python - "$1" "$2" <<'PY'
 import sys
@@ -732,7 +772,7 @@ ST2_pt_map() {
 	local outdir="$1"
 	local reads="$2"
 
-	note1 "1c) Map reads -> doubled A/B"
+	note2 "1c) Map reads -> doubled A/B"
 	local MAP_DIR="$outdir/02-map"
 	mkdir -p "$MAP_DIR"
 	local PAF_A="$MAP_DIR/formA.paf"
@@ -752,13 +792,14 @@ ST2_pt_map() {
 		PAF_B=""
 	fi
 
-	note1 "1d) MT-guided identity cutoff & emit pt.ids"
+	note2 "1d) MT-guided identity cutoff & emit pt.ids"
 	local PT_VARS="$outdir/pt_thresh.vars"
 	local PT_DIAG="$outdir/pt_thresh.diag.tsv"
 	local PT_IDS="$outdir/pt.ids"
 
+	# skip because identity_min is null.
 	if [[ -n "${identity_min:-}" ]]; then
-		note1 "using --identity-min=${identity_min} ; alen_min=${alen_min}"
+		note2 "using --identity-min=${identity_min} ; alen_min=${alen_min}"
 		if ((!DRY)); then
 			awk -v ID="$identity_min" -v AL="${alen_min:-0}" 'BEGIN{FS=OFS="\t"} NF>=12{ id=($11>0?$10/$11:0); if(id>=ID && $11+0>=AL) print $1 }' "$PAF_A" | sort -u >"$outdir/ptA.ids"
 			if [[ -s "$PAF_B" ]]; then
@@ -771,8 +812,14 @@ ST2_pt_map() {
 			: >"$PT_DIAG"
 		fi
 	else
+		note1 "using $PY_PT_THRESH -> file: $PT_VARS and PT IDs: $PT_IDS"
 		prof_start "pt_ident_threshold"
 		if ((!DRY)); then
+			note1 python "$PY_PT_THRESH" \
+				--paf "$PAF_A" ${PAF_B:+ "$PAF_B"} \
+				--pt-ids "${pt_origin:-/dev/null}" --mt-ids "${mt_origin:-/dev/null}" \
+				--alen-min "${alen_min:-0}" --fpr "${fpr:-0.10}" --tpr "${tpr:-0.90}" \
+				--diag "$PT_DIAG" --emit-pt-ids "$PT_IDS" ">$PT_VARS"
 			python "$PY_PT_THRESH" \
 				--paf "$PAF_A" ${PAF_B:+ "$PAF_B"} \
 				--pt-ids "${pt_origin:-/dev/null}" --mt-ids "${mt_origin:-/dev/null}" \
@@ -782,17 +829,20 @@ ST2_pt_map() {
 		prof_end
 	fi
 
-	note1 "1e) Remove PT reads -> R1"
-	local ident_min_out="${identity_min:-}"
-	if [[ -s "$PT_VARS" ]]; then
-		# robust parsing: read key=value pairs safely
-		while IFS='=' read -r key val; do
-			case "$key" in
-			ident_min) ident_min_out="$val" ;;
-			alen_min) alen_min="$val" ;;
-			esac
-		done <"$PT_VARS"
-	fi
+	note2 "1e) Reading $PT_VARS to remove PT reads -> R1"
+
+	# delete this: not used identity_min and alen_min values later
+	#
+	# local ident_min_out="${identity_min:-}"
+	# if [[ -s "$PT_VARS" ]]; then
+	# 	# robust parsing: read key=value pairs safely
+	# 	while IFS='=' read -r key val; do
+	# 		case "$key" in
+	# 		ident_min) ident_min_out="$val" ;;
+	# 		alen_min) alen_min="$val" ;;
+	# 		esac
+	# 	done <"$PT_VARS"
+	# fi
 
 	if ((!DRY)); then
 		seqkit fx2tab -ni "$reads" | sort -u >"$MAP_DIR/all.ids"
@@ -802,8 +852,8 @@ ST2_pt_map() {
 	fi
 
 	R1="$outdir/reads.nonpt.fq.gz"
-	seqkit stats -T "$R1" >"$R1".seqkit.stats.T.txt
-	export R1
+	seqkit stats -Ta "$R1" >"$R1".seqkit.stats.ta.tsv
+	# export R1
 }
 
 # ────────────────────────────────────────────────────────────────────
@@ -812,17 +862,18 @@ ST2_pt_map() {
 
 # coverage = (#nonzero rows in overlapness) / (#reads in R1)
 _ovl_cov() {
-	local ovl="$1" reads="$2"
+	local ovl="$1"
+	local reads="$2"
 	local nz tot
 	nz=$(awk 'NR>1{c++} END{print (c+0)}' "$ovl" 2>/dev/null || echo 0)
 
 	tot=0
-	if [[ -s "$reads".seqkit.stats.T.txt ]]; then
-		tot=$(cat "$reads" 2>/dev/null | awk 'NR==2{print $4+0}')
-	else
-		tot=$(seqkit stats -T "$reads" 2>/dev/null | awk 'NR==2{print $4+0}')
+
+	local seqkit_stats_ta="${reads}.seqkit.stats.Ta.tsv"
+	if [[ ! -s "$seqkit_stats_ta" ]]; then
+		seqkit stats -Ta "$reads" -o "$seqkit_stats_ta"
 	fi
-	# _polap_assert '((tot > 0))'
+	tot=$(cat "$seqkit_stats_ta" 2>/dev/null | awk 'NR==2{print $4+0}')
 
 	awk -v a="$nz" -v b="$tot" 'BEGIN{ if (b>0) printf "%.6f", a/b; else print 0 }'
 }
@@ -1048,7 +1099,7 @@ _combine_edges() {
 
 # Expect these to be set:
 #   EDGES_COMBINED="$ST3/edges_loose.tsv.gz"
-#   OVL_STRICT="$ST3/overlapness_strict.tsv"
+#   OVL_STRICT="$ST3/overlapness.tsv"
 #   REFILTER_EDGES="${HELP}/polap-py-refilter-edges-to-overlapness.py"
 #   R1 (reads), SHORT_DIR, SHARD_DIR, PARTS_DIR
 #   shortlist_frac, shortlist_step_frac, shortlist_max_frac, shortlist_target
@@ -1089,8 +1140,12 @@ _refilter_once_eweight_loop() {
 		cov=$(_ovl_cov "$OVL_STRICT" "$R1")
 		cov="${cov:-0}"
 		cov_pct=$(awk -v c="$cov" 'BEGIN{printf "%.2f", 100*c}')
-		tgt_pct=$(awk -v t="$shortlist_target" 'BEGIN{printf "%.2f", 100*t}')
-		note0 "hybrid: coverage=${cov_pct}% target=${tgt_pct}% (eweight=$ew)"
+
+		local tgt_pct=$(_polap_lib_math-percentify $shortlist_target)
+		# tgt_pct=$(awk -v t="$shortlist_target" 'BEGIN{printf "%.2f", 100*t}')
+		# tgt_pct=$(printf "%.2f" "$(bc -l <<<"$shortlist_target * 100")")
+
+		note1 "coverage=${cov_pct}% target=${tgt_pct}% (eweight=$ew)"
 
 		# track best attempt
 		if awk -v a="$cov" -v b="$best_cov" 'BEGIN{exit !(a>b)}'; then
@@ -1149,89 +1204,69 @@ _refilter_once_eweight_loop() {
 TARGET_GBP="${TARGET_GBP:-1}" # target ~ Gbp per shard (default 1 Gbp)
 ST3_part_vs_part() {
 	local OUTDIR="$1"
+	local READS="$2"
 
-	local READS="${reads}"
+	# Use R1 not reads to compute the overlapness
+	# local READS="${reads}"
+
 	local SEED="${SEED:-13}"
 
 	: "${INDEX_OPTS:=}"
 	: "${MAP_OPTS:=}"
 
 	local STDIR="${OUTDIR}/03-allvsall"
-	local SHUF_DIR="${STDIR}/shuffled"
-	local SHARD_DIR="${STDIR}/shards"
-	local EDGE_DIR="${STDIR}/edges"
-	mkdir -p "$SHUF_DIR" "$SHARD_DIR" "$EDGE_DIR"
+
+	local SHARD_DIR="${STDIR}/01-shards"
+	local EDGE_DIR="${STDIR}/02-edges"
+
+	mkdir -p "$SHARD_DIR" "$EDGE_DIR"
 
 	# --- helpers ---
 	_zcat() { case "$1" in *.gz) gzip -cd -- "$1" ;; *) cat -- "$1" ;; esac }
 
-	_estimate_bases() {
-		# Prefer seqkit stats (fast & robust). Fallback: awk over FASTQ (line 2 of each 4).
-		if command -v seqkit >/dev/null 2>&1; then
-			# seqkit stats -T columns: file, format, type, num_seqs, sum_len, ...
-			# We take 'sum_len' (bases). Works for FASTA/FASTQ (gz/plain).
-			seqkit stats -T "$1" 2>/dev/null | awk 'NR==2 {print $5}' || echo 0
-		else
-			# FASTQ fallback (heuristic). If FASTA, this undercounts; encourage seqkit install.
-			_zcat "$1" | awk 'NR%4==2{n+=length($0)} END{print (n+0)}'
+	# Version: v0.1.2
+	# calc_shards TOTAL_BASES TARGET_GBP
+	# Computes number of shards (B) from total bases and target gigabases.
+	# Ensures at least one shard and prints the result.
+	calc_shards() {
+		local TOTAL_BASES="$1"
+		local TARGET_GBP="$2"
+		local TARGET_BASES B
+
+		# 1 gigabase = 10^9 bases
+		local GIGA=1000000000
+
+		TARGET_BASES=$((TARGET_GBP * GIGA))
+		B=$(((TOTAL_BASES + TARGET_BASES - 1) / TARGET_BASES))
+
+		if [[ "$B" -lt 1 ]]; then
+			B=1
 		fi
+
+		echo "$B"
 	}
 
-	_ceil_div() { # ceil(a/b)
-		local a="$1" b="$2"
-		echo $(((a + b - 1) / b))
-	}
+	local TOTAL_BASES="$(count_bases "$READS")"
+	note1 "[ST3] Count total bases in: $READS -> $TOTAL_BASES"
+	local TARGET_GBP=1
+	local B=$(calc_shards "$TOTAL_BASES" "$TARGET_GBP")
+	note1 "[ST3] Number of shards of $TARGET_GBP Gb: $B"
 
-	# 1) estimate total bases & compute shard count B
-	note1 "[ST3] Estimating total bases in: $READS"
-	local TOTAL_BASES
-	TOTAL_BASES="$(_estimate_bases "$READS")"
-	if [[ -z "$TOTAL_BASES" || "$TOTAL_BASES" -le 0 ]]; then
-		note1 "[ST3][WARN] Could not estimate bases (got: $TOTAL_BASES). Defaulting B=16."
-		local B=16
-	else
-		local TARGET_BASES=$((TARGET_GBP * 1000000000))
-		local B
-		B="$(_ceil_div "$TOTAL_BASES" "$TARGET_BASES")"
-		[[ "$B" -lt 1 ]] && B=1
-		note1 "[ST3] Total bases ≈ $TOTAL_BASES ; target/shard=${TARGET_BASES} ->  B=$B"
-	fi
-
-	# 2) shuffle once (deterministic) then split equally into B parts
-	local SHUF="${SHUF_DIR}/reads.shuf.fq.gz"
-	if ((do_shuffle == 0)); then
-		note1 "[ST3] no Shuffling reads ->  SHUF = $R1"
-		SHUF="${outdir}/reads.nonpt.fq.gz"
-	else
-		if [[ ! -s "$SHUF" ]]; then
-			note1 "[ST3] Shuffling reads (seed=$SEED) ->  $SHUF"
-			seqkit shuffle -s "$SEED" "$READS" | gzip -c >"$SHUF"
-		else
-			note1 "[ST3] Using existing shuffle: $SHUF"
-		fi
-	fi
-
-	if [[ ! -e "${SHARD_DIR}/shard_000.fq.gz" ]]; then
-		note1 "[ST3] Splitting shuffled reads into $B shards ->  $SHARD_DIR"
-		# seqkit split2 creates reads.shuf.part_001.gz, ...
-		rm -rf "$SHARD_DIR"
-		mkdir -p "$SHARD_DIR"
-		seqkit split2 -p "$B" -O "$SHARD_DIR" "$SHUF"
-		local i=1
-		# mapfile -t parts < <(find "$SHARD_DIR" -maxdepth 1 -type f -name "reads.shuf.part_*" | sort -V)
-		for p in "$SHARD_DIR"/*.fq*; do
-			printf -v idx "%03d" "$i"
-			mv -f "$p" "${SHARD_DIR}/shard_${idx}.fq.gz"
-			((i++))
-		done
-	else
-		note1 "[ST3] Found shards in $SHARD_DIR"
-	fi
+	note1 "[ST3] Splitting shuffled reads into $B shards ->  $SHARD_DIR"
+	# seqkit split2 creates reads.shuf.part_001.gz, ...
+	rm -rf "$SHARD_DIR"
+	mkdir -p "$SHARD_DIR"
+	seqkit split2 -p "$B" -O "$SHARD_DIR" "$READS"
+	local i=1
+	for p in "$SHARD_DIR"/*.fq*; do
+		printf -v idx "%03d" "$i"
+		mv -f "$p" "${SHARD_DIR}/shard_${idx}.fq.gz"
+		((i++))
+	done
 
 	# Parallelized per-shard index + map -> edges.tsv.gz using GNU parallel
 	# Requires: GNU parallel. Falls back to serial if not available.
 	# Uses env vars: B, SHARD_DIR, EDGE_DIR, INDEX_OPTS, MAP_OPTS, TOTAL_CORES, EDGE_DUMP, note1
-
 	# Worker for a single shard index (000-padded) like "001"
 	_st3_process_shard() {
 		local idx="$1"
@@ -1245,6 +1280,16 @@ ST3_part_vs_part() {
 			return 0
 		fi
 
+		# minimap2 -> dump:
+		# edge_u edge_v alen ident weight
+		# edge_u, edge_v: read IDs
+		# alen: PAF column 11
+		# ident: col10/col11 of PAF or number of match / alignment length
+		# weight: ident * (alen / min(qlen,tlen))
+		#
+		# where
+		# qlen: col01 of PAF
+		# tlen: col06 of PAF
 		if ! minimap2 -x ava-ont -t "${MM2_TOTAL_CORES:-8}" ${MAP_OPTS:-} \
 			"$idxpath" "$infile" 2>>"$log" |
 			python "$EDGE_DUMP" --paf - --out - --min_olen 0 --min_ident 0 --w_floor 0 |
@@ -1271,323 +1316,45 @@ ST3_part_vs_part() {
 		done
 	fi
 
-	# 3) per-shard index + map -> edge TSV via EDGE_DUMP (no filtering thresholds)
-	# note1 "[ST3] Per-shard indexing + mapping with minimap2 (-x ava-ont)"
-	# local i
-	# for ((i = 1; i <= B; i++)); do
-	# 	printf -v idx "%03d" "$i"
-	# 	local shard="${SHARD_DIR}/shard_${idx}.fq.gz"
-	# 	local idxpath="${EDGE_DIR}/shard_${idx}.mmi"
-	# 	local infile="${SHARD_DIR}/shard_${idx}.fq.gz"
-	# 	local raw="${EDGE_DIR}/shard_${idx}.edges.tsv.gz"
-	# 	local log="${EDGE_DIR}/shard_${idx}.minimap2.log"
-	#
-	# 	if [[ -s "$raw" ]]; then
-	# 		note1 "  [${idx}] exists ->  $raw (skip)"
-	# 		continue
-	# 	fi
-	#
-	# 	note1 "  [${idx}] indexing -> $idxpath"
-	# 	if ! minimap2 -x ava-ont $INDEX_OPTS -d "$idxpath" "$shard" 2>"$log"; then
-	# 		note1 "  [${idx}][ERR] minimap2 index failed"
-	# 		continue
-	# 	fi
-	#
-	# 	note1 "  [${idx}] mapping + edge dump ->  $raw"
-	# 	# Your requested pattern:
-	# 	#   if ! minimap2 -x ava-ont -t "$TOTAL_CORES" $MAP_OPTS "$idx" "$infile" | python "$EDGE_DUMP" ... ; then
-	# 	if ! minimap2 -x ava-ont -t "$TOTAL_CORES" $MAP_OPTS \
-	# 		"$idxpath" "$infile" 2>>"$log" |
-	# 		python "$EDGE_DUMP" --paf - --out - \
-	# 			--min_olen 0 --min_ident 0 --w_floor 0 |
-	# 		gzip -c >"$raw"; then
-	# 		note1 "  [${idx}][ERR] mapping/edge_dump failed"
-	# 		continue
-	# 	fi
-	# done
-
 	# 4) concat per-shard TSV -> one big edges.tsv.gz
 	local ALL="${EDGE_DIR}/all.edges.tsv.gz"
-	if [[ ! -s "$ALL" ]]; then
-		note1 "[ST3] Concatenating shard edges -> $ALL"
-		# Using zcat (works on .gz files)
-		ls "$EDGE_DIR"/shard_*.edges.tsv.gz | sort -V |
-			xargs zcat |
-			gzip -c >"$ALL"
-	else
-		note1 "[ST3] Found concatenated edges: $ALL"
-	fi
+	note1 "[ST3] Concatenating shard edges -> $ALL"
+	# Using zcat (works on .gz files)
+	ls "$EDGE_DIR"/shard_*.edges.tsv.gz | sort -V |
+		xargs zcat |
+		gzip -c >"$ALL"
 
-	note1 "[ST3] Done."
-	note1 "  edges dir: $EDGE_DIR"
-	note1 "  combined : $ALL"
-	local EDGES_COMBINED="$ST3/edges_loose.tsv.gz"
-	ln -sf "edges/all.edges.tsv.gz" "$EDGES_COMBINED"
-}
-
-# Example call (uncomment to run directly):
-# ST3_run "reads.fastq.gz" "out" 16 1 13
-
-# ────────────────────────────────────────────────────────────────────
-# Step 2: HYBRID (edge-first) -> edges_loose.tsv.gz -> overlapness (refilter by eweight)
-# ────────────────────────────────────────────────────────────────────
-ST3_all_vs_all() {
-	local outdir="$1"
-
-	# Layout
-	SHORT_DIR="$ST3/01-shortlist"
-	SHARD_DIR="$ST3/02-shards"
-	PARTS_DIR="$ST3/03-edges_parts"
-	EDGES_COMBINED="$ST3/edges_loose.tsv.gz"
-	OVL_STRICT="$ST3/overlapness_strict.tsv"
-	mkdir -p "$SHORT_DIR" "$SHARD_DIR" "$PARTS_DIR"
-
-	# 2a) shortlist & shard once
-	note1 "2a) build shortlist by length, fraction=${shortlist_frac} -> $SHORT_DIR/R1.short.ids"
-	note2 _build_shortlist_len "$R1" "$SHORT_DIR/R1.short.ids" "$shortlist_frac"
-	_build_shortlist_len "$R1" "$SHORT_DIR/R1.short.ids" "$shortlist_frac"
-	note2 seqkit grep -f "$SHORT_DIR/R1.short.ids" "$R1" -o "$SHORT_DIR/R1.short.fq.gz"
-	seqkit grep -f "$SHORT_DIR/R1.short.ids" "$R1" -o "$SHORT_DIR/R1.short.fq.gz"
-
-	# break the read data file into pieces
-	note1 "2b) sharding $R1 into $hybrid_n_shards blocks at $SHARD_DIR"
-	if ! _shard_targets_once "$R1" "$SHARD_DIR" "$hybrid_n_shards"; then
-		note0 "ERR: sharding failed"
-		exit 2
-	fi
-
-	# minimap the pieces on the shortlist read data.
-	note1 "2c) minimap the pieces on the shortlist read data: $SHARD_DIR x $SHORT_DIR/R1.short.fq.gz"
-	note2 _map_edges_parts "$SHARD_DIR" "$SHORT_DIR/R1.short.fq.gz" "$PARTS_DIR"
-	if ! _map_edges_parts "$SHARD_DIR" "$SHORT_DIR/R1.short.fq.gz" "$PARTS_DIR"; then
-		note0 "ERR: edge-part mapping failed"
-		exit 2
-	fi
-
-	note1 "2d) combine parts at $PARTS_DIR to $EDGES_COMBINED"
-	if ! _combine_edges "$PARTS_DIR" "$EDGES_COMBINED"; then
-		note0 "ERR: edge combine failed"
-		exit 2
-	fi
-
-	note1 "2e) loop over edge weights to get $OVL_STRICT from $EDGES_COMBINED"
-
-	# One-pass eweight thresholding loop (uses to_milli/milli_to_str and calls REFILTER_EDGES each step)
-	# Assumes:
-	#   EDGES_COMBINED="$ST3/edges_loose.tsv.gz"
-	#   OVL_STRICT="$ST3/overlapness_strict.tsv"
-	#   REFILTER_EDGES="${HELP}/polap-py-refilter-edges-to-overlapness.py"
-	#   _ovl_cov prints coverage fraction (0..1)
-	# Knobs (defaults if unset):
-	eweight_m=$(to_milli "${eweight:-0.900}")     # start at 0.900
-	step_m=$(to_milli "${eweight_step:-0.050}")   # decrement 0.050
-	min_m=$(to_milli "${eweight_minimum:-0.010}") # floor 0.010
-	tgt_m=$(to_milli "${shortlist_target:-0.35}") # coverage target (0.35 -> 350)
-
-	# Sanity checks
-	if [[ ! -s "$EDGES_COMBINED" ]]; then
-		note0 "ERR: missing edges archive: $EDGES_COMBINED"
-		exit 2
-	fi
-	if ((step_m <= 0)); then
-		note0 "ERR: eweight_step must be > 0 (got '${eweight_step:-unset}')"
-		exit 2
-	fi
-
-	success=0
-	ew_m="$eweight_m"
-	while :; do
-		# clamp to floor and mark last
-		last=0
-		if ((ew_m < min_m)); then
-			ew_m="$min_m"
-			last=1
-		fi
-		ew_str=$(milli_to_str "$ew_m")
-
-		note1 "hybrid: refilter edges -> overlapness (eweight=$ew_str)"
-		if ! python "$REFILTER_EDGES" \
-			--edges "$EDGES_COMBINED" \
-			--w_floor "$ew_str" \
-			--out "$OVL_STRICT"; then
-			note0 "ERR: refilter failed at eweight=$ew_str"
-			exit 2
-		fi
-
-		cov_str=$(_ovl_cov "$OVL_STRICT" "$R1")
-		cov_str="${cov_str:-0}"
-		cov_m=$(to_milli "$cov_str")
-		cov_pct=$(awk -v c="$cov_str" 'BEGIN{printf "%.2f", 100*c}')
-		tgt_pct=$(awk -v t="${shortlist_target:-0}" 'BEGIN{printf "%.2f", 100*t}')
-		note1 "hybrid: coverage=${cov_pct}% target=${tgt_pct}% (eweight=$ew_str)"
-
-		if ((cov_m >= tgt_m)); then
-			eweight="$ew_str"
-			success=1
-			break
-		fi
-
-		# stop if we just tried the floor
-		if ((last)); then
-			break
-		fi
-
-		# descend to the next eweight
-		ew_m=$((ew_m - step_m))
-	done
-
-	# Finalize (no fallback restore, no further loops)
-	if [[ -s "$OVL_STRICT" ]]; then
-		cp -f "$OVL_STRICT" "$ST3/overlapness.tsv"
-		OTSV_GLOBAL="$ST3/overlapness.tsv"
-		cov_str=$(_ovl_cov "$OTSV_GLOBAL" "$R1")
-		cov_str="${cov_str:-0}"
-		cov_pct=$(awk -v c="$cov_str" 'BEGIN{printf "%.2f", 100*c}')
-		if ((success == 1)); then
-			note1 "hybrid: FINAL overlapness=$OTSV_GLOBAL ; eweight=$eweight ; coverage=${cov_pct}% (target met)"
-		else
-			note1 "hybrid: FINAL overlapness=$OTSV_GLOBAL ; eweight=$ew_str ; coverage=${cov_pct}% (target not met; floor reached)"
-		fi
-	else
-		note0 "ERR: no overlapness produced"
-		exit 2
-	fi
-
-	# Optional QC on the final overlapness
-	if ((!DRY)) && [[ -s "$OTSV_GLOBAL" ]]; then
-		QC_DIR="$ST3/04-qc"
-		mkdir -p "$QC_DIR"
-		OVL_VARS="$QC_DIR/overlap_qc.vars"
-		Rscript --vanilla "$SCAN_QCR" --input "$OTSV_GLOBAL" --outdir "$QC_DIR" --target 0.80 >"$OVL_VARS" || true
-	fi
-
-}
-
-ST3_overlapness_v1() {
-	local outdir="$1"
-
-	# Layout
-	SHORT_DIR="$ST3/01-shortlist"
-	SHARD_DIR="$ST3/02-shards"
-	PARTS_DIR="$ST3/03-edges_parts"
-
-	EDGES_COMBINED="$ST3/edges_loose.tsv.gz"
-	OVL_STRICT="$ST3/overlapness_strict.tsv"
-
-	note1 "2e) loop over edge weights to get $OVL_STRICT from $EDGES_COMBINED"
-
-	# One-pass eweight thresholding loop (uses to_milli/milli_to_str and calls REFILTER_EDGES each step)
-	# Assumes:
-	#   EDGES_COMBINED="$ST3/edges_loose.tsv.gz"
-	#   OVL_STRICT="$ST3/overlapness_strict.tsv"
-	#   REFILTER_EDGES="${HELP}/polap-py-refilter-edges-to-overlapness.py"
-	#   _ovl_cov prints coverage fraction (0..1)
-	# Knobs (defaults if unset):
-	eweight_m=$(to_milli "${eweight}")      # start at 0.900
-	step_m=$(to_milli "${eweight_step}")    # decrement 0.050
-	min_m=$(to_milli "${eweight_minimum}")  # floor 0.010
-	tgt_m=$(to_milli "${shortlist_target}") # coverage target (0.35 -> 350)
-
-	# Sanity checks
-	if [[ ! -s "$EDGES_COMBINED" ]]; then
-		note0 "ERR: missing edges archive: $EDGES_COMBINED"
-		exit 2
-	fi
-	if ((step_m <= 0)); then
-		note0 "ERR: eweight_step must be > 0 (got '${eweight_step:-unset}')"
-		exit 2
-	fi
-
-	success=0
-	ew_m="$eweight_m"
-	while :; do
-		# clamp to floor and mark last
-		last=0
-		if ((ew_m < min_m)); then
-			ew_m="$min_m"
-			last=1
-		fi
-		ew_str=$(milli_to_str "$ew_m")
-
-		note1 "hybrid: refilter edges -> overlapness (eweight=$ew_str)"
-		if ! python "$REFILTER_EDGES" \
-			--edges "$EDGES_COMBINED" \
-			--w_floor "$ew_str" \
-			--out "$OVL_STRICT"; then
-			note0 "ERR: refilter failed at eweight=$ew_str"
-			exit 2
-		fi
-
-		cov_str=$(_ovl_cov "$OVL_STRICT" "$R1")
-		cov_str="${cov_str:-0}"
-		cov_m=$(to_milli "$cov_str")
-		cov_pct=$(awk -v c="$cov_str" 'BEGIN{printf "%.2f", 100*c}')
-		tgt_pct=$(awk -v t="${shortlist_target:-0}" 'BEGIN{printf "%.2f", 100*t}')
-		note1 "hybrid: coverage=${cov_pct}% target=${tgt_pct}% (eweight=$ew_str)"
-
-		if ((cov_m >= tgt_m)); then
-			eweight="$ew_str"
-			success=1
-			break
-		fi
-
-		# stop if we just tried the floor
-		if ((last)); then
-			break
-		fi
-
-		# descend to the next eweight
-		ew_m=$((ew_m - step_m))
-	done
-
-	# Finalize (no fallback restore, no further loops)
-	if [[ -s "$OVL_STRICT" ]]; then
-		cp -f "$OVL_STRICT" "$ST3/overlapness.tsv"
-		OTSV_GLOBAL="$ST3/overlapness.tsv"
-		cov_str=$(_ovl_cov "$OTSV_GLOBAL" "$R1")
-		cov_str="${cov_str:-0}"
-		cov_pct=$(awk -v c="$cov_str" 'BEGIN{printf "%.2f", 100*c}')
-		if ((success == 1)); then
-			note1 "hybrid: FINAL overlapness=$OTSV_GLOBAL ; eweight=$eweight ; coverage=${cov_pct}% (target met)"
-		else
-			note1 "hybrid: FINAL overlapness=$OTSV_GLOBAL ; eweight=$ew_str ; coverage=${cov_pct}% (target not met; floor reached)"
-		fi
-	else
-		note0 "ERR: no overlapness produced"
-		exit 2
-	fi
-
-	# Optional QC on the final overlapness
-	if ((!DRY)) && [[ -s "$OTSV_GLOBAL" ]]; then
-		QC_DIR="$ST3/04-qc"
-		mkdir -p "$QC_DIR"
-		OVL_VARS="$QC_DIR/overlap_qc.vars"
-		Rscript --vanilla "$SCAN_QCR" --input "$OTSV_GLOBAL" --outdir "$QC_DIR" --target 0.80 >"$OVL_VARS" || true
-	fi
-
+	local EDGES_COMBINED="$STDIR/edges_loose.tsv.gz"
+	# ln -sf "02-edges/all.edges.tsv.gz" "$EDGES_COMBINED"
+	mv "${EDGE_DIR}/all.edges.tsv.gz" "$EDGES_COMBINED"
+	ln -sf "../edges_loose.tsv.gz" "${EDGE_DIR}/all.edges.tsv.gz"
+	note1 "[ST3] combined: $EDGES_COMBINED"
 }
 
 ST3_overlapness() {
-	local outdir="$1"
+	local OUTDIR="$1"
+	local READS="$2"
 
-	# Layout
-	SHORT_DIR="$ST3/01-shortlist"
-	SHARD_DIR="$ST3/02-shards"
-	PARTS_DIR="$ST3/03-edges_parts"
+	local STDIR="${OUTDIR}/03-allvsall"
+	local EDGES_COMBINED="$STDIR/edges_loose.tsv.gz"
+	local OVL_STRICT="$STDIR/overlapness.tsv"
 
-	EDGES_COMBINED="$ST3/edges_loose.tsv.gz"
-	OVL_STRICT="$ST3/overlapness_strict.tsv"
+	note1 "[ST3] input: Read-by-Read overlapness: $EDGES_COMBINED"
+	note1 "[ST3] output: Overlapness per read: $OVL_STRICT"
+	# Check the input files
+	exists "$EDGES_COMBINED"
 
+	note1 "ovelapness 35%: $STDIR/edges_loose.tsv.35.txt"
 	zcat "${EDGES_COMBINED}" | cut -f5 |
 		Rscript -e 'x <- scan(file="stdin", quiet=TRUE); q <- quantile(x, probs=0.35, type=7); cat(q, "\n")' \
-			>"$ST3/edges_loose.tsv.35.txt"
+			>"$STDIR/edges_loose.tsv.35.txt"
 
 	note1 "2e) loop over edge weights to get $OVL_STRICT from $EDGES_COMBINED"
 
 	# One-pass eweight thresholding loop (uses to_milli/milli_to_str and calls REFILTER_EDGES each step)
 	# Assumes:
 	#   EDGES_COMBINED="$ST3/edges_loose.tsv.gz"
-	#   OVL_STRICT="$ST3/overlapness_strict.tsv"
+	#   OVL_STRICT="$ST3/overlapness.tsv"
 	#   REFILTER_EDGES="${HELP}/polap-py-refilter-edges-to-overlapness.py"
 	#   _ovl_cov prints coverage fraction (0..1)
 	# Knobs (defaults if unset):
@@ -1597,49 +1364,40 @@ ST3_overlapness() {
 	tgt_m=$(to_milli "${shortlist_target}") # coverage target (0.35 -> 350)
 
 	# Sanity checks
-	if [[ ! -s "$EDGES_COMBINED" ]]; then
-		note0 "ERR: missing edges archive: $EDGES_COMBINED"
-		exit 2
-	fi
 	if ((step_m <= 0)); then
 		note0 "ERR: eweight_step must be > 0 (got '${eweight_step:-unset}')"
 		exit 2
 	fi
 
 	local ew_str=$(<"$ST3/edges_loose.tsv.35.txt")
+	note1 python "$REFILTER_EDGES" \
+		--edges "$EDGES_COMBINED" \
+		--w_floor "$ew_str" \
+		--out "$OVL_STRICT"
 	python "$REFILTER_EDGES" \
 		--edges "$EDGES_COMBINED" \
 		--w_floor "$ew_str" \
 		--out "$OVL_STRICT"
 
-	note1 "_ovl_cov $OVL_STRICT $R1"
-	cov_str=$(_ovl_cov "$OVL_STRICT" "$R1")
+	exists "$OVL_STRICT"
+	note1 "_ovl_cov $OVL_STRICT $READS"
+	cov_str=$(_ovl_cov "$OVL_STRICT" "$READS")
+
 	cov_str="${cov_str:-0}"
 	cov_m=$(to_milli "$cov_str")
-	cov_pct=$(awk -v c="$cov_str" 'BEGIN{printf "%.2f", 100*c}')
-	tgt_pct=$(awk -v t="${shortlist_target:-0}" 'BEGIN{printf "%.2f", 100*t}')
-	note1 "hybrid: coverage=${cov_pct}% ($cov_str) target=${tgt_pct}% (eweight=$ew_str)"
 
-	# Finalize (no fallback restore, no further loops)
-	if [[ -s "$OVL_STRICT" ]]; then
-		cp -f "$OVL_STRICT" "$ST3/overlapness.tsv"
-		OTSV_GLOBAL="$ST3/overlapness.tsv"
-		cov_str=$(_ovl_cov "$OTSV_GLOBAL" "$R1")
-		cov_str="${cov_str:-0}"
-		cov_pct=$(awk -v c="$cov_str" 'BEGIN{printf "%.2f", 100*c}')
-		note1 "hybrid: FINAL overlapness=$OTSV_GLOBAL ; eweight=$ew_str ; coverage=${cov_pct}% (target met)"
-	else
-		note0 "ERR: no overlapness produced"
-		exit 2
-	fi
+	local cov_pct=$(_polap_lib_math-percentify $cov_str)
+	local tgt_pct=$(_polap_lib_math-percentify $shortlist_target)
+	# cov_pct=$(awk -v c="$cov_str" 'BEGIN{printf "%.2f", 100*c}')
+	# tgt_pct=$(awk -v t="${shortlist_target:-0}" 'BEGIN{printf "%.2f", 100*t}')
+	note1 "coverage=${cov_pct}% ($cov_str) target=${tgt_pct}% (eweight=$ew_str)"
 
-	# Optional QC on the final overlapness
-	if ((!DRY)) && [[ -s "$OTSV_GLOBAL" ]]; then
-		QC_DIR="$ST3/04-qc"
-		mkdir -p "$QC_DIR"
-		OVL_VARS="$QC_DIR/overlap_qc.vars"
-		Rscript --vanilla "$SCAN_QCR" --input "$OTSV_GLOBAL" --outdir "$QC_DIR" --target 0.80 >"$OVL_VARS" || true
-	fi
+	note1 "[ST3] 04-qc"
+	local QC_DIR="$STDIR/04-qc"
+	mkdir -p "$QC_DIR"
+	local OVL_VARS="$QC_DIR/overlap_qc.vars"
+	note1 Rscript --vanilla "$SCAN_QCR" --input "$OVL_STRICT" --outdir "$QC_DIR" --target 0.80 ">$OVL_VARS"
+	Rscript --vanilla "$SCAN_QCR" --input "$OVL_STRICT" --outdir "$QC_DIR" --target 0.80 >"$OVL_VARS" || true
 }
 
 # 2. miniprot -t "${threads:-8}" …
@@ -1656,27 +1414,44 @@ ST3_overlapness() {
 # 	•	Redirect stdout into a file named nonpt.sample.busco.paf under $RDIR.
 # 	•	This file contains the alignment results in PAF format (Pairwise mApping Format), because miniprot outputs PAF by default.
 ST4_busco() {
+	local OUTDIR="$1"
+	local READS="$2"
 
-	local outdir="$1"
-	local ST3="$outdir/03-allvsall"
+	local ST3="$OUTDIR/03-allvsall"
+	local BDIR="$OUTDIR/04-busco"
 
-	if [[ -n "${nprot:-}" && -s "${nprot}" ]]; then
-		note1 "BUSCO QC on a 10% length-stratified subsample -> $BDIR/nuc.ids.sample"
-		local SAMP_FQ="$BDIR/reads.nonpt.sample.fq.gz"
-		((!DRY)) && sample_min_10pct_or_1gb "$R1" "$SAMP_FQ" "${seed:-13}"
-		((!DRY)) && miniprot -d "$BDIR/nonpt.sample.mpi" "$SAMP_FQ"
-		if ((!DRY)); then
-			miniprot -t "${TOTAL_CORES}" -S -N 3 --outc 0.4 \
-				"$BDIR/nonpt.sample.mpi" "$nprot" \
-				>"$BDIR/nonpt.sample.busco.paf"
-		fi
-		if ((!DRY)); then
-			awk 'BEGIN{FS=OFS="\t"} NF>=12 && $11+0>=150 {print $6}' \
-				"$BDIR/nonpt.sample.busco.paf" |
-				sort -u >"$BDIR/nuc.ids.sample"
-		fi
-	else
+	if ! [[ -n "${nprot:-}" && -s "${nprot}" ]]; then
 		note0 "No busco reference protein sequence dataset"
+	fi
+
+	note1 "BUSCO QC on a 10% length-stratified subsample -> $BDIR/nuc.ids.sample"
+	local SAMP_FQ="$BDIR/reads.nonpt.sample.fq.gz"
+	if ((!DRY)); then
+		note2 "$READS -> $SAMP_FQ min(10% or 1 Gb)"
+		sample_min_10pct_or_1gb "$READS" "$SAMP_FQ" "${seed:-13}"
+
+		note2 "[MP] $SAMP_FQ -> $BDIR/nonpt.sample.mpi"
+		miniprot -d "$BDIR/nonpt.sample.mpi" "$SAMP_FQ"
+
+		note2 "[MP] nonpt.sample.mpi vs BUSCO -> nonpt.sample.busco.paf"
+		note2 miniprot -t "${TOTAL_CORES}" -S -N 3 --outc 0.4 \
+			"$BDIR/nonpt.sample.mpi" "$nprot" \
+			">$BDIR/nonpt.sample.busco.paf"
+		miniprot -t "${TOTAL_CORES}" -S -N 3 --outc 0.4 \
+			"$BDIR/nonpt.sample.mpi" "$nprot" \
+			>"$BDIR/nonpt.sample.busco.paf"
+
+		# awk 'BEGIN{FS=OFS="\t"} NF>=12 && $11+0>=150 {print $6}' \
+		# 	"$BDIR/nonpt.sample.busco.paf" |
+		# 	sort -u >"$BDIR/nuc.ids.sample"
+
+		local NUC_SAMPLE="$BDIR/nuc.ids.sample"
+		note2 "[PAF] $BDIR/nonpt.sample.busco.paf -> $NUC_SAMPLE"
+		while IFS=$'\t' read -r -a f; do
+			((${#f[@]} >= 12)) || continue
+			[[ ${f[10]} =~ ^[0-9]+$ ]] && ((f[10] >= 150)) || continue # col11
+			printf '%s\n' "${f[5]}"                                    # col6
+		done <"$BDIR/nonpt.sample.busco.paf" | LC_ALL=C sort -u >"$NUC_SAMPLE"
 	fi
 
 }
@@ -1690,50 +1465,57 @@ ST4_busco() {
 #   Defaults ST3 to "$outdir/03-allvsall" if not provided.
 ST5_round() {
 	local outdir="$1"
+
 	local ST3="$outdir/03-allvsall"
 	local RDIR="$outdir/05-round"
-	mkdir -p "$RDIR"
 
 	local OTSV="$ST3/overlapness.tsv"
 	local SELECT_IDS="$RDIR/select_ids.txt"
+
 	note1 "3b) selection (prefer BUSCO sample labels) -> $SELECT_IDS"
 	# [[ -s "$RDIR/overlapness.tsv" ]] || cp -f "$OTSV_GLOBAL" "$RDIR/overlapness.tsv"
 
 	local NUC_SAMPLE="$BDIR/nuc.ids.sample"
-	local NUC_FOR_THRESH=""
-	if [[ -s "$NUC_SAMPLE" ]]; then
-		NUC_FOR_THRESH="$NUC_SAMPLE"
-	elif [[ -n "${nuc_ids_opt:-}" && -s "$nuc_ids_opt" ]]; then
-		NUC_FOR_THRESH="$nuc_ids_opt"
-	fi
+	local NUC_FOR_THRESH="${nuc_ids_opt:-"$NUC_SAMPLE"}"
 
-	if [[ -n "$NUC_FOR_THRESH" ]]; then
+	if [[ -s "$NUC_FOR_THRESH" ]]; then
+		# THRESH_NUC_PY="${HELP}/polap-py-threshold-from-nuclear.py"
 		note1 "nuclear-guided selection using $NUC_FOR_THRESH"
-		if ((!DRY)); then
-			python "$THRESH_NUC_PY" "$OTSV" "$NUC_FOR_THRESH" \
-				--mode fpr --fpr 0.20 --diag "$RDIR/threshold_from_nuclear.tsv" \
-				>"$RDIR/nuc_thresh.vars"
-			local wdeg_min=0 deg_min=0 kv
-			while IFS== read -r kv; do
-				case "$kv" in
-				wdeg_min=*) wdeg_min="${kv#wdeg_min=}" ;;
-				deg_min=*) deg_min="${kv#deg_min=}" ;;
-				esac
-			done <"$RDIR/nuc_thresh.vars"
-			awk -v W="$wdeg_min" -v D="$deg_min" \
-				'BEGIN{FS=OFS="\t"} NR>1 && ($3+0)>W && ($2+0)>D {print $1}' \
-				"$OTSV" | sort -u >"$RDIR/organelle.ids"
-			comm -23 <(sort -u "$RDIR/organelle.ids") <(sort -u "$NUC_FOR_THRESH") >"$SELECT_IDS"
-		fi
+		note1 python "$THRESH_NUC_PY" "$OTSV" "$NUC_FOR_THRESH" \
+			--mode fpr --fpr 0.20 \
+			--diag "$RDIR/threshold_from_nuclear.tsv" \
+			">$RDIR/nuc_thresh.vars"
+		python "$THRESH_NUC_PY" "$OTSV" "$NUC_FOR_THRESH" \
+			--mode fpr --fpr 0.20 \
+			--diag "$RDIR/threshold_from_nuclear.tsv" \
+			>"$RDIR/nuc_thresh.vars"
+
+		# Get the minimum overlapness values.
+		local wdeg_min=0 deg_min=0 kv
+		while IFS== read -r kv; do
+			case "$kv" in
+			wdeg_min=*) wdeg_min="${kv#wdeg_min=}" ;;
+			deg_min=*) deg_min="${kv#deg_min=}" ;;
+			esac
+		done <"$RDIR/nuc_thresh.vars"
+
+		# mtseed/keep.nonpt.ids -> number of nuclear and mito reads
+		# mtseed/05-round/select_ids.txt -> number of mito reads
+		awk -v W="$wdeg_min" -v D="$deg_min" \
+			'BEGIN{FS=OFS="\t"} NR>1 && ($3+0)>W && ($2+0)>D {print $1}' \
+			"$OTSV" | sort -u >"$RDIR/organelle.ids"
+
+		comm -23 <(sort -u "$RDIR/organelle.ids") <(sort -u "$NUC_FOR_THRESH") >"$SELECT_IDS"
 	else
+		note1 "No BUSCO; use $top_frac"
 		note1 "select top-frac by wdegree ($top_frac)"
 		((!DRY)) && python "$TOPPY" "$OTSV" --top_frac "$top_frac" >"$SELECT_IDS"
 	fi
 }
 
-# ST5: Assembly with miniasm (or raven fallback)
+# ST6: Assembly with miniasm (or raven fallback)
 # Usage:
-#   ST5_miniasm "$outdir" "$assembler"
+#   ST6_miniasm "$outdir" "$assembler"
 # Notes:
 #   Expects env/tools already defined:
 #     R1, threads, DRY, assembler, seqkit, minimap2, miniasm, raven, etc.
@@ -1743,12 +1525,12 @@ ST5_round() {
 #     $SELECT_IDS : ids selected in ST4_round
 
 ST6_miniasm() {
-	local outdir="$1"
-	local assembler="${2:-miniasm}"
+	local OUTDIR="$1"
+	local READS="$2"
+	local assembler="${3:-miniasm}"
 
-	local RDIR="$outdir/05-round"
-	local ADIR="$outdir/06-miniasm"
-	mkdir -p "$ADIR"
+	local RDIR="$OUTDIR/05-round"
+	local ADIR="$OUTDIR/06-miniasm"
 
 	local SELECT_IDS="$RDIR/select_ids.txt"
 	local TOPFA="$ADIR/top_reads.fa.gz"
@@ -1757,60 +1539,51 @@ ST6_miniasm() {
 	local SEEDS_CUR
 
 	if [[ "$assembler" == "miniasm" ]]; then
+
 		note1 "4a) extract selected reads -> $TOPFA"
-		((!DRY)) && { seqkit fq2fa "$R1" | seqkit grep -f "$SELECT_IDS" -o "$TOPFA"; }
+		seqkit fq2fa "$READS" | seqkit grep -f "$SELECT_IDS" -o "$TOPFA"
+		seqkit grep -f "$SELECT_IDS" "$READS" -o "$TOPFQ"
 
 		GFA="$ADIR/miniasm.gfa"
 
 		# recompute overlaps among selected reads
 		local SELPAF="$ADIR/selected_allvsall.paf.gz"
 		note1 "4b) recompute overlaps among selected reads -> $SELPAF"
-		((!DRY)) && minimap2 -x ava-ont -t "$TOTAL_CORES" \
+		minimap2 -x ava-ont -t "$TOTAL_CORES" \
 			"${MINIASM_MAP_OPTS}" \
 			"$TOPFA" "$TOPFA" | gzip -1 >"$SELPAF"
 
-		((!DRY)) && miniasm -f "$TOPFA" <(zcat -f "$SELPAF") >"$GFA"
+		miniasm -f "$TOPFA" <(zcat -f "$SELPAF") >"$GFA"
 
 		note1 "4c) extract contigs from GFA -> seeds"
 		SEEDS_ROUND="$ADIR/m_seeds_raw.fa"
-		((!DRY)) && awk '/^S/{print ">"$2"\n"$3}' "$GFA" >"$SEEDS_ROUND" || :
+		awk '/^S/{print ">"$2"\n"$3}' "$GFA" >"$SEEDS_ROUND" || :
+
 	else
 		note1 "4a) raven : extract selected reads (fq) -> $TOPFQ"
-		((!DRY)) && seqkit grep -f "$SELECT_IDS" "$R1" -o "$TOPFQ"
+		seqkit grep -f "$SELECT_IDS" "$READS" -o "$TOPFQ"
 
 		SEEDS_ROUND="$ADIR/raven_contigs.fasta"
 		note1 "raven --disable-polishing -> $SEEDS_ROUND"
-		((!DRY)) && raven --threads "$threads" --disable-polishing -o "$SEEDS_ROUND" "$TOPFQ"
+		raven --threads "$threads" --disable-polishing -o "$SEEDS_ROUND" "$TOPFQ"
 	fi
-
-	# SEEDS_CUR="$SEEDS_ROUND"
-	# export SEEDS_CUR
 }
 
 # ────────────────────────────────────────────────────────────────────
 # Main
 # ────────────────────────────────────────────────────────────────────
 
-# ---- usage example ----
-# choose_mm2_preset
-# # build index (target shard -> idx)
-# minimap2 -x ava-ont $INDEX_OPTS -d "$idx" "$shard"
-# # map with index (idx) and queries (infile)
-# minimap2 -x ava-ont -t "$threads" $MAP_OPTS "$idx" "$infile"
-# # In GNU parallel, use -j "$hybrid_n_shards"
-#
 # ────────────────────────────────────────────────────────────────────
 # Step 0: minimap2 setting
 # ────────────────────────────────────────────────────────────────────
+# echo "std1"
+# echo "std2" 1>&2
+# exists "$nprot"
 note1 "Step0. choose presets for minimap2"
 choose_mm2_preset
-
-# Example call site (unchanged shape):
-# parallel -j "$hybrid_n_shards" --halt now,fail=1 --line-buffer \
-#   'minimap2 -x ava-ont -t '"$threads"' '"$MM2_THOROUGH_OPTS"' "'"$infile"'" {} \
-#   | python "'"$EDGE_DUMP"'" --paf - --out "'"$PARTS_DIR"'/edges_part_{#}.tsv.gz" \
-#       --min_olen 0 --min_ident 0 --w_floor 0 --dedup' \
-#   ::: "$indir"/*.part_*.fq*
+note1 "Step0. checking"
+ST0_check "${outdir}"
+note1 "Step0. checked"
 
 # ────────────────────────────────────────────────────────────────────
 # Step 1: PT removal (unchanged)
@@ -1818,17 +1591,22 @@ choose_mm2_preset
 R1="$reads"
 PANEL_DIR="$outdir/01-panel"
 if _should_run 1; then
-	note0 "Step1. prepare ptDNA sequences"
+	note1 "Step1. prepare ptDNA sequences"
 	ST1_pt_isoform "${outdir}"
 fi
 
 # ────────────────────────────────────────────────────────────────────
 # Step 2: PT removal (unchanged)
 # ────────────────────────────────────────────────────────────────────
+
+note1 "R1 before ST2_pt_map: $R1 compare $R1.seqkit.stats.ta.tsv not .txt"
 if _should_run 2; then
-	note0 "Step2. map reads on ptDNA"
+	note1 "Step2. map reads on ptDNA"
 	ST2_pt_map "${outdir}" "$R1"
+else
+	R1="$outdir/reads.nonpt.fq.gz"
 fi
+note1 "R1 after ST2_pt_map: $R1 compare $R1.seqkit.stats.ta.tsv not .txt"
 
 if [[ ! -s "$R1" ]]; then
 	note0 "ERR missing R1 ($R1)"
@@ -1839,39 +1617,30 @@ fi
 # Step 3: minimap2 mapping all vs all
 # ────────────────────────────────────────────────────────────────────
 ST3="$outdir/03-allvsall"
-mkdir -p "$ST3"
-
 if _should_run 3; then
-	case "$map_mode" in
-	0)
-		note0 "Step3. (map reads on themselves) - (part vs part)"
-		ST3_part_vs_part "$outdir"
-		;;
-	1)
-		note0 "Step3. (hybrid edge-first): shortlist×ALL (sharded) ->  edges; refilter by eweight ladder"
-		ST3_all_vs_all "$outdir"
-		;;
-	esac
-	ST3_overlapness "$outdir"
+	mkdir -p "$ST3"
+	note1 "Step3. map reads on themselves - part vs part"
+	ST3_part_vs_part "$outdir" "$R1"
+	ST3_overlapness "$outdir" "$R1"
 fi
 
 # ────────────────────────────────────────────────────────────────────
 # Step 4: BUSCO QC (10% subsample), then selection (uses $RDIR/overlapness.tsv)
 # ────────────────────────────────────────────────────────────────────
 BDIR="$outdir/04-busco"
-mkdir -p "$BDIR"
 if _should_run 4; then
-	note0 "Step4. Detect nuclear genes"
-	ST4_busco "$outdir"
+	note1 "Step4. Detect nuclear genes"
+	mkdir -p "$BDIR"
+	ST4_busco "$outdir" "$R1"
 fi
 
 # ────────────────────────────────────────────────────────────────────
 # Step 5: selection (uses $RDIR/overlapness.tsv)
 # ────────────────────────────────────────────────────────────────────
 RDIR="$outdir/05-round"
-mkdir -p "$RDIR"
 if _should_run 5; then
-	note0 "Step5. Get overlapness"
+	note1 "Step5. Get overlapness"
+	mkdir -p "$RDIR"
 	ST5_round "$outdir"
 fi
 
@@ -1879,40 +1648,26 @@ fi
 # Step 6: assemble selected reads (miniasm|raven)
 # ────────────────────────────────────────────────────────────────────
 ADIR="$outdir/06-miniasm"
-mkdir -p "$ADIR"
-SEEDS_ROUND=""
 if _should_run 6; then
-	note0 "Step6. assemble selected reads using miniasm"
-	ST6_miniasm "$outdir"
+	note1 "Step6. assemble selected reads using miniasm"
+	mkdir -p "$ADIR"
+	ST6_miniasm "$outdir" "$R1"
 fi
 
-# Optional finisher (polap readassemble) using miniasm GFA
-FDIR_NAME="07-flye"
-FDIR="$outdir/$FDIR_NAME"
+# ────────────────────────────────────────────────────────────────────
+# Step 7: finisher (polap readassemble) using miniasm GFA
+# ────────────────────────────────────────────────────────────────────
+FDIR="$outdir/07-flye"
 if _should_run 7; then
-	note0 "Step7. assemble mtDNA using selected contigs"
-	note1 "7a) convert miniasm gfa for flye run"
+	note1 "Step7. assemble mtDNA using selected contigs"
 	contigger_dir="${FDIR}/30-contigger"
 	mkdir -p "${contigger_dir}"
+
+	note2 "7a) convert miniasm gfa for flye run -> ${contigger_dir}/graph_final.gfa"
 	sed 's/LN:i/dp:i/' "${ADIR}/miniasm.gfa" >"${contigger_dir}/graph_final.gfa"
-	note1 "7b) polap readassemble using miniasm seeds ..."
-	if ((do_polap == 1)); then
-		bash "${_POLAPLIB_DIR}/../polap.sh" readassemble annotated -o "${outdir}" -i "${FDIR_NAME}" -l "${reads}"
-	fi
+
+	# note2 "7b) polap readassemble using miniasm seeds ..."
+	# if ((do_polap == 1)); then
+	# 	bash "${_POLAPLIB_DIR}/../polap.sh" readassemble annotated -o "${outdir}" -i "${FDIR_NAME}" -l "${reads}"
+	# fi
 fi
-
-# if ((do_polap == 1)); then
-# 	note0 "Step8: clean up $outdir"
-# 	_polap_lib_file-cleanup -d "${outdir}" -s 5M -a rm
-# fi
-
-# Finalize
-# if ((!DRY)); then
-# 	FINAL_DIR="$(dirname "$SEEDS_CUR")"
-# 	FINAL_SEEDS="$FINAL_DIR/m_seeds_final.fa"
-# 	note0 "Finalize: cp $SEEDS_CUR -> $FINAL_SEEDS"
-# 	cp "$SEEDS_CUR" "$FINAL_SEEDS"
-# 	note0 "Done. Final seeds: $FINAL_SEEDS"
-# else
-# 	note0 "--dry finished (no commands executed)."
-# fi

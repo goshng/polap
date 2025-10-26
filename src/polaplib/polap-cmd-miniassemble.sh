@@ -95,7 +95,7 @@ EOF
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
 
-	_arg_steps_include="1"
+	_arg_steps_include="1-5"
 
 	local _include="${_arg_steps_include}"
 	local _exclude="${_arg_steps_exclude}" # Optional range or list of steps to exclude
@@ -112,33 +112,41 @@ EOF
 	# trace_functions_fline 19 # or: trace_functions_fline 19  (if you open fd 19 to a log file)
 
 	if _polap_contains_step 1 "${_step_array[@]}"; then
-		# assemble pt
 		_arg_plastid="on"
 		if [[ "${_arg_readassemble_pt}" == "on" ]]; then
 			_polap_readassemble-pt
-		else
-			_arg_long_reads="${_arg_outdir}/ld.fq"
 		fi
 	fi
 
 	# untrace_functions
 
 	if _polap_contains_step 2 "${_step_array[@]}"; then
-		_polap_log0 "step 2"
-		# select mt reads for a very early seeds
-		_arg_long_reads="${_arg_long_reads_original}"
 		_arg_plastid="off"
+		_arg_long_reads="${_arg_long_reads_original}"
+		mkdir -p "${_arg_outdir}/annotate-read-mtseed"/{mt,pt}
 		_polap_lib_readassemble-select-organelle-reads mtseed
-		_polap_lib_file-cleanup -d "${_arg_outdir}/annotate-read-mtseed" -s 5M -a rm
+		# _polap_lib_file-cleanup -d "${_arg_outdir}/annotate-read-mtseed" -s 5M -a rm
 	fi
 
 	if _polap_contains_step 3 "${_step_array[@]}"; then
-		_polap_log0 "step 3"
 		# generate mt seed contigs
 		_arg_pt_ref="${_arg_outdir}/pt.1.fa"
 		_polap_assert '[[ -s "${_arg_pt_ref}" ]]' "pt ref must exist, '${_arg_pt_ref}'"
+
 		rm -rf "${_arg_outdir}/mtseed/mt"{1..9}
 
+		_polap_log1 [RUN] "${_POLAPLIB_DIR}/polap-bash-fast-mtseed-ont.sh"
+
+		# Step 3. options:
+		# --eweight 0.80
+		# --eweight-step 0.10
+		# --eweight-minimum 0.01
+		# --shortlist-target 0.35
+		#
+		# Step 2. options: pt read filtering
+		# alen_min=3000
+		# fpr=0.01
+		# tpr=0.95
 		bash "${_POLAPLIB_DIR}/polap-bash-fast-mtseed-ont.sh" \
 			-r "${_arg_long_reads}" \
 			-o "${_arg_outdir}/mtseed" \
@@ -146,20 +154,20 @@ EOF
 			--pt-origin "${_arg_outdir}/annotate-read-mtseed/pt.id.all.txt" \
 			--mt-origin "${_arg_outdir}/annotate-read-mtseed/mt.id.all.txt" \
 			-n "busco_downloads/lineages/viridiplantae_odb12/refseq_db.faa.gz" \
-			-t "${_arg_threads}" \
+			-t "${_arg_half_threads}" \
 			--use-parallel \
 			--no-do-polap \
 			${_arg_verbose_str} \
-			--step "${_arg_steps_include}"
+			--step "1-7"
+		# --step "1-7"
+		# --step "1-2"
 	fi
 
 	# _polap_lib_file-cleanup -d "${_arg_outdir}/mtseed" -s 5M -a rm
 
 	# assemble mtDNA using the miniasm seeds
-
 	# assemble mtDNA using the flye seeds
 	if _polap_contains_step 4 "${_step_array[@]}"; then
-		_polap_log0 "step 4"
 		local FDIR_NAME="07-flye"
 		local FDIR="${_arg_outdir}/$FDIR_NAME"
 
@@ -171,7 +179,6 @@ EOF
 	fi
 
 	if _polap_contains_step 5 "${_step_array[@]}"; then
-		_polap_log0 "step 5"
 		local mt_gfa="${_arg_long_reads%.*}.mt.gfa"
 		cp -p "${_arg_outdir}/mt.1.gfa" "${mt_gfa}"
 		_polap_log0 "output assembly graph: ${mt_gfa}"

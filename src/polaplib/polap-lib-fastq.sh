@@ -49,7 +49,7 @@ _polap_lib_fastq-total-length-of() {
 
 	check_file_existence "${input1}"
 
-	_polap_log3_pipe "seqkit stats -Ta ${input1} -j ${_arg_threads} |\
+	_polap_log3_pipe "seqkit stats -Ta ${input1} -j 4 |\
 		csvtk cut -t -f sum_len |\
 		csvtk del-header \
 		>${output}"
@@ -217,27 +217,27 @@ _polap_compress_or_decompress() {
 
 	# same compression type -> symlink
 	if ((in_is_gz == out_is_gz)); then
-		_polap_log1 "[INFO] same type -> creating symlink"
+		_polap_log2 "[INFO] same type -> creating symlink"
 		ln -sf "$(realpath -s "$infile")" "$outfile"
 		return 0
 	fi
 
 	# decompress
 	if ((in_is_gz == 1 && out_is_gz == 0)); then
-		_polap_log1 "[INFO] decompressing (.gz -> plain)"
+		_polap_log2 "[INFO] decompressing (.gz -> plain)"
 		"${pv_cmd[@]}" | gzip -dc >"$outfile"
 		return 0
 	fi
 
 	# compress
 	if ((in_is_gz == 0 && out_is_gz == 1)); then
-		_polap_log1 "[INFO] compressing (plain -> .gz)"
+		_polap_log2 "[INFO] compressing (plain -> .gz)"
 		"${pv_cmd[@]}" | gzip -c >"$outfile"
 		return 0
 	fi
 
 	# fallback (weird combination)
-	_polap_log1 "[WARN] unknown combination, copying"
+	_polap_log2 "[WARN] unknown combination, copying"
 	"${pv_cmd[@]}" >"$outfile"
 }
 
@@ -248,17 +248,24 @@ _polap_lib_fastq-sample-to() {
 	local max_size="${3}"
 
 	# check if seqkit stats -Ta output exists.
-	local infile_seqkit_stats=$(seqkit_stats_outname "$infile")
-	_polap_log2 "infile_seqkit_stats: $infile_seqkit_stats"
-	if [[ ! -s "$infile_seqkit_stats" ]]; then
-		seqkit stats -Ta "${infile}" -o "${infile_seqkit_stats}"
-	fi
-	local sum_size=$(cat "${infile_seqkit_stats}" | awk 'NR==2 {print $5}')
+	# local infile_seqkit_stats=$(seqkit_stats_outname "$infile")
+	# _polap_log2 "infile_seqkit_stats: $infile_seqkit_stats"
+	# if [[ ! -s "$infile_seqkit_stats" ]]; then
+	# 	seqkit stats -Ta "${infile}" -o "${infile_seqkit_stats}"
+	# fi
+	# local sum_size=$(cat "${infile_seqkit_stats}" | awk 'NR==2 {print $5}')
+	local sum_size=$(_polap_lib_fastq-estimate-bases ${infile})
 
 	_polap_log2 "sum_size: ${sum_size}"
 	max_size=$(_polap_lib_unit-convert_to_int ${max_size})
 	_polap_log2 "max_size: ${max_size}"
-	local rate=$(echo "scale=9; $max_size / $sum_size" | bc)
+
+	local rate
+	if [[ "${max_size}" == "0" ]]; then
+		local rate=1
+	else
+		local rate=$(echo "scale=9; $max_size / $sum_size" | bc)
+	fi
 	_polap_log2 "rate: ${rate}"
 
 	if [[ $(echo "$rate < 1" | bc) -eq 1 ]]; then
@@ -456,4 +463,47 @@ _polap_lib_fastq-normalize-filename() {
 		return 1
 		;;
 	esac
+}
+
+# Version: v0.2.0
+# Estimate total bases in a FASTQ (compressed or not) from file size.
+# Prints only the numeric total base count (integer).
+# Usage:
+#   _polap_lib_fastq-estimate-bases reads.fastq[.gz|.bz2|.xz]
+
+_polap_lib_fastq-estimate-bases() {
+	local fq="$1"
+	local ratio=1.0 comp bytes bases
+
+	# Get file size
+	bytes=$(stat -c %s "$fq" 2>/dev/null) || {
+		echo "0" >&2
+		return 1
+	}
+
+	# Detect compression type
+	case "$fq" in
+	*.gz)
+		comp="gz"
+		ratio=3.5
+		;; # default ONT
+	*.bz2)
+		comp="bz2"
+		ratio=3.2
+		;;
+	*.xz)
+		comp="xz"
+		ratio=4.0
+		;;
+	*)
+		comp="none"
+		ratio=1.0
+		;;
+	esac
+
+	# Estimate total bases = bytes × ratio × 0.45
+	bases=$(echo "$bytes * $ratio * 0.45" | bc)
+
+	# Print only the number (integer)
+	printf "%.0f\n" "$bases"
 }

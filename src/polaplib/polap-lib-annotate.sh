@@ -59,12 +59,27 @@ _polap_lib_annotate() {
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 
 	_polap_log1 "  annotate ${_arg_outdir}/${_arg_inum} using amino acid sequences"
+
 	_polap_lib_annotate-edges-stats \
 		-o "${_arg_outdir}" -i "${_arg_inum}" -j "${_arg_jnum}"
+	if [[ $? -ne "$RETURN_SUCCESS" ]]; then
+		return $RETURN_FAIL
+	fi
+
 	_polap_lib_annotate-blast-genome \
 		-o "${_arg_outdir}" -i "${_arg_inum}" -j "${_arg_jnum}"
+	if [[ $? -ne "$RETURN_SUCCESS" ]]; then
+		return $RETURN_FAIL
+	fi
+
 	_polap_lib_annotate-count-gene \
 		-o "${_arg_outdir}" -i "${_arg_inum}" -j "${_arg_jnum}"
+
+	if [[ $? -ne "$RETURN_SUCCESS" ]]; then
+		return $RETURN_FAIL
+	fi
+
+	return $RETURN_SUCCESS
 }
 
 # 2025-08-14
@@ -223,7 +238,7 @@ _polap_lib_annotate-blast-genome() {
 
 	if [ ! -s "${_polap_var_ga_contigger_edges_stats}" ]; then
 		_polap_log0 "ERROR: no edges_stats.txt file: ${_polap_var_ga_contigger_edges_stats}"
-		exit $EXIT_ERROR
+		return $RETURN_FAIL
 	fi
 
 	_polap_log2 "    deleting and recreating the folder: ${_polap_var_ann}"

@@ -310,7 +310,7 @@ _polap_lib_readassemble-assemble-annotated-read-pt() {
 			-i pt$j
 	fi
 
-	_polap_log1_column "${annotatedir}/pt$j/pt-contig-annotation-depth-table.txt"
+	_polap_log0_column "${annotatedir}/pt$j/pt-contig-annotation-depth-table.txt"
 
 	# final link
 	ln -sf "annotate-read-${type}/pt.0.fa" \
@@ -1054,10 +1054,10 @@ _polap_lib_readassemble-miniasm() {
 				-i mt$i -j mt$j
 
 		fi
-		_polap_log0 "i: $i"
+		_polap_log3 "i: $i"
 		_polap_lib_file-cleanup -d "${annotatedir}/mt$j" -s 5M -a rm
 
-		_polap_log0 "i: $i"
+		_polap_log3 "i: $i"
 		if [[ -s "${annotatedir}/mt$j/assembly_graph.gfa" ]]; then
 			# _polap_lib_mt-extract-dna \
 			# 	"${annotatedir}/mt$j/assembly_graph.gfa" \
@@ -1066,7 +1066,7 @@ _polap_lib_readassemble-miniasm() {
 			_polap_lib_bandage \
 				"${annotatedir}/mt$j/assembly_graph.gfa" \
 				"${annotatedir}/mt$j/assembly_graph.png"
-			_polap_log0 "i: $i"
+			_polap_log3 "i: $i"
 
 			ln -sf "mt$j/mtdna/mt.0.fa" \
 				"${annotatedir}/mt.$j.fa"
@@ -1077,17 +1077,17 @@ _polap_lib_readassemble-miniasm() {
 			ln -sf "mt$j/assembly_graph.png" \
 				"${annotatedir}/mt.$j.png"
 
-			_polap_log0 "i: $i"
-			_polap_log0 "mtDNA assembly: ${annotatedir}/mt.$j.gfa"
+			_polap_log3 "i: $i"
+			_polap_log1 "mtDNA assembly: ${annotatedir}/mt.$j.gfa"
 		else
 			_polap_log0 "No mt assembly $j"
 		fi
 
 	done
 
-	_polap_log0 "after the for-loop"
-	_polap_log0 "i: $i"
-	_polap_log0 "j: $j"
+	_polap_log3 "after the for-loop"
+	_polap_log3 "i: $i"
+	_polap_log3 "j: $j"
 
 	#
 	# END: function readassemble-ont-pt-iterate_genus_species
@@ -1097,9 +1097,9 @@ _polap_lib_readassemble-miniasm() {
 
 	# use the generated reference to assemble a mitochondrial genome.
 	local j=$((i + 1))
-	_polap_log0 "after the j update"
-	_polap_log0 "i: $i"
-	_polap_log0 "j: $j"
+	_polap_log3 "after the j update"
+	_polap_log3 "i: $i"
+	_polap_log3 "j: $j"
 	# polap command: annotate
 	_polap_log0 _polap_lib_annotate \
 		-o "${annotatedir}" \

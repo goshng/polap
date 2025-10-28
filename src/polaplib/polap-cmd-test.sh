@@ -119,12 +119,21 @@ HEREDOC
 		_polap_log0 "short-read2: ${_arg_short_read2}"
 	fi
 
+	# All log to the polap.log
+	# -q: no log to screen
+	# -v: log0 and log1 to screen
+	# -v -v: log0, log1 and log2 to screen
+	# -v -v -v: log0, log1, log2, and log3 to screen
 	if [[ "${_arg_menu[1]}" == "log" ]]; then
-		_polap_log0 "Name: B0"
-		_polap_log2 "Name: B2"
-		_polap_log0 "Name: A0" >test.log
-		_polap_log2 "Name: A2" >>test.log
-		_polap_log0 "Name: A0" >>test.log
+		_polap_log0 "log0"
+		_polap_log1 "log1"
+		_polap_log2 "log2"
+		_polap_log3 "log3"
+
+		_polap_log0 "log0 to >test.log" >test.log
+		_polap_log1 "log1 to >test.log" >>test.log
+		_polap_log2 "log2 to >test.log" >>test.log
+		_polap_log3 "log3 to >test.log" >>test.log
 	fi
 
 	if [[ "${_arg_menu[1]}" == "config" ]]; then

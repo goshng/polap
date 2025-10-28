@@ -104,10 +104,10 @@ _polap_lib_annotate-edges-stats() {
 
 	# if ! command -v gfatools &>/dev/null; then
 	if ! command -v gfatools >/dev/null 2>&1; then
-		_polap_log0 "[ERROR] Required command gfatools not found in PATH."
-		_polap_log0 "[Conda environment before conda activate] ${CONDA_DEFAULT_ENV:-}"
+		_polap_log1 "[ERROR] Required command gfatools not found in PATH."
+		_polap_log1 "[Conda environment before conda activate] ${CONDA_DEFAULT_ENV:-}"
 		_polap_lib_conda-ensure_conda_env polap || exit 1
-		_polap_log0 "[Conda environment after conda activate] ${CONDA_DEFAULT_ENV:-}"
+		_polap_log1 "[Conda environment after conda activate] ${CONDA_DEFAULT_ENV:-}"
 	# else
 	# 	_polap_log1 "[INFO] Required command gfatools found in PATH."
 	# 	_polap_log1 "[Conda environment] ${CONDA_DEFAULT_ENV:-}"
@@ -120,6 +120,11 @@ _polap_lib_annotate-edges-stats() {
 		  -S ${_polap_var_ga_contigger_edges_gfa} \
 		  >${_polap_var_ga_gfa_all} \
 		  2>$_polap_output_dest"
+
+	if [[ ! -s "${_polap_var_ga_gfa_all}" ]]; then
+		_polap_log0 "[ERROR] gfatools view -S produced an empty gfa file: ${_polap_var_ga_gfa_all}"
+		return $RETURN_FAIL
+	fi
 	# fi
 
 	_polap_log2 "    extracting sequence part of GFA: ${_polap_var_ga_gfa_seq_part}"

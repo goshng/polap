@@ -21,6 +21,9 @@ set -euo pipefail
 # mtseed/05-round/select_ids.txt -> number of mito reads
 # then, miniasm plus minimap2
 
+# deleted functions
+# _map_edges_parts() {
+
 # ────────────────────────────────────────────────────────────────────
 # Paths & environment
 # ────────────────────────────────────────────────────────────────────
@@ -31,25 +34,11 @@ source "${_POLAPLIB_DIR}/polap-lib-math.sh" || true
 # Helpers (fast-mtseed)
 HELP="${_POLAPLIB_DIR}/fast-mtseed-ont"
 SCAN_QCR="${HELP}/polap-r-scan-autotune-qc.R"
-AUTOSCANPY="${HELP}/polap-py-autotune-scan.py"
-OLPY="${HELP}/polap-py-overlapness-from-paf.py"
-TOPPY="${HELP}/polap-py-topfrac-by-wdeg.py"
-FILTPY="${HELP}/polap-py-filter-paf-by-ids.py"
-CDSPY="${HELP}/polap-py-cds-coverage-from-paf.py"
-SEEDREADSPY="${HELP}/polap-py-seed-mapped-reads.py"
-STOPPY="${HELP}/polap-py-stop-delta.py"
-AWK_CONS="${HELP}/polap-awk-filter-conservative.awk"
-RECRUIT_SH="${HELP}/polap-bash-recruit-count.sh"
-PAF2MREADS_SH="${HELP}/polap-bash-paf2mreads.sh"
-R_PICK="${HELP}/polap-r-pick-high-recruit.R"
 THRESH_NUC_PY="${HELP}/polap-py-threshold-from-nuclear.py"
 PY_PT_THRESH="${HELP}/polap-py-pt-ident-threshold.py"
-PT_ISOFORM_SH="${_POLAPLIB_DIR}/polap-bash-pt-isoform.sh"
 EDGE_DUMP="${HELP}/polap-py-edge-dump.py"
 REFILTER_EDGES="${HELP}/polap-py-refilter-edges-to-overlapness.py"
-TOPKPY="${HELP}/paf-topk-per-q.py"
-EDGPY="${HELP}/paf-to-edges-stream.py"
-EDGECOMP="${HELP}/polap-py-edges-components.py"
+PT_ISOFORM_SH="${_POLAPLIB_DIR}/polap-bash-pt-isoform.sh"
 
 # map-ont	Align noisy long reads of ~10% error rate to a reference genome. This is the default mode.
 # ava-ont	Oxford Nanopore all-vs-all overlap mapping (-k15 -Xw5 -e0 -m100 -r2k).
@@ -92,22 +81,45 @@ note2() { _note_base 2 "$@"; }
 note3() { _note_base 3 "$@"; }
 
 cmd() {
-	if ((DRY)); then
-		local p="$1"
-		shift
-		printf "[DRY] %q" "$p" | tee -a "$LOG_FD"
-		for a in "$@"; do printf " %q" "$a" | tee -a "$LOG_FD"; done
-		printf "\n" | tee -a "$LOG_FD"
-		return 0
-	fi
 	local p="$1"
 	shift
-	printf "[RUN] %q" "$p" | tee -a "$LOG_FD"
-	for a in "$@"; do printf " %q" "$a" | tee -a "$LOG_FD"; done
-	printf "\n" | tee -a "$LOG_FD"
+	if ((DRY)); then
+		{
+			printf "[DRY] %q" "$p"
+			for a in "$@"; do printf " %q" "$a"; done
+			printf "\n"
+		} |
+			tee -a "/dev/stderr" >&2
+		return 0
+	fi
+	{
+		printf "[RUN] %q" "$p"
+		for a in "$@"; do printf " %q" "$a"; done
+		printf "\n"
+	} |
+		tee -a "/dev/stderr" >&2
 	"$p" "$@"
 }
+
+# cmd() {
+# 	if ((DRY)); then
+# 		local p="$1"
+# 		shift
+# 		printf "[DRY] %q" "$p" | tee -a "$LOG_FD"
+# 		for a in "$@"; do printf " %q" "$a" | tee -a "$LOG_FD"; done
+# 		printf "\n" | tee -a "$LOG_FD"
+# 		return 0
+# 	fi
+# 	local p="$1"
+# 	shift
+# 	printf "[RUN] %q" "$p" | tee -a "$LOG_FD"
+# 	for a in "$@"; do printf " %q" "$a" | tee -a "$LOG_FD"; done
+# 	printf "\n" | tee -a "$LOG_FD"
+# 	"$p" "$@"
+# }
+
 prof_start() { ((PROF)) && PROF_T0=$(date +%s) && PROF_STEP="$1" || true; }
+
 prof_end() {
 	((PROF)) || return 0
 	local t1=$(date +%s)
@@ -171,7 +183,7 @@ milli_to_str() {
 exists() {
 	local file="$1"
 
-	if [[ ! -s "$file" ]]; then
+	if ! [[ -n "${file:-}" && -s "${file}" ]]; then
 		# --- caller info ---
 		local caller_func="${FUNCNAME[1]:-MAIN}"
 		local caller_file="$(basename "${BASH_SOURCE[1]:-unknown}")"
@@ -578,9 +590,8 @@ fi
 note2 "Check: tools"
 require_tools minimap2 samtools seqkit python Rscript awk sort comm cut gzip
 note2 "Check: scripts"
-for s in "$EDGE_DUMP" "$REFILTER_EDGES" "$OLPY" "$TOPPY" "$FILTPY" "$CDSPY" \
-	"$SEEDREADSPY" "$STOPPY" "$AWK_CONS" "$RECRUIT_SH" "$PAF2MREADS_SH" \
-	"$R_PICK" "$THRESH_NUC_PY" "$PT_ISOFORM_SH"; do
+for s in "$EDGE_DUMP" "$REFILTER_EDGES" \
+	"$THRESH_NUC_PY" "$PT_ISOFORM_SH"; do
 
 	if [[ ! -s "$s" ]]; then
 		note0 "[ERR] missing helper: $s"
@@ -611,7 +622,7 @@ if ((PROF)); then
 	echo -e "step\tseconds" >"$PROF_FILE"
 fi
 
-note0 "pipeline: outdir=$outdir assembler=$assembler threads=$threads"
+note1 "pipeline: outdir=$outdir assembler=$assembler threads=$threads"
 
 # ────────────────────────────────────────────────────────────────────
 # Step 0: mm2 options
@@ -693,10 +704,9 @@ choose_mm2_preset() {
 	fi
 }
 
+# Step 0: Check required commands and input files.
 ST0_check() {
 	local outdir="$1"
-
-	echo 1 >&2
 
 	exists "$nprot"
 }
@@ -704,20 +714,14 @@ ST0_check() {
 # ST1: Build plastid (PT) isoforms and doubled single-record references
 # Usage:
 #   ST1_pt_isoform "$outdir"
-# Requires (from caller env):
-#   PT_ISOFORM_SH : script that produces pt_isomerA.fa (and optionally pt_isomerB.fa)
-#   pt_ref        : input plastid reference (FA/GBK/etc. per PT_ISOFORM_SH)
-#   threads       : cores to use
-#   DRY           : 0/1 (skip execution when DRY==1)
-#   note0, prof_start, prof_end : logging/timing helpers
 ST1_pt_isoform() {
 	local outdir="$1"
 
-	note2 "1a) Build PT isoforms A/B"
+	local PANEL_DIR="$outdir/01-panel"
 	mkdir -p "$PANEL_DIR"
-	prof_start "pt_isoform"
+
+	note2 "[ST1] Build PT isoforms A/B"
 	cmd bash "$PT_ISOFORM_SH" -r "$pt_ref" -o "$PANEL_DIR" -t "$threads"
-	prof_end
 
 	local ISO_A="$PANEL_DIR/pt_isomerA.fa"
 	local ISO_B="$PANEL_DIR/pt_isomerB.fa"
@@ -727,38 +731,27 @@ ST1_pt_isoform() {
 		exit 3
 	fi
 
-	note2 "1b) Double isoforms (single-record)"
+	note2 "[ST1] Double isoforms (single-record)"
+
 	dbld() {
-		python - "$1" "$2" <<'PY'
-import sys
-inp,outp=sys.argv[1],sys.argv[2]
-name=None; seq=[]
-with open(inp) as f:
-    for ln in f:
-        if ln.startswith('>'):
-            if name is None:
-                name=ln[1:].strip().split()[0]
-            else:
-                break
-        else:
-            seq.append(ln.strip())
-S=''.join(seq)
-with open(outp,'w') as w:
-    w.write('>pt.double\n')
-    w.write(S+S+'\n')
-PY
+		local input="$1"
+		local output="$2"
+		local tmpseq
+		tmpseq="$(seqkit seq -s "$input")" || return 1
+		{
+			echo ">pt.double"
+			echo "${tmpseq}${tmpseq}"
+		} >"$output"
 	}
 
 	local DBL_A="$PANEL_DIR/pt_isomerA.double.fa"
 	local DBL_B="$PANEL_DIR/pt_isomerB.double.fa"
 
-	prof_start "pt_double"
-	((!DRY)) && dbld "$ISO_A" "$DBL_A"
-	((!DRY)) && { [[ -s "$ISO_B" ]] && dbld "$ISO_B" "$DBL_B" || true; }
-	prof_end
+	dbld "$ISO_A" "$DBL_A"
 
-	# Export for downstream steps if you like
-	# export PANEL_DIR ISO_A ISO_B DBL_A DBL_B
+	if [[ -s "$ISO_B" ]]; then
+		dbld "$ISO_B" "$DBL_B" || true
+	fi
 }
 
 # ST2: Map reads to doubled plastid isoforms (A/B) and remove PT reads
@@ -771,89 +764,71 @@ PY
 ST2_pt_map() {
 	local outdir="$1"
 	local reads="$2"
+	R1="$outdir/reads.nonpt.fq.gz"
 
-	note2 "1c) Map reads -> doubled A/B"
-	local MAP_DIR="$outdir/02-map"
+	# local PANEL_DIR="$outdir/01-panel"
+	# local MAP_DIR="$outdir/02-map"
 	mkdir -p "$MAP_DIR"
+
+	note2 "[ST2-1] Map reads -> doubled A/B"
 	local PAF_A="$MAP_DIR/formA.paf"
 	local PAF_B="$MAP_DIR/formB.paf"
 	local DBL_A="$PANEL_DIR/pt_isomerA.double.fa"
 	local DBL_B="$PANEL_DIR/pt_isomerB.double.fa"
 
-	prof_start "map_ptA"
-	cmd minimap2 -x map-ont --secondary=yes -N 50 -t "${TOTAL_CORES}" "$DBL_A" "$reads" >"$PAF_A"
-	prof_end
+	minimap2 -x map-ont --secondary=yes -N 50 -t "${TOTAL_CORES}" "$DBL_A" "$reads" >"$PAF_A"
+	# echo minimap2 -x map-ont --secondary=yes -N 50 -t "${TOTAL_CORES}" "$DBL_A" "$reads" ">$PAF_A" >&2
 
 	if [[ -s "${DBL_B:-}" ]]; then
-		prof_start "map_ptB"
-		cmd minimap2 -x map-ont --secondary=yes -N 50 -t "${TOTAL_CORES}" "$DBL_B" "$reads" >"$PAF_B"
-		prof_end
+		minimap2 -x map-ont --secondary=yes -N 50 -t "${TOTAL_CORES}" "$DBL_B" "$reads" >"$PAF_B"
 	else
 		PAF_B=""
 	fi
 
-	note2 "1d) MT-guided identity cutoff & emit pt.ids"
+	note2 "[ST2-2] MT-guided identity cutoff & emit pt.ids"
 	local PT_VARS="$outdir/pt_thresh.vars"
 	local PT_DIAG="$outdir/pt_thresh.diag.tsv"
 	local PT_IDS="$outdir/pt.ids"
 
 	# skip because identity_min is null.
-	if [[ -n "${identity_min:-}" ]]; then
-		note2 "using --identity-min=${identity_min} ; alen_min=${alen_min}"
-		if ((!DRY)); then
-			awk -v ID="$identity_min" -v AL="${alen_min:-0}" 'BEGIN{FS=OFS="\t"} NF>=12{ id=($11>0?$10/$11:0); if(id>=ID && $11+0>=AL) print $1 }' "$PAF_A" | sort -u >"$outdir/ptA.ids"
-			if [[ -s "$PAF_B" ]]; then
-				awk -v ID="$identity_min" -v AL="${alen_min:-0}" 'BEGIN{FS=OFS="\t"} NF>=12{ id=($11>0?$10/$11:0); if(id>=ID && $11+0>=AL) print $1 }' "$PAF_B" | sort -u >"$outdir/ptB.ids"
-				sort -u "$outdir/ptA.ids" "$outdir/ptB.ids" >"$PT_IDS"
-			else
-				mv "$outdir/ptA.ids" "$PT_IDS"
-			fi
-			printf "ident_min=%s\nalen_min=%d\n" "$identity_min" "${alen_min:-0}" >"$PT_VARS"
-			: >"$PT_DIAG"
-		fi
-	else
-		note1 "using $PY_PT_THRESH -> file: $PT_VARS and PT IDs: $PT_IDS"
-		prof_start "pt_ident_threshold"
-		if ((!DRY)); then
-			note1 python "$PY_PT_THRESH" \
-				--paf "$PAF_A" ${PAF_B:+ "$PAF_B"} \
-				--pt-ids "${pt_origin:-/dev/null}" --mt-ids "${mt_origin:-/dev/null}" \
-				--alen-min "${alen_min:-0}" --fpr "${fpr:-0.10}" --tpr "${tpr:-0.90}" \
-				--diag "$PT_DIAG" --emit-pt-ids "$PT_IDS" ">$PT_VARS"
-			python "$PY_PT_THRESH" \
-				--paf "$PAF_A" ${PAF_B:+ "$PAF_B"} \
-				--pt-ids "${pt_origin:-/dev/null}" --mt-ids "${mt_origin:-/dev/null}" \
-				--alen-min "${alen_min:-0}" --fpr "${fpr:-0.10}" --tpr "${tpr:-0.90}" \
-				--diag "$PT_DIAG" --emit-pt-ids "$PT_IDS" >"$PT_VARS"
-		fi
-		prof_end
-	fi
-
-	note2 "1e) Reading $PT_VARS to remove PT reads -> R1"
-
-	# delete this: not used identity_min and alen_min values later
-	#
-	# local ident_min_out="${identity_min:-}"
-	# if [[ -s "$PT_VARS" ]]; then
-	# 	# robust parsing: read key=value pairs safely
-	# 	while IFS='=' read -r key val; do
-	# 		case "$key" in
-	# 		ident_min) ident_min_out="$val" ;;
-	# 		alen_min) alen_min="$val" ;;
-	# 		esac
-	# 	done <"$PT_VARS"
+	# if [[ -n "${identity_min:-}" ]]; then
+	# 	note2 "using --identity-min=${identity_min} ; alen_min=${alen_min}"
+	# 	if ((!DRY)); then
+	# 		awk -v ID="$identity_min" -v AL="${alen_min:-0}" 'BEGIN{FS=OFS="\t"} NF>=12{ id=($11>0?$10/$11:0); if(id>=ID && $11+0>=AL) print $1 }' "$PAF_A" | sort -u >"$outdir/ptA.ids"
+	# 		if [[ -s "$PAF_B" ]]; then
+	# 			awk -v ID="$identity_min" -v AL="${alen_min:-0}" 'BEGIN{FS=OFS="\t"} NF>=12{ id=($11>0?$10/$11:0); if(id>=ID && $11+0>=AL) print $1 }' "$PAF_B" | sort -u >"$outdir/ptB.ids"
+	# 			sort -u "$outdir/ptA.ids" "$outdir/ptB.ids" >"$PT_IDS"
+	# 		else
+	# 			mv "$outdir/ptA.ids" "$PT_IDS"
+	# 		fi
+	# 		printf "ident_min=%s\nalen_min=%d\n" "$identity_min" "${alen_min:-0}" >"$PT_VARS"
+	# 		: >"$PT_DIAG"
+	# 	fi
+	# else
+	note1 "using $PY_PT_THRESH -> file: $PT_VARS and PT IDs: $PT_IDS"
+	note1 python "$PY_PT_THRESH" \
+		--paf "$PAF_A" ${PAF_B:+ "$PAF_B"} \
+		--pt-ids "${pt_origin:-/dev/null}" --mt-ids "${mt_origin:-/dev/null}" \
+		--alen-min "${alen_min:-0}" --fpr "${fpr:-0.10}" --tpr "${tpr:-0.90}" \
+		--diag "$PT_DIAG" --emit-pt-ids "$PT_IDS" ">$PT_VARS"
+	python "$PY_PT_THRESH" \
+		--paf "$PAF_A" ${PAF_B:+ "$PAF_B"} \
+		--pt-ids "${pt_origin:-/dev/null}" \
+		--mt-ids "${mt_origin:-/dev/null}" \
+		--alen-min "${alen_min:-0}" \
+		--fpr "${fpr:-0.10}" \
+		--tpr "${tpr:-0.90}" \
+		--diag "$PT_DIAG" \
+		--emit-pt-ids "$PT_IDS" \
+		>"$PT_VARS"
 	# fi
 
-	if ((!DRY)); then
-		seqkit fx2tab -ni "$reads" | sort -u >"$MAP_DIR/all.ids"
-		sort -u "$PT_IDS" >"$MAP_DIR/pt.ids.sorted"
-		comm -23 "$MAP_DIR/all.ids" "$MAP_DIR/pt.ids.sorted" >"$outdir/keep.nonpt.ids"
-		seqkit grep -f "$outdir/keep.nonpt.ids" "$reads" -o "$outdir/reads.nonpt.fq.gz"
-	fi
-
-	R1="$outdir/reads.nonpt.fq.gz"
+	note2 "[ST2-3] Reading $PT_VARS to remove PT reads -> R1"
+	seqkit fx2tab -ni "$reads" | sort -u >"$MAP_DIR/all.ids"
+	sort -u "$PT_IDS" >"$MAP_DIR/pt.ids.sorted"
+	comm -23 "$MAP_DIR/all.ids" "$MAP_DIR/pt.ids.sorted" >"$outdir/keep.nonpt.ids"
+	seqkit grep -f "$outdir/keep.nonpt.ids" "$reads" -o "$R1"
 	seqkit stats -Ta "$R1" >"$R1".seqkit.stats.ta.tsv
-	# export R1
 }
 
 # ────────────────────────────────────────────────────────────────────
@@ -878,224 +853,7 @@ _ovl_cov() {
 	awk -v a="$nz" -v b="$tot" 'BEGIN{ if (b>0) printf "%.6f", a/b; else print 0 }'
 }
 
-# shortlist top fraction by length -> <outdir>/R1.short.fq.gz
-_build_shortlist_len() {
-	local reads="$1"
-	local outfile="$2"
-	local frac="${3:-0.5}"
-	seqkit fx2tab -nil "$reads" |
-		sort -k2,2nr |
-		awk -v f="$frac" \
-			'{ids[NR-1]=$1} END{lim=int((NR-1)*f); for(i=0;i<lim;i++) print ids[i]}' \
-			>"$outfile"
-}
-
-# shard target once (ALL reads)
-_shard_targets_once() {
-	local reads="$1"
-	local shard_dir="$2"
-	local B="${3:-4}"
-
-	# Pre-flight checks
-	[[ -n "$reads" && -s "$reads" ]] || {
-		note0 "ERR: reads not set or empty: '$reads'"
-		return 1
-	}
-	[[ -n "$shard_dir" ]] || {
-		note0 "ERR: shard_dir not set"
-		return 1
-	}
-
-	# If shard_dir already has files, consider sharding done
-	if [[ -d "$shard_dir" && -n "$(ls -A "$shard_dir" 2>/dev/null)" ]]; then
-		note1 "reusing existing shards at $shard_dir"
-		return 0
-	fi
-
-	# Create dir
-	if ! mkdir -p "$shard_dir"; then
-		note0 "ERR: cannot create shard_dir '$shard_dir'"
-		return 1
-	fi
-
-	# Run the split; capture exit status explicitly
-	note0 "hybrid: sharding targets into $B blocks at $shard_dir"
-	if ! seqkit split2 -p "$B" -O "$shard_dir" "$reads"; then
-		note0 "ERR: seqkit split2 failed"
-		return 1
-	fi
-
-	# Verify shards exist
-	if [[ -z "$(ls -A "$shard_dir" 2>/dev/null)" ]]; then
-		note0 "ERR: no shards found after split"
-		return 1
-	fi
-
-	return 0
-}
-
 # MM2_THOROUGH_OPTS="-k 17 -w 5 --secondary=yes -N 40 --mask-level 0.55 --min-occ-floor 8 -I 4g -K 2g"
-
-# 2b) map shortlist×each shard -> per-shard edge parts
-# _map_edges_parts <indir> <infile> <outdir>
-# Map shortlist (infile) × each shard in indir and dump edges to outdir.
-# Produces outdir/edges_part_XX.tsv.gz for each shard XX.
-_map_edges_parts() {
-	# ---- Inputs ----
-	local indir="$1"
-	local infile="$2"
-	local outdir="$3"
-
-	# ---- Pre-flight checks ----
-	if [[ -z "$indir" || -z "$infile" || -z "$outdir" ]]; then
-		note0 "ERR[_map_edges_parts]: missing args (indir='$indir' infile='$infile' outdir='$outdir')"
-		return 1
-	fi
-	if [[ ! -s "$infile" ]]; then
-		note0 "ERR[_map_edges_parts]: infile not found or empty: '$infile'"
-		return 1
-	fi
-	if [[ ! -d "$indir" ]]; then
-		note0 "ERR[_map_edges_parts]: indir not a directory: '$indir'"
-		return 1
-	fi
-	# ensure there is at least one shard
-	if ! ls "$indir"/*part_*.* >/dev/null 2>&1; then
-		note0 "ERR[_map_edges_parts]: no shard files found in '$indir'"
-		return 1
-	fi
-	if [[ -z "${hybrid_n_shards:-}" ]]; then
-		note1 "WARN[_map_edges_parts]: hybrid_n_shards is unset; defaulting to 4"
-		hybrid_n_shards=4
-	fi
-	if ! mkdir -p "$outdir"; then
-		note0 "ERR[_map_edges_parts]: cannot create outdir '$outdir'"
-		return 1
-	fi
-
-	# ---- Clean old parts ----
-	rm -f "$outdir/"*.tsv.gz 2>/dev/null || true
-
-	# ---- Map per shard -> edges_part_XX.tsv.gz ----
-	note2 "mapping shortlist × shards (thorough) ->  edge parts"
-	if [[ "${use_parallel}" -eq 1 ]]; then
-
-		if command -v parallel >/dev/null 2>&1; then
-
-			parallel -j 4 --halt now,fail=1 --line-buffer \
-				'minimap2 -x ava-ont -t '"$threads"' '"$MM2_THOROUGH_OPTS"' "'"$infile"'" {} \
-       | python "'"$EDGE_DUMP"'" --paf - --out "'"$PARTS_DIR"'/edges_part_{#}.tsv.gz" \
-       --min_olen 0 --min_ident 0 --w_floor 0 --dedup' \
-				::: "$indir"/*.part_*.fq*
-
-		fi
-
-	else
-
-		# build index per shard (if needed), then map with the .mmi
-		# target = shard index (.mmi), query = infile
-		# keep memory low: streaming dump (NO in-Python dedup), then disk dedup per shard
-		local j j2 shard idx
-		local INDEX_OPTS="${INDEX_OPTS:--x ava-ont}" # e.g., "-x ava-ont -H -k 17 -w 5" for HPC seeds
-		local INDEX_I="${INDEX_I:-2g}"               # index build chunk size
-		local SORT_MEM="${SORT_MEM:-2G}"             # memory cap for external sort
-		local SORT_TMP="${SORT_TMP:-$outdir/tmp}"    # temp dir for sort spills
-		mkdir -p "$SORT_TMP"
-
-		for j in $(seq 1 "$hybrid_n_shards"); do
-			j2=$(printf "%03d" "$j")
-			shard=$(ls "$indir"/*.part_${j2}.* 2>/dev/null | head -n1)
-			if [[ -z "$shard" ]]; then
-				note0 "ERR[_map_edges_parts]: missing shard for index $j2 in '$indir'"
-				return 1
-			fi
-
-			# choose index path next to the shard (or move to a dedicated mmi dir if you prefer)
-			case "$shard" in
-			*.gz) idx="${shard%.gz}.mmi" ;;
-			*) idx="${shard}.mmi" ;;
-			esac
-
-			# (re)build the index if missing or older than the shard
-			# if [[ ! -s "$idx" || "$idx" -ot "$shard" ]]; then
-			rm -f "$idx"
-			note2 "hybrid: indexing shard $j2 ->  $(basename "$idx")"
-			if ! minimap2 -x ava-ont $INDEX_OPTS -d "$idx" "$shard"; then
-				note0 "ERR[_map_edges_parts]: index build failed for shard $j2 ($shard)"
-				return 1
-			fi
-			# fi
-
-			# paths per shard
-			RAW="$outdir/edges_raw_${j2}.tsv.gz"
-			PART="$outdir/edges_part_${j2}.tsv.gz"
-
-			# map with index, stream-dump edges (NO dedup, NO gates) — low RAM
-			note2 "hybrid: shard $j2/$hybrid_n_shards (map with index -> raw edges)"
-			if ! minimap2 -x ava-ont -t "$TOTAL_CORES" $MAP_OPTS \
-				"$idx" "$infile" |
-				python "$EDGE_DUMP" --paf - --out "$RAW" \
-					--min_olen 0 --min_ident 0 --w_floor 0; then
-				note0 "ERR[_map_edges_parts]: mapping or raw edge dump failed for shard $j2"
-				return 1
-			fi
-
-			# disk dedup per shard (bounded by sort -S): keep one max-weight edge per unordered pair
-			# input cols assumed: u v alen ident weight
-			note2 "hybrid: shard $j2 dedup on disk (bounded RAM)"
-			if ! zcat "$RAW" |
-				awk 'BEGIN{FS=OFS="\t"} NF>=5{u=$1;v=$2; if(u>v){t=u;u=v;v=t} print u,v,$3,$4,$5}' |
-				LC_ALL=C sort -S "$SORT_MEM" -T "$SORT_TMP" -k1,1 -k2,2 -k5,5gr |
-				awk 'BEGIN{FS=OFS="\t"} !seen[$1 FS $2]++' |
-				gzip -1 >"$PART"; then
-				note0 "ERR[_map_edges_parts]: disk dedup failed for shard $j2"
-				return 1
-			fi
-		done
-
-	fi
-
-	# ---- Post-check results ----
-	if ! ls "$outdir/"*.tsv.gz >/dev/null 2>&1; then
-		note0 "ERR[_map_edges_parts]: no edge parts produced in '$outdir'"
-		return 1
-	fi
-
-	# ---- Success ----
-	return 0
-}
-
-# 2c) combine to edges_loose.tsv.gz
-_combine_edges() {
-	local indir="$1"
-	local outfile="$2"
-
-	note2 "hybrid: combine edge parts ->  $outfile"
-
-	# sanity checks
-	if [[ -z "$indir" || -z "$outfile" ]]; then
-		note0 "ERR[_combine_edges]: missing args (indir='$indir' outfile='$outfile')"
-		return 1
-	fi
-	if ! ls "$indir"/*.tsv.gz >/dev/null 2>&1 2>/dev/null; then
-		note0 "ERR[_combine_edges]: no edge parts (*.tsv.gz) found in '$indir'"
-		return 1
-	fi
-
-	# combine
-	if ! zcat "$indir"/*.tsv.gz | gzip -1 >"$outfile"; then
-		note0 "ERR[_combine_edges]: combine failed"
-		return 1
-	fi
-
-	# check result
-	if [[ ! -s "$outfile" ]]; then
-		note0 "ERR[_combine_edges]: output '$oroundutfile' is empty"
-		return 1
-	fi
-
-	return 0
-}
 
 # Expect these to be set:
 #   EDGES_COMBINED="$ST3/edges_loose.tsv.gz"
@@ -1107,77 +865,6 @@ _combine_edges() {
 # Also expect helpers:
 #   _ovl_cov  (prints coverage as fraction 0..1)
 #   _map_edges_parts  (maps shortlist x shards -> PARTS_DIR/edges_part_XX.tsv.gz)
-#   _combine_edges    (zcat parts -> EDGES_COMBINED)
-
-# 2d) refilter with eweight ladder (inline loop) until coverage >= target or floor reached
-_refilter_once_eweight_loop() {
-	# returns 0 on success (target met), 1 if floor reached without target, 2 on hard error
-	local ew cov cov_pct tgt_pct
-	local best_cov="0"
-	local best_ew=""
-
-	# sanity checks
-	if [[ ! -s "$EDGES_COMBINED" ]]; then
-		note0 "ERR: edges archive missing: $EDGES_COMBINED"
-		return 2
-	fi
-	if awk -v s="$eweight_step" 'BEGIN{exit !(s>0)}'; then :; else
-		note0 "ERR: edge weight step size must be > 0 (got '$eweight_step')"
-		return 2
-	fi
-
-	ew=$(awk -v x="$eweight" 'BEGIN{printf "%.3f", x}')
-	while :; do
-		note0 "hybrid: refilter edges -> overlapness (eweight=$ew)"
-		if ! python "$REFILTER_EDGES" \
-			--edges "$EDGES_COMBINED" \
-			--w_floor "$ew" \
-			--out "$OVL_STRICT"; then
-			note0 "ERR: refilter failed at eweight=$ew"
-			return 2
-		fi
-
-		cov=$(_ovl_cov "$OVL_STRICT" "$R1")
-		cov="${cov:-0}"
-		cov_pct=$(awk -v c="$cov" 'BEGIN{printf "%.2f", 100*c}')
-
-		local tgt_pct=$(_polap_lib_math-percentify $shortlist_target)
-		# tgt_pct=$(awk -v t="$shortlist_target" 'BEGIN{printf "%.2f", 100*t}')
-		# tgt_pct=$(printf "%.2f" "$(bc -l <<<"$shortlist_target * 100")")
-
-		note1 "coverage=${cov_pct}% target=${tgt_pct}% (eweight=$ew)"
-
-		# track best attempt
-		if awk -v a="$cov" -v b="$best_cov" 'BEGIN{exit !(a>b)}'; then
-			best_cov="$cov"
-			best_ew="$ew"
-		fi
-
-		# success?
-		if awk -v c="$cov" -v tgt="$shortlist_target" 'BEGIN{exit !(c>=tgt)}'; then
-			eweight="$ew"
-			return 0
-		fi
-
-		# descend eweight; stop at floor
-		ew=$(awk -v x="$ew" -v s="$eweight_step" -v f="$eweight_minimum" 'BEGIN{v=x-s; if(v<f) v=f; printf "%.3f", v}')
-		if awk -v x="$ew" -v f="$eweight_minimum" 'BEGIN{exit !(x<=f)}'; then
-			# floor hit; keep best attempt (regenerate if needed)
-			if [[ -n "$best_ew" && "$best_ew" != "$ew" ]]; then
-				note0 "hybrid: floor reached; restoring best attempt at eweight=$best_ew (best_cov=$(awk -v c="$best_cov" "BEGIN{printf \"%.2f\",100*c}")%)"
-				if ! python "$REFILTER_EDGES" \
-					--edges "$EDGES_COMBINED" \
-					--w_floor "$best_ew" \
-					--out "$OVL_STRICT"; then
-					note0 "ERR: failed to restore best attempt at eweight=$best_ew"
-					return 2
-				fi
-				eweight="$best_ew"
-			fi
-			return 1
-		fi
-	done
-}
 
 #!/usr/bin/env bash
 # 03-partvspart: randomized sharding + intra-shard mapping -> edges.tsv
@@ -1206,25 +893,17 @@ ST3_part_vs_part() {
 	local OUTDIR="$1"
 	local READS="$2"
 
-	# Use R1 not reads to compute the overlapness
-	# local READS="${reads}"
+	local STDIR="${OUTDIR}/03-allvsall"
+	local SHARD_DIR="${STDIR}/01-shards"
+	local EDGE_DIR="${STDIR}/02-edges"
 
 	local SEED="${SEED:-13}"
 
 	: "${INDEX_OPTS:=}"
 	: "${MAP_OPTS:=}"
 
-	local STDIR="${OUTDIR}/03-allvsall"
-
-	local SHARD_DIR="${STDIR}/01-shards"
-	local EDGE_DIR="${STDIR}/02-edges"
-
 	mkdir -p "$SHARD_DIR" "$EDGE_DIR"
 
-	# --- helpers ---
-	_zcat() { case "$1" in *.gz) gzip -cd -- "$1" ;; *) cat -- "$1" ;; esac }
-
-	# Version: v0.1.2
 	# calc_shards TOTAL_BASES TARGET_GBP
 	# Computes number of shards (B) from total bases and target gigabases.
 	# Ensures at least one shard and prints the result.
@@ -1247,12 +926,14 @@ ST3_part_vs_part() {
 	}
 
 	local TOTAL_BASES="$(count_bases "$READS")"
-	note1 "[ST3] Count total bases in: $READS -> $TOTAL_BASES"
+	note1 "[ST3-1] Count total bases in: $READS -> $TOTAL_BASES"
+
 	local TARGET_GBP=1
 	local B=$(calc_shards "$TOTAL_BASES" "$TARGET_GBP")
-	note1 "[ST3] Number of shards of $TARGET_GBP Gb: $B"
+	note2 "[ST3-2] Number of shards of $TARGET_GBP Gb: $B"
 
-	note1 "[ST3] Splitting shuffled reads into $B shards ->  $SHARD_DIR"
+	note2 "[ST3-3] Splitting shuffled reads into $B shards -> $SHARD_DIR"
+
 	# seqkit split2 creates reads.shuf.part_001.gz, ...
 	rm -rf "$SHARD_DIR"
 	mkdir -p "$SHARD_DIR"
@@ -1392,7 +1073,7 @@ ST3_overlapness() {
 	# tgt_pct=$(awk -v t="${shortlist_target:-0}" 'BEGIN{printf "%.2f", 100*t}')
 	note1 "coverage=${cov_pct}% ($cov_str) target=${tgt_pct}% (eweight=$ew_str)"
 
-	note1 "[ST3] 04-qc"
+	note1 "[ST3-3] 04-qc"
 	local QC_DIR="$STDIR/04-qc"
 	mkdir -p "$QC_DIR"
 	local OVL_VARS="$QC_DIR/overlap_qc.vars"
@@ -1420,97 +1101,66 @@ ST4_busco() {
 	local ST3="$OUTDIR/03-allvsall"
 	local BDIR="$OUTDIR/04-busco"
 
-	if ! [[ -n "${nprot:-}" && -s "${nprot}" ]]; then
-		note0 "No busco reference protein sequence dataset"
-	fi
-
-	note1 "BUSCO QC on a 10% length-stratified subsample -> $BDIR/nuc.ids.sample"
+	note2 "[ST4-1] BUSCO QC on a 10% length-stratified subsample -> $BDIR/nuc.ids.sample"
 	local SAMP_FQ="$BDIR/reads.nonpt.sample.fq.gz"
-	if ((!DRY)); then
-		note2 "$READS -> $SAMP_FQ min(10% or 1 Gb)"
-		sample_min_10pct_or_1gb "$READS" "$SAMP_FQ" "${seed:-13}"
+	note2 "$READS -> $SAMP_FQ min(10% or 1 Gb)"
+	sample_min_10pct_or_1gb "$READS" "$SAMP_FQ" "${seed:-13}"
 
-		note2 "[MP] $SAMP_FQ -> $BDIR/nonpt.sample.mpi"
-		miniprot -d "$BDIR/nonpt.sample.mpi" "$SAMP_FQ"
+	note2 "[ST4-2] [MP] $SAMP_FQ -> $BDIR/nonpt.sample.mpi -> nonpt.sample.busco.paf"
+	miniprot -d "$BDIR/nonpt.sample.mpi" "$SAMP_FQ"
+	note2 miniprot -t "${TOTAL_CORES}" -S -N 3 --outc 0.4 \
+		"$BDIR/nonpt.sample.mpi" "$nprot" \
+		">$BDIR/nonpt.sample.busco.paf"
+	miniprot -t "${TOTAL_CORES}" -S -N 3 --outc 0.4 \
+		"$BDIR/nonpt.sample.mpi" "$nprot" \
+		>"$BDIR/nonpt.sample.busco.paf"
 
-		note2 "[MP] nonpt.sample.mpi vs BUSCO -> nonpt.sample.busco.paf"
-		note2 miniprot -t "${TOTAL_CORES}" -S -N 3 --outc 0.4 \
-			"$BDIR/nonpt.sample.mpi" "$nprot" \
-			">$BDIR/nonpt.sample.busco.paf"
-		miniprot -t "${TOTAL_CORES}" -S -N 3 --outc 0.4 \
-			"$BDIR/nonpt.sample.mpi" "$nprot" \
-			>"$BDIR/nonpt.sample.busco.paf"
-
-		# awk 'BEGIN{FS=OFS="\t"} NF>=12 && $11+0>=150 {print $6}' \
-		# 	"$BDIR/nonpt.sample.busco.paf" |
-		# 	sort -u >"$BDIR/nuc.ids.sample"
-
-		local NUC_SAMPLE="$BDIR/nuc.ids.sample"
-		note2 "[PAF] $BDIR/nonpt.sample.busco.paf -> $NUC_SAMPLE"
-		while IFS=$'\t' read -r -a f; do
-			((${#f[@]} >= 12)) || continue
-			[[ ${f[10]} =~ ^[0-9]+$ ]] && ((f[10] >= 150)) || continue # col11
-			printf '%s\n' "${f[5]}"                                    # col6
-		done <"$BDIR/nonpt.sample.busco.paf" | LC_ALL=C sort -u >"$NUC_SAMPLE"
-	fi
-
+	local NUC_SAMPLE="$BDIR/nuc.ids.sample"
+	note2 "[ST4-3] [PAF] $BDIR/nonpt.sample.busco.paf -> $NUC_SAMPLE"
+	while IFS=$'\t' read -r -a f; do
+		((${#f[@]} >= 12)) || continue
+		[[ ${f[10]} =~ ^[0-9]+$ ]] && ((f[10] >= 150)) || continue # col11
+		printf '%s\n' "${f[5]}"                                    # col6
+	done <"$BDIR/nonpt.sample.busco.paf" | LC_ALL=C sort -u >"$NUC_SAMPLE"
 }
 
-# ST4: BUSCO-guided QC + selection round
-# Usage:
-#   ST4_round "$outdir" ["$st3_dir"]
-# Notes:
-#   Expects env/tools/vars already defined in caller:
-#     R1, nprot, seed, threads, DRY, nuc_ids_opt, THRESH_NUC_PY, TOPPY, note1
-#   Defaults ST3 to "$outdir/03-allvsall" if not provided.
 ST5_round() {
 	local outdir="$1"
 
-	local ST3="$outdir/03-allvsall"
-	local RDIR="$outdir/05-round"
+	# local ST3="$outdir/03-allvsall"
+	# local RDIR="$outdir/05-round"
 
 	local OTSV="$ST3/overlapness.tsv"
 	local SELECT_IDS="$RDIR/select_ids.txt"
-
-	note1 "3b) selection (prefer BUSCO sample labels) -> $SELECT_IDS"
-	# [[ -s "$RDIR/overlapness.tsv" ]] || cp -f "$OTSV_GLOBAL" "$RDIR/overlapness.tsv"
-
 	local NUC_SAMPLE="$BDIR/nuc.ids.sample"
 	local NUC_FOR_THRESH="${nuc_ids_opt:-"$NUC_SAMPLE"}"
 
-	if [[ -s "$NUC_FOR_THRESH" ]]; then
-		# THRESH_NUC_PY="${HELP}/polap-py-threshold-from-nuclear.py"
-		note1 "nuclear-guided selection using $NUC_FOR_THRESH"
-		note1 python "$THRESH_NUC_PY" "$OTSV" "$NUC_FOR_THRESH" \
-			--mode fpr --fpr 0.20 \
-			--diag "$RDIR/threshold_from_nuclear.tsv" \
-			">$RDIR/nuc_thresh.vars"
-		python "$THRESH_NUC_PY" "$OTSV" "$NUC_FOR_THRESH" \
-			--mode fpr --fpr 0.20 \
-			--diag "$RDIR/threshold_from_nuclear.tsv" \
-			>"$RDIR/nuc_thresh.vars"
+	note2 "[ST5-1] nuclear-guided selection using $NUC_FOR_THRESH"
+	note2 python "$THRESH_NUC_PY" "$OTSV" "$NUC_FOR_THRESH" \
+		--mode fpr --fpr 0.20 \
+		--diag "$RDIR/threshold_from_nuclear.tsv" \
+		">$RDIR/nuc_thresh.vars"
+	python "$THRESH_NUC_PY" "$OTSV" "$NUC_FOR_THRESH" \
+		--mode fpr --fpr 0.20 \
+		--diag "$RDIR/threshold_from_nuclear.tsv" \
+		>"$RDIR/nuc_thresh.vars"
 
-		# Get the minimum overlapness values.
-		local wdeg_min=0 deg_min=0 kv
-		while IFS== read -r kv; do
-			case "$kv" in
-			wdeg_min=*) wdeg_min="${kv#wdeg_min=}" ;;
-			deg_min=*) deg_min="${kv#deg_min=}" ;;
-			esac
-		done <"$RDIR/nuc_thresh.vars"
+	# Get the minimum overlapness values.
+	local wdeg_min=0 deg_min=0 kv
+	while IFS== read -r kv; do
+		case "$kv" in
+		wdeg_min=*) wdeg_min="${kv#wdeg_min=}" ;;
+		deg_min=*) deg_min="${kv#deg_min=}" ;;
+		esac
+	done <"$RDIR/nuc_thresh.vars"
 
-		# mtseed/keep.nonpt.ids -> number of nuclear and mito reads
-		# mtseed/05-round/select_ids.txt -> number of mito reads
-		awk -v W="$wdeg_min" -v D="$deg_min" \
-			'BEGIN{FS=OFS="\t"} NR>1 && ($3+0)>W && ($2+0)>D {print $1}' \
-			"$OTSV" | sort -u >"$RDIR/organelle.ids"
+	note2 "[ST5-2] organelle reads selection with PT & NT filtered out -> $SELECT_IDS"
 
-		comm -23 <(sort -u "$RDIR/organelle.ids") <(sort -u "$NUC_FOR_THRESH") >"$SELECT_IDS"
-	else
-		note1 "No BUSCO; use $top_frac"
-		note1 "select top-frac by wdegree ($top_frac)"
-		((!DRY)) && python "$TOPPY" "$OTSV" --top_frac "$top_frac" >"$SELECT_IDS"
-	fi
+	awk -v W="$wdeg_min" -v D="$deg_min" \
+		'BEGIN{FS=OFS="\t"} NR>1 && ($3+0)>W && ($2+0)>D {print $1}' \
+		"$OTSV" | sort -u >"$RDIR/organelle.ids"
+
+	comm -23 <(sort -u "$RDIR/organelle.ids") <(sort -u "$NUC_FOR_THRESH") >"$SELECT_IDS"
 }
 
 # ST6: Assembly with miniasm (or raven fallback)
@@ -1549,6 +1199,7 @@ ST6_miniasm() {
 		# recompute overlaps among selected reads
 		local SELPAF="$ADIR/selected_allvsall.paf.gz"
 		note1 "4b) recompute overlaps among selected reads -> $SELPAF"
+
 		minimap2 -x ava-ont -t "$TOTAL_CORES" \
 			"${MINIASM_MAP_OPTS}" \
 			"$TOPFA" "$TOPFA" | gzip -1 >"$SELPAF"
@@ -1573,23 +1224,28 @@ ST6_miniasm() {
 # Main
 # ────────────────────────────────────────────────────────────────────
 
+# ------------------------------------------------------------------------------
+# Input & Outputs
+# ------------------------------------------------------------------------------
+R1="$reads"
+PANEL_DIR="$outdir/01-panel"
+MAP_DIR="$outdir/02-map"
+ST3="$outdir/03-allvsall"
+BDIR="$outdir/04-busco"
+RDIR="$outdir/05-round"
+ADIR="$outdir/06-miniasm"
+FDIR="$outdir/07-flye"
+
 # ────────────────────────────────────────────────────────────────────
 # Step 0: minimap2 setting
 # ────────────────────────────────────────────────────────────────────
-# echo "std1"
-# echo "std2" 1>&2
-# exists "$nprot"
-note1 "Step0. choose presets for minimap2"
+note1 "Step0. choose presets for minimap2 and check the pre-conditions"
 choose_mm2_preset
-note1 "Step0. checking"
 ST0_check "${outdir}"
-note1 "Step0. checked"
 
 # ────────────────────────────────────────────────────────────────────
 # Step 1: PT removal (unchanged)
 # ────────────────────────────────────────────────────────────────────
-R1="$reads"
-PANEL_DIR="$outdir/01-panel"
 if _should_run 1; then
 	note1 "Step1. prepare ptDNA sequences"
 	ST1_pt_isoform "${outdir}"
@@ -1616,7 +1272,6 @@ fi
 # ────────────────────────────────────────────────────────────────────
 # Step 3: minimap2 mapping all vs all
 # ────────────────────────────────────────────────────────────────────
-ST3="$outdir/03-allvsall"
 if _should_run 3; then
 	mkdir -p "$ST3"
 	note1 "Step3. map reads on themselves - part vs part"
@@ -1627,7 +1282,6 @@ fi
 # ────────────────────────────────────────────────────────────────────
 # Step 4: BUSCO QC (10% subsample), then selection (uses $RDIR/overlapness.tsv)
 # ────────────────────────────────────────────────────────────────────
-BDIR="$outdir/04-busco"
 if _should_run 4; then
 	note1 "Step4. Detect nuclear genes"
 	mkdir -p "$BDIR"
@@ -1637,17 +1291,17 @@ fi
 # ────────────────────────────────────────────────────────────────────
 # Step 5: selection (uses $RDIR/overlapness.tsv)
 # ────────────────────────────────────────────────────────────────────
-RDIR="$outdir/05-round"
 if _should_run 5; then
 	note1 "Step5. Get overlapness"
 	mkdir -p "$RDIR"
 	ST5_round "$outdir"
 fi
 
+# NOTE: use polap-bash-fq2gfa.sh
+
 # ────────────────────────────────────────────────────────────────────
 # Step 6: assemble selected reads (miniasm|raven)
 # ────────────────────────────────────────────────────────────────────
-ADIR="$outdir/06-miniasm"
 if _should_run 6; then
 	note1 "Step6. assemble selected reads using miniasm"
 	mkdir -p "$ADIR"
@@ -1657,7 +1311,6 @@ fi
 # ────────────────────────────────────────────────────────────────────
 # Step 7: finisher (polap readassemble) using miniasm GFA
 # ────────────────────────────────────────────────────────────────────
-FDIR="$outdir/07-flye"
 if _should_run 7; then
 	note1 "Step7. assemble mtDNA using selected contigs"
 	contigger_dir="${FDIR}/30-contigger"

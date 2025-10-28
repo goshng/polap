@@ -2727,11 +2727,15 @@ EOF
 	_log_echo1 "Asemble organelle genomes using miniasm as a reference generator with ${option_data_type}"
 
 	# Always redo
-	rm -rf "${_brg_rundir}"
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		rm -rf "${_brg_rundir}"
+	fi
 	mkdir -p "${_brg_rundir}"
 
 	# Always redo
-	rm -rf "${_brg_target}"
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		rm -rf "${_brg_target}"
+	fi
 	mkdir -p "${_brg_target}"
 
 	# Start memory logger
@@ -14741,6 +14745,8 @@ Synopsis:
 Description:
   bolap
 
+  --coverage STR [default: 30g]
+
 Examples:
   Downsample the fastq to 10g:
     bolap data downsample-long -s Vigna_radiata --coverage 10g
@@ -14866,6 +14872,8 @@ EOF
 	echo "coverage: ${_brg_coverage}" >>"${_brg_target}/${long_sra}.fq.downsample.txt"
 	seqkit stats -Ta "${long_sra}.fastq" \
 		-o "${_brg_target}/${long_sra}.fastq.seqkit.stats.ta.tsv"
+
+	_log_echo0 "SRA: ${long_sra}"
 
 	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
 

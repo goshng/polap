@@ -95,7 +95,8 @@ EOF
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
 
-	_arg_steps_include="1-5"
+	_arg_steps_include="1-6"
+	# _arg_steps_include="3-6"
 
 	local _include="${_arg_steps_include}"
 	local _exclude="${_arg_steps_exclude}" # Optional range or list of steps to exclude
@@ -158,30 +159,65 @@ EOF
 			--use-parallel \
 			--no-do-polap \
 			${_arg_verbose_str} \
-			--step "1-7"
+			--step "1-5"
 		# --step "1-7"
 		# --step "1-2"
+	fi
+
+	if _polap_contains_step 4 "${_step_array[@]}"; then
+		# ST6_miniasm
+
+		local OUTDIR="${_arg_outdir}/mtseed"
+		# local READS="${_polap_outdir}/mtseed/reads.nonpt.fq.gz"
+		local READS="${_arg_long_reads}"
+		local RDIR="$OUTDIR/05-round"
+		local ADIR="$OUTDIR/06-miniasm"
+		local SELECT_IDS="$RDIR/select_ids.txt"
+		local TOPFA="$ADIR/top_reads.fa.gz"
+		local TOPFQ="$ADIR/top_reads.fq.gz"
+		local GFA SEEDS_ROUND
+		local SEEDS_CUR
+
+		_polap_log1 "4a) extract selected reads -> $TOPFA"
+		seqkit grep -f "$SELECT_IDS" "$READS" -o "$TOPFQ" 2>"$_polap_output_dest"
+
+		bash "${_POLAPLIB_DIR}/polap-bash-fq2gfa.sh" \
+			"${TOPFQ}" \
+			-o "${ADIR}" \
+			-t "${_arg_half_threads}" \
+			--assembler miniasm \
+			--gb 1
 	fi
 
 	# _polap_lib_file-cleanup -d "${_arg_outdir}/mtseed" -s 5M -a rm
 
 	# assemble mtDNA using the miniasm seeds
 	# assemble mtDNA using the flye seeds
-	if _polap_contains_step 4 "${_step_array[@]}"; then
-		local FDIR_NAME="07-flye"
-		local FDIR="${_arg_outdir}/$FDIR_NAME"
+	if _polap_contains_step 5 "${_step_array[@]}"; then
+		local OUTDIR="${_arg_outdir}/mtseed"
+		local ADIR="$OUTDIR/06-miniasm"
+		local FDIR="${OUTDIR}/07-flye"
+		local contigger_dir="${FDIR}/30-contigger"
+		mkdir -p "${contigger_dir}"
+
+		_polap_log2 "7a) convert miniasm gfa for flye run -> ${contigger_dir}/graph_final.gfa"
+		sed 's/LN:i/dp:i/' "${ADIR}/miniasm.gfa" >"${contigger_dir}/graph_final.gfa"
 
 		local _backup_outdir="${_arg_outdir}"
-		_arg_inum="${FDIR_NAME}"
+		_arg_inum="07-flye"
 		_arg_outdir="${_arg_outdir}/mtseed"
 		_polap_lib_readassemble-miniasm mtseed
 		_arg_outdir="$_backup_outdir"
 	fi
 
-	if _polap_contains_step 5 "${_step_array[@]}"; then
+	if _polap_contains_step 6 "${_step_array[@]}"; then
+		local pt_gfa="${_arg_long_reads%.*}.pt.gfa"
+		cp -p "${_arg_outdir}/pt.1.gfa" "${pt_gfa}"
+		_polap_log0 "output plastid assembly graph: ${pt_gfa}"
+
 		local mt_gfa="${_arg_long_reads%.*}.mt.gfa"
 		cp -p "${_arg_outdir}/mt.1.gfa" "${mt_gfa}"
-		_polap_log0 "output assembly graph: ${mt_gfa}"
+		_polap_log0 "output mitochondrial assembly graph: ${mt_gfa}"
 	fi
 
 	conda deactivate

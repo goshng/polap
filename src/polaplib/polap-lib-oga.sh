@@ -766,7 +766,7 @@ function _polap_lib_oga-estimate-omega {
 		# sampling rate
 		local _rate=$(echo "scale=9; ${_arg_coverage_oga}/$_expected_organelle_coverage" | bc)
 
-		_polap_log0 "omega: ${omega}: rate ($_lower_bound_subsampling_rate ~ $_upper_bound_subsampling_rate): ${_rate}"
+		_polap_log1 "omega: ${omega}: rate ($_lower_bound_subsampling_rate ~ $_upper_bound_subsampling_rate): ${_rate}"
 
 		if (($(echo "$_rate < $_lower_bound_subsampling_rate" | bc -l))); then
 			omega=$(echo "scale=9; ${omega} + 1000" | bc)

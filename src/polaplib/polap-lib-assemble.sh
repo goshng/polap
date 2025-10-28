@@ -102,7 +102,7 @@ _polap_lib_assemble-rate() {
 #
 _polap_lib_assemble-omega() {
 
-	_polap_log0 "Assemble using seed contigs by adjusting omega"
+	_polap_log1 "Assemble using seed contigs by adjusting omega"
 
 	# we can use all polap_var_ variables.
 	# They are determined by output, i, and j.
@@ -119,7 +119,7 @@ _polap_lib_assemble-omega() {
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh"
 	local i=0
 
-	_polap_log0 "$FUNCNAME: -l ${_arg_long_reads}"
+	_polap_log1 "-l ${_arg_long_reads}"
 
 	if ! _polap_gfatools-gfa2fasta; then
 		_polap_error_message $?
@@ -157,7 +157,7 @@ _polap_lib_assemble-omega() {
 		_arg_redo="on"
 		_run_polap_assemble2
 	fi
-	_polap_log0 "i: $i"
+	_polap_log1 "i: $i"
 
 	return 0
 }

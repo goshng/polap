@@ -282,8 +282,8 @@ HEREDOC
 	_polap_log2 "  input2: ${_polap_var_ga_contigger_edges_fasta}"
 
 	if [[ -s "${_polap_var_oga_contig}/contig.tab" ]] && [[ "${_arg_redo}" == "on" ]]; then
-		_polap_log0 "  found: ${_polap_var_oga_reads}/contig.tab, so skipping mapping long-read data ..."
-		return
+		_polap_log1 "  found: ${_polap_var_oga_reads}/contig.tab, so skipping mapping long-read data ..."
+		return 0
 	fi
 
 	if [ ! -s "${_polap_var_mtcontigname}" ]; then
@@ -753,7 +753,7 @@ HEREDOC
 
 	if [[ -v _polap_opt_dict["${_pread_sel}"] ]]; then
 		local _read_names=${_polap_opt_dict["${_pread_sel}"]}
-		_polap_log0 "  read names file: ${_read_names}"
+		_polap_log1 "  read names file: ${_read_names}"
 	else
 		die "No such name file for ${_pread_sel}"
 	fi
@@ -822,7 +822,7 @@ HEREDOC
 	fi
 
 	if [[ "${_arg_redo}" == "on" ]] && [[ "${_arg_yes}" == "off" ]]; then
-		_polap_log0 "  deleting the folder like ${_polap_var_oga_reads}/${_pread_sel}"
+		_polap_log1 "  deleting the folder like ${_polap_var_oga_reads}/${_pread_sel}"
 		rm -rf "${_polap_var_oga_reads}/${_pread_sel}"
 		rm -rf "${_polap_var_oga_seeds}/${_pread_sel}"
 		rm -rf "${_polap_var_oga_subsample}/${_pread_sel}"
@@ -883,7 +883,7 @@ HEREDOC
 
 		_polap_log3_cmd mkdir -p "${_polap_var_oga_reads}/${_pread_sel}/${i}"
 
-		_polap_log0 "  (${i}) selecting read names for ${_pread_sel}: w = ${_test_value} (bp)"
+		_polap_log1 "  (${i}) selecting read names for ${_pread_sel}: w = ${_test_value} (bp)"
 		_polap_log2 "    single-min: ${_arg_single_min}"
 		_polap_log2 "    pair-min: ${_arg_pair_min}"
 		_polap_log2 "    bridge-min: ${_arg_bridge_min}"
@@ -957,7 +957,7 @@ HEREDOC
 		if [[ "$_expected_organelle_coverage" -gt "${_arg_coverage_oga}" ]]; then
 			if [[ "${_arg_coverage_check}" == "on" ]]; then
 				local _rate=$(echo "scale=9; ${_arg_coverage_oga}/$_expected_organelle_coverage" | bc)
-				_polap_log0 "  long-read data reduction by rate of ${_rate} <= COV[${_arg_coverage_oga}] / long-read organelle coverage[$_expected_organelle_coverage]"
+				_polap_log1 "  long-read data reduction by rate of ${_rate} <= COV[${_arg_coverage_oga}] / long-read organelle coverage[$_expected_organelle_coverage]"
 				_polap_log1 "    sampling long-read data by ${_rate} ... wait ..."
 				_polap_lib_random-get
 				local _random_seed=${_polap_var_random_number}
@@ -1021,7 +1021,7 @@ HEREDOC
 			_polap_log2 "    input1: ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
 			_polap_log2 "    output: ${_polap_var_oga_summary}/${_pread_sel}/${i}.fragments"
 			_polap_log2 "    output: ${_polap_var_oga_summary}/${_pread_sel}/${i}.bases"
-			_polap_log0 "  output: ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
+			_polap_log1 "  output: ${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa"
 
 			ln -s $(realpath "${_polap_var_oga_flye}/${_pread_sel}/${i}/30-contigger/graph_final.gfa") ${_polap_var_oga_flye}/${_pread_sel}/${i}-graph_final.gfa
 
@@ -1139,16 +1139,16 @@ HEREDOC
 	case "${_arg_menu[1]}" in
 	infile | ptgaul-reads)
 		_arg_menu[1]="ptgaul-reads"
-		_polap_log0 "  default set to read-selection: ${_arg_menu[1]}"
+		_polap_log1 "  default set to read-selection: ${_arg_menu[1]}"
 		;;
 	polap-reads)
-		_polap_log0 "  read-selection: ${_arg_menu[1]}"
+		_polap_log1 "  read-selection: ${_arg_menu[1]}"
 		;;
 	bridge-reads)
-		_polap_log0 "  read-selection: ${_arg_menu[1]}"
+		_polap_log1 "  read-selection: ${_arg_menu[1]}"
 		;;
 	intra-reads)
-		_polap_log0 "  read-selection: ${_arg_menu[1]}"
+		_polap_log1 "  read-selection: ${_arg_menu[1]}"
 		;;
 	*)
 		_polap_log0 "ERROR: no such menu2 for select-reads: ${_arg_menu[1]}"
@@ -1192,9 +1192,9 @@ function _run_polap_flye2 { # executes Flye for an organelle-genome assembly
 
 	if [[ "${_arg_menu[1]}" == "infile" ]]; then
 		_arg_menu[1]="ptgaul-reads"
-		_polap_log0 "  default set to read-selection: ${_arg_menu[1]}"
+		_polap_log1 "  default set to read-selection: ${_arg_menu[1]}"
 	else
-		_polap_log0 "  read-selection: ${_arg_menu[1]}"
+		_polap_log1 "  read-selection: ${_arg_menu[1]}"
 	fi
 	if [[ "${_arg_polap_reads}" == "on" ]]; then
 		_arg_menu[1]="polap-reads"

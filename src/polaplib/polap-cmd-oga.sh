@@ -972,11 +972,11 @@ HEREDOC
           2>${_polap_output_dest}"
 				_polap_log3_pipe "echo ${_random_seed} >${_polap_var_oga_subsample}/${_pread_sel}/${i}.random.seed.${_random_seed}"
 			else
-				_polap_log0 "    no reduction of the long-read data because of the option --no-coverage-check: expected coverage: ${_expected_organelle_coverage}"
+				_polap_log1 "    no reduction of the long-read data because of the option --no-coverage-check: expected coverage: ${_expected_organelle_coverage}"
 				_polap_log3_cmd ln -s $(realpath "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz") "${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
 			fi
 		else
-			_polap_log0 "    no reduction of the long-read data because $_expected_organelle_coverage < ${_arg_coverage_oga}"
+			_polap_log1 "    no reduction of the long-read data because $_expected_organelle_coverage < ${_arg_coverage_oga}"
 			_polap_log3_cmd ln -s $(realpath "${_polap_var_oga_seeds}/${_pread_sel}/${i}.fq.gz") "${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
 		fi
 

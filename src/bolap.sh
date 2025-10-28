@@ -80,6 +80,7 @@ source "${_POLAPLIB_DIR}/bolap-parsing.sh"
 _polap_output_dest="/dev/null"
 source "${_POLAPLIB_DIR}/polap-bash-bolap-autoload-min.sh"
 bolap_autoload_min "${_POLAPLIB_DIR}" "${_bolap_type}"
+
 # Load more if not loaded by the autoloader.
 source "${_POLAPLIB_DIR}/polap-lib-command.sh"
 source "${_POLAPLIB_DIR}/polap-lib-bolap-compat.sh"

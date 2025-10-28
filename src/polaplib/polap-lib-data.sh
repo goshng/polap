@@ -14207,27 +14207,17 @@ EOF
 	local _remote=""
 
 	parse_commandline() {
-		set -- "${_brg_unknown_opts[@]}"
+		set -- "${_brg_args[@]}"
 
 		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
 		while test $# -gt 0; do
 			_key="$1"
 			case "$_key" in
-			--data-long-cleanup)
-				if test $# -lt 2; then
-					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'."
-				else
-					_data_long_cleanup="$2"
-					shift || true
-				fi
+			--cleanup)
+				_data_long_cleanup="true"
 				;;
-			--data-long-redo)
-				if test $# -lt 2; then
-					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'."
-				else
-					_data_long_redo="$2"
-					shift || true
-				fi
+			--redo)
+				_data_long_redo="true"
 				;;
 			--remote)
 				if test $# -lt 2; then
@@ -14238,10 +14228,10 @@ EOF
 				fi
 				;;
 			-*)
-				_log_echo0 "[ERROR] no such options: $1"
+				_log_echo1 "[INFO] no such options: $1"
 				;;
 			*)
-				break
+				:
 				;;
 			esac
 			shift || true
@@ -14276,19 +14266,10 @@ EOF
 	# if not check NCBI SRA database
 	#
 	# save it outdir/tmp/l.fq
-	#
 
 	_polap_lib_conda-ensure_conda_env polap-ncbitools || exit 1
-	# bash "${_POLAPLIB_DIR}/polap-bash-run-data-long.sh" \
-	# 	-l "${long_sra}" \
-	# 	-o "${_brg_outdir}"
-	# bash "${_POLAPLIB_DIR}/polap-bash-run-data-long.sh" \
-	# 	-l "${long_sra}" \
-	# 	-o "${_brg_outdir}" \
-	# 	$([[ "${_data_long_redo:-false}" != "false" ]] && printf -- '--redo') \
-	# 	$([[ "${_data_long_cleanup:-false}" != "false" ]] && printf -- '--redo')
 
-	args=(
+	local args=(
 		-l "${long_sra}"
 		-o "${_brg_outdir}"
 	)
@@ -14299,19 +14280,16 @@ EOF
 
 	if [[ "${_brg_redo,,}" != "false" ]]; then
 		args+=(--redo)
-	elif [[ "${_brg_cleanup,,}" != "false" ]]; then
-		args+=(--cleanup)
 	fi
 
-	if [[ "${_brg_dry_run,,}" != "false" ]]; then
-		args+=(--dry-run)
+	if [[ "${_brg_cleanup,,}" != "false" ]]; then
+		args+=(--cleanup)
 	fi
 
 	if [[ -n "${_remote}" ]]; then
 		args+=(--remote ${_remote})
 	fi
 
-	# _log_echo0 bash "${_POLAPLIB_DIR}/polap-bash-run-data-long.sh" "${args[@]}"
 	bash "${_POLAPLIB_DIR}/polap-bash-run-data-long.sh" "${args[@]}"
 
 	conda deactivate

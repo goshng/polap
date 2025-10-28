@@ -29,11 +29,11 @@ _media_dir="/media/h2/sra"
 _media1_dir="/media/h1/sra"
 _media2_dir="/media/h2/sra"
 
-if [[ "${_POLAP_RELEASE}" == "0" ]]; then
-	if [[ "${_local_host}" != $(hostname) ]]; then
-		cd .. && rsync -aq ${_local_host}:$PWD/github/ github/ && cd -
-	fi
-fi
+# if [[ "${_POLAP_RELEASE}" == "0" ]]; then
+# 	if [[ "${_local_host}" != $(hostname) ]]; then
+# 		cd .. && rsync -aq ${_local_host}:$PWD/github/ github/ && cd -
+# 	fi
+# fi
 
 # Use man folder for a release-version
 # otherwise use a custom folder.

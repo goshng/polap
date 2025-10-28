@@ -1101,7 +1101,7 @@ _polap_lib_readassemble-miniasm() {
 	_polap_log3 "i: $i"
 	_polap_log3 "j: $j"
 	# polap command: annotate
-	_polap_log0 _polap_lib_annotate \
+	_polap_log1 _polap_lib_annotate \
 		-o "${annotatedir}" \
 		-i mt$i
 	_polap_lib_annotate \

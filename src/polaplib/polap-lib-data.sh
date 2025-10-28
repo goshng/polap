@@ -97,20 +97,20 @@ __log() {
 	# (( _silent == 1 )) && return 0
 
 	# Print only if verbosity is high enough
+	local func="${FUNCNAME[2]}"
+	local file="$(basename "${BASH_SOURCE[2]}")"
+	local line="${BASH_LINENO[1]}"
+	local tag="[$func@$file:$line]"
+	# local log_line="$(date '+%Y-%m-%d %H:%M:%S') $tag [$subcmd1] - $msg"
+	local log_line="$(date '+%H:%M:%S') $tag [$subcmd1] - $msg"
+
+	if [[ -d "${_brg_outdir}" ]]; then
+		echo "$log_line" >>"${_brg_outdir}/${_polap_data_txt}"
+	else
+		echo "$log_line" >>"./${_polap_data_txt}"
+	fi
+
 	if ((_brg_verbose > level)); then
-		local func="${FUNCNAME[2]}"
-		local file="$(basename "${BASH_SOURCE[2]}")"
-		local line="${BASH_LINENO[1]}"
-		local tag="[$func@$file:$line]"
-		# local log_line="$(date '+%Y-%m-%d %H:%M:%S') $tag [$subcmd1] - $msg"
-		local log_line="$(date '+%H:%M:%S') $tag [$subcmd1] - $msg"
-
-		if [[ -d "${_brg_outdir}" ]]; then
-			echo "$log_line" >>"${_brg_outdir}/${_polap_data_txt}"
-		else
-			echo "$log_line" >>"./${_polap_data_txt}"
-		fi
-
 		echo "$log_line"
 	fi
 }
@@ -11739,9 +11739,11 @@ install-abc_genus_species() {
 install-polish_genus_species() {
 	local want_env="polap-polish"
 	local -a pkgs=(
-		minimap2 gfatools fmlrc2 ropebwt2 bwa-mem2 samtools polypolish
 		seqtk
+		minimap2 gfatools
+		fmlrc2 ropebwt2 bwa-mem2 samtools polypolish
 		meryl merqury r-base python
+		bowtie2
 		cmake=3.26.* ninja gcc=12 gxx=12 zlib git make
 	)
 
@@ -14427,22 +14429,22 @@ EOF
 	# Build args for the worker script
 	# local -a args=(-s "${short_sra}" -o "${_brg_outdir}" -i "${_brg_sindex}" --tier "${_tier}" --threads "${_threads}")
 	local -a args=(-s "${short_sra}" -o "${_brg_outdir}" --threads "${_threads}")
-	if [[ "${_brg_redo:-false}" != "false" || "${_data_short_redo}" != "false" ]]; then
-		args+=(--redo)
-	fi
-	if [[ "${_brg_cleanup:-false}" != "false" || "${_data_short_cleanup}" != "false" ]]; then
-		args+=(--cleanup)
-	fi
-	if [[ "${_brg_dry_run:-false}" != "false" ]]; then
-		args+=(--dry-run)
-	fi
+
+	# if [[ "${_brg_redo:-false}" != "false" || "${_data_short_redo}" != "false" ]]; then
+	# 	args+=(--redo)
+	# fi
+	# if [[ "${_brg_cleanup:-false}" != "false" || "${_data_short_cleanup}" != "false" ]]; then
+	# 	args+=(--cleanup)
+	# fi
+	# if [[ "${_brg_dry_run:-false}" != "false" ]]; then
+	# 	args+=(--dry-run)
+	# fi
 
 	if [[ -n "${_remote}" ]]; then
 		args+=(--remote ${_remote})
 	fi
 
 	_polap_lib_conda-ensure_conda_env polap-ncbitools || return 1
-	# _log_echo0 bash "${_POLAPLIB_DIR}/polap-bash-run-data-short.sh" "${args[@]}"
 	bash "${_POLAPLIB_DIR}/polap-bash-run-data-short.sh" "${args[@]}"
 	conda deactivate
 }
@@ -14781,12 +14783,6 @@ EOF
 					shift || true
 				fi
 				;;
-			-*)
-				_log_echo0 "[INFO] no such options: $1"
-				;;
-			*)
-				:
-				;;
 			esac
 			shift || true
 		done
@@ -14934,7 +14930,6 @@ EOF
 
 	parse_commandline() {
 		set -- "${_brg_args[@]}"
-		# set -- "${_brg_unknown_opts[@]}"
 
 		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
 		while test $# -gt 0; do
@@ -14947,12 +14942,6 @@ EOF
 					_brg_coverage="$2"
 					shift || true
 				fi
-				;;
-			-*)
-				_log_echo0 "[INFO] no such options: $1"
-				;;
-			*)
-				:
 				;;
 			esac
 			shift || true

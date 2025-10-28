@@ -115,6 +115,8 @@ _arg_reference="ref.gfa"
 _arg_table_format="tsv"
 _arg_outfile="outfile.txt"
 _arg_infile="infile.txt"
+_arg_infile1=""
+_arg_infile2=""
 _arg_min_read_length="3000"
 _arg_threads="$(cat /proc/cpuinfo | grep -c processor)"
 _arg_half_threads=$((_arg_threads / 2))
@@ -505,14 +507,14 @@ parse_commandline() {
 			_arg_anotherdir="${_key##--anotherdir=}"
 			_arg_anotherdir="${_arg_anotherdir%/}"
 			;;
-		-a | --short-read1)
+		-a | --short-read1 | --reads-sr1)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_short_read1="$2"
 			_arg_short_read1_is="on"
 			_arg_1_fastq="$_arg_short_read1"
 			shift
 			;;
-		--short-read1=*)
+		--short-read1=* | --reads-sr1=*)
 			_arg_short_read1="${_key##--short-read1=}"
 			_arg_short_read1_is="on"
 			_arg_1_fastq="$_arg_short_read1"
@@ -522,14 +524,14 @@ parse_commandline() {
 			_arg_short_read1_is="on"
 			_arg_1_fastq="$_arg_short_read1"
 			;;
-		-b | --short-read2)
+		-b | --short-read2 | --reads-sr2)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_short_read2="$2"
 			_arg_short_read2_is="on"
 			_arg_2_fastq="$_arg_short_read2"
 			shift
 			;;
-		--short-read2=*)
+		--short-read2=* | --reads-sr2=*)
 			_arg_short_read2="${_key##--short-read2=}"
 			_arg_short_read2_is="on"
 			_arg_2_fastq="$_arg_short_read2"
@@ -1446,6 +1448,22 @@ parse_commandline() {
 			;;
 		--infile=*)
 			_arg_infile="${_key##--infile=}"
+			;;
+		--infile1)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_infile1="$2"
+			shift
+			;;
+		--infile1=*)
+			_arg_infile1="${_key##--infile1=}"
+			;;
+		--infile2)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_infile2="$2"
+			shift
+			;;
+		--infile2=*)
+			_arg_infile2="${_key##--infile2=}"
 			;;
 		--outfile)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

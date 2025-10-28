@@ -40,7 +40,7 @@ fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
-function _run_polap_mtpt {
+function _run_polap_polish-longshort {
 	# Enable debugging if _POLAP_DEBUG is set
 	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -56,7 +56,7 @@ function _run_polap_mtpt {
 	help_message=$(
 		cat <<EOF
 Name:
-  polap ${polap_cmd} - annotate rougly reads with organelle genes
+  polap ${polap_cmd} - polish using Racon, fmlrc2, and Polypolish
 
 Synopsis:
   polap ${polap_cmd} [options]
@@ -69,12 +69,21 @@ Options:
   -l FASTQ
     reads data file
 
+  -a FASTQ
+    short-read file
+
+  -b FASTQ
+    short-read file
+
+  --infile FASTA
+    unpolished sequence file
+
+  --outfile FASTA
+    polished sequence file
+
 Examples:
   Get organelle genome sequences:
-    polap ${polap_cmd} -l l.fq
-
-TODO:
-  Dev.
+    polap ${polap_cmd} -l l.fq -a s1.fq -b s2.fq --infile a.fa --outfile b.fa
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -86,12 +95,7 @@ EOF
 	)
 
 	# Display help message
-	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
-		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
-		man "$manfile" >&3
-		rm -f "$manfile"
-		return
-	fi
+	_polap_lib_help-maybe-show3 "$polap_cmd" help_message || return 0
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
@@ -103,45 +107,49 @@ EOF
 		exit $EXIT_SUCCESS
 	fi
 
-	_polap_lib_conda-ensure_conda_env polap-evo || exit 1
+	_polap_lib_conda-ensure_conda_env polap-polish || exit 1
 
-	local MT="${_arg_mt_ref}"
-	local CP="${_arg_pt_ref}"
-	local OUT="${_arg_outdir}"
+	local OUTDIR="${_arg_outdir}/polish-longshort"
+	_polap_log3_cmd rm -rf "$OUTDIR"
 
-	mkdir -p "$OUT/mtpt"
-	makeblastdb -in "$MT" -dbtype nucl -out "$OUT/mtpt/mt"
-	blastn -task megablast \
-		-db "$OUT/mtpt/mt" \
-		-query "$CP" \
-		-evalue 1e-5 -dust no -soft_masking false \
-		-perc_identity 75 -word_size 11 \
-		-outfmt "6 qseqid sseqid pident length qstart qend sstart send qcovs" \
-		>"$OUT/mtpt/raw.blast6.tsv"
+	if [[ "${_arg_long_reads_is}" == "on" && "${_arg_short_read1_is}" == "on" ]]; then
 
-	python3 "$_POLAPLIB_DIR/scripts/polap_py_mtpt_scan.py" \
-		--blast6 "$OUT/mtpt/raw.blast6.tsv" \
-		--mt-fasta "$MT" \
-		--min-len 150 \
-		--recent 97 --intermediate 90 \
-		--out-tsv "$OUT/mtpt/mtpt.tsv" \
-		--out-bed "$OUT/mtpt/mtpt.bed"
+		_polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-polish-hybrid-racon-fmlrc2-polypolish.sh" \
+			--ont "${_arg_long_reads}" \
+			--sr1 "${_arg_short_read1}" \
+			--sr2 "${_arg_short_read2}" \
+			--fasta "${_arg_infile}" \
+			--outdir "${OUTDIR}" \
+			--threads "${_arg_half_threads}" \
+			--rounds 2 --min-ident 0.80 --min-alen 2000 \
+			${_arg_verbose_str}
 
-	python3 "$_POLAPLIB_DIR/polap-py-mtpt-verify-prepare.py" \
-		--fasta "$MT" \
-		--reads "${_arg_long_reads}" \
-		--mtpt-tsv "$OUT/mtpt/mtpt.tsv" \
-		--flank 800 \
-		--threads 12 \
-		--preset map-ont \
-		--out "$OUT/mtpt/verify"
+	elif [[ "${_arg_long_reads_is}" == "on" ]]; then
 
-	python3 "$_POLAPLIB_DIR/polap-py-mtpt-verify-batch.py" \
-		--fasta "$MT" \
-		--reads "${_arg_long_reads}" \
-		--mtpt-tsv "$OUT/mtpt/mtpt.tsv" \
-		--out "$OUT/mtpt" \
-		--mode both
+		bash "${_POLAPLIB_DIR}/polap-bash-polish-hybrid-racon-fmlrc2-polypolish.sh" \
+			--ont "${_arg_long_reads}" \
+			--fasta "${_arg_infile}" \
+			--outdir "${OUTDIR}" \
+			--threads "${_arg_half_threads}" \
+			--rounds 2 --min-ident 0.80 --min-alen 2000 \
+			${_arg_verbose_str}
+
+	elif [[ "${_arg_short_read1_is}" == "on" ]]; then
+
+		bash "${_POLAPLIB_DIR}/polap-bash-polish-hybrid-racon-fmlrc2-polypolish.sh" \
+			--sr1 "${_arg_short_read1}" \
+			--sr2 "${_arg_short_read2}" \
+			--fasta "${_arg_infile}" \
+			--outdir "${OUTDIR}" \
+			--threads "${_arg_half_threads}" \
+			--rounds 2 --min-ident 0.80 --min-alen 2000 \
+			${_arg_verbose_str}
+
+	else
+		_polap_log0 "[ERROR] Reads are required."
+	fi
+
+	_polap_log1_cmd cp -p "${OUTDIR}/polished.fa" "${_arg_outfile}"
 
 	conda deactivate
 

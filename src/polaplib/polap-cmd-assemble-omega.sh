@@ -117,7 +117,7 @@ TODO:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi

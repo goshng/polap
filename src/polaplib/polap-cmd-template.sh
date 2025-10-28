@@ -78,7 +78,7 @@ TODO:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -86,12 +86,13 @@ EOF
 	)
 
 	# Display help message
-	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
-		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
-		man "$manfile" >&3
-		rm -f "$manfile"
-		return
-	fi
+	_polap_lib_help-maybe-show3 "$polap_cmd" help_message || return 0
+	# if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
+	# 	local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
+	# 	man "$manfile" >&3
+	# 	rm -f "$manfile"
+	# 	return
+	# fi
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
@@ -125,6 +126,19 @@ EOF
 	_polap_log3_file "log3.file: all input/output"
 
 	_polap_log0 "var: ${_polap_var_apple}"
+
+	local OUTDIR="${_arg_outdir}/polish-longshort"
+	_polap_log3_cmd rm -rf "$OUTDIR"
+
+	_polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-polish-hybrid-racon-fmlrc2-polypolish.sh" \
+		--ont "${_arg_long_reads}" \
+		--sr1 "${_arg_short_read1}" \
+		--sr2 "${_arg_short_read2}" \
+		--fasta "${_arg_infile}" \
+		--outdir "${OUTDIR}" \
+		--threads "${_arg_half_threads}" \
+		--rounds 2 --min-ident 0.40 --min-alen 2000 \
+		${_arg_verbose_str}
 
 	conda deactivate
 

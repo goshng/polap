@@ -40,7 +40,7 @@ fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
-function _run_polap_mtpt {
+function _run_polap_compare {
 	# Enable debugging if _POLAP_DEBUG is set
 	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -103,45 +103,106 @@ EOF
 		exit $EXIT_SUCCESS
 	fi
 
-	_polap_lib_conda-ensure_conda_env polap-evo || exit 1
+	_polap_lib_conda-ensure_conda_env polap || exit 1
 
-	local MT="${_arg_mt_ref}"
-	local CP="${_arg_pt_ref}"
-	local OUT="${_arg_outdir}"
+	conda deactivate
 
-	mkdir -p "$OUT/mtpt"
-	makeblastdb -in "$MT" -dbtype nucl -out "$OUT/mtpt/mt"
-	blastn -task megablast \
-		-db "$OUT/mtpt/mt" \
-		-query "$CP" \
-		-evalue 1e-5 -dust no -soft_masking false \
-		-perc_identity 75 -word_size 11 \
-		-outfmt "6 qseqid sseqid pident length qstart qend sstart send qcovs" \
-		>"$OUT/mtpt/raw.blast6.tsv"
+	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+	# Disable debugging if previously enabled
+	[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+	return 0
+}
 
-	python3 "$_POLAPLIB_DIR/scripts/polap_py_mtpt_scan.py" \
-		--blast6 "$OUT/mtpt/raw.blast6.tsv" \
-		--mt-fasta "$MT" \
-		--min-len 150 \
-		--recent 97 --intermediate 90 \
-		--out-tsv "$OUT/mtpt/mtpt.tsv" \
-		--out-bed "$OUT/mtpt/mtpt.bed"
+function _run_polap_compare-polish {
+	# Enable debugging if _POLAP_DEBUG is set
+	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
+	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
 
-	python3 "$_POLAPLIB_DIR/polap-py-mtpt-verify-prepare.py" \
-		--fasta "$MT" \
-		--reads "${_arg_long_reads}" \
-		--mtpt-tsv "$OUT/mtpt/mtpt.tsv" \
-		--flank 800 \
-		--threads 12 \
-		--preset map-ont \
-		--out "$OUT/mtpt/verify"
+	# Set verbosity level: stderr if verbose >= 2, otherwise discard output
+	local _polap_output_dest="/dev/null"
+	[ "${_arg_verbose}" -ge "${_polap_var_function_verbose}" ] && _polap_output_dest="/dev/stderr"
 
-	python3 "$_POLAPLIB_DIR/polap-py-mtpt-verify-batch.py" \
-		--fasta "$MT" \
-		--reads "${_arg_long_reads}" \
-		--mtpt-tsv "$OUT/mtpt/mtpt.tsv" \
-		--out "$OUT/mtpt" \
-		--mode both
+	# Grouped file path declarations
+	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
+
+	local polap_cmd="${FUNCNAME##*_}"
+	help_message=$(
+		cat <<EOF
+Name:
+  polap ${polap_cmd} - annotate rougly reads with organelle genes
+
+Synopsis:
+  polap ${polap_cmd} [options]
+
+Description:
+  polap ${polap_cmd} uses plastid and organelle genes to annotate reads
+  using minimap2.
+
+Options:
+  -l FASTQ
+    reads data file
+
+Examples:
+  Compare two assemblies:
+    polap compare-polish -l l.fq -a s_1.fq -b s_2.fq --infile1 mt.1.fa --infile2 mt.2.fa
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# Display help message
+	_polap_lib_help-maybe-show3 "$polap_cmd" help_message || return 0
+
+	# Display the content of output files
+	if [[ "${_arg_menu[1]}" == "view" ]]; then
+
+		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
+		# Disable debugging if previously enabled
+		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
+		return 0
+		exit $EXIT_SUCCESS
+	fi
+
+	_polap_lib_conda-ensure_conda_env polap-polish || exit 1
+
+	# bash "${_POLAPLIB_DIR}/polap-bash-compare-polish-longreads.sh" \
+	# 	--reads "${_arg_long_reads}" \
+	# 	--fastaA "${_arg_infile1}" \
+	# 	--fastaB "${_arg_infile2}" \
+	# 	--outdir "${_arg_outdir}/compare-polish"
+
+	if [[ "${_arg_long_reads_is}" == "on" && "${_arg_short_read1_is}" == "on" ]]; then
+		bash "${_POLAPLIB_DIR}/polap-bash-compare-assemblies.sh" \
+			--reads-long "${_arg_long_reads}" \
+			--reads-sr1 "${_arg_short_read1}" \
+			--reads-sr2 "${_arg_short_read2}" \
+			--fastaA "${_arg_infile1}" \
+			--fastaB "${_arg_infile2}" \
+			"${_arg_verbose_str}" \
+			--outdir "${_arg_outdir}/compare-polish"
+	elif [[ "${_arg_long_reads_is}" == "on" ]]; then
+		bash "${_POLAPLIB_DIR}/polap-bash-compare-assemblies.sh" \
+			--reads-long "${_arg_long_reads}" \
+			--fastaA "${_arg_infile1}" \
+			--fastaB "${_arg_infile2}" \
+			"${_arg_verbose_str}" \
+			--outdir "${_arg_outdir}/compare-polish"
+	elif [[ "${_arg_short_read1_is}" == "on" ]]; then
+		bash "${_POLAPLIB_DIR}/polap-bash-compare-assemblies.sh" \
+			--reads-sr1 "${_arg_short_read1}" \
+			--reads-sr2 "${_arg_short_read2}" \
+			--fastaA "${_arg_infile1}" \
+			--fastaB "${_arg_infile2}" \
+			"${_arg_verbose_str}" \
+			--outdir "${_arg_outdir}/compare-polish"
+	else
+		_polap_log0 "[ERROR] Reads are required."
+	fi
 
 	conda deactivate
 

@@ -476,7 +476,7 @@ _polap_lib_fastq-estimate-bases() {
 	local ratio=1.0 comp bytes bases
 
 	# Get file size
-	bytes=$(stat -c %s "$fq" 2>/dev/null) || {
+	bytes=$(stat -L -c %s "$fq" 2>/dev/null) || {
 		echo "0" >&2
 		return 1
 	}

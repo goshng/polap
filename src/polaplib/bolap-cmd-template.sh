@@ -70,7 +70,7 @@ TODO:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi
@@ -78,12 +78,13 @@ EOF
 	)
 
 	# Display help message
-	if [[ ${_brg_menu[1]} == "help" || "${_brg_help}" == "on" ]]; then
-		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_brg_menu[0]}")
-		man "$manfile"
-		rm -f "$manfile"
-		return
-	fi
+	_polap_lib_help-maybe-show3 "$polap_cmd" help_message || return 0
+	# if [[ ${_brg_menu[1]} == "help" || "${_brg_help}" == "on" ]]; then
+	# 	local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_brg_menu[0]}")
+	# 	man "$manfile"
+	# 	rm -f "$manfile"
+	# 	return
+	# fi
 
 	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
 

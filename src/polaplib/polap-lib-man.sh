@@ -112,7 +112,7 @@ Bugs:
 
 Copyright:
   Copyright © 1992–1993 Jean-loup Gailly
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Jean-loup Gailly and Mark Adler

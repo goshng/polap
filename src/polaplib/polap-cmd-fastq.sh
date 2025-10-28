@@ -310,23 +310,33 @@ HEREDOC
 		if [[ "${_arg_genomesize}" == "0" ]]; then
 			_rate=1
 		else
-			# Compute the size of a paired-read data
-			if [[ ! -s "${_arg_outdir}/s1.fq.txt" ]]; then
-				_polap_lib_fastq-total-length-of "${_infile1}" "${_arg_outdir}/s1.fq.txt"
-			fi
-			if [[ ! -s "${_arg_outdir}/s2.fq.txt" ]]; then
-				_polap_lib_fastq-total-length-of "${_infile2}" "${_arg_outdir}/s2.fq.txt"
-			fi
 
-			local _s1=$(<"${_arg_outdir}/s1.fq.txt")
-			local _s2=$(<"${_arg_outdir}/s2.fq.txt")
+			# Estimate the size of short-read data not using seqkit
+			local _s1=$(_polap_lib_fastq-estimate-bases ${_infile1})
+			local _s2=$(_polap_lib_fastq-estimate-bases ${_infile2})
 			local _s=$((_s1 + _s2))
-			if [[ "${_s1}" == "${_s2}" ]]; then
-				_polap_log1 "Two of the pair are the same in the number of reads."
-			else
-				_polap_log0 "  short-read1: ${_s1} (bp)"
-				_polap_log0 "  short-read2: ${_s2} (bp)"
-				_polap_log0 "ERROR: two of the pair are different in the number of reads."
+
+			# Do not compute the size exactly to save time.
+			# Compute the size of a paired-read data
+			if false; then
+				if [[ ! -s "${_arg_outdir}/s1.fq.txt" ]]; then
+					_polap_lib_fastq-total-length-of "${_infile1}" "${_arg_outdir}/s1.fq.txt"
+				fi
+				if [[ ! -s "${_arg_outdir}/s2.fq.txt" ]]; then
+					_polap_lib_fastq-total-length-of "${_infile2}" "${_arg_outdir}/s2.fq.txt"
+				fi
+
+				local _s1=$(<"${_arg_outdir}/s1.fq.txt")
+				local _s2=$(<"${_arg_outdir}/s2.fq.txt")
+
+				local _s=$((_s1 + _s2))
+				if [[ "${_s1}" == "${_s2}" ]]; then
+					_polap_log1 "Two of the pair are the same in the number of reads."
+				else
+					_polap_log0 "  short-read1: ${_s1} (bp)"
+					_polap_log0 "  short-read2: ${_s2} (bp)"
+					_polap_log0 "ERROR: two of the pair are different in the number of reads."
+				fi
 			fi
 
 			_rate=$(echo "scale=5; ${_v} / ${_s}" | bc)
@@ -503,7 +513,7 @@ TODO:
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (1998–2018)
+  Free Software Foundation (2024-2025)
 
 Author:
   Sang Chul Choi

@@ -40,7 +40,7 @@ fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
-function _run_polap_mtpt {
+function _run_polap_polish-long {
 	# Enable debugging if _POLAP_DEBUG is set
 	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -56,7 +56,7 @@ function _run_polap_mtpt {
 	help_message=$(
 		cat <<EOF
 Name:
-  polap ${polap_cmd} - annotate rougly reads with organelle genes
+  polap ${polap_cmd} - long-read data polishing using Racon
 
 Synopsis:
   polap ${polap_cmd} [options]
@@ -71,10 +71,7 @@ Options:
 
 Examples:
   Get organelle genome sequences:
-    polap ${polap_cmd} -l l.fq
-
-TODO:
-  Dev.
+    polap ${polap_cmd} -l l.fq --infile unpolished.fa --outfile polished.fa
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -103,45 +100,27 @@ EOF
 		exit $EXIT_SUCCESS
 	fi
 
-	_polap_lib_conda-ensure_conda_env polap-evo || exit 1
+	_polap_lib_conda-ensure_conda_env polap-polish || exit 1
 
-	local MT="${_arg_mt_ref}"
-	local CP="${_arg_pt_ref}"
-	local OUT="${_arg_outdir}"
+	rm -rf "${_arg_outdir}/polish-long"
 
-	mkdir -p "$OUT/mtpt"
-	makeblastdb -in "$MT" -dbtype nucl -out "$OUT/mtpt/mt"
-	blastn -task megablast \
-		-db "$OUT/mtpt/mt" \
-		-query "$CP" \
-		-evalue 1e-5 -dust no -soft_masking false \
-		-perc_identity 75 -word_size 11 \
-		-outfmt "6 qseqid sseqid pident length qstart qend sstart send qcovs" \
-		>"$OUT/mtpt/raw.blast6.tsv"
-
-	python3 "$_POLAPLIB_DIR/scripts/polap_py_mtpt_scan.py" \
-		--blast6 "$OUT/mtpt/raw.blast6.tsv" \
-		--mt-fasta "$MT" \
-		--min-len 150 \
-		--recent 97 --intermediate 90 \
-		--out-tsv "$OUT/mtpt/mtpt.tsv" \
-		--out-bed "$OUT/mtpt/mtpt.bed"
-
-	python3 "$_POLAPLIB_DIR/polap-py-mtpt-verify-prepare.py" \
-		--fasta "$MT" \
+	_polap_log0 bash "${_POLAPLIB_DIR}/polap-bash-polish-longreads-allreads-qc.sh" \
 		--reads "${_arg_long_reads}" \
-		--mtpt-tsv "$OUT/mtpt/mtpt.tsv" \
-		--flank 800 \
-		--threads 12 \
-		--preset map-ont \
-		--out "$OUT/mtpt/verify"
-
-	python3 "$_POLAPLIB_DIR/polap-py-mtpt-verify-batch.py" \
-		--fasta "$MT" \
+		--fasta "${_arg_infile}" \
+		--outdir "${_arg_outdir}/polish-long" \
+		--threads "${_arg_half_threads}" \
+		--platform ont --rounds 2 --min-ident 0.90 --min-alen 3000 \
+		${_arg_verbose_str}
+	bash "${_POLAPLIB_DIR}/polap-bash-polish-longreads-allreads-qc.sh" \
 		--reads "${_arg_long_reads}" \
-		--mtpt-tsv "$OUT/mtpt/mtpt.tsv" \
-		--out "$OUT/mtpt" \
-		--mode both
+		--fasta "${_arg_infile}" \
+		--outdir "${_arg_outdir}/polish-long" \
+		--threads "${_arg_half_threads}" \
+		--platform ont --rounds 2 --min-ident 0.90 --min-alen 3000 \
+		${_arg_verbose_str}
+
+	_polap_log0 cp "${_arg_outdir}/polap-long/polished.r2.fa" "${_arg_outfile}"
+	cp "${_arg_outdir}/polap-long/polished.r2.fa" "${_arg_outfile}"
 
 	conda deactivate
 

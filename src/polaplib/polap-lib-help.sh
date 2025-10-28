@@ -32,7 +32,7 @@ set -euo pipefail
 # _polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
 #
 # for polap
-# _polap_lib_help-maybe-show3 "$bolap_cmd" help_message || return 0
+# _polap_lib_help-maybe-show3 "$polap_cmd" help_message || return 0
 
 _polap_lib_help-maybe-show() {
 	local cmd="${1:?}"

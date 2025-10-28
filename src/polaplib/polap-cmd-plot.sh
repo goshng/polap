@@ -40,7 +40,7 @@ fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
-function _run_polap_mtpt {
+function _run_polap_plot {
 	# Enable debugging if _POLAP_DEBUG is set
 	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -86,12 +86,7 @@ EOF
 	)
 
 	# Display help message
-	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
-		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
-		man "$manfile" >&3
-		rm -f "$manfile"
-		return
-	fi
+	_polap_lib_help-maybe-show3 "$polap_cmd" help_message || return 0
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
@@ -103,45 +98,16 @@ EOF
 		exit $EXIT_SUCCESS
 	fi
 
-	_polap_lib_conda-ensure_conda_env polap-evo || exit 1
+	_polap_lib_conda-ensure_conda_env polap || exit 1
 
-	local MT="${_arg_mt_ref}"
-	local CP="${_arg_pt_ref}"
-	local OUT="${_arg_outdir}"
+	local OUTDIR="${_arg_outdir}/paf-viz"
+	_polap_log3_cmd rm -rf "$OUTDIR"
 
-	mkdir -p "$OUT/mtpt"
-	makeblastdb -in "$MT" -dbtype nucl -out "$OUT/mtpt/mt"
-	blastn -task megablast \
-		-db "$OUT/mtpt/mt" \
-		-query "$CP" \
-		-evalue 1e-5 -dust no -soft_masking false \
-		-perc_identity 75 -word_size 11 \
-		-outfmt "6 qseqid sseqid pident length qstart qend sstart send qcovs" \
-		>"$OUT/mtpt/raw.blast6.tsv"
-
-	python3 "$_POLAPLIB_DIR/scripts/polap_py_mtpt_scan.py" \
-		--blast6 "$OUT/mtpt/raw.blast6.tsv" \
-		--mt-fasta "$MT" \
-		--min-len 150 \
-		--recent 97 --intermediate 90 \
-		--out-tsv "$OUT/mtpt/mtpt.tsv" \
-		--out-bed "$OUT/mtpt/mtpt.bed"
-
-	python3 "$_POLAPLIB_DIR/polap-py-mtpt-verify-prepare.py" \
-		--fasta "$MT" \
-		--reads "${_arg_long_reads}" \
-		--mtpt-tsv "$OUT/mtpt/mtpt.tsv" \
-		--flank 800 \
-		--threads 12 \
-		--preset map-ont \
-		--out "$OUT/mtpt/verify"
-
-	python3 "$_POLAPLIB_DIR/polap-py-mtpt-verify-batch.py" \
-		--fasta "$MT" \
-		--reads "${_arg_long_reads}" \
-		--mtpt-tsv "$OUT/mtpt/mtpt.tsv" \
-		--out "$OUT/mtpt" \
-		--mode both
+	_polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-paf-viz.sh" \
+		-i "${_arg_infile}" \
+		-o "${OUTDIR}" \
+		--min-ident 0.00 --min-alen 0 \
+		${_arg_verbose_str}
 
 	conda deactivate
 

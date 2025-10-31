@@ -104,6 +104,7 @@ https://conda.anaconda.org/conda-forge/linux-64/python-3.14.0-h5989046_101_cp314
 https://conda.anaconda.org/conda-forge/linux-64/tktable-2.10-h8d826fa_7.conda#3ac51142c19ba95ae0fadefa333c9afb
 https://conda.anaconda.org/conda-forge/linux-64/xorg-libx11-1.8.12-h4f16b4b_0.conda#db038ce880f100acc74dba10302b5630
 https://conda.anaconda.org/conda-forge/linux-64/xz-5.8.1-hbcc6ac9_2.conda#68eae977d7d1196d32b636a026dc015d
+https://conda.anaconda.org/bioconda/linux-64/bowtie2-2.5.4-he96a11b_6.tar.bz2#17f2305502aa2d28a3747db4ad62a28d
 https://conda.anaconda.org/conda-forge/linux-64/gcc-12.4.0-h236703b_2.conda#ec54d965fd9d276c256ae3cf1d3aface
 https://conda.anaconda.org/conda-forge/linux-64/gfortran_impl_linux-64-12.4.0-h61783b2_2.conda#ebc1890b03acf63c3e675296cb0a2351
 https://conda.anaconda.org/conda-forge/linux-64/gxx_impl_linux-64-12.4.0-h3ff227c_2.conda#5f8ae076e514514aeeb0eb52dac2d55d

@@ -269,7 +269,9 @@ _polap_lib_fastq-sample-to() {
 	_polap_log2 "rate: ${rate}"
 
 	if [[ $(echo "$rate < 1" | bc) -eq 1 ]]; then
+
 		_polap_lib_random-get
+
 		local seed=${_polap_var_random_number}
 
 		_polap_log2 "  input1: ${infile}"

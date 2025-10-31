@@ -2792,7 +2792,561 @@ EOF
 	fi
 }
 
-run-polap-polish_genus_species() {
+# 2025-10-30
+run-polap-assemble_genus_species() {
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - $bolap_cmd
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Execute polap assemble:
+    bolap run-polap-assemble -s Vigna_radiata
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# defaults
+	local _brg_type="miniasm"
+	local _brg_omega="1500"
+	local _brg_downsample="no-downsample"
+	local _brg_redo="off"
+	local _brg_cleanup="on"
+
+	parse_commandline() {
+		# set -- "${_brg_unknown_opts[@]}"
+		set -- "${_brg_args[@]}"
+		# _log_echo0 "parse: $@"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			-s)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_brg_outdir="${2%/}"
+				_brg_outdir_list+=("$_brg_outdir") # append to array
+				shift
+				;;
+			-i)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_brg_sindex="$2"
+				shift
+				;;
+			--type)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_type="$2"
+					shift || true
+				fi
+				;;
+			-w)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_omega="$2"
+					shift || true
+				fi
+				;;
+			--redo)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_redo="on"
+					shift || true
+				fi
+				;;
+			--no-cleanup)
+				# _log_echo0 "--no-cleanup"
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_cleanup="off"
+					shift || true
+				fi
+				;;
+			-d)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_downsample="downsample"
+					shift || true
+				fi
+				;;
+			--dry-run)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_dry="on"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[INFO] no such options: $1"
+				;;
+			*) ;;
+			esac
+			shift || true
+		done
+	}
+
+	# declare -n ref="help_message"
+	# if [[ "${_brg_help}" == "on" ]]; then
+	# 	local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+	# 	man "$manfile"
+	# 	rm -f "$manfile"
+	# 	return
+	# fi
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+	local long_sra="${_long["$_brg_target"]}"
+	local short_sra="${_short["$_brg_target"]}"
+
+	local option_data_type="--nano-raw"
+
+	parse_commandline
+	_log_echo1 "target: $_brg_target"
+
+	mkdir -p "${_brg_outdir_i}"
+
+	local platform="${_platform["$_brg_target"]}"
+
+	_log_echo1 "Finalize organelle genomes using miniasm, oatk-pathfinder, fmlrc2"
+
+	# Always redo
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		rm -rf "${_brg_rundir}"
+	fi
+	mkdir -p "${_brg_rundir}"
+
+	# Always redo
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		rm -rf "${_brg_target}"
+	fi
+	mkdir -p "${_brg_target}"
+
+	# Start memory logger
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
+
+	# check out input data
+	# ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
+	# _brg_input_data="${long_sra}.fastq"
+	if [[ ! -s "${long_sra}".fastq ]]; then
+		# data-long_genus_species "${_brg_outdir}"
+		_log_echo0 "No input data: ${long_sra}.fastq"
+		_log_echo0 "run data long -s ${_brg_outdir}"
+		_log_echo0 "data downsample long -s ${_brg_outdir}"
+		return 0
+	fi
+
+	${_polap_cmd} assemble \
+		"${option_data_type}" \
+		-l "${long_sra}.fastq" \
+		-a "${short_sra}_1.fastq" \
+		-b "${short_sra}_2.fastq" \
+		${_brg_verbose_str} \
+		-o "${_brg_target}"
+
+	# Summarize results after job (with previously defined summary function)
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+	# Save some results
+	rsync -azuq --max-size=5M \
+		"${_brg_target}/" "${_brg_rundir}/"
+
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		if [[ -d "${_brg_target}" ]]; then
+			_log_echo1 rm -rf "${_brg_target}"
+			rm -rf "${_brg_target}"
+		fi
+	fi
+}
+
+run-polap-extract-using-oatk_genus_species() {
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - $bolap_cmd
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Execute what?:
+    bolap syncassemble -s Vigna_radiata
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# defaults
+	local _brg_type="mtpt"
+	local _brg_omega="1500"
+	local _brg_downsample="no-downsample"
+	local _brg_redo="off"
+	local _brg_cleanup="on"
+
+	parse_commandline() {
+		set -- "${_brg_args[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			-s)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_brg_outdir="${2%/}"
+				_brg_outdir_list+=("$_brg_outdir") # append to array
+				shift
+				;;
+			-i)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_brg_sindex="$2"
+				shift
+				;;
+			--type)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_type="$2"
+					shift || true
+				fi
+				;;
+			-w)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_omega="$2"
+					shift || true
+				fi
+				;;
+			--redo)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_redo="on"
+					shift || true
+				fi
+				;;
+			--no-cleanup)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_cleanup="off"
+					shift || true
+				fi
+				;;
+			-d)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_downsample="downsample"
+					shift || true
+				fi
+				;;
+			--dry-run)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_dry="on"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[INFO] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	# --help
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	parse_commandline
+
+	# _brg_outdir: -s
+	# _brg_sindex: -i
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+	local long_sra="${_long["$_brg_target"]}"
+
+	# main
+	#
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
+
+	# redefine
+	local _brg_miniasm="${_brg_outdir_i}/polap-miniassemble"
+	local _brg_rundir="${_brg_outdir_i}/${_brg_title}"
+
+	mkdir -p "${_brg_outdir_i}"
+
+	local platform="${_platform["$_brg_target"]}"
+
+	mkdir -p "${_brg_target}"
+
+	# copy mt.1.gfa
+	if [[ ! -s "${_brg_miniasm}/mt.1.gfa" ]]; then
+		_log_echo0 "[ERROR] no MT assembly to extract: mt.1.gfa"
+		return 0
+	fi
+
+	if [[ ! -s "${_brg_miniasm}/pt.1.gfa" ]]; then
+		_log_echo0 "[ERROR] no PT assembly to extract: pt.1.gfa"
+		return 0
+	fi
+
+	${_polap_cmd} extract \
+		--infile1 "${_brg_miniasm}/pt.1.gfa" \
+		--infile2 "${_brg_miniasm}/mt.1.gfa" \
+		-o "${_brg_target}" -v
+
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+
+	# Save some results
+	rsync -azuq --max-size=5M \
+		"${_brg_target}/" "${_brg_rundir}/"
+
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		if [[ -d "${_brg_target}" ]]; then
+			_log_echo1 rm -rf "${_brg_target}"
+			rm -rf "${_brg_target}"
+		fi
+	fi
+}
+
+# 2025-10-29
+run-polap-polish-longshort_genus_species() {
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - $bolap_cmd
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Execute what?:
+    bolap syncassemble -s Vigna_radiata
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# defaults
+	local _brg_type="mtpt"
+	local _brg_omega="1500"
+	local _brg_downsample="no-downsample"
+	local _brg_redo="off"
+	local _brg_cleanup="on"
+
+	parse_commandline() {
+		set -- "${_brg_args[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			-s)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_brg_outdir="${2%/}"
+				_brg_outdir_list+=("$_brg_outdir") # append to array
+				shift
+				;;
+			-i)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_brg_sindex="$2"
+				shift
+				;;
+			--type)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_type="$2"
+					shift || true
+				fi
+				;;
+			-w)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_omega="$2"
+					shift || true
+				fi
+				;;
+			--redo)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_redo="on"
+					shift || true
+				fi
+				;;
+			--no-cleanup)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_cleanup="off"
+					shift || true
+				fi
+				;;
+			-d)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_downsample="downsample"
+					shift || true
+				fi
+				;;
+			--dry-run)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_dry="on"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[INFO] no such options: $1"
+				;;
+			*)
+				break
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	# --help
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	parse_commandline
+
+	# _brg_outdir: -s
+	# _brg_sindex: -i
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+	local long_sra="${_long["$_brg_target"]}"
+	local short_sra="${_short["$_brg_target"]}"
+
+	# main
+	#
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
+
+	# redefine
+	local _brg_extract="${_brg_outdir_i}/polap-extract-using-oatk/extract"
+	local _brg_rundir="${_brg_outdir_i}/${_brg_title}"
+
+	mkdir -p "${_brg_outdir_i}"
+
+	local platform="${_platform["$_brg_target"]}"
+
+	mkdir -p "${_brg_target}"
+
+	# copy mt.1.gfa
+
+	if [[ ! -s "${_brg_extract}/oatk.pltd.ctg.fasta" ]]; then
+		_log_echo0 "[ERROR] no draft plastid sequence to polish"
+		return 0
+	fi
+
+	if [[ ! -s "${_brg_extract}/oatk.mito.ctg.fasta" ]]; then
+		_log_echo0 "[ERROR] no draft mitochondrial sequence to polish"
+		return 0
+	fi
+
+	if [[ ! -s "${short_sra}_1.fastq" ]]; then
+		_log_echo0 "[ERROR] no short-read1 data to use for polishing"
+		return 0
+	fi
+
+	if [[ ! -s "${short_sra}_2.fastq" ]]; then
+		_log_echo0 "[ERROR] no short-read2 data to use for polishing"
+		return 0
+	fi
+
+	if [[ ! -s "${long_sra}.fastq" ]]; then
+		_log_echo0 "[ERROR] no long-read data to use for polishing"
+		return 0
+	fi
+
+	${_polap_cmd} polish-longshort \
+		-l "${long_sra}.fastq" \
+		-a "${short_sra}_1.fastq" \
+		-b "${short_sra}_2.fastq" \
+		--infile "${_brg_extract}/oatk.pltd.ctg.fasta" \
+		--outfile "${_brg_target}/pt.1.fasta"
+
+	${_polap_cmd} polish-longshort \
+		-l "${long_sra}.fastq" \
+		-a "${short_sra}_1.fastq" \
+		-b "${short_sra}_2.fastq" \
+		--infile "${_brg_extract}/oatk.mito.ctg.fasta" \
+		--outfile "${_brg_target}/mt.1.fasta"
+
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+
+	# Save some results
+	rsync -azuq --max-size=5M \
+		"${_brg_target}/" "${_brg_rundir}/"
+
+	_log_echo0 "mtDNA polished: ${_brg_rundir}/mt.1.fasta"
+	_log_echo0 "ptDNA polished: ${_brg_rundir}/pt.1.fasta"
+
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		if [[ -d "${_brg_target}" ]]; then
+			_log_echo1 rm -rf "${_brg_target}"
+			rm -rf "${_brg_target}"
+		fi
+	fi
+}
+
+run-polap-polish-long_genus_species() {
 	local _brg_outdir="${1:-$_brg_outdir}"
 	local _brg_sindex="${2:-$_brg_sindex}"
 
@@ -7912,6 +8466,8 @@ Description:
     bolap $bolap_cmd --export polap
     bolap $bolap_cmd --export-all
     bolap $bolap_cmd --recreate
+    bolap $bolap_cmd --create polap
+    bolap $bolap_cmd --delete polap
     bolap $bolap_cmd --list
 
 Copyright:
@@ -8042,7 +8598,7 @@ EOF
 
 	if [[ "$_export_all" == "1" ]]; then
 		if _polap_lib_dialog-yes-no "Export all conda environments?" "y"; then
-			make -f "${_POLAPLIB_DIR}"/Makefile.env export
+			make -f "${_POLAPLIB_DIR}"/Makefile.env export-full
 		else
 			echo "[SKIP] User declined."
 		fi
@@ -8050,7 +8606,7 @@ EOF
 
 	if [[ -n "$_export" ]]; then
 		if _polap_lib_dialog-yes-no "Export a conda environments: $_export?" "y"; then
-			make -f "${_POLAPLIB_DIR}"/Makefile.env export "$_export"
+			make -f "${_POLAPLIB_DIR}"/Makefile.env export ENVS="$_export"
 		else
 			echo "[SKIP] User declined."
 		fi
@@ -11736,6 +12292,41 @@ install-abc_genus_species() {
 	fi
 }
 
+install-path_genus_species() {
+	local want_env="polap-path"
+	local -a pkgs=(
+		python=3.11
+	)
+
+	# Confirm (honors opt_y_flag if you set it elsewhere)
+	local confirm
+	if [[ "${opt_y_flag-}" == "true" ]]; then
+		confirm="yes"
+	else
+		read -r -p "Do you want to install path in the ${want_env} conda environment? (y/N): " confirm
+	fi
+
+	if [[ "${confirm,,}" == "y" || "${confirm,,}" == "yes" ]]; then
+		# Create/upgrade env (channels first for R/bioconda harmony)
+		_polap_lib_conda-create-env \
+			"$want_env" "${pkgs[@]}" \
+			--channel conda-forge --channel bioconda -y || return 1
+
+		# Quick sanity check that key tools are on PATH
+		local t
+		for t in python samtools nucmer blastn R path; do
+			if ! command -v "$t" >/dev/null 2>&1; then
+				echo "WARNING: '$t' not found in '$want_env' PATH." >&2
+			fi
+		done
+	else
+		echo "path installation is canceled."
+		echo "Check: https://github.com/maickrau/path"
+		echo "conda install -c bioconda path"
+		echo "Execute: path"
+	fi
+}
+
 install-polish_genus_species() {
 	local want_env="polap-polish"
 	local -a pkgs=(
@@ -11769,59 +12360,119 @@ install-polish_genus_species() {
 			fi
 		done
 
-		# Install racon
-		rm -rf racon
-		git clone --recursive https://github.com/lbcb-sci/racon.git
-		cd racon
-		git fetch --tags --all
+		setup-racon_genus_species
 
-		# Pick a tag automatically (prefer 1.5.x if present; else latest semver tag)
-		TAG="$(git tag -l | grep -E '^v?1\.5(\.[0-9]+)?$' | sort -V | tail -1)"
-		if [ -z "$TAG" ]; then
-			TAG="$(git tag -l | grep -E '^v?[0-9]+\.[0-9]+(\.[0-9]+)?$' | sort -V | tail -1)"
-		fi
-
-		if [ -z "$TAG" ]; then
-			echo "[ERROR] No semver-like tags found; building from current default branch."
-		else
-			echo "[INFO] Using racon tag: $TAG"
-			git checkout -B "build-$TAG" "$TAG"
-		fi
-
-		# Resync submodules to match the tag
-		git submodule sync --recursive || true
-		git submodule update --init --recursive
-
-		# Clean build dir
-		rm -rf build && mkdir build && cd build
-
-		# Configure with pinned compilers, zlib, and policies (edlib SIMD off)
-		cmake -G Ninja \
-			-DCMAKE_BUILD_TYPE=Release \
-			-DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
-			-DCMAKE_C_COMPILER="$CONDA_PREFIX/bin/gcc" \
-			-DCMAKE_CXX_COMPILER="$CONDA_PREFIX/bin/g++" \
-			-DCMAKE_CXX_STANDARD=17 \
-			-Dracon_build_tests=OFF \
-			-DEDLIB_FORCE_DISABLE_SIMD=ON \
-			-DZLIB_ROOT="$CONDA_PREFIX" \
-			-DZLIB_INCLUDE_DIR="$CONDA_PREFIX/include" \
-			-DZLIB_LIBRARY="$CONDA_PREFIX/lib/libz.so" \
-			-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-			-DCMAKE_POLICY_DEFAULT_CMP0169=OLD \
-			-DCMAKE_POLICY_DEFAULT_CMP0074=NEW \
-			-Wno-dev \
-			..
-
-		ninja -j"$(nproc)"
-		ninja install
-
-		echo "Installed: $CONDA_PREFIX/bin/racon"
-		"$CONDA_PREFIX/bin/racon" --version
-
+		# # Install racon
+		# rm -rf racon
+		# git clone --recursive https://github.com/lbcb-sci/racon.git
+		# cd racon
+		# git fetch --tags --all
+		#
+		# # Pick a tag automatically (prefer 1.5.x if present; else latest semver tag)
+		# TAG="$(git tag -l | grep -E '^v?1\.5(\.[0-9]+)?$' | sort -V | tail -1)"
+		# if [ -z "$TAG" ]; then
+		# 	TAG="$(git tag -l | grep -E '^v?[0-9]+\.[0-9]+(\.[0-9]+)?$' | sort -V | tail -1)"
+		# fi
+		#
+		# if [ -z "$TAG" ]; then
+		# 	echo "[ERROR] No semver-like tags found; building from current default branch."
+		# else
+		# 	echo "[INFO] Using racon tag: $TAG"
+		# 	git checkout -B "build-$TAG" "$TAG"
+		# fi
+		#
+		# # Resync submodules to match the tag
+		# git submodule sync --recursive || true
+		# git submodule update --init --recursive
+		#
+		# # Clean build dir
+		# rm -rf build && mkdir build && cd build
+		#
+		# # Configure with pinned compilers, zlib, and policies (edlib SIMD off)
+		# cmake -G Ninja \
+		# 	-DCMAKE_BUILD_TYPE=Release \
+		# 	-DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
+		# 	-DCMAKE_C_COMPILER="$CONDA_PREFIX/bin/gcc" \
+		# 	-DCMAKE_CXX_COMPILER="$CONDA_PREFIX/bin/g++" \
+		# 	-DCMAKE_CXX_STANDARD=17 \
+		# 	-Dracon_build_tests=OFF \
+		# 	-DEDLIB_FORCE_DISABLE_SIMD=ON \
+		# 	-DZLIB_ROOT="$CONDA_PREFIX" \
+		# 	-DZLIB_INCLUDE_DIR="$CONDA_PREFIX/include" \
+		# 	-DZLIB_LIBRARY="$CONDA_PREFIX/lib/libz.so" \
+		# 	-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+		# 	-DCMAKE_POLICY_DEFAULT_CMP0169=OLD \
+		# 	-DCMAKE_POLICY_DEFAULT_CMP0074=NEW \
+		# 	-Wno-dev \
+		# 	..
+		#
+		# ninja -j"$(nproc)"
+		# ninja install
+		#
+		# echo "Installed: $CONDA_PREFIX/bin/racon"
+		# "$CONDA_PREFIX/bin/racon" --version
+		echo "[INFO] we have created conda env $CONDA_PREFIX" >&2
 	else
 		echo "polap-polish env is not created"
 	fi
+}
+
+setup-racon_genus_species() {
+
+	_polap_lib_conda-ensure_conda_env polap-polish || exit 1
+
+	# Install racon
+	rm -rf racon
+	git clone --recursive https://github.com/lbcb-sci/racon.git
+	cd racon
+	git fetch --tags --all
+
+	# Pick a tag automatically (prefer 1.5.x if present; else latest semver tag)
+	TAG="$(git tag -l | grep -E '^v?1\.5(\.[0-9]+)?$' | sort -V | tail -1)"
+	if [ -z "$TAG" ]; then
+		TAG="$(git tag -l | grep -E '^v?[0-9]+\.[0-9]+(\.[0-9]+)?$' | sort -V | tail -1)"
+	fi
+
+	if [ -z "$TAG" ]; then
+		echo "[ERROR] No semver-like tags found; building from current default branch."
+	else
+		echo "[INFO] Using racon tag: $TAG"
+		git checkout -B "build-$TAG" "$TAG"
+	fi
+
+	# Resync submodules to match the tag
+	git submodule sync --recursive || true
+	git submodule update --init --recursive
+
+	# Clean build dir
+	rm -rf build && mkdir build && cd build
+
+	# Configure with pinned compilers, zlib, and policies (edlib SIMD off)
+	cmake -G Ninja \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
+		-DCMAKE_C_COMPILER="$CONDA_PREFIX/bin/gcc" \
+		-DCMAKE_CXX_COMPILER="$CONDA_PREFIX/bin/g++" \
+		-DCMAKE_CXX_STANDARD=17 \
+		-Dracon_build_tests=OFF \
+		-DEDLIB_FORCE_DISABLE_SIMD=ON \
+		-DZLIB_ROOT="$CONDA_PREFIX" \
+		-DZLIB_INCLUDE_DIR="$CONDA_PREFIX/include" \
+		-DZLIB_LIBRARY="$CONDA_PREFIX/lib/libz.so" \
+		-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+		-DCMAKE_POLICY_DEFAULT_CMP0169=OLD \
+		-DCMAKE_POLICY_DEFAULT_CMP0074=NEW \
+		-Wno-dev \
+		..
+
+	ninja -j"$(nproc)"
+	ninja install
+
+	echo "Installed: $CONDA_PREFIX/bin/racon"
+	"$CONDA_PREFIX/bin/racon" --version
+	echo "[INFO] we have installed racon in the conda env $CONDA_PREFIX." >&2
+
+	conda deactivate
 }
 
 v1_install-polish_genus_species() {
@@ -12235,6 +12886,13 @@ install-oatk_genus_species() {
 		echo "oatk installation is canceled."
 		echo "${help_message_install_oatk}"
 	fi
+}
+
+setup-oatk_genus_species() {
+
+	git clone https://github.com/c-zhou/OatkDB.git
+
+	echo "[INFO] create: OatkDB" >&2
 }
 
 install-conda_genus_species() {
@@ -14340,38 +14998,22 @@ Notes:
 EOF
 	)
 
-	local _tier="v6" _threads="4"
-	local _data_short_redo="false" _data_short_cleanup="false"
+	local _data_long_cleanup=false
+	local _data_long_redo=false
 	local _remote=""
 
-	# Parse args from your global collector
 	parse_commandline() {
-		set -- "${_brg_unknown_opts[@]}"
-		while (($#)); do
-			case "$1" in
-			-s | --species)
-				_brg_outdir="${2:?}"
-				shift 2
+		set -- "${_brg_args[@]}"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--cleanup)
+				_data_long_cleanup="true"
 				;;
-			-i | --inum)
-				_brg_inum="${2:?}"
-				shift 2
-				;;
-			--tier)
-				_tier="${2:?}"
-				shift 2
-				;;
-			--threads)
-				_threads="${2:?}"
-				shift 2
-				;;
-			--data-short-redo)
-				_data_short_redo="${2:?}"
-				shift 2
-				;;
-			--data-short-cleanup)
-				_data_short_cleanup="${2:?}"
-				shift 2
+			--redo)
+				_data_long_redo="true"
 				;;
 			--remote)
 				if test $# -lt 2; then
@@ -14381,18 +15023,14 @@ EOF
 					shift || true
 				fi
 				;;
-			-h | --help)
-				declare -n ref="help_message"
-				local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
-				man "$manfile"
-				rm -f "$manfile"
-				return 0
-				;;
 			-*)
-				_log_echo0 "[ERROR] no such option: $1"
+				_log_echo1 "[INFO] no such options: $1"
 				;;
-			*) break ;;
+			*)
+				:
+				;;
 			esac
+			shift || true
 		done
 	}
 
@@ -14428,17 +15066,7 @@ EOF
 
 	# Build args for the worker script
 	# local -a args=(-s "${short_sra}" -o "${_brg_outdir}" -i "${_brg_sindex}" --tier "${_tier}" --threads "${_threads}")
-	local -a args=(-s "${short_sra}" -o "${_brg_outdir}" --threads "${_threads}")
-
-	# if [[ "${_brg_redo:-false}" != "false" || "${_data_short_redo}" != "false" ]]; then
-	# 	args+=(--redo)
-	# fi
-	# if [[ "${_brg_cleanup:-false}" != "false" || "${_data_short_cleanup}" != "false" ]]; then
-	# 	args+=(--cleanup)
-	# fi
-	# if [[ "${_brg_dry_run:-false}" != "false" ]]; then
-	# 	args+=(--dry-run)
-	# fi
+	local -a args=(-s "${short_sra}" -o "${_brg_outdir}")
 
 	if [[ -n "${_remote}" ]]; then
 		args+=(--remote ${_remote})
@@ -14844,14 +15472,15 @@ EOF
 	# seqkit stats -Ta
 	echo "input: ${l_fq_gz}" >>"${_brg_target}/${long_sra}.fq.downsample.txt"
 	echo "coverage: ${_brg_coverage}" >>"${_brg_target}/${long_sra}.fq.downsample.txt"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
 	seqkit stats -Ta "${long_sra}.fastq" \
 		-o "${_brg_target}/${long_sra}.fastq.seqkit.stats.ta.tsv"
+	conda deactivate
 
 	_log_echo0 "SRA: ${long_sra}"
 
 	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
-
-	# conda deactivate
 
 	rsync -azuq --max-size=5M \
 		"${_brg_target}/" "${_brg_rundir}/"
@@ -14995,10 +15624,13 @@ EOF
 	# seqkit stats -Ta
 	echo "input: ${s_1_fq_gz}" >>"${_brg_target}/${short_sra}.fq.downsample.txt"
 	echo "coverage: ${_brg_coverage}" >>"${_brg_target}/${short_sra}.fq.downsample.txt"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
 	seqkit stats -Ta "${short_sra}_1.fastq" \
 		-o "${_brg_target}/${short_sra}_1.fastq.seqkit.stats.ta.tsv"
 	seqkit stats -Ta "${short_sra}_2.fastq" \
 		-o "${_brg_target}/${short_sra}_2.fastq.seqkit.stats.ta.tsv"
+	conda deactivate
 
 	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
 

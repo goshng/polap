@@ -81,7 +81,7 @@ begins_with_short_option() {
 
 # THE DEFAULTS INITIALIZATION - POSITIONALS
 _positionals=()
-_arg_menu=("assemble" "infile" "outfile" "thirdfile" "fourthfile")
+_arg_menu=("subcommand" "infile" "outfile" "thirdfile" "fourthfile")
 # THE DEFAULTS INITIALIZATION - OPTIONALS
 _arg_long_reads="l.fq"
 _arg_l_fastq="${_arg_long_reads}"
@@ -163,6 +163,7 @@ _arg_select_contig_numbers=(1 2 3 4 5 6)
 # _arg_select_read_range="3000,39000,7"
 _arg_select_read_range="3000,3000,1"
 _arg_select_read_range_is="off"
+_arg_select_read_method="ptgaul-reads"
 _arg_report_x="5000,7000,9000,11000,13000,15000,17000"
 _arg_report_x_is="off"
 _arg_stopafter="off"
@@ -352,6 +353,7 @@ Usage: ${_polap_command_string} [command] [--help] [-o|--outdir <arg>]
       [-i|--inum <arg>] [-j|--jnum <arg>] [-w|--single-min <arg>]
 
 Commands:
+  assemble - assemble plant organelle genomes using low-quality ONT data
   assemble1 - assemble a whole genome using Flye
   assemble2 - assemble an organelle genome using seed contigs
   readassemble - assemble an organelle genome
@@ -967,6 +969,11 @@ parse_commandline() {
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_select_read_range="$2"
 			_arg_select_read_range_is="on"
+			shift
+			;;
+		--select-read-method)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_select_read_method="$2"
 			shift
 			;;
 		--report-x)
@@ -1655,6 +1662,8 @@ commandline_unit_conversion() {
 }
 
 parse_preset_commandline "$@"
+
+# --help
 
 if [[ -z "${_arg_config_path}" ]]; then
 	_arg_config_path="${_arg_config_dir}/${_arg_preset}.yaml"

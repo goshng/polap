@@ -60,6 +60,8 @@ fi
 
 # the default output o is created. o/polap.log, o/tmp, o/log are created as well.
 source "${_POLAPLIB_DIR}/polap-variables-main.sh"
+_polap_timer_reset
+_polap_lib_log-init
 
 # see polap-variables-main.sh for the logit function. all message to a log file
 # exec 3>&1 1>> >(logit)
@@ -110,13 +112,15 @@ if [[ -n "${_arg_genomesize}" ]]; then
 	_arg_genomesize=$(_polap_lib_unit-convert_to_int ${_arg_genomesize})
 fi
 
+# _polap_lib_random-init "${_arg_random_seed}"
+
 # Call a subcommand function
 if declare -f "_run_polap_${_arg_menu[0]}" >/dev/null 2>&1; then
-	if _run_polap_${_arg_menu[0]}; then
-		_polap_log3 "Menu ${_arg_menu[0]} has been finished."
-	else
-		_polap_error_message $?
-	fi
+	_polap_log1 "Execute: subcommand ${_arg_menu[0]}"
+
+	"_run_polap_${_arg_menu[0]}"
+	_polap_log3 "Menu ${_arg_menu[0]} has been finished."
+
 elif [[ ! -f "${_arg_menu[0]}" ]]; then
 	_polap_log0 "-----------------------------------"
 	_polap_log0 "Menu: assemble, prepare-polishing, polish"
@@ -124,6 +128,8 @@ elif [[ ! -f "${_arg_menu[0]}" ]]; then
 	_polap_log0 "  assemble2, select-seeds, map-reads, test-reads, select-reads, flye2"
 	_polap_log0 "ERROR: no such menu of $1"
 else
+	_polap_log1 "Execute: file: ${_arg_menu[0]}"
+
 	# Check arguments as files
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
@@ -133,23 +139,30 @@ else
 		# seqtype=$(_polap_lib_fastq-check-type "${_menu_item}")
 		case "$seqtype" in
 		illumina)
-			_polap_log1 "Detected Illumina short-read"
+			_polap_log1 "Detected Illumina short-read: $_menu_item"
 			if [[ "${_arg_short_read1_is}" == "on" ]]; then
 				_arg_short_read2="${_menu_item}"
 				_arg_short_read2_is="on"
+				_arg_2_fastq="$_arg_short_read2"
+			else
+				_arg_short_read1="${_menu_item}"
+				_arg_short_read1_is="on"
+				_arg_1_fastq="$_arg_short_read1"
 			fi
-			_arg_short_read1="${_menu_item}"
-			_arg_short_read1_is="on"
 			;;
 		pacbio-hifi)
 			_polap_log1 "Detected PacBio HiFi read"
 			_arg_long_reads="${_menu_item}"
 			_arg_long_reads_is="on"
+			_arg_long_reads_original="${_arg_long_reads}"
+			_arg_l_fastq="${_arg_long_reads}"
 			;;
 		nano-raw)
 			_polap_log1 "Detected Nanopore raw read"
 			_arg_long_reads="${_menu_item}"
 			_arg_long_reads_is="on"
+			_arg_long_reads_original="${_arg_long_reads}"
+			_arg_l_fastq="${_arg_long_reads}"
 			;;
 		unknown)
 			_polap_log1 "Could not determine sequencing type ${_menu_item}: pacbio-clr, nano-hq"
@@ -160,7 +173,7 @@ else
 		esac
 	done
 
-	_polap_log0 "checking: ${_arg_long_reads}"
+	_polap_log1 "checking: ${_arg_long_reads}"
 	if [[ -s "${_arg_long_reads}" ]]; then
 		seqtype=$(_polap_lib_try _polap_lib_fastq-check-type "${_arg_long_reads}" --fallback skip)
 		if [[ "${seqtype}" == "nano-raw" ]]; then
@@ -201,19 +214,23 @@ else
 	fi
 
 	if [[ -s "${_arg_long_reads}" ]]; then
-		_polap_log1 "Execute polap command"
-		if [[ "${_arg_plastid}" == "on" ]]; then
-			# plastid genome assembly
-			_run_polap_readassemble
-		else
-			# mitochondrial genome assembly: ptDNA and then mtDNA assembly
-			_arg_plastid="on"
-			_run_polap_readassemble
-			# mtDNA assembly
-			_arg_plastid="off"
-			_arg_noncoding="on"
-			_run_polap_readassemble
-		fi
+		_polap_log1 "Execute polap assemble"
+		_polap_lib_random-init
+		_polap_lib_random-get
+		_run_polap_assemble
+
+		# if [[ "${_arg_plastid}" == "on" ]]; then
+		# 	# plastid genome assembly
+		# 	_run_polap_readassemble
+		# else
+		# 	# mitochondrial genome assembly: ptDNA and then mtDNA assembly
+		# 	_arg_plastid="on"
+		# 	_run_polap_readassemble
+		# 	# mtDNA assembly
+		# 	_arg_plastid="off"
+		# 	_arg_noncoding="on"
+		# 	_run_polap_readassemble
+		# fi
 	else
 		_polap_log0 "-----------------------------------"
 		_polap_log0 "Menu: assemble, prepare-polishing, polish"
@@ -221,6 +238,8 @@ else
 		_polap_log0 "  assemble2, select-seeds, map-reads, test-reads, select-reads, flye2"
 		_polap_log0 "ERROR: no such menu of $1"
 	fi
+
+	conda deactivate
 fi
 
 [[ "${_arg_clock}" == "on" ]] && date +"%Y-%m-%d %H:%M:%S" >&3

@@ -4201,15 +4201,15 @@ Examples:
     bolap config view long,short | grep ERR6210790
 
   Get data at sfolder/tmp:
-    bolap run data-long -s Brassica_rapa
+    bolap run data-long -s Brassica_rapa [--remote main-host-name]
 
-    bolap run data-short -s Brassica_rapa
+    bolap run data-short -s Brassica_rapa [--remote main-host-name]
 
   Summary of the data at sfolder/tmp:
     bolap run summary-data -s Brassica_rapa
 
   Downsample long-read data:
-    bolap run downsample long -s Brassica_rapa --coverage 10g
+    bolap run downsample long -s Brassica_rapa --coverage 30g
 
   No sample long-read data:
     bolap run downsample long -s Brassica_rapa --coverage 0g
@@ -4236,7 +4236,22 @@ Examples:
     bolap run polap-readassemble -s Brassica_rapa
 
   Run polap for organelle genome assemblies:
+    bolap run polap-miniassemble -s Brassica_rapa
+
+  Manually get the sequence in fasta from the gfa assembly file
+    bolap run polap-extract-using-oatk -s Brassica_rapa
+
+  Polish using long- and short-read data:
+    bolap run polap-polish-longshort -s Brassica_rapa
+
+  Run polap for organelle genome assemblies:
     bolap run polap-mtpt -s Brassica_rapa
+
+  Remote:
+    bolap sync -s Brassica_rapa
+
+  Clean-up:
+    bolap clean -s Brassica_rapa
 
   Edit:
     polap-bash-make-manifest.sh for set some
@@ -4262,6 +4277,10 @@ Examples:
     source polap/src/polaplib/polap-bash-complete.sh
     bl conda --cleanup
     bl conda --recreate
+    bl conda --delete polap-polish
+    bl conda --create polap-polish
+    bl setup oatk
+    bl setup racon
     bl benchmark -s <TAB>
 
 Copyright:

@@ -555,12 +555,42 @@ HEREDOC
 	return 0
 }
 
+# Version: v0.1.0
+# Function: recreate_dir_preserve_log
+# Usage: recreate_dir_preserve_log <dir_path> [log_filename]
+# Example: recreate_dir_preserve_log "$_arg_outdir" polap.log
+
+recreate_dir_preserve_log() {
+	local dir="$1"
+	local logname="${2:-polap.log}"
+	local logfile="${dir}/${logname}"
+	local tmp_log=""
+
+	# If log exists, move it temporarily
+	if [[ -f "$logfile" ]]; then
+		tmp_log="$(mktemp)"
+		mv "$logfile" "$tmp_log"
+	fi
+
+	# Recreate directory
+	rm -rf "$dir"
+	mkdir -p "$dir"
+
+	# Restore log
+	if [[ -n "$tmp_log" ]]; then
+		mv "$tmp_log" "$logfile"
+	fi
+}
+
 ################################################################################
-# NOT IMPLEMENTED YET!
-# because we need a manual long-read selection step.
-# You could execute this menu with option --test.
+# 2025-10-29
+# We may be ready to implement this.
+# We will use miniassemble and Oatk's extraction subcommands to implement this.
+# We will also use a hybrid approach of polishing.
+# Many different functions are intergrated into this main subcommand.
+# We will take ONT and short-read datasets to assemble plastid and mitochondrial
+# genome sequences and polish them as a final form.
 #
-# Runs the organelle-genome assembly.
 # Arguments:
 #   -o ${_arg_outdir}
 #   -l ${_arg_long_reads}: a long-read fastq data file
@@ -571,6 +601,8 @@ HEREDOC
 #   ${_arg_short_read1}: a short-read fastq data file
 #   ${_arg_short_read2}: another short-read fastq data file
 # Outputs:
+#   ${_arg_long_reads}.mt.1.fasta
+#   ${_arg_long_reads}.pt.1.fasta
 ################################################################################
 function _run_polap_assemble { # whole-genome and then organelle-genome assembly
 	# Enable debugging if _POLAP_DEBUG is set
@@ -582,100 +614,21 @@ function _run_polap_assemble { # whole-genome and then organelle-genome assembly
 
 	source "${_POLAPLIB_DIR}/polap-variables-common.sh" # '.' means 'source'
 
+	local polap_cmd="${FUNCNAME##*_}"
+
 	help_message=$(
 		cat <<EOF
 Name:
-  polap assemble - assemble whole-genome and organelle-genome sequences
+  polap assemble - assemble plant organelle-genome sequences using ONT long-read data
 
 Synopsis:
-  polap assemble [-o|--outdir <arg>] [-l|--long-reads <arg>] [-a|--short-read1 <arg>] [-b|--short-read2 <arg>] [-i|--inum <arg>] [-j|--jnum <arg>] [-w|--single-min <arg>] [--preset] [-c|--coverage <arg>] [-t|--threads <arg>] [--redo] [--stopafter {data,flye1}] [--random-seed <arg>] [--data-type {ont,pacbio-raw,pacbio-hifi}] [--test] [-m|--min-read-length <arg>] [--help] [--verbose <arg>] [--version]
-
-      [-p|--unpolished-fasta <arg>] [-f|--final-assembly <arg>]
-      [-c|--coverage <arg>] [--flye-asm-coverage <arg>]
-      [--bioproject <arg>] [--species <arg>] [--accession <arg>]
-      [--query <arg>] [--subject <arg>]
-      [--no-reduction-reads] [--no-coverage-check]
-      [--plastid]
-      [--archive <arg>]
-      [--sra <arg>] [-g|--genomesize <arg>]
-
-
+  polap assemble [options]
 
 Description:
-  polap assemble runs the whole-genome assembly using Flye and then
-organelle-genome assembly using seed contig sequences.
-
-To assemble mitochondrial DNA (mtDNA), follow a series of sequential steps:
-
-  ${_polap_command_string} init -o <arg>
-
-  ${_polap_command_string} summary-reads -a <arg> [-b <arg>]
-
-  ${_polap_command_string} total-length-long -l <arg>
-
-  ${_polap_command_string} find-genome-size -a <arg> [-b <arg>]
-
-  ${_polap_command_string} reduce-data -l <arg> [-m <arg>]
-
-  ${_polap_command_string} flye1 [-t <arg>]
-
-  ${_polap_command_string} edges-stats -i <arg>
-
-  ${_polap_command_string} annotate -i <arg>
-
-  ${_polap_command_string} seeds [-i <arg>] -j <arg>
-
-  ${_polap_command_string} map-reads [-i <arg>] -j <arg>
-
-  ${_polap_command_string} test-reads [-i <arg>] -j <arg> -s <begin>,<end>,<count> [-c <arg>]
-
-  ${_polap_command_string} select-reads [-i <arg>] -j <arg> -w <arg> [-c <arg>]
-
-  ${_polap_command_string} flye2 [-i <arg>] -j <arg>
-
-  init - inititalize a polap output folder
-
-  summary-reads - summarize short-read data
-
-  total-length-long - count the total length of the long-read data
-
-  find-genome-size - estimate the genome size using short-read data
-
-  reduce-data - reduce the long-read data for the whole-genome assembly
-  
-  flye1 - execute Flye for a whole-genome assembly
-  
-  edges-stats - prepare the assembly graph summary from Flye's graph_final.gfa
-  
-  map-reads - map long reads on the seed contigs using minimap2
-  
-  test-reads - iterate organelle genome assemblies on a range of -w option values
-  
-  select-reads - use a -w option value after test-reads
-  
-  flye2 - execute Flye for an organelle-genome assembly
-  
-  blast-genome - execute NCBI's BLAST on seed contigs using organelle amino acid sequences
-  
-  conut-genes - count genes on seed contigs after blast-genome
-  
-  flye-polishing - execute Flye's polishing stage
-  
-  make-menus - create empty files for easy command typing
-  
-  clean-menus - delete the empty menu-name files
-  
-  list - list commands
-  
-  get-bioproject - fetch NCBI's BioProject info
-  
-  bioproject-prepare - arrange BioProject info to determine which data to download
-  
-  get-bioproject-sra - fetch NCBI's SRA data 
-  
-  get-mtdna - fetch known organelle genome sequences
-
-  simulate - simulate long-read data from known organelle genome sequences
+  polap assemble subcommand uses minimap2 and miniasm to generate seed contigs,
+which are fed into Flye to finalize the assembly. It also uses Oatk's pathfinder
+to extract organelle genome sequences, which are polished using Racon, fmlrc2, and
+polypolish.
 
 Options:
   -l FASTQ
@@ -689,33 +642,6 @@ Options:
 
   -o OUTDIR
     output folder
-
-  -m INT
-    minimum read length [default: ${_arg_min_read_length}]
-
-  -t INT
-    the number of CPU cores [default: ${_arg_threads}]
-
-  -c INT
-    the coverage option [default: ${_arg_coverage}]
-
-  -g <arg>
-    computed by find-genome-size polap command or given by users
-
-  --no-reduction-reads
-    no data reduction in a whole-genome assembly
-
-  --flye-asm-coverage INT
-    Flye option --asm-coverage [default: 50]
-
-  --random-seed INT
-    a 5-digit number
-
-  --redo
-    do not use previously generated intermediate results
-
-  --stopafter {data,flye1}
-    stop after data or flye1 step
 
   -o, --outdir: output folder name (default: ${_arg_outdir})
     The option '-o' or '--outdir' specifies the output folder name, 
@@ -737,242 +663,7 @@ Options:
     if provided, is considered optional.
     (Note: not tested yet; -a & -b are required.)
 
-  -i, --inum: previous output number of organelle-genome assembly (default: ${_arg_inum})
-    The option '-i' or '--inum' specifies the previous output number 
-    of an organelle-genome assembly, with a default value of '0'.
-    The zero for this option specifies the whole-genome assembly.
-
-  -j, --jnum: current output number of organelle-genome assembly (default: ${_arg_jnum})
-    The option '-j' or '--jnum' allows users to specify the current output number 
-    for an organelle-genome assembly, with a default value of '1'.
-
-  -m, --min-read-length: minimum length of long reads (default: ${_arg_min_read_length})
-    The option '-m' or '--min-read-length' specifies the minimum length of 
-    long reads, with a default value of 3000. 
-
-  -t, --threads: number of CPUs (default: maximum number of cores)
-    The option '-t' or '--threads' specifies the number of CPU threads to 
-    utilize, with a default value equal to the maximum number of available 
-    cores in the computer you execute 'polap'.
-
-  -c, --coverage: coverage for the organelle-genome assembly (default: ${_arg_coverage})
-    The option '-c' or '--coverage' specifies the coverage percentage for the 
-    organelle-genome assembly for controlling the data size.
-
-  -w, --single-min: minimum mapped bases or PAF 11th column (default: ${_arg_single_min})
-    This parameter ensures that the alignment level between a long-read and a
-    seed contig is properly controlled. For plant mitochondrial DNAs, a DNA
-    fragment size of approximately 3 kilobases appears to be more effective
-    than the smaller 1-kilobase fragment. In the case of plastid DNAs, a
-    fragment size of 1 kilobase (kb) might be more suitable, requiring an
-    adjustment to the -m option accordingly.
-
-  -g, --genomesize: expected genome size (default: estimated with a short-read dataset)
-    Users can assemble an organelle genome when they have a genome size
-    estimate. But, we require a short-read dataset to determine the genome size
-    for the whole-genome assembly process. Polishing a long-read assembly
-    necessitates the use of a short-read dataset.
-
-  -p, --unpolished-fasta: polishing sequence in fasta format (default: ${_arg_unpolished_fasta})
-    The option enables the polishing of sequences in a FASTA format, 
-    with the default output file being named 'mt.0.fasta'. 
-
-  -f, --final-assembly: final assembly in fasta format (default: ${_arg_final_assembly})
-    The final assembly in FASTA format, with a default file name of 'mt.1.fa'. 
-
-  --no-reduction-reads: reduction of long-read data before assemble1
-    In the process of whole-genome assembly, we utilize a reduced amount of
-    long-read data. By default, we reduce the size of a long-read dataset prior
-    to performing a whole-genome assembly.
-    Note: The size of coverage is set by --coverage (default: ${_arg_coverage})
-
-  --no-coverage-check: coverage check before assemble2 step
-    By default, in the process of assembling organelle genomes, we reduce
-    the size of selected seed reads.
-    Note: The size of coverage is set by --coverage (default: ${_arg_coverage})
-
-  --yes: always yes for a question or deletes output completely (off by default)
-
-  --redo: redo a POLAP pipeline (off by default)
-    The command specifies that any previously generated intermediate results 
-    should be disregarded and new calculations performed from scratch.
-
-  -s, --select-read-range: start,end,number for the range of read selection (default: ${_arg_select_read_range})
-    It specifies the values for ptGAUL read-selection minimum number of 
-    bases or ratios. For the start and end values of a ratio, real numbers
-		must 
-    fall within the range of 0 to 1.
-    Note: refer to the menu "test-reads" for help.
-
-  --start-index: used by test-reads
-
-  --end-index: used by test-reads
-
-  --random-seed: 5-digit number (default automatically assigned)
-    To ensure reproducibility, you can supply a random number seed 
-    to facilitate sampling of reads.
-    0 or negative for automatically assigned
-    seqkit sample random seed; 11 used in seqkit sample.
-
-  --flye-asm-coverage: Flye --asm-coverage (default: ${_arg_flye_asm_coverage})
-    Flye --asm-coverage is a parameter used with the assembly coverage of
-		Flye.
-
-  --no-flye-asm-coverage: no use of Flye --asm-coverage
-    The flag '--no-flye-asm-coverage' indicates that we use Flye option 
-    neither --asm-coverage nor --genome-size in flye execution.
-    This option is the same as --flye-asm-coverage set to 0.
-    Note: not tested yet!
-
-  --polap-reads: use intra- and inter-contig read selection (default: ${_arg_polap_reads})
-    The default read selection is ptGAUL's approach.
-    This option allows long reads that are mapped within a seed contig and
-    between two contigs.
-
-  --directional: (default: ${_arg_directional})
-    Use only forward strands of seed contigs and reads mapped on the seeds.
-    Seed contigs need to be specific to direction; edge_1+ not just edge_1.
-    Each line of mt.contig.name file could have multiple edge name with plus or
-    minus sign separated by a comma.
-    Example: edge_1+, edge_2-, edge_7+, edge_2+
-
-  --blast: (default: ${_arg_blast})
-
-  --bridge-same-strand: (default: ${_arg_bridge_same_strand})
-    When linking two inverted repeats, enabling this feature ensures that 
-    the strands are equal for the two mapped IR contigs.
-    Note: currently only plus strand is used.
-
-  --log: log file (default: <output>/polap.log)
-    The log file option allows users to specify a custom log file location, 
-    with a default setting of '<output>/polap.log'.
-
-  --clock: display the start and ending time (default: ${_arg_clock})
-    The clock option allows users to display both the start and end times.
-
-  --markdown: display the table in markdown format (default: ${_arg_markdown})
-
-  disassemble options:
-    Use help menu of the subcommand to see more example commands.
-
-  --downsample : maximum genome coverage to downsample (default: ${_arg_downsample})
-    The coverage for downsampling before assembling the plastid genome.
-    The genome size for the coverage is computed using short-read data.
-    Use option -i for a new downsampled set of data.
-    The default is a recommended downsample depth relative to a genome
-		size estimate.
-
-  --disassemble-p: the percentile of the largest long-read (default: ${_arg_disassemble_p})
-    The maximum percentage for the long-read data subsampling. Use this or
-    option --disassemble-b for the maximum subsample size for a range of the
-    subsampling.
-    The default is a recommended value given the downsample value.
-
-  --disassemble-n: the number of steps (default: ${_arg_disassemble_n})
-    The number of iterations in the first stage of the subsampling-based assembly.
-    The default is a recommended number of iterations.
-
-  --disassemble-r: the number of replicates (default: ${_arg_disassemble_r})
-    The number of iterations in the second and third stages.
-    The default is a recommended number of iterations.
-
-  --disassemble-q: the percentile of the largest short-read (default: ${_arg_disassemble_p})
-    The maximum percentage for the short-read data subsampling.
-    If not specified, we use the option value of --disassemble-p as the value
-    for --disassemble-q.
-
-  --disassemble-i: the index used for a separate plastid assemblies (default: ${_arg_disassemble_i})
-    Use the same downsampled data to assemble ptDNA with a different set of
-    options. Use option -i to have different downsampled data.
-
-  --disassemble-a: the smallest base pairs for a subsampling range (default: ${_arg_disassemble_a})
-    The smallest subsample size: default is 10 Mb. This number must be greater
-    than the largest one using option --disassemble-b.
-    The option --disassemble-p should be chosen so that the largest subsample
-    size should be greater than the value of option --disassemble-a.
-
-  --disassemble-b: the largest base pairs for a subsampling range (default: ${_arg_disassemble_b})
-    The largest subsample size in base pairs. 
-
-  --disassemble-m: the upper bound for a Flye assembly (default: ${_arg_disassemble_m})
-    The upper bound for an initital preassembly size.
-    The default for plastid genome assembly is 500 kb.
-    We keep the Flye's preassembly size under this value by adjusting
-    the read-coverage threshold.
-
-  --disassemble-memory: the maximum memory in Gb (default: ${_arg_disassemble_memory})
-    The memory maximum requirement for the plastid genome assembly.
-    Note that this value does not guarantee the overrun of memory. 
-    You can choose to allocate a smaller amount of memory than your computer's 
-    total capacity if you are constrained by limited resources.
-    You should adjust this based on the specifics of your plastid genome 
-    assembly outcome.
-
-  --disassemble-alpha: the starting Flye's disjointig coverage (default: ${_arg_disassemble_alpha})
-    This option should remain unchanged initially.
-    Use it if you really have a long-run analysis that you want to be shortened.
-
-  --disassemble-delta: the move size of alpha (0.1 - 1.0) (default: ${_arg_disassemble_delta})
-    Leave this option as it is, without any changes.
-
-  --disassemble-s: subsample size for stage 2, skipping stage 1 (default: ${_arg_disassemble_s})
-    If you are sure of the subsample size and the read-coverage threshold,
-    set this option to bypass Stage 1.
-
-  --disassemble-beta: subsample rate for stage 2, skipping stage 1 (default: ${_arg_disassemble_beta})
-    Use either this option or --disassemble-s to set the subsample size.
-    Setting both of them does not make sense.
-    If you are sure of the subsample size and the read-coverage threshold,
-    set this option to bypass Stage 1.
-
-  --disassemble-align-reference: (default: ${_arg_disassemble_align_reference})
-    Use this and --disassemble-c so that you can compare a known ptDNA and
-    the subsampling-based assembly.
-
-  --disassemble-c: a single reference sequence in FASTA (no default)
-    If you want to compare a ptDNA sequence with a subsampling-based assembly,
-    set this option to a FASTA file with a single sequence. It will be compared
-    with the assembled ptDNA.
-
-  --jellyfish-s: JellyFish's -s option (default: ${_arg_jellyfish_s})
-    For disassemble subcommand, it is set to 2G if not set here.
-    The -s 2G of JellyFish option claims memory of about 6 GB.
-    If it is slow in assembly size estimate, increase this value to
-    e.g., 5g or 10g. It would requires more memory.
-
-  Experimental (not implemented yet!):
-
-  --nano-raw (default), --nano-corr, --nano-hq:
-  --pacbio-raw, --pacbio-corr, --pacbio-hifi:
-    The Flye program requires a specific input data type.
-    If one switch is activated, the other switches are automatically deactivated.
-    Note: not tested yet!
-  --timing: turn on timing and memory usage
-
-  --species: Species scientific name (no default)
-  --sra: SRA data (no default)
-
-  -v, --verbose: use multiple times to increase the verbose level
-  --version: Prints version
-  -h: Prints polap global help
-  --help: Prints menu help
-
-
 Outputs:
-  ${_polap_var_outdir_s1_fq_stats}
-
-  ${_polap_var_outdir_s2_fq_stats}
-
-  ${_polap_var_outdir_long_total_length}
-
-  ${_polap_var_outdir_genome_size}
-
-  ${_polap_var_outdir_nk_fq_gz}
-
-  ${_polap_var_outdir_lk_fq_gz}
-
-  ${_polap_var_wga_contigger_edges_gfa}
-
   ${_polap_var_ga_contigger_edges_stats}
 
 Examples:
@@ -980,18 +671,6 @@ Examples:
     polap assemble -l l.fq -a s1.fq -b s2.fq -o outdir
 
 See also:
-  init, download, download-sra, download-bioproject, 
-  download-ftp, download-genbank, download-refseq, 
-  download-accession, download-species, 
-  download-sra-fastq, download-sra-fasta, 
-  test-reads, total-length-long, find-genome-size,
-  reduce-data, flye1, edges-stats,
-  assemble, assemble1, annotate, assemble2, flye-polishing, 
-  make-menus, list, clean-menus, cleanup, init,
-  summary-reads, total-length-long, find-genome-size, reduce-data, flye1
-  blast-genome, count-gene, seeds,
-  prepare-seeds, map-reads, test-reads, select-reads, flye2,
-  flye-polishing, prepare-polishing, polish,
   version
 
 Copyright:
@@ -1005,98 +684,45 @@ EOF
 	)
 
 	# Display help message
-	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
-		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
-		man "$manfile" >&3
-		rm -f "$manfile"
-		return
-	fi
+	_polap_lib_help-maybe-show3 "$polap_cmd" help_message || return 0
 
-	help_message_x=$(
-		cat <<HEREDOC
-# Run the POLAP organelle-genome assembly with sequencing data.
-#
-# Steps:
-#   1. assemble1
-#   2. seeds -> multiple mt.contig.name files
-#   3. assemble2 -> assemble as many organelle genomes as mt.contig.name files
-# 
-# Arguments:
-#   -o ${_arg_outdir}: output folder
-#   -l ${_arg_long_reads}: a long-read fastq data file
-#   -a ${_arg_short_read1}: a short-read fastq data file
-#   -b ${_arg_short_read2}: another short-read fastq data file
-# Inputs:
-#   ${_arg_long_reads}: a long-read fastq 
-#   ${_arg_short_read1}: a short-read fastq data file
-#   ${_arg_short_read2}: another short-read fastq data file
-# Outputs:
-#   ${_polap_var_oga_assembly_graph_gfa}
-Example: $(basename $0) -l ${_arg_long_reads} -a ${_arg_short_read1} -b ${_arg_short_read2}
-Example: $(basename $0) --test
-Example: $(basename $0) ${_arg_menu[0]} -o o2
-HEREDOC
-	)
-
-	# Display help message
-	[[ ${_arg_menu[1]} == "redo" ]] && _arg_redo="on"
-
-	_polap_log0 "assembling the organelle genome ..."
-	_polap_log1 "  input1: ${_arg_long_reads}"
-	_polap_log1 "  input2: ${_arg_short_read1}"
-	_polap_log1 "  input3: ${_arg_short_read2}"
-	_polap_log1 "  output1: ${_polap_var_ga_contigger_edges_gfa}"
-	_polap_log1 "  output2: ${_polap_var_ga_annotation_all}"
-	_polap_log1 "  output3: ${_polap_var_mtcontigname}"
-	_polap_log1 "  output4: ${_polap_var_oga_contigger_edges_gfa}"
-	_polap_log1 "  output5: ${_polap_var_oga_assembly_graph_gfa}"
+	_polap_log0 "assembling the plant organelle genome ..."
+	_polap_log0 "  long-read: ${_arg_long_reads}"
+	_polap_log0 "  short-read1: ${_arg_short_read1}"
+	_polap_log0 "  short-read2: ${_arg_short_read2}"
 
 	# Delete all except the polap.log
-	if [[ "${_arg_redo}" = "on" ]]; then
-		rm -rf "${_arg_outdir}/${_arg_inum}" "${_arg_outdir}/${_arg_jnum}"
-		rm -f "${_arg_outdir}"/jellyfish_out* \
-			"${_arg_outdir}"/*.txt \
-			"${_arg_outdir}"/*.stats \
-			"${_arg_outdir}"/*.gz
-	fi
+	# Deleting output folder and files are not a good idea
+	# because it accidentally deletes unintended folders.
+	# recreate_dir_preserve_log "${_arg_outdir}" "polap.log"
+	# find "${_arg_outdir}" -mindepth 1 ! -name 'polap.log' -exec rm -rf {} +
 
-	# Run assembly, annotation, and contig selection steps
-	if [[ -s "${_polap_var_ga_contigger_edges_gfa}" ]] &&
-		[[ "${_arg_redo}" == "off" ]]; then
-		_polap_log1 "  found: ${_polap_var_ga_contigger_edges_gfa}, skipping the whole-genome assembly"
-	else
-		check_file_existence "${_arg_long_reads}"
-		check_file_existence "${_arg_short_read1}"
-		_run_polap_assemble1
-	fi
+	_run_polap_miniassemble
 
-	if [[ -s "${_polap_var_mtcontigname}" ]] &&
-		[[ "${_arg_redo}" == "off" ]]; then
-		_polap_log0 "  found: ${_polap_var_mtcontigname}, skipping seed contig selection"
-	else
-		_run_polap_seeds
-	fi
+	ln -sf "${_arg_outdir}/pt.1.gfa" "${_arg_long_reads}.pt.1.gfa"
+	ln -sf "${_arg_outdir}/mt.1.gfa" "${_arg_long_reads}.mt.1.gfa"
 
-	# Loop over all files that match the pattern "mt.contig.name-<number>"
-	for file in "${_polap_var_ga}"/mt.contig.name-*; do
-		# Extract the <number> part using parameter expansion
-		file=$(basename $file)
-		local number="${file#mt.contig.name-}"
+	_arg_infile1="${_arg_outdir}/pt.1.gfa"
+	_arg_infile2="${_arg_outdir}/mt.1.gfa"
+	_run_polap_extract
 
-		_arg_jnum="${number}"
-		source "${_POLAPLIB_DIR}/polap-variables-common.sh"
-		if [[ -s "${_polap_var_oga_contigger_edges_gfa}" ]] &&
-			[[ "${_arg_redo}" == "off" ]]; then
-			_polap_log0 "  found: ${_polap_var_oga_contigger_edges_gfa}, skipping organelle-genome assembly"
-		else
-			_run_polap_assemble2
-		fi
-	done
+	_arg_infile="${_arg_outdir}/extract/oatk.pltd.ctg.fasta"
+	# _arg_outfile="${_arg_outdir}/pt.1.fasta"
+	_arg_outfile="${_arg_long_reads}.pt.1.fa"
 
-	# We need a way of extracting mtDNA sequences.
-	# _run_polap_select-mtdna
-	# _run_polap_preepare-polishing
-	# _run_polap_polish
+	_run_polap_polish-longshort
+
+	_arg_infile="${_arg_outdir}/extract/oatk.mito.ctg.fasta"
+	# _arg_outfile="${_arg_outdir}/mt.1.fasta"
+	_arg_outfile="${_arg_long_reads}.mt.1.fa"
+
+	_run_polap_polish-longshort
+
+	# Report lines
+	_polap_log0 "ptDNA assembly format: ${_arg_long_reads}.pt.1.gfa"
+	_polap_log0 "mtDNA assembly format: ${_arg_long_reads}.mt.1.gfa"
+	_polap_log0 "ptDNA sequence in fasta format: ${_arg_long_reads}.pt.1.fa"
+	_polap_log0 "mtDNA sequence in fasta format: ${_arg_long_reads}.mt.1.fa"
 
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

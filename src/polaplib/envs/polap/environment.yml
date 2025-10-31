@@ -44,4 +44,5 @@ dependencies:
   - qsv
   - filtlong
   - rasusa
+  - raven
 prefix: /home/goshng/miniconda3/envs/polap

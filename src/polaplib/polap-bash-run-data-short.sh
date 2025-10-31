@@ -190,7 +190,7 @@ write_from_gz() { # src.gz -> dst(.fq or .fq.gz)
 	local src="$1" dst="$2"
 	if [[ "$dst" == *.gz ]]; then
 		# just link/copy gz
-		ln -sf "$src" "$dst"
+		ln -sf "$(basename $src)" "$dst"
 	else
 		# write uncompressed copy
 		show "gunzip -> $(basename "$dst")"
@@ -204,7 +204,7 @@ write_from_fastq() { # src.fastq -> dst(.fq or .fq.gz)
 		show "gzip -> $(basename "$dst")"
 		pigz_c 6 <"$src" >"$dst"
 	else
-		ln -sf "$src" "$dst"
+		ln -sf "$(basename $src)" "$dst"
 	fi
 }
 
@@ -329,13 +329,11 @@ process_mate() {
 				# gzip outputs to save space if default gz mode requested
 				if command -v pigz >/dev/null 2>&1; then
 					if ((AS_FQ == 0)); then
-						[[ -s "${SHORT_SRA}_1.fastq" ]] && pigz -p "$THREADS" "${SHORT_SRA}_1.fastq" || true
-						[[ -s "${SHORT_SRA}_2.fastq" ]] && pigz -p "$THREADS" "${SHORT_SRA}_2.fastq" || true
+						[[ -s "${SHORT_SRA}_${mate}.fastq" ]] && pigz -p "$THREADS" "${SHORT_SRA}_${mate}.fastq" || true
 					fi
 				else
 					if ((AS_FQ == 0)); then
-						[[ -s "${SHORT_SRA}_1.fastq" ]] && gzip "${SHORT_SRA}_1.fastq" || true
-						[[ -s "${SHORT_SRA}_2.fastq" ]] && gzip "${SHORT_SRA}_2.fastq" || true
+						[[ -s "${SHORT_SRA}_${mate}.fastq" ]] && gzip "${SHORT_SRA}_${mate}.fastq" || true
 					fi
 				fi
 			else

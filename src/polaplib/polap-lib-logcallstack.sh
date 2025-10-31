@@ -38,12 +38,18 @@ polap_log_err() {
 }
 
 # optional: auto stack on uncaught ERR
-polap_trap_enable() {
+v1_polap_trap_enable() {
 	trap 'ec=$?;
         printf "[%s %s@%s:%s] ERROR: exit %d\n" "$(_polap_now)" "${FUNCNAME[1]:-main}" \
                "$(basename "${BASH_SOURCE[1]}")" "${BASH_LINENO[0]:-0}" "$ec" >&2;
         polap_stack_dump; exit "$ec"' ERR
 }
 
+polap_trap_enable() {
+	trap 'ec=$?;
+        printf "[%s %s@%s:%s] ERROR: exit %d\n" "$(_polap_now)" "${FUNCNAME[1]:-main}" \
+               "$(basename "${BASH_SOURCE[1]}")" "${BASH_LINENO[0]:-0}" "$ec" >&2;
+        polap_stack_dump' ERR
+}
 polap_log_function_start() { polap_log_info "Function start: $1"; }
 polap_log_function_end() { polap_log_info "Function end:   $1"; }

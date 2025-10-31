@@ -11,4 +11,6 @@ dependencies:
   - r-readr
   - r-png
   - r-dplyr
+  - qsv
+  - xan
 prefix: /home/goshng/miniconda3/envs/polap-man

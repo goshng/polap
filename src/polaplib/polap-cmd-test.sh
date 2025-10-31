@@ -293,6 +293,29 @@ HEREDOC
 		_polap_log0 "${_arg_long_reads} size: $v ($v_str)"
 	fi
 
+	if [[ "${_arg_menu[1]}" == "random" ]]; then
+
+		# _polap_lib_random-init 67890
+		printf 'A:'
+
+		for i in {1..5}; do
+			_polap_lib_random-get
+			printf ' %s' "$_polap_var_random_number"
+		done
+
+		echo
+
+		# _polap_lib_random-init 67891
+
+		printf 'B:'
+		for i in {1..5}; do
+			_polap_lib_random-get
+			printf ' %s' "$_polap_var_random_number"
+		done
+		echo
+		# A and B lines should match exactly (deterministic).
+	fi
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

@@ -114,9 +114,11 @@ EOF
 
 	if _polap_contains_step 1 "${_step_array[@]}"; then
 		_arg_plastid="on"
-		if [[ "${_arg_readassemble_pt}" == "on" ]]; then
-			_polap_readassemble-pt
-		fi
+		_arg_downsample="3g"
+		_polap_readassemble-pt
+		# if [[ "${_arg_readassemble_pt}" == "on" ]]; then
+		# 	_polap_readassemble-pt
+		# fi
 	fi
 
 	# untrace_functions

@@ -358,56 +358,317 @@ function _polap_log1_ne {
 	# verbose_echo_no_newline_ne 0 "$@"
 	verbose_echo_no_newline_ne 2 "$@" >&3
 }
-function _polap_log0_cmd {
-	verbose_echo_trim 0 "$@"
-	verbose_echo_trim 1 "$@" >&3
+
+# function _polap_log0_cmd {
+# 	verbose_echo_trim 0 "$@"
+# 	verbose_echo_trim 1 "$@" >&3
+# 	"$@"
+# }
+#
+# # log level 1 to the log file
+# # log level 0 to the screen
+# function _polap_log1_cmd {
+# 	verbose_echo_trim 0 "$@"
+# 	verbose_echo_trim 2 "$@" >&3
+# 	"$@"
+# }
+#
+# # log level 2 to the log file
+# # log level 1 to the screen
+# function _polap_log2_cmd {
+# 	verbose_echo_trim 0 "$@"
+# 	verbose_echo_trim 3 "$@" >&3
+# 	"$@"
+# }
+#
+# function _polap_log3_cmd {
+# 	verbose_echo_trim 0 "$@"
+# 	verbose_echo_trim 4 "$@" >&3
+# 	"$@"
+# }
+
+# Base runner: logs to screen at level 0 and to FD3 at the level you pass.
+_polap_log_cmd() {
+	local _fd3_level="$1"
+	shift
+	verbose_echo_trim 0 "$@" || true
+	verbose_echo_trim "${_fd3_level}" "$@" >&3 || true
 	"$@"
 }
 
-# log level 1 to the log file
-# log level 0 to the screen
-function _polap_log1_cmd {
-	verbose_echo_trim 0 "$@"
-	verbose_echo_trim 2 "$@" >&3
-	"$@"
+# Thin wrappers (only the FD3 verbosity differs)
+_polap_log0_cmd() { _polap_log_cmd 1 "$@"; }
+_polap_log1_cmd() { _polap_log_cmd 2 "$@"; }
+_polap_log2_cmd() { _polap_log_cmd 3 "$@"; }
+_polap_log3_cmd() { _polap_log_cmd 4 "$@"; }
+
+# function _polap_log0_pipe {
+# 	verbose_echo_trim 0 "$@"
+# 	verbose_echo_trim 1 "$@" >&3
+# 	eval "$@"
+# }
+#
+# function _polap_log1_pipe {
+# 	verbose_echo_trim 0 "$@"
+# 	verbose_echo_trim 2 "$@" >&3
+# 	eval "$@"
+# }
+#
+# function _polap_log2_pipe {
+# 	verbose_echo_trim 0 "$@"
+# 	verbose_echo_trim 3 "$@" >&3
+# 	eval "$@"
+# }
+#
+# function _polap_log3_pipe {
+# 	verbose_echo_trim 0 "$@"
+# 	verbose_echo_trim 4 "$@" >&3
+# 	eval "$@"
+# }
+
+#!/usr/bin/env bash
+# Version: v0.1.0
+
+# Base: log to screen at level 0, to FD3 at the level you pass.
+# _soft=0 → normal (return real status)
+# _soft=1 → "no-exit" (suspend -e & ERR trap; always return 0, stash raw in _POLAP_LOG3_LAST_STATUS)
+_polap_log_pipe_impl() {
+	local _fd3_level="$1" _soft="$2"
+	shift 2
+	local cmd="$*"
+
+	verbose_echo_trim 0 "$cmd" || true
+	verbose_echo_trim "${_fd3_level}" "$cmd" >&3 || true
+
+	if ((_soft)); then
+		# --- soft mode: don't trip errexit even on non-zero ---
+		local had_e=0 st saved_errtrap=""
+		case $- in *e*) had_e=1 ;; esac
+		saved_errtrap="$(trap -p ERR || true)"
+		set +e
+		trap - ERR
+		eval "$cmd"
+		st=$?
+		[[ -n "$saved_errtrap" ]] && eval "$saved_errtrap"
+		((had_e)) && set -e
+		_POLAP_LOG3_LAST_STATUS=$st
+		# (optional) warn on non-zero:
+		((st != 0)) && printf '[%(%F %T)T WARN] non-zero exit %d: %s\n' -1 "$st" "$cmd" >&2
+		return 0
+	else
+		# --- normal mode: return real status (respects set -e at call site) ---
+		eval "$cmd"
+	fi
 }
 
-# log level 2 to the log file
-# log level 1 to the screen
-function _polap_log2_cmd {
-	verbose_echo_trim 0 "$@"
-	verbose_echo_trim 3 "$@" >&3
-	"$@"
+# Thin wrappers (only FD3 verbosity and softness differ)
+_polap_log0_pipe() { _polap_log_pipe_impl 1 0 "$@"; }
+_polap_log1_pipe() { _polap_log_pipe_impl 2 0 "$@"; }
+_polap_log2_pipe() { _polap_log_pipe_impl 3 0 "$@"; }
+_polap_log3_pipe() { _polap_log_pipe_impl 4 0 "$@"; } # Avoid err-exit
+
+_polap_log3_pipe_avoid_errexit() { _polap_log_pipe_impl 4 1 "$@"; }
+
+# Version: v0.4.1
+# Features:
+#   - --argv: run without eval (safer)
+#   - --ok "0 1": treat listed exit codes as success (e.g., grep 1 = no match)
+#   - --out FILE: redirect stdout to FILE (truncate)
+#   - --append FILE: redirect stdout to FILE (append)
+#   - --status-var VAR: store raw status (before ok-coercion) in VAR
+#   - logs the redirection text in the display line, too.
+#
+# _polap_log_pipe_no_exit() — safe runner with logging & selective OK exit-codes.
+# Wrappers _polap_log{0,1,2,3}_pipe_no_exit() only change the FD3 log level.
+#
+_polap_log_pipe_no_exit() {
+	local ok_codes="" mode="string" status_var="" out_path="" append_path=""
+	local __fd3_level=4 # default for “log3”; wrappers override via --_fd3-level
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--ok | --ok-codes)
+			ok_codes="$2"
+			shift 2
+			;;
+		--status-var)
+			status_var="$2"
+			shift 2
+			;;
+		--argv)
+			mode="argv"
+			shift
+			;;
+		--out)
+			out_path="$2"
+			shift 2
+			;;
+		--append)
+			append_path="$2"
+			shift 2
+			;;
+		--_fd3-level)
+			__fd3_level="$2"
+			shift 2
+			;; # internal
+		--)
+			shift
+			break
+			;;
+		*) break ;;
+		esac
+	done
+
+	# Build display string (quoted argv + redirection hint)
+	local display s=""
+	if [[ "$mode" == "argv" ]]; then
+		for a in "$@"; do printf -v s '%s %q' "$s" "$a"; done
+		display="${s# }"
+		[[ -n "$out_path" ]] && display+=" > ${out_path}"
+		[[ -n "$append_path" ]] && display+=" >> ${append_path}"
+	else
+		display="$1"
+	fi
+
+	# Primary line (level 0) and FD3 line at chosen level
+	verbose_echo_trim 0 "$display"
+	verbose_echo_trim "${__fd3_level}" "$display" >&3 || true
+
+	# Remember state and suspend -e + ERR trap during execution
+	local had_e=0 st saved_errtrap=""
+	case $- in *e*) had_e=1 ;; esac
+	saved_errtrap="$(trap -p ERR || true)"
+	set +e
+	trap - ERR
+
+	if [[ "$mode" == "argv" ]]; then
+		# Ensure parent dir if redirecting
+		if [[ -n "$out_path" ]]; then mkdir -p -- "$(dirname -- "$out_path")"; fi
+		if [[ -n "$append_path" ]]; then mkdir -p -- "$(dirname -- "$append_path")"; fi
+
+		if [[ -n "$out_path" ]]; then
+			"$@" >"$out_path"
+			st=$?
+		elif [[ -n "$append_path" ]]; then
+			"$@" >>"$append_path"
+			st=$?
+		else
+			"$@"
+			st=$?
+		fi
+	else
+		eval "$1"
+		st=$?
+	fi
+
+	# Restore trap and errexit
+	[[ -n "$saved_errtrap" ]] && eval "$saved_errtrap"
+	((had_e)) && set -e
+
+	# Report raw status if requested
+	[[ -n "$status_var" ]] && printf -v "$status_var" '%s' "$st"
+
+	# Whitelist OK codes (e.g., grep: 0 = match, 1 = no match)
+	if [[ -n "$ok_codes" ]]; then
+		for ok in $ok_codes; do
+			[[ "$st" -eq "$ok" ]] && return 0
+		done
+	fi
+	return "$st"
 }
 
-function _polap_log3_cmd {
-	verbose_echo_trim 0 "$@"
-	verbose_echo_trim 4 "$@" >&3
-	"$@"
-}
+# Thin wrappers (only FD3 verbosity differs)
+_polap_log0_pipe_no_exit() { _polap_log_pipe_no_exit --_fd3-level 1 "$@"; }
+_polap_log1_pipe_no_exit() { _polap_log_pipe_no_exit --_fd3-level 2 "$@"; }
+_polap_log2_pipe_no_exit() { _polap_log_pipe_no_exit --_fd3-level 3 "$@"; }
+_polap_log3_pipe_no_exit() { _polap_log_pipe_no_exit --_fd3-level 4 "$@"; }
 
-function _polap_log0_pipe {
-	verbose_echo_trim 0 "$@"
-	verbose_echo_trim 1 "$@" >&3
-	eval "$@"
-}
+v1_polap_log3_pipe_no_exit() {
+	local ok_codes="" mode="string" status_var="" out_path="" append_path=""
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--ok | --ok-codes)
+			ok_codes="$2"
+			shift 2
+			;;
+		--status-var)
+			status_var="$2"
+			shift 2
+			;;
+		--argv)
+			mode="argv"
+			shift
+			;;
+		--out)
+			out_path="$2"
+			shift 2
+			;; # '>'
+		--append)
+			append_path="$2"
+			shift 2
+			;; # '>>'
+		--)
+			shift
+			break
+			;;
+		*) break ;;
+		esac
+	done
 
-function _polap_log1_pipe {
-	verbose_echo_trim 0 "$@"
-	verbose_echo_trim 2 "$@" >&3
-	eval "$@"
-}
+	# Build display string (quoted argv + redir hint)
+	local display s=""
+	if [[ "$mode" == "argv" ]]; then
+		for a in "$@"; do printf -v s '%s %q' "$s" "$a"; done
+		display="${s# }"
+		if [[ -n "$out_path" ]]; then display+=" > ${out_path}"; fi
+		if [[ -n "$append_path" ]]; then display+=" >> ${append_path}"; fi
+	else
+		display="$1"
+	fi
 
-function _polap_log2_pipe {
-	verbose_echo_trim 0 "$@"
-	verbose_echo_trim 3 "$@" >&3
-	eval "$@"
-}
+	verbose_echo_trim 0 "$display"
+	verbose_echo_trim 4 "$display" >&3 || true
 
-function _polap_log3_pipe {
-	verbose_echo_trim 0 "$@"
-	verbose_echo_trim 4 "$@" >&3
-	eval "$@"
+	# Remember -e and current ERR trap; suspend both while running
+	local had_e=0 st saved_errtrap=""
+	case $- in *e*) had_e=1 ;; esac
+	saved_errtrap="$(trap -p ERR || true)"
+	set +e
+	trap - ERR
+
+	if [[ "$mode" == "argv" ]]; then
+		# ensure parent dir if redirecting
+		if [[ -n "$out_path" ]]; then install -d -- "$(dirname -- "$out_path")"; fi
+		if [[ -n "$append_path" ]]; then install -d -- "$(dirname -- "$append_path")"; fi
+
+		if [[ -n "$out_path" ]]; then
+			"$@" >"$out_path"
+			st=$?
+		elif [[ -n "$append_path" ]]; then
+			"$@" >>"$append_path"
+			st=$?
+		else
+			"$@"
+			st=$?
+		fi
+	else
+		eval "$1"
+		st=$?
+	fi
+
+	# restore state
+	[[ -n "$saved_errtrap" ]] && eval "$saved_errtrap"
+	((had_e)) && set -e
+
+	# raw status out
+	[[ -n "$status_var" ]] && printf -v "$status_var" '%s' "$st"
+
+	# whitelist OK codes (e.g., grep: 0=match, 1=no match)
+	if [[ -n "$ok_codes" ]]; then
+		for ok in $ok_codes; do
+			[[ "$st" -eq "$ok" ]] && return 0
+		done
+	fi
+	return "$st"
 }
 
 function _polap_log3_pipe_command {

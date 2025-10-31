@@ -323,8 +323,14 @@ _polap_lib_annotate-blast-genome() {
 	_polap_log3 "      output1: ${_polap_var_ann_MTGENECOUNT}"
 	_polap_log3_cmd rm -f "${_polap_var_ann_MTGENECOUNT_TMP}"
 	while IFS= read -r contig; do
-		_polap_log3_pipe "grep -w ${contig} ${_polap_var_ann_MTAABLAST}.sorted.bed \
-			>${_polap_var_ann_MTAABED}/${contig}.bed"
+		# _polap_log3_pipe_no_exit "grep -w ${contig} ${_polap_var_ann_MTAABLAST}.sorted.bed \
+		# 	>${_polap_var_ann_MTAABED}/${contig}.bed"
+		# grep exit code 1 with no-line output case.
+		# this is not an error.
+		local out="${_polap_var_ann_MTAABED}/${contig}.bed"
+		_polap_log3_pipe_no_exit --argv --ok "0 1" --out "$out" \
+			grep -w -- "$contig" "${_polap_var_ann_MTAABLAST}.sorted.bed"
+
 		_polap_log3_pipe "bedtools merge -i ${_polap_var_ann_MTAABED}/${contig}.bed \
 			>${_polap_var_ann_MTAABED}/${contig}.bed.txt"
 		_polap_log3 commnad: printf \"%s\\t%d\\n\" "${contig}" $(wc -l <"${_polap_var_ann_MTAABED}/${contig}".bed.txt) ">>${_polap_var_ann_MTGENECOUNT_TMP}"
@@ -382,8 +388,12 @@ _polap_lib_annotate-blast-genome() {
 	_polap_log3 "      output1: ${_polap_var_ann_PTGENECOUNT}"
 	_polap_log3_cmd rm -f "${_polap_var_ann_PTGENECOUNT_TMP}"
 	while IFS= read -r contig; do
-		_polap_log3_pipe "grep -w ${contig} ${_polap_var_ann_PTAABLAST}.sorted.bed \
-			>${_polap_var_ann_PTAABED}/${contig}.bed"
+		# _polap_log3_pipe "grep -w ${contig} ${_polap_var_ann_PTAABLAST}.sorted.bed \
+		# 	>${_polap_var_ann_PTAABED}/${contig}.bed"
+		local out="${_polap_var_ann_PTAABED}/${contig}.bed"
+		_polap_log3_pipe_no_exit --argv --ok "0 1" --out "$out" \
+			grep -w -- "$contig" "${_polap_var_ann_PTAABLAST}.sorted.bed"
+
 		_polap_log3_pipe "bedtools merge -i ${_polap_var_ann_PTAABED}/${contig}.bed \
 			>${_polap_var_ann_PTAABED}/${contig}.bed.txt"
 		_polap_log3 commnad: printf \"%s\\t%d\\n\" "${contig}" $(wc -l <"${_polap_var_ann_PTAABED}/${contig}".bed.txt) ">>${_polap_var_ann_PTGENECOUNT_TMP}"

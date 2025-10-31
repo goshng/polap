@@ -744,7 +744,7 @@ HEREDOC
 	#   _read_names: read name file to use (ptgaul, single, combined)
 	if [[ "${_arg_menu[1]}" == "infile" ]]; then
 		_arg_menu[1]="ptgaul-intra-base-length"
-		_polap_log0 "  default set to read-selection: ${_arg_menu[1]}"
+		_polap_log1 "  default set to read-selection: ${_arg_menu[1]}"
 	fi
 	local _pread_sel="${_arg_menu[1]}"
 	if [[ -v _menu_type_dict["${_pread_sel}"] ]]; then
@@ -1109,9 +1109,11 @@ function _run_polap_select-reads { # selects reads mapped on a genome assembly
 #   ptgaul-reads [number of repeats]
 #   intra-reads [number of repeats]
 #   polap-reads [number of repeats]
-Example: $(basename "$0") ${_arg_menu[0]} [ptgaul-reads] -w 3000
-Example: $(basename "$0") ${_arg_menu[0]} intra-reads -w 5000
-Example: $(basename "$0") ${_arg_menu[0]} polap-reads -w 3000 5
+
+
+Example: $(basename "$0") ${_arg_menu[0]} -w 3000
+Example: $(basename "$0") ${_arg_menu[0]} --select-read-method intra-reads -w 5000
+Example: $(basename "$0") ${_arg_menu[0]} --select-read-method polap-reads -w 3000
 HEREDOC
 	)
 
@@ -1136,35 +1138,9 @@ HEREDOC
 		_polap_log0 "  use --polap-reads option, so menu1 becomes ${_arg_menu[1]}"
 	fi
 
-	case "${_arg_menu[1]}" in
-	infile | ptgaul-reads)
-		_arg_menu[1]="ptgaul-reads"
-		_polap_log1 "  default set to read-selection: ${_arg_menu[1]}"
-		;;
-	polap-reads)
-		_polap_log1 "  read-selection: ${_arg_menu[1]}"
-		;;
-	bridge-reads)
-		_polap_log1 "  read-selection: ${_arg_menu[1]}"
-		;;
-	intra-reads)
-		_polap_log1 "  read-selection: ${_arg_menu[1]}"
-		;;
-	*)
-		_polap_log0 "ERROR: no such menu2 for select-reads: ${_arg_menu[1]}"
-		return $RETURN_FAIL
-		;;
-	esac
+	_polap_log1 "  default set to read-selection: ${_arg_select_read_method}"
 
 	local _n_repeats="1"
-	if [[ "${_arg_menu[2]}" != "outfile" ]]; then
-		if [[ "${_n_repeats}" =~ ^[0-9]+$ ]]; then
-			local _n_repeats="${_arg_menu[2]}"
-		else
-			_polap_log0 "ERROR: menu3 must be a number: ${_arg_menu[2]}"
-			return 0
-		fi
-	fi
 	_arg_select_read_range="${_arg_single_min},${_arg_single_min},${_n_repeats}"
 	# _arg_flye="off"
 	_run_polap_test-reads

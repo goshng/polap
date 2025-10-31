@@ -216,6 +216,7 @@ fi
 # =========================
 if ((HAVE_SR == 1)); then
 	log 1 "Stage 2: fmlrc2 short-read correction (threads=$THREADS)"
+	log 2 "  phase msbwt"
 	# Stage 2: Build MSBWT (FM-index) from short reads for fmlrc2
 	# Notes:
 	#   - Extract only sequence lines from FASTQ (NR%4==2)
@@ -240,6 +241,7 @@ if ((HAVE_SR == 1)); then
 	# 	die "MSBWT build failed or incomplete: $OUT/stage2/comp_msbwt.npy"
 	# fi
 
+	log 2 "  phase fmlrc2"
 	FMLRC2_OUT="$OUT/stage2/segments.fmlrc2.fa"
 	fmlrc2 -t "$THREADS" "$OUT/stage2/comp_msbwt.npy" "$CUR" "$FMLRC2_OUT" \
 		1>"$OUT/logs/fmlrc2.out" 2>"$OUT/logs/fmlrc2.err"

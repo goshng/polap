@@ -23,4 +23,5 @@ dependencies:
   - samtools
   - seqtk
   - zlib
+  - bowtie2
 prefix: /home/goshng/miniconda3/envs/polap-polish

@@ -332,6 +332,7 @@ https://conda.anaconda.org/conda-forge/noarch/cached_property-1.5.2-pyha770c72_1
 https://conda.anaconda.org/conda-forge/noarch/certifi-2025.10.5-pyhd8ed1ab_0.conda#257ae203f1d204107ba389607d375ded
 https://conda.anaconda.org/conda-forge/noarch/charset-normalizer-3.4.2-pyhd8ed1ab_0.conda#40fe4284b8b5835a9073a645139f35af
 https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda#962b9857ee8e7018c22f2776ffa0b2d7
+https://conda.anaconda.org/conda-forge/noarch/contextlib2-21.6.0-pyhd8ed1ab_1.conda#4de17d73a4afd4ce03b370fe4480100f
 https://conda.anaconda.org/conda-forge/noarch/cpython-3.11.13-py311hd8ed1ab_0.conda#4666fd336f6d48d866a58490684704cd
 https://conda.anaconda.org/conda-forge/noarch/cycler-0.12.1-pyhd8ed1ab_1.conda#44600c4667a319d67dbe0681fc0bc833
 https://conda.anaconda.org/bioconda/noarch/dendropy-5.0.8-pyhdfd78af_1.tar.bz2#0fa94922431d1074792639704d19461d
@@ -447,6 +448,7 @@ https://conda.anaconda.org/conda-forge/noarch/perl-xml-sax-1.02-pl5321hd8ed1ab_0
 https://conda.anaconda.org/conda-forge/noarch/pip-25.1.1-pyh8b19718_0.conda#32d0781ace05105cc99af55d36cbec7c
 https://conda.anaconda.org/conda-forge/linux-64/pulseaudio-client-17.0-hb77b528_0.conda#07f45f1be1c25345faddb8db0de8039b
 https://conda.anaconda.org/conda-forge/noarch/python-dateutil-2.9.0.post0-pyhe01879c_2.conda#5b8d21249ff20967101ffa321cab24e8
+https://conda.anaconda.org/conda-forge/noarch/raven-6.10.0-py_0.tar.bz2#93186ee8abf4d148a8d0407f9954a491
 https://conda.anaconda.org/conda-forge/linux-64/scipy-1.16.0-py311h2d3ef60_0.conda#87f6abadb59e4b17fc3a7b666faa721f
 https://conda.anaconda.org/conda-forge/linux-64/sip-6.10.0-py311hfdbb021_0.conda#78e5e37d25d5ab01fb5e91b8653b8f6d
 https://conda.anaconda.org/conda-forge/noarch/sympy-1.14.0-pyh2585a3b_105.conda#8c09fac3785696e1c477156192d64b91

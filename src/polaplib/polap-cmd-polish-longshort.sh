@@ -109,6 +109,13 @@ EOF
 
 	_polap_lib_conda-ensure_conda_env polap-polish || exit 1
 
+	if command -v racon >/dev/null 2>&1; then
+		_polap_log1 "[Info] found racon, but not sure if it works."
+	else
+		_polap_log0 "[Info] racon is missing; the conda version of racon fails."
+		_polap_log0 "[Info] execute: bolap setup-racon"
+	fi
+
 	local OUTDIR="${_arg_outdir}/polish-longshort"
 	_polap_log3_cmd rm -rf "$OUTDIR"
 

@@ -39,16 +39,28 @@ fi
 #   _POLAP_DEBUG=0
 # fi
 
-SECONDS=0
+# Avoid resetting the global SECONDS on library load; provide helpers instead.
+_polap_timer_reset() { SECONDS=0; } # Explicit opt-in (affects current shell)  [oai_citation:2‡gnu.org](https://www.gnu.org/software/bash/manual/html_node/Bash-Variables.html?utm_source=chatgpt.com)
+_polap_timer_now() { printf '%s\n' "$SECONDS"; }
 
-[[ ! -d "${_arg_outdir}" ]] && mkdir -p "${_arg_outdir}"
-[[ ! -d "${_arg_outdir}/tmp" ]] && mkdir -p "${_arg_outdir}/tmp"
-[[ ! -d "${_arg_outdir}/log" ]] && mkdir -p "${_arg_outdir}/log"
-if [[ "${_arg_log_is}" == "off" || "${_arg_log_is}" == "false" ]]; then
-	LOG_FILE="${_arg_outdir}/${_arg_log}"
-else
-	LOG_FILE="${_arg_log}"
-fi
+_polap_lib_log-init() {
+	# Nounset-safe reads (don’t explode if caller didn’t define these yet)
+	local outdir="${1:-${_arg_outdir:-}}"
+	local log_is="${2:-${_arg_log_is:-off}}"
+	local log="${3:-${_arg_log:-polap.log}}"
+
+	[[ -n "$outdir" ]] || {
+		echo "ERR: outdir not set" >&2
+		return 2
+	}
+	mkdir -p -- "$outdir"/{tmp,log}
+
+	if [[ "$log_is" == "off" || "$log_is" == "false" ]]; then
+		LOG_FILE="${outdir}/${log}"
+	else
+		LOG_FILE="${log}"
+	fi
+}
 
 ################################################################################
 # for the magic logit function

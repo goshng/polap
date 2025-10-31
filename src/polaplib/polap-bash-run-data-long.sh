@@ -180,7 +180,7 @@ check_skip() {
 write_from_gz() { # src.gz -> dst(.fq or .fq.gz)
 	local src="$1" dst="$2"
 	if [[ "$dst" == *.gz ]]; then
-		ln -sf "$src" "$dst"
+		ln -sf "$(basename $src)" "$dst"
 	else
 		show "gunzip -> $(basename "$dst")"
 		pigz_dc <"$src" >"$dst"
@@ -193,7 +193,7 @@ write_from_fastq() { # src.fastq -> dst(.fq or .fq.gz)
 		show "gzip -> $(basename "$dst")"
 		pigz_c 6 <"$src" >"$dst"
 	else
-		ln -sf "$src" "$dst"
+		ln -sf "$(basename $src)" "$dst"
 	fi
 }
 

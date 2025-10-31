@@ -36,16 +36,16 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
 # global variables in polap-lib-random.sh
-_polap_var_random_seed=${_arg_random_seed:-$RANDOM}
-_polap_var_random_counter=0
-_polap_var_random_number=0
+# _polap_var_random_seed=${_arg_random_seed:-$RANDOM}
+# _polap_var_random_counter=0
+# _polap_var_random_number=0
 
 # Example usage
 # Uncomment the following line to initialize with a specific seed
@@ -63,16 +63,80 @@ _polap_var_random_number=0
 # _polap_var_random_counter=0
 
 # Function to initialize the seed (default: 12345)
-_polap_lib_random-init() {
-	local seed=${1:-12345} # Use provided seed or default
-	_polap_var_random_seed="$seed"
-}
+# _polap_lib_random-init() {
+# 	local seed=${1:-12345} # Use provided seed or default
+# 	_polap_var_random_seed="$seed"
+# }
 
 # Function to generate repeatable random numbers
-_polap_lib_random-get() {
-	_polap_var_random_number=$(awk -v seed="$_polap_var_random_seed" -v counter="$_polap_var_random_counter" \
-		'BEGIN { srand(seed); for (i=0; i<=counter; i++) num=int(rand()*10000); print num }')
+# _polap_lib_random-get() {
+# 	_polap_var_random_number=$(awk -v seed="$_polap_var_random_seed" -v counter="$_polap_var_random_counter" \
+# 		'BEGIN { srand(seed); for (i=0; i<=counter; i++) num=int(rand()*10000); print num }')
+#
+# 	# echo $((index + 1)) >"$_polap_var_COUNTER_FILE" # Update the counter
+# 	((_polap_var_random_counter++))
+# }
 
-	# echo $((index + 1)) >"$_polap_var_COUNTER_FILE" # Update the counter
-	((_polap_var_random_counter++))
+#!/usr/bin/env bash
+# Version: v0.2.0
+# Purpose: Nounset-safe, reproducible random numbers for Polap.
+# Behavior:
+#   - Deterministic sequence if _arg_random_seed is set (or init called).
+#   - Prints the random number on every call.
+#   - Guards all globals so set -u never trips.
+#   - Fallback xorshift32 variant (AWK-free) available below.
+
+# ── Globals (guarded later anyway) ────────────────────────────────────────────
+_polap_var_random_seed=${_arg_random_seed:-$RANDOM}
+_polap_var_random_counter=1
+_polap_var_random_number=1
+
+# Optional initializer (re-seed)
+_polap_lib_random-init() {
+	local seed="${1:-12345}"
+	_polap_var_random_seed="$seed"
+	_polap_var_random_counter=1
+	_polap_var_random_number=1
+}
+
+# Deterministic AWK-based generator (your approach, now nounset-safe + prints)
+_polap_lib_random-get() {
+	# Ensure all three exist even if the file wasn’t sourced early
+	: "${_polap_var_random_seed:=${_arg_random_seed-}}"
+	if [[ -z "${_polap_var_random_seed}" ]]; then
+		# Prefer SRANDOM (Bash 5.1+) if available, else RANDOM
+		if [[ -n "${SRANDOM+set}" ]]; then
+			_polap_var_random_seed="$SRANDOM"
+		else
+			_polap_var_random_seed="$RANDOM"
+		fi
+	fi
+	: "${_polap_var_random_counter:=0}"
+	: "${_polap_var_random_number:=0}"
+
+	_polap_var_random_number="$(
+		awk -v seed="$_polap_var_random_seed" -v counter="$_polap_var_random_counter" \
+			'BEGIN { srand(seed); for (i=0; i<=counter; i++) num=int(rand()*10000); print num }'
+	)"
+	((++_polap_var_random_counter))
+	return 0
+
+	# printf '%s\n' "$_polap_var_random_number"
+}
+
+# ── Optional: pure-bash xorshift32 (fast, AWK-free). Same printing contract. ──
+# Ref: Marsaglia (2003), Brent (2004), Panneton & L’Ecuyer notes on xorshift.
+_polap_lib_random-get_xorshift32() {
+	: "${_polap_var_random_seed:=$(((RANDOM << 16) ^ RANDOM))}"
+
+	# 32-bit xorshift: keep arithmetic masked to 32 bits
+	local x=$((_polap_var_random_seed & 0xFFFFFFFF))
+	x=$(((x ^ (x << 13)) & 0xFFFFFFFF))
+	x=$((x ^ (x >> 17)))
+	x=$(((x ^ (x << 5)) & 0xFFFFFFFF))
+
+	_polap_var_random_seed=$x
+	_polap_var_random_number=$((x % 10000)) # match your 0..9999 range
+	((++_polap_var_random_counter))
+	return 0
 }

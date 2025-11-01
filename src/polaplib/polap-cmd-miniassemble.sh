@@ -112,6 +112,12 @@ EOF
 	# exec 19>>trace.log
 	# trace_functions_fline 19 # or: trace_functions_fline 19  (if you open fd 19 to a log file)
 
+	local BUSCO_DIR="busco_downloads/lineages/viridiplantae_odb12"
+	if [[ ! -d "${BUSCO_DIR}" ]]; then
+		_polap_log0 "[ERROR] No BUSCO dataset -> execute: polap data busco"
+		return 1
+	fi
+
 	if _polap_contains_step 1 "${_step_array[@]}"; then
 		_arg_plastid="on"
 		_arg_downsample="3g"
@@ -213,11 +219,13 @@ EOF
 	fi
 
 	if _polap_contains_step 6 "${_step_array[@]}"; then
-		local pt_gfa="${_arg_long_reads%.*}.pt.gfa"
+		local pt_gfa="${_arg_prefix}.pt.gfa"
+		rm -f "${pt_gfa}"
 		cp -p "${_arg_outdir}/pt.1.gfa" "${pt_gfa}"
 		_polap_log0 "output plastid assembly graph: ${pt_gfa}"
 
-		local mt_gfa="${_arg_long_reads%.*}.mt.gfa"
+		local mt_gfa="${_arg_prefix}.mt.gfa"
+		rm -f "${mt_gfa}"
 		cp -p "${_arg_outdir}/mt.1.gfa" "${mt_gfa}"
 		_polap_log0 "output mitochondrial assembly graph: ${mt_gfa}"
 	fi

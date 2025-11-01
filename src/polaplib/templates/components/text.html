@@ -1,0 +1,7 @@
+{% if text %}
+<article>
+  {% if text.title %}<h3>{{ text.title }}</h3>{% endif %}
+  <pre>{{ text.content }}</pre>
+</article>
+{% endif %}
+

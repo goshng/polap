@@ -293,6 +293,10 @@ HEREDOC
 		_polap_log0 "${_arg_long_reads} size: $v ($v_str)"
 	fi
 
+	if [[ "${_arg_menu[1]}" == "exists" ]]; then
+		_polap_log0_file_exist "your file" "${_arg_menu[2]}"
+	fi
+
 	if [[ "${_arg_menu[1]}" == "random" ]]; then
 
 		# _polap_lib_random-init 67890

@@ -668,7 +668,8 @@ Outputs:
 
 Examples:
   Get organelle genome sequences:
-    polap assemble -l l.fq -a s1.fq -b s2.fq -o outdir
+    polap assemble -l l.fq -a s1.fq -b s2.fq -o outdir --prefix t1
+    Check t1.pt.gfa, t1.mt.gfa, t1.pt.fa, and t1.mt.fa
 
 See also:
   version
@@ -699,30 +700,43 @@ EOF
 
 	_run_polap_miniassemble
 
-	ln -sf "${_arg_outdir}/pt.1.gfa" "${_arg_long_reads}.pt.1.gfa"
-	ln -sf "${_arg_outdir}/mt.1.gfa" "${_arg_long_reads}.mt.1.gfa"
+	local pt_gfa="${_arg_prefix}.pt.gfa"
+	local mt_gfa="${_arg_prefix}.mt.gfa"
+	rm -f "${pt_gfa}"
+	rm -f "${mt_gfa}"
+	cp -p "${_arg_outdir}/pt.1.gfa" "${pt_gfa}"
+	cp -p "${_arg_outdir}/mt.1.gfa" "${mt_gfa}"
 
 	_arg_infile1="${_arg_outdir}/pt.1.gfa"
 	_arg_infile2="${_arg_outdir}/mt.1.gfa"
 	_run_polap_extract
 
+	local pt_fa="${_arg_prefix}.pt.fa"
+	local mt_fa="${_arg_prefix}.mt.fa"
+
+	_arg_plastid="on"
 	_arg_infile="${_arg_outdir}/extract/oatk.pltd.ctg.fasta"
-	# _arg_outfile="${_arg_outdir}/pt.1.fasta"
-	_arg_outfile="${_arg_long_reads}.pt.1.fa"
+	_arg_outfile="${_arg_outdir}/pt.1.fasta"
+	if [[ -s "${_arg_infile}" ]]; then
+		_run_polap_polish-longshort
+		rm -rf "${pt_fa}"
+		cp -p "${_arg_outfile}" "${pt_fa}"
+	fi
 
-	_run_polap_polish-longshort
-
+	_arg_plastid="off"
 	_arg_infile="${_arg_outdir}/extract/oatk.mito.ctg.fasta"
-	# _arg_outfile="${_arg_outdir}/mt.1.fasta"
-	_arg_outfile="${_arg_long_reads}.mt.1.fa"
-
-	_run_polap_polish-longshort
+	_arg_outfile="${_arg_outdir}/mt.1.fasta"
+	if [[ -s "${_arg_infile}" ]]; then
+		_run_polap_polish-longshort
+		rm -f "${mt_fa}"
+		cp -p "${_arg_outfile}" "${mt_fa}"
+	fi
 
 	# Report lines
-	_polap_log0 "ptDNA assembly format: ${_arg_long_reads}.pt.1.gfa"
-	_polap_log0 "mtDNA assembly format: ${_arg_long_reads}.mt.1.gfa"
-	_polap_log0 "ptDNA sequence in fasta format: ${_arg_long_reads}.pt.1.fa"
-	_polap_log0 "mtDNA sequence in fasta format: ${_arg_long_reads}.mt.1.fa"
+	_polap_log0_file_exist "ptDNA assembly format" "${pt_gfa}"
+	_polap_log0_file_exist "mtDNA assembly format" "${mt_gfa}"
+	_polap_log0_file_exist "ptDNA sequence in fasta format" "${pt_fa}"
+	_polap_log0_file_exist "mtDNA sequence in fasta format" "${mt_fa}"
 
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

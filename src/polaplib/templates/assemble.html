@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  {# ---- TOC ---- #}
+  {% if toc and toc|length %}
+  <nav class="toc">
+    <strong>Sections:</strong>
+    {% for t in toc %}
+      <a href="#sec-{{ t.id|replace('.','-') }}">{{ t.id }}. {{ t.title }}</a>
+      {% if t.subs %}
+        <small>(
+          {% for s in t.subs %}
+            <a href="#sec-{{ s|replace('.','-') }}">{{ s }}</a>{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        )</small>
+      {% endif %}
+      {% if not loop.last %} | {% endif %}
+    {% endfor %}
+  </nav>
+  {% endif %}
+
+  {# ---- Sections ---- #}
+  {% for section in sections %}
+    <section id="sec-{{ section.id|replace('.','-') }}">
+      <h2>{{ section.id }}. {{ section.title }}</h2>
+      <div class="stats">
+        <strong>Items:</strong> {{ section.stats.items }} &nbsp;
+        <strong>Total size:</strong> {{ section.stats.total_h }} &nbsp;
+        {% if section.stats.time_span %}<strong>Time:</strong> {{ section.stats.time_span }}{% endif %}
+      </div>
+
+      {# entries table for top-level section #}
+      {% if section.entries and section.entries|length %}
+        {% set entries = section.entries %}
+        {% include "components/entries_table.html" %}
+      {% endif %}
+
+      {# subsections, if any #}
+      {% if section.subsections and section.subsections|length %}
+        {% for sub in section.subsections %}
+          <section id="sec-{{ sub.id|replace('.','-') }}">
+            <h3>{{ sub.id }}. {{ sub.title }}</h3>
+            <div class="stats">
+              <strong>Items:</strong> {{ sub.stats.items }} &nbsp;
+              <strong>Total size:</strong> {{ sub.stats.total_h }} &nbsp;
+              {% if sub.stats.time_span %}<strong>Time:</strong> {{ sub.stats.time_span }}{% endif %}
+            </div>
+
+            {% if sub.entries and sub.entries|length %}
+              {% set entries = sub.entries %}
+              {% include "components/entries_table.html" %}
+            {% else %}
+              <p><em>No entries found.</em></p>
+            {% endif %}
+          </section>
+        {% endfor %}
+      {% endif %}
+    </section>
+  {% endfor %}
+
+{% endblock %}
+

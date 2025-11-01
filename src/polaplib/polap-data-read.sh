@@ -1202,48 +1202,6 @@ Skeys=("${keys_array[@]}")
 ################################################################################
 # Part of genus_species
 #
-test_genus_species_for() {
-	local _brg_outdir="${1:-all}"
-	local _brg_sindex="${2:-0}"
-	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
-
-	# local short_sra="${_short["$_brg_target"]}"
-
-	echo "Key: $_brg_target"
-	if [[ "${_POLAP_RELEASE}" == "0" ]]; then
-		echo "  long_sra: ${long_sra}"
-		# echo "  short_sra: ${short_sra}"
-	fi
-}
-
-test_genus_species() {
-	local _brg_outdir="${1:-some}"
-	local _brg_sindex="${2:-0}"
-	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
-
-	if [[ "${_brg_outdir}" == "all" ]]; then
-		for _v1 in "${Sall[@]}"; do
-			test_genus_species_for "${_v1}" "${@:2}"
-		done
-	elif [[ "${_brg_outdir}" == "some" ]]; then
-		for _v1 in "${Ssome[@]}"; do
-			test_genus_species_for "${_v1}" "${_brg_sindex}"
-		done
-	elif [[ "${_brg_outdir}" == "test" ]]; then
-		for _v1 in "${Stest[@]}"; do
-			test_genus_species_for "${_v1}" "${_brg_sindex}"
-		done
-	elif [[ "${_brg_outdir}" == "each" ]]; then
-		for key in "${Skeys[@]}"; do
-			_brg_outdir="${key%-*}"
-			_brg_inum="${key##*-}"
-			test_genus_species_for "${_brg_outdir}" "${_brg_inum}"
-		done
-	else
-		test_genus_species_for "$@"
-	fi
-}
-
 ##### INSERT_FUNCTION_HERE #####
 main_genus_species() {
 	local _brg_outdir="${1:-all}"
@@ -3682,7 +3640,7 @@ archive_genus_species() {
 # quarto
 
 parse_commandline_man() {
-	set -- "${_brg_unknown_opts[@]}"
+	set -- "${_brg_args[@]}"
 
 	set="auto"
 	# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
@@ -3697,15 +3655,137 @@ parse_commandline_man() {
 				shift || true
 			fi
 			;;
-		-*)
-			_log_echo0 "[ERROR] no such options: $1"
-			;;
-		*)
-			break
-			;;
 		esac
 		shift || true
 	done
+}
+
+report-assemble_genus_species() {
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - generate a PDF report document 
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Topic:
+    bolap $bolap_cmd
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	local set=""
+	parse_commandline_man
+
+	local _brg_title="polap-assemble"
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	if false; then
+		# 1) Build JSON by scanning the assemble base dir
+		python3 "${_POLAPLIB_DIR}/scripts/report_assemble_from_base.py" \
+			--base-dir "${_brg_rundir}" \
+			--out "${_brg_rundir}/report/assemble-report.json"
+
+		# 2) Render to HTML (place HTML under the run so previews resolve)
+		python3 "${_POLAPLIB_DIR}/scripts/report_assemble_json2html.py" \
+			--json "${_brg_rundir}/report/assemble-report.json" \
+			--html "${_brg_rundir}/report/assemble-report.html"
+	fi
+
+	rsync -aq "${_POLAPLIB_DIR}/templates/" "${_brg_outdir}/_templates/"
+
+	python3 "${_POLAPLIB_DIR}/scripts/report_assemble.py" \
+		--base-dir "${_brg_outdir}" \
+		--out "${_brg_rundir}/report/assemble-report.json"
+
+	python3 "${_POLAPLIB_DIR}/scripts/render_assemble.py" \
+		--base-dir "${_brg_outdir}" \
+		--json "${_brg_rundir}/report/assemble-report.json" \
+		--template "${_brg_outdir}/_templates" \
+		--html-out "${_brg_outdir}/report-assemble.html"
+
+	conda deactivate
+
+}
+
+report-progress_genus_species() {
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - generate a PDF report document 
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Topic:
+    bolap $bolap_cmd
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	local set=""
+	parse_commandline_man
+
+	local _brg_title="polap-assemble"
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	if [[ -d "man/md" ]]; then
+		mkdir -p man/md
+	fi
+
+	rsync -aq "${_POLAPLIB_DIR}/templates/" "man/md/_templates/"
+
+	python3 "${_POLAPLIB_DIR}/scripts/report_progress.py" \
+		--species-codes "${_POLAPLIB_DIR}/species-codes.txt" \
+		--root . \
+		--out man/md/report-progress.json
+
+	local type
+	for type in inputs pt mt; do
+		python3 "${_POLAPLIB_DIR}/scripts/render_progress.py" \
+			--json man/md/report-progress.json \
+			--type $type \
+			--html-out "man/md/report-progress-${type}.html"
+		echo "Check HTML report file: report-progress-${type}.html"
+	done
+
+	conda deactivate
+
 }
 
 man-man_genus_species() {

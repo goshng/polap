@@ -2897,10 +2897,6 @@ EOF
 					shift || true
 				fi
 				;;
-			-*)
-				_log_echo0 "[INFO] no such options: $1"
-				;;
-			*) ;;
 			esac
 			shift || true
 		done
@@ -10516,13 +10512,12 @@ run-polap-disassemble_genus_species() {
 }
 
 run-polap_genus_species() {
-	local _brg_outdir="${1}"
-	local _brg_inum="${2:-0}"
-
-	# Set the run title
-	local full_name="${FUNCNAME[0]}"
-	local middle_part="${full_name#run-}"
-	local _run_title="${middle_part%%_*}"
+	run-data_genus_species
+	run-downsample_genus_species
+	run-polap-assemble_genus_species
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		sync_genus_species
+	fi
 }
 
 run-oatk-nextdenovo_genus_species() {
@@ -12417,6 +12412,10 @@ install-polish_genus_species() {
 	fi
 }
 
+setup-busco_genus_species() {
+	${_polap_cmd} data busco
+}
+
 setup-racon_genus_species() {
 
 	_polap_lib_conda-ensure_conda_env polap-polish || exit 1
@@ -14052,6 +14051,8 @@ install-novoplasty_genus_species() {
 	# tar zcf "${_brg_outdir}-a.tar.gz" "${_brg_outdir}"
 }
 
+# 2025-10-31
+# not used much
 install-mitohifi_genus_species() {
 	local version="${1:-master}"
 	local sif_name="mitohifi-${version}.sif"
@@ -14835,6 +14836,11 @@ EOF
 	# fi
 }
 
+run-data_genus_species() {
+	run-data-long_genus_species
+	run-data-short_genus_species
+}
+
 run-data-long_genus_species() {
 	local bolap_cmd="${FUNCNAME##*_}"
 
@@ -15320,6 +15326,11 @@ run-downsample-long-data_genus_species() {
 	conda deactivate
 }
 
+run-downsample_genus_species() {
+	run-downsample-long_genus_species
+	run-downsample-short_genus_species
+}
+
 run-downsample-long_genus_species() {
 	data-downsample-long_genus_species
 }
@@ -15419,6 +15430,8 @@ EOF
 	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
 
 	parse_commandline
+
+	_log_echo0 "Downsample long-read: ${_brg_coverage}"
 
 	mkdir -p "${_brg_outdir_i}"
 	mkdir -p "${_brg_target}"
@@ -15581,7 +15594,8 @@ EOF
 
 	parse_commandline
 
-	# 1
+	_log_echo0 "Downsample short-read: ${_brg_coverage}"
+
 	mkdir -p "${_brg_outdir_i}"
 	mkdir -p "${_brg_target}"
 
@@ -15640,6 +15654,309 @@ EOF
 	if [[ -d "${_brg_target}" ]]; then
 		_log_echo1 rm -rf "${_brg_target}"
 		rm -rf "${_brg_target}"
+	fi
+}
+
+download-polap-github_genus_species() {
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to download polap from github? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
+	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+		if [[ -d "polap-${_polap_version}" ]]; then
+			echo "ERROR: you already have polap-${_polap_version}"
+			echo "  delete it if you want to redownload it."
+			exit 0
+		fi
+		wget -q https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
+		unzip -o -q ${_polap_version}.zip
+		echo "polap github source is created at polap-${_polap_version}"
+	else
+		echo "polap download from github is canceled."
+	fi
+}
+
+patch-polap_genus_species() {
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to replace conda env polap with the version ${_polap_version}? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
+	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+		if conda env list | awk '{print $1}' | grep -qx "polap"; then
+			echo "Updating the Polap Conda environment to version ${_polap_version}."
+			wget -q https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
+			if [[ -s "${_polap_version}.zip" ]]; then
+				unzip -o -q ${_polap_version}.zip
+				cd polap-${_polap_version}/src
+				bash polaplib/polap-build.sh >../build.sh
+				cd ..
+				PREFIX="$(conda info --base)/envs/polap" bash build.sh
+			else
+				echo "Error: no such file: ${_polap_version}.zip - no such polap version"
+				echo "Suggestion: _polap_version=0.4.3.7.4 $0 $subcmd1"
+			fi
+		else
+			echo "Error: You do not have polap environment. Please activate polap before running this script."
+		fi
+	else
+		echo "polap patch is canceled."
+		echo "${help_message_patch_polap}"
+	fi
+}
+
+bleeding-edge-polap_genus_species() {
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to update conda env polap with the latest polap github? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
+	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+		if conda env list | awk '{print $1}' | grep -qx "polap"; then
+			echo "Updating the Polap Conda environment to its most current state on GitHub ensures access to the latest features and updates."
+			if [[ -d "polap" ]]; then
+				rm -rf polap
+			fi
+			git clone --quiet https://github.com/goshng/polap.git
+			cd polap/src
+			bash polaplib/polap-build.sh >../build.sh
+			cd ..
+			PREFIX="$(conda info --base)/envs/polap" bash build.sh
+		else
+			echo "Error: You do not have polap environment. Please activate polap before running this script."
+		fi
+	else
+		echo "polap bleeding-edge version update is canceled."
+		echo "${help_message_bleeding_edge_polap}"
+	fi
+
+}
+
+local-edge-polap_genus_species() {
+
+	if [[ "${_arg2}" == arg2 ]]; then
+		echo "Help: ${subcmd1} <polap github base path>"
+		echo "  $0 ${subcmd1} polap/github"
+		exit 0
+	fi
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to update conda env polap with the local polap source? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
+	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+		if conda env list | awk '{print $1}' | grep -qx "polap"; then
+			echo "Updating the Polap Conda environment to the local source at ${_arg2}."
+			if [[ -d "${_arg2}/src" ]]; then
+				cd "${_arg2}/src"
+				bash polaplib/polap-build.sh >../build.sh
+				cd ..
+				PREFIX="$(conda info --base)/envs/polap" bash build.sh
+			else
+				echo "Error: The polap base path does not have src directory: ${_arg2}"
+			fi
+		else
+			echo "Error: You do not have polap environment. Please activate polap before running this script."
+		fi
+	else
+		echo "polap local version update is canceled."
+	fi
+}
+
+test-polap_genus_species() {
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to test polap? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
+	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+		if [[ ! -d "polap-${_polap_version}" ]]; then
+			echo "ERROR: no such folder: polap-${_polap_version}"
+			echo "  fetch the polap github source"
+			echo "$0 download-polap-github"
+			exit 0
+		fi
+		cd polap-${_polap_version}/test
+		source "$(conda info --base)/etc/profile.d/conda.sh"
+		if [[ "$CONDA_DEFAULT_ENV" != "polap" ]]; then
+			echo "You're not in the polap environment. Chaniging 'polap'..."
+			conda activate polap
+		fi
+
+		if [[ "$CONDA_DEFAULT_ENV" == "polap" ]]; then
+			polap assemble --test
+		else
+			echo "ERROR: no such conda environment: polap"
+			echo "$0 install-polap"
+		fi
+	else
+		echo "polap test is canceled."
+	fi
+
+}
+
+install-bolap_genus_species() {
+
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to install bolap? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
+	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+		# Check current conda environment
+		# Initialize Conda for non-interactive shells
+		source "$(conda info --base)/etc/profile.d/conda.sh"
+		if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+			echo "You're not in the base environment. Chaniging 'base'..."
+			conda activate base
+		fi
+
+		if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+			echo "You're in the base environment. Creating 'bolap'..."
+			if conda env list | awk '{print $1}' | grep -qx "bolap"; then
+				echo "ERROR: Conda environment 'bolap' already exists."
+			else
+				conda create -y --name bolap
+				conda activate bolap
+				conda install -y fqtools seqkit seqtk entrez-direct
+			fi
+		else
+			echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
+			exit 1
+		fi
+	else
+		echo "bolap installation is canceled."
+		echo "${help_message_install_bolap}"
+	fi
+}
+
+install-novoplasty_genus_species() {
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to install novoplasty? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
+	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+		# Check current conda environment
+		# Initialize Conda for non-interactive shells
+		source "$(conda info --base)/etc/profile.d/conda.sh"
+		if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
+			echo "You're not in the base environment. Chaniging 'base'..."
+			conda activate base
+		fi
+
+		if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
+			echo "You're in the base environment. Creating 'novoplasty'..."
+			if conda env list | awk '{print $1}' | grep -qx "novoplasty"; then
+				echo "ERROR: Conda environment 'novoplasty' already exists."
+			else
+				conda create -y --name novoplasty bioconda::novoplasty
+			fi
+		else
+			echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
+			exit 1
+		fi
+	else
+		echo "novoplasty installation is canceled."
+		echo "${help_message_install_novoplasty}"
+	fi
+}
+
+mkdir-all_genus_species() {
+	handled=1
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to create all species folders? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
+	case "$confirm" in
+	[yY] | [yY][eE][sS])
+		echo "creating all species folder $i ..."
+		for i in "${Sall[@]}"; do
+			mkdir ${i}
+		done
+		;;
+	*)
+		echo "Creating all species folders is canceled."
+		;;
+	esac
+}
+
+rm-empty_genus_species() {
+	find . -type d -empty -delete
+	echo "Deleting empty folders ... done."
+}
+
+rm_genus_species() {
+	read -p "Do you really want to delete all species folders? (YES/NO): " confirm
+	case "$confirm" in
+	YES)
+		read -p "Really, type in YES? (YES): " confirm
+		if [[ "$confirm" == "YES" ]]; then
+			for i in "${Sall[@]}"; do
+				echo "deleting folder $i ..."
+				rm -rf ${i}
+			done
+		fi
+		;;
+	*)
+		echo "Deleting all species folders is canceled."
+		;;
+	esac
+}
+
+xxx_genus_species() {
+	echo "bolap subcommand xxx"
+}
+
+test_genus_species_for() {
+	local _brg_outdir="${1:-all}"
+	local _brg_sindex="${2:-0}"
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	# local short_sra="${_short["$_brg_target"]}"
+
+	echo "Key: $_brg_target"
+	if [[ "${_POLAP_RELEASE}" == "0" ]]; then
+		echo "  long_sra: ${long_sra}"
+		# echo "  short_sra: ${short_sra}"
+	fi
+}
+
+test_genus_species() {
+	local _brg_outdir="${1:-some}"
+	local _brg_sindex="${2:-0}"
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	if [[ "${_brg_outdir}" == "all" ]]; then
+		for _v1 in "${Sall[@]}"; do
+			test_genus_species_for "${_v1}" "${@:2}"
+		done
+	elif [[ "${_brg_outdir}" == "some" ]]; then
+		for _v1 in "${Ssome[@]}"; do
+			test_genus_species_for "${_v1}" "${_brg_sindex}"
+		done
+	elif [[ "${_brg_outdir}" == "test" ]]; then
+		for _v1 in "${Stest[@]}"; do
+			test_genus_species_for "${_v1}" "${_brg_sindex}"
+		done
+	elif [[ "${_brg_outdir}" == "each" ]]; then
+		for key in "${Skeys[@]}"; do
+			_brg_outdir="${key%-*}"
+			_brg_inum="${key##*-}"
+			test_genus_species_for "${_brg_outdir}" "${_brg_inum}"
+		done
+	else
+		test_genus_species_for "$@"
 	fi
 }
 
@@ -15717,2458 +16034,6 @@ clean_input_lines() {
 
 		echo "$line"
 	done
-}
-
-function _polap_lib_data-execute-common-subcommand {
-	# local subcmd1="$1"
-	# local arg2="$2"
-	# local arg3="$3"
-	# local opt_y_flag="$4"
-	local handled=0
-	local subcmd1="$1"
-	local opt_y_flag="$2"
-	local -n cmd_args_ref="$3" # name reference to array
-
-	# set the global variables
-	# _brg_outdir
-	# _brg_sindex
-	if [[ -v cmd_args_ref[0] ]]; then
-		local _arg2=${cmd_args_ref[0]}
-	else
-		local _arg2=""
-	fi
-	if [[ -v cmd_args_ref[1] ]]; then
-		local _arg3=${cmd_args_ref[1]}
-	else
-		local _arg3=""
-	fi
-	_brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
-
-	case "$subcmd1" in
-	download-polap-github | \
-		patch-polap | bleeding-edge-polap | local-edge-polap | \
-		test-polap | \
-		install-apptainer | \
-		install-mitohifi | \
-		data-long | data-short | data-peek | \
-		data-downsample-long | data-downsample-short | \
-		mitohifi | \
-		list-subcommands)
-		handled=1
-		;;
-		##### INSERT_COMMAND_HERE #####
-	do-mv)
-		handled=1
-		;;
-	run-polap-disassemble-hifi)
-		handled=1
-		;;
-	run-polap-readassemble-animal-mt)
-		handled=1
-		;;
-	run-polap-readassemble-mt)
-		handled=1
-		;;
-	run-polap-readassemble-pt)
-		handled=1
-		;;
-	run-polap-readassemble)
-		handled=1
-		;;
-	get-conf-long-sra-id)
-		handled=1
-		;;
-	run-readassemble)
-		handled=1
-		;;
-	run-readassemble-nt)
-		handled=1
-		;;
-	run-readassemble-mt)
-		handled=1
-		;;
-	run-readassemble-pt)
-		handled=1
-		;;
-	system)
-		handled=1
-		;;
-	sync)
-		handled=1
-		;;
-	readassemble-ont-pt)
-		handled=1
-		;;
-	readassemble-ont-pt-iterate)
-		handled=1
-		;;
-	readassemble-ont-mt)
-		handled=1
-		;;
-	readassemble-ont-mt-iterate)
-		handled=1
-		;;
-	readassemble-ont-nt)
-		handled=1
-		;;
-	readassemble-ont-nt-iterate)
-		handled=1
-		;;
-	readassemble-annotate-pt)
-		handled=1
-		;;
-	readassemble-annotate-mt)
-		handled=1
-		;;
-	readassemble-annotate-nt)
-		handled=1
-		;;
-	run-pca-oga)
-		handled=1
-		;;
-	run-pca-wga)
-		handled=1
-		;;
-	run-pca-pt)
-		handled=1
-		;;
-	run-pca-ont-pt)
-		handled=1
-		;;
-	run-pca-kmer)
-		handled=1
-		;;
-	run-pca-ont-kmer)
-		handled=1
-		;;
-	run-pca-kmer-short)
-		handled=1
-		;;
-	run-pca-count)
-		handled=1
-		;;
-	run-pca-count-filter)
-		handled=1
-		;;
-	run-download-sra-clr)
-		handled=1
-		;;
-	run-download-sra-hifi)
-		handled=1
-		;;
-	run-hifi-oga)
-		handled=1
-		;;
-	sample-fastq)
-		handled=1
-		;;
-	get-aflye)
-		handled=1
-		;;
-	polap-cmd-xxx)
-		handled=1
-		;;
-	polap-cmd-find-genome-size)
-		handled=1
-		;;
-	polap-cmd-total-length-long)
-		handled=1
-		;;
-	polap-cmd)
-		handled=1
-		;;
-	polap-cmd-clean-menus)
-		handled=1
-		;;
-	update-dev)
-		handled=1
-		;;
-	polap-cmd-init)
-		handled=1
-		;;
-	download-sra)
-		handled=1
-		;;
-	run-direct-dflye)
-		handled=1
-		;;
-	download-bioproject)
-		handled=1
-		;;
-	archive-run)
-		handled=1
-		;;
-	get-dflye)
-		handled=1
-		;;
-	config-add)
-		handled=1
-		;;
-	config)
-		handled=1
-		;;
-	config-view)
-		handled=1
-		;;
-	config-test)
-		handled=1
-		;;
-	run-polap-assemble-wga)
-		handled=1
-		;;
-	run-polap-reduce-data)
-		handled=1
-		;;
-	run-polap-prepare-data)
-		handled=1
-		;;
-	run-direct-select-oga)
-		handled=1
-		;;
-	run-direct-bandage-oga)
-		handled=1
-		;;
-	run-direct-oga)
-		handled=1
-		;;
-	run-direct-wga)
-		handled=1
-		;;
-	run-direct-flye)
-		handled=1
-		;;
-	run-direct-read)
-		handled=1
-		;;
-	run-direct-map)
-		handled=1
-		;;
-	run-direct-seed)
-		handled=1
-		;;
-	run-direct)
-		handled=1
-		;;
-	install-latex)
-		handled=1
-		;;
-	download-species)
-		handled=1
-		;;
-	setup-completions)
-		handled=1
-		;;
-	setup-csv)
-		handled=1
-		;;
-	download-test-data-cflye)
-		handled=1
-		;;
-	download-test-data-hifi)
-		handled=1
-		;;
-	clean)
-		handled=1
-		;;
-	clean-hifi)
-		handled=1
-		;;
-	clean-cflye)
-		handled=1
-		;;
-	get-timing-pmat)
-		handled=1
-		;;
-	get-timing)
-		handled=1
-		;;
-	update-local)
-		handled=1
-		;;
-	update-github)
-		handled=1
-		;;
-	update)
-		handled=1
-		;;
-	get-cflye)
-		handled=1
-		;;
-	get)
-		handled=1
-		;;
-	print-help-all)
-		handled=1
-		;;
-	help)
-		handled=1
-		;;
-	h*)
-		handled=1
-		;;
-	setup-fmlrc2)
-		handled=1
-		;;
-	install-fmlrc2)
-		handled=1
-		;;
-	install-minimal)
-		handled=1
-		;;
-	install-all)
-		handled=1
-		;;
-	setup-nvim)
-		handled=1
-		;;
-	setup-pmat)
-		handled=1
-		;;
-	setup-polap)
-		handled=1
-		;;
-	setup-bandage)
-		handled=1
-		;;
-	install-nvim)
-		handled=1
-		;;
-	remove)
-		handled=1
-		;;
-	uninstall-fmlrc)
-		handled=1
-		;;
-	uninstall-dflye)
-		handled=1
-		;;
-	uninstall-cflye)
-		handled=1
-		;;
-	uninstall-oatk)
-		handled=1
-		;;
-	uninstall-tippo)
-		handled=1
-		;;
-	uninstall-pmat)
-		handled=1
-		;;
-	uninstall-getorganelle)
-		handled=1
-		;;
-	uninstall-polap)
-		handled=1
-		;;
-	uninstall)
-		handled=1
-		;;
-	run-summary-data)
-		handled=1
-		;;
-	install-man)
-		handled=1
-		;;
-	run-polap-disassemble-compare)
-		handled=1
-		;;
-	run-polap-disassemble-check)
-		handled=1
-		;;
-	run-polap-disassemble)
-		handled=1
-		;;
-	run-polap)
-		handled=1
-		;;
-	run-oatk-nextdenovo)
-		handled=1
-		;;
-	run-oatk-ont)
-		handled=1
-		;;
-	run-oatk-hifi)
-		handled=1
-		;;
-	run-estimate-genomesize)
-		handled=1
-		;;
-	run-nextdenovo-polish)
-		handled=1
-		;;
-	run-pmat)
-		handled=1
-		;;
-	run-tippo)
-		handled=1
-		;;
-	run-tippo-type)
-		handled=1
-		;;
-	run-oatk)
-		handled=1
-		;;
-	run-extract-ptdna-ptgaul)
-		handled=1
-		;;
-	run-polish-ptdna-ptgaul)
-		handled=1
-		;;
-	run-ptgaul)
-		handled=1
-		;;
-	run-mtgaul)
-		handled=1
-		;;
-	download-ptdna)
-		handled=1
-		;;
-	download-mtdna)
-		handled=1
-		;;
-	run-msbwt)
-		handled=1
-		;;
-	run)
-		handled=1
-		;;
-	run-getorganelle)
-		handled=1
-		;;
-	install-pmat)
-		handled=1
-		;;
-	install-bandage)
-		handled=1
-		;;
-	download)
-		handled=1
-		;;
-	delete-polap-github)
-		handled=1
-		;;
-	delete)
-		handled=1
-		;;
-	install-getorganelle)
-		handled=1
-		;;
-	install-oatk)
-		handled=1
-		;;
-	install-tippo)
-		handled=1
-		;;
-	install-dflye)
-		handled=1
-		;;
-	install-cflye)
-		handled=1
-		;;
-	install-polap)
-		handled=1
-		;;
-	install-fmlrc)
-		handled=1
-		;;
-	setup-conda)
-		handled=1
-		;;
-	setup)
-		handled=1
-		;;
-	list)
-		handled=1
-		;;
-	recover)
-		handled=1
-		;;
-	install)
-		handled=1
-		;;
-	install-conda)
-		handled=1
-		;;
-	install-mbg)
-		handled=1
-		;;
-	polap-analysis-oga)
-		handled=1
-		;;
-	polap-analysis-wga)
-		handled=1
-		;;
-	nextdenovo-polish)
-		handled=1
-		;;
-	polap-analysis-without-wga)
-		handled=1
-		;;
-	polap-analysis)
-		handled=1
-		;;
-	polap-analysis-data)
-		handled=1
-		;;
-	polap-analysis-polish)
-		handled=1
-		;;
-	polap-analysis-msbwt)
-		handled=1
-		;;
-	polap-analysis-assemble2)
-		handled=1
-		;;
-	polap-analysis-assemble1)
-		handled=1
-		;;
-	polap-analysis-reduce)
-		handled=1
-		;;
-	rsync)
-		handled=1
-		;;
-	oatk-polished)
-		handled=1
-		;;
-	hifiasm-polish)
-		handled=1
-		;;
-		################################################################################
-		# BEGIN: common manuscript functions
-		#
-	man)
-		handled=1
-		;;
-	man-init)
-		handled=1
-		;;
-		#
-		# END: common manuscript functions
-		################################################################################
-	mkdir-all)
-		handled=1
-		;;
-	rm-empty)
-		handled=1
-		;;
-	rm)
-		handled=1
-		;;
-	esac
-
-	case "$subcmd1" in
-	system)
-		${subcmd1}_genus_species
-		;;
-	data-peek)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${_arg2}"
-		;;
-	data-long)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${_arg2}"
-		;;
-	data-short)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${_arg2}"
-		;;
-	list-subcommands)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <query> [any|start|end]"
-			echo "  ${0} ${subcmd1} polap"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3="any"
-		local _brg_query="${_arg2}"
-		local _brg_where="${_arg3}"
-
-		if [[ "${_brg_where}" == "any" ]]; then
-			grep ")$" "${_POLAPLIB_DIR}/polap-lib-data.sh" | grep -v "(" | grep "${_brg_query}" | clean_input_lines
-			grep ")$" $0 | grep -v "(" | grep "${_brg_query}" | clean_input_lines
-		elif [[ "${_brg_where}" == "end" ]]; then
-			grep ")$" "${_POLAPLIB_DIR}/polap-lib-data.sh" | grep -v "(" | grep "${_brg_query})$" | clean_input_lines
-			grep ")$" $0 | grep -v "(" | grep "${_brg_query})$" | clean_input_lines
-		else
-			grep ")$" "${_POLAPLIB_DIR}/polap-lib-data.sh" | clean_input_lines | grep -v "(" | grep "^${_brg_query}"
-			grep ")$" $0 | clean_input_lines | grep -v "(" | grep "^${_brg_query}"
-		fi
-		;;
-	download-polap-github)
-		if [[ "${opt_y_flag}" == false ]]; then
-			read -p "Do you want to download polap from github? (y/N): " confirm
-		else
-			confirm="yes"
-		fi
-
-		if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
-			if [[ -d "polap-${_polap_version}" ]]; then
-				echo "ERROR: you already have polap-${_polap_version}"
-				echo "  delete it if you want to redownload it."
-				exit 0
-			fi
-			wget -q https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
-			unzip -o -q ${_polap_version}.zip
-			echo "polap github source is created at polap-${_polap_version}"
-		else
-			echo "polap download from github is canceled."
-		fi
-		;;
-	patch-polap)
-		if [[ "${opt_y_flag}" == false ]]; then
-			read -p "Do you want to replace conda env polap with the version ${_polap_version}? (y/N): " confirm
-		else
-			confirm="yes"
-		fi
-
-		if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
-			if conda env list | awk '{print $1}' | grep -qx "polap"; then
-				echo "Updating the Polap Conda environment to version ${_polap_version}."
-				wget -q https://github.com/goshng/polap/archive/refs/tags/${_polap_version}.zip
-				if [[ -s "${_polap_version}.zip" ]]; then
-					unzip -o -q ${_polap_version}.zip
-					cd polap-${_polap_version}/src
-					bash polaplib/polap-build.sh >../build.sh
-					cd ..
-					PREFIX="$(conda info --base)/envs/polap" bash build.sh
-				else
-					echo "Error: no such file: ${_polap_version}.zip - no such polap version"
-					echo "Suggestion: _polap_version=0.4.3.7.4 $0 $subcmd1"
-				fi
-			else
-				echo "Error: You do not have polap environment. Please activate polap before running this script."
-			fi
-		else
-			echo "polap patch is canceled."
-			echo "${help_message_patch_polap}"
-		fi
-		;;
-	bleeding-edge-polap)
-		if [[ "${opt_y_flag}" == false ]]; then
-			read -p "Do you want to update conda env polap with the latest polap github? (y/N): " confirm
-		else
-			confirm="yes"
-		fi
-
-		if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
-			if conda env list | awk '{print $1}' | grep -qx "polap"; then
-				echo "Updating the Polap Conda environment to its most current state on GitHub ensures access to the latest features and updates."
-				if [[ -d "polap" ]]; then
-					rm -rf polap
-				fi
-				git clone --quiet https://github.com/goshng/polap.git
-				cd polap/src
-				bash polaplib/polap-build.sh >../build.sh
-				cd ..
-				PREFIX="$(conda info --base)/envs/polap" bash build.sh
-			else
-				echo "Error: You do not have polap environment. Please activate polap before running this script."
-			fi
-		else
-			echo "polap bleeding-edge version update is canceled."
-			echo "${help_message_bleeding_edge_polap}"
-		fi
-		;;
-	local-edge-polap)
-		if [[ "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <polap github base path>"
-			echo "  $0 ${subcmd1} polap/github"
-			exit 0
-		fi
-		if [[ "${opt_y_flag}" == false ]]; then
-			read -p "Do you want to update conda env polap with the local polap source? (y/N): " confirm
-		else
-			confirm="yes"
-		fi
-
-		if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
-			if conda env list | awk '{print $1}' | grep -qx "polap"; then
-				echo "Updating the Polap Conda environment to the local source at ${_arg2}."
-				if [[ -d "${_arg2}/src" ]]; then
-					cd "${_arg2}/src"
-					bash polaplib/polap-build.sh >../build.sh
-					cd ..
-					PREFIX="$(conda info --base)/envs/polap" bash build.sh
-				else
-					echo "Error: The polap base path does not have src directory: ${_arg2}"
-				fi
-			else
-				echo "Error: You do not have polap environment. Please activate polap before running this script."
-			fi
-		else
-			echo "polap local version update is canceled."
-		fi
-		;;
-	test-polap)
-		if [[ "${opt_y_flag}" == false ]]; then
-			read -p "Do you want to test polap? (y/N): " confirm
-		else
-			confirm="yes"
-		fi
-
-		if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
-			if [[ ! -d "polap-${_polap_version}" ]]; then
-				echo "ERROR: no such folder: polap-${_polap_version}"
-				echo "  fetch the polap github source"
-				echo "$0 download-polap-github"
-				exit 0
-			fi
-			cd polap-${_polap_version}/test
-			source "$(conda info --base)/etc/profile.d/conda.sh"
-			if [[ "$CONDA_DEFAULT_ENV" != "polap" ]]; then
-				echo "You're not in the polap environment. Chaniging 'polap'..."
-				conda activate polap
-			fi
-
-			if [[ "$CONDA_DEFAULT_ENV" == "polap" ]]; then
-				polap assemble --test
-			else
-				echo "ERROR: no such conda environment: polap"
-				echo "$0 install-polap"
-			fi
-		else
-			echo "polap test is canceled."
-		fi
-		;;
-	install-getorganelle)
-		${subcmd1}_genus_species
-		;;
-	install-tippo)
-		${subcmd1}_genus_species
-		;;
-	install-oatk)
-		${subcmd1}_genus_species
-		;;
-	install-bolap)
-		if [[ "${opt_y_flag}" == false ]]; then
-			read -p "Do you want to install bolap? (y/N): " confirm
-		else
-			confirm="yes"
-		fi
-
-		if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
-			# Check current conda environment
-			# Initialize Conda for non-interactive shells
-			source "$(conda info --base)/etc/profile.d/conda.sh"
-			if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
-				echo "You're not in the base environment. Chaniging 'base'..."
-				conda activate base
-			fi
-
-			if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
-				echo "You're in the base environment. Creating 'bolap'..."
-				if conda env list | awk '{print $1}' | grep -qx "bolap"; then
-					echo "ERROR: Conda environment 'bolap' already exists."
-				else
-					conda create -y --name bolap
-					conda activate bolap
-					conda install -y fqtools seqkit seqtk entrez-direct
-				fi
-			else
-				echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
-				exit 1
-			fi
-		else
-			echo "bolap installation is canceled."
-			echo "${help_message_install_bolap}"
-		fi
-		;;
-		##### INSERT_CASE_HERE #####
-	do-mv)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap-disassemble-hifi)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap-readassemble-animal-mt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap-readassemble-nt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [noncoding|no-noncoding]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap-readassemble-mt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [noncoding|no-noncoding]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap-readassemble-pt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap-readassemble)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [pt|mt|animal] [noncoding|no-noncoding]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	get-conf-long-sra-id)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-readassemble)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-readassemble-nt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-readassemble-mt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-readassemble-pt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	sync)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [--pull|--push|--both] [5M] [--dry-run]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	readassemble-ont-pt-iterate)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	readassemble-ont-pt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	readassemble-ont-mt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	readassemble-ont-mt-iterate)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	readassemble-ont-nt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	readassemble-ont-nt-iterate)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	readassemble-annotate-pt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	readassemble-annotate-mt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	readassemble-annotate-nt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-pca-oga)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-pca-wga)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-pca-pt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-pca-ont-pt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [k:5|N] [dimred:umap] [genomesize:auto]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-pca-kmer)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-pca-ont-kmer)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-pca-kmer-short)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-pca-count-filter)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-pca-count)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-download-sra-clr)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-download-sra-hifi)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-hifi-oga)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N] [range:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	sample-fastq)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <in.fastq> [out:o|STRING] [coverage:10|N]"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	get-aflye)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> <hostname>"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	polap-cmd-xxx)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			echo "  $(basename ${0}) ${subcmd1}"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	polap-cmd-find-genome-size)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			echo "  $(basename ${0}) ${subcmd1}"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	polap-cmd-total-length-long)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			echo "  $(basename ${0}) ${subcmd1}"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	polap-cmd)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <polap command> <polap command arguments>"
-			echo "  $(basename ${0}) ${subcmd1} init"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	polap-cmd-clean-menus)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			echo "  $(basename ${0}) ${subcmd1}"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	update-dev)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			echo "  $(basename ${0}) ${subcmd1}"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	polap-cmd-init)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	download-sra)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <SRA Accession ID1> [SRA Accession ID2] ..."
-			echo "  $(basename ${0}) ${subcmd1} DRR036751"
-			echo "  $(basename ${0}) ${subcmd1} DRR036751 DRR066056"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-direct-dflye)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N] [jnum:1|N] [knum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	download-bioproject)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <bioproject accession ID>"
-			echo "  $(basename ${0}) ${subcmd1} PRJNA990649"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	archive-run)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	get-dflye)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> <index:0|N> <hostname>"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana hostname1"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	config-add)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	config)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <view|add>"
-			echo "  $(basename ${0}) ${subcmd1} view"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	config-view)
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	config-test)
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap-assemble-wga)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap-reduce-data)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap-prepare-data)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-direct-select-oga)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [jnum:0] [adir:t2]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-direct-bandage-oga)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [adir:t2] [bandage|off]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-direct-oga)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N] [range:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-direct-wga)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-direct-flye)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [index:0|N] [inum:0|N] [jnum:1|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-direct-read)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [jnum:1|N] [knum:2|N] [adir:t2]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-direct-map)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [jnum:1|N] [knum:2|N] [adir:t2]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-direct-seed)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [jnum:1|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-direct-dga)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	download-species)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		polap-analysis-data_genus_species "${cmd_args_ref[@]}"
-		;;
-	setup-completions)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			echo "  $(basename ${0}) ${subcmd1} cflye"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	setup-csv)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			echo "  $(basename ${0}) ${subcmd1} cflye"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	download-test-data-cflye)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			echo "  $(basename ${0}) ${subcmd1}"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	download-test-data-hifi)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			echo "  $(basename ${0}) ${subcmd1}"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	clean)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <which> <outdir>"
-			echo "  $(basename ${0}) ${subcmd1} cflye Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	clean-hifi)
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	clean-cflye)
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	get-timing-pmat)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	get-timing)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <tool> <outdir> [inum:0|N]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	update-local)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <local_github_path>"
-			echo "  git clone --quiet https://github.com/goshng/polap.git"
-			echo "  $(basename ${0}) ${subcmd1} polap"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	update-github)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} [main|tag|hash]"
-			echo "  $(basename ${0}) ${subcmd1} 0.4.3.7.8"
-			echo "  $(basename ${0}) ${subcmd1} befbb51"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	update)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} TOOL"
-			echo "  $(basename ${0}) ${subcmd1} github"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	get-cflye)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> <hostname>"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana hostname1"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	get)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} TOOL..."
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	print-help-all)
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	help | h*)
-		subcmd1="help"
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} [command]"
-			echo "  $(basename ${0}) ${subcmd1} example"
-			echo "  $(basename ${0}) ${subcmd1} install"
-			_subcmd1_clean="help_message_${subcmd1//-/_}"
-			declare -n ref="${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	setup-fmlrc2)
-		${subcmd1}_genus_species
-		;;
-	install-latex)
-		${subcmd1}_genus_species
-		;;
-	install-fmlrc2)
-		${subcmd1}_genus_species
-		;;
-	install-minimal)
-		${subcmd1}_genus_species
-		;;
-	install-all)
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	setup-nvim)
-		${subcmd1}_genus_species
-		;;
-	setup-pmat)
-		${subcmd1}_genus_species
-		;;
-	setup-polap)
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	setup-bandage)
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	remove)
-		uninstall_genus_species "${cmd_args_ref[@]}"
-		;;
-	uninstall-fmlrc2)
-		${subcmd1}_genus_species
-		;;
-	uninstall-fmlrc)
-		${subcmd1}_genus_species
-		;;
-	uninstall-dflye)
-		${subcmd1}_genus_species
-		;;
-	uninstall-cflye)
-		${subcmd1}_genus_species
-		;;
-	uninstall-oatk)
-		${subcmd1}_genus_species
-		;;
-	uninstall-tippo)
-		${subcmd1}_genus_species
-		;;
-	uninstall-pmat)
-		${subcmd1}_genus_species
-		;;
-	uninstall-getorganelle)
-		${subcmd1}_genus_species
-		;;
-	uninstall-polap)
-		${subcmd1}_genus_species
-		;;
-	run-summary-data)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	install-man)
-		${subcmd1}_genus_species
-		;;
-	run-polap-disassemble-compare)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap-disassemble-check)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap-disassemble)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [polishing:default|simple] [random:off|on|random]"
-			echo "  $(basename ${0}) ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polap)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-oatk-nextdenovo)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-oatk-ont)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-oatk-hifi)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-estimate-genomesize)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-nextdenovo-polish)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-pmat)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-tippo)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-tippo-type)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-oatk)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-extract-ptdna-ptgaul)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-polish-ptdna-ptgaul)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	download-mtdna)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${_arg2}"
-		;;
-	download-ptdna)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${_arg2}"
-		;;
-	run-msbwt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <command> ..."
-			echo "  $(basename ${0}) ${subcmd1} getorganelle Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-getorganelle)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		# [[ "${_arg3}" == arg3 ]] && _arg3=""
-		# ${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-ptgaul)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	run-mtgaul)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	install-pmat)
-		if [[ "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species
-		;;
-	install-bandage)
-		${subcmd1}_genus_species
-		;;
-	download-test-data2)
-		${subcmd1}_genus_species
-		;;
-	download)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <data>"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	delete-polap-github)
-		${subcmd1}_genus_species
-		;;
-	delete)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} TOOL..."
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	install-dflye)
-		${subcmd1}_genus_species
-		;;
-	install-cflye)
-		${subcmd1}_genus_species
-		;;
-	install-polap)
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	install-fmlrc)
-		${subcmd1}_genus_species
-		;;
-	install-nvim)
-		${subcmd1}_genus_species
-		;;
-	setup-conda)
-		if [[ "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species
-		;;
-	setup)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} TOOL..."
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	list)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} QUERY [any|start|end]"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	uninstall)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} TOOL..."
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		# [[ -z "${_arg3}" ]] && _arg3=""
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	install)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} TOOL..."
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		# [[ -z "${_arg3}" ]] && _arg3=""
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	install-conda)
-		${subcmd1}_genus_species
-		;;
-	install-mbg)
-		${subcmd1}_genus_species
-		;;
-	polap-analysis-oga)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3=""
-		${subcmd1}_genus_species "${_arg2}"
-		;;
-	polap-analysis-wga)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|string] [plastid:off|on] [test:off|on|test]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3="0"
-		[[ "${_arg4}" == arg4 ]] && _arg4="."
-		[[ "${_arg5}" == arg5 ]] && _arg5="off"
-		[[ "${_arg6}" == arg6 ]] && _arg6="off"
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}"
-		;;
-	nextdenovo-polish)
-		if [[ "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|string]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3="0"
-		[[ "${_arg4}" == arg4 ]] && _arg4="."
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
-		;;
-	polap-analysis-without-wga)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|string] [plastid:off|on]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3="0"
-		[[ "${_arg4}" == arg4 ]] && _arg4="."
-		[[ "${_arg5}" == arg5 ]] && _arg5="off"
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
-		;;
-	polap-analysis)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|string] [plastid:off|on]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3="0"
-		[[ "${_arg4}" == arg4 ]] && _arg4="."
-		[[ "${_arg5}" == arg5 ]] && _arg5="off"
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
-		;;
-	polap-analysis-data)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <all|outdir>"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			echo "  ${0} ${subcmd1} all"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${_arg2}"
-		;;
-	polap-analysis-polish)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|string]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3="0"
-		[[ "${_arg4}" == arg4 ]] && _arg4="."
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
-		;;
-	polap-analysis-msbwt)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir> [analysis:.|string] [coverage:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3="."
-		[[ "${_arg4}" == arg4 ]] && _arg4="0"
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
-		;;
-	polap-analysis-assemble2)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|string]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3="0"
-		[[ "${_arg4}" == arg4 ]] && _arg4="."
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}"
-		;;
-	polap-analysis-assemble1)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|string] [plastid:off|on] [test:off|on|test]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3="0"
-		[[ "${_arg4}" == arg4 ]] && _arg4="."
-		[[ "${_arg5}" == arg5 ]] && _arg5="off"
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
-		;;
-	polap-analysis-reduce)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [analysis:.|t1|string] [coverage:0|N] [test:off|on|test]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3="0"
-		[[ "${_arg4}" == arg4 ]] && _arg4="."
-		[[ "${_arg5}" == arg5 ]] && _arg5="0"
-		[[ "${_arg6}" == arg6 ]] && _arg6="off"
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}"
-		;;
-	rsync)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir|all> [inum:0|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3=""
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-		;;
-	oatk-polished)
-		if [[ "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <all|outdir> [inum:0|N] [polished:hifiasm|nextdenovo] [fc:30|N|N1,N2,N3,...]"
-			echo "  polap-data-v2.sh ${subcmd1} all"
-			echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3="0"
-		[[ "${_arg4}" == arg4 ]] && _arg4="hifiasm"
-		[[ "${_arg5}" == arg5 ]] && _arg5="30"
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}"
-		;;
-	hifiasm-polish)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:7|N]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3=""
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-		;;
-	mitohifi)
-		if [[ "${_arg2}" == "-h" || "${_arg2}" == --h* ]]; then
-			echo "Help: ${subcmd1} [master]"
-			echo "  ${0} ${subcmd1}"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg2}" == arg2 ]] && _arg2="master"
-		${subcmd1}_genus_species "${_arg2}" "${@:3}"
-		;;
-	install-apptainer)
-		if [[ "${_arg2}" == "-h" || "${_arg2}" == --h* ]]; then
-			echo "Help: ${subcmd1} [version:1.4.0]"
-			echo "  ${0} ${subcmd1}"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg2}" == arg2 ]] && _arg2="1.4.0"
-		${subcmd1}_genus_species "${_arg2}"
-		;;
-	install-novoplasty)
-		if [[ "${opt_y_flag}" == false ]]; then
-			read -p "Do you want to install novoplasty? (y/N): " confirm
-		else
-			confirm="yes"
-		fi
-
-		if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
-			# Check current conda environment
-			# Initialize Conda for non-interactive shells
-			source "$(conda info --base)/etc/profile.d/conda.sh"
-			if [[ "$CONDA_DEFAULT_ENV" != "base" ]]; then
-				echo "You're not in the base environment. Chaniging 'base'..."
-				conda activate base
-			fi
-
-			if [[ "$CONDA_DEFAULT_ENV" == "base" ]]; then
-				echo "You're in the base environment. Creating 'novoplasty'..."
-				if conda env list | awk '{print $1}' | grep -qx "novoplasty"; then
-					echo "ERROR: Conda environment 'novoplasty' already exists."
-				else
-					conda create -y --name novoplasty bioconda::novoplasty
-				fi
-			else
-				echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
-				exit 1
-			fi
-		else
-			echo "novoplasty installation is canceled."
-			echo "${help_message_install_novoplasty}"
-		fi
-		;;
-	install-mitohifi)
-		if [[ "${_arg2}" == "-h" || "${_arg2}" == --h* ]]; then
-			echo "Help: ${subcmd1} [version:master]"
-			echo "  ${0} ${subcmd1}"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg2}" == arg2 ]] && _arg2="master"
-		${subcmd1}_genus_species "${_arg2}"
-		;;
-	estimate-genomesize)
-		if [[ "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir|all> <inum:N>"
-			echo "  polap-data-v2.sh ${subcmd1} all"
-			echo "  polap-data-v2.sh ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3=""
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}"
-		;;
-	data-downsample-long)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [coverage:50|N] [random-seed:-1] [dry:off|on]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3=""
-		[[ "${_arg4}" == arg4 ]] && _arg4=""
-		[[ "${_arg5}" == arg5 ]] && _arg5=""
-		[[ "${_arg6}" == arg6 ]] && _arg6=""
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}"
-		;;
-	data-downsample-short)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir> [inum:0|N] [coverage:50|N] [dry:off|on] [genomesize]"
-			echo "  ${0} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		[[ "${_arg3}" == arg3 ]] && _arg3=""
-		[[ "${_arg4}" == arg4 ]] && _arg4=""
-		[[ "${_arg5}" == arg5 ]] && _arg5=""
-		[[ "${_arg6}" == arg6 ]] && _arg6=""
-		${subcmd1}_genus_species "${_arg2}" "${_arg3}" "${_arg4}" "${_arg5}" "${_arg6}"
-		;;
-		################################################################################
-		# BEGIN: common manuscript functions
-		#
-	man-init)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			echo "  $(basename ${0}) ${subcmd1}"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-	man)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 || "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1} <command> ..."
-			echo "  $(basename $0) ${subcmd1} table-benchmark"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${cmd_args_ref[@]}"
-		;;
-		#
-		# END: common manuscript functions
-		################################################################################
-	recover)
-		if [[ -z "${_arg2}" || "${_arg2}" == arg2 ]]; then
-			echo "Help: ${subcmd1} <outdir>"
-			echo "  ${0##*/} ${subcmd1} Arabidopsis_thaliana"
-			_subcmd1_clean="${subcmd1//-/_}"
-			declare -n ref="help_message_${_subcmd1_clean}"
-			echo "$ref"
-			exit 0
-		fi
-		${subcmd1}_genus_species "${_arg2}"
-		;;
-	mkdir-all)
-		handled=1
-		if [[ "${opt_y_flag}" == false ]]; then
-			read -p "Do you want to create all species folders? (y/N): " confirm
-		else
-			confirm="yes"
-		fi
-
-		case "$confirm" in
-		[yY] | [yY][eE][sS])
-			echo "creating all species folder $i ..."
-			for i in "${Sall[@]}"; do
-				mkdir ${i}
-			done
-			;;
-		*)
-			echo "Creating all species folders is canceled."
-			;;
-		esac
-		;;
-	rm-empty)
-		if [[ "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			echo "  Delete all empty folders at the current folder."
-			exit 0
-		fi
-		handled=1
-		find . -type d -empty -delete
-		echo "Deleting empty folders ... done."
-		;;
-	rm)
-		if [[ "${_arg2}" == "-h" || "${_arg2}" == "--help" ]]; then
-			echo "Help: ${subcmd1}"
-			echo "  Delete all species folders at the current folder."
-			exit 0
-		fi
-		handled=1
-		read -p "Do you really want to delete all species folders? (YES/NO): " confirm
-		case "$confirm" in
-		YES)
-			read -p "Really, type in YES? (YES): " confirm
-			if [[ "$confirm" == "YES" ]]; then
-				for i in "${Sall[@]}"; do
-					echo "deleting folder $i ..."
-					rm -rf ${i}
-				done
-			fi
-			;;
-		*)
-			echo "Deleting all species folders is canceled."
-			;;
-		esac
-		;;
-	esac
-
-	[[ $handled -eq 1 ]] && return 0 || return 1
 }
 
 dev_genus_species() {

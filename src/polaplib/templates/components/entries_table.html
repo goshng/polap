@@ -1,0 +1,62 @@
+{# expects: entries (list of dicts with datetime, size_h, display_path, href,
+comment, preview) #}
+<article>
+  <table role="grid">
+    <thead>
+      <tr>
+        <th>Datetime (UTC)</th>
+        <th>Size</th>
+        <th>Path</th>
+        <th>Comment</th>
+        <th>Preview</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in entries %}
+      <tr>
+        <td>{{ e.datetime }}</td>
+        <td>{{ e.size_h }}</td>
+        <td><a href="{{ e.href }}">{{ e.display_path }}</a></td>
+        <td>{{ e.comment }}</td>
+        <td>
+          {% if e.preview == 'img' %}
+          <details>
+            <summary>show</summary>
+            <img
+              src="{{ e.href }}"
+              alt="{{ e.display_path }}"
+              style="
+                max-width: 100%;
+                height: auto;
+                border: 1px solid #eee;
+                border-radius: 6px;
+                margin-top: 6px;
+              "
+            />
+          </details>
+          {% elif e.preview == 'pdf' %}
+          <details>
+            <summary>show</summary>
+            <object
+              data="{{ e.href }}"
+              type="application/pdf"
+              style="
+                width: 100%;
+                height: 520px;
+                border: 1px solid #eee;
+                border-radius: 6px;
+                margin-top: 6px;
+              "
+            >
+              <a href="{{ e.href }}">{{ e.href }}</a>
+            </object>
+          </details>
+          {% else %}
+          <small>—</small>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</article>

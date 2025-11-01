@@ -117,6 +117,12 @@ EOF
 	fi
 
 	local OUTDIR="${_arg_outdir}/polish-longshort"
+	_arg_plastid="on"
+	if [[ "${_arg_plastid}" == "on" ]]; then
+		OUTDIR="${_arg_outdir}/polish-longshort/pt"
+	else
+		OUTDIR="${_arg_outdir}/polish-longshort/mt"
+	fi
 	_polap_log3_cmd rm -rf "$OUTDIR"
 
 	if [[ "${_arg_long_reads_is}" == "on" && "${_arg_short_read1_is}" == "on" ]]; then

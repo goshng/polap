@@ -1,0 +1,18 @@
+{% if fig %}
+<article>
+  {% if fig.label %}<h3>{{ fig.label }}</h3>{% endif %}
+  {% if fig.href.endswith('.pdf') %}
+    <details open>
+      <summary>Preview PDF</summary>
+      <object data="{{ fig.href }}" type="application/pdf" style="width:100%;height:520px;border:1px solid #eee;border-radius:6px;"></object>
+    </details>
+  {% else %}
+    <details open>
+      <summary>Preview image</summary>
+      <img src="{{ fig.href }}" alt="{{ fig.label }}" style="max-width:100%;height:auto;border:1px solid #eee;border-radius:6px;">
+    </details>
+  {% endif %}
+  <p><small><a href="{{ fig.href }}">{{ fig.href }}</a></small></p>
+</article>
+{% endif %}
+

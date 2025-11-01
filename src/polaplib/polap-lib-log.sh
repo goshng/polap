@@ -899,3 +899,33 @@ function _polap_log_function {
 		verbose_echo_newline 4 "$@" >&2
 	fi
 }
+
+_polap_log_file_exist() {
+	local level="$1"
+	local msg="$2"
+	local file="$3"
+
+	if [[ -s "$file" ]]; then
+		local msgout="$msg: $file"
+		_polap_log"${level}" "$msgout"
+	else
+		local msgout="[WARN] no such file exists: $msg: $file"
+		_polap_log"${level}" "$msgout"
+	fi
+
+}
+
+_polap_log3_file_exist() {
+	_polap_log_file_exist 3 "$@"
+}
+
+_polap_log2_file_exist() {
+	_polap_log_file_exist 2 "$@"
+}
+_polap_log1_file_exist() {
+	_polap_log_file_exist 1 "$@"
+}
+
+_polap_log0_file_exist() {
+	_polap_log_file_exist 0 "$@"
+}

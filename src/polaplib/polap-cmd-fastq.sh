@@ -538,6 +538,7 @@ EOF
 		exit $EXIT_SUCCESS
 	fi
 
+	_polap_lib_conda-ensure_conda_env polap || exit 1
 	if [[ "${_arg_long_reads_is}" == "on" ]]; then
 		if [[ -n "${_arg_genomesize}" ]]; then
 			_polap_lib_fastq-sample-to "${_arg_long_reads}" "${_arg_outfile}" "${_arg_genomesize}"
@@ -549,6 +550,7 @@ EOF
 	else
 		_polap_log0 "infile: no such file or empty file: ${_arg_long_reads}"
 	fi
+	conda deactivate
 
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled

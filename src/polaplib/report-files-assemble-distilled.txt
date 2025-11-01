@@ -1,0 +1,129 @@
+# 1. Seed PT and MT reads
+
+2025-10-31 08:49:04.5065925960    2879483 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/assembly_info_organelle_annotation_count-all.txt Annotation MT PT for all
+2025-10-31 08:49:04.8315915750     272657 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/contig-annotation-depth-table.txt Annotation MT
+2025-10-31 08:49:05.0475908960    2100455 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt-contig-annotation-depth-table.txt Annotation PT
+2025-10-31 08:49:07.8535820600      22698 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt.id.txt PT reads
+2025-10-31 08:49:10.9185723870        265 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt0.fq.seqkit.stats.ta.txt PT reads seqkit stats
+
+# 2. ptDNA assembly
+
+2025-10-31 08:51:32.4691021470     126801 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt/30-contigger/graph_final.gfa Flye ptDNA assembly pt0 from PT reads alone
+2025-10-31 08:51:40.2410751220     127533 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt/30-contigger/graph_final.png pt0 assembly graph png
+2025-10-31 08:51:45.9870550690         36 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt/contig-annotation-depth-table.txt Annotation MT from assembly pt0
+2025-10-31 08:51:45.9970550340        112 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt/pt-contig-annotation-depth-table.txt Annotation PT from assembly pt0
+2025-10-31 08:51:46.0030550140        112 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt/assembly_info_organelle_annotation_count-all.txt
+2025-10-31 08:52:12.3049624520         21 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt/mt.contig.name-pt1 Seed contigs in pt0 assembly for pt1
+
+2025-10-31 08:52:12.4179620520     128688 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt1/01-contig/contig.fa Seed contig sequence from pt0 for pt1
+2025-10-31 08:58:18.5435708310     126683 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt1/assembly_graph.gfa Flye assembly graph of pt1
+2025-10-31 08:58:18.5465708200     155565 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt1/assembly.fasta Flye assembly pt1 sequence
+2025-10-31 08:58:18.6075705750        573 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt1/ptdna.metrics.csv ptDNA reads info in pt1
+2025-10-31 08:58:26.5135389050      87330 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt1/assembly_graph.png Assembly pt1 graph png
+2025-10-31 08:58:32.1575162640         36 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt1/contig-annotation-depth-table.txt Assembly pt1 annotation table for MT
+2025-10-31 08:58:32.1665162280        114 Brassica_rapa/v6/0/polap-assemble/annotate-read-pt/pt1/pt-contig-annotation-depth-table.txt Assembly pt1 annotation table for PT
+
+2025-10-31 08:58:35.0975044590     554843 Brassica_rapa/v6/0/polap-assemble/annotate-read-mtseed/pt/pt-contig-annotation-depth-table.txt.scatter.pdf PT read scatter plot
+2025-10-31 08:58:36.3224995380     182315 Brassica_rapa/v6/0/polap-assemble/annotate-read-mtseed/pt.id.all.txt PT reads
+2025-10-31 08:58:37.7304938810      29226 Brassica_rapa/v6/0/polap-assemble/annotate-read-mtseed/mt/contig-annotation-depth-table.txt.scatter.pdf MT read scatter plot
+2025-10-31 08:58:37.8204935190       7897 Brassica_rapa/v6/0/polap-assemble/annotate-read-mtseed/mt.id.all.txt MT reads
+
+# 3. Filter out PT reads
+
+2025-10-31 08:58:38.5514905810     151652 Brassica_rapa/v6/0/polap-assemble/mtseed/01-panel/pt_isomerA.fa ptDNA isomer A sequence fasta
+2025-10-31 08:58:38.7194899060     151652 Brassica_rapa/v6/0/polap-assemble/mtseed/01-panel/pt_isomerB.fa ptDNA isomer B sequence fasta
+2025-10-31 09:00:36.6780104510        242 Brassica_rapa/v6/0/polap-assemble/mtseed/pt_thresh.diag.tsv ptDNA assembly pt0 PT reads selection criteria
+2025-10-31 09:00:40.1529961770    2527868 Brassica_rapa/v6/0/polap-assemble/mtseed/pt.ids PT reads IDs selected for ptDNA assembbly pt0
+2025-10-31 09:00:40.1909960210         30 Brassica_rapa/v6/0/polap-assemble/mtseed/pt_thresh.vars pt0 reads selection min identity and alignment min length from pt_thresh.diag.tsv
+2025-10-31 09:09:08.8588439530        267 Brassica_rapa/v6/0/polap-assemble/mtseed/reads.nonpt.fq.gz.seqkit.stats.ta.tsv reads seqkit stats after filtering out PT reads
+
+# 4. Compute read overlapness
+
+2025-10-31 09:24:50.4677145010         10 Brassica_rapa/v6/0/polap-assemble/mtseed/03-allvsall/edges_loose.tsv.35.txt
+2025-10-31 09:31:46.3248728910       5133 Brassica_rapa/v6/0/polap-assemble/mtseed/03-allvsall/04-qc/scan_degree_hist.pdf distribution of degree values of all reads
+2025-10-31 09:31:47.7828664270       5144 Brassica_rapa/v6/0/polap-assemble/mtseed/03-allvsall/04-qc/scan_wdegree_hist.pdf distribution of weighted degree values of all reads
+2025-10-31 09:32:01.5838052430     166321 Brassica_rapa/v6/0/polap-assemble/mtseed/03-allvsall/04-qc/scan_cum_wdegree.pdf cumulative distribution of weighted degree values to determine the minimum weighted degree
+2025-10-31 09:32:01.6218050750         37 Brassica_rapa/v6/0/polap-assemble/mtseed/03-allvsall/04-qc/overlap_qc.vars overlapness QC values
+2025-10-31 09:40:47.0584739260      17028 Brassica_rapa/v6/0/polap-assemble/mtseed/pipeline.log mtseed procedure log file
+
+# 5. Filter out NT reads
+
+2025-10-31 09:40:55.0194385880      40845 Brassica_rapa/v6/0/polap-assemble/mtseed/04-busco/nuc.ids.sample NT reads IDs
+2025-10-31 09:40:57.7104266430         72 Brassica_rapa/v6/0/polap-assemble/mtseed/05-round/threshold_from_nuclear.tsv threshold value of weighted degrees to filter out NT reads
+
+# 6. Assemble seed contigs using miniasm or mtDNA assembly mt0
+
+2025-10-31 10:05:52.0343917070        185 Brassica_rapa/v6/0/polap-assemble/mtseed/06-miniasm/log/steps.log logs from miniasm executions
+2025-10-31 10:13:31.2880230660     133836 Brassica_rapa/v6/0/polap-assemble/mtseed/07-flye Folder for assembly mt0
+2025-10-31 10:13:31.2880230660     133836 Brassica_rapa/v6/0/polap-assemble/mtseed/07-flye/30-contigger/graph_final.png miniasm assembly graph png
+2025-10-31 10:13:31.6410212890     133088 Brassica_rapa/v6/0/polap-assemble/mtseed/07-flye/30-contigger/3-gfa.all.gfa miniasm assembly graph gfa without sequences
+2025-10-31 10:17:43.3627640050        589 Brassica_rapa/v6/0/polap-assemble/mtseed/07-flye/contig-annotation-depth-table.txt MT annotation table for miniasm assembly or mt0
+2025-10-31 10:17:43.3717639600        628 Brassica_rapa/v6/0/polap-assemble/mtseed/07-flye/pt-contig-annotation-depth-table.txt PT annotation table for miniasm assembly or mt0
+2025-10-31 10:24:12.9548457240       2620 Brassica_rapa/v6/0/polap-assemble/mtseed/07-flye/mt.contig.name-mt1 Seed contigs selected from mt0 for mt1
+
+# 7. mtDNA assembly
+
+# 7.1 mtDNA assembly mt1
+
+2025-10-31 18:45:54.8381714040      99872 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1 Folder for assembly mt1
+2025-10-31 10:30:47.8861467080         11 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/02-reads/ptgaul-reads/0/ptgaul.names.length.txt reads total from the ptgaul selection with omega 3000 bp
+2025-10-31 10:30:47.9131464530    1847589 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/02-reads/ptgaul-reads/0/ptgaul.names read IDs from the ptgaul selection with omega 3000 bp
+2025-10-31 10:39:05.3091335620         11 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/02-reads/ptgaul-reads/1/ptgaul.names.length.txt reads total from the ptgaul selection with omega 4000 bp 
+2025-10-31 10:39:05.3311334060    1608054 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/02-reads/ptgaul-reads/1/ptgaul.names read IDs from the ptgaul selection with omega 4000 bp
+2025-10-31 10:47:18.3868861160         11 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/02-reads/ptgaul-reads/2/ptgaul.names.length.txt reads total from the ptgaul selection with omega 5000 bp
+2025-10-31 10:47:18.4068859920    1415125 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/02-reads/ptgaul-reads/2/ptgaul.names read IDs from the ptgaul selection with omega 5000 bp
+2025-10-31 10:55:27.0259412370         11 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/02-reads/ptgaul-reads/3/ptgaul.names.length.txt reads total from the ptgaul selection with omega 6000 bp
+2025-10-31 10:55:27.0439411310    1245113 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/02-reads/ptgaul-reads/3/ptgaul.names read IDs from the ptgaul selection with omega 6000 bp
+2025-10-31 11:03:33.3098469810         11 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/02-reads/ptgaul-reads/4/ptgaul.names.length.txt reads total from the ptgaul selection with omega 7000 bp
+2025-10-31 11:03:33.3258469960    1066823 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/02-reads/ptgaul-reads/4/ptgaul.names read IDs from the ptgaul selection with omega 7000 bp
+2025-10-31 11:11:45.1113990520         11 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/02-reads/ptgaul-reads/5/ptgaul.names.length.txt reads total from the ptgaul selection with omega 8000 bp
+2025-10-31 11:11:45.1263990190     946841 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/02-reads/ptgaul-reads/5/ptgaul.names read IDs from the ptgaul selection with omega 8000 bp
+2025-10-31 11:19:52.5369642810          2 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/01-contig/index.txt selected run ID here is 5
+2025-10-31 11:19:52.5369642810          5 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/01-contig/omega.txt selected omega to use
+2025-10-31 11:25:20.0817686790          9 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/01-contig/contig_total_length.txt send conditg total length in base pairs
+2025-10-31 13:02:48.0220309990    1976428 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/05-flye/ptgaul-intra-base-length/0/flye.log Test run Flye log
+2025-10-31 13:02:48.3000299670     182969 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/06-summary/ptgaul-intra-base-length/0.gfa Test Flye run gfa
+2025-10-31 13:02:48.4840292840          5 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/06-summary/ptgaul-intra-base-length/0.fragments Test Flye run number of fragments
+2025-10-31 13:02:48.6440286900          9 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/06-summary/ptgaul-intra-base-length/0.bases Test Flye run total bases
+2025-10-31 13:02:48.6620286230          7 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/06-summary/ptgaul-intra-base-length/0.depth Test Flye run depths
+2025-10-31 16:21:27.0914019040     152633 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/assembly_graph.png Flye assembly graph png for mt1 assembly
+2025-10-31 16:21:29.0643997030     198434 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/30-contigger/3-gfa.all.gfa Flye assembyl mt1 graph without sequences
+2025-10-31 16:26:42.9789441190        336 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/contig-annotation-depth-table.txt MT annotation table for assembly mt1
+2025-10-31 16:26:42.9879441040        209 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/pt-contig-annotation-depth-table.txt PT annotation table for assembly pt1
+2025-10-31 16:29:05.3316859250         94 Brassica_rapa/v6/0/polap-assemble/mtseed/mt1/mt.contig.name-mt2 Seed contigs from assembly mt1 for assembly mt2
+
+# 7.2 mtDNA assembly mt2
+
+2025-10-31 18:45:54.8381714040      99872 Brassica_rapa/v6/0/polap-assemble/mtseed/mt2 Folder for assembly mt2
+
+# 7.3 mtDNA assembly mt3
+
+2025-10-31 18:45:54.8381714040      99872 Brassica_rapa/v6/0/polap-assemble/mtseed/mt3 Folder for assembly mt3
+
+# 8. Oatk's pathfinder
+
+2025-10-31 18:45:55.6521677700     126785 Brassica_rapa/v6/0/polap-assemble/extract/pt.norm.gfa Assembly graph PT for Oatk pathfinder
+2025-10-31 18:45:55.7111675070     133733 Brassica_rapa/v6/0/polap-assemble/extract/mt.norm.gfa Assembly graph MT for Oatk pathfinder
+2025-10-31 18:46:32.2520042690     154785 Brassica_rapa/v6/0/polap-assemble/extract/oatk.pltd.ctg.fasta PT DNA sequence by Oatk pathfinder 
+2025-10-31 18:46:32.2650042110     135927 Brassica_rapa/v6/0/polap-assemble/extract/oatk.mito.ctg.fasta MT DNA sequence by Oatk pathfinder
+
+# 9. Polishing
+
+2025-10-31 21:03:53.3188549530       2903 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/r1.minimap2.err Minimap2 round 1 log time memory at the last line
+2025-10-31 21:03:53.7828530480         36 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/r1.filter.err Filter round 1 log reads used for polishing
+2025-10-31 21:08:05.9017943390     133436 Brassica_rapa/v6/0/polap-assemble/polish-longshort/stage1/polished.r1.fa Racon round 1 polished sequence
+2025-10-31 21:08:05.9017943390       3590 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/r1.racon.err Racon round 1 log time at the last line
+2025-10-31 21:08:59.9695622830       2913 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/r2.minimap2.err Minimap2 round 2 log time memory at the last line
+2025-10-31 21:09:00.4355602770         36 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/r2.filter.err Filter round 2 log reads used for polishing
+2025-10-31 21:13:48.1083053020     133115 Brassica_rapa/v6/0/polap-assemble/polish-longshort/stage1/polished.r2.fa Racon round 2 polished sequence
+2025-10-31 21:13:48.1083053020       3606 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/r2.racon.err Racon round 2 log time at the last line
+2025-10-31 22:06:49.0588108180        624 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/ropebwt2.err ropebtw2 log time at the last line
+2025-10-31 22:07:40.6595414000        558 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/fmlrc2-convert.err fmlrc2 convert log
+2025-10-31 22:09:47.1988917080       1750 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/fmlrc2.err fmlrc2 log
+2025-10-31 22:09:49.6598792100     133199 Brassica_rapa/v6/0/polap-assemble/polish-longshort/stage2/segments.fmlrc2.fa fmlr2 result sequence
+2025-10-31 22:09:50.0258773520      13068 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/bt2-build.out bowtie2 out
+2025-10-31 22:09:50.0268773470        819 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/bt2-build.err bowtie2 err
+2025-10-31 22:26:33.2962506800        628 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/polypolish.bt2.err polypolish bowtie2 log
+2025-10-31 22:35:30.6638233930     133213 Brassica_rapa/v6/0/polap-assemble/polish-longshort/stage3/polished.polypolish.fa polypolish result sequence in FASTA format
+2025-10-31 22:35:30.6638233930       1711 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/polypolish.err polypolish log
+2025-10-31 22:35:30.6698233900     133213 Brassica_rapa/v6/0/polap-assemble/polish-longshort/polished.fa Racon two rounds, fmlr2, polypolish resulting sequence in FASTA format

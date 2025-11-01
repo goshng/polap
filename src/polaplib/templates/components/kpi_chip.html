@@ -1,0 +1,7 @@
+{# expects: chip = {'label','value','status' in (pass|fail|warn), 'hint'? } #}
+{% set chip = chip or {'label':'','value':'','status':'pass','hint':''} %}
+<span class="chip {{ chip.status|lower }}">
+  <strong>{{ chip.label }}:</strong> {{ chip.value }}
+  {% if chip.hint %}<small> ({{ chip.hint }})</small>{% endif %}
+</span>
+

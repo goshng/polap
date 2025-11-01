@@ -1,0 +1,20 @@
+{% if table %}
+<article>
+  {% if table.title %}<h3>{{ table.title }}</h3>{% endif %}
+  <table role="grid">
+    <thead>
+      <tr>
+        {% for h in table.headers %}<th>{{ h }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in table.rows %}
+      <tr>
+        {% for c in r %}<td>{{ c }}</td>{% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</article>
+{% endif %}
+

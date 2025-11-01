@@ -1637,6 +1637,9 @@ assign_positional_args() {
 
 parse_commandline_postprocess() {
 	_arg_omega="${_arg_single_min}"
+	if [[ -z "${_arg_prefix}" ]]; then
+		_arg_prefix="${_arg_long_reads%.*}"
+	fi
 }
 
 commandline_unit_conversion() {

@@ -1,0 +1,135 @@
+{% extends "base.html" %} {% block content %}
+<main class="container">
+  <header>
+    <h1>{{ page.title }}</h1>
+    <p>
+      Species: <strong>{{ page.species }}</strong><br />
+      Generated at: <small>{{ page.generated_at }}</small>
+    </p>
+    <hr />
+  </header>
+
+  {% for sec in sections %}
+  <section id="sec-{{ sec.id }}">
+    <h2>{{ sec.id }}. {{ sec.title }}</h2>
+
+    {# Loop over each block in this section #} {% for b in sec.blocks %} {% if
+    b.type == "text" %}
+    <article>
+      <h3>{{ b.text.title }}</h3>
+      {% if b.text.as_markdown %} {{ b.text.content | safe }} {% else %}
+      <pre style="white-space: pre-wrap">{{ b.text.content }}</pre>
+      {% endif %}
+    </article>
+
+    {% elif b.type == "figure" %}
+    <figure>
+      {% set ext = b.href.split('.')[-1]|lower %} {% if ext in
+      ['png','jpg','jpeg','svg'] %}
+      <img src="{{ b.href }}" alt="{{ b.label }}" style="max-width: 100%" />
+      {% elif ext == 'pdf' %}
+      <object
+        data="{{ b.href }}"
+        type="application/pdf"
+        width="100%"
+        height="600px"
+      >
+        <p>PDF preview unavailable: <a href="{{ b.href }}">{{ b.label }}</a></p>
+      </object>
+      {% endif %}
+      <figcaption>{{ b.label }}</figcaption>
+    </figure>
+
+    {% elif b.type == "table" %}
+    <h3>{{ b.table.title }}</h3>
+    <div style="overflow-x: auto">
+      <table role="grid">
+        <thead>
+          <tr>
+            {% for h in b.table.headers %}
+            <th>{{ h }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in b.table.rows %}
+          <tr>
+            {% for c in r %}
+            <td>{{ c }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% elif b.type == "kpi" %}
+    <h3>{{ b.kpi.title or 'Key performance indicators' }}</h3>
+    <ul>
+      {% for item in b.kpi.items %}
+      <li>
+        <strong>{{ item.label }}:</strong>
+        {{ item.value }} {% if item.hint %}<small>({{ item.hint }})</small>{%
+        endif %} {% if item.status %}
+        <span class="status-{{ item.status|lower }}"
+          >[{{ item.status|upper }}]</span
+        >
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %} {% endfor %} {# render subsections recursively if present #} {%
+    if sec.subsections %} {% for sub in sec.subsections %}
+    <section id="sec-{{ sub.id }}">
+      <h3>{{ sub.id }} {{ sub.title }}</h3>
+      {% for b in sub.blocks %} {% if b.type == "figure" %}
+      <figure>
+        {% set ext = b.href.split('.')[-1]|lower %} {% if ext in
+        ['png','jpg','jpeg','svg'] %}
+        <img src="{{ b.href }}" alt="{{ b.label }}" style="max-width: 100%" />
+        {% elif ext == 'pdf' %}
+        <object
+          data="{{ b.href }}"
+          type="application/pdf"
+          width="100%"
+          height="600px"
+        >
+          <p>
+            PDF preview unavailable: <a href="{{ b.href }}">{{ b.label }}</a>
+          </p>
+        </object>
+        {% endif %}
+        <figcaption>{{ b.label }}</figcaption>
+      </figure>
+      {% elif b.type == "table" %}
+      <h4>{{ b.table.title }}</h4>
+      <div style="overflow-x: auto">
+        <table role="grid">
+          <thead>
+            <tr>
+              {% for h in b.table.headers %}
+              <th>{{ h }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in b.table.rows %}
+            <tr>
+              {% for c in r %}
+              <td>{{ c }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% elif b.type == "text" %}
+      <pre style="white-space: pre-wrap">{{ b.text.content }}</pre>
+      {% endif %} {% endfor %}
+    </section>
+    {% endfor %} {% endif %}
+  </section>
+  <hr />
+  {% endfor %}
+</main>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  {% for section in sections %}
+  <section id="sec-{{ section.id|replace('.','-') }}">
+    <h2>{{ section.id }}. {{ section.title }}</h2>
+
+    {% if section.blocks and section.blocks|length %}
+      {% for b in section.blocks %}
+        {% if b.type == 'figure' %}
+          {% set fig = b %}
+          {% include "components/figure.html" %}
+        {% elif b.type == 'table' %}
+          {% set table = b.table %}
+          {% include "components/table.html" %}
+        {% elif b.type == 'text' %}
+          {% set text = b.text %}
+          {% include "components/text.html" %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+    {% if section.subsections and section.subsections|length %}
+      {% for sub in section.subsections %}
+        <section id="sec-{{ sub.id|replace('.','-') }}">
+          <h3>{{ sub.id }}. {{ sub.title }}</h3>
+          {% if sub.blocks and sub.blocks|length %}
+            {% for b in sub.blocks %}
+              {% if b.type == 'figure' %}
+                {% set fig = b %}
+                {% include "components/figure.html" %}
+              {% elif b.type == 'table' %}
+                {% set table = b.table %}
+                {% include "components/table.html" %}
+              {% elif b.type == 'text' %}
+                {% set text = b.text %}
+                {% include "components/text.html" %}
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            <p><em>No items found for {{ sub.id }}.</em></p>
+          {% endif %}
+        </section>
+      {% endfor %}
+    {% endif %}
+
+  </section>
+  {% endfor %}
+
+{% endblock %}
+
+

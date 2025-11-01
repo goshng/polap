@@ -1,0 +1,49 @@
+# MT/PT assemblies
+
+2025-10-19 21:45:43.6030233630         11 Brassica_rapa/tmp/l.sra.txt Long-read SRA accession
+2025-10-19 21:45:44.3390177260         11 Brassica_rapa/tmp/s.sra.txt Short-read SRA accession
+2025-10-19 22:15:02.3041255210        229 Brassica_rapa/v6/0/summary-data/l.fq.seqkit.stats.ta.txt Long-read data seqkit stats TSV
+2025-10-19 22:18:52.8025833730        224 Brassica_rapa/v6/0/summary-data/s_1.fq.seqkit.stats.ta.txt Short-read data 1 seqkit stats TSV
+2025-10-19 22:22:46.9420007440        225 Brassica_rapa/v6/0/summary-data/s_2.fq.seqkit.stats.ta.txt Short-read data 2 seqkit stats TSV
+
+2025-10-19 22:51:08.9393261450     156115 Brassica_rapa/v6/0/ncbi-ptdna/ptdna-reference.fa ptDNA reference sequence FASTA
+2025-10-19 22:51:19.5472705890     223514 Brassica_rapa/v6/0/ncbi-mtdna/mtdna-reference.fa mtDNA reference sequence FASTA 
+2025-10-19 22:51:08.8613265530       1786 Brassica_rapa/v6/0/ncbi-ptdna/00-bioproject/1-mtdna.fasta.stats known ptDNA list
+2025-10-19 22:51:08.9693259880         11 Brassica_rapa/v6/0/ncbi-ptdna/00-bioproject/2-mtdna.accession ptDNA reference accession
+2025-10-19 22:51:19.4582710550        777 Brassica_rapa/v6/0/ncbi-mtdna/00-bioproject/1-mtdna.fasta.stats known mtDNA list
+2025-10-19 22:51:19.5772704310         11 Brassica_rapa/v6/0/ncbi-mtdna/00-bioproject/2-mtdna.accession mtDNA reference accession
+
+2025-10-31 08:49:04.5065925960    2879483 Brassica_rapa/v6/0/polap-assemble/pt.1.fasta ptDNA assembly from polap
+2025-10-31 08:49:04.5065925960    2879483 Brassica_rapa/v6/0/polap-assemble/mt.1.fasta mtDNA assembly from polap
+2025-10-31 08:49:04.5065925960    2879483 Brassica_rapa/v6/0/polap-assemble/pt.1.png ptDNA assembly graph png from polap
+2025-10-31 08:49:04.5065925960    2879483 Brassica_rapa/v6/0/polap-assemble/mt.1.png mtDNA assembly graph png from polap
+
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/ptgaul/flye_cpONT/assembly_graph.gfa ptDNA assembly graph from ptGAUL
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/ptgaul/flye_cpONT/assembly_graph.png ptDNA assembly graph png from ptGAUL
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/mtgaul/flye_cpONT/assembly_graph.gfa mtDNA assembly graph from ptGAUL
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/mtgaul/flye_cpONT/assembly_graph.png mtDNA assembly graph png from ptGAUL
+
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/tippo/pt.gfa ptDNA assembly graph from TIPPo
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/tippo/pt.png ptDNA assembly graph png from TIPPo
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/tippo/mt.gfa mtDNA assembly graph from TIPPo
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/tippo/mt.png mtDNA assembly graph png from TIPPo
+
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/oatk/oatk-30.pltd.ctg.fasta ptDNA assembly graph png from oatk
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/oatk/oatk-30.pltd.gfa ptDNA assembly graph from oatk
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/oatk/oatk-30.pltd.png ptDNA assembly graph png from oatk
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/oatk/oatk-30.mito.ctg.fasta mtDNA assembly graph png from oatk
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/oatk/oatk-30.mito.gfa mtDNA assembly graph from oatk
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/oatk/oatk-30.mito.png mtDNA assembly graph png from oatk
+
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/summary-polap-assemble.txt time and memory required organelle genome assembly using polap
+2025-10-20 00:10:35.1945083980        783 Brassica_rapa/v6/0/summary-ptgaul.txt time and memory required ptDNA genome assembly using ptGAUL
+2025-10-20 01:07:24.8033804120        391 Brassica_rapa/v6/0/summary-mtgaul.txt time and memory required mtDNA genome assembly using ptGAUL
+2025-10-20 01:39:04.6663618490        507 Brassica_rapa/v6/0/summary-tippo.txt time and memory required organelle genome assembly using TIPPo
+2025-10-20 01:42:54.7925756060        451 Brassica_rapa/v6/0/summary-oatk.txt time and memory required organelle genome assembly using Oatk
+
+2025-10-28 16:41:21.4435456750        111 Brassica_rapa/v6/0/data-downsample-long/ERR6210792.fq.downsample.txt Long-read downsample log coverage
+2025-10-28 16:42:37.5242082290        196 Brassica_rapa/v6/0/data-downsample-long/ERR6210792.fastq.seqkit.stats.ta.tsv Long-read data actually used for the polap assembly
+2025-10-31 08:33:29.9954366600         49 Brassica_rapa/v6/0/data-downsample-short/ERR6210790.fq.downsample.txt Short-read downsample log coverage
+2025-10-31 08:34:26.6281512680        193 Brassica_rapa/v6/0/data-downsample-short/ERR6210790_1.fastq.seqkit.stats.ta.tsv Short-read 1 data actually used for the polap assembly
+2025-10-31 08:35:23.5938649310        193 Brassica_rapa/v6/0/data-downsample-short/ERR6210790_2.fastq.seqkit.stats.ta.tsv Short-read 2 data actually used for the polap assembly
+

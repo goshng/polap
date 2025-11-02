@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # report_assemble.py
-# Version: v1.0.0
+# Version: v1.2.0
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # Build a BLOCK JSON for rendering a polap-assemble report.
@@ -13,34 +13,49 @@
 #     --out Brassica_rapa/v6/0/polap-assemble/report/assemble-report.json
 #
 # Notes:
-# - This script reads files from a conventional run directory under <Species>/v6/0/polap-assemble
+# - This script reads files from the conventional run layout under <Species>/v6/0/polap-assemble
 #   and produces a single JSON with the exact blocks you requested.
-# - Hrefs are species-rooted (e.g., "Brassica_rapa/v6/0/...") so the renderer can convert to
-#   links relative to the final HTML location.
-#
-import os
-import sys
-import csv
-import json
+# - Figure hrefs are species-rooted (e.g., "<Species>/v6/0/...") so the renderer can convert them
+#   to links relative to the final HTML location.
+
+from __future__ import annotations
 import argparse
+import csv
 import datetime
-from typing import Dict, Any, List, Optional, Tuple
+import json
+import os
+import re
+from typing import Any, Dict, List, Optional, Tuple
 
-# ------------------------------ helpers ------------------------------
+VERSION = "report_assemble.py v1.2.0"
 
 
-def species_and_root(base_dir: str) -> Tuple[str, str]:
+# ------------------------------ basic helpers ------------------------------
+
+
+def _iso_now() -> str:
+    try:
+        return datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    except Exception:
+        return ""
+
+
+def _exists(path: str) -> bool:
+    return bool(path) and os.path.exists(path)
+
+
+def _species_and_root(base_dir: str) -> Tuple[str, str]:
     """Return (species_name, species_abs_root)."""
-    sp = os.path.basename(os.path.abspath(base_dir))
+    sp = os.path.basename(os.path.abspath(base_dir.rstrip("/")))
     return sp, os.path.abspath(base_dir)
 
 
-def P(sp_root: str, rel: str) -> str:
+def _join_species_root(sp_root: str, rel: str) -> str:
     """Join species root and a species-relative path."""
     return os.path.join(sp_root, rel)
 
 
-def species_href(abs_path: str, species_root: str, species: str) -> str:
+def _species_href(abs_path: str, species_root: str, species: str) -> str:
     """
     Produce a href like '<Species>/...' for any absolute file path under the species root.
     Fallback to basename if trimming fails.
@@ -50,26 +65,23 @@ def species_href(abs_path: str, species_root: str, species: str) -> str:
     if ap.startswith(root + "/"):
         tail = ap[len(root) + 1 :]
         return f"{species}/{tail}"
-    # Fallback: search for '/<Species>/' fragment
     i = ap.find("/" + species + "/")
     if i != -1:
         return ap[i + 1 :]
     return os.path.basename(ap)
 
 
-def exists(path: str) -> bool:
-    return path and os.path.exists(path)
+# ------------------------------ table/figure/text blocks ------------------------------
 
 
-def read_tsv_select_columns(
+def _read_tsv_select_columns(
     path: str, keep_cols: List[str]
 ) -> Optional[Dict[str, Any]]:
     """
-    Generic TSV reader selecting columns by header names (case-sensitive).
-    Returns table dict: {title, headers, rows}.
-    If the file has one data row (e.g., seqkit -T/-Ta), we output that row only.
+    TSV reader selecting columns by header (case-sensitive).
+    Returns table dict: {title, headers, rows} or None.
     """
-    if not exists(path):
+    if not _exists(path):
         return None
     with open(path, encoding="utf-8") as f:
         rd = csv.reader(f, delimiter="\t")
@@ -77,7 +89,7 @@ def read_tsv_select_columns(
         if not hdr:
             return None
         hpos = {h: i for i, h in enumerate(hdr)}
-        rows = []
+        rows: List[List[str]] = []
         for r in rd:
             row = []
             for col in keep_cols:
@@ -85,20 +97,19 @@ def read_tsv_select_columns(
                 row.append(r[i] if i is not None and i < len(r) else "")
             rows.append(row)
     if not rows:
-        # still produce empty with headers
         rows = [[]]
     return {"title": os.path.basename(path), "headers": keep_cols, "rows": rows}
 
 
-def read_tsv_generic(path: str, max_rows: int = 2000) -> Optional[Dict[str, Any]]:
+def _read_tsv_generic(path: str, max_rows: int = 2000) -> Optional[Dict[str, Any]]:
     """Read generic TSV into headers, rows."""
-    if not exists(path):
+    if not _exists(path):
         return None
     with open(path, encoding="utf-8") as f:
         rd = csv.reader(f, delimiter="\t")
         hdr = next(rd, None)
         if hdr is None:
-            # Attempt fallback: split by whitespace, build generic headers
+            # Fallback: split on whitespace, build generic headers
             f.seek(0)
             lines = [ln.strip() for ln in f if ln.strip()]
             if not lines:
@@ -107,7 +118,7 @@ def read_tsv_generic(path: str, max_rows: int = 2000) -> Optional[Dict[str, Any]
             width = max(len(r) for r in rows)
             headers = [f"col{i+1}" for i in range(width)]
             return {"title": os.path.basename(path), "headers": headers, "rows": rows}
-        rows = []
+        rows: List[List[str]] = []
         for r in rd:
             rows.append(r)
             if len(rows) >= max_rows:
@@ -115,11 +126,11 @@ def read_tsv_generic(path: str, max_rows: int = 2000) -> Optional[Dict[str, Any]
     return {"title": os.path.basename(path), "headers": hdr, "rows": rows}
 
 
-def read_space_table(path: str, max_rows: int = 2000) -> Optional[Dict[str, Any]]:
+def _read_space_table(path: str, max_rows: int = 2000) -> Optional[Dict[str, Any]]:
     """
-    Read a whitespace-delimited table (space/tabs), inferring headers from first row if it looks textual.
+    Read a whitespace-delimited table (space/tabs), infer headers from first row if it looks textual.
     """
-    if not exists(path):
+    if not _exists(path):
         return None
     rows: List[List[str]] = []
     with open(path, encoding="utf-8") as f:
@@ -132,7 +143,6 @@ def read_space_table(path: str, max_rows: int = 2000) -> Optional[Dict[str, Any]
                 break
     if not rows:
         return None
-    # Heuristic: if first row contains alpha, treat it as header
     if any(any(ch.isalpha() for ch in cell) for cell in rows[0]):
         headers = rows[0]
         data = rows[1:]
@@ -143,11 +153,11 @@ def read_space_table(path: str, max_rows: int = 2000) -> Optional[Dict[str, Any]
     return {"title": os.path.basename(path), "headers": headers, "rows": data}
 
 
-def text_block_from_file(
+def _text_block_from_file(
     path: str, title: str, limit_kb: int = 256
 ) -> Optional[Dict[str, Any]]:
     """Read small text file into a text block (truncated message if too large)."""
-    if not exists(path):
+    if not _exists(path):
         return None
     size = os.path.getsize(path)
     if size > limit_kb * 1024:
@@ -167,20 +177,92 @@ def text_block_from_file(
     }
 
 
-def figure_block_from_path(
+def _figure_block_from_path(
     path: str, label: str, species_root: str, species: str
 ) -> Optional[Dict[str, Any]]:
-    if not exists(path):
+    if not _exists(path):
         return None
-    href = species_href(path, species_root, species)
+    href = _species_href(path, species_root, species)
     return {"type": "figure", "label": label, "href": href}
 
 
-def table_block(table: Dict[str, Any], title: Optional[str] = None) -> Dict[str, Any]:
+def _table_block(table: Dict[str, Any], title: Optional[str] = None) -> Dict[str, Any]:
+    t = dict(table)
     if title:
-        table = dict(table)
-        table["title"] = title
-    return {"type": "table", "table": table}
+        t["title"] = title
+    # NOTE: keep nested .table form for compatibility with existing templates
+    return {"type": "table", "table": t}
+
+
+# ------------------------------ performance parsers ------------------------------
+
+
+def _parse_summary_polap(path: str) -> Dict[str, str]:
+    """
+    Parse summary-polap-assemble.txt for:
+      - elapsed_hms      "08:30:29"
+      - net_increase_kb  "34743552"
+      - disk_used_gb     "122"
+    """
+    out = {
+        "elapsed_hms": "NA",
+        "net_increase_kb": "NA",
+        "disk_used_gb": "NA",
+        "source": path if os.path.exists(path) else "NA",
+    }
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                ln = line.strip()
+                m = re.match(r"^Elapsed time:\s*([0-9]{2}:[0-9]{2}:[0-9]{2})", ln)
+                if m:
+                    out["elapsed_hms"] = m.group(1)
+                    continue
+                m = re.match(r"^Net increase:\s*([0-9]+)\s*KB", ln)
+                if m:
+                    out["net_increase_kb"] = m.group(1)
+                    continue
+                m = re.match(r"^Disk used:\s*([0-9]+)\s*GB", ln)
+                if m:
+                    out["disk_used_gb"] = m.group(1)
+                    continue
+    except FileNotFoundError:
+        pass
+    return out
+
+
+def _parse_timing_polap(path: str) -> Dict[str, str]:
+    """
+    Parse timing-polap-assemble.txt for:
+      - hostname
+      - cpu_model
+      - cpu_cores
+    """
+    out = {
+        "hostname": "NA",
+        "cpu_model": "NA",
+        "cpu_cores": "NA",
+        "source": path if os.path.exists(path) else "NA",
+    }
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                ln = line.strip()
+                m = re.match(r"^Hostname:\s*(.+)$", ln)
+                if m:
+                    out["hostname"] = m.group(1).strip()
+                    continue
+                m = re.match(r"^CPU Model:\s*(.+)$", ln)
+                if m:
+                    out["cpu_model"] = m.group(1).strip()
+                    continue
+                m = re.match(r"^CPU Cores:\s*([0-9]+)", ln)
+                if m:
+                    out["cpu_cores"] = m.group(1)
+                    continue
+    except FileNotFoundError:
+        pass
+    return out
 
 
 # ------------------------------ sections builder ------------------------------
@@ -189,102 +271,103 @@ def table_block(table: Dict[str, Any], title: Optional[str] = None) -> Dict[str,
 def build_sections(species_dir: str) -> Dict[str, Any]:
     """
     Build the full BLOCK JSON composed of sections and blocks as requested.
+    species_dir: the species base directory (e.g., "Brassica_rapra")
     """
-    species, sp_root = species_and_root(species_dir)
+    species, sp_root = _species_and_root(species_dir)
 
-    # Convenience helper to join species-root relative strings
     def S(rel: str) -> str:
-        return P(sp_root, rel)
+        return _join_species_root(sp_root, rel)
 
     sections: List[Dict[str, Any]] = []
 
-    # --- 1. Seed PT and MT reads: seqkit table (3 columns) ---
+    # 1. Seed PT and MT reads — seqkit (3 columns)
     sec1_blocks: List[Dict[str, Any]] = []
-    pt0_seqkit = S("v6/0/polap-assemble/annotate-read-pt/pt0.fq.seqkit.stats.ta.txt")
-    t1 = read_tsv_select_columns(pt0_seqkit, ["num_seqs", "sum_len", "AvgQual"])
+    t1 = _read_tsv_select_columns(
+        S("v6/0/polap-assemble/annotate-read-pt/pt0.fq.seqkit.stats.ta.txt"),
+        ["num_seqs", "sum_len", "AvgQual"],
+    )
     if t1:
-        sec1_blocks.append(table_block(t1, "PT reads (seqkit, pt0)"))
+        sec1_blocks.append(_table_block(t1, "PT reads (seqkit, pt0)"))
     sections.append({"id": "1", "title": "Seed PT and MT reads", "blocks": sec1_blocks})
 
-    # --- 2. ptDNA assembly: figures + space-delim table ---
+    # 2. ptDNA assembly — figures + space table
     sec2_blocks: List[Dict[str, Any]] = []
-    fig_pt0 = figure_block_from_path(
+    f0 = _figure_block_from_path(
         S("v6/0/polap-assemble/annotate-read-pt/pt/30-contigger/graph_final.png"),
         "PT assembly graph (pt0)",
         sp_root,
         species,
     )
-    if fig_pt0:
-        sec2_blocks.append(fig_pt0)
-    fig_pt1 = figure_block_from_path(
+    if f0:
+        sec2_blocks.append(f0)
+    f1 = _figure_block_from_path(
         S("v6/0/polap-assemble/annotate-read-pt/pt1/assembly_graph.png"),
         "PT assembly graph (pt1)",
         sp_root,
         species,
     )
-    if fig_pt1:
-        sec2_blocks.append(fig_pt1)
-
-    pt1_anno = S(
-        "v6/0/polap-assemble/annotate-read-pt/pt1/pt-contig-annotation-depth-table.txt"
+    if f1:
+        sec2_blocks.append(f1)
+    t2 = _read_space_table(
+        S(
+            "v6/0/polap-assemble/annotate-read-pt/pt1/pt-contig-annotation-depth-table.txt"
+        )
     )
-    t2 = read_space_table(pt1_anno)
     if t2:
-        sec2_blocks.append(table_block(t2, "PT annotation table (pt1)"))
+        sec2_blocks.append(_table_block(t2, "PT annotation table (pt1)"))
     sections.append({"id": "2", "title": "ptDNA assembly", "blocks": sec2_blocks})
 
-    # --- 3. Filter out PT reads: pt_thresh diag table + seqkit 3-col ---
+    # 3. Filter out PT reads — pt_thresh diag + nonPT (3 col)
     sec3_blocks: List[Dict[str, Any]] = []
-    diag_tsv = S("v6/0/polap-assemble/mtseed/pt_thresh.diag.tsv")
-    t3 = read_tsv_generic(diag_tsv)
+    t3 = _read_tsv_generic(S("v6/0/polap-assemble/mtseed/pt_thresh.diag.tsv"))
     if t3:
         sec3_blocks.append(
-            table_block(t3, "PT read selection cutoff (pt_thresh.diag.tsv)")
+            _table_block(t3, "PT read selection cutoff (pt_thresh.diag.tsv)")
         )
-
-    nonpt_tsv = S("v6/0/polap-assemble/mtseed/reads.nonpt.fq.gz.seqkit.stats.ta.tsv")
-    t4 = read_tsv_select_columns(nonpt_tsv, ["num_seqs", "sum_len", "AvgQual"])
+    t4 = _read_tsv_select_columns(
+        S("v6/0/polap-assemble/mtseed/reads.nonpt.fq.gz.seqkit.stats.ta.tsv"),
+        ["num_seqs", "sum_len", "AvgQual"],
+    )
     if t4:
-        sec3_blocks.append(table_block(t4, "Non-PT reads (after PT filtering)"))
+        sec3_blocks.append(_table_block(t4, "Non-PT reads (after PT filtering)"))
     sections.append({"id": "3", "title": "Filter out PT reads", "blocks": sec3_blocks})
 
-    # --- 4. Compute read overlapness: two PDFs ---
+    # 4. Compute read overlapness — PDFs
     sec4_blocks: List[Dict[str, Any]] = []
-    pdf_wdeg = figure_block_from_path(
+    p1 = _figure_block_from_path(
         S("v6/0/polap-assemble/mtseed/03-allvsall/04-qc/scan_wdegree_hist.pdf"),
         "Weighted degree distribution",
         sp_root,
         species,
     )
-    if pdf_wdeg:
-        sec4_blocks.append(pdf_wdeg)
-
-    pdf_cum = figure_block_from_path(
+    if p1:
+        sec4_blocks.append(p1)
+    p2 = _figure_block_from_path(
         S("v6/0/polap-assemble/mtseed/03-allvsall/04-qc/scan_cum_wdegree.pdf"),
         "Cumulative weighted degree (threshold)",
         sp_root,
         species,
     )
-    if pdf_cum:
-        sec4_blocks.append(pdf_cum)
+    if p2:
+        sec4_blocks.append(p2)
     sections.append(
         {"id": "4", "title": "Compute read overlapness", "blocks": sec4_blocks}
     )
 
-    # --- 5. Filter out NT reads: TSV table ---
+    # 5. Filter out NT reads — TSV table
     sec5_blocks: List[Dict[str, Any]] = []
-    t5 = read_tsv_generic(
+    t5 = _read_tsv_generic(
         S("v6/0/polap-assemble/mtseed/05-round/threshold_from_nuclear.tsv")
     )
     if t5:
         sec5_blocks.append(
-            table_block(t5, "Weighted-degree threshold to filter NT reads")
+            _table_block(t5, "Weighted-degree threshold to filter NT reads")
         )
     sections.append({"id": "5", "title": "Filter out NT reads", "blocks": sec5_blocks})
 
-    # --- 6. Assemble seed contigs using miniasm or mtDNA assembly mt0: figure ---
+    # 6. Assemble mt0 — figure
     sec6_blocks: List[Dict[str, Any]] = []
-    f_mt0 = figure_block_from_path(
+    f_mt0 = _figure_block_from_path(
         S("v6/0/polap-assemble/mtseed/07-flye/30-contigger/graph_final.png"),
         "Assembly mt0 (graph)",
         sp_root,
@@ -300,43 +383,37 @@ def build_sections(species_dir: str) -> Dict[str, Any]:
         }
     )
 
-    # --- 7. mtDNA assembly (7.1..7.3) ---
+    # 7. mtDNA assembly mt1..mt3
     subsecs: List[Dict[str, Any]] = []
     for name, idx in (("mt1", "7.1"), ("mt2", "7.2"), ("mt3", "7.3")):
         base_rel = f"v6/0/polap-assemble/mtseed/{name}"
         blocks: List[Dict[str, Any]] = []
 
-        # Contig total length (text)
-        tlen = text_block_from_file(
+        tlen = _text_block_from_file(
             S(f"{base_rel}/01-contig/contig_total_length.txt"), "Contig length (bp)"
         )
         if tlen:
             blocks.append(tlen)
-
-        # Assembly graph PNG
-        f_asm = figure_block_from_path(
+        fig = _figure_block_from_path(
             S(f"{base_rel}/assembly_graph.png"),
             f"Assembly graph ({name})",
             sp_root,
             species,
         )
-        if f_asm:
-            blocks.append(f_asm)
-
-        # MT annotation table (space-delimited)
-        t_mt = read_space_table(S(f"{base_rel}/contig-annotation-depth-table.txt"))
+        if fig:
+            blocks.append(fig)
+        t_mt = _read_space_table(S(f"{base_rel}/contig-annotation-depth-table.txt"))
         if t_mt:
-            blocks.append(table_block(t_mt, f"MT annotation table ({name})"))
+            blocks.append(_table_block(t_mt, f"MT annotation table ({name})"))
 
-        # Seed contig names text (for mt1 → mt2; for mt2 → mt3 if present)
         next_map = {"mt1": "mt2", "mt2": "mt3"}
         if name in next_map:
-            seed_names_path = S(f"{base_rel}/mt.contig.name-{next_map[name]}")
-            t_seed = text_block_from_file(
-                seed_names_path, f"Seed contig names → {next_map[name]}"
+            sn = _text_block_from_file(
+                S(f"{base_rel}/mt.contig.name-{next_map[name]}"),
+                f"Seed contig names → {next_map[name]}",
             )
-            if t_seed:
-                blocks.append(t_seed)
+            if sn:
+                blocks.append(sn)
 
         if blocks:
             subsecs.append(
@@ -347,89 +424,139 @@ def build_sections(species_dir: str) -> Dict[str, Any]:
         {"id": "7", "title": "mtDNA assembly", "blocks": [], "subsections": subsecs}
     )
 
-    # --- 8. Oatk's pathfinder (text links to FASTA) ---
+    # 8. Oatk pathfinder — FASTA paths as text
     sec8_blocks: List[Dict[str, Any]] = []
     pt_fa = S("v6/0/polap-assemble/extract/oatk.pltd.ctg.fasta")
-    if exists(pt_fa):
+    if _exists(pt_fa):
         sec8_blocks.append(
             {
                 "type": "text",
                 "text": {
                     "title": "Extracted ptDNA sequence (FASTA)",
-                    "content": species_href(pt_fa, sp_root, species),
+                    "content": _species_href(pt_fa, sp_root, species),
                     "as_markdown": False,
                 },
             }
         )
     mt_fa = S("v6/0/polap-assemble/extract/oatk.mito.ctg.fasta")
-    if exists(mt_fa):
+    if _exists(mt_fa):
         sec8_blocks.append(
             {
                 "type": "text",
                 "text": {
                     "title": "Extracted mtDNA sequence (FASTA)",
-                    "content": species_href(mt_fa, sp_root, species),
+                    "content": _species_href(mt_fa, sp_root, species),
                     "as_markdown": False,
                 },
             }
         )
     sections.append({"id": "8", "title": "Oatk's pathfinder", "blocks": sec8_blocks})
 
-    # --- 9. Polishing (final polished.fa path as text) ---
+    # 9. Polishing — final FASTA as text
     sec9_blocks: List[Dict[str, Any]] = []
     polished = S("v6/0/polap-assemble/polish-longshort/polished.fa")
-    if exists(polished):
+    if _exists(polished):
         sec9_blocks.append(
             {
                 "type": "text",
                 "text": {
                     "title": "Polished organelle sequence (FASTA)",
-                    "content": species_href(polished, sp_root, species),
+                    "content": _species_href(polished, sp_root, species),
                     "as_markdown": False,
                 },
             }
         )
     sections.append({"id": "9", "title": "Polishing", "blocks": sec9_blocks})
 
+    # 10. Performance section (summary-polap-assemble + timing-polap-assemble)
+    run_root = os.path.join(sp_root, "v6", "0")
+    p_summary_polap = os.path.join(run_root, "summary-polap-assemble.txt")
+    p_timing_polap = os.path.join(run_root, "timing-polap-assemble.txt")
+
+    perf_summary = _parse_summary_polap(p_summary_polap)
+    perf_timing = _parse_timing_polap(p_timing_polap)
+
+    perf_rows = [
+        ["Elapsed time", perf_summary.get("elapsed_hms", "NA")],
+        ["Net memory increase (KB)", perf_summary.get("net_increase_kb", "NA")],
+        ["Disk used (GB)", perf_summary.get("disk_used_gb", "NA")],
+        ["CPU model", perf_timing.get("cpu_model", "NA")],
+        ["CPU cores", perf_timing.get("cpu_cores", "NA")],
+        ["Hostname", perf_timing.get("hostname", "NA")],
+    ]
+
+    sections.append(
+        {
+            "id": "10",
+            "title": "System & Performance (polap-assemble)",
+            "blocks": [
+                {
+                    "type": "table",
+                    "table": {
+                        "title": "Run metrics",
+                        "headers": ["Metric", "Value"],
+                        "rows": perf_rows,
+                    },
+                }
+            ],
+        }
+    )
+
     # Page info
     page = {
         "species": species,
         "title": f"polap-assemble report ({species})",
-        "generated_at": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "base_dir": species,
+        "generated_at": _iso_now(),
+        "base_dir": sp_root,  # path to species dir
     }
 
-    return {"page": page, "sections": sections}
+    # Top-level perf for tooling
+    perf = {"summary": perf_summary, "timing": perf_timing}
+
+    return {"page": page, "sections": sections, "perf": perf}
 
 
 # ------------------------------ main ------------------------------
 
 
-def main():
+def main() -> int:
     ap = argparse.ArgumentParser(
         description="Create BLOCK JSON for polap-assemble report."
     )
     ap.add_argument(
-        "--base-dir", required=True, help="Species base directory (e.g., Brassica_rapa)"
+        "--base-dir",
+        required=True,
+        help="Species base directory (e.g., Brassica_rapra)",
     )
     ap.add_argument(
         "--out",
         required=True,
-        help="Output JSON path (e.g., .../report/assemble-report.json)",
+        help="Output JSON (…/v6/0/polap-assemble/report/assemble-report.json)",
     )
     args = ap.parse_args()
 
-    base_dir = os.path.abspath(args.base_dir)
-    if not os.path.isdir(base_dir):
-        sys.exit(f"[ERR] base dir not found: {base_dir}")
+    species_dir = os.path.abspath(args.base_dir)
+    if not os.path.isdir(species_dir):
+        sys.exit(f"[ERR] base dir not found: {species_dir}")
 
-    doc = build_sections(base_dir)
+    doc = build_sections(species_dir)
+    model = {
+        "meta": {
+            "generated_at": doc["page"]["generated_at"],
+            "version": VERSION,
+            "species_dir": doc["page"]["base_dir"],
+        },
+        "perf": doc["perf"],
+        "page": doc["page"],
+        "sections": doc["sections"],
+    }
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-    with open(args.out, "w", encoding="utf-8") as fo:
-        json.dump(doc, fo, indent=2)
+    with open(args.out, "w", encoding="utf-8") as f:
+        json.dump(model, f, indent=2)
     print(f"[OK] wrote BLOCK JSON: {os.path.abspath(args.out)}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

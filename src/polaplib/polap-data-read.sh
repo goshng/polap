@@ -3660,6 +3660,20 @@ parse_commandline_man() {
 	done
 }
 
+report-assemble-all_genus_species() {
+
+	#!/usr/bin/env bash
+	# Read species-codes.txt and print the 2nd column (species name)
+
+	while read -r code species _; do
+		# Skip empty lines and comment lines
+		[[ -z "$code" || "$code" =~ ^# ]] && continue
+		_brg_outdir="$species"
+		report-assemble_genus_species
+	done <"${_POLAPLIB_DIR}/species-codes.txt"
+
+}
+
 report-assemble_genus_species() {
 
 	local bolap_cmd="${FUNCNAME%%_*}"
@@ -3776,7 +3790,7 @@ EOF
 		--out man/md/report-progress.json
 
 	local type
-	for type in inputs pt mt; do
+	for type in inputs pt mt perf; do
 		python3 "${_POLAPLIB_DIR}/scripts/render_progress.py" \
 			--json man/md/report-progress.json \
 			--type $type \
@@ -4359,6 +4373,7 @@ Examples:
     bl conda --recreate
     bl conda --delete polap-polish
     bl conda --create polap-polish
+    bl conda --export-all
     bl setup oatk
     bl setup racon
     bl benchmark -s <TAB>

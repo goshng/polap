@@ -2978,6 +2978,190 @@ EOF
 	fi
 }
 
+run-polap-coverage_genus_species() {
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - $bolap_cmd
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  bolap
+
+Examples:
+  Execute polap assemble:
+    bolap run-polap-assemble -s Vigna_radiata
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# defaults
+	local _brg_type="miniasm"
+	local _brg_omega="1500"
+	local _brg_downsample="no-downsample"
+	local _brg_redo="off"
+	local _brg_cleanup="on"
+
+	parse_commandline() {
+		# set -- "${_brg_unknown_opts[@]}"
+		set -- "${_brg_args[@]}"
+		# _log_echo0 "parse: $@"
+
+		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			-s)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_brg_outdir="${2%/}"
+				_brg_outdir_list+=("$_brg_outdir") # append to array
+				shift
+				;;
+			-i)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_brg_sindex="$2"
+				shift
+				;;
+			--type)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_type="$2"
+					shift || true
+				fi
+				;;
+			-w)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_omega="$2"
+					shift || true
+				fi
+				;;
+			--redo)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_redo="on"
+					shift || true
+				fi
+				;;
+			--no-cleanup)
+				# _log_echo0 "--no-cleanup"
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_cleanup="off"
+					shift || true
+				fi
+				;;
+			-d)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_downsample="downsample"
+					shift || true
+				fi
+				;;
+			--dry-run)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_dry="on"
+					shift || true
+				fi
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+	local long_sra="${_long["$_brg_target"]}"
+	local short_sra="${_short["$_brg_target"]}"
+
+	local option_data_type="--nano-raw"
+
+	parse_commandline
+	_log_echo1 "target: $_brg_target"
+
+	mkdir -p "${_brg_outdir_i}"
+
+	local platform="${_platform["$_brg_target"]}"
+
+	_log_echo1 "Finalize organelle genomes using miniasm, oatk-pathfinder, fmlrc2"
+
+	# Always redo
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		rm -rf "${_brg_rundir}"
+	fi
+	mkdir -p "${_brg_rundir}"
+
+	# Always redo
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		rm -rf "${_brg_target}"
+	fi
+	mkdir -p "${_brg_target}"
+
+	# Start memory logger
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
+
+	# check out input data
+	# ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
+	# _brg_input_data="${long_sra}.fastq"
+	if [[ ! -s "${long_sra}".fastq ]]; then
+		# data-long_genus_species "${_brg_outdir}"
+		_log_echo0 "No input data: ${long_sra}.fastq"
+		_log_echo0 "run data long -s ${_brg_outdir}"
+		_log_echo0 "data downsample long -s ${_brg_outdir}"
+		return 0
+	fi
+
+	if [[ -s "${_brg_outdir_i}/polap-assemble/mt.1.fasta" ]]; then
+		${_polap_cmd} coverage \
+			-l "${long_sra}.fastq" \
+			--infile "${_brg_outdir_i}/polap-assemble/mt.1.fasta" \
+			-o "${_brg_target}"
+	fi
+
+	if [[ -s "${_brg_outdir_i}/polap-assemble/pt.1.fasta" ]]; then
+		${_polap_cmd} coverage \
+			--plastid \
+			-l "${long_sra}.fastq" \
+			--infile "${_brg_outdir_i}/polap-assemble/pt.1.fasta" \
+			-o "${_brg_target}"
+	fi
+
+	# Summarize results after job (with previously defined summary function)
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+	# Save some results
+	rsync -azuq --max-size=5M \
+		"${_brg_target}/" "${_brg_rundir}/"
+
+	if [[ "${_brg_cleanup}" == "on" ]]; then
+		if [[ -d "${_brg_target}" ]]; then
+			_log_echo1 rm -rf "${_brg_target}"
+			rm -rf "${_brg_target}"
+		fi
+	fi
+}
+
 run-polap-extract-using-oatk_genus_species() {
 
 	local bolap_cmd="${FUNCNAME%%_*}"
@@ -3660,7 +3844,7 @@ EOF
 
 	# redefine
 	local _brg_miniasm="${_brg_outdir_i}/polap-readassemble"
-	local _brg_polish="${_brg_outdir_i}/polap-polish"
+	local _brg_polap_assemble="${_brg_outdir_i}/polap-assemble"
 	local _brg_rundir="${_brg_outdir_i}/${_brg_title}"
 
 	mkdir -p "${_brg_outdir_i}"
@@ -3670,9 +3854,9 @@ EOF
 	mkdir -p "${_brg_target}"
 
 	# copy mt.1.gfa
-	cp -p "${_brg_polish}/mt.1.fasta" \
+	cp -p "${_brg_polap_assemble}/mt.1.fasta" \
 		"${_brg_target}"
-	cp -p "${_brg_polish}/pt.1.fasta" \
+	cp -p "${_brg_polap_assemble}/pt.1.fasta" \
 		"${_brg_target}"
 
 	${_polap_cmd} mtpt \
@@ -8462,9 +8646,11 @@ Description:
     bolap $bolap_cmd --export polap
     bolap $bolap_cmd --export-all
     bolap $bolap_cmd --recreate
-    bolap $bolap_cmd --create polap
     bolap $bolap_cmd --delete polap
+    bolap $bolap_cmd --create polap
+    bolap $bolap_cmd --delete polap --create polap
     bolap $bolap_cmd --list
+    bolap $bolap_cmd --table
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -8482,6 +8668,7 @@ EOF
 	local _recreate=0
 	local _create=""
 	local _list=0
+	local _table=0
 
 	parse_commandline() {
 		set -- "${_brg_args[@]}"
@@ -8528,6 +8715,13 @@ EOF
 					_list="1"
 				fi
 				;;
+			--table)
+				if test $# -lt 1; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_table="1"
+				fi
+				;;
 			--recreate)
 				if test $# -lt 1; then
 					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
@@ -8569,6 +8763,7 @@ EOF
 
 	_log_echo0 "cleanup: $_cleanup"
 	_log_echo0 "export: $_export"
+	_log_echo0 "table: $_table"
 	_log_echo0 "delete: $_delete"
 	_log_echo0 "export-all: $_export_all"
 	_log_echo0 "recreate: $_recreate"
@@ -8626,6 +8821,10 @@ EOF
 	fi
 
 	if [[ "$_list" == "1" ]]; then
+		conda env list | grep polap
+	fi
+
+	if [[ "$_table" == "1" ]]; then
 		if _polap_lib_dialog-yes-no "List all conda packages (it takes time; be patient!)?" "y"; then
 
 			# Concatenate conda env yaml files.
@@ -8850,6 +9049,26 @@ download-test-data-read_genus_species() {
 	else
 		echo "polap read-assemble test download is canceled."
 	fi
+}
+
+cleanup-all_genus_species() {
+	local first_arg="${1:-read}"
+	local _brg_sindex="${2:-$_brg_sindex}"
+
+	local odir
+	for odir in "${_brg_outdir_list[@]}"; do
+		echo "Deleting all folders from ${odir} ..."
+		local _brg_outdir="$odir"
+		source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+		local long_sra="${_long["$_brg_target"]}"
+		local short_sra="${_short["$_brg_target"]}"
+		set -x
+		rm -rf "${odir}"
+		rm -rf "${odir}-${_brg_sindex}"
+		rm -f "$long_sra"*
+		rm -f "$short_sra"*
+		set +x
+	done
 }
 
 clean_genus_species() {
@@ -10515,6 +10734,8 @@ run-polap_genus_species() {
 	run-data_genus_species
 	run-downsample_genus_species
 	run-polap-assemble_genus_species
+	run-polap-coverage_genus_species
+
 	if [[ "${_local_host}" != "$(hostname)" ]]; then
 		sync_genus_species
 	fi
@@ -12325,7 +12546,7 @@ install-path_genus_species() {
 install-polish_genus_species() {
 	local want_env="polap-polish"
 	local -a pkgs=(
-		seqtk
+		seqtk seqkit
 		minimap2 gfatools
 		fmlrc2 ropebwt2 bwa-mem2 samtools polypolish
 		meryl merqury r-base python

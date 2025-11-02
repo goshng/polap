@@ -2,18 +2,42 @@
 # -*- coding: utf-8 -*-
 """
 report_progress.py
+Version: v1.3.0
+SPDX-License-Identifier: GPL-3.0-or-later
+
 Create an aggregate JSON of MT/PT assembly progress across species.
+
+It reads:
+  - species-codes.txt   (mapping code → Species folder name; code_full = code + 2-digit index)
+  - For each <Species> under --root, scans:
+      tmp/l.sra.txt  tmp/s.sra.txt
+      v6/0/summary-data/l.fq.seqkit.stats.ta.txt
+      v6/0/summary-data/s_1.fq.seqkit.stats.ta.txt
+      v6/0/summary-data/s_2.fq.seqkit.stats.ta.txt
+      v6/0/ncbi-ptdna/ptdna-reference.fa
+      v6/0/ncbi-ptdna/00-bioproject/2-mtdna.accession
+      v6/0/ncbi-mtdna/mtdna-reference.fa
+      v6/0/ncbi-mtdna/00-bioproject/2-mtdna.accession
+      v6/0/polap-assemble/pt.1.fasta
+      v6/0/polap-assemble/mt.1.fasta
+      v6/0/summary-polap-assemble.txt
+      v6/0/timing-polap-assemble.txt
+      v6/0/data-downsample-long/<long_sra>.fastq.seqkit.stats.ta.tsv
+      v6/0/data-downsample-short/<short_sra>_1.fastq.seqkit.stats.ta.tsv
+      v6/0/data-downsample-short/<short_sra>_2.fastq.seqkit.stats.ta.tsv
+
+Conventions:
+  - Missing files are tolerated; fields become "NA".
+  - Converted fields:
+      * long-read total bases (sum_len)           → sum_len_gb (decimal Gb, 2 dp; divisor = 1e9)
+      * actually-used long-read bases (sum_len)   → sum_len_gb (decimal Gb, 2 dp; divisor = 1e9)
+      * net memory increase (KB)                  → net_increase_gb (2 dp; divisor = 1024*1024)
 
 Usage:
   python3 report_progress.py \
     --species-codes species-codes.txt \
-    --root /path/to/root_with_species_dirs \
+    --root /PATH/TO/ROOT \
     --out progress-report.json
-
-Notes:
-- Expects each species directory at: <root>/<Species_Name>/
-- Expects run paths inside each species at: <Species_Name>/v6/0/...
-- Missing files are tolerated; fields become "NA".
 """
 
 from __future__ import annotations
@@ -23,39 +47,51 @@ import io
 import json
 import os
 import re
-import sys
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 
-VERSION = "report_progress.py v1.0.0"
+
+VERSION = "report_progress.py v1.3.0"
+
+
+# ----------------------------- utilities -----------------------------
+
+
+def iso_now() -> str:
+    try:
+        from datetime import datetime, timezone
+
+        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    except Exception:
+        return ""
 
 
 def read_species_codes(path: str) -> List[Tuple[str, str]]:
     """
-    Read species codes: each non-empty, non-comment line has:
-      <code> <Species_Name>
-    Returns a list of (code, species_name) in order.
+    Read 'species-codes.txt' which contains lines like:
+      Aa Anthoceros_agrestis
+      Ag Anthoceros_angustus
+    Returns list of (code, species_dir_name) preserving order.
     """
-    pairs: List[Tuple[str, str]] = []
+    out: List[Tuple[str, str]] = []
     with open(path, "r", encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line or line.startswith("#"):
+        for ln in fh:
+            ln = ln.strip()
+            if not ln or ln.startswith("#"):
                 continue
-            parts = line.split()
+            parts = ln.split()
             if len(parts) < 2:
                 continue
-            code, species = parts[0], parts[1]
-            pairs.append((code, species))
-    return pairs
+            out.append((parts[0], parts[1]))
+    return out
 
 
 def slurp_first_line(path: str) -> str:
     try:
         with open(path, "r", encoding="utf-8") as fh:
-            for line in fh:
-                line = line.strip()
-                if line:
-                    return line
+            for ln in fh:
+                ln = ln.strip()
+                if ln:
+                    return ln
         return "NA"
     except FileNotFoundError:
         return "NA"
@@ -65,15 +101,12 @@ def slurp_first_line(path: str) -> str:
 
 def parse_seqkit_tsv_first_row(path: str) -> Dict[str, str]:
     """
-    Parse seqkit stats TSV with a header row + a single data row we care about.
-    Returns a dict of all columns in that first data row (as strings).
-    If file missing/empty, returns {}.
+    Parse a seqkit TSV (header + data rows) and return dict for the FIRST data row.
+    If missing/invalid returns {}.
     """
     try:
         with open(path, "r", encoding="utf-8") as fh:
             content = fh.read()
-        # Some files could have spaces; we expect *TSV* here.
-        # Use csv with delimiter '\t'. If there is only whitespace, bail.
         if not content.strip():
             return {}
         fh2 = io.StringIO(content)
@@ -82,7 +115,6 @@ def parse_seqkit_tsv_first_row(path: str) -> Dict[str, str]:
         if not rows:
             return {}
         header = rows[0]
-        # find the first row that has same or more columns than header
         data = None
         for r in rows[1:]:
             if len(r) >= len(header):
@@ -90,61 +122,33 @@ def parse_seqkit_tsv_first_row(path: str) -> Dict[str, str]:
                 break
         if data is None:
             return {}
-        # Build dict
-        rowdict = {
-            h.strip(): data[i].strip() if i < len(data) else ""
-            for i, h in enumerate(header)
+        return {
+            header[i].strip(): data[i].strip() if i < len(data) else ""
+            for i in range(len(header))
         }
-        return rowdict
     except FileNotFoundError:
         return {}
     except Exception:
         return {}
 
 
-def parse_space_table_first_rows(path: str) -> Dict[str, List[List[str]]]:
+def parse_fasta_len_and_first_header(path: str) -> Tuple[int, int, str]:
     """
-    For space-delimited files (not needed in this progress script, but here for parity).
-    Returns {"header": [...], "rows": [[...], ...]} for the first 1-2 lines.
-    (Not used in the three progress tables, kept for future extension.)
-    """
-    out = {"header": [], "rows": []}
-    try:
-        with open(path, "r", encoding="utf-8") as fh:
-            lines = [ln.strip() for ln in fh if ln.strip()]
-        if not lines:
-            return out
-        # naive split on whitespace
-        header = re.split(r"\s+", lines[0])
-        out["header"] = header
-        for ln in lines[1:3]:
-            out["rows"].append(re.split(r"\s+", ln))
-        return out
-    except FileNotFoundError:
-        return out
-    except Exception:
-        return out
-
-
-def parse_fasta_stats_and_first_header(path: str) -> Tuple[int, int, str]:
-    """
-    Count sequences and total bases; also return the FIRST header line (without '>').
-    Returns (seq_count, total_bases, first_header) or (0, 0, "") on failure.
+    Return (seq_count, total_bases, first_header_without_gt) or (0,0,"") on error.
     """
     try:
-        seq_count = 0
+        seqs = 0
         total = 0
         first_header = ""
         with open(path, "r", encoding="utf-8", errors="ignore") as fh:
-            for line in fh:
-                if line.startswith(">"):
-                    seq_count += 1
+            for ln in fh:
+                if ln.startswith(">"):
+                    seqs += 1
                     if not first_header:
-                        first_header = line[1:].strip()
+                        first_header = ln[1:].strip()
                 else:
-                    # count sequence characters ignoring whitespace
-                    total += len(line.strip())
-        return seq_count, total, first_header
+                    total += len(ln.strip())
+        return seqs, total, first_header
     except FileNotFoundError:
         return 0, 0, ""
     except Exception:
@@ -153,10 +157,9 @@ def parse_fasta_stats_and_first_header(path: str) -> Tuple[int, int, str]:
 
 def header_to_accession(header: str) -> str:
     """
-    Try to extract an accession token from a FASTA header string.
-    Strategy:
-      - If bar-delimited: something like 'ref|NC_012345.1|...' -> return tokens[1]
-      - Else: take the first whitespace-delimited token
+    Extract an accession token from a FASTA header (best effort).
+    - If pipe-delimited, use the second token (e.g., ref|NC_012345.1|...)
+    - Else the first whitespace-delimited token.
     """
     if not header:
         return ""
@@ -164,75 +167,98 @@ def header_to_accession(header: str) -> str:
         toks = header.split("|")
         if len(toks) >= 2 and toks[1]:
             return toks[1]
-    # fallback: first token
     return header.split()[0]
 
 
-def check_ncbi_reference(accession_file: str, fasta_path: str) -> Dict[str, str]:
+def check_ncbi_reference(accession_file: str, fasta_path: str) -> Dict[str, Any]:
     """
-    Read accession from file and compare with FASTA header.
-    Return dict with: accession, fasta_accession, acc_match ("true"/"false"), length (int or "NA")
+    Compare accession in the file with the FASTA header; compute sequence length and seq_count.
     """
     acc = slurp_first_line(accession_file)
-    seq_count, tot_len, first_header = parse_fasta_stats_and_first_header(fasta_path)
+    seq_count, total_len, first_header = parse_fasta_len_and_first_header(fasta_path)
     fasta_acc = header_to_accession(first_header)
-    match = "NA"
     if acc == "NA" and not fasta_acc:
         match = "NA"
     else:
-        # consider a 'match' if accession appears anywhere in header
         match = "true" if (acc != "NA" and acc in first_header) else "false"
-    result = {
+    return {
         "accession": acc,
         "fasta_accession": fasta_acc if fasta_acc else "NA",
         "acc_match": match,
-        "length": tot_len if tot_len > 0 else "NA",
+        "length": total_len if total_len > 0 else "NA",
         "seq_count": seq_count if seq_count > 0 else "NA",
     }
-    return result
 
 
-def parse_summary_time_mem(path: str) -> Dict[str, str]:
+def parse_summary_polap(path: str) -> Dict[str, str]:
     """
-    Parse memory/time lines from a summary text file.
-    We look for:
-      Start used:   N KB
-      Peak used:    N KB
-      Net increase: N KB
-      Elapsed time: HH:MM:SS (X.XX h)
-    Returns dict with string values (or "NA").
+    Parse summary-polap-assemble.txt for:
+      - Elapsed time (HH:MM:SS)
+      - Net increase KB (digits) -> plus computed net_increase_gb
+      - Disk used GB (digits)
+    Returns string dict with "NA" if not found.
     """
     out = {
-        "start_used_kb": "NA",
-        "peak_used_kb": "NA",
-        "net_increase_kb": "NA",
         "elapsed_hms": "NA",
-        "elapsed_hours": "NA",
+        "net_increase_kb": "NA",
+        "net_increase_gb": "NA",
+        "disk_used_gb": "NA",
     }
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as fh:
-            for line in fh:
-                ln = line.strip()
-                m1 = re.match(r"^Start used:\s+([0-9]+)\s*KB", ln)
-                if m1:
-                    out["start_used_kb"] = m1.group(1)
+            for ln in fh:
+                s = ln.strip()
+                m = re.match(r"^Elapsed time:\s*([0-9]{2}:[0-9]{2}:[0-9]{2})", s)
+                if m:
+                    out["elapsed_hms"] = m.group(1)
                     continue
-                m2 = re.match(r"^Peak used:\s+([0-9]+)\s*KB", ln)
-                if m2:
-                    out["peak_used_kb"] = m2.group(1)
+                m = re.match(r"^Net increase:\s*([0-9]+)\s*KB", s)
+                if m:
+                    out["net_increase_kb"] = m.group(1)
+                    # compute GB here
+                    try:
+                        kb = float(m.group(1))
+                        gb = kb / (1024.0 * 1024.0)  # 1 GB = 1024*1024 KB
+                        out["net_increase_gb"] = f"{gb:.2f}"
+                    except Exception:
+                        out["net_increase_gb"] = "NA"
                     continue
-                m3 = re.match(r"^Net increase:\s+([0-9]+)\s*KB", ln)
-                if m3:
-                    out["net_increase_kb"] = m3.group(1)
+                m = re.match(r"^Disk used:\s*([0-9]+)\s*GB", s)
+                if m:
+                    out["disk_used_gb"] = m.group(1)
                     continue
-                m4 = re.match(
-                    r"^Elapsed time:\s*([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s*\(([\d\.]+)\s*h\))?",
-                    ln,
-                )
-                if m4:
-                    out["elapsed_hms"] = m4.group(1)
-                    if m4.group(2):
-                        out["elapsed_hours"] = m4.group(2)
+        return out
+    except FileNotFoundError:
+        return out
+    except Exception:
+        return out
+
+
+def parse_timing_polap(path: str) -> Dict[str, str]:
+    """
+    Parse timing-polap-assemble.txt for Hostname, CPU Model, CPU Cores.
+    Returns string dict with "NA" if not found.
+    """
+    out = {
+        "hostname": "NA",
+        "cpu_model": "NA",
+        "cpu_cores": "NA",
+    }
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+            for ln in fh:
+                s = ln.strip()
+                m = re.match(r"^Hostname:\s*(.+)$", s)
+                if m:
+                    out["hostname"] = m.group(1).strip()
+                    continue
+                m = re.match(r"^CPU Model:\s*(.+)$", s)
+                if m:
+                    out["cpu_model"] = m.group(1).strip()
+                    continue
+                m = re.match(r"^CPU Cores:\s*([0-9]+)", s)
+                if m:
+                    out["cpu_cores"] = m.group(1)
                     continue
         return out
     except FileNotFoundError:
@@ -242,190 +268,32 @@ def parse_summary_time_mem(path: str) -> Dict[str, str]:
 
 
 def select_fields(row: Dict[str, str], fields: List[str]) -> Dict[str, str]:
+    """Pick fields (or NA) from a row dict."""
     if not row:
         return {f: "NA" for f in fields}
-    out = {}
+    out: Dict[str, str] = {}
     for f in fields:
-        out[f] = row.get(f, "NA") if row.get(f, "") != "" else "NA"
+        v = row.get(f, "")
+        out[f] = v if v != "" else "NA"
     return out
 
 
-def gather_species(root: str, code: str, idx1: int, species: str) -> Dict:
+def add_sum_len_gb(d: Dict[str, str]) -> Dict[str, str]:
     """
-    Build a record for one species.
-    idx1: 1-based index in species list, used to create code_full = f"{code}{idx1:02d}"
+    From a dict containing 'sum_len' (bases), add 'sum_len_gb' (decimal GB, 2 dp; divisor = 1e9).
+    If missing/invalid -> 'NA'.
     """
-    species_dir = os.path.join(root, species)
-    run_root = os.path.join(species_dir, "v6", "0")
-
-    # Common paths
-    p_tmp_l_sra = os.path.join(species_dir, "tmp", "l.sra.txt")
-    p_tmp_s_sra = os.path.join(species_dir, "tmp", "s.sra.txt")
-
-    p_sum_long = os.path.join(run_root, "summary-data", "l.fq.seqkit.stats.ta.txt")
-    p_sum_s1 = os.path.join(run_root, "summary-data", "s_1.fq.seqkit.stats.ta.txt")
-    p_sum_s2 = os.path.join(run_root, "summary-data", "s_2.fq.seqkit.stats.ta.txt")
-
-    p_pt_ref_fa = os.path.join(run_root, "ncbi-ptdna", "ptdna-reference.fa")
-    p_pt_acc_file = os.path.join(
-        run_root, "ncbi-ptdna", "00-bioproject", "2-mtdna.accession"
-    )
-    p_mt_ref_fa = os.path.join(run_root, "ncbi-mtdna", "mtdna-reference.fa")
-    p_mt_acc_file = os.path.join(
-        run_root, "ncbi-mtdna", "00-bioproject", "2-mtdna.accession"
-    )
-
-    p_pt_polap_fa = os.path.join(run_root, "polap-assemble", "pt.1.fasta")
-    p_mt_polap_fa = os.path.join(run_root, "polap-assemble", "mt.1.fasta")
-
-    # Summaries (time/mem)
-    p_sum_polap = os.path.join(run_root, "summary-polap-assemble.txt")
-    p_sum_ptgaul = os.path.join(run_root, "summary-ptgaul.txt")
-    p_sum_mtgaul = os.path.join(run_root, "summary-mtgaul.txt")
-    p_sum_tippo = os.path.join(run_root, "summary-tippo.txt")
-    p_sum_oatk = os.path.join(run_root, "summary-oatk.txt")
-
-    # Downsample/used data
-    long_sra = slurp_first_line(p_tmp_l_sra)
-    short_sra = slurp_first_line(p_tmp_s_sra)
-
-    # Derive used-data TSV paths from SRA IDs when possible
-    p_used_long = (
-        "NA"
-        if long_sra == "NA"
-        else os.path.join(
-            run_root, "data-downsample-long", f"{long_sra}.fastq.seqkit.stats.ta.tsv"
-        )
-    )
-    p_used_s1 = (
-        "NA"
-        if short_sra == "NA"
-        else os.path.join(
-            run_root,
-            "data-downsample-short",
-            f"{short_sra}_1.fastq.seqkit.stats.ta.tsv",
-        )
-    )
-    p_used_s2 = (
-        "NA"
-        if short_sra == "NA"
-        else os.path.join(
-            run_root,
-            "data-downsample-short",
-            f"{short_sra}_2.fastq.seqkit.stats.ta.tsv",
-        )
-    )
-
-    # Parse seqkit summaries (long + short)
-    long_sum_row = parse_seqkit_tsv_first_row(p_sum_long)
-    s1_sum_row = parse_seqkit_tsv_first_row(p_sum_s1)
-    s2_sum_row = parse_seqkit_tsv_first_row(p_sum_s2)
-
-    # Select required fields
-    wanted = ["num_seqs", "sum_len", "AvgQual"]
-    long_sum_sel = select_fields(long_sum_row, wanted)
-    s1_sum_sel = select_fields(s1_sum_row, wanted)
-    s2_sum_sel = select_fields(s2_sum_row, wanted)
-
-    # Parse used/actual data (downsampled) – if path is "NA" or missing, fields become "NA"
-    used_long_sel = select_fields(
-        parse_seqkit_tsv_first_row(p_used_long) if p_used_long != "NA" else {}, wanted
-    )
-    used_s1_sel = select_fields(
-        parse_seqkit_tsv_first_row(p_used_s1) if p_used_s1 != "NA" else {}, wanted
-    )
-    used_s2_sel = select_fields(
-        parse_seqkit_tsv_first_row(p_used_s2) if p_used_s2 != "NA" else {}, wanted
-    )
-
-    # NCBI references & length checks
-    ncbi_pt = check_ncbi_reference(p_pt_acc_file, p_pt_ref_fa)
-    ncbi_mt = check_ncbi_reference(p_mt_acc_file, p_mt_ref_fa)
-
-    # Polap assemblies (pt.1.fasta / mt.1.fasta)
-    pt_seq_count, pt_total, _ = parse_fasta_stats_and_first_header(p_pt_polap_fa)
-    mt_seq_count, mt_total, _ = parse_fasta_stats_and_first_header(p_mt_polap_fa)
-
-    polap_pt = {
-        "fasta": rel_or_na(p_pt_polap_fa, root),
-        "seq_count": pt_seq_count if pt_seq_count > 0 else "NA",
-        "total_bases": pt_total if pt_total > 0 else "NA",
-    }
-    polap_mt = {
-        "fasta": rel_or_na(p_mt_polap_fa, root),
-        "seq_count": mt_seq_count if mt_seq_count > 0 else "NA",
-        "total_bases": mt_total if mt_total > 0 else "NA",
-    }
-
-    # Summary time/mem blocks
-    summaries = {
-        "polap_assemble": parse_summary_time_mem(p_sum_polap),
-        "ptgaul": parse_summary_time_mem(p_sum_ptgaul),
-        "mtgaul": parse_summary_time_mem(p_sum_mtgaul),
-        "tippo": parse_summary_time_mem(p_sum_tippo),
-        "oatk": parse_summary_time_mem(p_sum_oatk),
-    }
-
-    record = {
-        "code": code,
-        "code_full": f"{code}{idx1:02d}",
-        "order": idx1,
-        "species": species,
-        "paths": {
-            "species_dir": rel_or_na(species_dir, root),
-            "run_root": rel_or_na(run_root, root),
-        },
-        "sra": {
-            "long": long_sra,
-            "short": short_sra,
-        },
-        "reads_summary": {
-            "long": {
-                **long_sum_sel,
-                "source": rel_or_na(p_sum_long, root),
-            },
-            "short1": {
-                **s1_sum_sel,
-                "source": rel_or_na(p_sum_s1, root),
-            },
-            "short2": {
-                **s2_sum_sel,
-                "source": rel_or_na(p_sum_s2, root),
-            },
-        },
-        "reads_used": {
-            "long": {
-                **used_long_sel,
-                "source": rel_or_na(p_used_long, root),
-            },
-            "short1": {
-                **used_s1_sel,
-                "source": rel_or_na(p_used_s1, root),
-            },
-            "short2": {
-                **used_s2_sel,
-                "source": rel_or_na(p_used_s2, root),
-            },
-        },
-        "ncbi": {
-            "pt": {
-                **ncbi_pt,
-                "accession_file": rel_or_na(p_pt_acc_file, root),
-                "fasta_path": rel_or_na(p_pt_ref_fa, root),
-            },
-            "mt": {
-                **ncbi_mt,
-                "accession_file": rel_or_na(p_mt_acc_file, root),
-                "fasta_path": rel_or_na(p_mt_ref_fa, root),
-            },
-        },
-        "polap": {
-            "pt": polap_pt,
-            "mt": polap_mt,
-        },
-        "summaries": summaries,
-    }
-    return record
+    val = d.get("sum_len", "NA")
+    if val in ("NA", "", None):
+        d["sum_len_gb"] = "NA"
+        return d
+    try:
+        bases = float(val)
+        gb = bases / 1e9  # decimal gigabases
+        d["sum_len_gb"] = f"{gb:.2f}"
+    except Exception:
+        d["sum_len_gb"] = "NA"
+    return d
 
 
 def rel_or_na(path: str, root: str) -> str:
@@ -439,6 +307,156 @@ def rel_or_na(path: str, root: str) -> str:
         return "NA"
 
 
+# ----------------------------- per-species scan -----------------------------
+
+
+def gather_species(root: str, code: str, idx1: int, species: str) -> Dict[str, Any]:
+    """
+    Build the record for one species. idx1 is 1-based index used to form code_full = code + 2-digit index.
+    """
+    species_dir = os.path.join(root, species)
+    run_root = os.path.join(species_dir, "v6", "0")
+
+    # SRA files
+    p_l_sra = os.path.join(species_dir, "tmp", "l.sra.txt")
+    p_s_sra = os.path.join(species_dir, "tmp", "s.sra.txt")
+    long_sra = slurp_first_line(p_l_sra)
+    short_sra = slurp_first_line(p_s_sra)
+
+    # seqkit summaries
+    p_l_sum = os.path.join(run_root, "summary-data", "l.fq.seqkit.stats.ta.txt")
+    p_s1_sum = os.path.join(run_root, "summary-data", "s_1.fq.seqkit.stats.ta.txt")
+    p_s2_sum = os.path.join(run_root, "summary-data", "s_2.fq.seqkit.stats.ta.txt")
+
+    wanted = ["num_seqs", "sum_len", "AvgQual"]
+    long_sum = add_sum_len_gb(
+        select_fields(parse_seqkit_tsv_first_row(p_l_sum), wanted)
+    )
+    s1_sum = select_fields(parse_seqkit_tsv_first_row(p_s1_sum), wanted)
+    s2_sum = select_fields(parse_seqkit_tsv_first_row(p_s2_sum), wanted)
+
+    # used/actual data, derived from SRA IDs
+    p_used_long = (
+        os.path.join(
+            run_root, "data-downsample-long", f"{long_sra}.fastq.seqkit.stats.ta.tsv"
+        )
+        if long_sra != "NA"
+        else "NA"
+    )
+    p_used_s1 = (
+        os.path.join(
+            run_root,
+            "data-downsample-short",
+            f"{short_sra}_1.fastq.seqkit.stats.ta.tsv",
+        )
+        if short_sra != "NA"
+        else "NA"
+    )
+    p_used_s2 = (
+        os.path.join(
+            run_root,
+            "data-downsample-short",
+            f"{short_sra}_2.fastq.seqkit.stats.ta.tsv",
+        )
+        if short_sra != "NA"
+        else "NA"
+    )
+
+    used_long = add_sum_len_gb(
+        select_fields(
+            parse_seqkit_tsv_first_row(p_used_long) if p_used_long != "NA" else {},
+            wanted,
+        )
+    )
+    used_s1 = select_fields(
+        parse_seqkit_tsv_first_row(p_used_s1) if p_used_s1 != "NA" else {}, wanted
+    )
+    used_s2 = select_fields(
+        parse_seqkit_tsv_first_row(p_used_s2) if p_used_s2 != "NA" else {}, wanted
+    )
+
+    # NCBI FASTA + accession checks
+    p_pt_fa = os.path.join(run_root, "ncbi-ptdna", "ptdna-reference.fa")
+    p_pt_acc = os.path.join(
+        run_root, "ncbi-ptdna", "00-bioproject", "2-mtdna.accession"
+    )
+    p_mt_fa = os.path.join(run_root, "ncbi-mtdna", "mtdna-reference.fa")
+    p_mt_acc = os.path.join(
+        run_root, "ncbi-mtdna", "00-bioproject", "2-mtdna.accession"
+    )
+    ncbi_pt = check_ncbi_reference(p_pt_acc, p_pt_fa)
+    ncbi_mt = check_ncbi_reference(p_mt_acc, p_mt_fa)
+
+    # polap fasta stats
+    p_pt_polap = os.path.join(run_root, "polap-assemble", "pt.1.fasta")
+    p_mt_polap = os.path.join(run_root, "polap-assemble", "mt.1.fasta")
+    pt_seq_count, pt_total, _ = parse_fasta_len_and_first_header(p_pt_polap)
+    mt_seq_count, mt_total, _ = parse_fasta_len_and_first_header(p_mt_polap)
+    polap_pt = {
+        "fasta": rel_or_na(p_pt_polap, root),
+        "seq_count": pt_seq_count if pt_seq_count > 0 else "NA",
+        "total_bases": pt_total if pt_total > 0 else "NA",
+    }
+    polap_mt = {
+        "fasta": rel_or_na(p_mt_polap, root),
+        "seq_count": mt_seq_count if mt_seq_count > 0 else "NA",
+        "total_bases": mt_total if mt_total > 0 else "NA",
+    }
+
+    # perf summary + timing
+    p_summary = os.path.join(run_root, "summary-polap-assemble.txt")
+    p_timing = os.path.join(run_root, "timing-polap-assemble.txt")
+    perf_summary = parse_summary_polap(p_summary)
+    timing_info = parse_timing_polap(p_timing)
+
+    record: Dict[str, Any] = {
+        "code": code,
+        "code_full": f"{code}{idx1:02d}",
+        "order": idx1,
+        "species": species,
+        "paths": {
+            "species_dir": rel_or_na(species_dir, root),
+            "run_root": rel_or_na(run_root, root),
+        },
+        "sra": {
+            "long": long_sra,
+            "short": short_sra,
+        },
+        "reads_summary": {
+            "long": {**long_sum, "source": rel_or_na(p_l_sum, root)},
+            "short1": {**s1_sum, "source": rel_or_na(p_s1_sum, root)},
+            "short2": {**s2_sum, "source": rel_or_na(p_s2_sum, root)},
+        },
+        "reads_used": {
+            "long": {**used_long, "source": rel_or_na(p_used_long, root)},
+            "short1": {**used_s1, "source": rel_or_na(p_used_s1, root)},
+            "short2": {**used_s2, "source": rel_or_na(p_used_s2, root)},
+        },
+        "ncbi": {
+            "pt": {
+                **ncbi_pt,
+                "accession_file": rel_or_na(p_pt_acc, root),
+                "fasta_path": rel_or_na(p_pt_fa, root),
+            },
+            "mt": {
+                **ncbi_mt,
+                "accession_file": rel_or_na(p_mt_acc, root),
+                "fasta_path": rel_or_na(p_mt_fa, root),
+            },
+        },
+        "polap": {
+            "pt": polap_pt,
+            "mt": polap_mt,
+        },
+        "summaries": {"polap_assemble": perf_summary},  # polap-assemble summary
+        "system": timing_info,  # timing-polap-assemble info
+    }
+    return record
+
+
+# ----------------------------- main -----------------------------
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="Create an aggregate JSON of MT/PT assembly progress across species."
@@ -447,46 +465,41 @@ def main() -> int:
     ap.add_argument(
         "--root",
         default=".",
-        help="Root folder containing species directories (default: current dir)",
+        help="Root folder containing species directories (default: .)",
     )
     ap.add_argument("--out", required=True, help="Output JSON file path")
     args = ap.parse_args()
 
     pairs = read_species_codes(args.species_codes)
     if not pairs:
-        print("No species parsed from --species-codes", file=sys.stderr)
+        print("[ERR] No species read from --species-codes", file=sys.stderr)
         return 2
 
-    species_records: List[Dict] = []
+    records: List[Dict[str, Any]] = []
     for i, (code, species) in enumerate(pairs, start=1):
-        rec = gather_species(args.root, code, i, species)
-        species_records.append(rec)
+        try:
+            rec = gather_species(args.root, code, i, species)
+        except Exception as e:
+            print(f"[WARN] Failed on species {species}: {e}", file=sys.stderr)
+            continue
+        records.append(rec)
 
     model = {
         "meta": {
-            "generated_at": _iso_now(),
             "version": VERSION,
+            "generated_at": iso_now(),
             "root": os.path.abspath(args.root),
-            "species_count": len(species_records),
+            "species_count": len(records),
             "source_species_codes": os.path.abspath(args.species_codes),
         },
-        "species": species_records,
+        "species": records,
     }
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as out:
         json.dump(model, out, indent=2)
-    print(f"Wrote {args.out}")
+    print(f"[OK] wrote {args.out}")
     return 0
-
-
-def _iso_now() -> str:
-    try:
-        from datetime import datetime, timezone
-
-        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    except Exception:
-        return ""
 
 
 if __name__ == "__main__":

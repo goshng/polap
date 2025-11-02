@@ -40,6 +40,8 @@ MIN_IDENT=0.91
 MIN_ALEN=3000
 BT2_INDEX=""
 VERB=1
+ROTATE_BETWEEN_ROUNDS=1 # off by default
+ROTATE_POS=""           # optional explicit POS
 
 POLAPLIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PAF_FILTER="${POLAPLIB_DIR}/scripts/polap-py-paf-filter.py" # S points to your scripts/ folder
@@ -54,6 +56,17 @@ die() {
 	printf '[ERROR] %s\n' "$*" >&2
 	exit 2
 }
+
+have_seqkit() { command -v seqkit >/dev/null 2>&1; }
+
+is_single_contig() (
+	awk 'BEGIN{n=0} /^>/{n++} END{print (n==1)?"YES":"NO"}' "$1"
+)
+
+contig_length() (
+	# total length for a single-contig FASTA; headers ignored
+	awk '/^>/{next}{L+=length($0)}END{print L+0}' "$1"
+)
 
 # ---------------- cli ----------------
 print_help() {
@@ -72,6 +85,14 @@ EOF
 
 while (("$#")); do
 	case "$1" in
+	--rotate-between-rounds)
+		ROTATE_BETWEEN_ROUNDS=1
+		shift
+		;;
+	--rotate-pos)
+		ROTATE_POS="${2:?}"
+		shift 2
+		;;
 	--fasta)
 		FASTA="${2:?}"
 		shift 2
@@ -184,19 +205,70 @@ if ((HAVE_ONT == 1)); then
 			>"$RAW" 2>"$OUT/logs/r${r}.minimap2.err"
 
 		log 2 "  Round $r: filter PAF (ident>=$MIN_IDENT, alen>=$MIN_ALEN)"
+		python3 "$PAF_FILTER" "$MIN_IDENT" "$MIN_ALEN" <"$RAW" >"$FLT" \
+			2>>"$OUT/logs/r${r}.filter.err"
+
+		if [[ ! -s "$FLT" ]]; then
+			log 0 "Minimap2 -> PAF filter: $FLT is empty (raw=$(wc -l <"$RAW" 2>/dev/null || echo 0))"
+			# optional: fallback to RAW to avoid empty-overlap crash
+			# cp -f "$RAW" "$FLT"
+		fi
+
+		log 2 "  Round $r: Racon consensus"
+		racon -t "$THREADS" "$ONT" "$FLT" "$CUR" >"$OUTFA" 2>"$OUT/logs/r${r}.racon.err"
+
+		# ----- Optional: rotate for next round -----
+		if ((ROTATE_BETWEEN_ROUNDS)) && ((r < ROUNDS)); then
+			if ! have_seqkit; then
+				log 0 "seqkit not found; skipping rotation"
+				CUR="$OUTFA"
+			else
+				if [[ "$(is_single_contig "$OUTFA")" == "YES" ]]; then
+					if [[ -n "$ROTATE_POS" ]]; then
+						POS="$ROTATE_POS"
+					else
+						L=$(contig_length "$OUTFA")
+						POS=$(((L / 2) + 1)) # 1-based; rotate ~half the length
+					fi
+					ROTFA="$OUT/stage1/polished.r${r}.rot.fa"
+					log 1 "  Round $r: rotating contig to POS=$POS with seqkit restart"
+					if seqkit restart -i "$POS" "$OUTFA" >"$ROTFA" 2>>"$OUT/logs/r${r}.rotate.err"; then
+						CUR="$ROTFA"
+					else
+						log 0 "seqkit restart failed; using unrotated $OUTFA"
+						CUR="$OUTFA"
+					fi
+				else
+					log 0 "Multiple contigs detected; skipping rotation for round $r"
+					CUR="$OUTFA"
+				fi
+			fi
+		else
+			CUR="$OUTFA"
+		fi
+		# ----- end rotation block -----
+	done
+	log 2 "  Racon output: $CUR"
+else
+	log 1 "Stage 1: ONT not provided; skipping Racon"
+fi
+
+# no code
+if false; then
+	log 1 "Stage 1: Racon x${ROUNDS} with ONT preset=${ONT_PRESET}"
+	for r in $(seq 1 "$ROUNDS"); do
+		RAW="$OUT/stage1/r${r}.raw.paf"
+		FLT="$OUT/stage1/r${r}.flt.paf"
+		OUTFA="$OUT/stage1/polished.r${r}.fa"
+
+		log 2 "  Round $r: minimap2 overlaps (primary-only) -> PAF"
+		minimap2 -x "$ONT_PRESET" -t "$THREADS" -c --secondary=no "$CUR" "$ONT" \
+			>"$RAW" 2>"$OUT/logs/r${r}.minimap2.err"
+
+		log 2 "  Round $r: filter PAF (ident>=$MIN_IDENT, alen>=$MIN_ALEN)"
 		log 2 "  Round $r: RAW: $RAW"
-		# python3 1.py "$MIN_IDENT" "$MIN_ALEN" <"$RAW" >"$FLT"
-		# paf_filter "$MIN_IDENT" "$MIN_ALEN" <"$RAW" >"$FLT"
 
 		python3 "$PAF_FILTER" "$MIN_IDENT" "$MIN_ALEN" <"$RAW" >"$FLT" 2>>"$OUT/logs/r${r}.filter.err"
-
-		# Safety net so Racon never dies on empty overlap set
-		# if [[ ! -s "$FLT" ]]; then
-		# 	raw_n=$(wc -l <"$RAW" 2>/dev/null || echo 0)
-		# 	echo "[polish] Round $r: filtered PAF empty (raw=$raw_n). Falling back to RAW for this round." \
-		# 		>>"$OUT/logs/r${r}.filter.err"
-		# 	cp -f "$RAW" "$FLT"
-		# fi
 
 		if [[ ! -s "$FLT" ]]; then
 			log 0 "Minimap2 -> PAF filter: $FLT: empty"

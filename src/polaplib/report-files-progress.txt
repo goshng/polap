@@ -36,6 +36,7 @@
 2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/oatk/oatk-30.mito.png mtDNA assembly graph png from oatk
 
 2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/summary-polap-assemble.txt time and memory required organelle genome assembly using polap
+2025-10-31 08:49:04.5065925960        483 Brassica_rapa/v6/0/timing-polap-assemble.txt machine infor for organelle genome assembly using polap
 2025-10-20 00:10:35.1945083980        783 Brassica_rapa/v6/0/summary-ptgaul.txt time and memory required ptDNA genome assembly using ptGAUL
 2025-10-20 01:07:24.8033804120        391 Brassica_rapa/v6/0/summary-mtgaul.txt time and memory required mtDNA genome assembly using ptGAUL
 2025-10-20 01:39:04.6663618490        507 Brassica_rapa/v6/0/summary-tippo.txt time and memory required organelle genome assembly using TIPPo

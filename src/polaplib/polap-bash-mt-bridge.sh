@@ -132,9 +132,9 @@ done
 # -------------------------
 # Logging (you may replace with your library later)
 # -------------------------
-_polap_log_ts() { date +"%F %T"; }
-_polap_log0() { echo "[$(_polap_log_ts)][ERR] $*" >&2; }
-_polap_log1() { [[ ${_quiet:-0} -eq 0 ]] && echo "[$(_polap_log_ts)][INFO] $*" >&2 || true; }
+# _polap_log_ts() { date +"%F %T"; }
+# _polap_log0() { echo "[$(_polap_log_ts)][ERR] $*" >&2; }
+# _polap_log1() { [[ ${_quiet:-0} -eq 0 ]] && echo "[$(_polap_log_ts)][INFO] $*" >&2 || true; }
 
 _run() {
 	local cmd="$*"

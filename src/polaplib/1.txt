@@ -1,7 +1,41 @@
-function _polap_summary-generated-reads {
-function _run_polap_summary-reads { # statisics of the read dataset
-function _run_polap_total-length-long { # total size (bp) of long-read data
-function _run_polap_total-length-short { # total size (bp) of short-read data
-function _run_polap_find-genome-size { # estimate the whole genome size
-function _run_polap_reduce-data { # reduce the long-read data, if too big
-function _run_polap_flye1 { # execute Flye for a whole-genome assembly
+# Enable traps early (no -u yet)
+set -Ee -o pipefail
+set -o errtrace
+set -o functrace
+
+trap '
+  st=$?;
+  set +u  # make printer robust to nounset
+  # failing site (the command that just failed)
+  _cmd=${BASH_COMMAND-}
+  _file=${BASH_SOURCE[1]-${BASH_SOURCE[0]-$0}}
+  _line=${BASH_LINENO[0]-${LINENO-0}}
+  _func=${FUNCNAME[1]-main}
+  printf "[%(%Y-%m-%d %H:%M:%S)T %s@%s:%s] FAILED CMD: %s (exit %d)\n" \
+         -1 "$_func" "${_file##*/}" "$_line" "${_cmd//$'\n'/\\n}" "$st" >&2
+
+  # call chain with actual call-site lines (and the source line, when readable)
+  i=0
+  while caller "$i" >/dev/null 2>&1; do
+    read -r l f fl < <(caller "$i")
+    : "${f:=main}"
+    # try to show the source line for that frame
+    src=""
+    if [[ -r "$fl" && "$l" =~ ^[0-9]+$ ]]; then
+      src="$(sed -n "${l}p" -- "$fl" 2>/dev/null | tr -d "\r")"
+      # collapse whitespace for compactness
+      src="$(printf '%s' "$src" | tr -s "[:space:]" " ")"
+    fi
+    if [[ -n "$src" ]]; then
+      printf "[%(%Y-%m-%d %H:%M:%S)T %s@%s:%s] CALLED FROM: %s\n" -1 "$f" "${fl##*/}" "$l" "$src" >&2
+    else
+      printf "[%(%Y-%m-%d %H:%M:%S)T %s@%s:%s] CALLED FROM\n" -1 "$f" "${fl##*/}" "$l" >&2
+    fi
+    i=$((i+1))
+  done
+  set -u
+' ERR
+
+# Turn -u back on for the body, after trap is armed
+set -u
+

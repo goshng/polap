@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 render_assembly.py
-Version: v0.2.0
+Version: v0.2.1
 SPDX-License-Identifier: GPL-3.0-or-later
 
 Render a block-based assemble report JSON (from report_assemble.py) to HTML using Jinja2.

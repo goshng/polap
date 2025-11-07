@@ -1277,6 +1277,10 @@ if _should_run 3; then
 	note1 "Step3. map reads on themselves - part vs part"
 	ST3_part_vs_part "$outdir" "$R1"
 	ST3_overlapness "$outdir" "$R1"
+
+	# cleanup
+	rm -rf "$ST3/01-shards"
+	rm -rf "$ST3/02-edges"
 fi
 
 # ────────────────────────────────────────────────────────────────────
@@ -1295,6 +1299,9 @@ if _should_run 5; then
 	note1 "Step5. Get overlapness"
 	mkdir -p "$RDIR"
 	ST5_round "$outdir"
+
+	# cleanup
+	rm -rf "$BDIR"
 fi
 
 # NOTE: use polap-bash-fq2gfa.sh

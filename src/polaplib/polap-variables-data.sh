@@ -71,7 +71,7 @@ local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
 
 if [[ -v _long["${_brg_target}"] ]]; then
 	local long_sra="${_long["${_brg_target}"]}"
-else
-	echo "Error: ${_brg_target} is not in the CSV."
+	# else
+	# 	echo "Error: ${_brg_target} is not in the CSV."
 	return
 fi

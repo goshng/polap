@@ -114,6 +114,8 @@ _arg_f_fasta="$_arg_final_assembly"
 _arg_reference="ref.gfa"
 _arg_table_format="tsv"
 _arg_outfile="outfile.txt"
+_arg_outfile1=""
+_arg_outfile2=""
 _arg_infile="infile.txt"
 _arg_infile1=""
 _arg_infile2=""
@@ -1479,6 +1481,22 @@ parse_commandline() {
 			;;
 		--outfile=*)
 			_arg_outfile="${_key##--outfile=}"
+			;;
+		--outfile1)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_outfile1="$2"
+			shift
+			;;
+		--outfile1=*)
+			_arg_outfile1="${_key##--outfile1=}"
+			;;
+		--outfile2)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_outfile2="$2"
+			shift
+			;;
+		--outfile2=*)
+			_arg_outfile2="${_key##--outfile2=}"
 			;;
 		--table-format)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

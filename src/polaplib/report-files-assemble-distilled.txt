@@ -127,3 +127,11 @@
 2025-10-31 22:35:30.6638233930     133213 Brassica_rapa/v6/0/polap-assemble/polish-longshort/stage3/polished.polypolish.fa polypolish result sequence in FASTA format
 2025-10-31 22:35:30.6638233930       1711 Brassica_rapa/v6/0/polap-assemble/polish-longshort/logs/polypolish.err polypolish log
 2025-10-31 22:35:30.6698233900     133213 Brassica_rapa/v6/0/polap-assemble/polish-longshort/polished.fa Racon two rounds, fmlr2, polypolish resulting sequence in FASTA format
+
+# 10. Coverage
+
+2025-10-31 22:35:30.6638233930       1711 Brassica_rapa/v6/0/polap-coverage/coverage/mt/plots/A_flatness_lines.pde
+2025-10-31 22:35:30.6638233930       1711 Brassica_rapa/v6/0/polap-coverage/coverage/mt/plots/B_uniformity_ecdf.pdf
+2025-10-31 22:35:30.6638233930       1711 Brassica_rapa/v6/0/polap-coverage/coverage/mt/plots/C_lorenz_gini.pdf
+
+

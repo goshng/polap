@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # report_assemble.py
-# Version: v1.2.0
+# Version: v1.2.1
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # Build a BLOCK JSON for rendering a polap-assemble report.
@@ -468,7 +468,39 @@ def build_sections(species_dir: str) -> Dict[str, Any]:
         )
     sections.append({"id": "9", "title": "Polishing", "blocks": sec9_blocks})
 
-    # 10. Performance section (summary-polap-assemble + timing-polap-assemble)
+    # 10. Coverage (mt) — three PDF plots
+    cov_blocks: List[Dict[str, Any]] = []
+
+    f_cov_A = _figure_block_from_path(
+        S("v6/0/polap-coverage/coverage/mt/plots/A_flatness_lines.pdf"),
+        "Coverage: Flatness (lines)", sp_root, species
+    )
+    if f_cov_A:
+        cov_blocks.append(f_cov_A)
+
+    f_cov_B = _figure_block_from_path(
+        S("v6/0/polap-coverage/coverage/mt/plots/B_uniformity_ecdf.pdf"),
+        "Coverage: Uniformity ECDF", sp_root, species
+    )
+    if f_cov_B:
+        cov_blocks.append(f_cov_B)
+
+    f_cov_C = _figure_block_from_path(
+        S("v6/0/polap-coverage/coverage/mt/plots/C_lorenz_gini.pdf"),
+        "Coverage: Lorenz–Gini", sp_root, species
+    )
+    if f_cov_C:
+        cov_blocks.append(f_cov_C)
+
+    if cov_blocks:
+        sections.append({
+            "id": "10",
+            "title": "Coverage (mt)",
+            "blocks": cov_blocks
+        })
+
+
+    # 11. Performance section (summary-polap-assemble + timing-polap-assemble)
     run_root = os.path.join(sp_root, "v6", "0")
     p_summary_polap = os.path.join(run_root, "summary-polap-assemble.txt")
     p_timing_polap = os.path.join(run_root, "timing-polap-assemble.txt")
@@ -487,7 +519,7 @@ def build_sections(species_dir: str) -> Dict[str, Any]:
 
     sections.append(
         {
-            "id": "10",
+            "id": "11",
             "title": "System & Performance (polap-assemble)",
             "blocks": [
                 {

@@ -320,6 +320,53 @@ HEREDOC
 		# A and B lines should match exactly (deterministic).
 	fi
 
+	if [[ "${_arg_menu[1]}" == "crash" ]]; then
+
+		if [[ "${_arg_menu[2]}" == "main" ]]; then
+			work="${PWD}/_demo_bash"
+			mkdir -p "$work/A" "$work/B"
+			: >"$work/A/file.txt"
+
+			# First link (fine or overwritten)
+			ln -sf ../A/file.txt "$work/B/link.txt" || true
+			# Second link without -f will fail with "File exists" ⇒ triggers ERR/stack
+			ln -s ../A/file.txt "$work/B/link.txt"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "bash" ]]; then
+			# crash inside a bash script
+			# bash ${_POLAPLIB_DIR}/polap-bash-test-crash.sh
+			_polap_log3_pipe "bash ${_POLAPLIB_DIR}/polap-bash-test-crash.sh"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "py" ]]; then
+			# crash inside a python script
+			_polap_log3_pipe "python3 ${_POLAPLIB_DIR}/polap-py-test-crash.py"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "r" ]]; then
+			# crash inside a R script
+			_polap_log3_pipe "Rscript --vanilla ${_POLAPLIB_DIR}/polap-r-test-crash.R"
+			# _polap_log3_pipe "Rscript ${_POLAPLIB_DIR}/polap-r-test-crash.R"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "bash-bash" ]]; then
+			# crash in a nested bash in a bash script
+			_polap_log3_pipe "bash ${_POLAPLIB_DIR}/polap-bash-test-crash-bash.sh"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "bash-py" ]]; then
+			# crash in a nested python script in a bash script
+			_polap_log3_pipe "bash ${_POLAPLIB_DIR}/polap-bash-test-crash-python.sh"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "bash-r" ]]; then
+			# crash in a nested R script in a bash script
+			_polap_log3_pipe "bash ${_POLAPLIB_DIR}/polap-bash-test-crash-r.sh"
+		fi
+
+	fi
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

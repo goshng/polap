@@ -75,15 +75,21 @@ Options:
   -b FASTQ
     short-read file
 
-  --infile FASTA
-    unpolished sequence file
+  --infile1 FASTA
+    unpolished mito genome sequence file
+
+  --infile2 FASTA
+    unpolished plastid genome sequence file
 
   --outfile FASTA
-    polished sequence file
+    polished genome sequence file
 
 Examples:
-  Get organelle genome sequences:
-    polap ${polap_cmd} -l l.fq -a s1.fq -b s2.fq --infile a.fa --outfile b.fa
+  Polish mitochondrial genome sequences:
+    polap ${polap_cmd} -l l.fq -a s1.fq -b s2.fq --infile1 mt.0.fa --infile2 pt.0.fa --outfile mt.1.fa
+
+  Polish plastid genome sequences:
+    polap ${polap_cmd} --plastid -l l.fq -a s1.fq -b s2.fq --infile1 mt.0.fa --infile2 pt.0.fa --outfile pt.1.fa
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -127,15 +133,43 @@ EOF
 
 	if [[ "${_arg_long_reads_is}" == "on" && "${_arg_short_read1_is}" == "on" ]]; then
 
-		_polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-polish-hybrid-racon-fmlrc2-polypolish.sh" \
-			--ont "${_arg_long_reads}" \
-			--sr1 "${_arg_short_read1}" \
-			--sr2 "${_arg_short_read2}" \
-			--fasta "${_arg_infile}" \
-			--outdir "${OUTDIR}" \
-			--threads "${_arg_half_threads}" \
-			--rounds 2 --min-ident 0.80 --min-alen 2000 \
-			${_arg_verbose_str}
+		# _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-polish-hybrid-racon-fmlrc2-polypolish.sh" \
+		# 	--ont "${_arg_long_reads}" \
+		# 	--sr1 "${_arg_short_read1}" \
+		# 	--sr2 "${_arg_short_read2}" \
+		# 	--fasta "${_arg_infile}" \
+		# 	--outdir "${OUTDIR}" \
+		# 	--threads "${_arg_half_threads}" \
+		# 	--rounds 2 --min-ident 0.80 --min-alen 2000 \
+		# 	${_arg_verbose_str}
+
+		if [[ "${_arg_plastid}" == "on" ]]; then
+			_polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-polish-racon-polypolish.sh" \
+				--target cp \
+				--fasta "${_arg_infile1}" \
+				--other "${_arg_infile2}" \
+				--ont "${_arg_long_reads}" \
+				--sr1 "${_arg_short_read1}" \
+				--sr2 "${_arg_short_read2}" \
+				--outdir "${OUTDIR}" \
+				--threads "${_arg_half_threads}" \
+				--racon-rounds 3
+		else
+			# Paste the scripts above into the touched paths, then run:
+			_polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-polish-racon-polypolish.sh" \
+				--target mt \
+				--fasta "${_arg_infile1}" \
+				--other "${_arg_infile2}" \
+				--ont "${_arg_long_reads}" \
+				--sr1 "${_arg_short_read1}" \
+				--sr2 "${_arg_short_read2}" \
+				--outdir "${OUTDIR}" \
+				--threads "${_arg_half_threads}" \
+				--racon-rounds 3 \
+				--mask auto --mask-min-ident 0.85 --mask-min-len 150 --mask-pad 500 --mask-qc 1 \
+				--cov-bin 200 --cov-min-mapq 0
+
+		fi
 
 	elif [[ "${_arg_long_reads_is}" == "on" ]]; then
 

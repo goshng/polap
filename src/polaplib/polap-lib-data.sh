@@ -3459,7 +3459,7 @@ EOF
 		"${_polap_var_memtracker_time_interval}"
 
 	# redefine
-	local _brg_extract="${_brg_outdir_i}/polap-extract-using-oatk/extract"
+	local _brg_extract="${_brg_outdir_i}/polap-assemble/extract"
 	local _brg_rundir="${_brg_outdir_i}/${_brg_title}"
 
 	mkdir -p "${_brg_outdir_i}"
@@ -3496,18 +3496,37 @@ EOF
 	fi
 
 	${_polap_cmd} polish-longshort \
+		--plastid \
 		-l "${long_sra}.fastq" \
 		-a "${short_sra}_1.fastq" \
 		-b "${short_sra}_2.fastq" \
-		--infile "${_brg_extract}/oatk.pltd.ctg.fasta" \
-		--outfile "${_brg_target}/pt.1.fasta"
+		--infile1 "${_brg_extract}/oatk.mito.ctg.fasta" \
+		--infile2 "${_brg_extract}/oatk.pltd.ctg.fasta" \
+		--outfile "${_brg_target}/pt.1.fasta" \
+		-o "${_brg_target}"
 
 	${_polap_cmd} polish-longshort \
 		-l "${long_sra}.fastq" \
 		-a "${short_sra}_1.fastq" \
 		-b "${short_sra}_2.fastq" \
-		--infile "${_brg_extract}/oatk.mito.ctg.fasta" \
-		--outfile "${_brg_target}/mt.1.fasta"
+		--infile1 "${_brg_extract}/oatk.mito.ctg.fasta" \
+		--infile2 "${_brg_extract}/oatk.pltd.ctg.fasta" \
+		--outfile "${_brg_target}/mt.1.fasta" \
+		-o "${_brg_target}"
+
+	# ${_polap_cmd} polish-longshort \
+	# 	-l "${long_sra}.fastq" \
+	# 	-a "${short_sra}_1.fastq" \
+	# 	-b "${short_sra}_2.fastq" \
+	# 	--infile "${_brg_extract}/oatk.pltd.ctg.fasta" \
+	# 	--outfile "${_brg_target}/pt.1.fasta"
+	#
+	# ${_polap_cmd} polish-longshort \
+	# 	-l "${long_sra}.fastq" \
+	# 	-a "${short_sra}_1.fastq" \
+	# 	-b "${short_sra}_2.fastq" \
+	# 	--infile "${_brg_extract}/oatk.mito.ctg.fasta" \
+	# 	--outfile "${_brg_target}/mt.1.fasta"
 
 	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
 
@@ -3860,8 +3879,8 @@ EOF
 		"${_brg_target}"
 
 	${_polap_cmd} mtpt \
-		-l "${long_sra}.fastq" \
 		-o "${_brg_target}" \
+		-l "${long_sra}.fastq" \
 		--pt-ref "${_brg_target}/pt.1.fasta" \
 		--mt-ref "${_brg_target}/mt.1.fasta"
 
@@ -12548,8 +12567,10 @@ install-polish_genus_species() {
 	local -a pkgs=(
 		seqtk seqkit
 		minimap2 gfatools
+		pysam
 		fmlrc2 ropebwt2 bwa-mem2 samtools polypolish
 		meryl merqury r-base python
+		conda-forge::r-data.table
 		bowtie2
 		cmake=3.26.* ninja gcc=12 gxx=12 zlib git make
 	)
@@ -12811,78 +12832,70 @@ install-abc-old-version_genus_species() {
 }
 
 install-evo_genus_species() {
-	if [[ "${opt_y_flag}" == false ]]; then
-		read -p "Do you want to install evo in the polap-evo conda environment? (y/N): " confirm
-	else
+	local want_env="polap-evo"
+	local -a pkgs=(
+		python=3.11
+		# core mappers / consensus
+		minimap2=2.*
+		racon=1.*
+		polypolish=0.*
+		bowtie2=2.*
+		bwa-mem2=2.*
+		samtools=1.*
+		# MTPT detection / annotation / repeats
+		blast=2.*
+		mummer4=4.*
+		hmmer=3.*
+		bedtools=2.*
+		seqkit=2.*
+		# clustering / alignment
+		mmseqs2=15.*
+		cd-hit=4.*
+		mafft=7.*
+		# cp phylogenomics
+		mauve=2.*
+		iqtree=2.*
+		# coverage
+		mosdepth=0.*
+		# R stack
+		r-base=4.*
+		r-data.table
+		r-ggplot2
+		r-ape
+		r-phangorn
+		r-phytools
+		r-castor
+		r-quantreg
+		bioconductor-ggtree
+		# Python stack
+		pysam
+		pandas
+		numpy
+		biopython
+		matplotlib
+	)
+
+	# Confirm (honors opt_y_flag if you set it elsewhere)
+	local confirm
+	if [[ "${opt_y_flag-}" == "true" ]]; then
 		confirm="yes"
+	else
+		read -r -p "Do you want to install evo in the ${want_env} conda environment? (y/N): " confirm
 	fi
 
-	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
+	if [[ "${confirm,,}" == "y" || "${confirm,,}" == "yes" ]]; then
+		# Create/upgrade env (channels first for R/bioconda harmony)
+		_polap_lib_conda-create-env \
+			"$want_env" "${pkgs[@]}" \
+			--channel conda-forge --channel bioconda -y || return 1
 
-		# --- Conda bootstrap (works under `set -u`) ---
-		# Try to make `conda activate` work in a non-interactive shell
-		if ! command -v conda >/dev/null 2>&1; then
-			for d in "$HOME/miniconda3" "$HOME/mambaforge" "$HOME/anaconda3" "/opt/conda"; do
-				if [[ -f "$d/etc/profile.d/conda.sh" ]]; then
-					# shellcheck disable=SC1090
-					source "$d/etc/profile.d/conda.sh"
-					break
-				fi
-			done
-		fi
-		# Enable `conda activate` regardless of how Conda is installed
-		command -v conda >/dev/null 2>&1 && eval "$(conda shell.bash hook)" || {
-			echo "ERROR: Could not initialize Conda in this shell." >&2
-			exit 1
-		}
-
-		# Helper: robust current env name (safe with `set -u`)
-		_current_env() {
-			if [[ -n "${CONDA_PREFIX-}" ]]; then
-				basename -- "$CONDA_PREFIX"
-			elif [[ -n "${CONDA_DEFAULT_ENV-}" ]]; then
-				printf '%s' "$CONDA_DEFAULT_ENV"
-			else
-				printf ''
+		# Quick sanity check that key tools are on PATH
+		local t
+		for t in iqtree; do
+			if ! command -v "$t" >/dev/null 2>&1; then
+				echo "WARNING: '$t' not found in '$want_env' PATH." >&2
 			fi
-		}
-
-		want_env="polap-evo"
-		cur_env="$(_current_env)"
-
-		# We don't need to hop to 'base' first; Conda can switch directly.
-		if [[ "$cur_env" != "$want_env" && -n "$cur_env" ]]; then
-			echo "You're in '$cur_env'. Switching to '$want_env' (no stacking)."
-		fi
-
-		# Create env if missing
-		if ! conda env list | awk '{print $1}' | grep -qx "$want_env"; then
-			echo "Creating Conda environment '$want_env'..."
-			# Prefer creating with all packages at once; add -c conda-forge for R stack
-			conda create -y -n "$want_env" \
-				python=3.11 \
-				samtools mummer4 blast minimap2 \
-				biopython pysam \
-				r-base r-data.table r-ggplot2 r-gridextra
-		else
-			echo "Conda environment '$want_env' already exists."
-		fi
-
-		# Activate and verify
-		conda activate "$want_env" || {
-			echo "ERROR: Failed to activate '$want_env'." >&2
-			exit 1
-		}
-
-		echo "Activated env: $(_current_env)"
-
-		# (optional) quick sanity check that core tools are on PATH
-		for tool in python samtools nucmer blastn R; do
-			command -v "$tool" >/dev/null 2>&1 || {
-				echo "WARNING: '$tool' not found in '$want_env' PATH." >&2
-			}
 		done
-
 	else
 		echo "evo installation is canceled."
 		echo "Check: https://github.com/maickrau/evo"
@@ -14751,10 +14764,6 @@ EOF
 					shift || true
 				fi
 				;;
-			-*)
-				_log_echo0 "[INFO] no such options: $1"
-				;;
-			*) ;;
 			esac
 			shift || true
 		done
@@ -14816,21 +14825,13 @@ EOF
 	# elif [[ "${_brg_type}" == "miniasm" ]]; then
 	_log_echo2 "plant mt $_brg_verbose_str"
 
-	_log_echo0 ${_polap_cmd} assemble1 \
+	${_polap_cmd} assemble1 \
 		"${option_data_type}" \
 		-l "${lfq}" \
 		-a "${sfq1}" \
 		-b "${sfq2}" \
 		${_brg_verbose_str} \
 		-o "${_brg_target}"
-
-	# ${_polap_cmd} assemble1 \
-	# 	"${option_data_type}" \
-	# 	-l "${lfq}" \
-	# 	-a "${sfq1}" \
-	# 	-b "${sfq2}" \
-	# 	${_brg_verbose_str} \
-	# 	-o "${_brg_target}"
 
 	# Summarize results after job (with previously defined summary function)
 	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"

@@ -3790,7 +3790,7 @@ EOF
 		--out man/md/report-progress.json
 
 	local type
-	for type in inputs pt mt perf; do
+	for type in inputs pt mt perf pt-png mt-png; do
 		python3 "${_POLAPLIB_DIR}/scripts/render_progress.py" \
 			--json man/md/report-progress.json \
 			--type $type \
@@ -4346,6 +4346,9 @@ Examples:
 
   Clean-up:
     bolap clean -s Brassica_rapa
+
+  Run polap aflye assemble1:
+    bolap run-polap-assemble1 -s Brassica_rapa
 
   Edit:
     polap-bash-make-manifest.sh for set some

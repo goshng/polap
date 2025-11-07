@@ -265,7 +265,11 @@ _polap_readassemble-pt() {
 
 	_polap_lib_readassemble-annotate-read-pt
 	_polap_lib_readassemble-assemble-annotated-read-pt
-	_polap_lib_file-cleanup -d "${_arg_outdir}/annotate-read-pt" -s 5M -a rm
+
+	# cleanup
+	rm -f "${_arg_outdir}/annotate-read-pt/pt.fq"
+
+	# _polap_lib_file-cleanup -d "${_arg_outdir}/annotate-read-pt" -s 5M -a rm
 }
 
 # 2025-08-13

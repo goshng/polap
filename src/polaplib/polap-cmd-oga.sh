@@ -986,28 +986,59 @@ HEREDOC
 		# if [[ "${_arg_plastid}" == "on" ]]; then
 		# 	CONTIG_LENGTH=$((CONTIG_LENGTH * 3))
 		# fi
-		local _command1="flye \
-      ${_arg_flye_data_type} \
-      ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz \
-		  --out-dir ${_polap_var_oga_flye}/${_pread_sel}/${i} \
-		  --threads ${_arg_threads}"
+
+		# 2025-11-03
+		# Comment out
+		# local _command1="flye \
+		#     ${_arg_flye_data_type} \
+		#     ${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz \
+		#   --out-dir ${_polap_var_oga_flye}/${_pread_sel}/${i} \
+		#   --threads ${_arg_threads}"
+		# if [[ "${_arg_flye_asm_coverage}" -gt 0 ]]; then
+		# 	_command1+=" \
+		#   --asm-coverage ${_arg_flye_asm_coverage} \
+		#   --genome-size $CONTIG_LENGTH"
+		# fi
+		# if [[ "${_arg_menu[2]}" == "polishing" ]]; then
+		# 	_command1+=" \
+		#   --resume"
+		# else
+		# 	_command1+=" \
+		#   --stop-after contigger"
+		# fi
+		# _command1+=" \
+		#   2>${_polap_output_dest}"
+		#
+		# if [[ "${_arg_flye}" == "on" ]]; then
+		# 	_polap_log3_pipe "${_command1}"
+		# else
+		# 	_polap_log0 "No flye run in test-reads"
+		# fi
+
+		# Version: v0.1.0
+		# Build argv (no backslashes, no eval)
+		local -a _cmd=(
+			flye
+			"${_arg_flye_data_type}"
+			"${_polap_var_oga_subsample}/${_pread_sel}/${i}.fq.gz"
+			--out-dir "${_polap_var_oga_flye}/${_pread_sel}/${i}"
+			--threads "${_arg_threads}"
+		)
+
 		if [[ "${_arg_flye_asm_coverage}" -gt 0 ]]; then
-			_command1+=" \
-		  --asm-coverage ${_arg_flye_asm_coverage} \
-		  --genome-size $CONTIG_LENGTH"
+			_cmd+=(--asm-coverage "${_arg_flye_asm_coverage}" --genome-size "$CONTIG_LENGTH")
 		fi
+
 		if [[ "${_arg_menu[2]}" == "polishing" ]]; then
-			_command1+=" \
-		  --resume"
+			_cmd+=(--resume)
 		else
-			_command1+=" \
-		  --stop-after contigger"
+			_cmd+=(--stop-after contigger)
 		fi
-		_command1+=" \
-		  2>${_polap_output_dest}"
 
 		if [[ "${_arg_flye}" == "on" ]]; then
-			_polap_log3_pipe "${_command1}"
+			# If you have _polap_log3_cmd (argv style), use it; stderr to file:
+			_polap_log3_cmd "${_cmd[@]}" 2>"${_polap_output_dest}"
+			# (If you only have the *_pipe variant, see option B below.)
 		else
 			_polap_log0 "No flye run in test-reads"
 		fi

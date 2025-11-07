@@ -40,7 +40,7 @@ fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
 
-function _run_polap_mtpt_old {
+function _run_polap_test-logging {
 	# Enable debugging if _POLAP_DEBUG is set
 	[ "$_POLAP_DEBUG" -eq 1 ] && set -x
 	_polap_log_function "Function start: $(echo $FUNCNAME | sed s/_run_polap_//)"
@@ -86,12 +86,13 @@ EOF
 	)
 
 	# Display help message
-	if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
-		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
-		man "$manfile" >&3
-		rm -f "$manfile"
-		return
-	fi
+	_polap_lib_help-maybe-show3 "$polap_cmd" help_message || return 0
+	# if [[ ${_arg_menu[1]} == "help" || "${_arg_help}" == "on" ]]; then
+	# 	local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
+	# 	man "$manfile" >&3
+	# 	rm -f "$manfile"
+	# 	return
+	# fi
 
 	# Display the content of output files
 	if [[ "${_arg_menu[1]}" == "view" ]]; then
@@ -103,46 +104,15 @@ EOF
 		exit $EXIT_SUCCESS
 	fi
 
-	if [[ "${_arg_menu[1]}" == "stats" ]]; then
+	_polap_lib_conda-ensure_conda_env polap || exit 1
 
-		_polap_lib_conda-ensure_conda_env polap || exit 1
-
-		# Minimal: recursively find files named 'mtpt.tsv' under the root folder
-		Rscript --vanilla "${_POLAPLIB_DIR}/scripts/mtpt_turnover_fig1.R" \
-			--root "$PWD" \
-			--pattern mtpt.tsv \
-			--out out_mtpt_summary
-		conda deactivate
-
-		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-		# Disable debugging if previously enabled
-		[ "$_POLAP_DEBUG" -eq 1 ] && set +x
-		return 0
-	fi
-
-	_polap_lib_conda-ensure_conda_env polap-evo || exit 1
-
-	local MT="${_arg_mt_ref}"
-	local CP="${_arg_pt_ref}"
-	local OUT="${_arg_outdir}/mtpt"
-
-	mkdir -p "$OUT/mtpt"
-
-	python3 "$_POLAPLIB_DIR/polap-py-mtpt-verify-prepare.py" \
-		--fasta "$MT" \
-		--reads "${_arg_long_reads}" \
-		--mtpt-tsv "$OUT/mtpt/mtpt.tsv" \
-		--flank 800 \
-		--threads 12 \
-		--preset map-ont \
-		--out "$OUT/mtpt/verify"
-
-	python3 "$_POLAPLIB_DIR/polap-py-mtpt-verify-batch.py" \
-		--fasta "$MT" \
-		--reads "${_arg_long_reads}" \
-		--mtpt-tsv "$OUT/mtpt/mtpt.tsv" \
-		--out "$OUT/mtpt" \
-		--mode both
+	# return 2
+	# _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-test-fail.sh" \
+	bash "${_POLAPLIB_DIR}/polap-bash-test-fail.sh" \
+		--which all \
+		--exit-code 7 \
+		--message "provoking nested failures across runtimes" \
+		"${_arg_infile:-}" "${_arg_outfile:-}"
 
 	conda deactivate
 

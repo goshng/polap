@@ -195,6 +195,9 @@ EOF
 			-t "${_arg_half_threads}" \
 			--assembler miniasm \
 			--gb 1
+
+		# cleanup
+		rm -rf "$ADIR"/{gfa,paf,shards}
 	fi
 
 	# _polap_lib_file-cleanup -d "${_arg_outdir}/mtseed" -s 5M -a rm

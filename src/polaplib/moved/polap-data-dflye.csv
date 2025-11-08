@@ -1,7 +1,0 @@
-species,_long,_short,_host,_inref,_min_read,_range,_random_seed,down,dummy,status
-Lolium_perenne-0,SRR13386519,SRR13386518,siepel,family,10000,36000:42000:3,101,50,dummy,done
-Lolium_perenne-1,SRR13386519,SRR13386518,siepel,family,10000,36000:42000:3,101,50,dummy,done
-Punica_granatum-0,SRR24893686,SRR24893685,marybeth,family,3000,3000:6000:2,103,50,dummy,done
-Macadamia_tetraphylla-0,SRR10424548,SRR10424549,vincent,genus,3000,3000:6000:2,105,50,dummy,done
-Test_species-0,l,s,vincent,genus,3000,3000:6000:2,105,50,dummy,done
-Spirodela_polyrhiza-0,SRR11472010,SRR11472009,siepel,family,3000,3000:6000:2,103,50,dummy,done

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# FILE: polaplib/tooltest/bin/hmmannot
+# VERSION: 0.0.1 (stub for tooltest)
+set -euo pipefail
+# Ignore options; emit a minimal header + 2 rows for a fake gene on "ctg000001c"
+cat <<'EOF'
+# target name        accession  query name           accession  hmmfrom hmm to alifrom  ali to envfrom  env to  modlen strand   E-value  score  bias  description of target
+#------------------- ---------- -------------------- ---------- ------- ------- ------- ------- ------- ------- ------- ------ --------- ------ ----- ---------------------
+psbA                 -          ctg000001c           -                1    1062     100    1161     100    1161    1062    +           0 1000.0  10.0  -
+rbcL                 -          ctg000001c           -                2     672    2000    2672    2000    2672     673    +           0  900.0   9.0  -
+EOF
+

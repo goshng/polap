@@ -91,6 +91,8 @@ _arg_long_reads_is="off"
 # the default out directory o is created in polap-variables-main.sh
 # o/log, o/tmp, and the polap.log are handled in polap-variables-main.sh
 _arg_preset=""
+_arg_mode=""
+_arg_lang="bash"
 _arg_config_dir="$HOME/.polap/profiles"
 _arg_config_path=""
 _arg_outdir="o"
@@ -444,6 +446,16 @@ parse_commandline() {
 	while test $# -gt 0; do
 		_key="$1"
 		case "$_key" in
+		--lang)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_lang="$2"
+			shift
+			;;
+		--mode)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_mode="$2"
+			shift
+			;;
 		--preset)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_arg_preset="$2"
@@ -1679,6 +1691,10 @@ commandline_unit_conversion() {
 	fi
 	if [[ -n "${_arg_mt_w}" ]]; then
 		_arg_mt_w=$(_polap_lib_unit-convert_to_int ${_arg_mt_w})
+	fi
+
+	if [[ -n "${_arg_genomesize:-}" ]]; then
+		_arg_genomesize=$(_polap_lib_unit-convert_to_int "${_arg_genomesize}")
 	fi
 }
 

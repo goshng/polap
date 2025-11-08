@@ -72,3 +72,24 @@ _polap_lib_version-check_flye_version() {
 		return 1
 	fi
 }
+
+# Returns 0 if $1 >= $2 (ge), else 1.
+polap_ver_ge() {
+	local A="$1" B="$2"
+	# Prefer coreutils sort -V if present
+	if command -v sort >/dev/null 2>&1; then
+		[[ "$(printf '%s\n' "$B" "$A" | sort -V | head -n1)" == "$B" ]]
+		return $?
+	fi
+	# Fallback: awk numeric field compare
+	awk -v A="$A" -v B="$B" '
+    function splitv(s,a){ n=split(s,a,/[^0-9]+/); for(i=1;i<=n;i++) if(a[i]=="") a[i]=0; return n }
+    BEGIN{
+      na=splitv(A,aa); nb=splitv(B,bb); n=(na>nb?na:nb)
+      for(i=1;i<=n;i++){
+        a=(i in aa?aa[i]+0:0); b=(i in bb?bb[i]+0:0)
+        if(a>b){exit 0} if(a<b){exit 1}
+      }
+      exit 0
+    }'
+}

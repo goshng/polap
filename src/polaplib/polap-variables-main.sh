@@ -40,9 +40,14 @@ fi
 # fi
 
 # Avoid resetting the global SECONDS on library load; provide helpers instead.
-_polap_timer_reset() { SECONDS=0; } # Explicit opt-in (affects current shell)  [oai_citation:2‡gnu.org](https://www.gnu.org/software/bash/manual/html_node/Bash-Variables.html?utm_source=chatgpt.com)
+_polap_timer_reset() {
+	SECONDS=0
+} # Explicit opt-in (affects current shell)  [oai_citation:2‡gnu.org](https://www.gnu.org/software/bash/manual/html_node/Bash-Variables.html?utm_source=chatgpt.com)
 _polap_timer_now() { printf '%s\n' "$SECONDS"; }
 
+_polap_timer_log() {
+	echo "Time at $(hostname): $((SECONDS / 3600))hrs $(((SECONDS / 60) % 60))min $((SECONDS % 60))sec - $CMD"
+}
 _polap_lib_log-init() {
 	# Nounset-safe reads (don’t explode if caller didn’t define these yet)
 	local outdir="${1:-${_arg_outdir:-}}"
@@ -53,23 +58,27 @@ _polap_lib_log-init() {
 		echo "ERR: outdir not set" >&2
 		return 2
 	}
-	mkdir -p -- "$outdir"/{tmp,log}
+	mkdir -p -- "$outdir"
 
 	if [[ "$log_is" == "off" || "$log_is" == "false" ]]; then
 		LOG_FILE="${outdir}/${log}"
 	else
 		LOG_FILE="${log}"
 	fi
+
+	# Set the central log file path early
+	export POLAP_LOG_FILE="${LOG_FILE}"
+	export POLAP_VERBOSE="${_arg_verbose:-1}"
 }
 
 ################################################################################
 # for the magic logit function
 ################################################################################
-function logit {
-	while read; do
-		# echo "$(date) $REPLY" >> ${LOG_FILE}
-		# -1 means "current time"
-		# printf "[%(%Y-%m-%d %T)T] %s\n" -1 "$REPLY" >> ${LOG_FILE}
-		printf "[%s] %s\n" "$(date +"%Y-%m-%d %T")" "$REPLY" >>${LOG_FILE}
-	done
-}
+# function logit {
+# 	while read; do
+# 		# echo "$(date) $REPLY" >> ${LOG_FILE}
+# 		# -1 means "current time"
+# 		# printf "[%(%Y-%m-%d %T)T] %s\n" -1 "$REPLY" >> ${LOG_FILE}
+# 		printf "[%s] %s\n" "$(date +"%Y-%m-%d %T")" "$REPLY" >>${LOG_FILE}
+# 	done
+# }

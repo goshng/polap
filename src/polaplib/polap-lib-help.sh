@@ -67,7 +67,8 @@ _polap_lib_help-maybe-show3() {
 
 	local manfile
 	manfile=$(_bolap_lib_man-convert_help_message "$ref" "$cmd")
-	man "$manfile" >&3
+	man "$manfile"
+	# man "$manfile" >&3
 	rm -f "$manfile"
 	return 1
 }

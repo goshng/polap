@@ -15,7 +15,9 @@
 # polap. If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-set -euo pipefail
+set -Eeuo pipefail
+set -o errtrace
+set -o functrace
 
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
 	echo "[ERROR] This script must be executed, not sourced: use 'bash $BASH_SOURCE'" >&2

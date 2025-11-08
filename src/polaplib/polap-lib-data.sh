@@ -16146,11 +16146,11 @@ test_genus_species_for() {
 	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
 
 	# local short_sra="${_short["$_brg_target"]}"
+	${_polap_cmd} test log
 
 	echo "Key: $_brg_target"
 	if [[ "${_POLAP_RELEASE}" == "0" ]]; then
 		echo "  long_sra: ${long_sra}"
-		# echo "  short_sra: ${short_sra}"
 	fi
 }
 

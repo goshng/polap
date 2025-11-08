@@ -1,0 +1,8 @@
+# polaplib/tooltest/registry.yml
+tools:
+  - name: minimap2
+    tests: [smoke, io, gold]
+    version:
+      min: "2.26"
+      max: "2.31"
+

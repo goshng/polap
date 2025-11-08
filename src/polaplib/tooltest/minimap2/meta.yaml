@@ -1,0 +1,12 @@
+tool: minimap2
+version:
+  min: "2.26"
+  max: "2.31"
+caps:
+  profiles:
+    - name: map-ont
+      probe: "-x map-ont"     # just documentation; we’ll validate by running
+notes:
+  - "Tests use tiny fixtures; output is PAF to stdout."
+  - "GOLD test is semantic (checks fields), not byte-for-byte."
+

@@ -1,41 +1,110 @@
-# FILE: scripts/mk_mapping.R
 #!/usr/bin/env Rscript
-# VERSION: 0.3.2
+# FILE: scripts/mk_mapping.R
+# VERSION: 0.3.4
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Usage: Rscript mk_mapping.R <treefile> <presence.tsv> <outdir> <model>
+# Models: mk | fitch | dollo | all
 
 suppressPackageStartupMessages({
   library(data.table)
-  library(ape)        # read.tree, ace
+  library(ape)  # read.tree, ace
 })
 
 args <- commandArgs(trailingOnly=TRUE)
-if (length(args) < 4) stop("Usage: mk_mapping.R <treefile> <presence.tsv> <outdir> <model>")
-treef <- args[1]; presf <- args[2]; outd <- args[3]; model <- tolower(args[4])
-dir.create(outd, showWarnings=FALSE, recursive=TRUE)
-
-tr0 <- read.tree(treef)
-if (is.null(tr0) || length(tr0$tip.label) == 0) stop("Empty/invalid tree: ", treef)
-
-P <- fread(presf)
-if (!"CID" %in% names(P)) stop("presence.tsv must have a 'CID' column.")
-species_all <- setdiff(colnames(P), "CID")
-if (!length(species_all)) stop("presence.tsv has no species columns.")
-
-# Match tips
-tips_in <- intersect(tr0$tip.label, species_all)
-if (!length(tips_in)) {
-  stop("No overlapping species between tree tips and presence.tsv columns.\n",
-       "  tree tips (n=", length(tr0$tip.label), "): ",
-       paste(head(tr0$tip.label, 10), collapse=", "), " ...\n",
-       "  presence cols (n=", length(species_all), "): ",
-       paste(head(species_all, 10), collapse=", "), " ...")
+if (length(args) < 4) {
+  stop("Usage: mk_mapping.R <treefile> <presence.tsv> <outdir> <model>")
 }
-tr <- if (length(tips_in) < length(tr0$tip.label)) keep.tip(tr0, tips_in) else tr0
-species <- tr$tip.label
+treef <- args[1]
+presf <- args[2]
+outd  <- args[3]
+model <- tolower(args[4])
+dir.create(outd, showWarnings = FALSE, recursive = TRUE)
 
-# Build tree scaffolding
-Ntip <- length(tr$tip.label); Nnode <- tr$Nnode; Ntot <- Ntip + Nnode
+# -------- I/O --------
+tr0 <- read.tree(treef)
+if (is.null(tr0) || length(tr0$tip.label) == 0)
+  stop("Empty/invalid tree: ", treef)
+
+P0 <- fread(presf)
+if (!"CID" %in% names(P0)) stop("presence.tsv must have a 'CID' column.")
+species_cols0 <- setdiff(colnames(P0), "CID")
+if (!length(species_cols0)) stop("presence.tsv has no species columns.")
+
+# -------- Normalization helpers --------
+normalize <- function(x) {
+  # Trim and strip a common suffix of the form '-digits' (e.g., "-0")
+  x <- trimws(as.character(x))
+  sub("-[0-9]+$", "", x, perl = TRUE)
+}
+
+# Original and normalized labels
+tips_raw   <- tr0$tip.label
+tips_norm  <- normalize(tips_raw)
+pres_raw   <- species_cols0
+pres_norm  <- normalize(pres_raw)
+
+# Intersect in normalized space
+in_both_norm <- intersect(tips_norm, pres_norm)
+if (length(in_both_norm) == 0L) {
+  # Helpful diagnostics
+  stop(
+    "No overlapping species between tree tips and presence.tsv columns.\n",
+    "  tree tips (n=", length(tips_raw), "): ",
+    paste(head(tips_raw, 10), collapse=", "), " ...\n",
+    "  presence cols (n=", length(pres_raw), "): ",
+    paste(head(pres_raw, 10), collapse=", "), " ...\n",
+    "  tree tips (normalized, n=", length(tips_norm), "): ",
+    paste(head(tips_norm, 10), collapse=", "), " ...\n",
+    "  presence cols (normalized, n=", length(pres_norm), "): ",
+    paste(head(pres_norm, 10), collapse=", "), " ..."
+  )
+}
+
+# Keep tree tips that are present after normalization; preserve tree order
+keep_idx <- which(tips_norm %in% in_both_norm)
+tr <- if (length(keep_idx) < length(tips_norm)) keep.tip(tr0, tips_raw[keep_idx]) else tr0
+
+# Recompute normalized vectors after pruning
+tips_raw  <- tr$tip.label
+tips_norm <- normalize(tips_raw)
+
+# Build a mapping from normalized -> presence original columns
+# If normalization created duplicates on presence side, we'll collapse by OR later
+norm_to_pres <- split(pres_raw, f = pres_norm)  # list: norm -> vector of original colnames
+# Ordered species (normalized) following the tree
+species_norm_order <- tips_norm
+
+# -------- Build presence matrix aligned to tree order --------
+# Collapse duplicates (same normalized name) by OR across columns
+collapse_by_norm <- function(DT, norm_map, order_norm) {
+  out <- vector("list", length(order_norm))
+  names(out) <- order_norm
+  for (nm in order_norm) {
+    cols <- norm_map[[nm]]
+    if (is.null(cols)) {
+      # species absent in presence table -> all zeros
+      out[[nm]] <- integer(nrow(DT))
+    } else {
+      M <- as.matrix(DT[, ..cols])
+      mode(M) <- "integer"
+      M[is.na(M)] <- 0L
+      M[M != 0L] <- 1L
+      # OR across columns
+      out[[nm]] <- as.integer(rowSums(M) > 0L)
+    }
+  }
+  as.data.table(out)
+}
+
+Pres_aligned <- collapse_by_norm(P0, norm_to_pres, species_norm_order)
+Pres_aligned[, CID := P0$CID]
+setcolorder(Pres_aligned, c("CID", species_norm_order))
+
+# -------- Tree scaffolding for parsimony --------
+Ntip  <- length(tr$tip.label)
+Nnode <- tr$Nnode
+Ntot  <- Ntip + Nnode
+
 children <- vector("list", Ntot); parent <- integer(Ntot); parent[] <- NA_integer_
 for (i in seq_len(nrow(tr$edge))) {
   a <- tr$edge[i,1]; b <- tr$edge[i,2]
@@ -45,15 +114,12 @@ for (i in seq_len(nrow(tr$edge))) {
 for (v in seq_len(Ntot)) if (is.null(children[[v]])) children[[v]] <- integer(0)
 root <- setdiff(tr$edge[,1], tr$edge[,2])[1]
 
-# Robust iterative postorder
 postorder <- function(root, children) {
   ord <- integer(0)
   stack_v <- c(root); stack_vis <- c(FALSE)
   while (length(stack_v)) {
-    v <- stack_v[[length(stack_v)]]
-    vis <- stack_vis[[length(stack_vis)]]
-    stack_v <- stack_v[-length(stack_v)]
-    stack_vis <- stack_vis[-length(stack_vis)]
+    v <- tail(stack_v, 1L); vis <- tail(stack_vis, 1L)
+    stack_v <- head(stack_v, -1L); stack_vis <- head(stack_vis, -1L)
     if (!vis) {
       stack_v   <- c(stack_v, v, rev(children[[v]]))
       stack_vis <- c(stack_vis, TRUE, rep(FALSE, length(children[[v]])))
@@ -63,26 +129,33 @@ postorder <- function(root, children) {
 }
 PO <- postorder(root, children)
 
-# Fitch encodings: 1={0}, 2={1}, 3={0,1}
-enc_tip <- function(x01) { x01 <- ifelse(is.na(x01), 0L, x01); ifelse(x01==0L, 1L, 2L) }
+# Fitch set encoding: 1={0}, 2={1}, 3={0,1}
+enc_tip <- function(x01) {
+  x01 <- ifelse(is.na(x01), 0L, x01)
+  ifelse(x01==0L, 1L, 2L)
+}
 
 fitch_assign <- function(y01, dollo_bias=FALSE) {
   S <- integer(Ntot); S[] <- 0L
-  S[seq_len(Ntip)] <- enc_tip(y01[species])
-  # postorder sets
+  # y01 is named by tip labels (in tree order species_norm_order)
+  tip_map <- setNames(seq_len(Ntip), tr$tip.label)
+  S[seq_len(Ntip)] <- enc_tip(y01[ names(tip_map) ])
+
+  # Postorder: compute sets at internal nodes
   for (v in PO[PO > Ntip]) {
     ch <- children[[v]]; if (!length(ch)) next
     inter_val <- S[ch[1L]]
-    for (u in ch[-1L]) inter_val <- bitwAnd(inter_val, S[u])
+    if (length(ch) > 1L) for (u in ch[-1L]) inter_val <- bitwAnd(inter_val, S[u])
     if (inter_val != 0L) {
       S[v] <- inter_val
     } else {
       uni_val <- S[ch[1L]]
-      for (u in ch[-1L]) uni_val <- bitwOr(uni_val, S[u])
+      if (length(ch) > 1L) for (u in ch[-1L]) uni_val <- bitwOr(uni_val, S[u])
       S[v] <- uni_val
     }
   }
-  # preorder picks
+
+  # Preorder: select states
   assign <- integer(Ntot); assign[] <- NA_integer_
   rset <- S[root]
   root_state <- if (rset==3L) { if (dollo_bias) 0L else 1L } else if (rset==2L) 1L else 0L
@@ -96,6 +169,7 @@ fitch_assign <- function(y01, dollo_bias=FALSE) {
     else            assign[v] <- if (vset %in% c(2L,3L)) 1L else 0L
     if (length(children[[v]])) queue <- c(queue, children[[v]])
   }
+
   gains <- 0L; losses <- 0L
   for (iE in seq_len(nrow(tr$edge))) {
     a <- tr$edge[iE,1]; b <- tr$edge[iE,2]
@@ -105,42 +179,48 @@ fitch_assign <- function(y01, dollo_bias=FALSE) {
   list(gains=as.integer(gains), losses=as.integer(losses))
 }
 
-# Presence matrix for matched species only (0/1)
-Pres <- as.matrix(P[, ..species]); mode(Pres) <- "integer"
-Pres[is.na(Pres)] <- 0L; Pres[Pres != 0L] <- 1L; rownames(Pres) <- P$CID
+# -------- ASR across clusters --------
+species <- tr$tip.label            # original tip order; columns of Pres_aligned are normalized but in same order
+Y <- as.matrix(Pres_aligned[, ..species_norm_order])
+mode(Y) <- "integer"; Y[is.na(Y)] <- 0L; Y[Y!=0L] <- 1L
+rownames(Y) <- Pres_aligned$CID
 
-events <- vector("list", nrow(P))
-for (i in seq_len(nrow(P))) {
-  cid <- P$CID[i]
-  y <- Pres[cid, ]; names(y) <- species
+res_list <- vector("list", nrow(Pres_aligned))
+for (i in seq_len(nrow(Pres_aligned))) {
+  cid <- Pres_aligned$CID[i]
+  y <- Y[cid, ]
+  names(y) <- species  # map to actual tip labels; order consistent with species_norm_order
+
   rows <- list()
 
   if (model %in% c("fitch","all")) {
-    gl <- fitch_assign(y, dollo_bias=FALSE)
+    gl <- fitch_assign(y, dollo_bias = FALSE)
     rows[[length(rows)+1]] <- data.table(CID=cid, model="fitch", gains=gl$gains, losses=gl$losses)
   }
   if (model %in% c("dollo","all")) {
-    gl <- fitch_assign(y, dollo_bias=TRUE)
+    gl <- fitch_assign(y, dollo_bias = TRUE)
     rows[[length(rows)+1]] <- data.table(CID=cid, model="dollo_like", gains=gl$gains, losses=gl$losses)
   }
   if (model %in% c("mk","all")) {
-    # APE's ace for discrete ER Mk
-    # ace() expects named vector of states for tips
-    lab <- species
-    vec <- as.integer(y); names(vec) <- lab
+    # Use factor states to enforce columns "0" and "1"
+    vec <- factor(as.integer(y), levels=c(0L,1L))
+    names(vec) <- species
     ok <- TRUE; mk_g <- NA_integer_; mk_l <- NA_integer_
     suppressWarnings({
       fit <- try(ace(vec, tr, type="discrete", model="ER"), silent=TRUE)
       if (inherits(fit, "try-error")) ok <- FALSE
     })
     if (ok && !is.null(fit$lik.anc)) {
-      # choose state 1 if P(state=1) >= 0.5
+      # Columns correspond to levels(vec): "0","1"
+      colnames_la <- colnames(fit$lik.anc)
+      if (!all(c("0","1") %in% colnames_la)) {
+        # Fallback: assume second column is "1" if unnamed
+        colnames_la <- if (ncol(fit$lik.anc)==2) c("0","1") else colnames_la
+      }
       assign <- integer(Ntot); assign[] <- NA_integer_
-      assign[seq_len(Ntip)] <- vec
+      assign[seq_len(Ntip)] <- as.integer(as.character(vec))  # 0/1 at tips
       for (k in seq_len(Nnode)) {
         nd <- Ntip + k
-        # fit$lik.anc rows correspond to internal nodes in node order:
-        # internal node numbers are (Ntip+1):(Ntip+Nnode)
         p1 <- fit$lik.anc[k, "1"]
         assign[nd] <- as.integer(p1 >= 0.5)
       }
@@ -157,12 +237,17 @@ for (i in seq_len(nrow(P))) {
     rows[[length(rows)+1]] <- data.table(CID=cid, model="mk_ER", gains=mk_g, losses=mk_l)
   }
 
-  events[[i]] <- data.table::rbindlist(rows, fill=TRUE)
+  res_list[[i]] <- data.table::rbindlist(rows, fill=TRUE)
 }
 
-EVENTS <- data.table::rbindlist(events, fill=TRUE)
-fwrite(P, file=file.path(outd, "presence.tsv"), sep="\t")
-fwrite(EVENTS, file=file.path(outd, "events.tsv"), sep="\t")
-fwrite(data.table(CID=P$CID, mid_time=NA_real_), file=file.path(outd, "timeline.tsv"), sep="\t")
-cat("ASR done: presence.tsv, events.tsv, timeline.tsv\n")
+EVENTS <- data.table::rbindlist(res_list, fill=TRUE)
 
+# -------- Write outputs --------
+# Write a normalized, tree-ordered presence matrix so downstream is deterministic
+P_out <- copy(Pres_aligned)
+setcolorder(P_out, c("CID", species_norm_order))
+fwrite(P_out, file=file.path(outd, "presence.tsv"), sep="\t")
+fwrite(EVENTS, file=file.path(outd, "events.tsv"), sep="\t")
+# timeline placeholder (dating optional)
+fwrite(data.table(CID=P_out$CID, mid_time=NA_real_), file=file.path(outd, "timeline.tsv"), sep="\t")
+cat("ASR done: presence.tsv, events.tsv, timeline.tsv\n")

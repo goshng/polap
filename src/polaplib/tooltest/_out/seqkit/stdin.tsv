@@ -1,0 +1,2 @@
+file	format	type	num_seqs	sum_len	min_len	avg_len	max_len
+-	FASTA	DNA	2	12	4	6.0	8

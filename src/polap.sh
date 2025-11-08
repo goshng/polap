@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# polap.sh — minimal driver with corrected FD wiring
+
 set -Eeuo pipefail
-set -o errtrace # inherit ERR into functions/subshells (with -E). See Bash manual.
+set -o errtrace
+set -o functrace
 
 # Must be executed (not sourced)
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
@@ -40,7 +41,9 @@ done
 unset __a
 source "${_POLAPLIB_DIR}/polap-bash-autoload.sh"
 polap_autoload "${_POLAPLIB_DIR}"
-polap_trap_enable # installs DEBUG/ERR ring printer
+polap_enable_failsafe
+
+# polap_trap_enable # installs DEBUG/ERR ring printer
 
 # ───────────────────────────────────────────────────────────────────────────────
 # MAIN
@@ -55,53 +58,12 @@ fi
 
 # Prepare output locations and the log file path
 source "${_POLAPLIB_DIR}/polap-variables-main.sh"
+_POLAP_COMMAND_LINE="$0 $*"
 _polap_timer_reset
 _polap_lib_log-init # sets $LOG_FILE and ensures ${_arg_outdir}/{tmp,log} exist
-
-# ── Corrected FD scheme ───────────────────────────────────────────────────────
-# FD 1 (STDOUT): SCREEN (unchanged)
-# FD 2 (STDERR): TEE → append to LOG_FILE and also to SCREEN
-# FD 3: LOG FILE (append) for polap-lib-log.sh helpers (always-available log sink)
-
-# Open FD 3 for appending to the log (human-readable log)
-exec 3>>"$LOG_FILE"
-
-# Tee STDERR to the log *and* keep it on the screen
-# (This captures child tool errors without hiding them.)
-exec 2> >(tee -a "$LOG_FILE" >&2)
-
-# Optional: keep the original screen FDs if ever needed later
-# (not used by this minimal driver, but harmless to keep)
-exec 4>&2 # original stderr (screen), if you want to reference it
-
-# Print a small header to both screen and log
-[[ "${_arg_clock:-off}" == "on" ]] && date +"%Y-%m-%d %H:%M:%S" | tee -a "$LOG_FILE" >&1
-CMD="$0 $*"
-{
-	echo "POLAP: ${_polap_version}"
-	echo "CMD: $CMD"
-} >>"$LOG_FILE"
-
-# Print all parsed globals from polap-parsing.sh to screen and log
-# (kept minimal; still useful when debugging parsing)
-{
-	set +u
-	for var in $(compgen -v _arg_); do
-		echo "$var=${!var}"
-	done
-	set -u
-} >>"$LOG_FILE"
-
-# Normalize options that need preprocessing
-if [[ -n "${_arg_genomesize:-}" ]]; then
-	_arg_genomesize=$(_polap_lib_unit-convert_to_int "${_arg_genomesize}")
-fi
-
-echo "verbose level: ${_arg_verbose}"
-
-# If you want log functions to prefer FD3 instead of STDERR, ensure this is "off"
-# so release-mode _polap_log* send to FD3 (the log file) rather than FD2.
-: "${_arg_log_stderr:=off}"
+_polap_lib_logfile-clock
+_polap_lib_logfile-cmd "${_POLAP_COMMAND_LINE}"
+_polap_lib_logfile-args
 
 # ── Dispatch ──────────────────────────────────────────────────────────────────
 if declare -f "_run_polap_${_arg_menu[0]}" >/dev/null 2>&1; then
@@ -213,9 +175,6 @@ else
 	conda deactivate
 fi
 
-[[ "${_arg_clock:-off}" == "on" ]] && date +"%Y-%m-%d %H:%M:%S" | tee -a "$LOG_FILE" >&1
-ELAPSED="Time at $(hostname): $((SECONDS / 3600))hrs $(((SECONDS / 60) % 60))min $((SECONDS % 60))sec - $CMD"
-echo "$ELAPSED" | tee -a "$LOG_FILE" >&1
-
-# Close the log FD
-exec 3>&-
+_polap_lib_logfile-cmd "${_POLAP_COMMAND_LINE}" END
+_polap_lib_logfile-elapsed
+_polap_lib_logfile-clock

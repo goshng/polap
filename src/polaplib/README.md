@@ -1,3 +1,32 @@
+# How-To Add Polap commands
+
+Copy the polap-cmd-template.sh to add a new polap command.
+
+# Bolap man
+
+2025-12-01
+
+A few reporting tables and figures are generated.
+Bolap analysis types each require a specific set of source files, including `Makefile.type` and `polap-data-type.sh`, where _type_ can be hifi, read, aflye, or cflye.
+None of these analysis types have been thoroughly tested because Bolap has not yet been released.
+Each type is associated with a particular release version: aflye corresponds to v0.3, cflye to v0.4, hifi to v0.5, and read is planned for v0.6.
+I previously worked on `polap-data-read.sh` for the Bolap command, but I realized that completing this component would require more development time.
+Therefore, I have returned to the hifi analysis path and am focusing on reviewing the recently released plant mitogenome pipelines, including PMAT2, TIPPo, Oatk, and HiMT.
+
+# manifest for reporting
+
+We use polap-bash-make-manifest.sh to collect results in a structured json file.
+
+First, we list all files prepared in a species folder using:
+
+bash polap/src/polaplib/polap-dev-list-files.sh Breynia_androgyna >polap/src/polaplib/report-files-hifi.txt
+
+Then, edit the report-files-...txt file.
+
+Edit polap-bash-make-manifest.sh according to the report-files-...txt document.
+
+We have polap-bash-hifi-make-manifest.sh and polap-bash-read-make-manifest.sh for each bolap analysis type because results would be different.
+
 # About this polaplib
 
 The `src` folder has the main bash shell scripts including `polap.sh` and

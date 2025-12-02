@@ -367,6 +367,19 @@ HEREDOC
 
 	fi
 
+	if [[ "${_arg_menu[1]}" == "tool" ]]; then
+
+		local tool="${_arg_menu[2]}"
+		bash "${_POLAPLIB_DIR}/tooltest/$tool/run.sh"
+
+	fi
+
+	if [[ "${_arg_menu[1]}" == "run" ]]; then
+
+		local tool="${_arg_menu[2]}"
+		bash "${_POLAPLIB_DIR}/polap-bash-run-command-selftest.sh"
+
+	fi
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	# Disable debugging if previously enabled
 	[ "$_POLAP_DEBUG" -eq 1 ] && set +x

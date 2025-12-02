@@ -64,8 +64,9 @@ Synopsis:
 Description:
   Conversions are delegated to well-tested command-line tools.
 
-  Supported (initial):
+  Supported menu:
     - gfa2fasta : Use gfatools gfa2fa; optional ID subset via seqkit/seqtk.
+    - himt2prefix: Extract himt HTML to a report out directory
 
 Positional arguments:
   in2out
@@ -90,6 +91,8 @@ Examples:
 
   polap ${polap_cmd} gfa2fasta - out.fa --ids ids.txt
 
+  polap ${polap_cmd} himt2prefix himt-in.html out-prefix
+
 Notes:
   - Implementation uses: gfatools gfa2fa; seqkit grep/seq or seqtk subseq/seq for filtering/rewrap.
 
@@ -97,15 +100,7 @@ Notes:
 EOF
 	)
 
-	# Help
-	if [[ "${_arg_menu[1]:-}" == "help" || "${_arg_help:-off}" == "on" ]]; then
-		local manfile=$(_polap_lib_man-convert_help_message "$help_message" "${_arg_menu[0]}")
-		man "$manfile" >&3
-		rm -f "$manfile"
-		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
-		[ "${_POLAP_DEBUG:-0}" -eq 1 ] && set +x
-		return 0
-	fi
+	_polap_lib_help-maybe-show3 "convert" help_message || return 0
 
 	# Reserved "view"
 	if [[ "${_arg_menu[1]:-}" == "view" ]]; then
@@ -165,6 +160,34 @@ EOF
 			return 4
 		fi
 		;;
+
+	himt2prefix)
+		# Exactly this name, as requested
+		# local runner="${_POLAPLIB_DIR}/polap-bash-parse-himt-mito-report.sh"
+		local runner="${_POLAPLIB_DIR}/polap-bash-assess-mito.sh"
+		if [[ ! -s "$runner" ]]; then
+			_polap_log0 "ERROR: Not found: $runner"
+			conda deactivate || true
+			[ "${_POLAP_DEBUG:-0}" -eq 1 ] && set +x
+			return 3
+		fi
+
+		mkdir -p $(dirname "$outpath")
+		# if ! bash "$runner" -p "$outpath" "$inpath" 2>$_polap_output_dest; then
+		if [[ -s "$inpath" ]]; then
+			if ! bash "$runner" -i "$inpath" -o "$outpath" 2>$_polap_output_dest; then
+				_polap_log0 "ERROR: $runner failed."
+				_polap_log0 "inpath: $inpath"
+				_polap_log0 "outpath: $outpath"
+				_polap_log0 "bash $runner -i $inpath -o $outpath"
+				conda deactivate || true
+				[ "${_POLAP_DEBUG:-0}" -eq 1 ] && set +x
+				return 4
+			fi
+		else
+			_polap_log0 "Skipping because of no input HiMT HTML: $inpath"
+		fi
+		;;
 	*)
 		_polap_log0 "ERROR: unknown conversion key: ${conv}"
 		echo "$help_message" >&2
@@ -175,6 +198,7 @@ EOF
 	esac
 
 	conda deactivate || true
+
 	_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 	[ "${_POLAP_DEBUG:-0}" -eq 1 ] && set +x
 	return 0

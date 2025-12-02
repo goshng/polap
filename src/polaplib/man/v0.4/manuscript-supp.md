@@ -27,11 +27,11 @@ NA represents no assemblies in the subsampling-based method and no comparison av
 Table: Three stages of subsampling-based plastid genome assembly for the _Eucalyptus pauciflora_ dataset with Run Setting A.
 The configuration includes an increasing subsample size up to a maximum subsampling rate of 5%, a step size of 10 in Stage 1, 5 replicates in Stages 2 and 3, and a maximum memory limit of 16 GB.
 Abbreviations are as follows:
-iteration in each Stage (I), subsampling rate (Rate) and read-coverage threshold (Alpha);
+iteration in each Stage (Index), subsampling rate (Rate) and read-coverage threshold (Alpha);
 assembly metrics including the number of segments in the assembly (N),
 the total length of these segments (L), and
-the number of circular genome paths detected (C); 
-memory usage in GB (memory) and
+the number of circular genome paths detected (C);
+memory usage in GB (Memory) and
 the draft plastid genome assembly length (Length).
 Alpha at Stage 3 is the percent identity values between consecutive indices.
 NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the stage but just polishing of the draft genome sequences.
@@ -42,10 +42,6 @@ NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the s
 \newpage
 
 # Figures
-
-<!--figure1-->
-
-![Workflow of the subsampling-based plastid genome assembly. The genome assembly procedure is applied repeatedly in Stages 1 and 2.](figures/polap2-figure1.pdf){#fig:mainfigure1 width=100%}
 
 <!--figure2-->
 <!-- polap-data-cflye man figure-benchmark some 2 time -->
@@ -83,6 +79,10 @@ Long-read error-correction (NextDenovo),
 `PMAT` with `-fc 1.0` (PMAT-1.0).
 ](figures/figure-memory-some-2.pdf){#fig:memory-some-2 width=100%}
 
+<!--figure1-->
+
+![Workflow of the subsampling-based plastid genome assembly. The genome assembly procedure is applied repeatedly in Stages 1 and 2.](figures/polap2-figure1.pdf){#fig:mainfigure1 width=100%}
+
 \setcounter{table}{0}
 \setcounter{figure}{0}
 \renewcommand{\thetable}{S\arabic{table}}
@@ -92,49 +92,11 @@ Long-read error-correction (NextDenovo),
 
 # Supplementary Materials
 
-<!--tableS1-->
-<!-- polap-data-cflye man table-benchmark some 2 -->
-<!-- polap-data-cflye man table-benchmark some 2 data view -->
-
-Table: Sequencing data for the datasets, including species names and their corresponding taxonomic ranks studied. {#tbl:benchmark-data-some-2}
-
-!include figures/table-benchmark-data-some-2.md
-
-<!-- \begingroup -->
-<!-- \tiny -->
-<!-- \setlength{\parskip}{2pt} -->
-<!---->
-<!-- Abbreviations are as follows: -->
-<!-- SRA ID for the long-read dataset (L_SRA), -->
-<!-- the size of the long-read dataset (L_size), -->
-<!-- the long-read coverage (L_cov), -->
-<!-- SRA ID for the short-read dataset (S_SRA), -->
-<!-- the size of the short-read dataset (S_size), and -->
-<!-- the short-read coverage (S_cov). -->
-<!---->
-<!-- \endgroup -->
-<!---->
-
-\elandscape
-
-<!--tableS2-->
-<!--tableS:computer-->
-<!-- polap-data-cflye man table-benchmark some 2 -->
-<!-- polap-data-cflye man table-benchmark some 2 computer view -->
-<!-- polap-data-cflye man table-benchmark some 2 hostname view -->
-
-\newpage
-
-Table: Computer setup for the 23 datasets.
-{#tbl:benchmark-computer}
-
-!include figures/table-benchmark-computer-some-2.md
-
 <!--tableS3-->
 <!-- polap-data-cflye man table-benchmark some 1 -->
 <!-- polap-data-cflye man table-benchmark some 1 polap view -->
 
-\newpage
+<!-- \newpage -->
 
 <!-- \blandscape -->
 
@@ -239,11 +201,11 @@ NA represents no assemblies in the subsampling-based method and no comparison av
 Table: Three stages of subsampling-based plastid genome assembly for the _Eucalyptus pauciflora_ dataset with Run Setting B.
 The configuration includes an increasing subsample size up to a maximum subsampling rate of 10%, a step size of 10 in Stage 1, 5 replicates in Stages 2 and 3, and a maximum memory limit of 16 GB.
 Abbreviations are as follows:
-iteration in each Stage (I), subsampling rate (Rate) and read-coverage threshold (Alpha);
+iteration in each Stage (Index), subsampling rate (Rate) and read-coverage threshold (Alpha);
 assembly metrics including the number of segments in the assembly (N),
 the total length of these segments (L), and
 the number of circular genome paths detected (C);
-memory usage in GB (memory) and
+memory usage in GB (Memory) and
 the draft plastid genome assembly length (Length).
 Alpha at Stage 3 is the percent identity values between consecutive indices.
 NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the stage but just polishing of the draft genome sequences.
@@ -260,11 +222,11 @@ NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the s
 Table: Three stages of subsampling-based plastid genome assembly for the _Eucalyptus pauciflora_ dataset with Run Setting C.
 The configuration includes an increasing subsample size up to a maximum subsampling rate of 10%, a step size of 50 in Stage 1, 5 replicates in Stages 2 and 3, and a maximum memory limit of 16 GB.
 Abbreviations are as follows:
-iteration in each Stage (I), subsampling rate (Rate) and read-coverage threshold (Alpha);
+iteration in each Stage (Index), subsampling rate (Rate) and read-coverage threshold (Alpha);
 assembly metrics including the number of segments in the assembly (N),
 the total length of these segments (L), and
 the number of circular genome paths detected (C);
-memory usage in GB (memory) and
+memory usage in GB (Memory) and
 the draft plastid genome assembly length (Length).
 Alpha at Stage 3 is the percent identity values between consecutive indices.
 NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the stage but just polishing of the draft genome sequences.
@@ -273,6 +235,44 @@ NAs at the columns of N, L, and C in Stage 3 are because of no assembly in the s
 !include figures/table-polap-disassemble-Eucalyptus_pauciflora-3.md
 
 \newpage
+
+<!--tableS1-->
+<!-- polap-data-cflye man table-benchmark some 2 -->
+<!-- polap-data-cflye man table-benchmark some 2 data view -->
+
+Table: Sequencing data for the datasets, including species names and their corresponding taxonomic ranks studied. {#tbl:benchmark-data-some-2}
+
+!include figures/table-benchmark-data-some-2.md
+
+<!-- \begingroup -->
+<!-- \tiny -->
+<!-- \setlength{\parskip}{2pt} -->
+<!---->
+<!-- Abbreviations are as follows: -->
+<!-- SRA ID for the long-read dataset (L_SRA), -->
+<!-- the size of the long-read dataset (L_size), -->
+<!-- the long-read coverage (L_cov), -->
+<!-- SRA ID for the short-read dataset (S_SRA), -->
+<!-- the size of the short-read dataset (S_size), and -->
+<!-- the short-read coverage (S_cov). -->
+<!---->
+<!-- \endgroup -->
+<!---->
+
+\elandscape
+
+<!--tableS2-->
+<!--tableS:computer-->
+<!-- polap-data-cflye man table-benchmark some 2 -->
+<!-- polap-data-cflye man table-benchmark some 2 computer view -->
+<!-- polap-data-cflye man table-benchmark some 2 hostname view -->
+
+\newpage
+
+Table: Computer setup for the 23 datasets.
+{#tbl:benchmark-computer}
+
+!include figures/table-benchmark-computer-some-2.md
 
 <!--figureS3-->
 <!-- polap-data-cflye man figure-benchmark some 2 time-nextdenovo -->

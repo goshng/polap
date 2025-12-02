@@ -3466,6 +3466,7 @@ EOF
 
 	local platform="${_platform["$_brg_target"]}"
 
+	rm -rf "${_brg_target}"
 	mkdir -p "${_brg_target}"
 
 	# copy mt.1.gfa
@@ -3495,15 +3496,18 @@ EOF
 		return 0
 	fi
 
-	${_polap_cmd} polish-longshort \
-		--plastid \
-		-l "${long_sra}.fastq" \
-		-a "${short_sra}_1.fastq" \
-		-b "${short_sra}_2.fastq" \
-		--infile1 "${_brg_extract}/oatk.mito.ctg.fasta" \
-		--infile2 "${_brg_extract}/oatk.pltd.ctg.fasta" \
-		--outfile "${_brg_target}/pt.1.fasta" \
-		-o "${_brg_target}"
+	# _log_echo0 "START: ptDNA polish"
+	# ${_polap_cmd} polish-longshort \
+	# 	--plastid \
+	# 	-l "${long_sra}.fastq" \
+	# 	-a "${short_sra}_1.fastq" \
+	# 	-b "${short_sra}_2.fastq" \
+	# 	--infile1 "${_brg_extract}/oatk.mito.ctg.fasta" \
+	# 	--infile2 "${_brg_extract}/oatk.pltd.ctg.fasta" \
+	# 	--outfile "${_brg_target}/pt.1.fasta" \
+	# 	-v \
+	# 	-o "${_brg_target}"
+	# _log_echo0 "END: ptDNA polish"
 
 	${_polap_cmd} polish-longshort \
 		-l "${long_sra}.fastq" \
@@ -3512,21 +3516,8 @@ EOF
 		--infile1 "${_brg_extract}/oatk.mito.ctg.fasta" \
 		--infile2 "${_brg_extract}/oatk.pltd.ctg.fasta" \
 		--outfile "${_brg_target}/mt.1.fasta" \
+		-v \
 		-o "${_brg_target}"
-
-	# ${_polap_cmd} polish-longshort \
-	# 	-l "${long_sra}.fastq" \
-	# 	-a "${short_sra}_1.fastq" \
-	# 	-b "${short_sra}_2.fastq" \
-	# 	--infile "${_brg_extract}/oatk.pltd.ctg.fasta" \
-	# 	--outfile "${_brg_target}/pt.1.fasta"
-	#
-	# ${_polap_cmd} polish-longshort \
-	# 	-l "${long_sra}.fastq" \
-	# 	-a "${short_sra}_1.fastq" \
-	# 	-b "${short_sra}_2.fastq" \
-	# 	--infile "${_brg_extract}/oatk.mito.ctg.fasta" \
-	# 	--outfile "${_brg_target}/mt.1.fasta"
 
 	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
 
@@ -7657,17 +7648,17 @@ dataset-import_genus_species() {
 	help_message=$(
 		cat <<EOF
 Name:
-  bolap - tutorial
+  bolap - dataset import
 
 Synopsis:
-  bolap $bolap_cmd
+  bolap $bolap_cmd --infile CSV
 
 Description:
-  bolap
+  Prepare a CSV file with columns including species, long, and short. Additional fields are optional.
 
 Examples:
-  Topic:
-    bolap $bolap_cmd --topic 38
+  Import in.csv as a json dataset:
+    bolap $bolap_cmd --infile in.csv
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -7680,7 +7671,7 @@ EOF
 
 	local infile=""
 	parse_commandline() {
-		set -- "${_brg_unknown_opts[@]}"
+		set -- "${_brg_args[@]}"
 
 		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
 		while test $# -gt 0; do
@@ -7696,9 +7687,6 @@ EOF
 				;;
 			-*)
 				_log_echo0 "[ERROR] no such options: $1"
-				;;
-			*)
-				break
 				;;
 			esac
 			shift || true
@@ -7740,6 +7728,10 @@ Synopsis:
 Description:
   bolap
 
+Examples:
+  View the json dataset:
+    bolap $bolap_cmd --fields long,short
+
 Copyright:
   Copyright © 2025 Sang Chul Choi
   Free Software Foundation (2024-2025)
@@ -7749,24 +7741,27 @@ Author:
 EOF
 	)
 
-	local infile=""
+	local fields=""
 	parse_commandline() {
-		set -- "${_brg_unknown_opts[@]}"
+		set -- "${_brg_args[@]}"
 
 		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
-		while (($#)) && [[ $1 == --* ]]; do
-			case "$1" in
-			--fields=*) fields_csv="${1#--fields=}" ;;
-			--match=*) match="${1#--match=}" ;;
-			--na=*) na="${1#--na=}" ;;
-			--sep=*) sep="${1#--sep=}" ;;
-			--no-header) header=false ;;
-			*)
-				echo "[ERROR] Unknown option: $1" >&2
-				return 1
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--fields)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					fields="$2"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
 				;;
 			esac
-			shift
+			shift || true
 		done
 	}
 
@@ -7778,10 +7773,15 @@ EOF
 		return
 	fi
 
-	# parse_commandline
+	parse_commandline
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
-	dataset-view-table ${_brg_unknown_opts[@]}
+	if [[ -z "${fields:-}" ]]; then
+		dataset-view-table
+	else
+		dataset-view-table --fields="$fields"
+	fi
+	# echo dataset-view-table --fields="$fields" >&2
 	conda deactivate
 
 }
@@ -9681,6 +9681,21 @@ setup-pmat_genus_species() {
 	conda deactivate
 }
 
+setup-pmat2-apptainer_genus_species() {
+	echo "Install fuse2fs gocryptfs ..."
+	sudo apt update
+	sudo apt -y install fuse2fs gocryptfs
+
+	echo "Setup apptainer ..."
+	_polap_lib_conda-ensure_conda_env polap-pmat2 || exit 1
+	apptainer exec $CONDA_PREFIX/bin/container/runAssembly.sif echo "Fail: PMAT setup"
+	echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/90-userns.conf
+	echo 'kernel.apparmor_restrict_unprivileged_userns=0' | sudo tee /etc/sysctl.d/80-apparmor-userns.conf
+	sudo sysctl --system
+	apptainer exec $CONDA_PREFIX/bin/container/runAssembly.sif echo "Success: PMAT setup"
+	conda deactivate
+}
+
 setup-polap_genus_species() {
 	local _brg_outdir="${1:-na}"
 	local bashrc="$HOME/.bashrc"
@@ -11029,7 +11044,7 @@ run-pmat_genus_species() {
 		rm -rf "${_run_dir}"
 
 		# command time -v PMAT autoMito \
-		command time -v timeout 6h PMAT autoMito \
+		command time -v timeout ${_brg_timeout} PMAT autoMito \
 			-i "${_brg_input_data}" \
 			-o "${_run_dir}" \
 			-st ont \
@@ -11135,7 +11150,7 @@ run-tippo_genus_species() {
 
 	# -g organelle
 	# -g chloroplast \
-	command time -v timeout 6h TIPPo.v2.4.pl \
+	command time -v timeout ${_brg_timeout} TIPPo.v2.4.pl \
 		-f "${_brg_input_data}" \
 		-t ${_brg_threads} \
 		-g organelle \
@@ -11189,44 +11204,53 @@ run-oatk_genus_species() {
 
 	_polap_lib_conda-ensure_conda_env polap-oatk || exit 1
 
-	local _fc=30
-	local formatted_fc=$(printf "%02d" "${_fc}")
+	local _fc
+	# for _fc in 30 25 20 15 10; do
+	for _fc in 30 20 10; do
 
-	_log_echo "oatk on ${_brg_rundir} with -c ${_fc}"
-	local formatted_fc=$(printf "%02d" "${_fc}")
+		local formatted_fc=$(printf "%02d" "${_fc}")
 
-	rm -f "${_stdout_txt}"
-	rm -f "${_timing_txt}"
+		_log_echo "oatk on ${_brg_rundir} with -c ${_fc}"
+		local formatted_fc=$(printf "%02d" "${_fc}")
+		local stdout_txt_oatk="${_stdout_txt%.txt}-${formatted_fc}.txt"
+		local timing_txt_oatk="${_timing_txt%.txt}-${formatted_fc}.txt"
+		local memlog_file_oatk="${_memlog_file%.csv}-${formatted_fc}.csv"
+		local summary_file_oatk="${_summary_file%.txt}-${formatted_fc}.txt"
 
-	# Start memory logger
-	_polap_lib_process-start_memtracker "${_memlog_file}" \
-		"${_polap_var_oatk_memtracker_time_interval}"
+		rm -f "${stdout_txt_oatk}"
+		rm -f "${timing_txt_oatk}"
 
-	# https://github.com/c-zhou/oatk
-	# NOTE: oatk threads 56 -> seg. fault.
-	# Either way, it is still very fast.
-	local rc
-	local _oatk_threads=8
-	command time -v timeout 6h oatk \
-		-k 1001 \
-		-c ${_fc} \
-		-t ${_oatk_threads} \
-		-m ./OatkDB/v20230921/embryophyta_mito.fam \
-		-p ./OatkDB/v20230921/embryophyta_pltd.fam \
-		-o "${_brg_target}/oatk-${formatted_fc}" \
-		"${_brg_input_data}" \
-		>"${_stdout_txt}" \
-		2>"${_timing_txt}" || rc=$?
+		# Start memory logger
+		_polap_lib_process-start_memtracker "${memlog_file_oatk}" \
+			"${_polap_var_oatk_memtracker_time_interval}"
 
-	if [[ "${rc:-0}" -ne 0 ]]; then
-		printf '[ERR] oatk failed (rc=%d)\n' "$rc" >&2
-		# decide: exit "$rc" / continue
-	fi
+		# https://github.com/c-zhou/oatk
+		# NOTE: oatk threads 56 -> seg. fault.
+		# Either way, it is still very fast.
+		local rc
+		local _oatk_threads=8
+		command time -v timeout ${_brg_timeout} oatk \
+			-k 1001 \
+			-c ${_fc} \
+			-t ${_oatk_threads} \
+			-m ./OatkDB/v20230921/embryophyta_mito.fam \
+			-p ./OatkDB/v20230921/embryophyta_pltd.fam \
+			-o "${_brg_target}/oatk-${formatted_fc}" \
+			"${_brg_input_data}" \
+			>"${stdout_txt_oatk}" \
+			2>"${timing_txt_oatk}" || rc=$?
 
-	# Save system info
-	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+		if [[ "${rc:-0}" -ne 0 ]]; then
+			printf '[ERR] oatk failed (rc=%d)\n' "$rc" >&2
+			# decide: exit "$rc" / continue
+		fi
 
-	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+		# Save system info
+		_polap_lib_timing-get_system_info >>"${timing_txt_oatk}"
+
+		_polap_lib_process-end_memtracker "${memlog_file_oatk}" "${summary_file_oatk}" "no_verbose"
+
+	done
 
 	conda deactivate
 
@@ -11325,7 +11349,7 @@ run-oatk-hifi_genus_species() {
 
 		# NOTE: oatk threads 56 -> seg. fault.
 		local _oatk_threads=8
-		command time -v timeout 6h oatk \
+		command time -v timeout ${_brg_timeout} oatk \
 			-k 1001 \
 			-c ${_fc} \
 			-t ${_oatk_threads} \
@@ -11350,6 +11374,307 @@ run-oatk-hifi_genus_species() {
 
 	# Clean-up
 	rm -rf "${_brg_runtitledir}"
+}
+
+# 2025-11-30
+run-himt_genus_species() {
+	local _brg_outdir="${1:-$_brg_outdir}"
+	local _brg_sindex="${2:-$_brg_sindex}"
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	# Create folders
+	rm -rf "${_brg_target}"
+	mkdir -p "${_brg_target}"
+	mkdir -p "${_brg_outdir_i}"
+
+	# ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
+	_brg_input_data="${long_sra}.fastq"
+
+	# check the input
+	# prepare if there is no such one
+
+	_polap_lib_conda-ensure_conda_env polap-himt || exit 1
+
+	# local _fc=30
+	# local formatted_fc=$(printf "%02d" "${_fc}")
+
+	_log_echo "himt on ${_brg_rundir}"
+	# local formatted_fc=$(printf "%02d" "${_fc}")
+
+	rm -f "${_stdout_txt}"
+	rm -f "${_timing_txt}"
+
+	# Start memory logger
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_oatk_memtracker_time_interval}"
+
+	local rc
+	local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+	local _himt_threads="${_brg_threads}"
+
+	command time -v timeout ${_brg_timeout} himt \
+		assemble \
+		-t ${_himt_threads} \
+		-n 4 \
+		-b 3 \
+		-s plant \
+		--input_file "${_brg_input_data}" \
+		--output_dir "${_brg_target}" \
+		>"${_stdout_txt}" \
+		2>"${_timing_txt}" || rc=$?
+
+	if [[ "${rc:-0}" -ne 0 ]]; then
+		printf '[ERR] oatk failed (rc=%d)\n' "$rc" >&2
+		# decide: exit "$rc" / continue
+	fi
+
+	# Save system info
+	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+
+	conda deactivate
+
+	# Save results
+	rsync -azuq --max-size=5M \
+		"${_brg_target}/" "${_brg_rundir}/"
+
+	# Clean-up
+	rm -rf "${_brg_target}"
+}
+
+# 2025-12-01
+# HiMT assess -> report for all 4 pipelines
+# gfa -> png using Bandage
+run-assess-himt_genus_species() {
+	local _brg_outdir="${1:-$_brg_outdir}"
+	local _brg_sindex="${2:-$_brg_sindex}"
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	# Create folders
+	rm -rf "${_brg_target}"
+	mkdir -p "${_brg_target}"
+	mkdir -p "${_brg_outdir_i}"
+
+	# ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
+	_brg_input_data="${long_sra}.fastq"
+
+	# check the input
+	# prepare if there is no such one
+
+	_polap_lib_conda-ensure_conda_env polap-himt || exit 1
+
+	# local _fc=30
+	# local formatted_fc=$(printf "%02d" "${_fc}")
+
+	_log_echo "assess himt on ${_brg_rundir}"
+	# local formatted_fc=$(printf "%02d" "${_fc}")
+
+	rm -f "${_stdout_txt}"
+	rm -f "${_timing_txt}"
+
+	# Start memory logger
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_oatk_memtracker_time_interval}"
+
+	local rc
+	local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+	local _himt_threads="${_brg_threads}"
+
+	# assess oatk
+	local _fc
+	# for _fc in 30 25 20 15 10 5; do
+	for _fc in 30 20 10; do
+		local formatted_fc=$(printf "%02d" "${_fc}")
+		# local gfa="${_brg_outdir_i}/oatk/oatk-${formatted_fc}.mito.gfa"
+		local gfa="${_brg_outdir_i}/oatk/oatk-${formatted_fc}.mito.gfa"
+		local png="${_brg_outdir_i}/oatk/oatk-${formatted_fc}.mito.png"
+		local fasta="${_brg_outdir_i}/oatk/oatk-${formatted_fc}.mito.ctg.fasta"
+		local assess_gfa="${_brg_outdir_i}/assess/oatk-${formatted_fc}"
+		himt \
+			assess \
+			--input_file "${fasta}" \
+			--output_dir "${assess_gfa}" \
+			>>"${_stdout_txt}" \
+			2>>"${_timing_txt}" || rc=$?
+
+		if [[ "${rc:-0}" -ne 0 ]]; then
+			printf "[ERR] himt assess on oatk-${formatted_fc} failed (rc=%d)\n" "$rc" >&2
+		fi
+
+		# convert HiMT assess html to report
+		local assess_himt_html="${_brg_outdir_i}/assess/oatk-${formatted_fc}/himt_mitochondrial.html"
+		local assess_report_prefix="${_brg_outdir_i}/assess/oatk-${formatted_fc}/report/prefix"
+		${_polap_cmd} convert himt2prefix \
+			"${assess_himt_html}" "${assess_report_prefix}"
+
+		if [[ -s "${gfa}" ]]; then
+			${_polap_cmd} bandage png "${gfa}" "${png}"
+		fi
+
+	done
+
+	# assess himt
+	local gfa="${_brg_outdir_i}/himt/himt_mitochondrial.gfa"
+	local png="${_brg_outdir_i}/himt/himt_mitochondrial.png"
+	local assess_gfa="${_brg_outdir_i}/assess/himt"
+	himt \
+		assess \
+		--input_file "${gfa}" \
+		--output_dir "${assess_gfa}" \
+		>"${_stdout_txt}" \
+		2>"${_timing_txt}" || rc=$?
+
+	if [[ "${rc:-0}" -ne 0 ]]; then
+		printf '[ERR] himt assess on himt failed (rc=%d)\n' "$rc" >&2
+	fi
+
+	# convert HiMT assess html to report
+	local assess_himt_html="${_brg_outdir_i}/assess/himt/himt_mitochondrial.html"
+	local assess_report_prefix="${_brg_outdir_i}/assess/himt/report/prefix"
+	${_polap_cmd} convert himt2prefix \
+		"${assess_himt_html}" "${assess_report_prefix}"
+
+	if [[ -s "${gfa}" ]]; then
+		${_polap_cmd} bandage png "${gfa}" "${png}"
+	fi
+
+	# assess tippo
+	local gfa="${_brg_outdir_i}/tippo/${long_sra}.fastq.mitochondrial.fasta.filter.fasta.flye/assembly_graph.gfa"
+	local png="${_brg_outdir_i}/tippo/${long_sra}.fastq.mitochondrial.fasta.filter.fasta.flye/assembly_graph.png"
+	local assess_gfa="${_brg_outdir_i}/assess/tippo"
+	himt \
+		assess \
+		--input_file "${gfa}" \
+		--output_dir "${assess_gfa}" \
+		>>"${_stdout_txt}" \
+		2>>"${_timing_txt}" || rc=$?
+
+	if [[ "${rc:-0}" -ne 0 ]]; then
+		printf '[ERR] himt assess on tippo failed (rc=%d)\n' "$rc" >&2
+	fi
+
+	# convert HiMT assess html to report
+	local assess_himt_html="${_brg_outdir_i}/assess/tippo/himt_mitochondrial.html"
+	local assess_report_prefix="${_brg_outdir_i}/assess/tippo/report/prefix"
+	${_polap_cmd} convert himt2prefix \
+		"${assess_himt_html}" "${assess_report_prefix}"
+
+	if [[ -s "${gfa}" ]]; then
+		${_polap_cmd} bandage png "${gfa}" "${png}"
+	fi
+
+	local gfa="${_brg_outdir_i}/pmat2/gfa_result/PMAT_mt_main.gfa"
+	local png="${_brg_outdir_i}/pmat2/gfa_result/PMAT_mt_main.png"
+	local assess_gfa="${_brg_outdir_i}/assess/pmat2"
+	himt \
+		assess \
+		--input_file "${gfa}" \
+		--output_dir "${assess_gfa}" \
+		>>"${_stdout_txt}" \
+		2>>"${_timing_txt}" || rc=$?
+
+	if [[ "${rc:-0}" -ne 0 ]]; then
+		printf '[ERR] himt assess on pmat2 failed (rc=%d)\n' "$rc" >&2
+	fi
+
+	# convert HiMT assess html to report
+	local assess_himt_html="${_brg_outdir_i}/assess/pmat2/himt_mitochondrial.html"
+	local assess_report_prefix="${_brg_outdir_i}/assess/pmat2/report/prefix"
+	${_polap_cmd} convert himt2prefix \
+		"${assess_himt_html}" "${assess_report_prefix}"
+
+	if [[ -s "${gfa}" ]]; then
+		${_polap_cmd} bandage png "${gfa}" "${png}"
+	fi
+
+	# Save system info
+	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+
+	conda deactivate
+
+	# Clean-up
+	rm -rf "${_brg_target}"
+}
+
+# 2025-11-30
+run-pmat2_genus_species() {
+	local _brg_outdir="${1:-$_brg_outdir}"
+	local _brg_sindex="${2:-$_brg_sindex}"
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	# Create folders
+	rm -rf "${_brg_target}"
+	mkdir -p "${_brg_target}"
+	mkdir -p "/tmp/${_brg_target}"
+	mkdir -p "${_brg_outdir_i}"
+
+	# ln -sf "${_brg_tmpdir}/l.fq" "${long_sra}.fastq"
+	_brg_input_data="${long_sra}.fastq"
+
+	# check the input
+	# prepare if there is no such one
+
+	_polap_lib_conda-ensure_conda_env polap-pmat2 || exit 1
+
+	# local _fc=30
+	# local formatted_fc=$(printf "%02d" "${_fc}")
+
+	_log_echo "pmat2 on ${_brg_rundir}"
+	# local formatted_fc=$(printf "%02d" "${_fc}")
+
+	rm -f "${_stdout_txt}"
+	rm -f "${_timing_txt}"
+
+	# Start memory logger
+	_polap_lib_process-start_memtracker "${_memlog_file}" \
+		"${_polap_var_oatk_memtracker_time_interval}"
+
+	local rc
+	local _brg_threads="$(($(grep -c ^processor /proc/cpuinfo)))"
+	local _pmat2_threads="${_brg_threads}"
+
+	# pmat2 options
+	# -k 31 \
+	# -p 1 \
+	# -G mt \
+	# -x 0 \
+	# -F 1 \
+	local pmat_cmd=$(which PMAT)
+	local pmat_out=$(realpath "${_brg_target}")
+	command time -v timeout ${_brg_timeout} $pmat_cmd autoMito \
+		-i "${_brg_input_data}" \
+		-o "/tmp/${_brg_target}" \
+		-t hifi \
+		-m \
+		-T ${_brg_threads} \
+		>"${_stdout_txt}" \
+		2>"${_timing_txt}" || rc=$?
+
+	if [[ "${rc:-0}" -ne 0 ]]; then
+		printf '[ERR] pmat2 failed (rc=%d)\n' "$rc" >&2
+		# decide: exit "$rc" / continue
+	fi
+
+	# Save system info
+	_polap_lib_timing-get_system_info >>"${_timing_txt}"
+
+	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
+
+	conda deactivate
+
+	# Save results
+	rsync -azuq --max-size=5M \
+		"/tmp/${_brg_target}/" "${_brg_rundir}/"
+
+	# Clean-up
+	rm -rf "${_brg_target}"
+	rm -rf "/tmp/${_brg_target}"
 }
 
 run-extract-ptdna-ptgaul_genus_species() {
@@ -11545,6 +11870,10 @@ run-mtgaul_genus_species() {
 	run-ptgaul_genus_species "${_brg_outdir}" "${_brg_sindex}" "mt"
 }
 
+run-download-mtdna_genus_species() {
+	download-mtdna_genus_species "$@"
+}
+
 download-mtdna_genus_species() {
 	local _brg_outdir="${1:-$_brg_outdir}"
 	local _brg_sindex="${2:-$_brg_sindex}"
@@ -11602,6 +11931,10 @@ download-ptdna_genus_species() {
 	local _brg_outdir="${1:-$_brg_outdir}"
 	local _brg_sindex="${2:-$_brg_sindex}"
 	download-mtdna_genus_species "${_brg_outdir}" "${_brg_sindex}" "ptdna"
+}
+
+run-download-ptdna_genus_species() {
+	download-ptdna_genus_species "$@"
 }
 
 run-msbwt_genus_species() {
@@ -11735,6 +12068,79 @@ run-getorganelle_genus_species() {
 
 }
 
+install-pmat2_genus_species() {
+	local want_env="polap-pmat2"
+	local -a pkgs=(
+		apptainer nextdenovo canu blast
+	)
+
+	# Confirm (honors opt_y_flag if you set it elsewhere)
+	local confirm
+	if [[ "${opt_y_flag-}" == "true" ]]; then
+		confirm="yes"
+	else
+		read -r -p "Do you want to install pmat2 in the ${want_env} conda environment? (y/N): " confirm
+	fi
+
+	if [[ "${confirm,,}" == "y" || "${confirm,,}" == "yes" ]]; then
+		# Create/upgrade env (channels first for R/bioconda harmony)
+		_polap_lib_conda-create-env \
+			"$want_env" "${pkgs[@]}" \
+			--channel conda-forge --channel bioconda -y || return 1
+
+		# Quick sanity check that key tools are on PATH
+		local t
+		for t in blastn; do
+			if ! command -v "$t" >/dev/null 2>&1; then
+				echo "WARNING: '$t' not found in '$want_env' PATH." >&2
+			fi
+		done
+
+		wget https://github.com/aiPGAB/PMAT2/archive/refs/tags/v2.1.5.tar.gz
+		tar -zxvf v2.1.5.tar.gz
+		cd PMAT2-2.1.5
+		make
+		./PMAT --help
+	else
+		echo "pmat2 installation is canceled."
+		echo "Check: https://github.com/aiPGAB/PMAT2"
+		echo "wget https://github.com/aiPGAB/PMAT2/archive/refs/tags/v2.1.5.tar.gz"
+		echo "tar -zxvf PMAT2-2.1.5.tar.gz"
+		echo "cd PMAT2-2.1.5"
+		echo "make"
+		echo "./PMAT --help"
+	fi
+}
+
+setup-pmat2_genus_species() {
+
+	_polap_lib_conda-ensure_conda_env polap-pmat2 || exit 1
+
+	if [[ "$CONDA_DEFAULT_ENV" == "polap-pmat2" ]]; then
+		wget https://github.com/aiPGAB/PMAT2/archive/refs/tags/v2.1.5.tar.gz
+		tar -zxvf v2.1.5.tar.gz
+		cd PMAT2-2.1.5
+		make
+		install -Dm755 PMAT "$CONDA_PREFIX/bin/PMAT"
+		cp -r Conserved_PCGs_db "$CONDA_PREFIX/bin/"
+		cp -r container "$CONDA_PREFIX/bin/"
+		cp -r lib "$CONDA_PREFIX/bin/"
+	else
+		echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
+		exit 1
+	fi
+}
+
+test-pmat2_genus_species() {
+	_polap_lib_conda-ensure_conda_env polap-pmat2 || exit 1
+	if [[ "$CONDA_DEFAULT_ENV" == "polap-pmat2" ]]; then
+		$CONDA_PREFIX/bin/PMAT --help
+	else
+		echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
+		exit 1
+	fi
+}
+
 install-pmat_genus_species() {
 	if [[ "${opt_y_flag}" == false ]]; then
 		read -p "Do you want to install pmat in the polap-pmat conda environment? (y/N): " confirm
@@ -11768,6 +12174,42 @@ install-pmat_genus_species() {
 		echo "Ref: https://github.com/bichangwei/PMAT"
 		echo "Ref: wget https://github.com/bichangwei/PMAT/archive/refs/tags/v1.5.3.tar.gz"
 		echo "${help_message_install_pmat}"
+	fi
+}
+
+install-himt_genus_species() {
+	local want_env="polap-himt"
+	local -a pkgs=(
+		shuyuan_tang::himt
+	)
+
+	# Confirm (honors opt_y_flag if you set it elsewhere)
+	local confirm
+	if [[ "${opt_y_flag-}" == "true" ]]; then
+		confirm="yes"
+	else
+		read -r -p "Do you want to install himt in the ${want_env} conda environment? (y/N): " confirm
+	fi
+
+	if [[ "${confirm,,}" == "y" || "${confirm,,}" == "yes" ]]; then
+		# Create/upgrade env (channels first for R/bioconda harmony)
+		_polap_lib_conda-create-env \
+			"$want_env" "${pkgs[@]}" \
+			--channel conda-forge --channel bioconda -y || return 1
+
+		# Quick sanity check that key tools are on PATH
+		local t
+		for t in python; do
+			if ! command -v "$t" >/dev/null 2>&1; then
+				echo "WARNING: '$t' not found in '$want_env' PATH." >&2
+			fi
+		done
+	else
+		echo "himt installation is canceled."
+		echo "https://anaconda.org/channels/shuyuan_tang/packages/himt/overview"
+		echo "Check: https://github.com/tang-shuyuan/HiMT"
+		echo "conda install shuyuan_tang::himt -c bioconda"
+		echo "Execute: himt"
 	fi
 }
 
@@ -16186,7 +16628,7 @@ test_genus_species() {
 # BEGIN: common manuscript functions
 #
 man_genus_species() {
-	local first_arg="${1}"
+	local first_arg="${1:-help}"
 	local remaining_args=("${@:2}")
 
 	man-${first_arg}_genus_species "${remaining_args[@]}"
@@ -16331,4 +16773,89 @@ EOF
 	parse_commandline
 
 	echo "$ref"
+}
+
+use_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - choose polap's data analysis
+
+Synopsis:
+  bolap ${bolap_cmd} DATA
+
+Description:
+  bolap ${bolap_cmd} allows to choose polap's data analysis; DATA can be aflye, cflye, read.
+Each DATA has its own benchmark and man bolap subcommand.
+
+Examples:
+  Choose read polap's data analysis.
+    bolap ${bolap_cmd} --data read --folder \$HOME
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local _brg_topic=""
+	local data="read"
+	local folder="${HOME}"
+
+	parse_commandline() {
+		# echo "${_brg_args[@]}" >&2
+		set -- "${_brg_args[@]}"
+
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--folder)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					folder="$2"
+					shift || true
+				fi
+				;;
+			--data)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					data="$2"
+					shift || true
+				fi
+				;;
+			-*)
+				_log_echo0 "[ERROR] no such options: $1"
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	# echo "H: $_brg_help" >&2
+
+	declare -n ref="help_message"
+	if [[ "${_brg_help}" == "on" ]]; then
+		echo "$_brg_help" >&2
+		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
+		man "$manfile"
+		rm -f "$manfile"
+		return
+	fi
+
+	# echo "H1: $data" >&2
+	parse_commandline
+	# echo "H2: $data" >&2
+
+	_log_echo "${bolap_cmd}_genus_species" "${data}" "${folder}"
+	echo "${data}" >"${folder}/.bolaprc"
+	echo "bolap use data: ${data}"
+
+	# echo "$ref: $_brg_topic" >&2
 }

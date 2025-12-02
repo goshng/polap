@@ -268,6 +268,7 @@ fi
 opt_m_arg="off"
 opt_y_flag=false
 opt_f_flag=false
+_brg_timeout="1h"
 opt_e_arg=""
 _brg_help="off"
 _brg_preset=""
@@ -300,7 +301,7 @@ commands:
   run                  Run tools
   download             Download data.
   uninstall            Uninstall tools.
-  use                  Use one of benchmark analysis datasets: read, cflye, aflye
+  use                  Use one of benchmark analysis datasets: read, cflye, aflye, hifi
   conda                Manage conda environments.
   list                 List for tools.
   help                 Print help message for commands and others.
@@ -312,7 +313,7 @@ options:
   -i INT               Set species index (default: ${_brg_sindex})
   -c FILE              Set value for -c option (default: ${opt_c_arg})
   -t STR               Set value for -t option (default: ${opt_t_arg})
-  -f                   Enable profiling.
+  -f STR               Set timeout and enable profiling (default: ${_brg_timeout})
   -y                   Yes for all questions.
   -v                   Enable verbose mode.
   --remote STR         Set the remote cental server (default: none).
@@ -410,7 +411,10 @@ parse_commandline() {
 			opt_y_flag=true
 			;;
 		-f)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			opt_f_flag=true
+			_brg_timeout="$2"
+			shift
 			;;
 		--preset)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1

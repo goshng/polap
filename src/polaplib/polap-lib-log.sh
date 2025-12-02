@@ -110,6 +110,27 @@ _polap_log1() { _polap__emit "L1" 3 "$*"; }
 _polap_log2() { _polap__emit "L2" 3 "$*"; }
 _polap_log3() { _polap__emit "L3" 3 "$*"; }
 
+_polap_log0n() {
+	local i="${1}"
+	i=$((i + 3))
+	_polap__emit "L0" 3 "$*"
+}
+_polap_log1n() {
+	local i="${1}"
+	i=$((i + 3))
+	_polap__emit "L1" 3 "$*"
+}
+_polap_log2n() {
+	local i="${1}"
+	i=$((i + 3))
+	_polap__emit "L2" 3 "$*"
+}
+_polap_log3n() {
+	local i="${1}"
+	i=$((i + 3))
+	_polap__emit "L3" 3 "$*"
+}
+
 _polap_log0_log() { _polap_log0 "LOG: $*"; }
 _polap_log1_log() { _polap_log1 "LOG: $*"; }
 _polap_log2_log() { _polap_log2 "LOG: $*"; }
@@ -372,3 +393,19 @@ _polap_log3_column() { _polap__file_info "${1:?}" "L3" && column -t -- "$1" 1>&2
 
 # ---------- Function banner ---------------------------------------------------
 _polap_log_function() { _polap__emit "L3" 3 "$*"; }
+
+_polap_log0_file() {
+	_polap_log0 "FILE: $@"
+}
+
+_polap_log1_file() {
+	_polap_log1 "FILE: $@"
+}
+
+_polap_log2_file() {
+	_polap_log2 "FILE: $@"
+}
+
+_polap_log3_file() {
+	_polap_log3 "FILE: $@"
+}

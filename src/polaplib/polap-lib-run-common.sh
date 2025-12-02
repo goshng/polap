@@ -80,6 +80,7 @@ polap__emit() {
 	if ((POLAP_VERBOSE >= need)); then
 		printf '%s\n' "$line" >&2
 	fi
+	return 0
 }
 
 # public log shorthands (depth=3 is suited for wrappers that call emit)

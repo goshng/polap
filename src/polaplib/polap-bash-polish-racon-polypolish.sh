@@ -1,36 +1,58 @@
 #!/usr/bin/env bash
-# Version: v0.8.0
-# Name: polap-bash-polish-racon-polypolish.sh
-#
-# MTPT-aware organelle polishing with:
-#   1) Competitive read assignment (target + other organelle)
-#   2) Long-read polish (racon xN; Medaka optional, OFF by default)
-#   3) cp↔mt transfer detection → mask + reports
-#   4) Short-read polish (Polypolish) only in mask-complement regions
-#   5) Coverage diagnostics (all ONT vs assigned ONT) with MTPT shading
-#
-# Polypolish aligner choices (for all-per-read mapping): bowtie2 (default) | bwa | minimap2
-#   bowtie2 : --very-sensitive -a
-#   bwa-mem2: -a
-#   minimap2: -x sr -a
-#
-# Helpers expected in: $POLAPLIB_DIR/scripts/
-#   polap_py_paf_filter.py
-#   polap_py_mask_from_paf.py
-#   polap_py_bed_complement.py
-#   polap_py_paf_to_hits_tsv.py
-#   polap_py_bed_add_len.py
-#   polap_py_assign_ont_ids.py
-#   polap_py_assign_sr_ids.py
-#   polap_py_fastq_filter_by_ids.py
-#   polap_py_bam_coverage_bins.py
-#   polap_r_covplot_mtpt_overlay.R
-#   polap_r_mask_qc.R
-#
+# File: polap-bash-polish-racon-polypolish.sh
+# Version: v0.9.2
+# MTPT-aware organelle polishing with failsafe step wrappers.
 set -Eeuo pipefail
 
-# ---------- Paths ----------
+# ---------- Locate polaplib and source run lib ----------
 POLAPLIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd -P)"
+RUNLIB="${POLAPLIB_DIR}/polap-lib-run-command.sh"
+[[ -s "$RUNLIB" ]] || {
+	echo "Missing: $RUNLIB" >&2
+	exit 2
+}
+# shellcheck source=polap-lib-run-command.sh
+source "$RUNLIB"
+
+# polap_run_wrapper() {
+# 	local name="$1"
+# 	shift
+# 	local stepdir="$OUTDIR/.polap-run/$name"
+# 	local steplog="$stepdir/step.log"
+# 	polap__ensure_dir "$stepdir"
+#
+# 	if ((POLAP_FORCE == 0)) && [[ -e "$stepdir/.ok" ]]; then
+# 		polap_log1 "SKIP (ok): $name"
+# 		return 0
+# 	fi
+#
+# 	printf '%q ' "$@" >"$stepdir/cmd.txt"
+# 	: >"$stepdir/.running"
+# 	polap_log1 "RUN : $name"
+#
+# 	if ((POLAP_DRYRUN == 1)); then
+# 		rm -f "$stepdir/.running"
+# 		return 0
+# 	fi
+#
+# 	local rc=0
+# 	(
+# 		set -Eeuo pipefail
+# 		"$@"
+# 	) >>"$steplog" 2>&1 || rc=$?
+#
+# 	if ((rc != 0)); then
+# 		rm -f "$stepdir/.running"
+# 		polap_log0 "FAIL: $name (rc=$rc) see $steplog"
+# 		return "$rc"
+# 	fi
+#
+# 	touch "$stepdir/.ok"
+# 	rm -f "$stepdir/.running"
+# 	polap_log1 "DONE: $name"
+# }
+
+# ---------- Helpers & step script paths ----------
 SCRIPTS_DIR="${POLAPLIB_DIR}/scripts"
 
 PAF_FILTER="${SCRIPTS_DIR}/polap_py_paf_filter.py"
@@ -44,6 +66,16 @@ FASTQ_FILTER_BY_IDS="${SCRIPTS_DIR}/polap_py_fastq_filter_by_ids.py"
 COV_BINS="${SCRIPTS_DIR}/polap_py_bam_coverage_bins.py"
 COV_PLOT="${SCRIPTS_DIR}/polap_r_covplot_mtpt_overlay.R"
 MASK_QC_R="${SCRIPTS_DIR}/polap_r_mask_qc.R"
+MAKE_COMBINED="${SCRIPTS_DIR}/polap_py_make_combined_fasta.py"
+
+STEP1_ASSIGN_ONT="${POLAPLIB_DIR}/polap-bash-polish-raconpoly-step1-assign-ont.sh"
+# STEP2_FILTER_FQ="${POLAPLIB_DIR}/polap-bash-polish-raconpoly-step2-filter-fastq-by-ids.sh"
+STEP3_ASSIGN_SR="${POLAPLIB_DIR}/polap-bash-polish-raconpoly-step3-assign-sr.sh"
+STEP4_RACON_RND="${POLAPLIB_DIR}/polap-bash-polish-raconpoly-step4-racon-round.sh"
+STEP5_MEDAKA="${POLAPLIB_DIR}/polap-bash-polish-raconpoly-step5-medaka.sh"
+STEP6_A2A_MASK="${POLAPLIB_DIR}/polap-bash-polish-raconpoly-step6-a2a-mask.sh"
+STEP7_COVERAGE="${POLAPLIB_DIR}/polap-bash-polish-raconpoly-step7-coverage.sh"
+STEP8_POLYPOL="${POLAPLIB_DIR}/polap-bash-polish-raconpoly-step8-polypolish.sh"
 
 # ---------- Defaults ----------
 TARGET="mt" # mt | cp
@@ -54,40 +86,25 @@ SR1=""
 SR2=""
 OUTDIR=""
 THREADS=16
-
-# LR polish
 RACON_ROUNDS=2
 ONT_PRESET="map-ont"
 PAF_MIN_IDENT=0.91
 PAF_MIN_ALEN=3000
-USE_MEDAKA=0 # default OFF
+USE_MEDAKA=0
 MEDAKA_MODEL="r941_min_sup_g507"
-
-# Mask detection (cp→mt for mt target; mt→cp for cp target)
-MASK_POLICY="auto" # auto:on for mt, off for cp
+MASK_POLICY="auto"
 MASK_MIN_IDENT=0.85
 MASK_MIN_LEN=150
 MASK_PAD=1000
 RUN_MASK_QC=1
-
-# Coverage diagnostics
 COV_DISABLE=0
 COV_BIN=200
 COV_MIN_MAPQ=0
-
-# Assignment thresholds
 ASSIGN_MAPQ=30
-
-# Polypolish aligner choice
 PP_ALIGNER="bowtie2" # bowtie2 | bwa | minimap2
-
-# ---------- Logging ----------
-ts() { date "+%Y-%m-%d %H:%M:%S"; }
-log() { echo "[$(ts)] $*" >&2; }
-die() {
-	echo "[$(ts)] ERROR: $*" >&2
-	exit 2
-}
+: "${PP_MMSR_SECONDARIES:=0}"
+: "${POLAP_FORCE:=0}"
+: "${POLAP_DRYRUN:=0}"
 
 usage() {
 	cat <<EOF
@@ -100,12 +117,8 @@ Usage:
     [--mask auto|on|off] [--mask-min-ident 0.85] [--mask-min-len 150] [--mask-pad 1000] [--mask-qc 0|1] \\
     [--cov-disable 0|1] [--cov-bin 200] [--cov-min-mapq 0] \\
     [--assign-mapq 30] \\
-    [--pp-aligner bowtie2|bwa|minimap2]
-
-Outputs:
-  polishing:  <outdir>/polished.fa
-  masks:      <outdir>/mask/transfer.mask.bed + .hits.tsv + .merged.tsv (+ mask_qc.tsv/.pdf)
-  coverage:   <outdir>/coverage/coverage_overlay.pdf + coverage_summary.tsv
+    [--pp-aligner bowtie2|bwa|minimap2] [--pp-mm2-secondary 0|1] \\
+    [--force 0|1] [--dry-run 0|1]
 EOF
 }
 
@@ -144,7 +157,6 @@ while (($#)); do
 		THREADS="${2:?}"
 		shift 2
 		;;
-
 	--racon-rounds)
 		RACON_ROUNDS="${2:?}"
 		shift 2
@@ -169,7 +181,6 @@ while (($#)); do
 		MEDAKA_MODEL="${2:?}"
 		shift 2
 		;;
-
 	--mask)
 		MASK_POLICY="${2:?}"
 		shift 2
@@ -190,7 +201,6 @@ while (($#)); do
 		RUN_MASK_QC="${2:?}"
 		shift 2
 		;;
-
 	--cov-disable)
 		COV_DISABLE="${2:?}"
 		shift 2
@@ -203,7 +213,6 @@ while (($#)); do
 		COV_MIN_MAPQ="${2:?}"
 		shift 2
 		;;
-
 	--assign-mapq)
 		ASSIGN_MAPQ="${2:?}"
 		shift 2
@@ -212,258 +221,317 @@ while (($#)); do
 		PP_ALIGNER="${2:?}"
 		shift 2
 		;;
-
+	--pp-mm2-secondary)
+		PP_MMSR_SECONDARIES="${2:?}"
+		shift 2
+		;;
+	--force)
+		POLAP_FORCE="${2:?}"
+		shift 2
+		;;
+	--dry-run)
+		POLAP_DRYRUN="${2:?}"
+		shift 2
+		;;
 	-h | --help)
 		usage
 		exit 0
 		;;
-	*) die "Unknown option: $1" ;;
+	*) polap_die "Unknown option: $1" ;;
 	esac
 done
 
 [[ -n "$FASTA" && -n "$OUTDIR" ]] || {
 	usage
-	die "Required: --fasta and --outdir"
+	polap_die "Required: --fasta and --outdir"
 }
-[[ "$TARGET" == "mt" || "$TARGET" == "cp" ]] || die "--target must be mt or cp"
-[[ -s "$FASTA" ]] || die "FASTA not found: $FASTA"
-[[ -n "$OTHER" ]] && [[ ! -s "$OTHER" ]] && die "Other FASTA not found: $OTHER"
 
-mkdir -p "$OUTDIR"/{stage0_assign,stage1_racon,mask,stage3_polypolish,coverage,final,logs}
+[[ "$TARGET" == "mt" || "$TARGET" == "cp" ]] || polap_die "--target must be mt or cp"
+
+[[ -s "$FASTA" ]] || polap_die "FASTA not found: $FASTA"
+
+[[ -n "$OTHER" ]] && [[ ! -s "$OTHER" ]] && polap_die "Other FASTA not found: $OTHER"
+
+# ---------- Prepare dirs, logging, lock ----------
+install -d -- "$OUTDIR"/{stage0_assign,stage1_racon,mask,stage3_polypolish,coverage,final,logs}
+LOG_FILE="$OUTDIR/logs/main.log"
+LOCKDIR="$OUTDIR/.lock"
+polap_lock_acquire_wrapper "$LOCKDIR" || polap_die "Another process is using $OUTDIR (lock busy)."
 
 # ---------- deps ----------
-need() { command -v "$1" >/dev/null 2>&1 || die "Missing dependency: $1"; }
-need samtools
-need minimap2
-need racon
-need polypolish
-need python3
-# optional aligners for Polypolish
+polap_require samtools minimap2 racon polypolish python3
+
 case "$PP_ALIGNER" in
-bowtie2) need bowtie2 ;;
-bwa) need bwa-mem2 ;;
-minimap2) ;; # already required
-*) die "--pp-aligner must be bowtie2|bwa|minimap2" ;;
+bowtie2) polap_require bowtie2 ;;
+bwa) polap_require bwa-mem2 ;;
+minimap2) : ;;
+*) polap_die "--pp-aligner must be bowtie2|bwa|minimap2" ;;
 esac
-# helpers present?
+
 for f in "$PAF_FILTER" "$MASK_FROM_PAF" "$BED_COMPLEMENT" "$PAF_TO_HITS" "$BED_ADD_LEN" \
-	"$ASSIGN_ONT_IDS" "$ASSIGN_SR_IDS" "$FASTQ_FILTER_BY_IDS" "$COV_BINS" "$COV_PLOT"; do
-	[[ -s "$f" ]] || die "Helper missing: $f"
+	"$ASSIGN_ONT_IDS" "$ASSIGN_SR_IDS" "$FASTQ_FILTER_BY_IDS" "$COV_BINS" "$MAKE_COMBINED"; do
+	if [[ ! -s "$f" ]]; then
+		polap_die "Helper missing: $f"
+	fi
 done
-# pysam check
-python3 - <<'PY' || die "Python module 'pysam' not found (pip install pysam)"
+
+python3 - <<'PY' || polap_die "Python module 'pysam' not found (pip install pysam)"
 import importlib, sys; importlib.import_module("pysam"); sys.exit(0)
 PY
 
-HAVE_SEQKIT=0
-command -v seqkit >/dev/null 2>&1 && HAVE_SEQKIT=1
-if [[ "$USE_MEDAKA" -eq 1 ]] && ! command -v medaka_consensus >/dev/null 2>&1; then
-	log "Medaka requested but not found; proceeding without Medaka"
-	USE_MEDAKA=0
-fi
-
-filter_fastq_by_ids() {
-	local fq="$1" ids="$2" out="$3"
-	if [[ "$HAVE_SEQKIT" -eq 1 ]]; then
-		seqkit grep -f "$ids" "$fq" -o "$out" 2>>"$OUTDIR/logs/seqkit.err"
-	else
-		python3 "$FASTQ_FILTER_BY_IDS" --fastq "$fq" --ids "$ids" --out "$out"
-	fi
-}
-
-# ---------- Combined reference ----------
-COMBINED="$OUTDIR/stage0_assign/combined.fa"
+# ---------- Combined reference (Python; no AWK) ----------
+ASSIGN_DIR="$OUTDIR/stage0_assign"
+COMBINED="$ASSIGN_DIR/combined.fa"
 TGT_PREFIX="${TARGET}|"
 OTH_PREFIX="$([[ "$TARGET" == "mt" ]] && echo "cp|" || echo "mt|")"
-{
-	awk -vP="$TGT_PREFIX" '/^>/{sub(/^>/,">"P)}1' "$FASTA"
-	if [[ -n "$OTHER" ]]; then awk -vP="$OTH_PREFIX" '/^>/{sub(/^>/,">"P)}1' "$OTHER"; fi
-} >"$COMBINED"
-samtools faidx "$COMBINED" >/dev/null
+
+POLAP_RUN_BACKEND="direct"
+if ! polap_run_wrapper "s0_combined_fa" \
+	python3 "$MAKE_COMBINED" \
+	--target-fasta "$FASTA" --target-prefix "$TGT_PREFIX" \
+	${OTHER:+--other-fasta "$OTHER"} ${OTHER:+--other-prefix "$OTH_PREFIX"} \
+	--out "$COMBINED"; then
+	polap_log0 "[s0_combined_fa] FAILED"
+	polap_lock_release_wrapper "$LOCKDIR"
+	exit 1
+fi
+
+POLAP_RUN_BACKEND=""
+if ! polap_run_wrapper "s0_combined_fai" \
+	samtools faidx "$COMBINED"; then
+	polap_log0 "[s0_combined_fai] FAILED"
+	polap_lock_release_wrapper "$LOCKDIR"
+	exit 1
+fi
 
 # ---------- Stage 0: assignment ----------
-ASSIGN_DIR="$OUTDIR/stage0_assign"
 LR_ASSIGNED="$ASSIGN_DIR/ont.target.fq.gz"
 SR1_ASSIGNED="$ASSIGN_DIR/sr.target.R1.fq.gz"
 SR2_ASSIGNED="$ASSIGN_DIR/sr.target.R2.fq.gz"
 HAVE_LR=0
 HAVE_SR=0
 
+# ONT
+IDS_ONT="$ASSIGN_DIR/ont.target.ids"
 if [[ -n "$ONT" ]]; then
-	log "Assign ONT → target (MAPQ≥$ASSIGN_MAPQ)"
-	minimap2 -ax "$ONT_PRESET" -t "$THREADS" "$COMBINED" "$ONT" |
-		samtools view -h -F 0x900 - |
-		python3 "$ASSIGN_ONT_IDS" --sam - --target-prefix "$TGT_PREFIX" --mapq "$ASSIGN_MAPQ" \
-			>"$ASSIGN_DIR/ont.target.ids"
-	n_ont=$(wc -l <"$ASSIGN_DIR/ont.target.ids" || echo 0)
-	[[ "$n_ont" -gt 0 ]] || die "No ONT reads assigned; adjust --assign-mapq or inputs"
-	filter_fastq_by_ids "$ONT" "$ASSIGN_DIR/ont.target.ids" "$LR_ASSIGNED"
+
+	POLAP_RUN_BACKEND="direct"
+	if ! polap_run_wrapper "s0_assign_ont_ids" \
+		bash "$STEP1_ASSIGN_ONT" -r "$COMBINED" -q "$ONT" -x "$TGT_PREFIX" \
+		-m "$ASSIGN_MAPQ" -p "$ONT_PRESET" -t "$THREADS" -o "$IDS_ONT"; then
+		polap_log0 "[s0_assign_ont_ids] FAILED"
+		polap_lock_release_wrapper "$LOCKDIR"
+		exit 1
+	fi
+
+	POLAP_RUN_BACKEND=""
+	if ! [[ -s "$IDS_ONT" ]]; then
+		polap_log0 "No ONT reads assigned; adjust --assign-mapq or inputs"
+		polap_lock_release_wrapper "$LOCKDIR"
+		exit 1
+	fi
+
+	if ! polap_run_wrapper "s0_filter_ont_to_target" \
+		seqkit grep -f "$IDS_ONT" "$ONT" -o "$LR_ASSIGNED"; then
+		polap_log0 "[s0_filter_ont_to_target] FAILED"
+		polap_lock_release_wrapper "$LOCKDIR"
+		exit 1
+	fi
+
+	# if ! polap_run_wrapper "s0_filter_ont_to_target" \
+	# 	bash "$STEP2_FILTER_FQ" -i "$ONT" -l "$IDS_ONT" -o "$LR_ASSIGNED"; then
+	# 	polap_log0 "[s0_filter_ont_to_target] FAILED"
+	# 	polap_lock_release_wrapper "$LOCKDIR"
+	# 	exit 1
+	# fi
+
 	HAVE_LR=1
 else
-	log "No ONT provided; LR polish & coverage will be skipped"
+	polap_log1 "No ONT provided; LR polish & coverage will be skipped"
 fi
 
+# SR pairs
+IDS_SR="$ASSIGN_DIR/sr.target.ids"
 if [[ -n "$SR1" && -n "$SR2" ]]; then
-	log "Assign Illumina → target (both ends MAPQ≥$ASSIGN_MAPQ)"
-	mkdir -p "$ASSIGN_DIR/bt2idx"
-	bowtie2-build "$COMBINED" "$ASSIGN_DIR/bt2idx/comb" >"$OUTDIR/logs/assign_bt2_build.out" 2>"$OUTDIR/logs/assign_bt2_build.err"
-	bowtie2 --very-sensitive -x "$ASSIGN_DIR/bt2idx/comb" -1 "$SR1" -2 "$SR2" -p "$THREADS" 2>"$OUTDIR/logs/assign_bt2.err" |
-		samtools view -bh - |
-		python3 "$ASSIGN_SR_IDS" --bam - --target-prefix "$TGT_PREFIX" --mapq "$ASSIGN_MAPQ" \
-			>"$ASSIGN_DIR/sr.target.ids"
-	n_sr=$(wc -l <"$ASSIGN_DIR/sr.target.ids" || echo 0)
-	if [[ "$n_sr" -gt 0 ]]; then
-		filter_fastq_by_ids "$SR1" "$ASSIGN_DIR/sr.target.ids" "$SR1_ASSIGNED"
-		filter_fastq_by_ids "$SR2" "$ASSIGN_DIR/sr.target.ids" "$SR2_ASSIGNED"
+	POLAP_RUN_BACKEND="direct"
+	if ! polap_run_wrapper "s0_assign_sr_ids" \
+		bash "$STEP3_ASSIGN_SR" -r "$COMBINED" -x "$TGT_PREFIX" -m "$ASSIGN_MAPQ" -t "$THREADS" \
+		-1 "$SR1" -2 "$SR2" -o "$IDS_SR"; then
+		polap_log0 "[s0_assign_sr_ids] FAILED"
+		polap_lock_release_wrapper "$LOCKDIR"
+		exit 1
+	fi
+
+	POLAP_RUN_BACKEND=""
+	if [[ -s "$IDS_SR" ]]; then
+		# Filter R1 reads by assigned IDs
+		if ! polap_run_wrapper "s0_filter_sr_R1" \
+			seqkit grep -f "$IDS_SR" "$SR1" -o "$SR1_ASSIGNED"; then
+			polap_log0 "[s0_filter_sr_R1] FAILED"
+			polap_lock_release_wrapper "$LOCKDIR"
+			exit 1
+		fi
+
+		# Filter R2 reads by assigned IDs
+		if ! polap_run_wrapper "s0_filter_sr_R2" \
+			seqkit grep -f "$IDS_SR" "$SR2" -o "$SR2_ASSIGNED"; then
+			polap_log0 "[s0_filter_sr_R2] FAILED"
+			polap_lock_release_wrapper "$LOCKDIR"
+			exit 1
+		fi
+
 		HAVE_SR=1
 	else
-		log "WARNING: no short-read pairs confidently assigned; SR polish will be skipped."
+		polap_log1 "WARNING: no short-read pairs confidently assigned; SR polish will be skipped."
 	fi
+
+	# if [[ -s "$IDS_SR" ]]; then
+	# 	if ! polap_run_wrapper "s0_filter_sr_R1" bash "$STEP2_FILTER_FQ" -i "$SR1" -l "$IDS_SR" -o "$SR1_ASSIGNED"; then
+	# 		polap_log0 "[s0_filter_sr_R1] FAILED"
+	# 		polap_lock_release_wrapper "$LOCKDIR"
+	# 		exit 1
+	# 	fi
+	# 	if ! polap_run_wrapper "s0_filter_sr_R2" bash "$STEP2_FILTER_FQ" -i "$SR2" -l "$IDS_SR" -o "$SR2_ASSIGNED"; then
+	# 		polap_log0 "[s0_filter_sr_R2] FAILED"
+	# 		polap_lock_release_wrapper "$LOCKDIR"
+	# 		exit 1
+	# 	fi
+	# 	HAVE_SR=1
+	# else
+	# 	polap_log1 "WARNING: no short-read pairs confidently assigned; SR polish will be skipped."
+	# fi
+
 else
-	log "No SR provided; SR polish will be skipped"
+	polap_log1 "No SR provided; SR polish will be skipped"
 fi
 
-((HAVE_LR == 1 || HAVE_SR == 1)) || die "No reads assigned; nothing to polish"
+((HAVE_LR == 1 || HAVE_SR == 1)) || {
+	polap_log0 "No reads assigned; nothing to polish"
+	polap_lock_release_wrapper "$LOCKDIR"
+	exit 1
+}
 
-# ---------- Stage 1: Long-read polish ----------
+# ---------- Stage 1: Racon xN, optional Medaka ----------
 CUR="$FASTA"
 if ((HAVE_LR == 1)); then
-	log "Stage 1: racon x${RACON_ROUNDS} (preset=${ONT_PRESET}; NO mask at LR stage)"
+	polap_log1 "Stage 1: racon x${RACON_ROUNDS} (preset=${ONT_PRESET})"
 	for r in $(seq 1 "$RACON_ROUNDS"); do
-		RAW="$OUTDIR/stage1_racon/r${r}.raw.paf"
-		FLT="$OUTDIR/stage1_racon/r${r}.flt.paf"
 		OUTFA="$OUTDIR/stage1_racon/polished.r${r}.fa"
-		minimap2 -x "$ONT_PRESET" -t "$THREADS" -c --secondary=no "$CUR" "$LR_ASSIGNED" >"$RAW" 2>"$OUTDIR/logs/r${r}.minimap2.err"
-		python3 "$PAF_FILTER" --min-ident "$PAF_MIN_IDENT" --min-alen "$PAF_MIN_ALEN" --in "$RAW" --out "$FLT" 2>>"$OUTDIR/logs/r${r}.paf_filter.err"
-		[[ -s "$FLT" ]] || {
-			log "WARN: filtered PAF empty; fallback to RAW"
-			cp -f "$RAW" "$FLT"
-		}
-		racon -t "$THREADS" "$LR_ASSIGNED" "$FLT" "$CUR" >"$OUTFA" 2>"$OUTDIR/logs/r${r}.racon.err"
+		if ! polap_run_wrapper "s1_r${r}_racon_round" \
+			bash "$STEP4_RACON_RND" -R "$LR_ASSIGNED" -A "$CUR" -p "$ONT_PRESET" -t "$THREADS" \
+			-i "$PAF_MIN_IDENT" -a "$PAF_MIN_ALEN" -n "$r" -O "$OUTFA" -D "$OUTDIR/stage1_racon"; then
+			polap_log0 "[s1_r${r}_racon_round] FAILED"
+			polap_lock_release_wrapper "$LOCKDIR"
+			exit 1
+		fi
+
+		# Index the new consensus so any downstream tool (R coverage plot) can read .fai
+		if ! polap_run_wrapper "s1_r${r}_faidx" \
+			samtools faidx "$OUTFA"; then
+			polap_log0 "[s1_r${r}_faidx] FAILED"
+			polap_lock_release_wrapper "$LOCKDIR"
+			exit 1
+		fi
+
 		CUR="$OUTFA"
 	done
-	if [[ "$USE_MEDAKA" -eq 1 ]] && command -v medaka_consensus >/dev/null 2>&1; then
-		log "Stage 1b: medaka (model=$MEDAKA_MODEL)"
-		MED_DIR="$OUTDIR/stage1_racon/medaka"
-		mkdir -p "$MED_DIR"
-		minimap2 -ax "$ONT_PRESET" -t "$THREADS" "$CUR" "$LR_ASSIGNED" | samtools sort -@ "$THREADS" -o "$MED_DIR/reads.sorted.bam" -
-		samtools index -@ "$THREADS" "$MED_DIR/reads.sorted.bam"
-		medaka_consensus -i "$LR_ASSIGNED" -d "$CUR" -o "$MED_DIR" -m "$MEDAKA_MODEL" -t "$THREADS" \
-			1>"$OUTDIR/logs/medaka.out" 2>"$OUTDIR/logs/medaka.err" || log "Medaka failed; keep racon result"
-		[[ -s "$MED_DIR/consensus.fasta" ]] && CUR="$MED_DIR/consensus.fasta"
-	fi
+
+	# We do not use medaka because we do not know the exact sequencing platform.
+	#
+	# if [[ "$USE_MEDAKA" -eq 1 ]] && command -v medaka_consensus >/dev/null 2>&1; then
+	# 	MED_DIR="$OUTDIR/stage1_racon/medaka"
+	# 	if ! polap_run_wrapper "s1_medaka" \
+	# 		bash "$STEP5_MEDAKA" -R "$LR_ASSIGNED" -A "$CUR" -m "$MEDAKA_MODEL" -t "$THREADS" -o "$MED_DIR"; then polap_log0 "[s1_medaka] FAILED (continue with racon)"; fi
+	# 	[[ -s "$MED_DIR/consensus.fasta" ]] && CUR="$MED_DIR/consensus.fasta"
+	# else
+	# 	polap_log1 "Medaka OFF or not found"
+	# fi
 fi
 
-# ---------- Stage 2: Mask detection + reports ----------
-if [[ "$MASK_POLICY" == "auto" ]]; then
-	if [[ "$TARGET" == "mt" ]]; then MASK_POLICY="on"; else MASK_POLICY="off"; fi
-fi
+# ---------- Stage 2: Mask detect + reports ----------
+
+# 3 cases but only 2 cases.
+# 1. No mask
+# 2. Detect MTPT candidates
+# 3. or we could use detected MTPT.
+#
+[[ "$MASK_POLICY" == "auto" ]] && { if [[ "$TARGET" == "mt" ]]; then MASK_POLICY="on"; else MASK_POLICY="off"; fi; }
 MASK_DIR="$OUTDIR/mask"
-mkdir -p "$MASK_DIR"
+install -d -- "$MASK_DIR"
 MASK_BED="$MASK_DIR/transfer.mask.bed"
 ALLOW_BED="$MASK_DIR/allow.bed"
-A2A_PAF="$MASK_DIR/a2a.raw.paf"
-A2A_FILT="$MASK_DIR/a2a.filt.paf"
-MASK_HITS_TSV="$MASK_DIR/transfer.mask.hits.tsv"
-MASK_MERGED_TSV="$MASK_DIR/transfer.mask.merged.tsv"
 
 if [[ "$MASK_POLICY" == "off" || -z "$OTHER" || ! -s "$OTHER" ]]; then
-	log "Stage 2: mask OFF or --other missing; ALLOW = whole assembly"
-	python3 "$BED_COMPLEMENT" --fasta "$CUR" --bed /dev/null --out-bed "$ALLOW_BED" >/dev/null 2>&1
+
+	polap_log1 "Stage 2: mask OFF or --other missing; ALLOW = whole assembly"
+	if ! polap_run_wrapper "s2_allow_whole" \
+		python3 "$BED_COMPLEMENT" --fasta "$CUR" --bed /dev/null --out-bed "$ALLOW_BED"; then
+		polap_log0 "[s2_allow_whole] FAILED"
+		polap_lock_release_wrapper "$LOCKDIR"
+		exit 1
+	fi
 	: >"$MASK_BED"
+
 else
-	log "Stage 2: detect $([[ "$TARGET" == "mt" ]] && echo 'cp→mt' || echo 'mt→cp')) transfers"
-	minimap2 -x asm10 -t "$THREADS" -c --secondary=no "$CUR" "$OTHER" >"$A2A_PAF" 2>"$OUTDIR/logs/a2a.minimap2.err"
-	python3 "$PAF_FILTER" --min-ident "$MASK_MIN_IDENT" --min-alen "$MASK_MIN_LEN" --in "$A2A_PAF" --out "$A2A_FILT" 2>"$OUTDIR/logs/a2a.filter.err"
-	python3 "$MASK_FROM_PAF" --paf "$A2A_FILT" --fasta "$CUR" --pad "$MASK_PAD" --out-bed "$MASK_BED" 2>"$OUTDIR/logs/mask_from_paf.err"
-	python3 "$BED_COMPLEMENT" --fasta "$CUR" --bed "$MASK_BED" --out-bed "$ALLOW_BED" 2>"$OUTDIR/logs/bed_complement.err"
-	python3 "$PAF_TO_HITS" --paf "$A2A_FILT" --out "$MASK_HITS_TSV" 2>"$OUTDIR/logs/paf_to_hits.err"
-	python3 "$BED_ADD_LEN" --fasta "$CUR" --bed "$MASK_BED" --out "$MASK_MERGED_TSV" 2>"$OUTDIR/logs/bed_add_len.err"
-	if [[ "$RUN_MASK_QC" -eq 1 ]] && command -v Rscript >/dev/null 2>&1 && [[ -s "$MASK_QC_R" ]]; then
-		Rscript --vanilla "$MASK_QC_R" --fasta "$CUR" --bed "$MASK_BED" \
-			--outpdf "$MASK_DIR/mask_qc.pdf" --outtsv "$MASK_DIR/mask_qc.tsv" >/dev/null 2>&1 || true
+
+	if ! polap_run_wrapper "s2_mask_detect" \
+		bash "$STEP6_A2A_MASK" -A "$CUR" -O "$OTHER" -t "$THREADS" \
+		-i "$MASK_MIN_IDENT" -l "$MASK_MIN_LEN" -p "$MASK_PAD" -d "$MASK_DIR" -Q "$RUN_MASK_QC"; then
+		polap_log0 "[s2_mask_detect] FAILED"
+		polap_lock_release_wrapper "$LOCKDIR"
+		exit 1
 	fi
+
 fi
 
-# ---------- Stage 2.5: Coverage diagnostics ----------
+# ---------- Stage 2.5: Coverage ----------
 if ((COV_DISABLE == 0)) && [[ -n "$ONT" ]] && ((HAVE_LR == 1)); then
-	log "Stage 2.5: coverage (all ONT vs assigned ONT), bin=${COV_BIN}, minMAPQ=${COV_MIN_MAPQ}"
-	COV_DIR="$OUTDIR/coverage"
-	mkdir -p "$COV_DIR"
 
-	minimap2 -ax "$ONT_PRESET" -t "$THREADS" "$CUR" "$ONT" |
-		samtools sort -@ "$THREADS" -o "$COV_DIR/allONT.sorted.bam" -
+	# Ensure the assembly used for coverage/overlay has a .fai
+	if ! polap_run_wrapper "s25_cur_faidx" \
+		samtools faidx "$CUR"; then
+		polap_log0 "[s25_cur_faidx] FAILED"
+		polap_lock_release_wrapper "$LOCKDIR"
+		exit 1
+	fi
 
-	samtools index -@ "$THREADS" "$COV_DIR/allONT.sorted.bam"
-
-	minimap2 -ax "$ONT_PRESET" -t "$THREADS" "$CUR" "$ASSIGN_DIR/ont.target.fq.gz" |
-		samtools sort -@ "$THREADS" -o "$COV_DIR/assignedONT.sorted.bam" -
-
-	samtools index -@ "$THREADS" "$COV_DIR/assignedONT.sorted.bam"
-
-	python3 "$COV_BINS" --fasta "$CUR" --bam "$COV_DIR/allONT.sorted.bam" \
-		--bin "$COV_BIN" --min-mapq "$COV_MIN_MAPQ" --source allONT \
-		--out-tsv "$COV_DIR/coverage.allONT.bin${COV_BIN}.tsv"
-
-	python3 "$COV_BINS" --fasta "$CUR" --bam "$COV_DIR/assignedONT.sorted.bam" \
-		--bin "$COV_BIN" --min-mapq "$COV_MIN_MAPQ" --source assignedONT \
-		--out-tsv "$COV_DIR/coverage.assignedONT.bin${COV_BIN}.tsv"
-
-	if command -v Rscript >/dev/null 2>&1 && [[ -s "$COV_PLOT" ]]; then
-		Rscript --vanilla "$COV_PLOT" \
-			--fasta "$CUR" \
-			--cov-all "$COV_DIR/coverage.allONT.bin${COV_BIN}.tsv" \
-			--cov-assigned "$COV_DIR/coverage.assignedONT.bin${COV_BIN}.tsv" \
-			--mask "$MASK_BED" \
-			--bin "$COV_BIN" \
-			--out-pdf "$COV_DIR/coverage_overlay.pdf" \
-			--out-tsv "$COV_DIR/coverage_summary.tsv" \
-			--title "$(basename "$OUTDIR"): coverage (all ONT vs assigned ONT)"
+	if ! polap_run_wrapper "s25_coverage" \
+		bash "$STEP7_COVERAGE" -A "$CUR" -Q "$ONT" -E "$ASSIGN_DIR/ont.target.fq.gz" \
+		-t "$THREADS" -b "$COV_BIN" -q "$COV_MIN_MAPQ" -m "$MASK_BED" -o "$OUTDIR/coverage" -R "$COV_PLOT"; then
+		polap_log0 "[s25_coverage] FAILED"
+		polap_lock_release_wrapper "$LOCKDIR"
+		exit 1
 	fi
 else
-	log "Stage 2.5: coverage skipped"
+	polap_log1 "Stage 2.5: coverage skipped"
 fi
 
-# ---------- Stage 3: SR Polypolish (choose aligner) ----------
+# ---------- Stage 3: Polypolish ----------
 FINAL="$CUR"
-if [[ -n "${SR1_ASSIGNED:-}" && -s "$SR1_ASSIGNED" && -n "${SR2_ASSIGNED:-}" && -s "$SR2_ASSIGNED" ]]; then
-	log "Stage 3: Polypolish using --pp-aligner=$PP_ALIGNER (mask enforced)"
-	PP_DIR="$OUTDIR/stage3_polypolish"
-	mkdir -p "$PP_DIR/bt2idx"
-
-	case "$PP_ALIGNER" in
-	bowtie2)
-		bowtie2-build "$CUR" "$PP_DIR/bt2idx/asm" >"$OUTDIR/logs/pp_build.out" 2>"$OUTDIR/logs/pp_build.err"
-		bowtie2 --very-sensitive -a -x "$PP_DIR/bt2idx/asm" -1 "$SR1_ASSIGNED" -2 "$SR2_ASSIGNED" -p "$THREADS" 2>"$OUTDIR/logs/pp_bt2.err" |
-			samtools view -bh - |
-			samtools view -bh -L "$ALLOW_BED" - |
-			samtools sort -n -@ "$THREADS" -o "$PP_DIR/short.name.bam" - 2>"$OUTDIR/logs/pp_sortn.err"
-		;;
-	bwa)
-		bwa-mem2 index "$CUR" >"$OUTDIR/logs/pp_bwa_index.out" 2>"$OUTDIR/logs/pp_bwa_index.err"
-		bwa-mem2 mem -t "$THREADS" -a "$CUR" "$SR1_ASSIGNED" "$SR2_ASSIGNED" 2>"$OUTDIR/logs/pp_bwa.err" |
-			samtools view -bh - |
-			samtools view -bh -L "$ALLOW_BED" - |
-			samtools sort -n -@ "$THREADS" -o "$PP_DIR/short.name.bam" - 2>"$OUTDIR/logs/pp_sortn.err"
-		;;
-	minimap2)
-		minimap2 -x sr -a -t "$THREADS" "$CUR" "$SR1_ASSIGNED" "$SR2_ASSIGNED" 2>"$OUTDIR/logs/pp_mmsr.err" |
-			samtools view -bh - |
-			samtools view -bh -L "$ALLOW_BED" - |
-			samtools sort -n -@ "$THREADS" -o "$PP_DIR/short.name.bam" - 2>"$OUTDIR/logs/pp_sortn.err"
-		;;
-	esac
-
-	POLY_OUT="$PP_DIR/polished.fa"
-	samtools view "$PP_DIR/short.name.bam" | polypolish polish "$CUR" /dev/stdin >"$POLY_OUT" 2>"$OUTDIR/logs/polypolish.err" || true
-	[[ -s "$POLY_OUT" ]] && FINAL="$POLY_OUT"
+PP_DIR="$OUTDIR/stage3_polypolish"
+install -d -- "$PP_DIR"
+if [[ -s "${SR1_ASSIGNED:-/dev/null}" && -s "${SR2_ASSIGNED:-/dev/null}" ]]; then
+	if ! polap_run_wrapper "s3_polypolish" \
+		bash "$STEP8_POLYPOL" -a "$PP_ALIGNER" -S "$PP_MMSR_SECONDARIES" \
+		-A "$CUR" -1 "$SR1_ASSIGNED" -2 "$SR2_ASSIGNED" -B "$ALLOW_BED" \
+		-t "$THREADS" -d "$PP_DIR" -o "$PP_DIR/polished.fa" -b "$PP_DIR/short.name.bam"; then polap_log0 "[s3_polypolish] FAILED (continue)"; else
+		[[ -s "$PP_DIR/polished.fa" ]] && FINAL="$PP_DIR/polished.fa"
+	fi
 else
-	log "Stage 3: SR polish skipped (no confidently assigned pairs)"
+	polap_log1 "Stage 3: SR polish skipped (no confidently assigned pairs)"
 fi
 
-cp -f "$FINAL" "$OUTDIR/polished.fa"
-log "DONE: $OUTDIR/polished.fa"
-log "Summary: TARGET=$TARGET  LR=$([[ -n "$ONT" ]] && echo yes || echo no)  SR=$([[ -n "$SR1" && -n "$SR2" ]] && echo yes || echo no)"
-log "Mask: policy=$MASK_POLICY  thresholds: ident>=$MASK_MIN_IDENT len>=$MASK_MIN_LEN pad=${MASK_PAD}bp"
-log "Coverage: bin=$COV_BIN minMAPQ=$COV_MIN_MAPQ status=$([[ $COV_DISABLE -eq 0 && -n $ONT ]] && echo on || echo off)"
-log "Polypolish aligner: $PP_ALIGNER"
+# ---------- Finalize ----------
+if ! polap_run_wrapper "s4_final_copy" cp -f "$FINAL" "$OUTDIR/polished.fa"; then
+	polap_log0 "[s4_final_copy] FAILED"
+	polap_lock_release_wrapper "$LOCKDIR"
+	exit 1
+fi
+
+polap_log1 "DONE: $OUTDIR/polished.fa"
+polap_log1 "Summary: TARGET=$TARGET LR=$([[ -n "$ONT" ]] && echo yes || echo no) SR=$([[ -n "$SR1" && -n "$SR2" ]] && echo yes || echo no)"
+polap_log1 "Mask: policy=$MASK_POLICY thresholds: ident>=$MASK_MIN_IDENT len>=$MASK_MIN_LEN pad=${MASK_PAD}bp"
+polap_log1 "Coverage: bin=$COV_BIN minMAPQ=$COV_MIN_MAPQ status=$([[ $COV_DISABLE -eq 0 && -n $ONT ]] && echo on || echo off)"
+polap_log1 "Polypolish aligner: $PP_ALIGNER (mm2 secondaries=${PP_MMSR_SECONDARIES})"
+
+polap_lock_release_wrapper "$LOCKDIR"

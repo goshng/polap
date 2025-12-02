@@ -4273,6 +4273,123 @@ Author:
 EOF
 	)
 
+	help_message_review=$(
+		cat <<EOF
+Name:
+  bolap for review
+
+Synopsis:
+  bolap $bolap_cmd --topic STR
+
+Description:
+  bolap
+
+  topic:
+    38, man, review
+
+Examples:
+  Execute polap syncassemble:
+    bolap dataset view --fields=long,short --match=Zea
+
+  Search for the species with SRA accession:
+    bolap config view long,short | grep ERR6210790
+
+  Get data at sfolder/tmp:
+    bolap run data-long -s Brassica_rapa [--remote main-host-name]
+
+    bolap run data-short -s Brassica_rapa [--remote main-host-name]
+
+  Summary of the data at sfolder/tmp:
+    bolap run summary-data -s Brassica_rapa
+
+  Downsample long-read data:
+    bolap run downsample long -s Brassica_rapa --coverage 30g
+
+  No sample long-read data:
+    bolap run downsample long -s Brassica_rapa --coverage 0g
+
+  Get a reference mtDNA from NCBI:
+    bolap download mtdna -s Brassica_rapa
+
+  Get a reference ptDNA from NCBI:
+    bolap download ptdna -s Brassica_rapa
+
+  Run ptGAUL:
+    bolap run ptgaul -s Brassica_rapa
+
+  Run ptGAUL for mtDNA assembly:
+    bolap run mtgaul -s Brassica_rapa
+
+  Run TIPPo for organelle genome assemblies:
+    bolap run tippo -s Brassica_rapa
+
+  Run Oatk for organelle genome assemblies:
+    bolap run oatk -s Brassica_rapa
+
+  Run polap for organelle genome assemblies:
+    bolap run polap-readassemble -s Brassica_rapa
+
+  Run polap for organelle genome assemblies:
+    bolap run polap-miniassemble -s Brassica_rapa
+
+  Manually get the sequence in fasta from the gfa assembly file
+    bolap run polap-extract-using-oatk -s Brassica_rapa
+
+  Polish using long- and short-read data:
+    bolap run polap-polish-longshort -s Brassica_rapa
+
+  Run polap for organelle genome assemblies:
+    bolap run polap-mtpt -s Brassica_rapa
+
+  Remote:
+    bolap sync -s Brassica_rapa
+
+  Clean-up:
+    bolap clean -s Brassica_rapa
+
+  Run polap aflye assemble1:
+    bolap run-polap-assemble1 -s Brassica_rapa
+
+  Edit:
+    polap-bash-make-manifest.sh for set some
+
+  Report:
+    bolap man init
+    bolap man manifest --set auto
+    bolap man sheet-ptmt --set some
+    bolap man table-data
+    bolap man pt-table
+    bolap man mt-table
+    bolap man table-s1
+    bolap man man
+
+    bolap man figure
+    bolap man pt-figure
+    bolap man mt-figure
+
+  Setup:
+    ln -s ~/all/polap/github polap
+    export BOLAP=polap/src/bolap.sh
+    alias bl="bash \$BOLAP"
+    source polap/src/polaplib/polap-bash-complete.sh
+    bl conda --cleanup
+    bl conda --recreate
+    bl conda --delete polap-polish
+    bl conda --create polap-polish
+    bl conda --export-all
+    bl setup oatk
+    bl setup racon
+    bl benchmark -s <TAB>
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
 	help_message_38=$(
 		cat <<EOF
 Name:
@@ -4410,10 +4527,12 @@ Author:
 EOF
 	)
 
+	# local _brg_topic="review"
 	local _brg_topic="38"
 
 	parse_commandline() {
-		set -- "${_brg_unknown_opts[@]}"
+		set -- "${_brg_args[@]}"
+		# set -- "${_brg_unknown_opts[@]}"
 
 		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
 		while test $# -gt 0; do
@@ -4440,32 +4559,15 @@ EOF
 
 	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return
 
-	# declare -n ref="help_message"
-	# if [[ "${_brg_help}" == "on" ]]; then
-	# 	local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
-	# 	man "$manfile"
-	# 	rm -f "$manfile"
-	# 	return
-	# fi
-
 	parse_commandline
 
-	# declare -n ref="help_message_${_brg_topic}"
-	# if [[ -n "$ref" ]]; then
-	# 	local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
-	# 	man "$manfile"
-	# 	rm -f "$manfile"
-	# else
-	# 	_log_echo0 "No such topic: ${_brg_topic}"
-	#
-	# fi
-	#
 	local varname="help_message_${_brg_topic}"
+
 	if [[ -v $varname ]]; then
 		declare -n ref="$varname"
 		manfile=$(_bolap_lib_man-convert_help_message "$ref" "$_brg_topic")
 		man "$manfile"
-		rm -f "$manfile"
+		rm -f "$manfile" >&2
 	else
 		echo "[WARN] No help message defined for topic $_brg_topic" >&2
 	fi

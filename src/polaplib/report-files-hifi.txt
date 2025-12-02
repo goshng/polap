@@ -1,0 +1,641 @@
+
+# TIPPo assembly
+2025-12-01 16:40:38	    131416 Breynia_androgyna/v5/0/tippo/SRR25111202.fastq.chloroplast.fasta.filter.800.round1.fasta.chloroplast.flye/assembly_graph.gfa ptDNA assembly graph GFA
+2025-12-01 16:40:38	    313474 Breynia_androgyna/v5/0/tippo/SRR25111202.fastq.chloroplast.fasta.filter.800.round1.edge_3.edge_2.edge_1.organelle.chloroplast.fasta ptDNA assembly FASTA
+2025-12-01 16:46:10	    375658 Breynia_androgyna/v5/0/tippo/SRR25111202.fastq.mitochondrial.fasta.filter.fasta.flye/assembly_graph.gfa mtDNA assembly graph GFA
+2025-12-01 19:23:09	    113534 Breynia_androgyna/v5/0/tippo/SRR25111202.fastq.mitochondrial.fasta.filter.fasta.flye/assembly_graph.png mtDNA assembly graph Bandage PNG
+2025-12-01 16:46:13	      9852 Breynia_androgyna/v5/0/summary-tippo.txt Run log memory and time
+2025-12-01 16:41:03	      2096 Breynia_androgyna/v5/0/stdout-tippo.txt 
+2025-12-01 16:46:13	      9852 Breynia_androgyna/v5/0/timing-tippo.txt 
+2025-12-01 16:46:13	      9852 Breynia_androgyna/v5/0/memlog-tippo.txt
+
+# Oatk assembly with -c 30
+2025-12-01 17:36:11	    388412 Breynia_androgyna/v5/0/oatk/oatk-30.mito.gfa mtDNA assembly graph GFA
+2025-12-01 19:21:41	    127312 Breynia_androgyna/v5/0/oatk/oatk-30.mito.png mtDNA assembly graph Bandage PNG
+2025-12-01 17:36:11	    399707 Breynia_androgyna/v5/0/oatk/oatk-30.mito.ctg.fasta mtDNA assembly sequence FASTA
+2025-12-01 17:36:11	    388412 Breynia_androgyna/v5/0/oatk/oatk-30.pltd.gfa ptDNA assembly graph GFA
+2025-12-01 19:21:41	    127312 Breynia_androgyna/v5/0/oatk/oatk-30.pltd.png ptDNA assembly graph Bandage PNG
+2025-12-01 17:36:11	    399707 Breynia_androgyna/v5/0/oatk/oatk-30.pltd.ctg.fasta ptDNA assembly sequence FASTA
+2025-12-01 17:36:13	       454 Breynia_androgyna/v5/0/summary-oatk-30.txt Run log memory and time
+2025-12-01 17:33:40	         0 Breynia_androgyna/v5/0/stdout-oatk-30.txt
+2025-12-01 17:36:13	      4811 Breynia_androgyna/v5/0/memlog-oatk-30.csv
+2025-12-01 17:36:13	      4649 Breynia_androgyna/v5/0/timing-oatk-30.txt
+
+# Oatk assembly with -c 20
+2025-12-01 17:36:11	    388412 Breynia_androgyna/v5/0/oatk/oatk-20.mito.gfa mtDNA assembly graph GFA
+2025-12-01 19:21:41	    127312 Breynia_androgyna/v5/0/oatk/oatk-20.mito.png mtDNA assembly graph Bandage PNG
+2025-12-01 17:36:11	    399707 Breynia_androgyna/v5/0/oatk/oatk-20.mito.ctg.fasta mtDNA assembly sequence FASTA
+2025-12-01 17:36:11	    388412 Breynia_androgyna/v5/0/oatk/oatk-20.pltd.gfa ptDNA assembly graph GFA
+2025-12-01 19:21:41	    127312 Breynia_androgyna/v5/0/oatk/oatk-20.pltd.png ptDNA assembly graph Bandage PNG
+2025-12-01 17:36:11	    399707 Breynia_androgyna/v5/0/oatk/oatk-20.pltd.ctg.fasta ptDNA assembly sequence FASTA
+2025-12-01 17:36:13	       454 Breynia_androgyna/v5/0/summary-oatk-20.txt Run log memory and time
+2025-12-01 17:33:40	         0 Breynia_androgyna/v5/0/stdout-oatk-20.txt
+2025-12-01 17:36:13	      4811 Breynia_androgyna/v5/0/memlog-oatk-20.csv
+2025-12-01 17:36:13	      4649 Breynia_androgyna/v5/0/timing-oatk-20.txt
+
+# Oatk assembly with -c 10
+2025-12-01 17:36:11	    388412 Breynia_androgyna/v5/0/oatk/oatk-10.mito.gfa mtDNA assembly graph GFA
+2025-12-01 19:21:41	    127312 Breynia_androgyna/v5/0/oatk/oatk-10.mito.png mtDNA assembly graph Bandage PNG
+2025-12-01 17:36:11	    399707 Breynia_androgyna/v5/0/oatk/oatk-10.mito.ctg.fasta mtDNA assembly sequence FASTA
+2025-12-01 17:36:11	    388412 Breynia_androgyna/v5/0/oatk/oatk-10.pltd.gfa ptDNA assembly graph GFA
+2025-12-01 19:21:41	    127312 Breynia_androgyna/v5/0/oatk/oatk-10.pltd.png ptDNA assembly graph Bandage PNG
+2025-12-01 17:36:11	    399707 Breynia_androgyna/v5/0/oatk/oatk-10.pltd.ctg.fasta ptDNA assembly sequence FASTA
+2025-12-01 17:36:13	       454 Breynia_androgyna/v5/0/summary-oatk-10.txt Run log memory and time
+2025-12-01 17:33:40	         0 Breynia_androgyna/v5/0/stdout-oatk-10.txt
+2025-12-01 17:36:13	      4811 Breynia_androgyna/v5/0/memlog-oatk-10.csv
+2025-12-01 17:36:13	      4649 Breynia_androgyna/v5/0/timing-oatk-10.txt
+
+# HiMT assembly
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/himt/himt_chloroplast.gfa ptDNA assembly graph GFA 
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/himt/himt_chloroplast.png ptDNA assembly graph Bandage PNG
+2025-12-01 19:15:22	    378744 Breynia_androgyna/v5/0/himt/himt_mitochondrial.gfa mtDNA assembly graph GFA
+2025-12-01 19:22:44	     97469 Breynia_androgyna/v5/0/himt/himt_mitochondrial.png mtDNA assembly graph Bandage PNG
+2025-12-01 19:15:22	    156727 Breynia_androgyna/v5/0/himt/chloroplast_path1.fa one form of ptDNA sequence
+2025-12-01 19:15:22	    156727 Breynia_androgyna/v5/0/himt/chloroplast_path2.fa 2nd form of ptDNA sequence
+2025-12-01 19:15:32	       492 Breynia_androgyna/v5/0/summary-himt.txt Run log memory and time
+2025-12-01 19:15:28	     72228 Breynia_androgyna/v5/0/memlog-himt.csv
+2025-12-01 19:15:32	      2713 Breynia_androgyna/v5/0/stdout-himt.txt
+2025-12-01 19:15:32	      5900 Breynia_androgyna/v5/0/timing-himt.txt
+
+# PMAT2 assembly
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/pmat2/gfa_result/PMAT_mt_main.gfa mtDNA assembly graph GFA
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/pmat2/gfa_result/PMAT_mt_main.png mtDNA assembly graph Bandage PNG
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/pmat2/gfa_result/PMAT_pt_main.gfa ptDNA assembly graph GFA
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/pmat2/gfa_result/PMAT_pt_main.png ptDNA assembly graph Bandage PNG
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/pmat2/gfa_result/PMAT_mt.fa mtDNA assembly sequence
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/pmat2/gfa_result/PMAT_pt.fa ptDNA assembly sequence
+2025-12-01 19:15:32	       492 Breynia_androgyna/v5/0/summary-pmat2.txt Run log memory and time
+2025-12-01 19:15:28	     72228 Breynia_androgyna/v5/0/memlog-pmat2.csv
+2025-12-01 19:15:32	      2713 Breynia_androgyna/v5/0/stdout-pmat2.txt
+2025-12-01 19:15:32	      5900 Breynia_androgyna/v5/0/timing-pmat2.txt
+
+# example of summary-xxx.txt
+summary-oatk.txt
+Physical Memory Usage Summary:
+Start used:      33549708 KB (32.00 GB)
+Peak used:       42866308 KB (40.88 GB)
+Net increase:    9316600 KB (8.89 GB)
+Elapsed time:    00:23:42 (0.40 h)
+Peak CPU load:   17.74
+Start disk free: 483 GB
+Min disk free:   459 GB
+Disk used:       24 GB
+
+
+# HiMT assessment on Oatk with -c 30
+2025-12-01 19:21:24	   8713846 Breynia_androgyna/v5/0/assess/oatk-30/himt_mitochondrial.html HiMT assessment HTML
+2025-12-01 19:21:33	      1748 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.spliced_genes.tsv
+2025-12-01 19:21:33	       225 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.gene_integrity_summary.tsv
+2025-12-01 19:21:33	      2779 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.gene_integrity.tsv
+2025-12-01 19:21:33	       200 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.mito_basic_info.tsv
+2025-12-01 19:21:33	       142 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.contig_table.tsv
+2025-12-01 19:21:33	       692 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.4c_metrics.tsv
+2025-12-01 19:21:35	      9642 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.mito_qc_4c.pdf
+
+# HiMT assessment on Oatk with -c 20
+2025-12-01 19:21:45	   8713946 Breynia_androgyna/v5/0/assess/oatk-20/himt_mitochondrial.html
+2025-12-01 19:21:53	      1748 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.spliced_genes.tsv
+2025-12-01 19:21:53	       225 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.gene_integrity_summary.tsv
+2025-12-01 19:21:53	      2779 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.gene_integrity.tsv
+2025-12-01 19:21:53	       200 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.mito_basic_info.tsv
+2025-12-01 19:21:53	       142 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.contig_table.tsv
+2025-12-01 19:21:53	       692 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.4c_metrics.tsv
+2025-12-01 19:21:55	      9642 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.mito_qc_4c.pdf
+
+# HiMT assessment on Oatk with -c 10
+2025-12-01 19:22:04	   8713896 Breynia_androgyna/v5/0/assess/oatk-10/himt_mitochondrial.html
+2025-12-01 19:22:13	      1748 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.spliced_genes.tsv
+2025-12-01 19:22:13	       225 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.gene_integrity_summary.tsv
+2025-12-01 19:22:13	      2779 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.gene_integrity.tsv
+2025-12-01 19:22:13	       200 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.mito_basic_info.tsv
+2025-12-01 19:22:13	       142 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.contig_table.tsv
+2025-12-01 19:22:13	       692 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.4c_metrics.tsv
+2025-12-01 19:22:15	      9642 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.mito_qc_4c.pdf
+
+# HiMT assessment on HiMT
+2025-12-01 19:22:27	  12152219 Breynia_androgyna/v5/0/assess/himt/himt_mitochondrial.html
+2025-12-01 19:22:36	      1231 Breynia_androgyna/v5/0/assess/himt/report/prefix.gene_integrity.tsv
+2025-12-01 19:22:36	      1360 Breynia_androgyna/v5/0/assess/himt/report/prefix.spliced_genes.tsv
+2025-12-01 19:22:36	       240 Breynia_androgyna/v5/0/assess/himt/report/prefix.gene_integrity_summary.tsv
+2025-12-01 19:22:36	       184 Breynia_androgyna/v5/0/assess/himt/report/prefix.mito_basic_info.tsv
+2025-12-01 19:22:36	       413 Breynia_androgyna/v5/0/assess/himt/report/prefix.contig_table.tsv
+2025-12-01 19:22:36	       692 Breynia_androgyna/v5/0/assess/himt/report/prefix.4c_metrics.tsv
+2025-12-01 19:22:38	      9522 Breynia_androgyna/v5/0/assess/himt/report/prefix.mito_qc_4c.pdf
+
+# HiMT assessment on TIPPo
+2025-12-01 19:22:53	  15086214 Breynia_androgyna/v5/0/assess/tippo/himt_mitochondrial.html
+2025-12-01 19:23:01	      1450 Breynia_androgyna/v5/0/assess/tippo/report/prefix.spliced_genes.tsv
+2025-12-01 19:23:01	      1613 Breynia_androgyna/v5/0/assess/tippo/report/prefix.gene_integrity.tsv
+2025-12-01 19:23:01	       228 Breynia_androgyna/v5/0/assess/tippo/report/prefix.gene_integrity_summary.tsv
+2025-12-01 19:23:01	       183 Breynia_androgyna/v5/0/assess/tippo/report/prefix.mito_basic_info.tsv
+2025-12-01 19:23:01	       698 Breynia_androgyna/v5/0/assess/tippo/report/prefix.contig_table.tsv
+2025-12-01 19:23:01	       681 Breynia_androgyna/v5/0/assess/tippo/report/prefix.4c_metrics.tsv
+2025-12-01 19:23:03	      9479 Breynia_androgyna/v5/0/assess/tippo/report/prefix.mito_qc_4c.pdf
+
+# HiMT assessment on PMAT2
+2025-12-01 19:22:53	  15086214 Breynia_androgyna/v5/0/assess/pmat2/himt_mitochondrial.html
+2025-12-01 19:23:01	      1450 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.spliced_genes.tsv
+2025-12-01 19:23:01	      1613 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.gene_integrity.tsv
+2025-12-01 19:23:01	       228 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.gene_integrity_summary.tsv
+2025-12-01 19:23:01	       183 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.mito_basic_info.tsv
+2025-12-01 19:23:01	       698 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.contig_table.tsv
+2025-12-01 19:23:01	       681 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.4c_metrics.tsv
+2025-12-01 19:23:03	      9479 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.mito_qc_4c.pdf
+
+# For each of these files, extract relevant information:
+
+prefix.4c_metrics.tsv
+prefix.contig_table.tsv
+prefix.gene_integrity_summary.tsv
+prefix.gene_integrity.tsv
+prefix.mito_basic_info.tsv
+prefix.spliced_genes.tsv
+prefix.mito_qc_4c.pdf
+
+# validation metrics for plant mitogenome assembly
+
+term, definition, computation from HiMT assess results
+
+# prefix.spliced_genes.tsv
+gene    best_integrity  sum_integrity   nonzero_copies  min_exon_count_min      splice_type     canonical_trans_spliced model_length_bp best_orf_bp     cumulative_orf_bp       copy_integrities
+nad5    72.0    99.0    2       1       trans   TRUE                            72.0,27.0,0.0,0.0
+cox2    97.0    97.0    1       1       none    FALSE                           97.0,0.0,0.0,0.0
+ccmB    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+nad9    100.0   123.0   3       2       none    TRUE                            100.0,12.0,11.0,0.0
+atp6    100.0   130.0   3       2       none    FALSE                           100.0,17.0,13.0,0.0
+nad1    57.0    161.0   4       2       trans   TRUE                            57.0,40.0,32.0,32.0
+atp1    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+nad2    63.0    110.0   3       2       trans   TRUE                            63.0,37.0,10.0,0.0
+cox1    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+nad6    100.0   107.0   2       2       none    FALSE                           100.0,7.0,0.0,0.0
+cob     99.0    99.0    1       1       none    FALSE                           99.0,0.0,0.0,0.0
+ccmFc   100.0   100.0   1       1       none    TRUE                            100.0,0.0,0.0,0.0
+nad4    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+mttB    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+matR    100.0   200.0   2       2       none    FALSE                           100.0,100.0,0.0,0.0
+nad7    100.0   131.0   4       2       none    TRUE                            100.0,11.0,10.0,10.0
+atp8    100.0   117.0   2       2       none    FALSE                           100.0,17.0,0.0,0.0
+atp9    100.0   124.0   2       2       none    FALSE                           100.0,24.0,0.0,0.0
+nad3    100.0   167.0   2       2       none    FALSE                           100.0,67.0,0.0,0.0
+ccmC    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+cox3    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+nad4L   100.0   200.0   2       2       none    FALSE                           100.0,100.0,0.0,0.0
+atp4    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+ccmFN   100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+
+# prefix.contig_table.tsv
+Index   Contig name     Conserved gene number   GC content      Length  Depth
+1       edge_223        10      0.45    330338  62
+2       edge_72 11      0.45    264628  58
+3       edge_217        10      0.45    137611  51
+4       edge_224        4       0.45    119506  55
+5       edge_216        8       0.45    115730  56
+6       edge_1  0       0.46    1414    93
+
+prefix.contig_table.tsv This is parsed from the HiMT “Contig information” table.
+- Index
+- Contig name
+- Conserved gene number (how many conserved mitochondrial protein-coding genes are found on that contig)
+- GC content
+- Length
+- Depth
+
+# prefix.gene_integrity_summary.tsv
+metric  value
+genes_total     24
+genes_present   24
+genes_missing   0
+genes_high_integrity_ge95       21
+geneset_completeness_prop       1.0
+high_integrity_gene_prop        0.875
+mean_best_integrity     95.33333333333333
+median_best_integrity   100.0
+
+# prefix.gene_integrity.tsv
+gene    copy    integrity
+nad5    copy1   72.0
+nad5    copy2   27.0
+nad5    copy3   0.0
+nad5    copy4   0.0
+cox2    copy1   97.0
+cox2    copy2   0.0
+cox2    copy3   0.0
+cox2    copy4   0.0
+ccmB    copy1   100.0
+ccmB    copy2   0.0
+ccmB    copy3   0.0
+ccmB    copy4   0.0
+nad9    copy1   100.0
+nad9    copy2   12.0
+nad9    copy3   11.0
+nad9    copy4   0.0
+...
+...
+...
+
+# prefix.mito_basic_info.tsv
+metric  value
+Total length    969227
+Total contig number     6
+N count 0
+Number of closed circular contigs       0
+Total GC content        0.45
+Minimum length  1414
+Maximum length  330338
+N50     264628
+
+Extract:
+- GC content
+
+# prefix.4c_metrics.tsv
+category        metric  value   description
+completeness    genes_total     24      Total genes
+completeness    genes_present   24      Present genes
+completeness    geneset_completeness_prop       1.0     Proportion present
+completeness    mean_best_integrity     0.9533333333333333      Mean best integrity
+completeness    median_best_integrity   1.0     Median best integrity
+contiguity      num_contigs     6       # contigs
+contiguity      total_length    969227  total length
+contiguity      N50     264628  N50
+consistency     frac_spliced_genes      0.125   Fraction spliced (cis+trans)
+consistency     frac_trans_spliced_among_spliced        1.0     Among spliced, fraction trans
+consistency     frac_canonical_trans_spliced_detected   0.5     Detected canonical trans-spliced
+
+Extract:
+- geneset completeness proportion
+- total length
+- number of contigs
+- N50
+
+# 4C metrics
+
+1. Completeness: Core gene completeness: geneset completeness proportion
+
+2. CONTIGUITY
+
+Available directly from mito_basic_info.tsv:
+- Total contig number
+- N50
+- Maximum contig
+- Minimum contig
+- Total length
+- L50: number of contigs whose cumulative sum reaches half the genome length
+- Genome fragmentation index = 1 – (N50 / total_length)
+- Largest contig proportion = max_len / total_length
+
+3. Correctness: n/a
+
+4. Comprehensiveness
+
+Coefficient of variation (CV): CV = sd(lengths) / mean(lengths)
+
+
+# Auto
+
+Now, create a new polap-bash-hifi-make-manifest.sh by copying polap-bash-make-manifest.sh. Edit polap-bash-hifi-make-manifest.sh so that you add 4 items for assembly results: Consider these to add entries for oatk, tippo, himt, pmat2 assembly results files. Leave other code in the script as is. As we did before, if files are missing, add empty items so we avoid errors missing.
+
+Each entry needs items for mtdna gfa, mtdna fasta, mtdna png, and these three things for ptdna as well.
+for each assembly entry, parse summary-xxx.txt to extract: Net increase as used memory, Elapsed time for used run time, Disk used: for disk usage. for memory and time extract two different format or unit.
+memory KB and GB. time 00:xx:xx and 0.40 h like format.
+
+Each assembly entry needs items for HiMT assessment as well. Consider content below:
+
+we need 4C values:
+
+# 4C metrics
+
+1. Completeness: Core gene completeness: geneset completeness proportion
+
+2. CONTIGUITY
+
+Available directly from mito_basic_info.tsv:
+
+* Total contig number
+* N50
+* Maximum contig
+* Minimum contig
+* Total length
+* L50: number of contigs whose cumulative sum reaches half the genome length
+* Genome fragmentation index = 1 – (N50 / total_length)
+* Largest contig proportion = max_len / total_length
+
+3. Correctness: n/a
+
+4. Comprehensiveness
+
+Coefficient of variation (CV): CV = sd(lengths) / mean(lengths)
+
+These are files related to store as entries and extract from;
+
+# TIPPo assembly
+
+2025-12-01 16:40:38	    131416 Breynia_androgyna/v5/0/tippo/SRR25111202.fastq.chloroplast.fasta.filter.800.round1.fasta.chloroplast.flye/assembly_graph.gfa ptDNA assembly graph GFA
+2025-12-01 16:40:38	    313474 Breynia_androgyna/v5/0/tippo/SRR25111202.fastq.chloroplast.fasta.filter.800.round1.edge_3.edge_2.edge_1.organelle.chloroplast.fasta ptDNA assembly FASTA
+2025-12-01 16:46:10	    375658 Breynia_androgyna/v5/0/tippo/SRR25111202.fastq.mitochondrial.fasta.filter.fasta.flye/assembly_graph.gfa mtDNA assembly graph GFA
+2025-12-01 19:23:09	    113534 Breynia_androgyna/v5/0/tippo/SRR25111202.fastq.mitochondrial.fasta.filter.fasta.flye/assembly_graph.png mtDNA assembly graph Bandage PNG
+2025-12-01 16:46:13	      9852 Breynia_androgyna/v5/0/summary-tippo.txt Run log memory and time
+2025-12-01 16:41:03	      2096 Breynia_androgyna/v5/0/stdout-tippo.txt
+2025-12-01 16:46:13	      9852 Breynia_androgyna/v5/0/timing-tippo.txt
+2025-12-01 16:46:13	      9852 Breynia_androgyna/v5/0/memlog-tippo.txt
+
+# Oatk assembly with -c 30
+
+2025-12-01 17:36:11	    388412 Breynia_androgyna/v5/0/oatk/oatk-30.mito.gfa mtDNA assembly graph GFA
+2025-12-01 19:21:41	    127312 Breynia_androgyna/v5/0/oatk/oatk-30.mito.png mtDNA assembly graph Bandage PNG
+2025-12-01 17:36:11	    399707 Breynia_androgyna/v5/0/oatk/oatk-30.mito.ctg.fasta mtDNA assembly sequence FASTA
+2025-12-01 17:36:11	    388412 Breynia_androgyna/v5/0/oatk/oatk-30.pltd.gfa ptDNA assembly graph GFA
+2025-12-01 19:21:41	    127312 Breynia_androgyna/v5/0/oatk/oatk-30.pltd.png ptDNA assembly graph Bandage PNG
+2025-12-01 17:36:11	    399707 Breynia_androgyna/v5/0/oatk/oatk-30.pltd.ctg.fasta ptDNA assembly sequence FASTA
+2025-12-01 17:36:13	       454 Breynia_androgyna/v5/0/summary-oatk-30.txt Run log memory and time
+2025-12-01 17:33:40	         0 Breynia_androgyna/v5/0/stdout-oatk-30.txt
+2025-12-01 17:36:13	      4811 Breynia_androgyna/v5/0/memlog-oatk-30.csv
+2025-12-01 17:36:13	      4649 Breynia_androgyna/v5/0/timing-oatk-30.txt
+
+# Oatk assembly with -c 20
+
+2025-12-01 17:36:11	    388412 Breynia_androgyna/v5/0/oatk/oatk-20.mito.gfa mtDNA assembly graph GFA
+2025-12-01 19:21:41	    127312 Breynia_androgyna/v5/0/oatk/oatk-20.mito.png mtDNA assembly graph Bandage PNG
+2025-12-01 17:36:11	    399707 Breynia_androgyna/v5/0/oatk/oatk-20.mito.ctg.fasta mtDNA assembly sequence FASTA
+2025-12-01 17:36:11	    388412 Breynia_androgyna/v5/0/oatk/oatk-20.pltd.gfa ptDNA assembly graph GFA
+2025-12-01 19:21:41	    127312 Breynia_androgyna/v5/0/oatk/oatk-20.pltd.png ptDNA assembly graph Bandage PNG
+2025-12-01 17:36:11	    399707 Breynia_androgyna/v5/0/oatk/oatk-20.pltd.ctg.fasta ptDNA assembly sequence FASTA
+2025-12-01 17:36:13	       454 Breynia_androgyna/v5/0/summary-oatk-20.txt Run log memory and time
+2025-12-01 17:33:40	         0 Breynia_androgyna/v5/0/stdout-oatk-20.txt
+2025-12-01 17:36:13	      4811 Breynia_androgyna/v5/0/memlog-oatk-20.csv
+2025-12-01 17:36:13	      4649 Breynia_androgyna/v5/0/timing-oatk-20.txt
+
+# Oatk assembly with -c 10
+
+2025-12-01 17:36:11	    388412 Breynia_androgyna/v5/0/oatk/oatk-10.mito.gfa mtDNA assembly graph GFA
+2025-12-01 19:21:41	    127312 Breynia_androgyna/v5/0/oatk/oatk-10.mito.png mtDNA assembly graph Bandage PNG
+2025-12-01 17:36:11	    399707 Breynia_androgyna/v5/0/oatk/oatk-10.mito.ctg.fasta mtDNA assembly sequence FASTA
+2025-12-01 17:36:11	    388412 Breynia_androgyna/v5/0/oatk/oatk-10.pltd.gfa ptDNA assembly graph GFA
+2025-12-01 19:21:41	    127312 Breynia_androgyna/v5/0/oatk/oatk-10.pltd.png ptDNA assembly graph Bandage PNG
+2025-12-01 17:36:11	    399707 Breynia_androgyna/v5/0/oatk/oatk-10.pltd.ctg.fasta ptDNA assembly sequence FASTA
+2025-12-01 17:36:13	       454 Breynia_androgyna/v5/0/summary-oatk-10.txt Run log memory and time
+2025-12-01 17:33:40	         0 Breynia_androgyna/v5/0/stdout-oatk-10.txt
+2025-12-01 17:36:13	      4811 Breynia_androgyna/v5/0/memlog-oatk-10.csv
+2025-12-01 17:36:13	      4649 Breynia_androgyna/v5/0/timing-oatk-10.txt
+
+# HiMT assembly
+
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/himt/himt_chloroplast.gfa ptDNA assembly graph GFA
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/himt/himt_chloroplast.png ptDNA assembly graph Bandage PNG
+2025-12-01 19:15:22	    378744 Breynia_androgyna/v5/0/himt/himt_mitochondrial.gfa mtDNA assembly graph GFA
+2025-12-01 19:22:44	     97469 Breynia_androgyna/v5/0/himt/himt_mitochondrial.png mtDNA assembly graph Bandage PNG
+2025-12-01 19:15:22	    156727 Breynia_androgyna/v5/0/himt/chloroplast_path1.fa one form of ptDNA sequence
+2025-12-01 19:15:22	    156727 Breynia_androgyna/v5/0/himt/chloroplast_path2.fa 2nd form of ptDNA sequence
+2025-12-01 19:15:32	       492 Breynia_androgyna/v5/0/summary-himt.txt Run log memory and time
+2025-12-01 19:15:28	     72228 Breynia_androgyna/v5/0/memlog-himt.csv
+2025-12-01 19:15:32	      2713 Breynia_androgyna/v5/0/stdout-himt.txt
+2025-12-01 19:15:32	      5900 Breynia_androgyna/v5/0/timing-himt.txt
+
+# PMAT2 assembly
+
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/pmat2/gfa_result/PMAT_mt_main.gfa mtDNA assembly graph GFA
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/pmat2/gfa_result/PMAT_mt_main.png mtDNA assembly graph Bandage PNG
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/pmat2/gfa_result/PMAT_pt_main.gfa ptDNA assembly graph GFA
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/pmat2/gfa_result/PMAT_pt_main.png ptDNA assembly graph Bandage PNG
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/pmat2/gfa_result/PMAT_mt.fa mtDNA assembly sequence
+2025-12-01 19:15:22	    131339 Breynia_androgyna/v5/0/pmat2/gfa_result/PMAT_pt.fa ptDNA assembly sequence
+2025-12-01 19:15:32	       492 Breynia_androgyna/v5/0/summary-pmat2.txt Run log memory and time
+2025-12-01 19:15:28	     72228 Breynia_androgyna/v5/0/memlog-pmat2.csv
+2025-12-01 19:15:32	      2713 Breynia_androgyna/v5/0/stdout-pmat2.txt
+2025-12-01 19:15:32	      5900 Breynia_androgyna/v5/0/timing-pmat2.txt
+
+# example of summary-xxx.txt
+
+summary-oatk.txt
+Physical Memory Usage Summary:
+Start used:      33549708 KB (32.00 GB)
+Peak used:       42866308 KB (40.88 GB)
+Net increase:    9316600 KB (8.89 GB)
+Elapsed time:    00:23:42 (0.40 h)
+Peak CPU load:   17.74
+Start disk free: 483 GB
+Min disk free:   459 GB
+Disk used:       24 GB
+
+# HiMT assessment on Oatk with -c 30
+
+2025-12-01 19:21:24	   8713846 Breynia_androgyna/v5/0/assess/oatk-30/himt_mitochondrial.html HiMT assessment HTML
+2025-12-01 19:21:33	      1748 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.spliced_genes.tsv
+2025-12-01 19:21:33	       225 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.gene_integrity_summary.tsv
+2025-12-01 19:21:33	      2779 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.gene_integrity.tsv
+2025-12-01 19:21:33	       200 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.mito_basic_info.tsv
+2025-12-01 19:21:33	       142 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.contig_table.tsv
+2025-12-01 19:21:33	       692 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.4c_metrics.tsv
+2025-12-01 19:21:35	      9642 Breynia_androgyna/v5/0/assess/oatk-30/report/prefix.mito_qc_4c.pdf
+
+# HiMT assessment on Oatk with -c 20
+
+2025-12-01 19:21:45	   8713946 Breynia_androgyna/v5/0/assess/oatk-20/himt_mitochondrial.html
+2025-12-01 19:21:53	      1748 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.spliced_genes.tsv
+2025-12-01 19:21:53	       225 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.gene_integrity_summary.tsv
+2025-12-01 19:21:53	      2779 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.gene_integrity.tsv
+2025-12-01 19:21:53	       200 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.mito_basic_info.tsv
+2025-12-01 19:21:53	       142 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.contig_table.tsv
+2025-12-01 19:21:53	       692 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.4c_metrics.tsv
+2025-12-01 19:21:55	      9642 Breynia_androgyna/v5/0/assess/oatk-20/report/prefix.mito_qc_4c.pdf
+
+# HiMT assessment on Oatk with -c 10
+
+2025-12-01 19:22:04	   8713896 Breynia_androgyna/v5/0/assess/oatk-10/himt_mitochondrial.html
+2025-12-01 19:22:13	      1748 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.spliced_genes.tsv
+2025-12-01 19:22:13	       225 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.gene_integrity_summary.tsv
+2025-12-01 19:22:13	      2779 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.gene_integrity.tsv
+2025-12-01 19:22:13	       200 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.mito_basic_info.tsv
+2025-12-01 19:22:13	       142 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.contig_table.tsv
+2025-12-01 19:22:13	       692 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.4c_metrics.tsv
+2025-12-01 19:22:15	      9642 Breynia_androgyna/v5/0/assess/oatk-10/report/prefix.mito_qc_4c.pdf
+
+# HiMT assessment on HiMT
+
+2025-12-01 19:22:27	  12152219 Breynia_androgyna/v5/0/assess/himt/himt_mitochondrial.html
+2025-12-01 19:22:36	      1231 Breynia_androgyna/v5/0/assess/himt/report/prefix.gene_integrity.tsv
+2025-12-01 19:22:36	      1360 Breynia_androgyna/v5/0/assess/himt/report/prefix.spliced_genes.tsv
+2025-12-01 19:22:36	       240 Breynia_androgyna/v5/0/assess/himt/report/prefix.gene_integrity_summary.tsv
+2025-12-01 19:22:36	       184 Breynia_androgyna/v5/0/assess/himt/report/prefix.mito_basic_info.tsv
+2025-12-01 19:22:36	       413 Breynia_androgyna/v5/0/assess/himt/report/prefix.contig_table.tsv
+2025-12-01 19:22:36	       692 Breynia_androgyna/v5/0/assess/himt/report/prefix.4c_metrics.tsv
+2025-12-01 19:22:38	      9522 Breynia_androgyna/v5/0/assess/himt/report/prefix.mito_qc_4c.pdf
+
+# HiMT assessment on TIPPo
+
+2025-12-01 19:22:53	  15086214 Breynia_androgyna/v5/0/assess/tippo/himt_mitochondrial.html
+2025-12-01 19:23:01	      1450 Breynia_androgyna/v5/0/assess/tippo/report/prefix.spliced_genes.tsv
+2025-12-01 19:23:01	      1613 Breynia_androgyna/v5/0/assess/tippo/report/prefix.gene_integrity.tsv
+2025-12-01 19:23:01	       228 Breynia_androgyna/v5/0/assess/tippo/report/prefix.gene_integrity_summary.tsv
+2025-12-01 19:23:01	       183 Breynia_androgyna/v5/0/assess/tippo/report/prefix.mito_basic_info.tsv
+2025-12-01 19:23:01	       698 Breynia_androgyna/v5/0/assess/tippo/report/prefix.contig_table.tsv
+2025-12-01 19:23:01	       681 Breynia_androgyna/v5/0/assess/tippo/report/prefix.4c_metrics.tsv
+2025-12-01 19:23:03	      9479 Breynia_androgyna/v5/0/assess/tippo/report/prefix.mito_qc_4c.pdf
+
+# HiMT assessment on PMAT2
+
+2025-12-01 19:22:53	  15086214 Breynia_androgyna/v5/0/assess/pmat2/himt_mitochondrial.html
+2025-12-01 19:23:01	      1450 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.spliced_genes.tsv
+2025-12-01 19:23:01	      1613 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.gene_integrity.tsv
+2025-12-01 19:23:01	       228 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.gene_integrity_summary.tsv
+2025-12-01 19:23:01	       183 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.mito_basic_info.tsv
+2025-12-01 19:23:01	       698 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.contig_table.tsv
+2025-12-01 19:23:01	       681 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.4c_metrics.tsv
+2025-12-01 19:23:03	      9479 Breynia_androgyna/v5/0/assess/pmat2/report/prefix.mito_qc_4c.pdf
+
+# For each of these files, extract relevant information:
+
+prefix.4c_metrics.tsv
+prefix.contig_table.tsv
+prefix.gene_integrity_summary.tsv
+prefix.gene_integrity.tsv
+prefix.mito_basic_info.tsv
+prefix.spliced_genes.tsv
+prefix.mito_qc_4c.pdf
+
+# validation metrics for plant mitogenome assembly
+
+term, definition, computation from HiMT assess results
+
+# prefix.spliced_genes.tsv
+
+gene    best_integrity  sum_integrity   nonzero_copies  min_exon_count_min      splice_type     canonical_trans_spliced model_length_bp best_orf_bp     cumulative_orf_bp       copy_integrities
+nad5    72.0    99.0    2       1       trans   TRUE                            72.0,27.0,0.0,0.0
+cox2    97.0    97.0    1       1       none    FALSE                           97.0,0.0,0.0,0.0
+ccmB    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+nad9    100.0   123.0   3       2       none    TRUE                            100.0,12.0,11.0,0.0
+atp6    100.0   130.0   3       2       none    FALSE                           100.0,17.0,13.0,0.0
+nad1    57.0    161.0   4       2       trans   TRUE                            57.0,40.0,32.0,32.0
+atp1    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+nad2    63.0    110.0   3       2       trans   TRUE                            63.0,37.0,10.0,0.0
+cox1    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+nad6    100.0   107.0   2       2       none    FALSE                           100.0,7.0,0.0,0.0
+cob     99.0    99.0    1       1       none    FALSE                           99.0,0.0,0.0,0.0
+ccmFc   100.0   100.0   1       1       none    TRUE                            100.0,0.0,0.0,0.0
+nad4    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+mttB    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+matR    100.0   200.0   2       2       none    FALSE                           100.0,100.0,0.0,0.0
+nad7    100.0   131.0   4       2       none    TRUE                            100.0,11.0,10.0,10.0
+atp8    100.0   117.0   2       2       none    FALSE                           100.0,17.0,0.0,0.0
+atp9    100.0   124.0   2       2       none    FALSE                           100.0,24.0,0.0,0.0
+nad3    100.0   167.0   2       2       none    FALSE                           100.0,67.0,0.0,0.0
+ccmC    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+cox3    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+nad4L   100.0   200.0   2       2       none    FALSE                           100.0,100.0,0.0,0.0
+atp4    100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+ccmFN   100.0   100.0   1       1       none    FALSE                           100.0,0.0,0.0,0.0
+
+# prefix.contig_table.tsv
+
+Index   Contig name     Conserved gene number   GC content      Length  Depth
+1       edge_223        10      0.45    330338  62
+2       edge_72 11      0.45    264628  58
+3       edge_217        10      0.45    137611  51
+4       edge_224        4       0.45    119506  55
+5       edge_216        8       0.45    115730  56
+6       edge_1  0       0.46    1414    93
+
+prefix.contig_table.tsv This is parsed from the HiMT “Contig information” table.
+
+* Index
+* Contig name
+* Conserved gene number (how many conserved mitochondrial protein-coding genes are found on that contig)
+* GC content
+* Length
+* Depth
+
+# prefix.gene_integrity_summary.tsv
+
+metric  value
+genes_total     24
+genes_present   24
+genes_missing   0
+genes_high_integrity_ge95       21
+geneset_completeness_prop       1.0
+high_integrity_gene_prop        0.875
+mean_best_integrity     95.33333333333333
+median_best_integrity   100.0
+
+# prefix.gene_integrity.tsv
+
+gene    copy    integrity
+nad5    copy1   72.0
+nad5    copy2   27.0
+nad5    copy3   0.0
+nad5    copy4   0.0
+cox2    copy1   97.0
+cox2    copy2   0.0
+cox2    copy3   0.0
+cox2    copy4   0.0
+ccmB    copy1   100.0
+ccmB    copy2   0.0
+ccmB    copy3   0.0
+ccmB    copy4   0.0
+nad9    copy1   100.0
+nad9    copy2   12.0
+nad9    copy3   11.0
+nad9    copy4   0.0
+...
+...
+...
+
+# prefix.mito_basic_info.tsv
+
+metric  value
+Total length    969227
+Total contig number     6
+N count 0
+Number of closed circular contigs       0
+Total GC content        0.45
+Minimum length  1414
+Maximum length  330338
+N50     264628
+
+Extract:
+
+* GC content
+
+# prefix.4c_metrics.tsv
+
+category        metric  value   description
+completeness    genes_total     24      Total genes
+completeness    genes_present   24      Present genes
+completeness    geneset_completeness_prop       1.0     Proportion present
+completeness    mean_best_integrity     0.9533333333333333      Mean best integrity
+completeness    median_best_integrity   1.0     Median best integrity
+contiguity      num_contigs     6       # contigs
+contiguity      total_length    969227  total length
+contiguity      N50     264628  N50
+consistency     frac_spliced_genes      0.125   Fraction spliced (cis+trans)
+consistency     frac_trans_spliced_among_spliced        1.0     Among spliced, fraction trans
+consistency     frac_canonical_trans_spliced_detected   0.5     Detected canonical trans-spliced
+
+Extract:
+
+* geneset completeness proportion
+* total length
+* number of contigs
+* N50
+
+# 4C metrics
+
+1. Completeness: Core gene completeness: geneset completeness proportion
+
+2. CONTIGUITY
+
+Available directly from mito_basic_info.tsv:
+
+* Total contig number
+* N50
+* Maximum contig
+* Minimum contig
+* Total length
+* L50: number of contigs whose cumulative sum reaches half the genome length
+* Genome fragmentation index = 1 – (N50 / total_length)
+* Largest contig proportion = max_len / total_length
+
+3. Correctness: n/a
+
+4. Comprehensiveness
+
+Coefficient of variation (CV): CV = sd(lengths) / mean(lengths)
+

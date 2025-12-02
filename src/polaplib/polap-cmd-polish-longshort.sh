@@ -64,6 +64,7 @@ Synopsis:
 Description:
   polap ${polap_cmd} uses plastid and organelle genes to annotate reads
   using minimap2.
+Hybrid MTPT‑mask polishing is a cautious, biology‑aware way to finish plant organelle assemblies without “correcting away” real transfer tracts. Plant mitochondria routinely capture sizeable fragments of plastid DNA—so‑called mitochondrial plastid DNA (MTPT)—and these inserts can be recent, extensive, and heterogeneous across lineages; the reverse direction (mt→cp) is rarer but documented. If you polish naively with mixed organelle evidence, these bona fide transfers can be overwritten to resemble the donor genome, creating artefacts and even downstream misidentifications. The hybrid approach sidesteps that risk in three broad moves: first, use long‑read polishing (e.g., Racon, optionally followed by Medaka’s neural‑network consensus) to reduce systematic long‑read errors and stabilize the draft without relying on cross‑organelle short‑read evidence; second, detect cp↔mt similarity blocks at the assembly level and mask those intervals so they’re protected from generic consensus changes; third, bring in short reads with a conservative tool like Polypolish, but apply it only in the mask‑complement regions where the evidence is clearly target‑specific. Polypolish’s all‑per‑read alignment philosophy helps resolve repeats without forcing a single “best” placement, and its conservative update rules are a good fit for organelle finishing. In practice, this hybrid style raises base‑level accuracy while preserving biological reality in MTPT tracts—a balance that’s especially important because plastid→mitochondrial transfers are common and can confound barcoding and comparative analyses if not handled carefully.
 
 Options:
   -l FASTQ
@@ -122,41 +123,36 @@ EOF
 		_polap_log0 "[Info] execute: bolap setup-racon"
 	fi
 
-	local OUTDIR="${_arg_outdir}/polish-longshort"
-	_arg_plastid="on"
+	local OUTDIR="${_arg_outdir}/polish-longshort/pt"
 	if [[ "${_arg_plastid}" == "on" ]]; then
 		OUTDIR="${_arg_outdir}/polish-longshort/pt"
 	else
 		OUTDIR="${_arg_outdir}/polish-longshort/mt"
 	fi
 	_polap_log3_cmd rm -rf "$OUTDIR"
+	_polap_log3_cmd mkdir -p "$OUTDIR"
 
 	if [[ "${_arg_long_reads_is}" == "on" && "${_arg_short_read1_is}" == "on" ]]; then
 
-		# _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-polish-hybrid-racon-fmlrc2-polypolish.sh" \
-		# 	--ont "${_arg_long_reads}" \
-		# 	--sr1 "${_arg_short_read1}" \
-		# 	--sr2 "${_arg_short_read2}" \
-		# 	--fasta "${_arg_infile}" \
-		# 	--outdir "${OUTDIR}" \
-		# 	--threads "${_arg_half_threads}" \
-		# 	--rounds 2 --min-ident 0.80 --min-alen 2000 \
-		# 	${_arg_verbose_str}
-
 		if [[ "${_arg_plastid}" == "on" ]]; then
-			_polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-polish-racon-polypolish.sh" \
+			# _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-polish-racon-polypolish.sh" \
+			_polap_log1 "START: racon + polypolish for ptDNA"
+			bash "${_POLAPLIB_DIR}/polap-bash-polish-racon-polypolish.sh" \
 				--target cp \
-				--fasta "${_arg_infile1}" \
-				--other "${_arg_infile2}" \
+				--fasta "${_arg_infile2}" \
+				--other "${_arg_infile1}" \
 				--ont "${_arg_long_reads}" \
 				--sr1 "${_arg_short_read1}" \
 				--sr2 "${_arg_short_read2}" \
 				--outdir "${OUTDIR}" \
 				--threads "${_arg_half_threads}" \
 				--racon-rounds 3
+			_polap_log1 "END: racon + polypolish for ptDNA"
 		else
 			# Paste the scripts above into the touched paths, then run:
-			_polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-polish-racon-polypolish.sh" \
+			# _polap_log3_cmd bash "${_POLAPLIB_DIR}/polap-bash-polish-racon-polypolish.sh" \
+			_polap_log1 "START: racon + polypolish for mtDNA"
+			bash "${_POLAPLIB_DIR}/polap-bash-polish-racon-polypolish.sh" \
 				--target mt \
 				--fasta "${_arg_infile1}" \
 				--other "${_arg_infile2}" \
@@ -168,6 +164,7 @@ EOF
 				--racon-rounds 3 \
 				--mask auto --mask-min-ident 0.85 --mask-min-len 150 --mask-pad 500 --mask-qc 1 \
 				--cov-bin 200 --cov-min-mapq 0
+			_polap_log1 "END: racon + polypolish for mtDNA"
 
 		fi
 

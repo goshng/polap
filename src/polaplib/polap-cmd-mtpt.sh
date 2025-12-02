@@ -128,11 +128,91 @@ EOF
 	if [[ "${_arg_menu[1]}" == "plot" ]]; then
 
 		# plot
-		Rscript --vanilla "${_POLAPLIB_DIR}/polap-r-mtpt-plot-tree.R" \
-			--tree man/analysis/pt_tree/concat/iqtree.treefile \
-			--presence man/analysis/gain_loss/presence.tsv \
-			--out man/analysis/results/mtpt_events_fitch.pdf \
-			--model fitch --chronos --lambda 1.0 --strip-tree-suffix "-0"
+		if [[ "${_arg_menu[2]}" == "1" ]]; then
+			Rscript --vanilla "${_POLAPLIB_DIR}/polap-r-mtpt-plot-tree.R" \
+				--tree man/analysis/pt_tree/concat/iqtree.treefile \
+				--presence man/analysis/gain_loss/presence.tsv \
+				--out man/analysis/results/mtpt_events_fitch.pdf \
+				--model fitch --chronos --lambda 1.0 --strip-tree-suffix "-0"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "2" ]]; then
+			Rscript --vanilla "${_POLAPLIB_DIR}/scripts/polap-r-mtpt-entry-edge-map.R" \
+				--tree man/analysis/pt_tree/concat/iqtree.treefile \
+				--presence man/analysis/gain_loss/presence.tsv \
+				--out man/analysis/results/fig2A_entry_edges.pdf \
+				--model fitch --chronos --lambda 1.0 --strip-tree-suffix "-0"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "3" ]]; then
+
+			Rscript --vanilla "${_POLAPLIB_DIR}/scripts/polap-r-mtpt-edge-waterfall.R" \
+				--tree man/analysis/pt_tree/concat/iqtree.treefile \
+				--presence man/analysis/gain_loss/presence.tsv \
+				--out man/analysis/results/fig2B_edge_waterfall.pdf \
+				--model fitch --strip-tree-suffix "-0"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "4" ]]; then
+
+			Rscript --vanilla "${_POLAPLIB_DIR}/scripts/polap-r-mtpt-tree-heatband-by-entry.R" \
+				--tree man/analysis/pt_tree/concat/iqtree.treefile \
+				--presence man/analysis/gain_loss/presence.tsv \
+				--out man/analysis/results/fig3_heatband.pdf \
+				--model fitch --strip-tree-suffix "-0"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "5" ]]; then
+
+			Rscript --vanilla "${_POLAPLIB_DIR}/scripts/polap-r-mtpt-timeline-density.R" \
+				--tree man/analysis/pt_tree/concat/iqtree.treefile \
+				--presence man/analysis/gain_loss/presence.tsv \
+				--out man/analysis/results/fig4A_timeline.pdf \
+				--model fitch --chronos --lambda 1.0 --strip-tree-suffix "-0"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "6" ]]; then
+
+			Rscript --vanilla "${_POLAPLIB_DIR}/scripts/polap-r-mtpt-concordance-map.R" \
+				--tree man/analysis/pt_tree/concat/iqtree.treefile \
+				--presence man/analysis/gain_loss/presence.tsv \
+				--out man/analysis/results/fig4B_concordance.pdf \
+				--strip-tree-suffix "-0"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "7" ]]; then
+
+			# Selected clusters
+			Rscript --vanilla "${_POLAPLIB_DIR}/scripts/polap-r-mtpt-cluster-panels.R" \
+				--tree man/analysis/pt_tree/concat/iqtree.treefile \
+				--presence man/analysis/gain_loss/presence.tsv \
+				--out man/analysis/results/figS_cluster_panels.pdf \
+				--cids CID_00026,CID_00011 --model fitch --strip-tree-suffix "-0"
+		fi
+
+		if [[ "${_arg_menu[2]}" == "8" ]]; then
+
+			Rscript --vanilla "${_POLAPLIB_DIR}/scripts/polap-r-mtpt-recency-erosion.R" \
+				--metrics man/analysis/results/mtpt_metrics.tsv \
+				--out man/analysis/results/figS_recency_erosion.pdf \
+				--facet-by clade
+		fi
+
+		if [[ "${_arg_menu[2]}" == "9" ]]; then
+
+			Rscript --vanilla "${_POLAPLIB_DIR}/scripts/polap-r-mtpt-repeat-enrichment.R" \
+				--enrichment man/analysis/results/repeat_enrichment.tsv \
+				--out man/analysis/results/figS_repeat_enrichment.pdf
+		fi
+
+		if [[ "${_arg_menu[2]}" == "10" ]]; then
+
+			Rscript --vanilla "${_POLAPLIB_DIR}/scripts/polap-r-mtpt-survival-curves.R" \
+				--tree man/analysis/pt_tree/concat/iqtree.treefile \
+				--presence man/analysis/gain_loss/presence.tsv \
+				--out man/analysis/results/figS_survival.pdf \
+				--model fitch --chronos --lambda 1.0 --strip-tree-suffix "-0"
+		fi
 
 		_polap_log3 "Function end: $(echo $FUNCNAME | sed s/_run_polap_//)"
 		# Disable debugging if previously enabled

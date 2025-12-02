@@ -43,6 +43,7 @@ usage() {
 Usage:
   $(basename "$0") --set some|auto|file:/path|Species_Name
                    --tier v6 --inum 0
+                   --species-codes FILE
                    --out md/manifest.json
                    [--include-ptpt] [--pretty] [--debug]
 EOF
@@ -140,10 +141,20 @@ get_species_list() {
 	case "$SET" in
 	auto)
 		find . -mindepth 4 -maxdepth 4 -type d \
+			-path "./*/${TIER}/${INUM}/oatk" -printf '%P\n' |
+			cut -d/ -f1 | LC_ALL=C sort -u
+		;;
+	autoread)
+		find . -mindepth 4 -maxdepth 4 -type d \
 			-path "./*/${TIER}/${INUM}/polap-readassemble" -printf '%P\n' |
 			cut -d/ -f1 | LC_ALL=C sort -u
 		;;
 	some)
+		cat <<'__SOME__'
+Biancaea_sappan
+__SOME__
+		;;
+	someread)
 		cat <<'__SOME__'
 Anthoceros_agrestis
 Anthoceros_angustus

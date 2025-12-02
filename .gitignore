@@ -1,5 +1,9 @@
 moved/
 ai-draft/
+.tags
+tags
+testlib
+_out
 /target/
 /**/target/
 /**/.DS_Store

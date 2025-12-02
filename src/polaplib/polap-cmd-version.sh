@@ -63,6 +63,11 @@ v0.5.2
 - Add readassemble subcommand for ptDNA/mtDNA assembly
 
 ------
+v0.5.1
+------
+- Add Bolap for a review of four plant mitogenome pipelines
+
+------
 v0.4.3
 ------
 - Add disassemble subcommand for ptDNA assembly

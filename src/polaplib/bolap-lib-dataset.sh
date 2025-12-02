@@ -44,10 +44,12 @@ fi
 # JSON-based dataset manager for polap-dataset-read.json
 
 DATASET_FILE="${_brg_dataset:-dataset.json}"
-[[ -f "$DATASET_FILE" ]] || {
+if [[ ! -f "$DATASET_FILE" ]]; then
 	echo "Error: $DATASET_FILE not found" >&2
+	echo "Create an empty: $DATASET_FILE" >&2
+	touch $DATASET_FILE
 	return 1
-}
+fi
 
 ########################################
 # Load dataset.json into variable

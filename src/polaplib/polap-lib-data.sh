@@ -7786,79 +7786,6 @@ EOF
 
 }
 
-dev_genus_species() {
-	local bolap_cmd="${FUNCNAME%%_*}"
-
-	help_message=$(
-		cat <<EOF
-Name:
-  bolap - development
-
-Synopsis:
-  bolap $bolap_cmd
-
-Description:
-  Edit bolap-parsing.sh for bolap -h
-
-  Edit polap-data-read.sh for bolap help
-
-  Edit polap-lib-data.sh to add a new command
-
-  Makefile.read to add man commands
-
-See also:
-  Makefile.read
-
-Copyright:
-  Copyright © 2025 Sang Chul Choi
-  Free Software Foundation (2024-2025)
-
-Author:
-  Sang Chul Choi
-EOF
-	)
-
-	local _brg_topic=""
-
-	parse_commandline() {
-		set -- "${_brg_unknown_opts[@]}"
-
-		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
-		while test $# -gt 0; do
-			_key="$1"
-			case "$_key" in
-			--topic)
-				if test $# -lt 2; then
-					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
-				else
-					_brg_topic="$2"
-					shift || true
-				fi
-				;;
-			-*)
-				_log_echo0 "[ERROR] no such options: $1"
-				;;
-			*)
-				break
-				;;
-			esac
-			shift || true
-		done
-	}
-
-	declare -n ref="help_message"
-	if [[ "${_brg_help}" == "on" ]]; then
-		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
-		man "$manfile"
-		rm -f "$manfile"
-		return
-	fi
-
-	parse_commandline
-
-	echo "$ref"
-}
-
 demo_genus_species() {
 	local first_arg="$1"
 	local remaining_args=("${@:2}")
@@ -8756,12 +8683,12 @@ EOF
 				fi
 				shift || true
 				;;
-			-*)
-				_log_echo0 "[ERROR] no such options: $1"
-				;;
-			*)
-				_log_echo0 "[POS] arg: $1"
-				;;
+			# -*)
+			# 	_log_echo0 "[ERROR] no such options: $1"
+			# 	;;
+			# *)
+			# 	_log_echo0 "[POS] arg: $1"
+			# 	;;
 			esac
 			shift || true
 		done
@@ -8780,13 +8707,13 @@ EOF
 
 	parse_commandline
 
-	_log_echo0 "cleanup: $_cleanup"
-	_log_echo0 "export: $_export"
-	_log_echo0 "table: $_table"
-	_log_echo0 "delete: $_delete"
-	_log_echo0 "export-all: $_export_all"
-	_log_echo0 "recreate: $_recreate"
-	_log_echo0 "create: $_create"
+	# _log_echo0 "cleanup: $_cleanup"
+	# _log_echo0 "export: $_export"
+	# _log_echo0 "table: $_table"
+	# _log_echo0 "delete: $_delete"
+	# _log_echo0 "export-all: $_export_all"
+	# _log_echo0 "recreate: $_recreate"
+	# _log_echo0 "create: $_create"
 
 	_polap_lib_conda-ensure_conda_env base || exit 1
 
@@ -9693,7 +9620,9 @@ setup-pmat2-apptainer_genus_species() {
 	echo 'kernel.apparmor_restrict_unprivileged_userns=0' | sudo tee /etc/sysctl.d/80-apparmor-userns.conf
 	sudo sysctl --system
 	apptainer exec $CONDA_PREFIX/bin/container/runAssembly.sif echo "Success: PMAT setup"
+	set +u
 	conda deactivate
+	set -u
 }
 
 setup-polap_genus_species() {
@@ -10266,7 +10195,8 @@ install-man_genus_species() {
 			if conda env list | awk '{print $1}' | grep -qx "polap-man"; then
 				echo "ERROR: Conda environment 'polap-man' already exists."
 			else
-				conda create -y --name polap-man pandoc pandoc-crossref yq jq
+				conda create -y --name polap-man pandoc pandoc-crossref yq jq \
+					r-ggplot2 r-patchwork r-dplyr r-readr r-optparse
 			fi
 		else
 			echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
@@ -11666,7 +11596,9 @@ run-pmat2_genus_species() {
 
 	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
 
+	set +u
 	conda deactivate
+	set -u
 
 	# Save results
 	rsync -azuq --max-size=5M \
@@ -12071,6 +12003,7 @@ run-getorganelle_genus_species() {
 install-pmat2_genus_species() {
 	local want_env="polap-pmat2"
 	local -a pkgs=(
+		zlib gcc_linux-64 gxx_linux-64
 		apptainer nextdenovo canu blast
 	)
 
@@ -12096,13 +12029,15 @@ install-pmat2_genus_species() {
 			fi
 		done
 
-		wget https://github.com/aiPGAB/PMAT2/archive/refs/tags/v2.1.5.tar.gz
-		tar -zxvf v2.1.5.tar.gz
-		cd PMAT2-2.1.5
-		make
-		./PMAT --help
+		# wget https://github.com/aiPGAB/PMAT2/archive/refs/tags/v2.1.5.tar.gz
+		# tar -zxvf v2.1.5.tar.gz
+		# cd PMAT2-2.1.5
+		# make
+		# ./PMAT --help
+
 	else
 		echo "pmat2 installation is canceled."
+		echo "conda install -c conda-forge zlib gcc_linux-64 gxx_linux-64"
 		echo "Check: https://github.com/aiPGAB/PMAT2"
 		echo "wget https://github.com/aiPGAB/PMAT2/archive/refs/tags/v2.1.5.tar.gz"
 		echo "tar -zxvf PMAT2-2.1.5.tar.gz"
@@ -12114,13 +12049,21 @@ install-pmat2_genus_species() {
 
 setup-pmat2_genus_species() {
 
+	set +u
 	_polap_lib_conda-ensure_conda_env polap-pmat2 || exit 1
+	set -u
 
 	if [[ "$CONDA_DEFAULT_ENV" == "polap-pmat2" ]]; then
+		rm -f v2.1.5.tar.gz
 		wget https://github.com/aiPGAB/PMAT2/archive/refs/tags/v2.1.5.tar.gz
+		rm -rf PMAT2-2.1.5
 		tar -zxvf v2.1.5.tar.gz
 		cd PMAT2-2.1.5
-		make
+
+		make -f "${_POLAPLIB_DIR}/Makefile.pmat2" \
+			CFLAGS="-g -O3 -Wall -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-result -I${CONDA_PREFIX}/include" \
+			LDFLAGS="-L${CONDA_PREFIX}/lib"
+
 		install -Dm755 PMAT "$CONDA_PREFIX/bin/PMAT"
 		cp -r Conserved_PCGs_db "$CONDA_PREFIX/bin/"
 		cp -r container "$CONDA_PREFIX/bin/"
@@ -14780,6 +14723,9 @@ check_and_prepare_fastq() {
 	local result=""
 	local dirs=("$media_dir" "$media1_dir" "$PWD")
 
+	# echo "${remote_host}" >&2
+	# return 0
+
 	# 1. Try local working directory
 	# for ext in ".fastq" "-*.fq" ".fq.gz" ".fastq.gz"; do
 	for ext in ".fastq" ".fq" ".fq.gz" ".fastq.gz"; do
@@ -16703,7 +16649,7 @@ clean_input_lines() {
 dev_genus_species() {
 	local bolap_cmd="${FUNCNAME%%_*}"
 
-	help_message=$(
+	help_message_main=$(
 		cat <<EOF
 Name:
   bolap - development
@@ -16722,6 +16668,18 @@ Description:
 
   rsync -a -v thorne:/home/goshng/all/polap/github/src/ /home/goshng/all/polap/github/src/
 
+
+Examples:
+  Setup:
+    mkdir -p $HOME/all/polap
+    cd $HOME/all/polap
+    git clone https://github.com/goshng/polap.git github
+    alias pl='bash polap/src/polap.sh'
+    alias bl='bash polap/src/bolap.sh'
+    cd $HOME/all/polap/hifi1
+    ln -s $HOME/all/polap/github polap
+    cd .. && rsync -aq thorne:\$PWD/github/ github/ && rsync -aq thorne:.polap/ \$HOME/.polap/ && cd -
+
 See also:
   Makefile.read
 
@@ -16734,12 +16692,11 @@ Author:
 EOF
 	)
 
-	local _brg_topic=""
+	local _brg_topic="main"
 
 	parse_commandline() {
-		set -- "${_brg_unknown_opts[@]}"
+		set -- "${_brg_args[@]}"
 
-		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
 		while test $# -gt 0; do
 			_key="$1"
 			case "$_key" in
@@ -16754,25 +16711,26 @@ EOF
 			-*)
 				_log_echo0 "[ERROR] no such options: $1"
 				;;
-			*)
-				break
-				;;
 			esac
 			shift || true
 		done
 	}
 
-	declare -n ref="help_message"
-	if [[ "${_brg_help}" == "on" ]]; then
-		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
-		man "$manfile"
-		rm -f "$manfile"
-		return
-	fi
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return
 
 	parse_commandline
 
-	echo "$ref"
+	# echo "$ref"
+	local varname="help_message_${_brg_topic}"
+
+	if [[ -v $varname ]]; then
+		declare -n ref="$varname"
+		manfile=$(_bolap_lib_man-convert_help_message "$ref" "$_brg_topic")
+		man "$manfile"
+		rm -f "$manfile" >&2
+	else
+		echo "[WARN] No help message defined for topic $_brg_topic" >&2
+	fi
 }
 
 use_genus_species() {

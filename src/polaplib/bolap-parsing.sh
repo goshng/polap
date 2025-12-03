@@ -244,6 +244,7 @@ _brg_dry_run=false
 _brg_redo=false
 _brg_cleanup=false
 _bolap_command_string=bolap
+_local_host="$(hostname)"
 
 if [[ -s "${HOME}/.bolaprc" ]]; then
 	_bolap_type=$(<"${HOME}/.bolaprc")
@@ -267,6 +268,7 @@ if [[ "${_bolap_type}" == "read" ]]; then
 fi
 opt_m_arg="off"
 opt_y_flag=false
+POLAP_ASSUME_YES=""
 opt_f_flag=false
 _brg_timeout="1h"
 opt_e_arg=""
@@ -409,6 +411,7 @@ parse_commandline() {
 			;;
 		-y)
 			opt_y_flag=true
+			POLAP_ASSUME_YES="1"
 			;;
 		-f)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -429,6 +432,11 @@ parse_commandline() {
 		--config-path)
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			_brg_config_path="$2"
+			shift
+			;;
+		--remote)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_local_host="$2"
 			shift
 			;;
 		--version)

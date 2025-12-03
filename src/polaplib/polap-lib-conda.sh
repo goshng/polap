@@ -80,7 +80,9 @@ _polap_lib_conda-ensure_conda_env() {
 	# Activate the environment
 	if [[ "${CONDA_DEFAULT_ENV:-}" != "$env_name" ]]; then
 		[[ "$_POLAP_DEBUG" == "1" ]] && echo "[INFO] Activating conda environment '$env_name'..."
+		set +u
 		conda activate "$env_name"
+		set -u
 	fi
 
 	# Verify activation

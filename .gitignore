@@ -4,6 +4,8 @@ ai-draft/
 tags
 testlib
 _out
+figures
+manuscript.pdf
 /target/
 /**/target/
 /**/.DS_Store

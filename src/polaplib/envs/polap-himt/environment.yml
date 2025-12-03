@@ -1,0 +1,8 @@
+name: polap-himt
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - shuyuan_tang::himt
+prefix: /home/goshng/miniconda3/envs/polap-himt

@@ -256,7 +256,7 @@ anno-scan: $(MANIFEST_V6)
 	  --out-dir "$(MANIFEST_DIR)" \
 	  --tier "$(TIER_CLEAN)" --inum "$(INUM_CLEAN)"
 
-sheet-ptmt:
+sheet-ptmt: manifest
 	@bash "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-ptmt-sheet.sh" \
 	  --base-dir "." \
 	  --manifest "$(MANIFEST_V6)" \
@@ -271,7 +271,7 @@ sheet-ptmt:
 #-------------------------------------------------------------------------------
 # Boxplots
 #-------------------------------------------------------------------------------
-graph:
+graph: manifest
 	@bash "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-graph.sh" \
 	  --manifest "$(MANIFEST_V6)" \
 	  --out "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf" \
@@ -327,7 +327,7 @@ $(DOC_OUT_PDF): $(EXP_MD)
 	}
 	@echo "[OK] Wrote: $(DOC_OUT_PDF)"
 
-manuscript.pdf: $(DOC_OUT_PDF) sheet-ptmt
+manuscript.pdf: $(DOC_OUT_PDF) sheet-ptmt pt-table mt-table table-s1 table-data graph
 	@pdfunite "$(DOC_OUT_PDF)" "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" manuscript.pdf
 	@cp -p manuscript.pdf "$(CURDIR)/polap/src/polaplib/"
 

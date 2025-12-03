@@ -81,6 +81,10 @@ _polap_lib_dialog-yes-no() {
 	local default="${2:-y}" # default: 'y' = yes, 'n' = no
 	local ans=""
 
+	if [[ "${POLAP_ASSUME_YES:-0}" == "1" ]]; then
+		return 0
+	fi
+
 	# non-interactive guard
 	if [[ ! -t 0 ]]; then
 		if [[ "${POLAP_ASSUME_YES:-0}" == "1" ]]; then

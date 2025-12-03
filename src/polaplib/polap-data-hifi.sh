@@ -26,7 +26,7 @@ export _POLAP_RELEASE
 
 # Data directories: we download data from the NCBI SRA database
 # unless they exist in the following folders.
-_polap_data_version=0.5.4
+_polap_data_version=0.5.1
 _local_host="thorne"
 _media_dir="/media/h2/sra"
 _media1_dir="/media/h1/sra"
@@ -2135,322 +2135,18 @@ benchmark-command_genus_species_for() {
 		_log_echo "No reference mtdna; no ptGAUL assembly of the mtDNA"
 	fi
 
-	run-tippo_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 	run-oatk_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+	run-tippo_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 	run-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 	run-pmat2_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 	run-assess-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 
 	if [[ "${_local_host}" != "$(hostname)" ]]; then
-		clean-read_genus_species_for "${_brg_outdir}"
 		sync_genus_species "${_brg_outdir}" "${_brg_sindex}" --main-push
+		clean-hifi_genus_species "${_brg_outdir}"
 	fi
 
 	return 0
-
-	_log_echo "START (${_brg_rundir}): banchmarking of organelle genome assembly"
-
-	if [[ -s "${_brg_tmpdir}/l.fq" ]]; then
-		_log_echo "Found: the data: ${_brg_tmpdir}/l.fq"
-	else
-		run-data-long_genus_species "${_brg_outdir}" "${_brg_inum_0}"
-	fi
-
-	local _run_title="summary-data"
-	local _rundir="${_brg_outdir_0}/${_run_title}"
-	if [[ -s "${_rundir}"/l.fq.stats ]]; then
-		_log_echo "Found: the data summary"
-		local long_sra_size=$(awk 'NR==2 { print $5 }' "${_rundir}/l.fq.stats")
-	else
-		run-summary-data_genus_species "${_brg_outdir}" "${_brg_inum_0}"
-		if [[ -s "${_rundir}"/l.fq.stats ]]; then
-			_log_echo "Success: the data summary"
-		else
-			_log_echo "Fail: the data summary"
-			exit 1
-		fi
-	fi
-
-	# run-estimate-genomesize
-	local _run_title="estimate-genomesize"
-	local _rundir="${_brg_outdir_0}/${_run_title}"
-	if [[ -s "${_rundir}/short_expected_genome_size.txt" ]]; then
-		_log_echo "Found: the genome size estimate"
-	else
-		run-estimate-genomesize_genus_species "${_brg_outdir}" "${_brg_inum_0}"
-		if [[ -s "${_rundir}/short_expected_genome_size.txt" ]]; then
-			_log_echo "Success: the genome size estimate"
-		else
-			_log_echo "Fail: the genome size estimate"
-		fi
-	fi
-
-	# Downsample
-	if [[ -s "${_brg_tmpdir}/ld.fq" ]]; then
-		_log_echo "Found: the downsample"
-	else
-		if [[ "${platform}" == "ONT" ]]; then
-			run-downsample-long-data_genus_species "${_brg_outdir}" 0 -c 10g
-			ret=$?
-			if [[ $ret -eq 0 ]]; then
-				_log_echo "Success: downsampling of ONT"
-			elif [[ $ret -eq 1 ]]; then
-				_log_echo "No input FASTQ"
-			else
-				_log_echo "Other error (code $ret)"
-			fi
-			# data-downsample-long_genus_species "${_brg_outdir}" 0 10g
-		elif [[ "${platform}" == "PACBIO_SMRT" ]]; then
-			run-downsample-long-data_genus_species "${_brg_outdir}" 0 -c 100
-			ret=$?
-			if [[ $ret -eq 0 ]]; then
-				_log_echo "Success: downsampling of HiFi"
-			elif [[ $ret -eq 1 ]]; then
-				_log_echo "No input FASTQ"
-			else
-				_log_echo "Other error (code $ret)"
-			fi
-			# data-downsample-long_genus_species "${_brg_outdir}" 0 3
-		elif [[ "${platform}" == "PACBIO_CLR" ]]; then
-			# cut down to 3kb reads
-			_polap_lib_conda-ensure_conda_env polap || exit 1
-			seqkit seq -m 3000 "${_brg_tmpdir}/l.fq" -o "${_brg_tmpdir}/ld.fq"
-			conda deactivate
-		else
-			_log_echo "[ERROR] unknown platform"
-			exit
-		fi
-	fi
-
-	# Execute NCBI edirect download ptDNA
-	# check: ncbi-ptdna/ptdna-reference.fa
-	local _run_title="ncbi-ptdna"
-	local _rundir="${_brg_outdir_0}/${_run_title}"
-	if [[ -s "${_rundir}/ptdna-reference.fa" ]]; then
-		if [[ $(wc -c <"${_rundir}/ptdna-reference.fa") -ge 1024 ]]; then
-			_log_echo "Found: reference ptDNA"
-		else
-			_log_echo "Warning: no reference ptDNA"
-		fi
-	else
-		download-ptdna_genus_species "${_brg_outdir}"
-		if [[ -s "${_rundir}/ptdna-reference.fa" ]]; then
-			_log_echo "Success: reference ptDNA"
-		else
-			_log_echo "Warning: no reference ptDNA"
-			echo 0 >"${_rundir}/ptdna-reference.fa"
-		fi
-	fi
-
-	local _run_title="ncbi-mtdna"
-	local _rundir="${_brg_outdir_0}/${_run_title}"
-	if [[ -s "${_rundir}/mtdna-reference.fa" ]]; then
-		if [[ $(wc -c <"${_rundir}/mtdna-reference.fa") -ge 1024 ]]; then
-			_log_echo "Found: reference mtdna"
-		else
-			_log_echo "Warning: no reference mtDNA"
-		fi
-	else
-		download-mtdna_genus_species "${_brg_outdir}"
-		if [[ -s "${_rundir}/mtdna-reference.fa" ]]; then
-			_log_echo "Success: reference mtdna"
-		else
-			_log_echo "Fail: reference mtdna"
-			echo 0 >"${_rundir}/mtdna-reference.fa"
-		fi
-	fi
-
-	local ptdna_ref=$(<"${_brg_outdir_0}/ncbi-ptdna/ptdna-reference.fa")
-	if [[ "${ptdna_ref}" == "0" ]]; then
-		_log_echo "No ptDNA reference for ptGAUL"
-	else
-		# Execute ptGAUL
-		# check: ptgaul/flye_cpONT/assembly_graph.gfa
-		local _run_title="ptgaul"
-		local _rundir="${_brg_outdir_0}/${_run_title}"
-		if [[ -s "${_rundir}/flye_cpONT/assembly_graph.gfa" ]]; then
-			_log_echo "Found: ptGAUL assembly"
-		else
-			run-ptgaul_genus_species "${_brg_outdir}" "${_brg_inum_0}"
-			if [[ -s "${_rundir}/flye_cpONT/assembly_graph.gfa" ]]; then
-				_log_echo "Success: ptGAUL assembly"
-			else
-				_log_echo "Fail: ptGAUL assembly"
-			fi
-		fi
-
-		# Extract ptDNA from ptGAUL
-		# check: ptgaul/flye_cpONT/ptdna/circular_path_1_concatenated.fa
-		local _run_title="ptgaul"
-		local _rundir="${_brg_outdir_0}/${_run_title}/flye_cpONT/ptdna"
-		if [[ -s "${_rundir}/circular_path_1_concatenated.fa" ]]; then
-			if [[ $(wc -c <"${_rundir}/circular_path_1_concatenated.fa") -ge 1024 ]]; then
-				_log_echo "Found: ptGAUL extracted ptDNA"
-			else
-				_log_echo "Warning: no ptGAUL extracted ptDNA"
-			fi
-		else
-			run-extract-ptdna-ptgaul_genus_species "${_brg_outdir}" "${_brg_inum_0}"
-			if [[ -s "${_rundir}/circular_path_1_concatenated.fa" ]]; then
-				_log_echo "Success: ptGAUL extracted ptDNA"
-			else
-				_log_echo "Warning: ptGAUL extracted ptDNA"
-				echo 0 >"${_rundir}/circular_path_1_concatenated.fa"
-			fi
-		fi
-	fi
-
-	local mtdna_ref=$(<"${_brg_outdir_0}/ncbi-mtdna/mtdna-reference.fa")
-	if [[ "${mtdna_ref}" == "0" ]]; then
-		_log_echo "No mtDNA reference for ptGAUL"
-	else
-		# Execute mtGAUL
-		# check: mtgaul/flye_cpONT/assembly_graph.gfa
-		local _run_title="mtgaul"
-		local _rundir="${_brg_outdir_0}/${_run_title}"
-		if [[ -s "${_rundir}/flye_cpONT/assembly_graph.gfa" ]]; then
-			_log_echo "Found: ptGAUL mtDNA assembly"
-		else
-			run-mtgaul_genus_species "${_brg_outdir}" "${_brg_inum_0}"
-			if [[ -s "${_rundir}/flye_cpONT/assembly_graph.gfa" ]]; then
-				_log_echo "Success: ptGAUL mtDNA assembly"
-			else
-				_log_echo "Warning: no ptGAUL mtDNA assembly"
-			fi
-		fi
-	fi
-
-	# run-tippo
-	local _run_title="tippo"
-	local _rundir="${_brg_outdir_0}/${_run_title}"
-	local _check_file_for_finish="${_rundir}/${long_sra}.fastq.tiara.out"
-	local _check_file_for_try="${_rundir}"
-	if [[ -d "${_check_file_for_try}" ]]; then
-		if [[ -s "${_check_file_for_finish}" ]]; then
-			_log_echo "Found: the tippo result"
-		else
-			_log_echo "Warning: no tippo result"
-		fi
-	else
-		run-tippo_genus_species "${_brg_outdir}" "${_brg_inum_0}"
-		if [[ -s "${_check_file_for_finish}" ]]; then
-			_log_echo "Success: the tippo result"
-		else
-			_log_echo "Fail: the tippo result"
-		fi
-	fi
-
-	# run-oatk
-	local _run_title="oatk"
-	local _rundir="${_brg_outdir_0}/${_run_title}"
-	local _check_file_for_finish="${_rundir}/oatk-30.utg.gfa"
-	local _check_file_for_try="${_rundir}"
-	if [[ -d "${_check_file_for_try}" ]]; then
-		if [[ -s "${_check_file_for_finish}" ]]; then
-			_log_echo "Found: the oatk result"
-		else
-			_log_echo "Warning: no oatk result"
-		fi
-	else
-		run-oatk_genus_species "${_brg_outdir}" "${_brg_inum_0}"
-		if [[ -s "${_check_file_for_finish}" ]]; then
-			_log_echo "Success: the oatk result"
-		else
-			_log_echo "Fail: the oatk result"
-		fi
-	fi
-
-	# run-pmat
-
-	# run more pipelines if you need
-
-	# run-polap-readassemble-pt
-	local _run_title="polap-readassemble-1-pt"
-	local _rundir="${_brg_outdir_i}/${_run_title}"
-	if [[ -s "${_rundir}/pt.0.gfa" ]]; then
-		_log_echo "Found: polap-readassemble-pt pt assembly"
-	else
-		_log_echo run-polap-readassemble-pt_genus_species "${_brg_outdir}" "${_brg_sindex}"
-		run-polap-readassemble-pt_genus_species "${_brg_outdir}" "${_brg_sindex}"
-		if [[ -s "${_rundir}/pt.0.gfa" ]]; then
-			_log_echo "Success: polap-readassemble-pt pt assembly"
-		else
-			_log_echo "Fail: polap-readassemble-pt pt assembly"
-		fi
-	fi
-
-	# run-polap-readassemble-nt
-	# run-polap-syncassemble
-	if [[ "${platform}" == "ONT" ]]; then
-		# readassemble-nt
-		local _run_title="polap-readassemble-1-mt"
-		local _rundir="${_brg_outdir_i}/${_run_title}"
-		if [[ -s "${_rundir}/mt.0.gfa" ]]; then
-			_log_echo "Found: polap-readassemble-mt mt assembly"
-		else
-			run-polap-readassemble-nt_genus_species "${_brg_outdir}" "${_brg_sindex}"
-			if [[ -s "${_rundir}/mt.0.gfa" ]]; then
-				_log_echo "Success: polap-readassemble-mt mt assembly"
-			else
-				_log_echo "Fail: polap-readassemble-mt mt assembly"
-			fi
-		fi
-	elif [[ "${platform}" == "PACBIO_SMRT" ]]; then
-		# syncassemble-mt
-		local _run_title="polap-syncassemble"
-		local _rundir="${_brg_outdir_i}/${_run_title}"
-		if [[ -s "${_rundir}/mt.0.gfa" ]]; then
-			_log_echo "Found: polap-syncassemble assembly"
-		else
-			run-polap-syncassemble_genus_species "${_brg_outdir}" "${_brg_sindex}"
-			if [[ -s "${_rundir}/mt.0.gfa" ]]; then
-				_log_echo "Success: polap-syncassemble assembly"
-			else
-				_log_echo "Fail: polap-syncassemble assembly"
-			fi
-		fi
-	elif [[ "${platform}" == "PACBIO_CLR" ]]; then
-		_log_echo "[ERROR] CLR platform is not supported"
-		exit
-	else
-		_log_echo "[ERROR] unknown platform"
-		exit
-	fi
-
-	_log_echo "END (${_brg_outdir}): polap annotating and assembling with banchmarking analysis"
-
-	return
-
-	# polap whole-genome assembly step
-	# reduce data
-	# whole-genome assembly
-	local _run_title="polap-assemble-1-mt"
-	local _rundir="${_brg_outdir_i}/${_run_title}"
-	if [[ -s "${_rundir}/mt.0.gfa" ]]; then
-		_log_echo "Found: polap-assemble-mt mt assembly"
-	else
-		run-polap-reduce-data_genus_species "${_brg_outdir}" "${_brg_inum}"
-		run-polap-assemble-wga_genus_species "${_brg_outdir}" "${_brg_inum}"
-		if [[ -s "${_rundir}/mt.0.gfa" ]]; then
-			_log_echo "Success: polap-assemble-mt mt assembly"
-		else
-			_log_echo "Fail: polap-assemble-mt mt assembly"
-		fi
-	fi
-
-	if [[ "${_local_host}" != "$(hostname)" ]]; then
-		sync_genus_species "${_brg_outdir}" "${_brg_sindex}" --main-push
-	fi
-
-	# if [[ "${_local_host}" != "$(hostname)" ]]; then
-	# 	sync_genus_species "${_brg_outdir}" "${_brg_inum}" --main-push
-	# 	rm -rf "${_brg_outdir}-${_brg_inum}" "${_brg_outdir}"
-	# 	rm -f "${long_sra}.fastq" "${long_sra}-10x.fastq.tar.gz"
-	# else
-	# 	rm -rf "${_brg_outdir}-${_brg_inum}"
-	# 	rm -f "${long_sra}.fastq" "${long_sra}-10x.fastq.tar.gz"
-	# fi
-
 }
 
 benchmark-command_genus_species() {
@@ -4540,6 +4236,57 @@ Author:
 EOF
 	)
 
+	help_message_conda=$(
+		cat <<EOF
+Name:
+  bolap for conda
+
+Synopsis:
+  bolap $bolap_cmd --topic STR
+
+Description:
+  Make sure that these conda environments are available for bolap analysis type of hifi.
+    polap
+    polap-oatk
+    polap-himt
+    polap-pmat2
+    polap-tippo
+
+    polap-bioc
+    polap-cflye
+    polap-evo
+    polap-flye
+    polap-fmlrc
+    polap-fmlrc2
+    polap-getorganelle
+    polap-graphaligner
+    polap-man
+    polap-mbg
+    polap-ncbitools
+    polap-ont
+    polap-pmat
+    polap-polish
+    polap-racon
+    polap-sim
+    polap-test
+
+Examples:
+  Installation of other tools:
+    bolap install pmat2
+    bolap install oatk
+    bolap install tippo
+    bolap install himt
+    bolap install bandage
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
 	help_message_review=$(
 		cat <<EOF
 Name:
@@ -4607,7 +4354,7 @@ Examples:
     bolap run himt -s Brassica_rapa
 
   Assess mitogenomes using HiMT assess command:
-    bolap run asess-himt -s Brassica_rapa
+    bolap run assess-himt -s Brassica_rapa
 
   Remote:
     bolap sync -s Brassica_rapa
@@ -4636,22 +4383,65 @@ Examples:
     bolap man pt-figure
     bolap man mt-figure
 
+  Installation of other tools:
+    bolap install pmat2
+    bolap install oatk
+    bolap install tippo
+    bolap install himt
+    bolap install bandage
+
   Setup:
     ln -s ~/all/polap/github polap
+    cd .. && rsync -aq thorne:$PWD/github/ github/ && rsync -aq thorne:.polap/ $HOME/.polap/ && cd -
+    export POLAP=polap/src/polap.sh
+    alias pl="bash \$POLAP"
     export BOLAP=polap/src/bolap.sh
     alias bl="bash \$BOLAP"
+    bolap use --data hifi
     source polap/src/polaplib/polap-bash-complete.sh
-    bl conda --cleanup
-    bl conda --recreate
-    bl conda --delete polap-polish
-    bl conda --create polap-polish
-    bl conda --export-all
-    bl setup oatk
-    bl setup racon
+    bolap conda --cleanup
+    bolap conda --recreate
+    bolap conda --delete polap-polish
+    bolap conda --create polap-polish
+    bolap conda --export-all
+    bolap setup racon
+
+    git clone https://github.com/goshng/polap.git github
+
+  Now:
+    rm -rf polap/src/polaplib/figures
+    cd .. && rsync -aq thorne:$PWD/github/ github/ && rsync -aq thorne:.polap/ $HOME/.polap/ && cd -
+    bolap use --data hifi
+    bolap conda --create polap-pmat2
+    bolap conda --create polap-himt
+    bolap setup oatk
     bolap install pmat2
     bolap setup pmat2
-    bolap setup pmat2-apptainer
-    bl benchmark -s <TAB>
+    bolap setup pmat2-apptainer (requires sudo permission)
+    bolap benchmark -s <TAB>
+    bolap benchmark -f 6h -y --remote thorne -s Cichorium_endivia
+
+  Do Now:
+mkdir -p $HOME/all/polap/hifi1
+cd $HOME/all/polap/hifi1
+ln -s ~/all/polap/github polap
+rm -rf polap/src/polaplib/figures
+cd .. && rsync -aq thorne:$PWD/github/ github/ && rsync -aq thorne:.polap/ $HOME/.polap/ && cd -
+bl use --data hifi
+bl conda --create polap-pmat2 -y
+bl conda --create polap-himt -y
+bl setup oatk
+bl setup pmat2
+bl setup pmat2-apptainer
+source polap/src/polaplib/polap-bash-complete.sh
+bl benchmark -f 6h -y --remote thorne -s 
+
+cd .. && rsync -aq thorne:$PWD/github/ github/ && rsync -aq thorne:.polap/ $HOME/.polap/ && cd -
+rsync -azuq --max-size=5M /tmp
+bl run assess-himt -s Quercus_berberidifolia
+bl sync -s Quercus_berberidifolia
+for i in Quercus_engelmannii Salix_arbutifolia; do bl benchmark -f 6h -y --remote thorne -s $i; done
+
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -4703,15 +4493,12 @@ EOF
 			-*)
 				_log_echo0 "[ERROR] no such options: $1"
 				;;
-			*)
-				break
-				;;
 			esac
 			shift || true
 		done
 	}
 
-	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return
+	# _polap_lib_help-maybe-show "$bolap_cmd" help_message || return
 
 	parse_commandline
 

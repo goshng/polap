@@ -271,6 +271,8 @@ fi
 if [[ -n "$REMOTE" ]]; then
 	for r in "${_media_dir}/${base}.fastq.gz" \
 		"${_media1_dir}/${base}.fastq.gz" \
+		"${_media1_dir}/${base}-10x.fastq.gz" \
+		"${_media2_dir}/${base}-10x.fastq.gz" \
 		"${_media2_dir}/${base}.fastq.gz"; do
 		if remote_has "$r"; then
 			tmpgz="$TMP/.${base}.fastq.gz.tmp"
@@ -288,6 +290,8 @@ if [[ -n "$REMOTE" ]]; then
 	done
 	for r in "${_media_dir}/${base}.fastq" \
 		"${_media1_dir}/${base}.fastq" \
+		"${_media1_dir}/${base}-10x.fastq" \
+		"${_media2_dir}/${base}-10x.fastq" \
 		"${_media2_dir}/${base}.fastq"; do
 		if remote_has "$r"; then
 			tmpfq="$TMP/.${base}.fastq.tmp"

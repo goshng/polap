@@ -3,9 +3,10 @@
 ###############################################################################
 # scripts/make_table_dataset_summary.py
 #
-# Version : v0.2.0
+# Version : v0.2.1
 # Author  : Sang Chul Choi (POLAP)
-# Date    : 2025-10-22
+# Date    : 2025-12-04
+# Date    : 2025-10-22 v0.2.0
 # License : GPL-3.0+
 #
 # Purpose :
@@ -15,17 +16,21 @@
 # Input JSON schema (per item):
 #   {
 #     "code2": "Aa01",             # used as Species in the table
+#     "species": "Genus_species"   # Species name
 #     "data": {
 #       "total_bases": <number|string>,   # raw bases
-#       "read_count":  <number|string>,   # reads
+#       "read_count":  <number|string>,   # reads -> delete
 #       "mean_length": <number|string>,   # average read length (bases)
 #       "N50":         <number|string>,   # N50 (bases)
 #       "avg_qual":    <number|string>    # average quality (float)
+#       "sra_id":      <number|string>    # SRA
 #     }
 #   }
 #
 # Output TSV columns (UNITS APPLIED as requested):
-#   Species  Bases  Reads  AvgLen  N50  AvgQ
+#   SpeciesCode  Species  SRA  Bases  Reads  AvgLen  N50  AvgQ
+#   - Species: string
+#   - SRA    : string
 #   - Bases  : gigabases, 1 decimal (e.g., 7.7)
 #   - AvgLen : kilobases, 1 decimal (e.g., 11.4)
 #   - N50    : kilobases, 1 decimal (e.g., 20.1)
@@ -141,12 +146,22 @@ def main() -> int:
         print("[ERR] No 'items' array in manifest or empty.", file=sys.stderr)
         return 2
 
-    header = ["Species", "Bases_Gb", "Reads", "AvgLen_kb", "N50_kb", "AvgQ"]
+    header = [
+        "Code",
+        "Species",
+        "SRA",
+        "Bases_Gb",
+        # "Reads",
+        "AvgLen_kb",
+        "N50_kb",
+        "AvgQ",
+    ]
     out_rows: list[list[str]] = []
 
     # Build rows with conversion/scaling applied
     for it in items:
         code2 = it.get("code2", "")  # Species code
+        species_name = it.get("species", "")  # Species name
         d = it.get("data", {}) or {}
 
         v_bases = num(d.get("total_bases"))
@@ -154,11 +169,14 @@ def main() -> int:
         v_avlen = num(d.get("mean_length"))
         v_n50 = num(d.get("N50"))
         v_q = num(d.get("avg_qual"))
+        v_sra = d.get("sra_id")
 
         row = [
             str(code2) if code2 is not None else "",
+            str(species_name) if species_name is not None else "",
+            str(v_sra) if v_sra is not None else "",
             fmt_gb(v_bases),  # Bases (GB, 1 dec)
-            str(int(v_reads)) if v_reads is not None else "",  # Reads (integer display)
+            # str(int(v_reads)) if v_reads is not None else "",  # Reads (integer display)
             fmt_kb(v_avlen),  # AvgLen (kb, 1 dec)
             fmt_kb(v_n50),  # N50 (kb, 1 dec)
             fmt_int(v_q),  # AvgQ (rounded int)

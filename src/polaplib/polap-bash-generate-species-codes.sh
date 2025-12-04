@@ -8,12 +8,13 @@ set -euo pipefail
 #   Brassica_napus                     -> Bn02 Brassica_napus
 #   Cucumis_sativus_var_hardwickii     -> Cs03 Cucumis_sativus_var_hardwickii
 
-if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-	echo "Usage: $0 input.txt [output.txt]" >&2
+# if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+if [ "$#" -gt 2 ]; then
+	echo "Usage: $0 [input.txt] [output.txt]" >&2
 	exit 1
 fi
 
-input="$1"
+input="${1:-/dev/stdin}"
 output="${2:-/dev/stdout}"
 
 awk '

@@ -3583,6 +3583,8 @@ EOF
 
 	_polap_lib_conda-ensure_conda_env polap-man || exit 1
 
+	echo make BOLAP_TYPE="${_bolap_type}" SET="$set" \
+		-f "${_POLAPLIB_DIR}/Makefile.${_bolap_type}" manuscript >&2
 	make BOLAP_TYPE="${_bolap_type}" SET="$set" \
 		-f "${_POLAPLIB_DIR}/Makefile.${_bolap_type}" manuscript
 

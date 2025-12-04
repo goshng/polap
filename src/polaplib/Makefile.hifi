@@ -256,14 +256,17 @@ anno-scan: $(MANIFEST_V6)
 	  --out-dir "$(MANIFEST_DIR)" \
 	  --tier "$(TIER_CLEAN)" --inum "$(INUM_CLEAN)"
 
-sheet-ptmt: manifest
+# sheet-ptmt: $(MANIFEST_V6)
+sheet-ptmt:
 	@bash "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-ptmt-sheet.sh" \
 	  --base-dir "." \
 	  --manifest "$(MANIFEST_V6)" \
 	  --species-codes "$(SPECIES_CODES_TXT)" \
 	  --out "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
-	  --page-width-in 11 --page-height-in 17 --margin-in 0.5 \
-	  --gap-mm 4.0 --label-cex 0.55 --title-cex 1.0 \
+	  --page-width-in 11 --page-height-in 17 --margin-in 1.5 \
+	  --gap-mm 4.0 --label-cex 1.25 --title-cex 1.0 \
+	  --rows-per-page 6 \
+	  --start-page 47 \
 	  --title "Mitogenome assembly graphs ($(TIER_CLEAN); PMAT, TIPPo, HiMT, Oatk)"
 	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
 		"$(POLAPLIB_DIR)/figures"
@@ -271,12 +274,13 @@ sheet-ptmt: manifest
 #-------------------------------------------------------------------------------
 # Boxplots
 #-------------------------------------------------------------------------------
+# --title "Mitogenome assembly QC metrics ($(TIER_CLEAN); PMAT, TIPPo, HiMT, Oatk)"
 graph: manifest
 	@bash "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-graph.sh" \
 	  --manifest "$(MANIFEST_V6)" \
 	  --out "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf" \
 	  --page-width-in 11 --page-height-in 8.5 --margin-in 0.5 \
-	  --title "Mitogenome assembly QC metrics ($(TIER_CLEAN); PMAT, TIPPo, HiMT, Oatk)"
+		--title " "
 	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf" \
 		"$(POLAPLIB_DIR)/figures"
 
@@ -300,7 +304,7 @@ fig1-r:
 .PHONY: manuscript
 manuscript: manuscript.pdf
 
-$(EXP_MD): $(DOC_MD) sheet-ptmt table-s1 table-data pt-table mt-table
+$(EXP_MD): $(MANIFEST_V6) $(DOC_MD) sheet-ptmt table-s1 table-data pt-table mt-table
 	@bash "$(MAN_DIR)/sh/replace_include.sh" "$(DOC_MD)" >"$(EXP_MD)"
 
 $(DOC_OUT_PDF): $(EXP_MD) 

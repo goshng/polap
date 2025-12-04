@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # polap-r-hifi-graph.R
-# Version : v1.1.3  (2025-12-02)
+# Version : v1.1.4  (2025-12-04)
 # Author  : Sang Chul Choi (POLAP)
 # License : GPL-3.0+
 #
@@ -11,7 +11,10 @@
 #   species, pipeline,
 #   mem_gb, time_hours, disk_gb,
 #   geneset_completeness_prop,
-#   num_contigs, N50, fragmentation_index,
+#   num_contigs, N50,
+#
+# Remove the following:
+#   fragmentation_index,
 #   contig_length_cv, max_contig_prop, total_length
 
 library(optparse)
@@ -34,6 +37,7 @@ opt <- OptionParser(option_list = list(
   make_option(c("--title"),
     type = "character",
     default = "Mitogenome assembly QC metrics (PMAT, TIPPo, HiMT, Oatk)"
+    # default = ""
   ),
   make_option(c("--page-width-in"), type = "double", default = 11),
   make_option(c("--page-height-in"), type = "double", default = 8.5),
@@ -77,15 +81,22 @@ df <- df %>%
     disk_gb = to_num(disk_gb),
     geneset_completeness_prop = to_num(geneset_completeness_prop),
     num_contigs = to_num(num_contigs),
-    N50 = to_num(N50),
-    fragmentation_index = to_num(fragmentation_index),
-    contig_length_cv = to_num(contig_length_cv),
-    max_contig_prop = to_num(max_contig_prop),
-    total_length = to_num(total_length)
+    N50 = to_num(N50)
+    # fragmentation_index = to_num(fragmentation_index),
+    # contig_length_cv = to_num(contig_length_cv),
+    # max_contig_prop = to_num(max_contig_prop),
+    # total_length = to_num(total_length)
   )
 
 # -----------------------------------------------------------------------------#
 # Metric definitions and pretty labels
+#
+# 2025-12-04
+# Remove the following:
+# "fragmentation_index",
+# "contig_length_cv",
+# "max_contig_prop",
+# "total_length"
 # -----------------------------------------------------------------------------#
 metrics <- c(
   "mem_gb",
@@ -93,24 +104,22 @@ metrics <- c(
   "disk_gb",
   "geneset_completeness_prop",
   "num_contigs",
-  "N50",
-  "fragmentation_index",
-  "contig_length_cv",
-  "max_contig_prop",
-  "total_length"
+  "N50"
 )
 
+# 2025-12-04
+# Remove the following:
+# fragmentation_index = "Fragmentation index",
+# contig_length_cv = "Contig length CV",
+# max_contig_prop = "Max contig proportion",
+# total_length = "Total length (bp)"
 metric_labels <- c(
-  mem_gb = "Peak memory (GB)",
-  time_hours = "Runtime (hours)",
-  disk_gb = "Disk (GB)",
-  geneset_completeness_prop = "Gene set completeness",
-  num_contigs = "Number of contigs",
-  N50 = "N50 (bp)",
-  fragmentation_index = "Fragmentation index",
-  contig_length_cv = "Contig length CV",
-  max_contig_prop = "Max contig proportion",
-  total_length = "Total length (bp)"
+  mem_gb = "(A) Peak memory (GB)",
+  time_hours = "(B) Runtime (hours)",
+  disk_gb = "(C) Disk (GB)",
+  geneset_completeness_prop = "(D) Gene set completeness",
+  num_contigs = "(E) Number of contigs",
+  N50 = "(F) N50 (bp)"
 )
 
 # -----------------------------------------------------------------------------#
@@ -131,7 +140,10 @@ make_boxplot <- function(metric_name) {
     ) +
     theme_bw(base_size = 10) +
     theme(
-      plot.title = element_text(hjust = 0.5, face = "bold"),
+      # hjust = 0 left
+      # hjust = 0.5 center
+      # hjust = 1 right
+      plot.title = element_text(hjust = 0, face = "bold"),
       axis.title.x = element_text(size = 9),
       axis.title.y = element_text(size = 9)
     )

@@ -201,4 +201,6 @@ Rscript "${_POLAPLIB_DIR}/scripts/polap-r-hifi-graph.R" \
 	--ncol-per-row 3 \
 	--page-width-in "$PW" --page-height-in "$PH" --margin-in "$MG"
 
+cp "$CSV" "${OUTPDF%.pdf}.csv"
+echo "[OK] Wrote: ${OUTPDF%.pdf}.csv"
 echo "[OK] Wrote: $OUTPDF"

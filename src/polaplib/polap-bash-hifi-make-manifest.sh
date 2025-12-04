@@ -241,11 +241,26 @@ _extract_summary_metrics() {
 	fi
 
 	# Disk used line, e.g.:
-	# Disk used:       24 GB
-	line="$(grep -m1 -E 'Disk used' "$f" || true)"
+	#   Disk used:       24 GB
+	#   Disk used:       24GB
+	#   Disk used:       24.5 GB
+	line="$(grep -m1 -E '^[[:space:]]*Disk[[:space:]]+used' "$f" || true)"
+	sum_disk_gb=""
 	if [[ -n "$line" ]]; then
-		sum_disk_gb="$(awk '{for(i=1;i<=NF;i++) if($i ~ /GB/){gsub(/GB/,"",$i);print $i;exit}}' <<<"$line" | tr -d '[:space:]')"
+		# Extract the first number that is followed by optional space + GB
+		sum_disk_gb="$(
+			printf '%s\n' "$line" |
+				sed -E 's/.*Disk[[:space:]]+used:[^0-9]*([0-9]+(\.[0-9]+)?)[[:space:]]*GB.*/\1/'
+		)"
+		# If that didn't work (e.g. 24GB with no space), try a more generic fallback:
+		if [[ -z "$sum_disk_gb" ]]; then
+			sum_disk_gb="$(
+				printf '%s\n' "$line" |
+					sed -E 's/.*Disk[[:space:]]+used:[^0-9]*([0-9]+(\.[0-9]+)?)GB.*/\1/'
+			)"
+		fi
 	fi
+
 }
 
 # Parse HiMT metrics in assess/<tool>/report/prefix.*; set globals:
@@ -593,8 +608,9 @@ harvest_one() {
 		local root="${sp}/${TIER}/${INUM}"
 
 		# ---- OATK variants: summary-oatk-*.txt -> single organelle "oatk" -----
+		# if compgen -G "${root}/summary-oatk-*.txt" >/dev/null 2>&1; then
 		if compgen -G "${root}/summary-oatk-*.txt" >/dev/null 2>&1; then
-			for sumf in "${root}"/summary-oatk-*.txt; do
+			for sumf in "${root}"/summary-oatk-30.txt; do
 				[[ -e "$sumf" ]] || continue
 				local cov tag_suffix
 				cov="$(basename "$sumf" | sed -e 's/^summary-oatk-//' -e 's/\.txt$//')"
@@ -623,31 +639,6 @@ harvest_one() {
 					done
 				fi
 
-				# file paths (always emit keys; empty if missing)
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "file" "${tag_suffix}_mt_gfa" "$([[ -s "$mtg" ]] && echo "$mtg" || echo "")"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "file" "${tag_suffix}_mt_fasta" "$([[ -s "$mtf" ]] && echo "$mtf" || echo "")"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "file" "${tag_suffix}_mt_png" "$([[ -s "$mtp" ]] && echo "$mtp" || echo "")"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "file" "${tag_suffix}_pt_gfa" "$([[ -s "$ptg" ]] && echo "$ptg" || echo "")"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "file" "${tag_suffix}_pt_fasta" "$([[ -s "$ptf" ]] && echo "$ptf" || echo "")"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "file" "${tag_suffix}_pt_png" "$([[ -s "$ptp" ]] && echo "$ptp" || echo "")"
-
-				# resources from summary-oatk-*.txt
-				# _extract_summary_metrics "$sumf"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${tag_suffix}_mem_kb" "${sum_mem_kb}"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${tag_suffix}_mem_gb" "${sum_mem_gb}"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${tag_suffix}_time_hms" "${sum_time_hms}"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${tag_suffix}_time_hours" "${sum_time_hours}"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${tag_suffix}_disk_gb" "${sum_disk_gb}"
-
-				# HiMT metrics for this oatk variant
-				# _extract_himt_metrics "$sp" "$TIER" "$INUM" "oatk-${cov}"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${tag_suffix}_geneset_completeness_prop" "${hmt_geneset}"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${tag_suffix}_num_contigs" "${hmt_contigs}"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${tag_suffix}_total_length" "${hmt_total_len}"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${tag_suffix}_N50" "${hmt_n50}"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${tag_suffix}_fragmentation_index" "${hmt_frag_idx}"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${tag_suffix}_max_contig_prop" "${hmt_max_prop}"
-				# append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${tag_suffix}_contig_length_cv" "${hmt_cv}"
 			done
 		else
 			# No OATK summaries; still ensure there is an oatk block with placeholders
@@ -660,7 +651,7 @@ harvest_one() {
 			# mt/pt GFA, FASTA, PNG (best-effort heuristics)
 			local tip_mt_g tip_mt_f tip_mt_p tip_pt_g tip_pt_f tip_pt_p
 			tip_mt_g="$(first_match "${tip_dir}"/*mitochondrial*flye/assembly_graph.gfa)"
-			tip_mt_p="$(first_match "${tip_dir}"/*mitochondrial*.png)"
+			tip_mt_p="$(first_match "${tip_dir}"/*mitochondrial*flye/assembly_graph.png)"
 			tip_pt_g="$(first_match "${tip_dir}"/*chloroplast*flye/assembly_graph.gfa)"
 			tip_pt_f="$(first_match "${tip_dir}"/*organelle.chloroplast.fasta)"
 			tip_pt_p="$(first_match "${tip_dir}"/*chloroplast*.png)"

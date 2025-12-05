@@ -17157,6 +17157,7 @@ EOF
 		if [[ -s "${_brg_outdir_i}/${sra_id}.txt.gz" ]]; then
 			_log_echo0 "[INFO] file exist: ${_brg_outdir_i}/${sra_id}.txt.gz"
 			# cp "${_brg_outdir_i}/${sra_id}.txt.gz" reads-id/
+			# echo "${_brg_outdir} ${sra_id}" >>check-reads-species.txt
 		else
 			seqkit seq -ni "${_brg_tmpdir}/l.fq.gz" \
 				-o "${_brg_outdir_i}/${sra_id}.txt.gz"

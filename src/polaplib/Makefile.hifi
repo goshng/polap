@@ -115,12 +115,20 @@ check-env:
 	@command -v python3 >/dev/null 2>&1 || { echo "[ERR] python3 missing" >&2; exit 2; }
 	@true
 
+species_code:
+	@echo "[INFO] Preparing $(POLAPLIB_DIR)/polap-species-codes-hifi.txt"
+	find . -maxdepth 1 -type d -printf '%f\n' \
+		| grep -E '^[A-Z][a-z]+_[a-z]+$$' \
+		| sort \
+		| bash $(POLAPLIB_DIR)/polap-bash-generate-species-codes.sh \
+		>$(POLAPLIB_DIR)/polap-species-codes-hifi.txt
+
 # ------------------------------------------------------------------------------
 # Manifest (single v5)
 # ------------------------------------------------------------------------------
 manifest: $(MANIFEST_V6)
 
-$(MANIFEST_V6): check-env
+$(MANIFEST_V6): check-env species_code
 	@mkdir -p "$(MANIFEST_DIR)"
 	@echo "[INFO] Building manifest tier=$(TIER_CLEAN) set=$(SET_CLEAN) in $(SR)"
 	cd "$(SR)" && \

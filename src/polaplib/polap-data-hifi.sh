@@ -2215,23 +2215,61 @@ EOF
 
 	local _brg_topic=""
 
-	parse_commandline() {
-		set -- "${_brg_unknown_opts[@]}"
+	# parse_commandline() {
+	# 	set -- "${_brg_unknown_opts[@]}"
+	#
+	# 	# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+	# 	while test $# -gt 0; do
+	# 		_key="$1"
+	# 		case "$_key" in
+	# 		--topic)
+	# 			if test $# -lt 2; then
+	# 				_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+	# 			else
+	# 				_brg_topic="$2"
+	# 				shift || true
+	# 			fi
+	# 			;;
+	# 		*)
+	# 			break
+	# 			;;
+	# 		esac
+	# 		shift || true
+	# 	done
+	# }
 
-		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
+	bolap_s_parse_commandline() {
+		# echo "${_brg_args[@]}" >&2
+		set -- "${_brg_args[@]}"
+
 		while test $# -gt 0; do
 			_key="$1"
 			case "$_key" in
-			--topic)
+			-s)
 				if test $# -lt 2; then
-					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'."
 				else
-					_brg_topic="$2"
+					_brg_outdir="$2"
 					shift || true
 				fi
 				;;
-			*)
-				break
+			-i)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'."
+				else
+					_brg_sindex="$2"
+					shift || true
+				fi
+				;;
+			-y)
+				opt_y_flag=true
+				POLAP_ASSUME_YES="1"
+				;;
+			-f)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				opt_f_flag=true
+				_brg_timeout="$2"
+				shift
 				;;
 			esac
 			shift || true
@@ -2246,17 +2284,18 @@ EOF
 		return
 	fi
 
-	parse_commandline
+	# parse_commandline
+	bolap_s_parse_commandline
 
-	if ((${#_brg_outdir_list[@]} == 0)); then
-		_log_echo0 "[ERROR] bolap -s <species1>"
-		_log_echo0 "bolap -h for help"
-	fi
+	# if ((${#_brg_outdir_list[@]} == 0)); then
+	# 	_log_echo0 "[ERROR] bolap -s <species1>"
+	# 	_log_echo0 "bolap -h for help"
+	# fi
 
-	local outdir
-	for outdir in "${_brg_outdir_list[@]}"; do
-		benchmark_genus_species_for "${outdir}"
-	done
+	# local outdir
+	# for outdir in "${_brg_outdir_list[@]}"; do
+	benchmark_genus_species_for "${_brg_outdir}"
+	# done
 }
 
 #-------------------------------------------------------------------------------
@@ -4312,6 +4351,9 @@ Examples:
 
   Get data at sfolder/tmp:
     bolap run data-long -s Brassica_rapa [--remote main-host-name]
+
+  Save sequence IDs in the dataset for a species name:
+    bolap run save-sequnce-id -s Brassica_rapa
 
   Summary of the data at sfolder/tmp:
     bolap run summary-data -s Brassica_rapa

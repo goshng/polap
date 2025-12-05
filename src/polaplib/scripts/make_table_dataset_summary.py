@@ -3,9 +3,10 @@
 ###############################################################################
 # scripts/make_table_dataset_summary.py
 #
-# Version : v0.2.1
+# Version : v0.2.2
 # Author  : Sang Chul Choi (POLAP)
-# Date    : 2025-12-04
+# Date    : 2025-12-05
+# Date    : 2025-12-04 v0.2.1
 # Date    : 2025-10-22 v0.2.0
 # License : GPL-3.0+
 #
@@ -92,6 +93,14 @@ def fmt_int(v: Optional[float]) -> str:
     return str(int(round(v)))
 
 
+def fmt_species(name: str) -> str:
+    """Remove underscores and wrap in Markdown italics."""
+    if not name:
+        return ""
+    clean = name.replace("_", " ").strip()
+    return f"*{clean}*"
+
+
 def write_tsv(path: str, header: list[str], rows: list[list[str]]) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", newline="") as f:
@@ -150,10 +159,10 @@ def main() -> int:
         "Code",
         "Species",
         "SRA",
-        "Bases_Gb",
+        "Bases (Gb)",
         # "Reads",
-        "AvgLen_kb",
-        "N50_kb",
+        "AvgLen (kb)",
+        # "N50_kb",
         "AvgQ",
     ]
     out_rows: list[list[str]] = []
@@ -173,12 +182,12 @@ def main() -> int:
 
         row = [
             str(code2) if code2 is not None else "",
-            str(species_name) if species_name is not None else "",
+            fmt_species(species_name) if species_name is not None else "",
             str(v_sra) if v_sra is not None else "",
             fmt_gb(v_bases),  # Bases (GB, 1 dec)
             # str(int(v_reads)) if v_reads is not None else "",  # Reads (integer display)
             fmt_kb(v_avlen),  # AvgLen (kb, 1 dec)
-            fmt_kb(v_n50),  # N50 (kb, 1 dec)
+            # fmt_kb(v_n50),  # N50 (kb, 1 dec)
             fmt_int(v_q),  # AvgQ (rounded int)
         ]
         out_rows.append(row)

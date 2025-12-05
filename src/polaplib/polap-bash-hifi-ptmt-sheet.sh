@@ -143,7 +143,8 @@ trap 'rm -f "$TSV_UN" "$TSV" "$CSV" "$ORDER_FILE"' EXIT
 # Species order file from species-codes.txt
 # -----------------------------------------------------------------------------#
 if [[ -s "$SPECIES_CODES_TXT" ]]; then
-	awk 'NR==1{next} NF>=2 {print $2}' "$SPECIES_CODES_TXT" >"$ORDER_FILE"
+	# awk 'NR==1{next} NF>=1 {print $2}' "$SPECIES_CODES_TXT" >"$ORDER_FILE"
+	awk 'NF>=1 {print $2}' "$SPECIES_CODES_TXT" >"$ORDER_FILE"
 fi
 
 # -----------------------------------------------------------------------------#

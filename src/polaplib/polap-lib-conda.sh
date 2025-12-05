@@ -94,6 +94,12 @@ _polap_lib_conda-ensure_conda_env() {
 	return 0
 }
 
+_polap_lib_conda-ensure_conda_env_deactivate() {
+	set +u
+	conda deactivate
+	set -u
+}
+
 # Robust, generic Conda env installer (safe with: set -euo pipefail)
 # Usage:
 #   ensure_conda_env ENV_NAME [PKG ...]

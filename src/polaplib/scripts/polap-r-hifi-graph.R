@@ -133,6 +133,12 @@ make_boxplot <- function(metric_name) {
 
   ggplot(df, aes(x = pipeline, y = .data[[metric_name]])) +
     geom_boxplot(outlier.shape = 21) +
+    scale_x_discrete(labels = c(
+      pmat = "PMAT2",
+      tippo = "TIPPo",
+      himt = "HiMT",
+      oatk = "Oatk"
+    )) +
     labs(
       x = "Pipeline",
       y = metric_labels[[metric_name]],

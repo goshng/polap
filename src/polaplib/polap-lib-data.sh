@@ -9545,6 +9545,7 @@ EOF
 	local _version="${_brg_ver}"
 
 	local tools_to_install=(
+		ncbitools
 		fmlrc
 		fmlrc2
 		pmat2
@@ -13536,7 +13537,9 @@ install-ncbitools_genus_species() {
 			echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."
 			exit 1
 		fi
+		set +u
 		conda deactivate
+		set -u
 	else
 		echo "ncbitools installation is canceled."
 		echo "conda install -c bioconda blast entrez-direct sra-tools"
@@ -15767,7 +15770,10 @@ EOF
 
 	bash "${_POLAPLIB_DIR}/polap-bash-run-data-long.sh" "${args[@]}"
 
-	conda deactivate
+	_polap_lib_conda-ensure_conda_env_deactivate
+	# set +u
+	# conda deactivate
+	# set -u
 
 	# redownload
 
@@ -17426,6 +17432,65 @@ EOF
 	set +u
 	conda deactivate
 	set -u
+}
+
+run-data-long-10x_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - template
+
+Synopsis:
+  bolap ${bolap_cmd}
+
+Description:
+  Use read names in polap/data/hifi to prepare 10x input data.
+
+Examples:
+  Subtitle:
+    bolap ${bolap_cmd} -s Genus_species
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	bolap_s_parse_commandline
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	if [[ -s "polap/data/hifi/${long_sra}.txt.gz" ]]; then
+
+		echo "[INFO] creating 10x ${long_sra} in ${_brg_tmpdir}/l.fq.gz" >&2
+		gzip -dc "polap/data/hifi/${long_sra}.txt.gz" >"${long_sra}.txt"
+
+		echo "[WARN] backing up ${_brg_tmpdir}/lb.fq.gz" >&2
+		if [[ ! -e "${_brg_tmpdir}/lb.fq.gz" ]]; then
+			mv "${_brg_tmpdir}/l.fq.gz" "${_brg_tmpdir}/lb.fq.gz"
+		fi
+
+		seqkit grep -f "${long_sra}.txt" \
+			"${_brg_tmpdir}/lb.fq.gz" \
+			-o "${long_sra}.fastq"
+
+		gzip "${long_sra}.fastq"
+		mv "${long_sra}.fastq.gz" "${_brg_tmpdir}/l.fq.gz"
+		rm "${long_sra}.txt"
+	else
+		echo "[ERROR] no read name file: polap/data/hifi/${long_sra}.txt.gz" >&2
+	fi
+
+	_polap_lib_conda-ensure_conda_env_deactivate
 }
 
 # 2025-12-05

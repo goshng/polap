@@ -2114,6 +2114,7 @@ benchmark-command_genus_species_for() {
 	fi
 
 	run-data-long_genus_species
+	run-data-long-10x_genus_species
 	run-summary-data_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 	data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex_0}" --coverage 0g
 
@@ -4352,8 +4353,11 @@ Examples:
   Get data at sfolder/tmp:
     bolap run data-long -s Brassica_rapa [--remote main-host-name]
 
-  Save sequence IDs in the dataset for a species name:
+  Dev Only: Save sequence IDs in the dataset for a species name:
     bolap run save-sequnce-id -s Brassica_rapa
+
+  Prepare 10x data:
+    bolap run data-long-10x -s Brassica_rapa
 
   Summary of the data at sfolder/tmp:
     bolap run summary-data -s Brassica_rapa

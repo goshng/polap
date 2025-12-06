@@ -249,10 +249,10 @@ _local_host="$(hostname)"
 if [[ -s "${HOME}/.bolaprc" ]]; then
 	_bolap_type=$(<"${HOME}/.bolaprc")
 	if [[ -z "${_bolap_type}" ]]; then
-		_bolap_type="read"
+		_bolap_type="hifi"
 	fi
 else
-	_bolap_type="read"
+	_bolap_type="hifi"
 	echo "${_bolap_type}" >"${HOME}/.bolaprc"
 fi
 
@@ -265,12 +265,18 @@ opt_c_arg="off"
 opt_t_arg="v5"
 if [[ "${_bolap_type}" == "read" ]]; then
 	opt_t_arg="v6"
+elif [[ "${_bolap_type}" == "hifi" ]]; then
+	opt_t_arg="v5"
+elif [[ "${_bolap_type}" == "cflye" ]]; then
+	opt_t_arg="v4"
+elif [[ "${_bolap_type}" == "aflye" ]]; then
+	opt_t_arg="v3"
 fi
 opt_m_arg="off"
 opt_y_flag=false
 POLAP_ASSUME_YES=""
 opt_f_flag=false
-_brg_timeout="1h"
+_brg_timeout="24h"
 opt_e_arg=""
 _brg_help="off"
 _brg_preset=""
@@ -285,25 +291,24 @@ print_help() {
 	help_message=$(
 		cat <<HEREDOC
 BOLAP - Benchmarking of organelle DNA long-read assembly pipeline.
-Version: ${_polap_version}
+Version: ${_polap_version} (beta)
 Type: ${_bolap_type}
 
 Usage: ${_bolap_command_string} [command] [options] -s species_name
 
-bolap is a tool for data analysis of plant plastid genome assembly
-by annotating long reads with organelle genome sequences and selecting those
-originating from organelle genomes.
+bolap is a tool for data analysis of plant plastid genome assembly using
+mitogenome assembly pipelines including PMAT2, TIPPo, HiMT, and Oatk.
 
 Required arguments:
   -s STR               Set species folder (REQUIRED).
 
 commands:
-  benchmark (default)  Benchmark GetOrganelle, ptGAUL, TIPPo, and Oatk.
+  benchmark (default)  Benchmark GetOrganelle, ptGAUL, HiMT, TIPPo, and Oatk.
   install/setup/update Install, setup, update tools using conda environments.
   run                  Run tools
   download             Download data.
   uninstall            Uninstall tools.
-  use                  Use one of benchmark analysis datasets: read, cflye, aflye, hifi
+  use                  Use one of benchmark analysis datasets: hifi, read, cflye, aflye
   conda                Manage conda environments.
   list                 List for tools.
   help                 Print help message for commands and others.
@@ -312,15 +317,16 @@ commands:
   clean                Remove unnecessary folders.
 
 options:
-  -i INT               Set species index (default: ${_brg_sindex})
-  -c FILE              Set value for -c option (default: ${opt_c_arg})
-  -t STR               Set value for -t option (default: ${opt_t_arg})
-  -f STR               Set timeout and enable profiling (default: ${_brg_timeout})
   -y                   Yes for all questions.
+  -f STR               Set timeout and enable profiling (default: ${_brg_timeout})
+  -i INT               Set species index (default: ${_brg_sindex})
+  -c FILE              Set value for -c option for CSV config (default: ${opt_c_arg})
+  -t STR               Set value for -t option for run folder name(default: ${opt_t_arg})
   -v                   Enable verbose mode.
   --remote STR         Set the remote cental server (default: none).
   --version            Show the polap-data-${_bolap_type} version number and exit.
-  -h, --help           Show this help message and exit.
+  --help               Show help message of a subcommand in the man page style.
+  -h                   Show this help message and exit.
 HEREDOC
 	)
 
@@ -508,6 +514,11 @@ _brg_preset_dir=""
 _brg_preset_path=""
 _brg_allow_create="yes"
 _brg_dry_run="no"
+
+if [[ $# -eq 0 ]]; then
+	print_help
+	exit 0
+fi
 
 # ---------------------------------------------
 # Parse CLI arguments

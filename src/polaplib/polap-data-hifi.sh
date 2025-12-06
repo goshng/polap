@@ -2295,7 +2295,11 @@ EOF
 
 	# local outdir
 	# for outdir in "${_brg_outdir_list[@]}"; do
-	benchmark_genus_species_for "${_brg_outdir}"
+	if [[ -n "${_brg_outdir}" ]]; then
+		benchmark_genus_species_for "${_brg_outdir}"
+	else
+		_log_echo0 "[ERROR] -s option is required for benchmark subcommand"
+	fi
 	# done
 }
 

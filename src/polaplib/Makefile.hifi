@@ -275,7 +275,7 @@ sheet-ptmt:
 	  --gap-mm 4.0 --label-cex 1.25 --title-cex 1.0 \
 	  --rows-per-page 6 \
 	  --start-page 47 \
-	  --title "Mitogenome assembly graphs ($(TIER_CLEAN); PMAT, TIPPo, HiMT, Oatk)"
+	  --title "Supplementary Materials - plant mitogenome assembly graphs"
 	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
 		"$(POLAPLIB_DIR)/figures"
 

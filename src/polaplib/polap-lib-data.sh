@@ -13715,7 +13715,12 @@ setup-oatk_genus_species() {
 }
 
 install-conda_genus_species() {
-	read -p "Do you want to install miniconda3? (y/N): " confirm
+	if [[ "${opt_y_flag}" == false ]]; then
+		read -p "Do you want to install miniconda3? (y/N): " confirm
+	else
+		confirm="yes"
+	fi
+
 	if [[ "${confirm,,}" == "yes" || "${confirm,,}" == "y" ]]; then
 		if [[ -d "$HOME/miniconda3" ]]; then
 			echo "ERROR: you already have miniconda3: $HOME/miniconda3"

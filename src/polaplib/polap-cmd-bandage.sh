@@ -92,13 +92,42 @@ HEREDOC
 		return 0
 	fi
 
+	# Find Bandage executable (PATH, ./, or $HOME/bin)
+	# Exit script if not found.
+	find_bandage() {
+		local cmd=""
+
+		# 1. Check system PATH
+		if command -v Bandage >/dev/null 2>&1; then
+			cmd="$(command -v Bandage)"
+
+		# 2. Check current directory
+		elif [[ -x "./Bandage" ]]; then
+			cmd="$(realpath ./Bandage)"
+
+		# 3. Check $HOME/bin
+		elif [[ -x "$HOME/bin/Bandage" ]]; then
+			cmd="$(realpath "$HOME/bin/Bandage")"
+		fi
+
+		if [[ -z "$cmd" ]]; then
+			echo "[ERROR] Bandage not found in PATH, ., or \$HOME/bin" >&2
+			exit 1
+		fi
+
+		printf '%s' "$cmd"
+	}
+
+	local bandage_cmd="$(find_bandage)"
+	_polap_log2 "[INFO] Using Bandage at: $bandage_cmd"
+
 	if [[ "${_arg_menu[1]}" == "png" ]]; then
 		local _infile="${_arg_menu[2]}"
 		local _outfile="${_arg_menu[3]}"
 		local _color="${_arg_menu[4]}"
 		if [[ "${_color}" == "fourthfile" ]]; then
 			# gray color
-			Bandage image "${_infile}" \
+			"${bandage_cmd}" image "${_infile}" \
 				"${_outfile}" \
 				--colour uniform \
 				--unicolpos \#EEEEEE \
@@ -106,7 +135,7 @@ HEREDOC
 				--toutline 1
 		elif [[ "${_color}" == "label" ]]; then
 			# gray color
-			Bandage image "${_infile}" \
+			"${bandage_cmd}" image "${_infile}" \
 				"${_outfile}" \
 				--colour uniform \
 				--unicolpos \#EEEEEE \
@@ -117,7 +146,7 @@ HEREDOC
 				--depth
 		elif [[ "${_color}" == "label2" ]]; then
 			# gray color
-			Bandage image "${_infile}" \
+			"${bandage_cmd}" image "${_infile}" \
 				"${_outfile}" \
 				--colour uniform \
 				--unicolpos \#EEEEEE \
@@ -129,7 +158,7 @@ HEREDOC
 				--fontsize 3
 		else
 			# random color
-			Bandage image "${_infile}" \
+			"${bandage_cmd}" image "${_infile}" \
 				"${_outfile}" \
 				--colour random \
 				--singlearr \

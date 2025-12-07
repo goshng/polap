@@ -271,6 +271,8 @@ elif [[ "${_bolap_type}" == "cflye" ]]; then
 	opt_t_arg="v4"
 elif [[ "${_bolap_type}" == "aflye" ]]; then
 	opt_t_arg="v3"
+elif [[ "${_bolap_type}" == "oatk" ]]; then
+	opt_t_arg="v2"
 fi
 opt_m_arg="off"
 opt_y_flag=false

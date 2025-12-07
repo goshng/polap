@@ -11359,6 +11359,476 @@ run-oatk-hifi_genus_species() {
 	rm -rf "${_brg_runtitledir}"
 }
 
+# Run Tiara and return mito FASTQ path
+# Args:
+#   $1 = input reads (FASTQ)
+#   $2 = work dir (e.g. "${_brg_target}")
+#   $3 = name of shell variable to set with mito FASTQ path
+#
+# Side products:
+#   ${work}/tiara/tiara.out.tsv
+#   ${work}/tiara/tiara.mito.fq.gz
+#   ${work}/tiara/tiara.plastid.fq.gz
+_polap_oatk_step_tiara() {
+	local in_reads="$1"
+	local work="$2"
+	local __outvar="$3"
+
+	local _stdout_txt="${_stdout_txt_base}-tiara.txt"
+	local _timing_txt="${_timing_txt_base}-tiara.txt"
+
+	_polap_lib_conda-ensure_conda_env polap-tiara || return 1
+
+	local tiara_dir="${work}/tiara"
+	mkdir -p "$tiara_dir"
+
+	local tiara_out="${tiara_dir}/tiara.out.tsv"
+	local tiara_mito_fq="${tiara_dir}/tiara.mito.fq.gz"
+	local tiara_plastid_fq="${tiara_dir}/tiara.plastid.fq.gz"
+	local tiara_fa="${tiara_dir}/tiara.input.fa"
+
+	echo "[INFO] Tiara: converting FASTQ to FASTA for $in_reads"
+	seqkit fq2fa "$in_reads" |
+		seqkit replace -p "\s.+" -r "" >"$tiara_fa"
+
+	echo "[INFO] Tiara classification on $in_reads"
+	command time -v tiara \
+		-i "$tiara_fa" \
+		-o "$tiara_out" \
+		--tf mit pla \
+		-t "${_brg_threads:-8}" \
+		>"${_stdout_txt}" \
+		2>"${_timing_txt}" || rc=$?
+
+	if [[ "${rc:-0}" -ne 0 ]]; then
+		printf '[ERR] tiara failed (rc=%d)\n' "$rc" >&2
+	fi
+
+	# mitogenome reads: class_snd_stage == "mitochondrion"
+	awk 'BEGIN{FS="\t"} NR>1 && $3=="mitochondrion" {print $1}' "$tiara_out" |
+		seqkit grep -f - "$in_reads" \
+			-o "$tiara_mito_fq"
+
+	# plastome reads: class_snd_stage == "plastid"
+	awk 'BEGIN{FS="\t"} NR>1 && $3=="plastid" {print $1}' "$tiara_out" |
+		seqkit grep -f - "$in_reads" \
+			-o "$tiara_plastid_fq"
+
+	rm -f "$tiara_fa"
+	_polap_lib_conda-ensure_conda_env_deactivate || true
+
+	# return mito FASTQ path in the requested variable
+	printf -v "$__outvar" '%s' "$tiara_mito_fq"
+}
+
+# Run HiMT filter and return filtered FASTQ path
+# Args:
+#   $1 = input reads (FASTQ)
+#   $2 = work dir (e.g. "${_brg_target}")
+#   $3 = name of shell variable to set with filtered FASTQ path
+_polap_oatk_step_himt() {
+	local in_reads="$1"
+	local work="$2"
+	local __outvar="$3"
+
+	local _stdout_txt="${_stdout_txt_base}-himt-filter.txt"
+	local _timing_txt="${_timing_txt_base}-himt-filter.txt"
+
+	_polap_lib_conda-ensure_conda_env polap-himt || return 1
+
+	local himt_dir="${work}/himt"
+	mkdir -p "$himt_dir"
+
+	local himt_out_fa="${himt_dir}/extract.fa"
+	local himt_out="${himt_dir}/himt.fq.gz"
+
+	echo "[INFO] HiMT filter on $in_reads"
+	command time -v himt filter \
+		--input_file "$in_reads" \
+		--output_dir "$himt_dir" \
+		-s plant \
+		--thread "${_brg_threads:-8}" \
+		>"${_stdout_txt}" \
+		2>"${_timing_txt}" || rc=$?
+
+	if [[ "${rc:-0}" -ne 0 ]]; then
+		printf '[ERR] himt filter failed (rc=%d)\n' "$rc" >&2
+	fi
+
+	_polap_lib_conda-ensure_conda_env_deactivate || conda deactivate || true
+
+	seqkit seq -ni "${himt_out_fa}" |
+		seqkit grep -f - "${in_reads}" -o "${himt_out}"
+
+	printf -v "$__outvar" '%s' "$himt_out"
+}
+
+# 2025-12-07
+################################################################################
+# Run Oatk on HiFi reads with Tiara + HiMT filtering in configurable order
+#
+# Patterns:
+#   t-h : Tiara -> HiMT -> Oatk        -> prefix oatk-t-h-XY
+#   h-t : HiMT -> Tiara -> Oatk        -> prefix oatk-h-t-XY
+#   t-x : Tiara -> Oatk                -> prefix oatk-t-x-XY
+#   x-h : HiMT  -> Oatk                -> prefix oatk-x-h-XY
+#   x-x : Oatk only                    -> prefix oatk-x-x-XY
+#
+# Usage:
+#   run-oatk-tiara-himt_genus_species OUTDIR [INUM] [PATTERN] [C_LIST]
+#     OUTDIR  : species folder (e.g. Erythranthe_laciniata)
+#     INUM    : integer index (default 0)
+#     PATTERN : t-h | h-t | t-x | x-h | x-x  (default t-h)
+#     C_LIST  : comma-separated list of c-values, 2-digit padded (01..48)
+#               default: 01,02,...,48
+################################################################################
+run-oatk-tiara-himt_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd}
+
+Synopsis:
+  bolap ${bolap_cmd}
+
+Description:
+  Run Oatk on HiFi reads with Tiara + HiMT filtering in configurable order
+
+Options:
+  -s STR
+    species folder (e.g. Erythranthe_laciniata)
+
+  -i INT
+    integer index (default 0)
+
+  --pattern
+    PATTERN : t-h | h-t | t-x | x-h | x-x  (default t-h)
+
+  --c-list
+    C_LIST  : comma-separated list of c-values, 2-digit padded (01..48)
+              default: 01,02,...,48
+
+Examples:
+  Subtitle:
+    bolap ${bolap_cmd} -s species_name -i 0 --pattern t-h --c-list 01,02,03
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	parse_commandline() {
+		# echo "${_brg_args[@]}" >&2
+		set -- "${_brg_args[@]}"
+
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--pattern)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_pattern="$2"
+					shift || true
+				fi
+				;;
+			--c-list)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_c_list="$2"
+					shift || true
+				fi
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	# local _brg_outdir="${1:-${_brg_outdir}}"
+	# local _brg_sindex="${2:-${_brg_sindex:-0}}"
+	local _pattern="t-h"
+	local _c_list=""
+	# local _c_list="01..48"
+
+	bolap_s_parse_commandline
+	parse_commandline
+
+	get_padded_sequence_pure() {
+		# Extract start and end numbers using parameter expansion
+		local start=${1%%..*}
+		local end=${1##*..}
+		local output=""
+
+		# Loop from start to end
+		for ((i = start; i <= end; i++)); do
+			# Format the number with 0 padding
+			printf -v num "%02d" $i
+
+			# Append to output with comma
+			output="${output}${num},"
+		done
+
+		# Print output with the trailing comma removed
+		echo "${output%,}"
+	}
+
+	# Default c_list: 01..48
+	if [[ -z "$_c_list" ]]; then
+		local i
+		for i in $(seq 2 49); do
+			printf -v c "%02d" "$i"
+			if [[ -z "$_c_list" ]]; then
+				_c_list="$c"
+			else
+				_c_list="${_c_list},$c"
+			fi
+		done
+	elif [[ "$_c_list" == *..* ]]; then
+		# Usage Example
+		_c_list=$(get_padded_sequence_pure "$_c_list")
+	fi
+
+	# Normalize pattern
+	case "$_pattern" in
+	t-h | h-t | t-x | x-h | x-x) ;;
+	*)
+		echo "[ERR] run-oatk-tiara-himt_genus_species: unknown pattern: $_pattern" >&2
+		return 2
+		;;
+	esac
+
+	# Boiler-plate: defines _brg_outdir_i etc
+	local _brg_title="oatk-tiara-himt-${_pattern}"
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+	local _brg_rundir="${_brg_outdir_i}/${_brg_title}"
+
+	mkdir -p "${_brg_outdir_i}"
+
+	# Input reads (HiFi)
+	local reads="${long_sra}.fastq"
+	if [[ ! -s "$reads" ]]; then
+		echo "[ERR] run-oatk-tiara-himt_genus_species: no reads found for ${_brg_outdir}/${_brg_adir}/${_brg_sindex}" >&2
+		return 2
+	fi
+
+	# Working folder for this pipeline
+	# local work="${_brg_target}/oatk-tiara-himt"
+	local work="${_brg_target}"
+	mkdir -p "$work"
+	local tiara_reads=""
+	local himt_reads=""
+	local oatk_reads=""
+
+	# ------------------------------------------------------------------#
+	# Decide the sequence:
+	#   t-h : Tiara -> HiMT
+	#   h-t : HiMT  -> Tiara
+	#   t-x : Tiara only
+	#   x-h : HiMT  only
+	#   x-x : no filtering (raw reads)
+	# ------------------------------------------------------------------#
+	case "$_pattern" in
+	t-h)
+		_polap_oatk_step_tiara "$reads" "$work" tiara_reads || return 1
+		# tiara_reads="$work/tiara/tiara.mito.fq.gz"
+		_polap_oatk_step_himt "$tiara_reads" "$work" himt_reads || return 1
+		oatk_reads="$himt_reads"
+		;;
+
+	h-t)
+		_polap_oatk_step_himt "$reads" "$work" himt_reads || return 1
+		_polap_oatk_step_tiara "$himt_reads" "$work" tiara_reads || return 1
+		oatk_reads="$tiara_reads"
+		;;
+
+	t-x)
+		_polap_oatk_step_tiara "$reads" "$work" tiara_reads || return 1
+		oatk_reads="$tiara_reads"
+		;;
+
+	x-h)
+		_polap_oatk_step_himt "$reads" "$work" himt_reads || return 1
+		oatk_reads="$himt_reads"
+		;;
+
+	x-x)
+		oatk_reads="$reads"
+		;;
+
+	*)
+		echo "[ERR] unknown pattern '$_pattern' (expected one of t-h h-t t-x x-h x-x)" >&2
+		return 2
+		;;
+	esac
+
+	# ------------------------------------------------------------------#
+	# From here on, use $oatk_reads as the input to Oatk
+	# ------------------------------------------------------------------#
+	echo "[INFO] Oatk will use reads: $oatk_reads"
+
+	# -------------------------------------------------------------------------- #
+	# Step 3: Oatk for each c in _c_list
+	# Output prefix: oatk-<pattern>-<c>
+	# utg GFA/FASTA etc should be written into oatk/ so that downstream tools see them
+	# -------------------------------------------------------------------------- #
+	_polap_lib_conda-ensure_conda_env polap-oatk || return 1
+
+	local oatk_dir="${work}/oatk"
+	mkdir -p "$oatk_dir"
+
+	local c
+	IFS=',' read -r -a _c_arr <<<"$_c_list"
+	for c in "${_c_arr[@]}"; do
+		local prefix="oatk-${_pattern}-${c}"
+		local outprefix="${oatk_dir}/${prefix}"
+
+		c_num=$((10#$c))
+		local _stdout_txt="${_stdout_txt_base}-c${c}.txt"
+		local _timing_txt="${_timing_txt_base}-c${c}.txt"
+
+		echo "[INFO] Running Oatk ($prefix) on $oatk_reads (c=$c_num)"
+
+		local rc=0
+		local _oatk_threads=8
+		command time -v oatk \
+			-k 1001 \
+			-c ${c_num} \
+			-t ${_oatk_threads} \
+			-m ./OatkDB/v20230921/embryophyta_mito.fam \
+			-p ./OatkDB/v20230921/embryophyta_pltd.fam \
+			-o "${outprefix}" \
+			"${oatk_reads}" \
+			>"${_stdout_txt}" \
+			2>"${_timing_txt}" || rc=$?
+
+		if [[ "${rc:-0}" -ne 0 ]]; then
+			printf '[ERR] oatk failed (rc=%d)\n' "${rc:-0}" >&2
+		fi
+
+	done
+
+	_polap_lib_conda-ensure_conda_env_deactivate || true
+
+	# Save results
+	# rsync -azuq --max-size=5M \
+	# 	"${_brg_target}/" "${_brg_rundir}/"
+	rsync -azuq "${_brg_target}/" "${_brg_rundir}/"
+
+	# Clean-up
+	rm -rf "${_brg_target}"
+}
+
+################################################################################
+# Run HiMT "assess" on all oatk-* patterns and c values
+# Produces 5 * 48 assess folders:
+#   <outdir>/v5/0/assess/oatk-t-h-01, ..., oatk-x-x-48
+################################################################################
+run-assess-oatk-tiara-himt_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd}
+
+Synopsis:
+  bolap ${bolap_cmd}
+
+Description:
+  text.
+
+Examples:
+  Subtitle:
+    bolap ${bolap_cmd} -s Genus_species
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	bolap_s_parse_commandline
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	local assess_root="${_brg_outdir_i}/assess"
+	mkdir -p "$assess_root"
+
+	_polap_lib_conda-ensure_conda_env polap-himt || return 1
+
+	rm -f "${_stdout_txt}"
+	rm -f "${_timing_txt}"
+
+	local pattern c
+	for pattern in t-h h-t t-x x-h x-x; do
+		for i in $(seq 2 49); do
+			printf -v c "%02d" "$i"
+			local oatk_dir="${_brg_outdir_i}/oatk-tiara-himt-${pattern}"
+			local prefix="oatk-${pattern}-${c}"
+			local gfa="${oatk_dir}/oatk/${prefix}.mito.gfa"
+			local png="${oatk_dir}/oatk/${prefix}.mito.png"
+			local mito_fa="${oatk_dir}/oatk/${prefix}.mito.ctg.fasta"
+			local outdir="${assess_root}/${prefix}"
+
+			if [[ ! -s "$mito_fa" ]]; then
+				# echo "[WARN] Missing mito assembly for $prefix ($mito_fa); skipping assess" >&2
+				continue
+			fi
+
+			rm -rf "$outdir"
+			mkdir -p "$outdir"
+			echo "[INFO] HiMT assess for $prefix"
+			if [[ -s "${mito_fa}" ]]; then
+
+				himt assess \
+					--input_file "${mito_fa}" \
+					--output_dir "$outdir" \
+					>>"${_stdout_txt}" \
+					2>>"${_timing_txt}" || rc=$?
+			else
+				echo "[ERROR] no fasta: ${mito_fa}" >&2
+			fi
+
+			if [[ "${rc:-0}" -ne 0 ]]; then
+				printf "[ERR] himt assess on ${prefix} failed (rc=%d)\n" "${rc:-0}" >&2
+			fi
+
+			# convert HiMT assess html to report
+			local assess_himt_html="${outdir}/himt_mitochondrial.html"
+			local assess_report_prefix="${outdir}/report/prefix"
+			if [[ -s "${assess_himt_html}" ]]; then
+				${_polap_cmd} convert himt2prefix \
+					"${assess_himt_html}" "${assess_report_prefix}"
+			else
+				echo "[ERROR] no himt html: ${assess_himt_html}" >&2
+			fi
+
+			if [[ -s "${gfa}" ]]; then
+				# echo ${_polap_cmd} bandage png "${gfa}" "${png}" >&2
+				${_polap_cmd} bandage png "${gfa}" "${png}"
+			else
+				echo "[ERROR] no gfa: ${gfa}" >&2
+			fi
+		done
+	done
+
+	_polap_lib_conda-ensure_conda_env_deactivate || true
+}
+
 # 2025-11-30
 run-himt_genus_species() {
 	local _brg_outdir="${1:-$_brg_outdir}"
@@ -13064,14 +13534,14 @@ install-sim_genus_species() {
 
 # Wrapper that uses your _polap_lib_conda-* helpers
 # Installs “abc” into env 'polap-abc' with a sensible default stack.
-install-abc_genus_species() {
-	local want_env="polap-abc"
+install-template_genus_species() {
+	local want_env="polap-template"
 	local -a pkgs=(
 		python=3.11
 		samtools mummer4 blast
 		biopython pysam
 		r-base r-data.table r-ggplot2 r-gridextra
-		abc
+		template
 	)
 
 	# Confirm (honors opt_y_flag if you set it elsewhere)
@@ -13079,7 +13549,7 @@ install-abc_genus_species() {
 	if [[ "${opt_y_flag-}" == "true" ]]; then
 		confirm="yes"
 	else
-		read -r -p "Do you want to install abc in the ${want_env} conda environment? (y/N): " confirm
+		read -r -p "Do you want to install template in the ${want_env} conda environment? (y/N): " confirm
 	fi
 
 	if [[ "${confirm,,}" == "y" || "${confirm,,}" == "yes" ]]; then
@@ -13090,16 +13560,83 @@ install-abc_genus_species() {
 
 		# Quick sanity check that key tools are on PATH
 		local t
-		for t in python samtools nucmer blastn R abc; do
+		for t in python samtools nucmer blastn R template; do
 			if ! command -v "$t" >/dev/null 2>&1; then
 				echo "WARNING: '$t' not found in '$want_env' PATH." >&2
 			fi
 		done
 	else
-		echo "abc installation is canceled."
-		echo "Check: https://github.com/maickrau/abc"
-		echo "conda install -c bioconda abc"
-		echo "Execute: abc"
+		echo "template installation is canceled."
+		echo "Check: https://github.com/maickrau/template"
+		echo "conda install -c bioconda template"
+		echo "Execute: template"
+	fi
+}
+
+install-tiara_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd}
+
+Synopsis:
+  bolap ${bolap_cmd}
+
+Description:
+  Install tiara.
+
+Examples:
+  Basic usage:
+    tiara -i sample_input.fasta -o out.txt
+
+  Advanced:
+    tiara -i sample_input.fasta -o out.txt --tf mit pla pro -t 4 -p 0.65 0.60 --probabilities
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local want_env="polap-tiara"
+	local -a pkgs=(
+		tiara
+		seqtk seqkit
+	)
+
+	# Confirm (honors opt_y_flag if you set it elsewhere)
+	local confirm
+	if [[ "${opt_y_flag-}" == "true" ]]; then
+		confirm="yes"
+	else
+		read -r -p "Do you want to install tiara in the ${want_env} conda environment? (y/N): " confirm
+	fi
+
+	if [[ "${confirm,,}" == "y" || "${confirm,,}" == "yes" ]]; then
+		# Create/upgrade env (channels first for R/bioconda harmony)
+		_polap_lib_conda-create-env \
+			"$want_env" "${pkgs[@]}" \
+			--channel conda-forge --channel bioconda -y || return 1
+
+		# Quick sanity check that key tools are on PATH
+		local t
+		for t in tiara; do
+			if ! command -v "$t" >/dev/null 2>&1; then
+				echo "WARNING: '$t' not found in '$want_env' PATH." >&2
+			fi
+		done
+	else
+		echo "tiara installation is canceled."
+		echo "Check: https://github.com/ibe-uw/tiara"
+		echo "conda install -c conda-forge tiara"
+		echo "Unfortunately currently it does work only for python 3.7 and 3.8."
+		echo "License: MIT license"
+		echo "Execute: tiara"
 	fi
 }
 

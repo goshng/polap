@@ -3734,7 +3734,7 @@ EOF
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
 
-	make BOLAP_TYPE="${_bolap_type}" SET="$set" \
+	make BOLAP_TYPE="${_bolap_type}" SET="$set" TIER="$opt_t_arg" \
 		-f "${_POLAPLIB_DIR}/Makefile.${_bolap_type}" manifest
 
 	conda deactivate
@@ -4336,23 +4336,36 @@ EOF
 	help_message_review=$(
 		cat <<EOF
 Name:
-  bolap for review
+  bolap tutorial oatk
 
 Synopsis:
   bolap $bolap_cmd --topic STR
 
 Description:
-  Tutorial for HiFi data analyses using Oatk, TIPPo, HiMT, and PMAT2
+  Tutorial for Oatk data analyses using Oatk, TIPPo, and HiMT
 
   topic:
-    review, 38, man
+    review
 
 Examples:
+  Check the dataset for a species name:
+    bolap dataset view --fields long
+
+  Run Oatk for organelle genome assemblies:
+    bolap run oatk-tiara-himt -s Brassica_rapa
+
+  Run Oatk for organelle genome assemblies:
+    bolap run assess-oatk-tiara-himt -s Brassica_rapa
+
+  Run Oatk for organelle genome assemblies:
+    bolap man init
+    bolap man manifest [--set auto|some]
+    bolap man table-data [--set auto|some]
+    bolap man sheet-ptmt [--set auto|some]
+    bolap man graph [--set auto|some]
+
   Benchmarking batch run:
     bolap -s Brassica_rapa [-y] [-f 1h]
-
-  Check the dataset for a species name:
-    bolap dataset view --fields long,short
 
   Get data at sfolder/tmp:
     bolap run data-long -s Brassica_rapa [--remote main-host-name]
@@ -4390,17 +4403,6 @@ Examples:
   Setup OatkDB:
     bolap install oatk
     bolap setup oatk
-
-  Run Oatk for organelle genome assemblies:
-    bolap run oatk -s Brassica_rapa
-
-  Setup PMAT2 apptainer:
-    bolap install pmat2
-    bolap setup pmat2
-    bolap setup pmat2-apptainer
-
-  Run PMAT2 for organelle genome assemblies:
-    bolap run pmat2 -s Brassica_rapa
 
   Run HiMT for organelle genome assemblies:
     bolap run himt -s Brassica_rapa

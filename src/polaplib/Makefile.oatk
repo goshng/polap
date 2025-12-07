@@ -1,0 +1,316 @@
+# polap/src/Makefile  —  Single-tier (v6) workflow
+# version: v0.2.0
+
+# Use Bash for all recipes
+SHELL := /usr/bin/env bash
+
+# ------------------------------------------------------------------------------
+# Bolap type: read (aflye, cflye for Makefile.aflye, and Makefile.cflye)
+# ------------------------------------------------------------------------------
+BOLAP_TYPE  ?= read
+
+# ------------------------------------------------------------------------------
+# Base paths
+# ------------------------------------------------------------------------------
+POLAPLIB_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+POLAP_SRC    := $(abspath $(POLAPLIB_DIR)/..)
+export POLAP_SRC POLAPLIB_DIR
+
+# Species root defaults to current working dir (can override: SPECIES_ROOT=/abs/path)
+SPECIES_ROOT ?= $(CURDIR)
+SR := $(abspath $(SPECIES_ROOT))
+
+# ------------------------------------------------------------------------------
+# Tier/Set (single tier)
+# ------------------------------------------------------------------------------
+SET   ?= auto     # auto|some|file:/abs/list.txt|<species>
+INUM  ?= 0
+TIER  ?= v2
+
+SET_CLEAN  := $(strip $(SET))
+INUM_CLEAN := $(strip $(INUM))
+TIER_CLEAN := $(strip $(TIER))
+
+# ------------------------------------------------------------------------------
+# Outputs
+# ------------------------------------------------------------------------------
+MAN_DIR       ?= $(SR)/man
+FIGURE_DIR    ?= $(SR)/man/figures
+MANIFEST_DIR  ?= $(SR)/man/md
+
+# Common manifest tag reused across all tier/inum/set combinations
+MANIFEST_TAG := $(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN)
+
+# Paths built from the tag
+MANIFEST_V6  := $(MANIFEST_DIR)/$(MANIFEST_TAG)-manifest.json
+MANIFEST_LOG := $(MANIFEST_DIR)/$(MANIFEST_TAG)-manifest.log
+
+# Derived summaries
+PT_TABLE_TSV  := $(MANIFEST_DIR)/$(MANIFEST_TAG)-pt-summary.tsv
+PT_TABLE_MD   := $(PT_TABLE_TSV:.tsv=.md)
+MT_TABLE_TSV  := $(MANIFEST_DIR)/$(MANIFEST_TAG)-mt-summary.tsv
+MT_TABLE_MD   := $(MT_TABLE_TSV:.tsv=.md)
+DATA_TABLE_PREFIX := $(MANIFEST_DIR)/$(MANIFEST_TAG)-data-summary
+DATA_TABLE_TSV    := $(DATA_TABLE_PREFIX).tsv
+DATA_TABLE_MD     := $(DATA_TABLE_PREFIX).md
+DATA_TABLE_NO_BASE_PREFIX := $(MANIFEST_DIR)/$(MANIFEST_TAG)-data-summary-no-base
+DATA_TABLE_NO_BASE_TSV    := $(DATA_TABLE_NO_BASE_PREFIX).tsv
+DATA_TABLE_NO_BASE_MD     := $(DATA_TABLE_NO_BASE_PREFIX).md
+
+# Table S1
+TABLE_S1_TSV  := $(MANIFEST_DIR)/$(MANIFEST_TAG)-table-s1.tsv
+TABLE_S1_MD   := $(TABLE_S1_TSV:.tsv=.md)
+
+# Optional species codes file (used by manifest/table scripts)
+SPECIES_CODES_TXT ?= $(POLAPLIB_DIR)/polap-species-codes-$(BOLAP_TYPE).txt
+
+# Inputs / outputs (override on CLI if desired)
+# DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-project00.md
+DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-man00-$(BOLAP_TYPE).md
+EXP_MD          ?= $(SR)/man/expanded.md
+DOC_OUT_PDF     ?= $(SR)/man/polap-manuscript.pdf
+
+# Pandoc engine and common flags
+PANDOC          ?= pandoc
+PDF_ENGINE      ?= xelatex
+
+# Resource search path: allow images in md/, man/, man/figures/
+# PANDOC_RPATH    ?= $(SR):$(SR)/md:$(MAN_DIR):$(FIG_DIR)
+PANDOC_RPATH    ?= $(SR)/md:$(MAN_DIR)
+
+
+# ------------------------------------------------------------------------------
+# Phony targets and default goal
+# ------------------------------------------------------------------------------
+.PHONY: help print-vars check-env manifests table-s1 pt-table mt-table table-data \
+        figure-assembly figure-assemblies-pdf figure-assemblies-both \
+        figure-assemblies-two-pages anno-scan sheet-ptmt fig1-puml fig1-r \
+        clean
+
+.DEFAULT_GOAL := help
+
+# ------------------------------------------------------------------------------
+# Help / diagnostics
+# ------------------------------------------------------------------------------
+help:
+	@echo "Single-tier (v5) workflow"
+	@echo "Run from anywhere (SPECIES_ROOT defaults to $$PWD). Examples:"
+	@echo "  make -f $(POLAPLIB_DIR)/Makefile manifests"
+	@echo "  make -f $(POLAPLIB_DIR)/Makefile table-s1"
+	@echo "  make -f $(POLAPLIB_DIR)/Makefile pt-table"
+	@echo "  make -f $(POLAPLIB_DIR)/Makefile mt-table"
+	@echo "  make -f $(POLAPLIB_DIR)/Makefile table-data"
+	@echo ""
+	@echo "Override vars: SPECIES_ROOT=/abs/root  SET=auto|file:/abs/list.txt|<species>  INUM=0  TIER=v6"
+
+print-vars:
+	@echo "SPECIES_ROOT=$(SR)"
+	@echo "POLAP_SRC=$(POLAP_SRC)"
+	@echo "POLAPLIB_DIR=$(POLAPLIB_DIR)"
+	@echo "SET=$(SET_CLEAN)  INUM=$(INUM_CLEAN)  TIER=$(TIER_CLEAN)"
+	@echo "MANIFEST=$(MANIFEST_V6)"
+
+check-env:
+	@command -v bash    >/dev/null 2>&1 || { echo "[ERR] bash missing"    >&2; exit 2; }
+	@command -v python3 >/dev/null 2>&1 || { echo "[ERR] python3 missing" >&2; exit 2; }
+	@true
+
+species_code:
+
+	@echo "[INFO] Preparing $(SPECIES_CODES_TXT)"
+	find . -maxdepth 1 -type d -printf '%f\n' \
+		| grep -E '^[A-Z][a-z]+_[a-z]+$$' \
+		| sort \
+		| bash $(POLAPLIB_DIR)/polap-bash-generate-species-codes.sh \
+		>$(SPECIES_CODES_TXT)
+
+# ------------------------------------------------------------------------------
+# Manifest (single v5)
+# ------------------------------------------------------------------------------
+manifest: $(MANIFEST_V6)
+
+$(MANIFEST_V6): check-env species_code
+	@mkdir -p "$(MANIFEST_DIR)"
+	@echo "[INFO] Building manifest tier=$(TIER_CLEAN) set=$(SET_CLEAN) in $(SR)"
+	cd "$(SR)" && \
+	  bash "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-make-manifest.sh" \
+	    --species-codes  "$(SPECIES_CODES_TXT)" \
+	    --set  "$(SET_CLEAN)" \
+	    --tier "$(TIER_CLEAN)" \
+	    --inum "$(INUM_CLEAN)" \
+	    --out  "$(abspath $@)" \
+	    --pretty \
+	    2> "$(MANIFEST_LOG)" \
+	  || { echo "[ERR] See $(abspath $(MANIFEST_LOG))"; exit 1; }
+	@echo "[INFO] Wrote: $(abspath $@)"
+	@echo "[INFO] Log:   $(abspath $(MANIFEST_LOG))"
+
+# ------------------------------------------------------------------------------
+# Table S1 (manifest -> TSV + MD via Python script)
+# ------------------------------------------------------------------------------
+#	polap-bash-format-table-dataset-summary.sh" \
+.PHONY: table-s1
+table-s1: $(TABLE_S1_TSV) $(TABLE_S1_MD)
+
+$(TABLE_S1_TSV): $(MANIFEST_V6)
+	@mkdir -p "$(dir $@)"
+	@echo "[INFO] Building Table S1 from $(MANIFEST_V6)"
+	python3 "$(POLAPLIB_DIR)/scripts/make_table_dataset_summary.py" \
+	  --manifest "$(MANIFEST_V6)" \
+	  --out "$(TABLE_S1_TSV)" \
+	  --markdown
+	@echo "[OK] Wrote: $(TABLE_S1_TSV) and $(TABLE_S1_MD)"
+
+$(TABLE_S1_MD): $(TABLE_S1_TSV)
+	@true
+
+# ------------------------------------------------------------------------------
+# PT summary (manifest -> TSV -> MD)
+# ------------------------------------------------------------------------------
+
+pt-table: $(PT_TABLE_MD)
+
+$(PT_TABLE_MD): $(MANIFEST_V6)
+	@mkdir -p "$(dir $@)"
+	@echo "[INFO] PT summary (MD) from $(MANIFEST_V6)"
+	@bash "$(POLAPLIB_DIR)/polap-bash-table-pt.sh" \
+	  --manifest "$(MANIFEST_V6)" \
+	  --tsv "$(PT_TABLE_TSV)" \
+	  --md  "$(PT_TABLE_MD)"
+	@echo "[OK] Wrote: $(PT_TABLE_MD)"
+
+# ------------------------------------------------------------------------------
+# MT summary (manifest -> TSV -> MD)
+# ------------------------------------------------------------------------------
+mt-table: $(MT_TABLE_TSV) $(MT_TABLE_MD)
+	@echo "[OK] MT table: $(MT_TABLE_TSV) and $(MT_TABLE_MD)"
+
+$(MT_TABLE_TSV) $(MT_TABLE_MD): $(MANIFEST_V6)
+	@mkdir -p "$(dir $(MT_TABLE_TSV))"
+	@echo "[INFO] MT summary from $(MANIFEST_V6)"
+	@bash "$(POLAPLIB_DIR)/polap-bash-table-mt.sh" \
+	  --manifest "$(MANIFEST_V6)" \
+	  --tsv "$(MT_TABLE_TSV)" \
+	  --md  "$(MT_TABLE_MD)"
+
+# ------------------------------------------------------------------------------
+# Data summary (long/short) (manifest -> TSV -> MD)
+# ------------------------------------------------------------------------------
+table-data: $(DATA_TABLE_MD)
+
+$(DATA_TABLE_MD): $(MANIFEST_V6)
+	@mkdir -p "$(dir $@)"
+	@echo "[INFO] Data summary (TSV/MD) from $(MANIFEST_V6)"
+	@bash "$(POLAPLIB_DIR)/polap-bash-table-data.sh" \
+	  --manifest "$(MANIFEST_V6)" \
+	  --out-tsv  "$(DATA_TABLE_TSV)" \
+	  --out-md   "$(DATA_TABLE_MD)" \
+	  --sort     "code2"
+	@cut -f1,2,3,5 "$(DATA_TABLE_TSV)" > "$(DATA_TABLE_NO_BASE_TSV)"
+	@tr '\t' ',' < "$(DATA_TABLE_NO_BASE_TSV)" > "$(DATA_TABLE_NO_BASE_TSV).csv"
+	@pandoc "$(DATA_TABLE_NO_BASE_TSV).csv" -f csv -t markdown_mmd -o "$(DATA_TABLE_NO_BASE_MD)" 
+	@echo "[OK] Wrote: $(DATA_TABLE_NO_BASE_TSV)"
+	@echo "[OK] Wrote: $(DATA_TABLE_NO_BASE_MD)"
+
+#-------------------------------------------------------------------------------
+# PT/MT assembly graphs
+#-------------------------------------------------------------------------------
+anno-scan: $(MANIFEST_V6)
+	@bash "$(POLAPLIB_DIR)/polap-bash-anno-scan.sh" \
+	  --base-dir "." \
+	  --manifest "$(MANIFEST_V6)" \
+	  --manifest-tag "$(MANIFEST_TAG)" \
+	  --out-dir "$(MANIFEST_DIR)" \
+	  --tier "$(TIER_CLEAN)" --inum "$(INUM_CLEAN)"
+
+# sheet-ptmt: $(MANIFEST_V6)
+sheet-ptmt:
+	@bash "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-ptmt-sheet.sh" \
+	  --manifest "$(MANIFEST_V6)" \
+	  --species-codes "$(SPECIES_CODES_TXT)" \
+	  --out "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
+	  --page-width-in 11 --page-height-in 17 --margin-in 1.5 \
+	  --gap-mm 4.0 --label-cex 1.25 --title-cex 1.0 \
+	  --rows-per-page 8 \
+	  --columns-per-page 6 \
+	  --start-page 47 \
+		--mt-only \
+	  --title "Supplementary Materials - plant mitogenome assembly graphs"
+	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
+		"$(POLAPLIB_DIR)/figures"
+
+#-------------------------------------------------------------------------------
+# Boxplots
+#-------------------------------------------------------------------------------
+# --title "Mitogenome assembly QC metrics ($(TIER_CLEAN); PMAT, TIPPo, HiMT, Oatk)"
+graph: manifest
+	@bash "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-graph.sh" \
+	  --manifest "$(MANIFEST_V6)" \
+	  --out "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf" \
+	  --page-width-in 11 --page-height-in 8.5 --margin-in 0.5 \
+		--title " "
+	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf" \
+		"$(POLAPLIB_DIR)/figures"
+
+
+#-------------------------------------------------------------------------------
+# pipeline schematic figure
+#-------------------------------------------------------------------------------
+fig1-puml:
+	@plantuml -tsvg "$(POLAPLIB_DIR)/figure1-pipeline.puml" -o "$(SR)/md"
+	@plantuml -tpng "$(POLAPLIB_DIR)/figure1-pipeline.puml" -o "$(SR)/md"
+	@echo "[OK] Wrote: $(SR)/md/figure1-pipeline.svg and .png"
+
+fig1-r:
+	Rscript "$(POLAPLIB_DIR)/polap-r-figure1-pipeline.R"
+
+###############################################################################
+# Manuscript builder: polap-md-project00.md -> man/Polap-manuscript.pdf
+# Requires: pandoc (and LaTeX installed; e.g., TeX Live). Optional: rsvg, citeproc, pandoc-crossref.
+###############################################################################
+
+.PHONY: manuscript
+manuscript: manuscript.pdf
+
+$(EXP_MD): $(MANIFEST_V6) $(DOC_MD) sheet-ptmt table-s1 table-data pt-table mt-table
+	@bash "$(MAN_DIR)/sh/replace_include.sh" "$(DOC_MD)" >"$(EXP_MD)"
+
+$(DOC_OUT_PDF): $(EXP_MD) 
+	@command -v $(PANDOC) >/dev/null 2>&1 || { echo "[ERR] pandoc not found"; exit 2; }
+	@mkdir -p "$(MAN_DIR)"
+	@echo "[INFO] Building PDF: $@"
+	{ \
+	  BIB_OPT=""; CSL_OPT=""; XREF_OPT=""; \
+	  BIB="$(MAN_DIR)/j-polap.bib"; \
+	  CSL="$(MAN_DIR)/style.csl"; \
+	  if [ -s "$$BIB" ]; then BIB_OPT="--citeproc --bibliography=$$BIB"; fi; \
+	  if [ -s "$$CSL" ]; then CSL_OPT="--csl=$$CSL"; fi; \
+	  if command -v pandoc-crossref >/dev/null 2>&1; then XREF_OPT="--filter pandoc-crossref"; fi; \
+	  $(PANDOC) "$(EXP_MD)" \
+	    --pdf-engine="$(PDF_ENGINE)" \
+	    --resource-path="$(PANDOC_RPATH)" \
+	    --toc --toc-depth=2 \
+	    --number-sections \
+			$$XREF_OPT \
+	    $$BIB_OPT \
+			$$CSL_OPT \
+	    -V geometry:margin=1in \
+	    -o "$(DOC_OUT_PDF)"; \
+	}
+	@echo "[OK] Wrote: $(DOC_OUT_PDF)"
+
+manuscript.pdf: $(DOC_OUT_PDF) sheet-ptmt pt-table mt-table table-s1 table-data graph
+	@pdfunite "$(DOC_OUT_PDF)" "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" manuscript.pdf
+	@cp -p manuscript.pdf "$(CURDIR)/polap/src/polaplib/"
+
+# ------------------------------------------------------------------------------
+# Clean
+# ------------------------------------------------------------------------------
+clean:
+	@rm -f -- "$(MANIFEST_V6)" "$(MANIFEST_LOG)" \
+	         "$(TABLE_S1_TSV)" "$(TABLE_S1_MD)" \
+	         "$(PT_TABLE_TSV)" "$(PT_TABLE_MD)" \
+	         "$(MT_TABLE_TSV)" "$(MT_TABLE_MD)" \
+	         "$(DATA_TABLE_TSV)" "$(DATA_TABLE_MD)" || true
+	@echo "[OK] Cleaned"
+

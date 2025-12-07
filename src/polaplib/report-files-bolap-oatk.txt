@@ -1,0 +1,112 @@
+
+# HiMT results of pattern x-h
+2025-12-07 21:33:48	      2455 Aegilops_umbellulata/v2/0/stdout-oatk-tiara-himt-x-h-himt-filter.txt stedout
+2025-12-07 21:33:48	       844 Aegilops_umbellulata/v2/0/timing-oatk-tiara-himt-x-h-himt-filter.txt command time -v stderr
+2025-12-07 21:33:48	 698155125 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-h/himt/extract.fa HiMT filtered fasta
+2025-12-07 21:33:56	 287348565 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-h/himt/himt.fq.gz HiMT filtered fastq
+
+# Oatk -c 02 results of pattern x-h
+2025-12-07 21:33:56	         0 Aegilops_umbellulata/v2/0/stdout-oatk-tiara-himt-x-h-c02.txt stdout
+2025-12-07 21:37:34	    103144 Aegilops_umbellulata/v2/0/timing-oatk-tiara-himt-x-h-c02.txt command time -v stderr
+2025-12-07 21:37:34	    412611 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-h/oatk/oatk-x-h-02.mito.gfa mito assembly GFA
+2025-12-07 21:37:34	    412611 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-h/oatk/oatk-x-h-02.mito.png mito assembly graph PNG
+2025-12-07 21:37:34	    412073 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-h/oatk/oatk-x-h-02.mito.ctg.fasta mito assembly FASTA
+2025-12-07 21:37:34	    120628 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-h/oatk/oatk-x-h-02.pltd.gfa plastid assembly GFA
+2025-12-07 21:37:34	    120628 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-h/oatk/oatk-x-h-02.pltd.png plastid assembly graph PNG
+2025-12-07 21:37:34	    139265 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-h/oatk/oatk-x-h-02.pltd.ctg.fasta plastid assembly FASTA
+# Oatk -c 03 results of pattern x-h
+...
+# Oatk -c 49 results of pattern x-h
+
+# Tiara results of pattern t-x
+2025-12-07 21:53:49	       480 Aegilops_umbellulata/v2/0/stdout-oatk-tiara-himt-t-x-tiara.txt stdout
+2025-12-07 21:53:51	       866 Aegilops_umbellulata/v2/0/timing-oatk-tiara-himt-t-x-tiara.txt command time -v stderr
+2025-12-07 21:53:49	  11367193 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-x/tiara/tiara.out.tsv Tiara inference for mito plastid origin
+2025-12-07 21:53:49	  36904989 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-x/tiara/mitochondrion_tiara.input.fa Tiara mito FASTA
+2025-12-07 21:53:49	  59153010 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-x/tiara/plastid_tiara.input.fa Tiara plastid FASTA
+2025-12-07 21:53:57	  17426661 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-x/tiara/tiara.mito.fq.gz Tiara mito reads
+2025-12-07 21:54:03	  27631158 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-x/tiara/tiara.plastid.fq.gz Tiara plastid reads
+
+# Oatk -c 02 results of pattern t-x
+2025-12-07 21:54:04	         0 Aegilops_umbellulata/v2/0/stdout-oatk-tiara-himt-t-x-c02.txt stdout
+2025-12-07 21:54:21	      5227 Aegilops_umbellulata/v2/0/timing-oatk-tiara-himt-t-x-c02.txt command time -v stderr
+2025-12-07 21:54:21	    460217 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-x/oatk/oatk-t-x-02.mito.gfa mito assembly GFA
+2025-12-07 21:54:21	    460217 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-x/oatk/oatk-t-x-02.mito.png mito assembly graph PNG
+2025-12-07 21:54:21	    609219 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-x/oatk/oatk-t-x-02.mito.ctg.fasta mito assembly FASTA
+2025-12-07 21:54:21	     27458 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-x/oatk/oatk-t-x-02.pltd.gfa plastid assembly GFA
+2025-12-07 21:54:21	     27458 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-x/oatk/oatk-t-x-02.pltd.png plastid assembly graph PNG
+2025-12-07 21:54:21	     27966 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-x/oatk/oatk-t-x-02.pltd.ctg.fasta plastid assembly FASTA
+# Oatk -c 03 results of pattern t-x
+...
+# Oatk -c 49 results of pattern t-x
+
+# Tiara results of pattern t-h
+2025-12-07 22:05:52	       480 Aegilops_umbellulata/v2/0/stdout-oatk-tiara-himt-t-h-tiara.txt stdout
+2025-12-07 22:05:54	       866 Aegilops_umbellulata/v2/0/timing-oatk-tiara-himt-t-h-tiara.txt command time -v stderr
+2025-12-07 22:05:51	  11367193 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-h/tiara/tiara.out.tsv Tiara inference for mito plastid origin
+2025-12-07 22:05:51	  36904989 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-h/tiara/mitochondrion_tiara.input.fa Tiara mito FASTA
+2025-12-07 22:05:51	  59153010 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-h/tiara/plastid_tiara.input.fa Tiara plastid FASTA
+2025-12-07 22:05:59	  17426661 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-h/tiara/tiara.mito.fq.gz Tiara mito reads
+2025-12-07 22:06:05	  27631158 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-h/tiara/tiara.plastid.fq.gz Tiara plastid reads
+
+# HiMT results of pattern t-h
+2025-12-07 22:06:16	      1395 Aegilops_umbellulata/v2/0/stdout-oatk-tiara-himt-t-h-himt-filter.tx stdout
+2025-12-07 22:06:16	       859 Aegilops_umbellulata/v2/0/timing-oatk-tiara-himt-t-h-himt-filter.txt command time -v stderr
+2025-12-07 22:06:16	  16342013 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-h/himt/extract.fa HiMT filtered FASTA
+2025-12-07 22:06:17	   7819323 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-h/himt/himt.fq.gz HiMT filtered FASTQ
+
+# Oatk -c 02 results of pattern t-h
+2025-12-07 22:06:17	         0 Aegilops_umbellulata/v2/0/stdout-oatk-tiara-himt-t-h-c02.txt stdout
+2025-12-07 22:06:28	      4572 Aegilops_umbellulata/v2/0/timing-oatk-tiara-himt-t-h-c02.txt command time -v stderr
+2025-12-07 22:06:28	     19339 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-h/oatk/oatk-t-h-02.pltd.ctg.fasta mito assembly FASTA
+2025-12-07 22:06:28	    433429 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-h/oatk/oatk-t-h-02.mito.gfa mito assembly FASTQ
+2025-12-07 22:06:28	    433429 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-h/oatk/oatk-t-h-02.mito.png mito assembly graph PNG
+2025-12-07 22:06:28	    445129 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-h/oatk/oatk-t-h-02.plastid.ctg.fasta mito assembly FASTA
+2025-12-07 22:06:28	     19003 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-h/oatk/oatk-t-h-02.pltd.gfa plastid assembly FASTQ
+2025-12-07 22:06:28	     19003 Aegilops_umbellulata/v2/0/oatk-tiara-himt-t-h/oatk/oatk-t-h-02.pltd.png plastid assembly graph PNG
+# Oatk -c 03 results of pattern t-h
+...
+# Oatk -c 49 results of pattern t-h
+
+# HiMT results of pattern h-t
+2025-12-07 22:35:31	      2455 Aegilops_umbellulata/v2/0/stdout-oatk-tiara-himt-h-t-himt-filter.txt stdout
+2025-12-07 22:35:31	       844 Aegilops_umbellulata/v2/0/timing-oatk-tiara-himt-h-t-himt-filter.txt command time -v stderr
+2025-12-07 22:08:21	5917248844 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/himt/process.fa HiMT input FASTA
+2025-12-07 22:08:27	2959851705 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/himt/proportion.fa
+2025-12-07 22:35:31	 679373000 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/himt/extract.fa HiMT filtered FASTA
+2025-12-07 22:35:39	 279018351 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/himt/himt.fq.gz HiMT filtered FASTQ
+
+# Tiara results of pattern h-t
+2025-12-07 22:37:05	       474 Aegilops_umbellulata/v2/0/stdout-oatk-tiara-himt-h-t-tiara.txt stdout
+2025-12-07 22:37:06	       860 Aegilops_umbellulata/v2/0/timing-oatk-tiara-himt-h-t-tiara.txt command time -v stderr
+2025-12-07 22:37:04	   1417218 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/tiara/tiara.out.tsv Tiara inference for mito plastid origin
+2025-12-07 22:37:05	  19694067 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/tiara/mitochondrion_tiara.input.fa Tiara mito FASTA
+2025-12-07 22:37:05	  55621117 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/tiara/plastid_tiara.input.fa Tiara plastid FASTA
+2025-12-07 22:37:13	   9062415 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/tiara/tiara.mito.fq.gz Tiara mito FASTQ
+2025-12-07 22:37:20	  25527941 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/tiara/tiara.plastid.fq.gz Tiara plastid FASTQ
+
+# Oatk -c 02 results of pattern h-t
+2025-12-07 22:37:21	         0 Aegilops_umbellulata/v2/0/stdout-oatk-tiara-himt-h-t-c02.txt stdout
+2025-12-07 22:37:32	      4592 Aegilops_umbellulata/v2/0/timing-oatk-tiara-himt-h-t-c02.txt command time -v stderr
+2025-12-07 22:37:32	    420877 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/oatk/oatk-h-t-02.mito.gfa mito assembly GFA
+2025-12-07 22:37:32	    420877 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/oatk/oatk-h-t-02.mito.png mito assembly graph PNG
+2025-12-07 22:37:32	    423549 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/oatk/oatk-h-t-02.mito.ctg.fasta mito assembly FASTA
+2025-12-07 22:37:32	     19917 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/oatk/oatk-h-t-02.pltd.gfa plastid assembly GFA
+2025-12-07 22:37:32	     19917 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/oatk/oatk-h-t-02.pltd.png plastid assembly graph PNG
+2025-12-07 22:37:32	     20269 Aegilops_umbellulata/v2/0/oatk-tiara-himt-h-t/oatk/oatk-h-t-02.pltd.ctg.fasta plastid assembly FASTA
+# Oatk -c 03 results of pattern h-t
+...
+# Oatk -c 49 results of pattern h-t
+
+# Oatk -c 02 results of pattern x-x
+2025-12-07 22:40:42	         0 Aegilops_umbellulata/v2/0/stdout-oatk-tiara-himt-x-x-c20.txt stdout
+2025-12-07 22:42:50	      4996 Aegilops_umbellulata/v2/0/timing-oatk-tiara-himt-x-x-c20.txt command time -v stderr
+2025-12-07 22:42:49	    331413 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-x/oatk/oatk-x-x-20.mito.gfa mito assembly GFA
+2025-12-07 22:42:49	    331413 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-x/oatk/oatk-x-x-20.mito.png mito assembly graph PNG
+2025-12-07 22:42:49	    345733 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-x/oatk/oatk-x-x-20.mito.ctg.fasta mito assembly FASTA
+2025-12-07 22:42:49	    116888 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-x/oatk/oatk-x-x-20.pltd.gfa plastid assembly GFA
+2025-12-07 22:42:49	    116888 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-x/oatk/oatk-x-x-20.pltd.png plastid assembly graph PNG
+2025-12-07 22:42:49	    139240 Aegilops_umbellulata/v2/0/oatk-tiara-himt-x-x/oatk/oatk-x-x-20.pltd.ctg.fasta plastid assembly FASTA 
+# Oatk -c 03 results of pattern x-x
+...
+# Oatk -c 49 results of pattern x-x

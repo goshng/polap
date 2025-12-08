@@ -1,6 +1,7 @@
 # Polap: Plant Mitochondrial DNA Assembly Pipeline
 
 Polap is a specialized pipeline designed to assemble plant mitochondrial DNA (mtDNA) using the **Flye** long-read assembler, supplemented by organellar gene annotation to guide contig selection. Inspired by **ptGAUL** (a chloroplast assembly pipeline), Polap integrates Flye's capabilities with gene annotation to identify and assemble mtDNA contigs from whole-genome data.
+Bolap (Benchmark of Plant Organelle Long-read Assembly Pipeline) is also available along with Polap.
 
 NOTE: use the version 0.3.7.3 from the conda package.
 
@@ -528,6 +529,10 @@ A sample dataset demonstrating Polap's mtDNA assembly is available on Figshare: 
 
 A sample dataset demonstrating Polap's ptDNA assembly is available on Figshare:
 [Polap subsampling-based ptDNA assembly of 23 datasets](https://figshare.com/s/ec1cb394870c7727a2d4).
+
+#### Bolap (Benchmark of Plant Organelle Long-read Assembly Pipeline v0.5.1) method
+
+A sample dataset demonstrating Bolap's benchmark of mtDNA assemblies is available on Figshare: [Plant mitochondrial genome assembly focusing on high-accuracy long-read data](https://figshare.com/s/a464d38d3075b837fd93).
 
 ```bash
 # using github source

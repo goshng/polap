@@ -54,8 +54,8 @@ if [[ "${_POLAP_RELEASE}" == "1" ]]; then
 	_polap_var_memtracker_time_interval=120
 	_polap_var_oatk_memtracker_time_interval=12
 else
-	_polap_var_memtracker_time_interval=60
-	_polap_var_oatk_memtracker_time_interval=6
+	_polap_var_memtracker_time_interval=30
+	_polap_var_oatk_memtracker_time_interval=3
 fi
 
 source "${_POLAPLIB_DIR}/polap-lib-conda.sh"
@@ -9506,6 +9506,61 @@ install-all_genus_species() {
 	done
 }
 
+# 2025-12-08
+install-oatk_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap - $bolap_cmd
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  Install all conda environments for bolap oatk analysis.
+
+Examples:
+  Install all for bolap oatk analysis:
+    bolap install oatk
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	# defaults
+	local _brg_ver=""
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	polap_setup_parse_commandline
+
+	local _version="${_brg_ver}"
+
+	local tools_to_install=(
+		ncbitools
+		fmlrc
+		fmlrc2
+		oatk
+		himt
+		man
+		tippo
+		bandage
+	)
+
+	set +u
+	for item in "${tools_to_install[@]}"; do
+		install-${item}_genus_species
+	done
+	set -u
+}
+
 # 2025-12-03
 # 2025-12-04
 install-hifi_genus_species() {
@@ -11374,8 +11429,13 @@ _polap_oatk_step_tiara() {
 	local work="$2"
 	local __outvar="$3"
 
-	local _stdout_txt="${_stdout_txt_base}-tiara.txt"
-	local _timing_txt="${_timing_txt_base}-tiara.txt"
+	local stdout_txt="${_stdout_txt_base}-tiara.txt"
+	local timing_txt="${_timing_txt_base}-tiara.txt"
+	local memlog_file="${_memlog_file_base}-tiara.txt"
+	local summary_file="${_summary_file_base}-tiara.txt"
+
+	_polap_lib_process-start_memtracker "${memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
 
 	_polap_lib_conda-ensure_conda_env polap-tiara || return 1
 
@@ -11397,8 +11457,8 @@ _polap_oatk_step_tiara() {
 		-o "$tiara_out" \
 		--tf mit pla \
 		-t "${_brg_threads:-8}" \
-		>"${_stdout_txt}" \
-		2>"${_timing_txt}" || rc=$?
+		>"${stdout_txt}" \
+		2>"${timing_txt}" || rc=$?
 
 	if [[ "${rc:-0}" -ne 0 ]]; then
 		printf '[ERR] tiara failed (rc=%d)\n' "$rc" >&2
@@ -11413,6 +11473,9 @@ _polap_oatk_step_tiara() {
 	awk 'BEGIN{FS="\t"} NR>1 && $3=="plastid" {print $1}' "$tiara_out" |
 		seqkit grep -f - "$in_reads" \
 			-o "$tiara_plastid_fq"
+
+	_polap_lib_timing-get_system_info >>"${timing_txt}"
+	_polap_lib_process-end_memtracker "${memlog_file}" "${summary_file}" "no_verbose"
 
 	rm -f "$tiara_fa"
 	_polap_lib_conda-ensure_conda_env_deactivate || true
@@ -11431,8 +11494,13 @@ _polap_oatk_step_himt() {
 	local work="$2"
 	local __outvar="$3"
 
-	local _stdout_txt="${_stdout_txt_base}-himt-filter.txt"
-	local _timing_txt="${_timing_txt_base}-himt-filter.txt"
+	local stdout_txt="${_stdout_txt_base}-himt-filter.txt"
+	local timing_txt="${_timing_txt_base}-himt-filter.txt"
+	local memlog_file="${_memlog_file_base}-himt-filter.txt"
+	local summary_file="${_summary_file_base}-himt-filter.txt"
+
+	_polap_lib_process-start_memtracker "${memlog_file}" \
+		"${_polap_var_memtracker_time_interval}"
 
 	_polap_lib_conda-ensure_conda_env polap-himt || return 1
 
@@ -11448,17 +11516,20 @@ _polap_oatk_step_himt() {
 		--output_dir "$himt_dir" \
 		-s plant \
 		--thread "${_brg_threads:-8}" \
-		>"${_stdout_txt}" \
-		2>"${_timing_txt}" || rc=$?
+		>"${stdout_txt}" \
+		2>"${timing_txt}" || rc=$?
 
 	if [[ "${rc:-0}" -ne 0 ]]; then
 		printf '[ERR] himt filter failed (rc=%d)\n' "$rc" >&2
 	fi
 
-	_polap_lib_conda-ensure_conda_env_deactivate || conda deactivate || true
-
 	seqkit seq -ni "${himt_out_fa}" |
 		seqkit grep -f - "${in_reads}" -o "${himt_out}"
+
+	_polap_lib_conda-ensure_conda_env_deactivate || conda deactivate || true
+
+	_polap_lib_timing-get_system_info >>"${timing_txt}"
+	_polap_lib_process-end_memtracker "${memlog_file}" "${summary_file}" "no_verbose"
 
 	printf -v "$__outvar" '%s' "$himt_out"
 }
@@ -11483,6 +11554,10 @@ _polap_oatk_step_himt() {
 #               default: 01,02,...,48
 ################################################################################
 run-oatk-tiara-himt_genus_species() {
+	local _brg_outdir="${1:-$_brg_outdir}"
+	local _brg_sindex="${2:-$_brg_sindex}"
+	local _pattern="${3:-t-h}"
+	local _c_list="${4:-2..49}"
 	local bolap_cmd="${FUNCNAME%%_*}"
 
 	help_message=$(
@@ -11555,8 +11630,6 @@ EOF
 
 	# local _brg_outdir="${1:-${_brg_outdir}}"
 	# local _brg_sindex="${2:-${_brg_sindex:-0}}"
-	local _pattern="t-h"
-	local _c_list=""
 	# local _c_list="01..48"
 
 	bolap_s_parse_commandline
@@ -11692,10 +11765,15 @@ EOF
 		local outprefix="${oatk_dir}/${prefix}"
 
 		c_num=$((10#$c))
-		local _stdout_txt="${_stdout_txt_base}-c${c}.txt"
-		local _timing_txt="${_timing_txt_base}-c${c}.txt"
+		local stdout_txt="${_stdout_txt_base}-c${c}.txt"
+		local timing_txt="${_timing_txt_base}-c${c}.txt"
+		local memlog_file="${_memlog_file_base}-c${c}.csv"
+		local summary_file="${_summary_file_base}-c${c}.txt"
 
 		echo "[INFO] Running Oatk ($prefix) on $oatk_reads (c=$c_num)"
+
+		_polap_lib_process-start_memtracker "${memlog_file}" \
+			"${_polap_var_oatk_memtracker_time_interval}"
 
 		local rc=0
 		local _oatk_threads=8
@@ -11707,8 +11785,11 @@ EOF
 			-p ./OatkDB/v20230921/embryophyta_pltd.fam \
 			-o "${outprefix}" \
 			"${oatk_reads}" \
-			>"${_stdout_txt}" \
-			2>"${_timing_txt}" || rc=$?
+			>"${stdout_txt}" \
+			2>"${timing_txt}" || rc=$?
+
+		_polap_lib_timing-get_system_info >>"${timing_txt}"
+		_polap_lib_process-end_memtracker "${memlog_file}" "${summary_file}" "no_verbose"
 
 		if [[ "${rc:-0}" -ne 0 ]]; then
 			printf '[ERR] oatk failed (rc=%d)\n' "${rc:-0}" >&2
@@ -11733,6 +11814,8 @@ EOF
 #   <outdir>/v5/0/assess/oatk-t-h-01, ..., oatk-x-x-48
 ################################################################################
 run-assess-oatk-tiara-himt_genus_species() {
+	local _brg_outdir="${1:-$_brg_outdir}"
+	local _brg_sindex="${2:-$_brg_sindex}"
 	local bolap_cmd="${FUNCNAME%%_*}"
 
 	help_message=$(
@@ -18213,6 +18296,40 @@ EOF
 	oatk -h
 
 	_polap_lib_conda-ensure_conda_env_deactivate
+}
+
+test2_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - template
+
+Synopsis:
+  bolap ${bolap_cmd}
+
+Description:
+  text.
+
+Examples:
+  Subtitle:
+    bolap ${bolap_cmd} template
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	bolap_s_parse_commandline
+
+	echo "${_brg_outdir}"
 }
 
 # 2025-12-05

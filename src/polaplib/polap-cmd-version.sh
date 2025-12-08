@@ -58,9 +58,9 @@ POLAP - Plant organelle DNA long-read assembly pipeline.
 version ${_polap_version}
 
 ------
-v0.5.2
+v0.5.3
 ------
-- Add readassemble subcommand for ptDNA/mtDNA assembly
+- Add a feature to bolap: Tiara, HiMT-filter + Oatk's syncasm
 
 ------
 v0.5.1

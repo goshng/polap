@@ -2060,47 +2060,6 @@ benchmark-command_genus_species_for() {
 	local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
 	local _brg_sindex_0=0
 
-	# necessary variables
-	# local short_sra="${_short["$_brg_target"]}"
-	# local bench_oatk="${_bench_oatk["$_brg_target"]}"
-	# local random_seed="${_random_seed["$_brg_target"]}"
-	# local platform="${_platform["$_brg_target"]}"
-	# local run_title="${_brg_title}"
-	# local target_index="${_brg_target}"
-
-	##############################################################################
-	# variables
-	#
-	# local _brg_adir=v6
-	# local _brg_outdir=Arabidopsis_thaliana
-	# local _brg_outdir_0=Arabidopsis_thaliana/v6/0
-	# local _brg_outdir_i=Arabidopsis_thaliana/v6/0
-	# local _brg_outdir_t=Arabidopsis_thaliana/v6
-	# local _brg_rundir=Arabidopsis_thaliana/v6/0/benchmark-command
-	# local _brg_sindex=0
-	# local _brg_sindex_0=0
-	# local _brg_target=Arabidopsis_thaliana-0
-	# local _brg_threads=56
-	# local _brg_title=benchmark-command
-	# local _brg_tmpdir=Arabidopsis_thaliana/tmp
-	# local _memlog_file=Arabidopsis_thaliana/v6/0/memlog-benchmark-command.csv
-	# local _stdout_txt=Arabidopsis_thaliana/v6/0/stdout-benchmark-command.txt
-	# local _summary_file=Arabidopsis_thaliana/v6/0/summary-benchmark-command.txt
-	# local _timing_txt=Arabidopsis_thaliana/v6/0/timing-benchmark-command.txt
-	# local long_sra=ERR2173373
-	# local species_name=Arabidopsis\ thaliana
-	# local subcmd1=benchmark-command
-
-	# debug local variables
-	# for debugging: Inline local printing local var
-	# while IFS= read -r line; do
-	# 	if [[ $line =~ ^declare\ --\ ([^=]+)= ]]; then
-	# 		var="${BASH_REMATCH[1]}"
-	# 		printf "%s=%q\n" "$var" "${!var}"
-	# 	fi
-	# done < <(local -p 2>/dev/null)
-	# return
-
 	if [[ "${opt_y_flag}" == false ]]; then
 		echo "We will execute benchmarking using GetOrganelle, ptGAUL, TIPPo, Oatk on ${_brg_outdir_i} ..."
 		read -p "Do you want to execute assemble on ${_brg_outdir_i}? (yes/no): " confirm
@@ -2113,34 +2072,39 @@ benchmark-command_genus_species_for() {
 		return
 	fi
 
-	run-data-long_genus_species
-	run-data-long-10x_genus_species
-	run-summary-data_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
-	data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex_0}" --coverage 0g
+	# run-data-long_genus_species
+	# run-data-long-10x_genus_species
+	# run-summary-data_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+	# data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex_0}" --coverage 0g
+	#
+	# download-ptdna_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+	# if [[ -s "${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa" ]]; then
+	# 	if [[ $(wc -c <"${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa") -ge 1024 ]]; then
+	# 		run-ptgaul_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+	# 	fi
+	# else
+	# 	_log_echo "No reference ptdna; no ptGAUL assembly of the ptDNA"
+	# fi
+	#
+	# download-mtdna_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+	# if [[ -s "${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa" ]]; then
+	# 	if [[ $(wc -c <"${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa") -ge 1024 ]]; then
+	# 		run-mtgaul_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+	# 	fi
+	# else
+	# 	_log_echo "No reference mtdna; no ptGAUL assembly of the mtDNA"
+	# fi
 
-	download-ptdna_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
-	if [[ -s "${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa" ]]; then
-		if [[ $(wc -c <"${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa") -ge 1024 ]]; then
-			run-ptgaul_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
-		fi
-	else
-		_log_echo "No reference ptdna; no ptGAUL assembly of the ptDNA"
-	fi
-
-	download-mtdna_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
-	if [[ -s "${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa" ]]; then
-		if [[ $(wc -c <"${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa") -ge 1024 ]]; then
-			run-mtgaul_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
-		fi
-	else
-		_log_echo "No reference mtdna; no ptGAUL assembly of the mtDNA"
-	fi
+	# run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" t-h 2..11
+	# run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" h-t 2..11
+	# run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" t-x 2..11
+	# run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" x-h 2..11
+	# run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" x-x 2..11
+	run-assess-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 
 	run-oatk_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 	run-tippo_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 	run-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
-	run-pmat2_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
-	run-assess-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 
 	if [[ "${_local_host}" != "$(hostname)" ]]; then
 		sync_genus_species "${_brg_outdir}" "${_brg_sindex}" --main-push
@@ -4350,6 +4314,13 @@ Description:
 Examples:
   Check the dataset for a species name:
     bolap dataset view --fields long
+
+  Batch run:
+    cut -f 2 -d' ' polap/src/polaplib/polap-species-codes-oatk.txt > s.txt
+    bolap batch --cmd run-data-long --type file:s.txt
+    bolap batch --cmd run-downsample-long --type file:s.txt --coverage 0g
+    bolap batch --cmd run-oatk-tiara-himt --tipe file:s.txt
+    bolap batch --cmd run-assess-oatk-tiara-himt --type file:s.txt
 
   Run Oatk for organelle genome assemblies:
     bolap run oatk-tiara-himt -s Brassica_rapa

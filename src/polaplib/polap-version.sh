@@ -16,7 +16,7 @@
 
 ################################################################################
 # Print the version information of polap and its tools.
-# 
+#
 # Example:
 # polap version
 # TODO: rename: polap-cmd-version.sh
@@ -43,8 +43,8 @@ declare "$_POLAP_INCLUDE_=1"
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
-  return 1 2>/dev/null || exit 1
+	echo "[ERROR] This script must be sourced, not executed: use 'source $BASH_SOURCE'" >&2
+	return 1 2>/dev/null || exit 1
 fi
 : "${_POLAP_DEBUG:=0}"
 : "${_POLAP_RELEASE:=0}"
@@ -56,6 +56,16 @@ function print_version_history {
 		cat <<HEREDOC
 POLAP - Plant organelle DNA long-read assembly pipeline.
 version ${_polap_version}
+
+------
+v0.5.3
+------
+- Add a feature to bolap: Tiara, HiMT-filter + Oatk's syncasm
+
+------
+v0.5.1
+------
+- Add bolap
 
 ------
 v0.4.3

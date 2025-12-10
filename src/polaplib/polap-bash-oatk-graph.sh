@@ -98,6 +98,9 @@ mkdir -p "$(dirname "$CSV")" "$(dirname "$PDF")"
 	--manifest "$MANIFEST" \
 	--out-csv "$CSV"
 
+echo "Wrote:"
+echo "  CSV : $CSV"
+
 # 2) CSV -> boxplot PDF
 "$R_BIN" "$GRAPH_R" \
 	--data "$CSV" \
@@ -105,6 +108,4 @@ mkdir -p "$(dirname "$CSV")" "$(dirname "$PDF")"
 	--title "$TITLE" \
 	"${R_EXTRA_ARGS[@]}"
 
-echo "Wrote:"
-echo "  CSV : $CSV"
 echo "  PDF : $PDF"

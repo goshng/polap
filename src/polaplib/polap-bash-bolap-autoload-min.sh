@@ -40,6 +40,7 @@ bolap_autoload_min() {
 		"polap-lib-unit.sh"
 		"polap-lib-array.sh"
 		"polap-lib-number.sh"
+		"polap-lib-fastq.sh"
 		"polap-lib-data.sh"
 		"polap-lib-file.sh"
 		"polap-lib-process.sh"

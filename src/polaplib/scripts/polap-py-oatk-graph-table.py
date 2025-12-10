@@ -2,76 +2,67 @@
 ###############################################################################
 # scripts/polap-py-oatk-graph-table.py
 #
-# Version : v0.4.0  (2025-12-08)
+# Version : v0.6.0  (2025-12-09)
 # Author  : Sang Chul Choi (POLAP)
 # License : GPL-3.0+
 #
 # Purpose
 # -------
 # From a POLAP OATK manifest JSON, build a long-format CSV of metrics
-# AND assembly-graph PNG paths for each pattern/coverage combination.
+# across tools and patterns, plus MT/PT GFA/PNG paths.
 #
-# This version v0.4.0 is *compatible* with v0.3.0:
-#   - All previous columns are preserved with the same semantics:
-#       species, code2, pattern, cov,
-#       geneset_completeness_prop, num_contigs, total_length, N50,
-#       oatk_mem_gb, oatk_time_hours,
-#       himt_mem_gb, himt_time_hours,
-#       tiara_mem_gb, tiara_time_hours
-#   - NEW columns appended at the end:
-#       mito_png, plastid_png
-#
-# Output CSV columns (in order):
+# Output CSV columns:
 #   species
 #   code2
-#   pattern
-#   cov
-#   geneset_completeness_prop
+#   avg_qual
+#   mean_length
+#   tool                # "oatk", "himt", "tippo"
+#   pattern             # e.g. "h-t","t-h","t-x","x-h","x-x","x" (flat oatk), or "" for others
+#   cov                 # coverage number for oatk rows, "" for himt/tippo
+#   mem_gb
+#   time_hours
+#   total_mem_gb
+#   total_time_hours
+#   completeness_prop   # geneset_completeness_prop
 #   num_contigs
 #   total_length
 #   N50
-#   oatk_mem_gb
-#   oatk_time_hours
-#   himt_mem_gb
-#   himt_time_hours
-#   tiara_mem_gb
-#   tiara_time_hours
-#   mito_png
-#   plastid_png
+#   mt_gfa
+#   mt_png
+#   pt_gfa
+#   pt_png
 #
-# JSON layout assumed:
-#   • Flat OATK metrics in item["oatk"] as keys:
-#       "<tag>_geneset_completeness_prop",
-#       "<tag>_num_contigs",
-#       "<tag>_total_length",
-#       "<tag>_N50"
-#     where <tag> looks like "ch-t-02", "ct-h-03", "cx-x-20", etc.
+# Tools and sources:
+#   • OATK (flat):
+#       item["oatk"]["c10_mem_gb"], "c10_time_hours", "c10_gfa" (plastid),
+#       similarly c20_*, c30_*, ...
+#       pattern = "x", cov = 10,20,30,...
 #
-#   • Nested pattern blocks:
-#       item["oatk-tiara-himt-<pattern>"]["cXX"]["mem_gb"/"time_hours"/"mito_png"/"plastid_png"]
-#       item["oatk-tiara-himt-<pattern>"]["himt"]["filter_mem_gb"/"filter_time_hours"]
-#       item["oatk-tiara-himt-<pattern>"]["tiara"]["mem_gb"/"time_hours"]
+#   • OATK (patterned):
+#       item["oatk-tiara-himt-<pattern>"]["cXX"] fields:
+#         total_mem_gb, total_time_hours, mem_gb, time_hours,
+#         geneset_completeness_prop, num_contigs, total_length, N50,
+#         mito_gfa, mito_png, plastid_gfa, plastid_png
+#       where pattern ∈ { "h-t","t-h","t-x","x-h","x-x" } and XX is coverage.
 #
-#   where:
-#       pattern ∈ { "h-t", "t-h", "t-x", "x-h", "x-x" } when present
-#       cXX uses zero-padded coverage (e.g. "c02", "c20", "c30")
+#   • HiMT (global tool):
+#       item["himt"]["mt_gfa"], "mt_png", "pt_gfa", "pt_png",
+#       "mem_gb","time_hours",
+#       "geneset_completeness_prop","num_contigs","total_length","N50".
+#
+#   • TIPPo (global tool):
+#       item["tippo"]["mt_gfa"], "mt_png", "pt_gfa", "pt_png",
+#       "mem_gb","time_hours",
+#       "geneset_completeness_prop","num_contigs","total_length","N50".
 ###############################################################################
 
 import argparse
 import csv
 import json
 import os
+import re
 import sys
-from typing import Any, Dict, List, Tuple
-
-
-# 4C-ish metrics from the flat "oatk" block
-OATK_METRIC_NAMES = (
-    "geneset_completeness_prop",
-    "num_contigs",
-    "total_length",
-    "N50",
-)
+from typing import Any, Dict, Iterable
 
 
 def _as_str(v: Any) -> str:
@@ -81,171 +72,293 @@ def _as_str(v: Any) -> str:
     return str(v)
 
 
-def collect_oatk_tags(oatk: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
-    """
-    From the 'oatk' dict, collect metrics by tag.
+def _get(d: Dict[str, Any], key: str, default: str = "") -> str:
+    """Safely get d[key] as string, or default if missing/None."""
+    if not isinstance(d, dict):
+        return default
+    v = d.get(key, default)
+    return default if v is None else str(v)
 
-    Expects keys of the form:
-        <tag>_<metric>
-    where <metric> is in OATK_METRIC_NAMES.
 
-    Returns:
-        { tag: { metric_name: value_str, ... }, ... }
+def _guess_png_from_gfa(path: str) -> str:
+    """If path ends with .gfa, guess a .png alongside it; else return empty."""
+    if not path:
+        return ""
+    if path.endswith(".gfa"):
+        return path[:-4] + ".png"
+    return ""
+
+
+def collect_oatk_flat_rows(item: Dict[str, Any], base_info: Dict[str, str]) -> Iterable[Dict[str, str]]:
     """
-    result: Dict[str, Dict[str, str]] = {}
+    Collect rows for the legacy flat OATK block:
+      item["oatk"]["c10_mem_gb"], "c10_time_hours", "c10_gfa", etc.
+
+    pattern is "x"; cov is coverage number after 'c' in keys (10,20,30...).
+    """
+    oatk = item.get("oatk") or {}
     if not isinstance(oatk, dict):
-        return result
+        return
 
-    for key, val in oatk.items():
-        if not isinstance(key, str):
-            continue
-        for metric in OATK_METRIC_NAMES:
-            suffix = "_" + metric
-            if key.endswith(suffix):
-                tag = key[: -len(suffix)]
-                if not tag:
-                    continue
-                tag_block = result.setdefault(tag, {})
-                tag_block[metric] = _as_str(val)
-                break
+    cov_set = set()
+    for key in oatk.keys():
+        m = re.match(r"^c(\d+)_mem_gb$", key)
+        if m:
+            cov_set.add(m.group(1))
 
-    return result
+    for cov_str in sorted(cov_set, key=lambda s: int(s)):
+        prefix = f"c{cov_str}"
 
+        mem_gb = _get(oatk, f"{prefix}_mem_gb")
+        time_hours = _get(oatk, f"{prefix}_time_hours")
 
-def split_tag(tag: str) -> Tuple[str, str]:
-    """
-    Split a tag like "ch-t-02" into (pattern, cov):
+        # total_mem_gb / total_time_hours rarely present for flat OATK
+        total_mem_gb = _get(oatk, f"{prefix}_total_mem_gb")
+        total_time_hours = _get(oatk, f"{prefix}_total_time_hours")
 
-      "ch-t-02" -> ("h-t", "2")
-      "ct-h-02" -> ("t-h", "2")
-      "ct-x-02" -> ("t-x", "2")
-      "cx-h-02" -> ("x-h", "2")
-      "cx-x-20" -> ("x-x", "20")
+        # geneset metrics: per-cov if they exist, else fall back to global.
+        completeness = _get(
+            oatk,
+            f"{prefix}_geneset_completeness_prop",
+            _get(oatk, "geneset_completeness_prop"),
+        )
+        num_contigs = _get(
+            oatk,
+            f"{prefix}_num_contigs",
+            _get(oatk, "num_contigs"),
+        )
+        total_length = _get(
+            oatk,
+            f"{prefix}_total_length",
+            _get(oatk, "total_length"),
+        )
+        N50 = _get(
+            oatk,
+            f"{prefix}_N50",
+            _get(oatk, "N50"),
+        )
 
-    If the format is unexpected, returns ("", "").
-    """
-    if not tag:
-        return "", ""
+        # GFA/PNG: flat OATK block generally has plastid-only gfa ("c10_gfa").
+        pt_gfa = _get(oatk, f"{prefix}_gfa")
+        pt_png = _get(oatk, f"{prefix}_png", _guess_png_from_gfa(pt_gfa))
+        mt_gfa = ""
+        mt_png = ""
 
-    parts = tag.split("-")
-    if len(parts) < 2:
-        return "", ""
-
-    cov_str = parts[-1]
-    core = "-".join(parts[:-1])  # e.g. "ch-t"
-
-    # remove leading "c" from the core pattern if present
-    if core.startswith("c") and len(core) > 1:
-        pattern = core[1:]
-    else:
-        pattern = core
-
-    # normalize cov to integer string (no leading zeros when numeric)
-    cov = cov_str
-    try:
-        cov = str(int(cov_str))
-    except ValueError:
-        cov = cov_str
-
-    return pattern, cov
-
-
-def get_pattern_blocks(
-    item: Dict[str, Any], pattern: str, cov: str
-) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
-    """
-    For a given pattern and coverage, return:
-      pattern_block, cov_block, himt_block, tiara_block
-
-    Where:
-      pattern_block = item["oatk-tiara-himt-<pattern>"] (or {})
-      cov_block     = pattern_block["cXX"] (or {}),
-                      where XX is zero-padded cov
-      himt_block    = pattern_block["himt"] (or {})
-      tiara_block   = pattern_block["tiara"] (or {})
-    """
-    org = f"oatk-tiara-himt-{pattern}"
-    pattern_block = item.get(org) or {}
-
-    try:
-        cov_int = int(cov)
-        cov_key = f"c{cov_int:02d}"
-    except ValueError:
-        cov_key = f"c{cov}"
-
-    cov_block = pattern_block.get(cov_key) or {}
-    himt_block = pattern_block.get("himt") or {}
-    tiara_block = pattern_block.get("tiara") or {}
-
-    return pattern_block, cov_block, himt_block, tiara_block
-
-
-def iter_rows(item: Dict[str, Any]):
-    """
-    Yield rows for a single manifest item (species):
-
-      species, code2, pattern, cov,
-      geneset_completeness_prop, num_contigs, total_length, N50,
-      oatk_mem_gb, oatk_time_hours,
-      himt_mem_gb, himt_time_hours,
-      tiara_mem_gb, tiara_time_hours,
-      mito_png, plastid_png
-    """
-    species = _as_str(item.get("species", ""))
-    code2 = _as_str(item.get("code2", ""))
-
-    oatk_flat = item.get("oatk") or {}
-    tags = collect_oatk_tags(oatk_flat)
-
-    for tag, metrics in sorted(tags.items()):
-        pattern, cov = split_tag(tag)
-        if not pattern or not cov:
-            continue
-
-        _, cov_block, himt_block, tiara_block = get_pattern_blocks(item, pattern, cov)
-
-        # OATK mem/time from cov_block
-        oatk_mem_gb = _as_str(cov_block.get("mem_gb", ""))
-        oatk_time_hours = _as_str(cov_block.get("time_hours", ""))
-
-        # HiMT mem/time (pattern-wide)
-        himt_mem_gb = _as_str(himt_block.get("filter_mem_gb", ""))
-        himt_time_hours = _as_str(himt_block.get("filter_time_hours", ""))
-
-        # Tiara mem/time (pattern-wide)
-        tiara_mem_gb = _as_str(tiara_block.get("mem_gb", ""))
-        tiara_time_hours = _as_str(tiara_block.get("time_hours", ""))
-
-        # PNG paths from cov_block
-        mito_png = _as_str(cov_block.get("mito_png", ""))
-        plastid_png = _as_str(cov_block.get("plastid_png", ""))
-
-        yield {
-            "species": species,
-            "code2": code2,
-            "pattern": pattern,
-            "cov": cov,
-            "geneset_completeness_prop": metrics.get("geneset_completeness_prop", ""),
-            "num_contigs": metrics.get("num_contigs", ""),
-            "total_length": metrics.get("total_length", ""),
-            "N50": metrics.get("N50", ""),
-            "oatk_mem_gb": oatk_mem_gb,
-            "oatk_time_hours": oatk_time_hours,
-            "himt_mem_gb": himt_mem_gb,
-            "himt_time_hours": himt_time_hours,
-            "tiara_mem_gb": tiara_mem_gb,
-            "tiara_time_hours": tiara_time_hours,
-            "mito_png": mito_png,
-            "plastid_png": plastid_png,
+        row = {
+            **base_info,
+            "tool": "oatk",
+            "pattern": "x",
+            "cov": cov_str,
+            "mem_gb": mem_gb,
+            "time_hours": time_hours,
+            "total_mem_gb": total_mem_gb,
+            "total_time_hours": total_time_hours,
+            "completeness_prop": completeness,
+            "num_contigs": num_contigs,
+            "total_length": total_length,
+            "N50": N50,
+            "mt_gfa": mt_gfa,
+            "mt_png": mt_png,
+            "pt_gfa": pt_gfa,
+            "pt_png": pt_png,
         }
+        yield row
+
+
+def collect_oatk_pattern_rows(item: Dict[str, Any], base_info: Dict[str, str]) -> Iterable[Dict[str, str]]:
+    """
+    Collect rows for patterned OATK runs stored in:
+      item["oatk-tiara-himt-<pattern>"]["cXX"]
+
+    pattern in { "h-t", "t-h", "t-x", "x-h", "x-x" }.
+    """
+    patterns = ["h-t", "t-h", "t-x", "x-h", "x-x"]
+
+    for pattern in patterns:
+        org_key = f"oatk-tiara-himt-{pattern}"
+        block = item.get(org_key)
+        if not isinstance(block, dict):
+            continue
+
+        for c_key, c_val in block.items():
+            if not isinstance(c_key, str):
+                continue
+            if not c_key.startswith("c"):
+                continue
+            try:
+                cov_int = int(c_key[1:])
+                cov_str = str(cov_int)
+            except ValueError:
+                cov_str = c_key[1:]
+
+            cov_block = c_val if isinstance(c_val, dict) else {}
+
+            mem_gb = _get(cov_block, "mem_gb")
+            time_hours = _get(cov_block, "time_hours")
+            total_mem_gb = _get(cov_block, "total_mem_gb")
+            total_time_hours = _get(cov_block, "total_time_hours")
+
+            completeness = _get(cov_block, "geneset_completeness_prop")
+            num_contigs = _get(cov_block, "num_contigs")
+            total_length = _get(cov_block, "total_length")
+            N50 = _get(cov_block, "N50")
+
+            mt_gfa = _get(cov_block, "mito_gfa")
+            mt_png = _get(cov_block, "mito_png")
+            pt_gfa = _get(cov_block, "plastid_gfa")
+            pt_png = _get(cov_block, "plastid_png", _guess_png_from_gfa(pt_gfa))
+
+            row = {
+                **base_info,
+                "tool": "oatk",
+                "pattern": pattern,
+                "cov": cov_str,
+                "mem_gb": mem_gb,
+                "time_hours": time_hours,
+                "total_mem_gb": total_mem_gb,
+                "total_time_hours": total_time_hours,
+                "completeness_prop": completeness,
+                "num_contigs": num_contigs,
+                "total_length": total_length,
+                "N50": N50,
+                "mt_gfa": mt_gfa,
+                "mt_png": mt_png,
+                "pt_gfa": pt_gfa,
+                "pt_png": pt_png,
+            }
+            yield row
+
+
+def collect_himt_rows(item: Dict[str, Any], base_info: Dict[str, str]) -> Iterable[Dict[str, str]]:
+    """Single-row HiMT tool metrics (no coverage)."""
+    himt = item.get("himt") or {}
+    if not isinstance(himt, dict):
+        return
+
+    has_any = any(k not in ("present",) for k in himt.keys())
+    if not has_any:
+        return
+
+    mem_gb = _get(himt, "mem_gb")
+    time_hours = _get(himt, "time_hours")
+    total_mem_gb = _get(himt, "total_mem_gb")
+    total_time_hours = _get(himt, "total_time_hours")
+
+    completeness = _get(himt, "geneset_completeness_prop")
+    num_contigs = _get(himt, "num_contigs")
+    total_length = _get(himt, "total_length")
+    N50 = _get(himt, "N50")
+
+    mt_gfa = _get(himt, "mt_gfa")
+    mt_png = _get(himt, "mt_png")
+    pt_gfa = _get(himt, "pt_gfa")
+    pt_png = _get(himt, "pt_png")
+
+    row = {
+        **base_info,
+        "tool": "himt",
+        "pattern": "",
+        "cov": "",
+        "mem_gb": mem_gb,
+        "time_hours": time_hours,
+        "total_mem_gb": total_mem_gb,
+        "total_time_hours": total_time_hours,
+        "completeness_prop": completeness,
+        "num_contigs": num_contigs,
+        "total_length": total_length,
+        "N50": N50,
+        "mt_gfa": mt_gfa,
+        "mt_png": mt_png,
+        "pt_gfa": pt_gfa,
+        "pt_png": pt_png,
+    }
+    yield row
+
+
+def collect_tippo_rows(item: Dict[str, Any], base_info: Dict[str, str]) -> Iterable[Dict[str, str]]:
+    """Single-row TIPPo tool metrics (no coverage)."""
+    tippo = item.get("tippo") or {}
+    if not isinstance(tippo, dict):
+        return
+
+    has_any = any(k not in ("present",) for k in tippo.keys())
+    if not has_any:
+        return
+
+    mem_gb = _get(tippo, "mem_gb")
+    time_hours = _get(tippo, "time_hours")
+    total_mem_gb = _get(tippo, "total_mem_gb")
+    total_time_hours = _get(tippo, "total_time_hours")
+
+    completeness = _get(tippo, "geneset_completeness_prop")
+    num_contigs = _get(tippo, "num_contigs")
+    total_length = _get(tippo, "total_length")
+    N50 = _get(tippo, "N50")
+
+    mt_gfa = _get(tippo, "mt_gfa")
+    mt_png = _get(tippo, "mt_png")
+    pt_gfa = _get(tippo, "pt_gfa")
+    pt_png = _get(tippo, "pt_png")
+
+    row = {
+        **base_info,
+        "tool": "tippo",
+        "pattern": "",
+        "cov": "",
+        "mem_gb": mem_gb,
+        "time_hours": time_hours,
+        "total_mem_gb": total_mem_gb,
+        "total_time_hours": total_time_hours,
+        "completeness_prop": completeness,
+        "num_contigs": num_contigs,
+        "total_length": total_length,
+        "N50": N50,
+        "mt_gfa": mt_gfa,
+        "mt_png": mt_png,
+        "pt_gfa": pt_gfa,
+        "pt_png": pt_png,
+    }
+    yield row
+
+
+def iter_rows_for_item(item: Dict[str, Any]) -> Iterable[Dict[str, str]]:
+    """Yield all rows (oatk flat, oatk patterns, himt, tippo) for one manifest item."""
+    species = _get(item, "species")
+    code2 = _get(item, "code2")
+
+    data_block = item.get("data") or {}
+    avg_qual = _get(data_block, "avg_qual")
+    mean_length = _get(data_block, "mean_length")
+
+    base_info = {
+        "species": species,
+        "code2": code2,
+        "avg_qual": avg_qual,
+        "mean_length": mean_length,
+    }
+
+    # OATK (flat c10,c20,c30 etc.)
+    for row in collect_oatk_flat_rows(item, base_info):
+        yield row
+
+    # OATK (patterned h-t, t-h, t-x, x-h, x-x)
+    for row in collect_oatk_pattern_rows(item, base_info):
+        yield row
+
+    # HiMT
+    for row in collect_himt_rows(item, base_info):
+        yield row
+
+    # TIPPo
+    for row in collect_tippo_rows(item, base_info):
+        yield row
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
         description=(
-            "Build long-format metrics CSV for OATK patterns from a POLAP "
-            "manifest JSON. v0.4.0 (compatible with v0.3.0) – adds mito_png "
-            "and plastid_png columns at the end."
+            "Build unified metrics CSV (oatk/himt/tippo) from a POLAP manifest JSON.\n"
+            "One row per (tool, pattern, cov) combination, with mt/pt GFA/PNG paths."
         )
     )
     ap.add_argument(
@@ -256,7 +369,7 @@ def main(argv=None) -> int:
     ap.add_argument(
         "--out-csv",
         required=True,
-        help="Output CSV path (e.g., oatk-graph-metrics.csv)",
+        help="Output CSV path (e.g., oatk-metrics-table.csv)",
     )
     args = ap.parse_args(argv)
 
@@ -267,32 +380,37 @@ def main(argv=None) -> int:
     if not isinstance(items, list):
         raise SystemExit("manifest['items'] must be a list")
 
-    os.makedirs(os.path.dirname(os.path.abspath(args.out_csv)), exist_ok=True)
+    out_dir = os.path.dirname(os.path.abspath(args.out_csv))
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
 
     fieldnames = [
         "species",
         "code2",
+        "avg_qual",
+        "mean_length",
+        "tool",
         "pattern",
         "cov",
-        "geneset_completeness_prop",
+        "mem_gb",
+        "time_hours",
+        "total_mem_gb",
+        "total_time_hours",
+        "completeness_prop",
         "num_contigs",
         "total_length",
         "N50",
-        "oatk_mem_gb",
-        "oatk_time_hours",
-        "himt_mem_gb",
-        "himt_time_hours",
-        "tiara_mem_gb",
-        "tiara_time_hours",
-        "mito_png",
-        "plastid_png",
+        "mt_gfa",
+        "mt_png",
+        "pt_gfa",
+        "pt_png",
     ]
 
     with open(args.out_csv, "w", newline="", encoding="utf-8") as out_fh:
         writer = csv.DictWriter(out_fh, fieldnames=fieldnames)
         writer.writeheader()
         for item in items:
-            for row in iter_rows(item):
+            for row in iter_rows_for_item(item):
                 writer.writerow(row)
 
     return 0

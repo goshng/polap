@@ -1,22 +1,50 @@
-# polap/src/Makefile  —  Single-tier (v6) workflow
-# version: v0.2.0
+################################################################################
+# File: polap/src/polaplib/Makefile.oatk
+# version: v0.1.0
+#
+# Author: Sang Chul Choi
+# Date: 2025-12-09
+#
+# License: GNU General Public License (GPL) - Version 3 or later
+#          See the LICENSE file for more details.
+################################################################################
+
+################################################################################
+# input tables and figures
+#
+# Base directory: man
+# Tables: man/md
+# Figures: man/figures
+# Sample report markdown: $(POLAPLIB_DIR)/polap-md-man00-$(BOLAP_TYPE).md
 
 # Use Bash for all recipes
-SHELL := /usr/bin/env bash
+SHELL := /bin/bash
 
 # ------------------------------------------------------------------------------
-# Bolap type: read (aflye, cflye for Makefile.aflye, and Makefile.cflye)
+# Bolap type: oatk (aflye, cflye for Makefile.aflye, and Makefile.cflye)
 # ------------------------------------------------------------------------------
-BOLAP_TYPE  ?= read
+BOLAP_TYPE  ?= oatk
 
 # ------------------------------------------------------------------------------
 # Base paths
 # ------------------------------------------------------------------------------
+# This line sets POLAPLIB_DIR to the absolute path of the directory containing 
+# the current Makefile.
 POLAPLIB_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+# This line takes the POLAPLIB_DIR, appends /.. (which means "go up one
+# directory"), and then converts the resulting path to an absolute path.
+# Assuming the Makefile is in a subdirectory named lib or similar, this
+# effectively sets POLAP_SRC to the absolute path of the project's root
+# directory.
 POLAP_SRC    := $(abspath $(POLAPLIB_DIR)/..)
+# Define a variable called CURRENT_MAKEFILE
+CURRENT_MAKEFILE := $(lastword $(MAKEFILE_LIST))
 export POLAP_SRC POLAPLIB_DIR
 
 # Species root defaults to current working dir (can override: SPECIES_ROOT=/abs/path)
+# If a value for SPECIES_ROOT hasn't already been set (e.g., by a user on the
+# command line like make SPECIES_ROOT=/usr/local), then set it to the directory
+# where I am currently running make.
 SPECIES_ROOT ?= $(CURDIR)
 SR := $(abspath $(SPECIES_ROOT))
 
@@ -26,7 +54,9 @@ SR := $(abspath $(SPECIES_ROOT))
 SET   ?= auto     # auto|some|file:/abs/list.txt|<species>
 INUM  ?= 0
 TIER  ?= v2
-
+# This function takes a string as input and returns the string with all leading
+# and trailing whitespace (spaces, tabs) removed. It also replaces sequences of
+# multiple internal spaces/tabs with a single space.
 SET_CLEAN  := $(strip $(SET))
 INUM_CLEAN := $(strip $(INUM))
 TIER_CLEAN := $(strip $(TIER))
@@ -56,16 +86,11 @@ DATA_TABLE_MD     := $(DATA_TABLE_PREFIX).md
 DATA_TABLE_NO_BASE_PREFIX := $(MANIFEST_DIR)/$(MANIFEST_TAG)-data-summary-no-base
 DATA_TABLE_NO_BASE_TSV    := $(DATA_TABLE_NO_BASE_PREFIX).tsv
 DATA_TABLE_NO_BASE_MD     := $(DATA_TABLE_NO_BASE_PREFIX).md
-
-# Table S1
 TABLE_S1_TSV  := $(MANIFEST_DIR)/$(MANIFEST_TAG)-table-s1.tsv
 TABLE_S1_MD   := $(TABLE_S1_TSV:.tsv=.md)
-
-# Optional species codes file (used by manifest/table scripts)
 SPECIES_CODES_TXT ?= $(POLAPLIB_DIR)/polap-species-codes-$(BOLAP_TYPE).txt
 
 # Inputs / outputs (override on CLI if desired)
-# DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-project00.md
 DOC_MD          ?= $(POLAPLIB_DIR)/polap-md-man00-$(BOLAP_TYPE).md
 EXP_MD          ?= $(SR)/man/expanded.md
 DOC_OUT_PDF     ?= $(SR)/man/polap-manuscript.pdf
@@ -74,74 +99,121 @@ DOC_OUT_PDF     ?= $(SR)/man/polap-manuscript.pdf
 PANDOC          ?= pandoc
 PDF_ENGINE      ?= xelatex
 
-# Resource search path: allow images in md/, man/, man/figures/
+# Resource search path: allow images in man/figures/, man/
 # PANDOC_RPATH    ?= $(SR):$(SR)/md:$(MAN_DIR):$(FIG_DIR)
-PANDOC_RPATH    ?= $(SR)/md:$(MAN_DIR)
+# PANDOC_RPATH    ?= $(SR)/md:$(MAN_DIR)
+PANDOC_RPATH    ?= $(FIGURE_DIR):$(MAN_DIR)
 
+# Scripts
+SCRIPT_MANIFEST := "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-make-manifest.sh"
+SCRIPT_MANIFEST_PY := "$(POLAPLIB_DIR)/scripts/oatk_manifest_assemble.py"
+SCRIPT_GRAPH := "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-graph.sh"
+SCRIPT_GRAPH_PY := "$(POLAPLIB_DIR)/scripts/polap-py-$(BOLAP_TYPE)-graph-table.py"
+SCRIPT_GRAPH_R := "$(POLAPLIB_DIR)/scripts/polap-r-$(BOLAP_TYPE)-graph.R"
 
 # ------------------------------------------------------------------------------
 # Phony targets and default goal
+#
+# Declaring a target with .PHONY tells make two things:
+# 1. Always execute the recipe: make knows the target doesn't represent a file,
+#    so it always runs the commands associated with that target's recipe,
+#    regardless of whether a file with that name exists.
+# 2. Performance: It improves make's performance by skipping the file system
+#    check.
 # ------------------------------------------------------------------------------
-.PHONY: help print-vars check-env manifests table-s1 pt-table mt-table table-data \
-        figure-assembly figure-assemblies-pdf figure-assemblies-both \
-        figure-assemblies-two-pages anno-scan sheet-ptmt fig1-puml fig1-r \
-        clean
+.PHONY: help print-vars check-env manifests table-s1 pt-table mt-table \
+	table-data figure-assembly figure-assemblies-pdf figure-assemblies-both \
+	figure-assemblies-two-pages anno-scan sheet-ptmt fig1-puml fig1-r \
+	clean
 
+# The .DEFAULT_GOAL is a special make variable that specifies which target
+# should be executed if the user invokes make without providing any arguments.
 .DEFAULT_GOAL := help
 
 # ------------------------------------------------------------------------------
 # Help / diagnostics
 # ------------------------------------------------------------------------------
+# Example usage in a target:
 help:
-	@echo "Single-tier (v5) workflow"
+	@echo "bolap type: oatk ($(TIER_CLEAN)) workflow"
 	@echo "Run from anywhere (SPECIES_ROOT defaults to $$PWD). Examples:"
-	@echo "  make -f $(POLAPLIB_DIR)/Makefile manifests"
-	@echo "  make -f $(POLAPLIB_DIR)/Makefile table-s1"
-	@echo "  make -f $(POLAPLIB_DIR)/Makefile pt-table"
-	@echo "  make -f $(POLAPLIB_DIR)/Makefile mt-table"
-	@echo "  make -f $(POLAPLIB_DIR)/Makefile table-data"
+	@echo "  make -f $(CURRENT_MAKEFILE) script"
+	@echo "  make -f $(CURRENT_MAKEFILE) print-vars"
+	@echo "  make -f $(CURRENT_MAKEFILE) manifest"
+	@echo "  make -f $(CURRENT_MAKEFILE) table-data"
+	@echo "  make -f $(CURRENT_MAKEFILE) sheet-ptmt"
+	@echo "  make -f $(CURRENT_MAKEFILE) graph"
 	@echo ""
-	@echo "Override vars: SPECIES_ROOT=/abs/root  SET=auto|file:/abs/list.txt|<species>  INUM=0  TIER=v6"
+	@echo "Species Code: $(SPECIES_CODES_TXT)"
+	@echo ""
+	@echo "Override vars: SPECIES_ROOT=/abs/root SET=auto|file:/abs/list.txt|<species> INUM=0 TIER=v6"
 
 print-vars:
-	@echo "SPECIES_ROOT=$(SR)"
+	@echo "TIER=$(TIER_CLEAN)"
+	@echo "SET=$(SET_CLEAN)"
+	@echo "INUM=$(INUM_CLEAN)"
+	@echo "SPECIES_ROOT or SR=$(SR)"
 	@echo "POLAP_SRC=$(POLAP_SRC)"
 	@echo "POLAPLIB_DIR=$(POLAPLIB_DIR)"
-	@echo "SET=$(SET_CLEAN)  INUM=$(INUM_CLEAN)  TIER=$(TIER_CLEAN)"
 	@echo "MANIFEST=$(MANIFEST_V6)"
 
 check-env:
-	@command -v bash    >/dev/null 2>&1 || { echo "[ERR] bash missing"    >&2; exit 2; }
+	@command -v bash >/dev/null 2>&1 || { echo "[ERR] bash missing" >&2; exit 2; }
 	@command -v python3 >/dev/null 2>&1 || { echo "[ERR] python3 missing" >&2; exit 2; }
 	@true
 
-species_code:
-
+$(SPECIES_CODES_TXT): check-env # Added check-env as prerequisite here
 	@echo "[INFO] Preparing $(SPECIES_CODES_TXT)"
-	find . -maxdepth 1 -type d -printf '%f\n' \
+	@find . -maxdepth 1 -type d -printf '%f\n' \
 		| grep -E '^[A-Z][a-z]+_[a-z]+$$' \
 		| sort \
 		| bash $(POLAPLIB_DIR)/polap-bash-generate-species-codes.sh \
 		>$(SPECIES_CODES_TXT)
 
+script:
+	@echo manifest: $(SCRIPT_MANIFEST)
+	@echo manifest py: $(SCRIPT_MANIFEST_PY)
+
+test:
+	@cd TIPP && echo $$PWD
+
+test2:
+	@cd TIPP
+	@echo $$PWD
+
 # ------------------------------------------------------------------------------
-# Manifest (single v5)
+# Manifest - result collection
 # ------------------------------------------------------------------------------
+# Target: manifest (A phony target - it's an action, not a file).
+# Prerequisite: $(MANIFEST_V6) (The dynamic filename of the actual manifest file).
+# Purpose: This rule creates a convenient, non-versioned alias or shortcut for
+# the user. When the user types make manifest, make knows it needs to ensure the
+# file named by $(MANIFEST_V6) exists and is up-to-date. The rule itself has no
+# recipe, delegating all the work to its prerequisite.
 manifest: $(MANIFEST_V6)
 
-$(MANIFEST_V6): check-env species_code
+# Target: $(MANIFEST_V6) (The actual filename being generated, e.g.,
+# manifests/v1.0.0-full.json).
+# Prerequisites: check-env species_code (These are the necessary setup actions
+# that must run before the manifest can be built).
+# Recipe: This block contains all the shell commands required to create the file
+# $@ ($(MANIFEST_V6)).
+# Purpose: This rule is responsible for the file's creation logic and explicitly
+# lists all the dependencies (check-env, species_code) required by that logic.
+$(MANIFEST_V6): check-env $(SPECIES_CODES_TXT)
 	@mkdir -p "$(MANIFEST_DIR)"
 	@echo "[INFO] Building manifest tier=$(TIER_CLEAN) set=$(SET_CLEAN) in $(SR)"
-	cd "$(SR)" && \
-	  bash "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-make-manifest.sh" \
+	@echo "[INFO] bash script: ${SCRIPT_MANIFEST}" 
+	@cd "$(SR)" && \
+	  bash "$(SCRIPT_MANIFEST)" \
 	    --species-codes  "$(SPECIES_CODES_TXT)" \
-	    --set  "$(SET_CLEAN)" \
 	    --tier "$(TIER_CLEAN)" \
+	    --set  "$(SET_CLEAN)" \
 	    --inum "$(INUM_CLEAN)" \
 	    --out  "$(abspath $@)" \
 	    --pretty \
 	    2> "$(MANIFEST_LOG)" \
-	  || { echo "[ERR] See $(abspath $(MANIFEST_LOG))"; exit 1; }
+	    || { echo "[ERR] See $(abspath $(MANIFEST_LOG))"; exit 1; }
 	@echo "[INFO] Wrote: $(abspath $@)"
 	@echo "[INFO] Log:   $(abspath $(MANIFEST_LOG))"
 
@@ -243,15 +315,23 @@ sheet-ptmt:
 # Boxplots
 #-------------------------------------------------------------------------------
 # --title "Mitogenome assembly QC metrics ($(TIER_CLEAN); PMAT, TIPPo, HiMT, Oatk)"
-graph: manifest
-	@bash "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-graph.sh" \
+T_GRAPH := "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf"
+
+graph: $(T_GRAPH)
+
+$(T_GRAPH): $(MANIFEST_V6)
+	@echo "[INFO] Building graph tier=$(TIER_CLEAN) set=$(SET_CLEAN) in $(SR)"
+	@echo "[INFO] bash script: ${SCRIPT_GRAPH}" 
+	@echo "[INFO] python script: ${SCRIPT_GRAPH_PY}" 
+	@echo "[INFO] R script: ${SCRIPT_GRAPH_R}" 
+	@bash "$(SCRIPT_GRAPH)" \
 	  --manifest "$(MANIFEST_V6)" \
 	  --out "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf" \
 	  --page-width-in 11 --page-height-in 8.5 --margin-in 0.5 \
 		--title " "
 	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf" \
 		"$(POLAPLIB_DIR)/figures"
-
+	@echo "[INFO] Wrote: $(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf"
 
 #-------------------------------------------------------------------------------
 # pipeline schematic figure

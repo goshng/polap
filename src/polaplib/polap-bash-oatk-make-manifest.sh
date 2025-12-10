@@ -64,10 +64,22 @@ Usage:
 EOF
 }
 
+# While the number of arguments ($#) is greater than zero, continue executing
+# the loop body.
+# The special variable containing the number of positional arguments passed to
+# the script.
+# The loop continues as long as $# is greater than zero (i.e., there are
+# arguments left to process).
 while (($#)); do
 	case "$1" in
 	--species-codes)
+		# It assigns the second positional argument ($2) to the variable
+		# SPECIES_CODES_TXT. The :${?} is a Bash parameter expansion that means: If
+		# $2 is unset or null, print an error message (to standard error) and exit
+		# the script. This ensures the user must provide a value after this flag.
 		SPECIES_CODES_TXT="${2:?}"
+		# It discards the first two arguments (--species-codes and its value). $3
+		# becomes the new $1, and $# decreases by 2.
 		shift 2
 		;;
 	--set)
@@ -103,12 +115,13 @@ while (($#)); do
 		exit 0
 		;;
 	*)
-		echo "[ERR] Unknown arg: $1" >&2
+		echo "[ERROR] Unknown arg: $1" >&2
 		usage
 		exit 2
 		;;
 	esac
 done
+# Q: OUT should be the json output file not its base directory.
 mkdir -p "$(dirname "$OUT")"
 
 # ------------------------------------------------------------------------------
@@ -116,9 +129,18 @@ mkdir -p "$(dirname "$OUT")"
 # ------------------------------------------------------------------------------
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# first_match() {
+# 	# Best-effort "find first file that matches"
+# 	compgen -G "$1" >/dev/null 2>&1 && ls $1 2>/dev/null | head -n1 || true
+# }
 first_match() {
-	# Best-effort "find first file that matches"
-	compgen -G "$1" >/dev/null 2>&1 && ls $1 2>/dev/null | head -n1 || true
+	local old_nullglob=$(shopt -p nullglob) # store previous setting
+	shopt -s nullglob
+
+	local files=($1)
+	printf "%s\n" "${files[0]:-}"
+
+	eval "$old_nullglob" # restore previous setting
 }
 
 # species list
@@ -177,6 +199,7 @@ append_fact() {
 }
 
 # Parse a single “seqkit stats -T/-Ta” table -> prints: num  sum  avg  n50  avgQ  gc
+# Q: rewrite it using python or something else.
 parse_seqkit_ta() {
 	local f="$1"
 	awk '
@@ -209,6 +232,7 @@ compute_seqkit_Ta() {
 	seqkit stats -Ta "$in" 2>/dev/null | tail -n +2 || true
 }
 
+# Parse the output from a seqkit stats -Ta command.
 _emit_six_attrs() { # species tier inum tag num sum avg n50 avgQ gc
 	local sp="$1" tier="$2" inum="$3" tag="$4"
 	local num="$5" sum="$6" avg="$7" n50="$8" avgQ="$9" gc="${10}"
@@ -230,6 +254,7 @@ _ensure_empty_block() {
 # Parse summary-*.txt (legacy) : set globals sum_mem_kb, sum_mem_gb, sum_time_hms, sum_time_hours, sum_disk_gb
 _extract_summary_metrics() {
 	local f="$1"
+
 	sum_mem_kb=""
 	sum_mem_gb=""
 	sum_time_hms=""
@@ -238,46 +263,18 @@ _extract_summary_metrics() {
 
 	[[ ! -s "$f" ]] && return 0
 
-	local line
+	# Net increase memory
+	sum_mem_kb=$(grep -E "Net increase" "$f" | sed -E 's/.*: *([0-9]+) KB.*/\1/' | head -n1)
+	sum_mem_gb=$(grep -E "Net increase" "$f" | sed -E 's/.*\(([0-9.]+) GB\).*/\1/' | head -n1)
 
-	# Net increase memory line, e.g.:
-	# Net increase:    9316600 KB (8.89 GB)
-	line="$(grep -m1 -E 'Net increase' "$f" || true)"
-	if [[ -n "$line" ]]; then
-		sum_mem_kb="$(awk '{for(i=1;i<=NF;i++) if($i=="KB"||$i=="KB)"){print $(i-1);exit}}' <<<"$line" | tr -d '[:space:]')"
-		sum_mem_gb="$(sed -n 's/.*(\(.*GB\)).*/\1/p' <<<"$line" | tr -d '[:space:]')"
-	fi
+	# Elapsed time (HH:MM:SS string)
+	sum_time_hms=$(grep -E "Elapsed time" "$f" | sed -E 's/.*time:[^0-9]*([0-9]{2}:[0-9]{2}:[0-9]{2}).*/\1/' | head -n1)
 
-	# Elapsed time line, e.g.:
-	# Elapsed time:    00:23:42 (0.40 h)
-	line="$(grep -m1 -E 'Elapsed time' "$f" || true)"
-	if [[ -n "$line" ]]; then
-		sum_time_hms="$(awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9]{2}:[0-9]{2}:[0-9]{2}$/){print $i;exit}}' <<<"$line")"
-		sum_time_hours="$(sed -n 's/.*(\(.*h\)).*/\1/p' <<<"$line" | tr -d '[:space:]')"
-		# Fallback if no parentheses
-		if [[ -z "$sum_time_hours" && -n "$sum_time_hms" ]]; then
-			IFS=: read -r hh mm ss <<<"$sum_time_hms"
-			local total_sec=$((10#$hh * 3600 + 10#$mm * 60 + 10#$ss))
-			sum_time_hours="$(awk -v sec="$total_sec" 'BEGIN{printf"%.2fh", sec/3600}')"
-		fi
-	fi
+	# Elapsed time in hours (numeric float)
+	sum_time_hours=$(grep -E "Elapsed time" "$f" | sed -E 's/.*\(([0-9.]+) h\).*/\1/' | head -n1)
 
-	# Disk used line, e.g.:
-	#   Disk used:       24 GB
-	line="$(grep -m1 -E '^[[:space:]]*Disk[[:space:]]+used' "$f" || true)"
-	sum_disk_gb=""
-	if [[ -n "$line" ]]; then
-		sum_disk_gb="$(
-			printf '%s\n' "$line" |
-				sed -E 's/.*Disk[[:space:]]+used:[^0-9]*([0-9]+(\.[0-9]+)?)[[:space:]]*GB.*/\1/'
-		)"
-		if [[ -z "$sum_disk_gb" ]]; then
-			sum_disk_gb="$(
-				printf '%s\n' "$line" |
-					sed -E 's/.*Disk[[:space:]]+used:[^0-9]*([0-9]+(\.[0-9]+)?)GB.*/\1/'
-			)"
-		fi
-	fi
+	# Disk usage in GB
+	sum_disk_gb=$(grep -E "Disk used" "$f" | sed -E 's/.*: *([0-9.]+) GB.*/\1/' | head -n1)
 }
 
 # Parse HiMT metrics in assess/<tool>/report/prefix.*; set globals:
@@ -324,6 +321,7 @@ _extract_himt_metrics() {
 	fi
 
 	# CV of contig lengths from contig_table.tsv (Length column)
+	# Q: rewrite not using awk.
 	if [[ -s "$ct" ]]; then
 		local awk_out
 		awk_out="$(
@@ -349,103 +347,33 @@ _extract_himt_metrics() {
 		)"
 		hmt_cv="$awk_out"
 	fi
-}
 
-# Parse "command time -v" stderr logs (timing-*.txt)
-# Sets globals:
-#   tv_mem_kb, tv_mem_gb, tv_time_hms, tv_time_hours, tv_user_s, tv_sys_s
-_extract_timev_metrics() {
-	local f="$1"
-	tv_mem_kb=""
-	tv_mem_gb=""
-	tv_time_hms=""
-	tv_time_hours=""
-	tv_user_s=""
-	tv_sys_s=""
-
-	[[ ! -s "$f" ]] && return 0
-
-	local out
-	out="$(
-		awk '
-			/Maximum resident set size \(kbytes\)/{
-				mem=$NF
-			}
-			/Elapsed \(wall clock\) time/{
-				# Example:
-				#   Elapsed (wall clock) time (h:mm:ss or m:ss): 0:31.54
-				# Extract the token after the *last* colon ("0:31.54").
-				if (match($0, /:[[:space:]]*([^[:space:]]+)$/, m)) {
-					wall = m[1]
-				}
-			}
-			/User time \(seconds\)/{
-				user=$NF
-			}
-			/System time \(seconds\)/{
-				sys=$NF
-			}
-			END{
-				if (mem  == "") mem  = ""
-				if (wall == "") wall = ""
-				if (user == "") user = ""
-				if (sys  == "") sys  = ""
-				printf "%s\t%s\t%s\t%s\n", mem, wall, user, sys
-			}
-		' "$f"
-	)"
-
-	tv_mem_kb="$(printf '%s' "$out" | cut -f1)"
-	tv_time_hms="$(printf '%s' "$out" | cut -f2)"
-	tv_user_s="$(printf '%s' "$out" | cut -f3)"
-	tv_sys_s="$(printf '%s' "$out" | cut -f4)"
-
-	# Convert wall-clock to hours (handles h:mm:ss, m:ss, s, and fractional seconds)
-	if [[ -n "$tv_time_hms" ]]; then
-		tv_time_hours="$(
-			awk -v t="$tv_time_hms" 'BEGIN{
-				# Accept formats like:
-				#   h:mm:ss      (e.g. 1:02:03)
-				#   m:ss         (e.g. 0:31.54, 12:03)
-				#   s or s.ss    (e.g. 31.54)
-				n = split(t, a, ":");
-				h = 0; m = 0; s = 0;
-				if (n == 3) {
-					h = a[1]; m = a[2]; s = a[3];
-				} else if (n == 2) {
-					m = a[1]; s = a[2];
-				} else if (n == 1) {
-					s = a[1];
-				}
-				sec = h*3600 + m*60 + s;
-				if (sec > 0) {
-					printf "%.3f", sec/3600.0;
-				}
-			}'
-		)"
-	else
-		tv_time_hours=""
-	fi
-
-	# Convert kB to GB
-	if [[ -n "$tv_mem_kb" ]]; then
-		tv_mem_gb="$(
-			awk -v kb="$tv_mem_kb" 'BEGIN{
-				if (kb>0) { printf "%.3f", kb/1024.0/1024.0 } else { printf "" }
-			}'
-		)"
-	else
-		tv_mem_gb=""
-	fi
+	# Remove all instances of the carriage return character ($'\r')
+	hmt_geneset=${hmt_geneset//$'\r'/}
+	hmt_contigs=${hmt_contigs//$'\r'/}
+	hmt_total_len=${hmt_total_len//$'\r'/}
+	hmt_n50=${hmt_n50//$'\r'/}
+	hmt_frag_idx=${hmt_frag_idx//$'\r'/}
+	hmt_max_prop=${hmt_max_prop//$'\r'/}
+	hmt_cv=${hmt_cv//$'\r'/}
 }
 
 # Append OATK file paths as attributes under organelle "oatk" (legacy summary-oatk-*.txt)
 _oatk_append_oatk_files() {
 	local sp="$1" tier="$2" inum="$3" cov="$4" base_dir="$5"
+	# cov=${pattern}-05
+	# oatk_dir="${root}/oatk-tiara-himt-${pattern}/oatk"
+	# -> base_dir
+	# e.g.,
+	# cov=x-x-05
+	# pattern=x-x
 
 	local label="c${cov}"
+	# Q: weird?
+	# Q: summary-oatk-tiara-himt-h-t-c11.txt
 	local sdir="${sp}/${tier}/${inum}/summary-oatk-${cov}.txt"
 	local assess_dir="${sp}/${tier}/${inum}/assess/oatk-${cov}/report"
+	local assess_tool="oatk-${cov}"
 
 	# --- File paths (mtDNA / ptDNA) ---
 	local mt_gfa="${base_dir}/oatk-${cov}.mito.gfa"
@@ -455,6 +383,14 @@ _oatk_append_oatk_files() {
 	local pt_fa="${base_dir}/oatk-${cov}.pltd.ctg.fasta"
 	local pt_png="${base_dir}/oatk-${cov}.pltd.png"
 
+	# Use string as variable name:
+	# k="mt_gfa"
+	# mt_gfa="/path/to/mt.gfa"
+	# val="${!k}" -> "/path/to/mt.gfa"
+	# This loop iterates over symbolic variable names for OATK output files,
+	# resolves each to its actual filename using indirect expansion, builds an
+	# attribute key from the label and file type, and records the file path into
+	# the FACTS table only if the file exists and is non-empty.
 	for k in mt_gfa mt_fa mt_png pt_gfa pt_fa pt_png; do
 		local val="${!k:-}"
 		local key="${label}_${k#*_}"
@@ -466,11 +402,11 @@ _oatk_append_oatk_files() {
 	# --- Summary metrics (memory/time/disk) ---
 	local mem_kb="" mem_gb="" time_hms="" time_hours="" disk_gb=""
 	if [[ -s "$sdir" ]]; then
-		mem_kb=$(grep -E "Net increase" "$sdir" | awk '{print $3}' | head -n1)
-		mem_gb=$(grep -E "Net increase" "$sdir" | sed -n 's/.*(\(.*GB\)).*/\1/p' | head -n1)
+		mem_kb=$(grep -E "Net increase" "$sdir" | sed -E 's/.*: *([0-9]+) KB.*/\1/' | head -n1)
+		mem_gb=$(grep -E "Net increase" "$sdir" | sed -E 's/.*\(([0-9.]+) GB\).*/\1/' | head -n1)
+		time_hours=$(grep -E "Elapsed time" "$sdir" | sed -E 's/.*\(([0-9.]+) h\).*/\1/' | head -n1)
+		disk_gb=$(grep -E "Disk used" "$sdir" | sed -E 's/.*: *([0-9.]+) GB.*/\1/' | head -n1)
 		time_hms=$(grep -E "Elapsed time" "$sdir" | awk '{print $3}' | head -n1)
-		time_hours=$(grep -E "Elapsed time" "$sdir" | sed -n 's/.*(\(.*h\)).*/\1/p' | head -n1)
-		disk_gb=$(grep -E "Disk used" "$sdir" | awk '{print $3}' | head -n1)
 	fi
 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_mem_kb" "$mem_kb"
 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_mem_gb" "$mem_gb"
@@ -478,38 +414,41 @@ _oatk_append_oatk_files() {
 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_time_hours" "$time_hours"
 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_disk_gb" "$disk_gb"
 
-	# --- HiMT metrics (4C) ---
-	local geneset_completeness_prop="" num_contigs="" total_length="" N50=""
-	local fragmentation_index="" max_contig_prop="" contig_length_cv=""
+	# Extract 4C metrics
+	_extract_himt_metrics "$sp" "$TIER" "$INUM" "${assess_tool}"
 
-	if [[ -s "${assess_dir}/prefix.gene_integrity_summary.tsv" ]]; then
-		geneset_completeness_prop=$(awk -F'\t' '$1=="geneset_completeness_prop"{print $2}' \
-			"${assess_dir}/prefix.gene_integrity_summary.tsv" | head -n1)
-	fi
-	if [[ -s "${assess_dir}/prefix.mito_basic_info.tsv" ]]; then
-		num_contigs=$(awk -F'\t' '$1=="Total contig number"{print $2}' \
-			"${assess_dir}/prefix.mito_basic_info.tsv" | head -n1)
-		total_length=$(awk -F'\t' '$1=="Total length"{print $2}' \
-			"${assess_dir}/prefix.mito_basic_info.tsv" | head -n1)
-		N50=$(awk -F'\t' '$1=="N50"{print $2}' \
-			"${assess_dir}/prefix.mito_basic_info.tsv" | head -n1)
-	fi
-	if [[ -s "${assess_dir}/prefix.4c_metrics.tsv" ]]; then
-		fragmentation_index=$(awk -F'\t' '$2=="fragmentation_index"{print $3}' \
-			"${assess_dir}/prefix.4c_metrics.tsv" | head -n1)
-		max_contig_prop=$(awk -F'\t' '$2=="max_contig_prop"{print $3}' \
-			"${assess_dir}/prefix.4c_metrics.tsv" | head -n1)
-		contig_length_cv=$(awk -F'\t' '$2=="contig_length_cv"{print $3}' \
-			"${assess_dir}/prefix.4c_metrics.tsv" | head -n1)
-	fi
+	# # --- HiMT metrics (4C) ---
+	# local geneset_completeness_prop="" num_contigs="" total_length="" N50=""
+	# local fragmentation_index="" max_contig_prop="" contig_length_cv=""
+	#
+	# if [[ -s "${assess_dir}/prefix.gene_integrity_summary.tsv" ]]; then
+	# 	geneset_completeness_prop=$(awk -F'\t' '$1=="geneset_completeness_prop"{print $2}' \
+	# 		"${assess_dir}/prefix.gene_integrity_summary.tsv" | head -n1)
+	# fi
+	# if [[ -s "${assess_dir}/prefix.mito_basic_info.tsv" ]]; then
+	# 	num_contigs=$(awk -F'\t' '$1=="Total contig number"{print $2}' \
+	# 		"${assess_dir}/prefix.mito_basic_info.tsv" | head -n1)
+	# 	total_length=$(awk -F'\t' '$1=="Total length"{print $2}' \
+	# 		"${assess_dir}/prefix.mito_basic_info.tsv" | head -n1)
+	# 	N50=$(awk -F'\t' '$1=="N50"{print $2}' \
+	# 		"${assess_dir}/prefix.mito_basic_info.tsv" | head -n1)
+	# fi
+	# if [[ -s "${assess_dir}/prefix.4c_metrics.tsv" ]]; then
+	# 	fragmentation_index=$(awk -F'\t' '$2=="fragmentation_index"{print $3}' \
+	# 		"${assess_dir}/prefix.4c_metrics.tsv" | head -n1)
+	# 	max_contig_prop=$(awk -F'\t' '$2=="max_contig_prop"{print $3}' \
+	# 		"${assess_dir}/prefix.4c_metrics.tsv" | head -n1)
+	# 	contig_length_cv=$(awk -F'\t' '$2=="contig_length_cv"{print $3}' \
+	# 		"${assess_dir}/prefix.4c_metrics.tsv" | head -n1)
+	# fi
 
-	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_geneset_completeness_prop" "$geneset_completeness_prop"
-	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_num_contigs" "$num_contigs"
-	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_total_length" "$total_length"
-	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_N50" "$N50"
-	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_fragmentation_index" "$fragmentation_index"
-	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_max_contig_prop" "$max_contig_prop"
-	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_contig_length_cv" "$contig_length_cv"
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "geneset_completeness_prop" "${hmt_geneset}"
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "num_contigs" "${hmt_contigs}"
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "total_length" "${hmt_total_len}"
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "N50" "${hmt_n50}"
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "fragmentation_index" "${hmt_frag_idx}"
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "max_contig_prop" "${hmt_max_prop}"
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "contig_length_cv" "${hmt_cv}"
 }
 
 # ------------------------------------------------------------------------------
@@ -517,7 +456,9 @@ _oatk_append_oatk_files() {
 #   <sp>/<tier>/<inum>/oatk-tiara-himt-<pattern>/{himt,tiara,oatk}
 # ------------------------------------------------------------------------------
 harvest_oatk_tiara_himt() {
-	local sp="$1" tier="$2" inum="$3"
+	local sp="$1"
+	local tier="$2"
+	local inum="$3"
 	local root="${sp}/${tier}/${inum}"
 
 	shopt -s nullglob
@@ -532,7 +473,17 @@ harvest_oatk_tiara_himt() {
 		# Make sure the block exists
 		append_fact "$sp" "$tier" "$inum" "$org" "attr" "present" "1"
 
+		# Total time and memory usage
+		# HiMT + Tiara + each Oatk
+		local sum_himt_mem_gb=0
+		local sum_himt_time_hours=0
+		local sum_tiara_mem_gb=0
+		local sum_tiara_time_hours=0
+		local sum_total_mem_gb=0
+		local sum_total_hours=0
+
 		# ---------------------- HiMT (filter) ----------------------
+		# e.g., oatk-tiara-himt-t-h/himt
 		local himt_dir="${od}/himt"
 		if [[ -d "$himt_dir" ]]; then
 			local h_extract="${himt_dir}/extract.fa"
@@ -540,24 +491,34 @@ harvest_oatk_tiara_himt() {
 			local h_proc="${himt_dir}/process.fa"
 			local h_prop="${himt_dir}/proportion.fa"
 
-			[[ -s "$h_extract" ]] && append_fact "$sp" "$tier" "$inum" "$org" "file" "himt_extract_fa" "$h_extract"
-			[[ -s "$h_fq" ]] && append_fact "$sp" "$tier" "$inum" "$org" "file" "himt_reads_fq" "$h_fq"
-			[[ -s "$h_proc" ]] && append_fact "$sp" "$tier" "$inum" "$org" "file" "himt_process_fa" "$h_proc"
-			[[ -s "$h_prop" ]] && append_fact "$sp" "$tier" "$inum" "$org" "file" "himt_proportion_fa" "$h_prop"
+			[[ -s "$h_extract" ]] &&
+				append_fact "$sp" "$tier" "$inum" "$org" "file" "himt_extract_fa" "$h_extract"
+			[[ -s "$h_fq" ]] &&
+				append_fact "$sp" "$tier" "$inum" "$org" "file" "himt_reads_fq" "$h_fq"
+			[[ -s "$h_proc" ]] &&
+				append_fact "$sp" "$tier" "$inum" "$org" "file" "himt_process_fa" "$h_proc"
+			[[ -s "$h_prop" ]] &&
+				append_fact "$sp" "$tier" "$inum" "$org" "file" "himt_proportion_fa" "$h_prop"
 
 			local hf_stdout="${root}/stdout-oatk-tiara-himt-${pattern}-himt-filter.txt"
 			local hf_timing="${root}/timing-oatk-tiara-himt-${pattern}-himt-filter.txt"
-			[[ -s "$hf_stdout" ]] && append_fact "$sp" "$tier" "$inum" "$org" "file" "himt_filter_stdout" "$hf_stdout"
-			[[ -s "$hf_timing" ]] && append_fact "$sp" "$tier" "$inum" "$org" "file" "himt_filter_timing" "$hf_timing"
+			local hf_summary="${root}/summary-oatk-tiara-himt-${pattern}-himt-filter.txt"
+			[[ -s "$hf_stdout" ]] &&
+				append_fact "$sp" "$tier" "$inum" "$org" "file" "himt_filter_stdout" "$hf_stdout"
+			[[ -s "$hf_timing" ]] &&
+				append_fact "$sp" "$tier" "$inum" "$org" "file" "himt_filter_timing" "$hf_timing"
 
-			if [[ -s "$hf_timing" ]]; then
-				_extract_timev_metrics "$hf_timing"
-				append_fact "$sp" "$tier" "$inum" "$org" "attr" "himt_filter_mem_kb" "$tv_mem_kb"
-				append_fact "$sp" "$tier" "$inum" "$org" "attr" "himt_filter_mem_gb" "$tv_mem_gb"
-				append_fact "$sp" "$tier" "$inum" "$org" "attr" "himt_filter_time_hms" "$tv_time_hms"
-				append_fact "$sp" "$tier" "$inum" "$org" "attr" "himt_filter_time_hours" "$tv_time_hours"
-				append_fact "$sp" "$tier" "$inum" "$org" "attr" "himt_filter_user_s" "$tv_user_s"
-				append_fact "$sp" "$tier" "$inum" "$org" "attr" "himt_filter_sys_s" "$tv_sys_s"
+			if [[ -s "$hf_summary" ]]; then
+				# Q: in python not awk
+				_extract_summary_metrics "$hf_summary"
+				sum_himt_mem_gb="$sum_mem_gb"
+				sum_himt_time_hours="$sum_time_hours"
+
+				append_fact "$sp" "$tier" "$inum" "$org" "attr" "himt_filter_mem_kb" "$sum_mem_kb"
+				append_fact "$sp" "$tier" "$inum" "$org" "attr" "himt_filter_mem_gb" "$sum_mem_gb"
+				append_fact "$sp" "$tier" "$inum" "$org" "attr" "himt_filter_time_hms" "$sum_time_hms"
+				append_fact "$sp" "$tier" "$inum" "$org" "attr" "himt_filter_time_hours" "$sum_time_hours"
+				append_fact "$sp" "$tier" "$inum" "$org" "attr" "himt_filter_disk_gb" "$sum_disk_gb"
 			fi
 		fi
 
@@ -578,17 +539,19 @@ harvest_oatk_tiara_himt() {
 
 			local t_stdout="${root}/stdout-oatk-tiara-himt-${pattern}-tiara.txt"
 			local t_timing="${root}/timing-oatk-tiara-himt-${pattern}-tiara.txt"
+			local t_summary="${root}/summary-oatk-tiara-himt-${pattern}-tiara.txt"
 			[[ -s "$t_stdout" ]] && append_fact "$sp" "$tier" "$inum" "$org" "file" "tiara_stdout" "$t_stdout"
 			[[ -s "$t_timing" ]] && append_fact "$sp" "$tier" "$inum" "$org" "file" "tiara_timing" "$t_timing"
 
-			if [[ -s "$t_timing" ]]; then
-				_extract_timev_metrics "$t_timing"
-				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_mem_kb" "$tv_mem_kb"
-				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_mem_gb" "$tv_mem_gb"
-				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_time_hms" "$tv_time_hms"
-				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_time_hours" "$tv_time_hours"
-				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_user_s" "$tv_user_s"
-				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_sys_s" "$tv_sys_s"
+			if [[ -s "$t_summary" ]]; then
+				_extract_summary_metrics "$t_summary"
+				sum_tiara_mem_gb="$sum_mem_gb"
+				sum_tiara_time_hours="$sum_time_hours"
+				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_mem_kb" "$sum_mem_kb"
+				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_mem_gb" "$sum_mem_gb"
+				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_time_hms" "$sum_time_hms"
+				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_time_hours" "$sum_time_hours"
+				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_disk_gb" "$sum_disk_gb"
 			fi
 		fi
 
@@ -603,6 +566,7 @@ harvest_oatk_tiara_himt() {
 				local tmp="${base#oatk-${pattern}-}" # 02.mito.gfa
 				cov="${tmp%%.mito.gfa}"              # 02
 				label="c${cov}"
+				local assess_tool="oatk-${pattern}-${cov}"
 
 				local mt_png="${oatk_dir}/oatk-${pattern}-${cov}.mito.png"
 				local mt_ctg="${oatk_dir}/oatk-${pattern}-${cov}.mito.ctg.fasta"
@@ -619,18 +583,35 @@ harvest_oatk_tiara_himt() {
 
 				local o_stdout="${root}/stdout-oatk-tiara-himt-${pattern}-c${cov}.txt"
 				local o_timing="${root}/timing-oatk-tiara-himt-${pattern}-c${cov}.txt"
+				local o_summary="${root}/summary-oatk-tiara-himt-${pattern}-c${cov}.txt"
 				[[ -s "$o_stdout" ]] && append_fact "$sp" "$tier" "$inum" "$org" "file" "${label}_stdout" "$o_stdout"
 				[[ -s "$o_timing" ]] && append_fact "$sp" "$tier" "$inum" "$org" "file" "${label}_timing" "$o_timing"
 
-				if [[ -s "$o_timing" ]]; then
-					_extract_timev_metrics "$o_timing"
-					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_mem_kb" "$tv_mem_kb"
-					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_mem_gb" "$tv_mem_gb"
-					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_time_hms" "$tv_time_hms"
-					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_time_hours" "$tv_time_hours"
-					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_user_s" "$tv_user_s"
-					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_sys_s" "$tv_sys_s"
+				if [[ -s "$o_summary" ]]; then
+					_extract_summary_metrics "$o_summary"
+					# Memory Calculation
+					sum_total_mem_gb=$(bc <<<"$sum_mem_gb + $sum_himt_mem_gb + $sum_tiara_mem_gb")
+					# Hours Calculation
+					sum_total_time_hours=$(bc <<<"$sum_time_hours + $sum_himt_time_hours + $sum_tiara_time_hours")
+					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_total_mem_gb" "$sum_total_mem_gb"
+					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_total_time_hours" "$sum_total_time_hours"
+
+					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_mem_kb" "$sum_mem_kb"
+					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_mem_gb" "$sum_mem_gb"
+					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_time_hms" "$sum_time_hms"
+					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_time_hours" "$sum_time_hours"
+					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_disk_gb" "$sum_disk_gb"
 				fi
+
+				_extract_himt_metrics "$sp" "$TIER" "$INUM" "${assess_tool}"
+				append_fact "$sp" "$TIER" "$INUM" "${org}" "attr" "${label}_geneset_completeness_prop" "${hmt_geneset}"
+				append_fact "$sp" "$TIER" "$INUM" "${org}" "attr" "${label}_num_contigs" "${hmt_contigs}"
+				append_fact "$sp" "$TIER" "$INUM" "${org}" "attr" "${label}_total_length" "${hmt_total_len}"
+				append_fact "$sp" "$TIER" "$INUM" "${org}" "attr" "${label}_N50" "${hmt_n50}"
+				append_fact "$sp" "$TIER" "$INUM" "${org}" "attr" "${label}_fragmentation_index" "${hmt_frag_idx}"
+				append_fact "$sp" "$TIER" "$INUM" "${org}" "attr" "${label}_max_contig_prop" "${hmt_max_prop}"
+				append_fact "$sp" "$TIER" "$INUM" "${org}" "attr" "${label}_contig_length_cv" "${hmt_cv}"
+
 			done
 		fi
 	done
@@ -640,6 +621,9 @@ harvest_oatk_tiara_himt() {
 # ------------------------------------------------------------------------------
 # Harvest one species (serial; never abort the run)
 # ------------------------------------------------------------------------------
+# In essence, this function is designed to run its internal commands and then
+# silently ignore any errors, always telling the parent script that it completed
+# successfully.
 harvest_one() {
 	local sp="$1"
 	{
@@ -647,25 +631,32 @@ harvest_one() {
 		local sdir="${sp}/${TIER}/${INUM}/summary-data"
 
 		# Track if blocks got any rows
-		local have_data=0 have_s1=0 have_s2=0
+		local have_data=0
+		local have_s1=0
+		local have_s2=0
 
 		# ---------- LONG: metrics from l.fq.seqkit.stats.ta.txt (or fallback) ---
+		# Parse summary-data/l.fq.seqkit.stats.ta.txt
+		# Set have_data to 1
 		local l_ta="${sdir}/l.fq.seqkit.stats.ta.txt"
 		if [[ -s "$l_ta" ]]; then
-			local row
-			row="$(parse_seqkit_ta "$l_ta")"
+			# parse the output of a seqkit stats -Ta l.fq
+			local row="$(parse_seqkit_ta "$l_ta")"
 			if [[ -n "$row" ]]; then
 				IFS=$'\t' read -r num sum avg n50 avgQ gc <<<"$row"
-				_emit_six_attrs "$sp" "$TIER" "$INUM" "data" "$num" "$sum" "$avg" "$n50" "$avgQ" "$gc"
+				_emit_six_attrs "$sp" "$TIER" "$INUM" "data" \
+					"$num" "$sum" "$avg" "$n50" "$avgQ" "$gc"
 				have_data=1
 			fi
 		else
-			local fq
-			fq="$(first_match "${sdir}/l.fq.gz")"
+			# This block finds the long-read FASTQ (l.fq.gz or l.fq), uses seqkit to
+			# compute read metrics if possible, parses out
+			# count/total/mean/N50/quality/GC, and records those six attributes into
+			# the FACTS table under kind="data" for that species.
+			local fq="$(first_match "${sdir}/l.fq.gz")"
 			[[ -z "$fq" ]] && fq="$(first_match "${sdir}/l.fq")"
 			if [[ -n "$fq" && -s "$fq" ]] && have seqkit; then
-				local row
-				row="$(compute_seqkit_Ta "$fq")"
+				local row="$(compute_seqkit_Ta "$fq")"
 				if [[ -n "$row" ]]; then
 					IFS=$'\t' read -r _f _fmt _typ num sum _min avg _max _Q1 _Q2 _Q3 _sumgap n50 _n50num _q20 _q30 avgQ gc _sumn <<<"$row"
 					_emit_six_attrs "$sp" "$TIER" "$INUM" "data" "$num" "$sum" "$avg" "$n50" "$avgQ" "$gc"
@@ -674,14 +665,22 @@ harvest_one() {
 			fi
 		fi
 
-		# data_file_bytes from <species>/tmp/l.fq (uncompressed, if exists)
-		local lf="$sp/tmp/l.fq"
-		if [[ -s "$lf" ]]; then
+		# Parse data file size.
+		# data_file_bytes from <species>/tmp/l.fq.gz (uncompressed, if exists)
+		# This rewritten block searches for the long-read file (l.fq.gz or fallback
+		# l.fq) in ${sp}/tmp/ using first_match(), and if the file exists and is
+		# non-empty records its exact byte size into the FACTS table as the
+		# data_file_bytes attribute.
+		local lf="$sp/tmp/l.fq.gz"
+		local lf="$(first_match "${sp}/tmp/l.fq.gz")"
+		[[ -z "$lf" ]] && lf="$(first_match "${sp}/tmp/l.fq")"
+		if [[ -n "$lf" && -s "$lf" ]]; then
 			local bytes=""
 			bytes="$(wc -c <"$lf" | tr -d '[:space:]' || true)"
 			[[ -n "$bytes" ]] && append_fact "$sp" "$TIER" "$INUM" "data" "attr" "data_file_bytes" "$bytes" && have_data=1
 		fi
 
+		# Parse long SRA ID.
 		# LONG SRA: prefer tmp/l.sra.txt, fallback summary-data
 		local l_sra=""
 		[[ -s "$sp/tmp/l.sra.txt" ]] && l_sra="$(head -n1 "$sp/tmp/l.sra.txt" | tr -d '\r\n')"
@@ -692,6 +691,7 @@ harvest_one() {
 		fi
 
 		# ---------- SHORT SRA (pair): prefer tmp/s.sra.txt, fallback summary-data
+		# Porase short SRA ID.
 		local s_sra=""
 		[[ -s "$sp/tmp/s.sra.txt" ]] && s_sra="$(head -n1 "$sp/tmp/s.sra.txt" | tr -d '\r\n')"
 		[[ -z "$s_sra" && -s "$sdir/s.sra.txt" ]] && s_sra="$(head -n1 "$sdir/s.sra.txt" | tr -d '\r\n')"
@@ -707,16 +707,14 @@ harvest_one() {
 			local tag="short${mate}data"
 			local s_ta="${sdir}/s_${mate}.fq.seqkit.stats.ta.txt"
 			if [[ -s "$s_ta" ]]; then
-				local row
-				row="$(parse_seqkit_ta "$s_ta")"
+				local row="$(parse_seqkit_ta "$s_ta")"
 				if [[ -n "$row" ]]; then
 					IFS=$'\t' read -r num sum avg n50 avgQ gc <<<"$row"
 					_emit_six_attrs "$sp" "$TIER" "$INUM" "$tag" "$num" "$sum" "$avg" "$n50" "$avgQ" "$gc"
 					[[ "$mate" == "1" ]] && have_s1=1 || have_s2=1
 				fi
 			else
-				local sfq
-				sfq="$(first_match "${sdir}/s_${mate}.fq.gz")"
+				local sfq="$(first_match "${sdir}/s_${mate}.fq.gz")"
 				[[ -z "$sfq" ]] && sfq="$(first_match "${sdir}/s_${mate}.fq")"
 				[[ -z "$sfq" ]] && sfq="$(first_match "${sp}/tmp/s_${mate}.fq.gz")"
 				[[ -z "$sfq" ]] && sfq="$(first_match "${sp}/tmp/s_${mate}.fq")"
@@ -856,21 +854,35 @@ harvest_one() {
 			printf "%s\n" "$pattern"
 		}
 
+		extract_pattern_cov_only() {
+			local f="$1"
+			local base mid pattern
+			base="${f##*/}"
+			mid="${base#summary-oatk-}"
+			mid="${mid%.txt}"
+			printf "%s\n" "$mid"
+		}
+
 		# ===================== legacy oatk assembly entries =====================
 		local root="${sp}/${TIER}/${INUM}"
 
-		if compgen -G "${root}/timing-oatk-tiara-himt-*.txt" >/dev/null 2>&1; then
+		# ---- Oatk assembly (legacy) not for oatk-tiara-himt ----
+		#
+		# This block scans for legacy Tiara–HiMT OATK timing files, extracts their
+		# pattern and coverage, processes the corresponding OATK output directories,
+		# and if none are found, records that no legacy OATK data exist.
+		# Use a simple glob to find all files, regardless of what the * matched
+		pattern="${root}/summary-oatk-*.txt"
+		if compgen -G "$pattern" >/dev/null 2>&1; then
 			local summary
-			for summary in "$root"/timing-oatk-tiara-himt-*.txt; do
-				[[ -e "$summary" ]] || continue
-				local cov=$(extract_pattern_cov "$summary")
-				local pattern=$(extract_pattern_only "$summary")
-				echo "summary: $summary" >&2
-				echo "cov: $cov" >&2
-				echo "pattern: $pattern" >&2
-				local oatk_dir="${root}/oatk-tiara-himt-${pattern}/oatk"
-				if [[ -d "$oatk_dir" ]]; then
-					_oatk_append_oatk_files "$sp" "$TIER" "$INUM" "$cov" "$oatk_dir"
+			for summary in $pattern; do
+				local cov
+				cov=$(basename "$summary" | grep -oE 'summary-oatk-([0-9]+)\.txt$' | grep -oE '[0-9]+')
+				if [[ -n "$cov" ]]; then
+					local oatk_dir="${root}/oatk"
+					if [[ -d "$oatk_dir" ]]; then
+						_oatk_append_oatk_files "$sp" "$TIER" "$INUM" "$cov" "$oatk_dir"
+					fi
 				fi
 			done
 		else
@@ -995,6 +1007,7 @@ harvest_one() {
 # Collect facts (serial), then assemble JSON
 # ------------------------------------------------------------------------------
 FACTS="$(mktemp -t polap-facts.XXXXXX.tsv)"
+trap '[[ -f "$FACTS" ]] && rm -f "$FACTS"' EXIT
 echo -e "species\ttier\tinum\torganelle\tkind\tkey\tvalue" >"$FACTS"
 
 while read -r sp; do
@@ -1015,6 +1028,7 @@ python3 "${_POLAPLIB_DIR}/scripts/oatk_manifest_assemble.py" \
 	--out "$OUT" $([[ $PRETTY -eq 1 ]] && echo --pretty) \
 	--species-codes "${SPECIES_CODES_TXT}"
 
+# for debugging purpose
 cp "$FACTS" 1.tsv
 
 [[ "$QUIET" -eq 1 ]] || echo "[INFO] Wrote: $OUT"

@@ -258,6 +258,7 @@ fi
 
 _brg_outdir=""
 _brg_sindex=0
+_brg_downsample="30g"
 _brg_verbose=1
 _brg_verbose_str=""
 _brg_dataset="${_POLAPLIB_DIR}/polap-dataset-${_bolap_type}.json"
@@ -288,6 +289,7 @@ _brg_default_target_dir="${opt_m_arg}"
 declare -a _blg_unknown_opts=()
 declare -a _brg_outdir_list=()
 
+# Bolap main help message.
 print_help() {
 
 	help_message=$(
@@ -310,7 +312,7 @@ commands:
   run                  Run tools
   download             Download data.
   uninstall            Uninstall tools.
-  use                  Use one of benchmark analysis datasets: hifi, read, cflye, aflye
+  use                  Benchmark type: hifi, oatk, read, cflye, aflye
   conda                Manage conda environments.
   list                 List for tools.
   help                 Print help message for commands and others.
@@ -321,15 +323,16 @@ commands:
 options:
   -y                   Yes for all questions.
   -f STR               Set timeout and enable profiling (default: ${_brg_timeout})
-  -i INT               Set species index (default: ${_brg_sindex})
-  -c FILE              Set value for -c option for CSV config (default: ${opt_c_arg})
-  -t STR               Set value for -t option for run folder name(default: ${opt_t_arg})
-  -v                   Enable verbose mode.
+  -d INTx|INTg|path    Downsample e.g., 10x or 30g (default: ${_brg_downsample})
   --remote STR         Set the remote cental server (default: none).
   --version            Show the polap-data-${_bolap_type} version number and exit.
   --help               Show help message of a subcommand in the man page style.
   -h                   Show this help message and exit.
 HEREDOC
+		# -i INT               Set species index (default: ${_brg_sindex})
+		# -c FILE              Set value for -c option for CSV config (default: ${opt_c_arg})
+		# -t STR               Set value for -t option for run folder name (default: ${opt_t_arg})
+		# -v                   Enable verbose mode.
 	)
 
 	echo "${help_message}"
@@ -425,6 +428,11 @@ parse_commandline() {
 			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 			opt_f_flag=true
 			_brg_timeout="$2"
+			shift
+			;;
+		-d | --downsample)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_brg_downsample="$2"
 			shift
 			;;
 		--preset)

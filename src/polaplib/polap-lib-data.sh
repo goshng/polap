@@ -10151,6 +10151,7 @@ uninstall-efg_genus_species() {
 	fi
 }
 
+#
 run-summary-data_genus_species() {
 	local _brg_outdir="${1:-$_brg_outdir}"
 	local _brg_sindex="${2:-$_brg_sindex}"
@@ -10168,7 +10169,7 @@ Synopsis:
   bolap run-summary-data
 
 Description:
-  bolap
+  Seqkit stats summary of tmp/l.fq.gz.
 
 Examples:
   Execute:
@@ -10183,67 +10184,15 @@ Author:
 EOF
 	)
 
-	local _data_long_cleanup=false
-	local _data_long_redo=false
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
 
-	parse_commandline() {
-		set -- "${_brg_unknown_opts[@]}"
-
-		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
-		while test $# -gt 0; do
-			_key="$1"
-			case "$_key" in
-			--data-long-cleanup)
-				if test $# -lt 2; then
-					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'."
-				else
-					_data_long_cleanup="$2"
-					shift || true
-				fi
-				;;
-			--data-long-redo)
-				if test $# -lt 2; then
-					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'."
-				else
-					_data_long_redo="$2"
-					shift || true
-				fi
-				;;
-			-*)
-				_log_echo0 "[ERROR] no such options: $1"
-				;;
-			*)
-				break
-				;;
-			esac
-			shift || true
-		done
-	}
-
-	declare -n ref="help_message"
-	if [[ "${_brg_help}" == "on" ]]; then
-		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
-		man "$manfile"
-		rm -f "$manfile"
-		return
-	fi
-
-	parse_commandline
-
-	# source "${_POLAPLIB_DIR}/polap-variables-data.sh"
-	# local long_sra="${_long["$_brg_target"]}"
-
-	# redownload
 	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
-
 	mkdir -p "${_brg_rundir}"
 
 	local short_sra="${_short["$_brg_target"]}"
 
 	_polap_lib_conda-ensure_conda_env polap || exit 1
 
-	_log_echo0 _polap_lib_process-start_memtracker "${_memlog_file}" \
-		"${_polap_var_memtracker_time_interval}"
 	_polap_lib_process-start_memtracker "${_memlog_file}" \
 		"${_polap_var_memtracker_time_interval}"
 
@@ -10274,12 +10223,9 @@ EOF
 		fi
 	done
 
-	# Save system info
-	# _polap_lib_timing-get_system_info >>"${_timing_txt}"
-
 	_polap_lib_process-end_memtracker "${_memlog_file}" "${_summary_file}" "no_verbose"
 
-	conda deactivate
+	_polap_lib_conda-ensure_conda_env_deactivate || true
 }
 
 install-man_genus_species() {
@@ -16289,11 +16235,35 @@ Synopsis:
   bolap run-data-long
 
 Description:
-  bolap
+  Use the species folder name to find the long-read SRA ID.
+Then, fetch the fastq file from the SRA database.
+Save the long-read data file as outdir/tmp/l.fq.gz
+by checking long-read data in the following order:
+where long_sra=l
+
+  local computer storage:
+    l.fastq
+    l.fq
+    l.fastq.gz
+    l.fq.gz
+    l.fastq.tar.gz
+    l.fq.tar.gz
+
+  storage: check each directory for the filenames as above
+    media_dir
+    media1_dir
+    media2_dir
+
+  look up the storage above at a remote remote host's storage.
+  
+  and the NCBI SRA database.
 
 Examples:
-  Execute polap readassemble:
+  Download a long-read data file:
     bolap run-data-long -s Vigna_radiata
+
+  Download a long-read data file in a remote host storage:
+    bolap run-data-long -s Vigna_radiata --remote <host_name>
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -16351,37 +16321,12 @@ EOF
 		done
 	}
 
-	declare -n ref="help_message"
-	if [[ "${_brg_help}" == "on" ]]; then
-		local manfile=$(_bolap_lib_man-convert_help_message "$ref" "${bolap_cmd}")
-		man "$manfile"
-		rm -f "$manfile"
-		return
-	fi
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
 
 	parse_commandline "$@"
-
-	# echo "s:${_brg_outdir}" >&2
-	# echo "i:${_brg_sindex}" >&2
+	bolap_s_parse_commandline
 
 	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
-
-	# check long-read in the following order
-	# where long_sra=l
-	# l.fastq
-	# l.fq
-	# l.fastq.gz
-	# l.fq.gz
-	# l.fastq.tar.gz
-	# l.fq.tar.gz
-	# storage: check each dir for the filenames as above
-	# $media_dir
-	# $media1_dir
-	# $media2_dir
-	# remote: or the dispatcher or _local_host's storage
-	# if not check NCBI SRA database
-	#
-	# save it outdir/tmp/l.fq
 
 	_polap_lib_conda-ensure_conda_env polap-ncbitools || exit 1
 
@@ -16406,15 +16351,10 @@ EOF
 		args+=(--remote ${_remote})
 	fi
 
+	# echo bash "${_POLAPLIB_DIR}/polap-bash-run-data-long.sh" "${args[@]}" >&2
 	bash "${_POLAPLIB_DIR}/polap-bash-run-data-long.sh" "${args[@]}"
 
 	_polap_lib_conda-ensure_conda_env_deactivate
-	# set +u
-	# conda deactivate
-	# set -u
-
-	# redownload
-
 }
 
 # Version: v0.1.0
@@ -16631,6 +16571,9 @@ estimate-genomesize_genus_species() {
 	echo "${_genome_size}"
 }
 
+# We used to use short-read data to estimate the size of genome assembly.
+# Because PacBio HiFi data could be used instead, we use the platform to
+# use HiFi data.
 estimate-genomesize-platform_genus_species() {
 	local _brg_outdir="${1:-all}"
 	local _brg_inum="${2:-0}"
@@ -16836,6 +16779,8 @@ EOF
 	)
 
 	local _brg_random_seed="-1"
+	# this value stays put in benchmark
+	# all input data under 30g
 	local _brg_coverage="30g"
 	local _brg_dry="off"
 
@@ -17636,15 +17581,14 @@ Name:
   bolap ${bolap_cmd} - choose polap's data analysis
 
 Synopsis:
-  bolap ${bolap_cmd} DATA
+  bolap ${bolap_cmd} --data DATA
 
 Description:
-  bolap ${bolap_cmd} allows to choose polap's data analysis; DATA can be aflye, cflye, read.
-Each DATA has its own benchmark and man bolap subcommand.
+  bolap ${bolap_cmd} chooses the type of data analysis; DATA can be hifi, oatk, aflye, cflye, or read. Each DATA has its own benchmark and man bolap subcommand.
 
 Examples:
   Choose read polap's data analysis.
-    bolap ${bolap_cmd} --data read --folder \$HOME
+    bolap ${bolap_cmd} --data read
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -18332,6 +18276,463 @@ EOF
 	echo "${_brg_outdir}"
 }
 
+run-downsample-long-using-d-option_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - template
+
+Synopsis:
+  bolap ${bolap_cmd}
+
+Description:
+  Use the option --downsample to downsample the raw input data
+tmp/l.fq.gz to produce SRA_ID.fastq at the base directory.
+
+  Option values for --downsample or -d.
+    --downsample 10x -> genome size estimate -> rate -> read names
+    --downsample 30g -> rate -> read names
+    --downsample path/to/readnames.txt[.gz] -> read names
+    --downsample auto -> read names from polap github hifi data
+
+Examples:
+  Downsample tmp/l.fq.gz using the genome size estimate:
+    bolap ${bolap_cmd} --downsample 10x -s <species_folder>
+
+  Downsample tmp/l.fq.gz using the maximum number of bases:
+    bolap ${bolap_cmd} --downsample 30g -s <species_folder>
+
+  Downsample tmp/l.fq.gz using the read names:
+    bolap ${bolap_cmd} --downsample path/to/readnames.txt -s <species_folder>
+
+  Downsample tmp/l.fq.gz using the read names from polap github data:
+    bolap ${bolap_cmd} --downsample auto -s <species_folder>
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	parse_commandline() {
+		set -- "${_brg_args[@]}"
+
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			-d | --downsample)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					_brg_downsample="$2"
+					shift || true
+				fi
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	parse_commandline
+	bolap_s_parse_commandline
+
+	# Define exit status constants
+	readonly ERR_INVALID_INPUT=2
+
+	# Function to check if a variable contains a valid non-empty number (integer or float)
+	is_valid_number() {
+		local value="$1"
+		# Check for empty string
+		if [[ -z "$value" ]]; then
+			return 1
+		fi
+		# Check for non-numeric characters (allows for digits and a single decimal point)
+		# The pattern matches: optional leading '-', followed by digits,
+		# optionally followed by . and more digits
+		if [[ "$value" =~ ^-?[0-9]+(\.[0-9]+)?$ ]]; then
+			return 0 # Valid number
+		else
+			return 1 # Invalid format
+		fi
+	}
+
+	# Function definitions remain the same
+	# INTx downsample
+	handle_factor_downsample() {
+		local factor="$1"
+		echo "ACTION: Downsampling by the fold of a genome size: ${factor}x"
+		_polap_lib_conda-ensure_conda_env polap || exit 1
+
+		# revert
+		gunzip -c "${_brg_tmpdir}/l.fq.gz" >"${_brg_tmpdir}/l.fq"
+
+		"${_polap_cmd}" find-genome-size-for-pacbio \
+			-o "${_brg_target}" \
+			-l "${_brg_tmpdir}/l.fq"
+
+		# local genome_size=$(head -n 1 "${_brg_target}/short_expected_genome_size.txt")
+		local genome_size
+		if read -r genome_size <"${_brg_target}/short_expected_genome_size.txt"; then
+			echo "Genome size read successfully: $genome_size"
+		else
+			echo "[ERR] Failed to read genome size from file." >&2
+			exit $ERR_INVALID_INPUT
+		fi
+
+		# revert
+		_polap_lib_fastq-total-length-of "${_brg_tmpdir}/l.fq" \
+			"${_brg_tmpdir}/l.fq.length.txt"
+
+		local total_base
+		if read -r total_base <"${_brg_tmpdir}/l.fq.length.txt"; then
+			echo "Total number of bases in the raw input: $total_base"
+		else
+			echo "[ERR] Failed to read total base from file." >&2
+			exit $ERR_INVALID_INPUT
+		fi
+
+		# Use a common variable name for error status
+		readonly ERR_CALC_FAILED=3
+
+		# 1. Check if total_base is zero (Division by Zero Check)
+		if (($(bc <<<"$total_base == 0"))); then
+			echo "[FATAL ERR] Computation failed: Cannot divide by zero. 'total_base' is 0." >&2
+			exit $ERR_CALC_FAILED
+		fi
+
+		# 2. Check if all variables are valid numbers (ensures bc won't choke)
+		if ! is_valid_number "$genome_size"; then
+			echo "[FATAL ERR] Computation failed: 'genome_size' ('$genome_size') is not a valid number." >&2
+			exit $ERR_CALC_FAILED
+		fi
+
+		if ! is_valid_number "$factor"; then
+			echo "[FATAL ERR] Computation failed: 'factor' ('$factor') is not a valid number." >&2
+			exit $ERR_CALC_FAILED
+		fi
+
+		if ! is_valid_number "$total_base"; then
+			echo "[FATAL ERR] Computation failed: 'total_base' ('$total_base') is not a valid number." >&2
+			exit $ERR_CALC_FAILED
+		fi
+
+		# --- Valid Computation ---
+		local rate_sample=0
+		rate_sample=$(bc <<<"scale=7; $genome_size * $factor / $total_base")
+		if [[ $? -ne 0 ]]; then
+			echo "[FATAL ERR] 'bc' command failed unexpectedly during computation." >&2
+			exit $ERR_CALC_FAILED
+		fi
+
+		echo "Computation successful: rate_sample = $rate_sample"
+
+		if (($(bc <<<"$rate_sample > 1"))); then
+			if ! cp "${_brg_tmpdir}/l.fq" "${_brg_tmpdir}/ls.fq"; then
+				echo "[FATAL ERR] Failed to copy original file for 100% sampling." >&2
+				exit $ERR_CALC_FAILED
+			fi
+		elif (($(bc <<<"$rate_sample > 0"))); then
+
+			local R="$RANDOM"
+			echo "Rate Sample is positive ($rate_sample). Using Random Seed: $R"
+
+			seqkit sample -p "$rate_sample" -s "$R" "${_brg_tmpdir}/l.fq" -o "${_brg_tmpdir}/ls.fq"
+
+		else
+			echo "[ERR] Cannot perform downsampling. Calculated sample rate is zero or negative: $rate_sample" >&2
+			# You might want to exit the script or skip the process here
+			exit $ERR_CALC_FAILED
+		fi
+
+		# revert
+		rm -f "${_brg_tmpdir}/l.fq"
+
+		_polap_lib_conda-ensure_conda_env_deactivate || true
+	}
+
+	# INTg downsample
+	handle_count_downsample() {
+		local count="$1"
+		echo "ACTION: Downsampling to maximum count: ${count} Gb reads."
+		_polap_lib_conda-ensure_conda_env polap || exit 1
+
+		# revert
+		gunzip -c "${_brg_tmpdir}/l.fq.gz" >"${_brg_tmpdir}/l.fq"
+
+		# revert
+		_polap_lib_fastq-total-length-of "${_brg_tmpdir}/l.fq" \
+			"${_brg_tmpdir}/l.fq.length.txt"
+
+		local total_base
+		if read -r total_base <"${_brg_tmpdir}/l.fq.length.txt"; then
+			echo "Total number of bases in the raw input: $total_base"
+		else
+			echo "[ERR] Failed to read total base from file." >&2
+			exit $ERR_INVALID_INPUT
+		fi
+
+		# Use a common variable name for error status
+		readonly ERR_CALC_FAILED=3
+
+		# 1. Check if total_base is zero (Division by Zero Check)
+		if (($(bc <<<"$total_base == 0"))); then
+			echo "[FATAL ERR] Computation failed: Cannot divide by zero. 'total_base' is 0." >&2
+			exit $ERR_CALC_FAILED
+		fi
+
+		if ! is_valid_number "$count"; then
+			echo "[FATAL ERR] Computation failed: 'count' ('$count') is not a valid number." >&2
+			exit $ERR_CALC_FAILED
+		fi
+
+		if ! is_valid_number "$total_base"; then
+			echo "[FATAL ERR] Computation failed: 'total_base' ('$total_base') is not a valid number." >&2
+			exit $ERR_CALC_FAILED
+		fi
+
+		# --- Valid Computation ---
+		local rate_sample=0
+		rate_sample=$(bc <<<"scale=7; 1000000000 * $count / $total_base")
+		if [[ $? -ne 0 ]]; then
+			echo "[FATAL ERR] 'bc' command failed unexpectedly during computation." >&2
+			exit $ERR_CALC_FAILED
+		fi
+
+		echo "Computation successful: rate_sample = $rate_sample"
+
+		if (($(bc <<<"$rate_sample > 1"))); then
+			if ! cp "${_brg_tmpdir}/l.fq" "${_brg_tmpdir}/ls.fq"; then
+				echo "[FATAL ERR] Failed to copy original file for 100% sampling." >&2
+				exit $ERR_CALC_FAILED
+			fi
+		elif (($(bc <<<"$rate_sample > 0"))); then
+
+			# Method A: Using system randomness (Recommended for true randomness)
+			# The output is a number between 0 and 32767
+			# R=$(shuf -i 1-32767 -n 1)
+			local R="$RANDOM"
+			echo "Rate Sample is positive ($rate_sample). Using Random Seed: $R"
+
+			seqkit sample -p "$rate_sample" -s "$R" "${_brg_tmpdir}/l.fq" -o "${_brg_tmpdir}/ls.fq"
+
+		else
+			echo "[ERR] Cannot perform downsampling. Calculated sample rate is zero or negative: $rate_sample" >&2
+			# You might want to exit the script or skip the process here
+			exit $ERR_CALC_FAILED
+		fi
+
+		# revert
+		rm -f "${_brg_tmpdir}/l.fq"
+
+		_polap_lib_conda-ensure_conda_env_deactivate || true
+	}
+
+	# file downsample
+	handle_file_downsample() {
+		local filepath="$1"
+		echo "ACTION: Downsampling using read list from file: $filepath."
+
+		# use l.fq.gz directly to get the reads using the read names.
+		# gunzip -c "${_brg_tmpdir}/l.fq.gz" >"${_brg_tmpdir}/l.fq"
+
+		local output_file="${_brg_tmpdir}/ls.txt"
+
+		if [[ "$filepath" == *.gz ]]; then
+			if zcat "$filepath" >"$output_file"; then
+				echo "Decompression successful."
+			else
+				echo "[ERR] Failed to decompress file: $filepath" >&2
+				return 1
+			fi
+		else
+			# Simply copy the file
+			if cp "$filepath" "$output_file"; then
+				echo "Copy successful."
+			else
+				echo "[ERR] Failed to copy file: $filepath" >&2
+				return 1
+			fi
+		fi
+
+		seqkit grep -f "${output_file}" \
+			"${_brg_tmpdir}/l.fq.gz" \
+			-o "${long_sra}.fastq"
+
+		# gzip "${long_sra}.fastq"
+		# mv "${long_sra}.fastq.gz" "${_brg_tmpdir}/l.fq.gz"
+		rm "${output_file}"
+	}
+
+	# Check for empty input
+	if [[ -z "$_brg_downsample" ]]; then
+		echo "[ERR] Downsample variable is empty. Please provide a value." >&2
+		exit 1
+	fi
+
+	local matched=0
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+	mkdir -p "${_brg_rundir}"
+	mkdir -p "${_brg_target}"
+
+	# =========================================================================
+	# 1. Check for File Path (Must be checked first as it's the most specific type)
+	# =========================================================================
+
+	# If the path exists as a regular file, treat it as a file path.
+	if [[ "$_brg_downsample" == "auto" ]]; then
+		local output_file="${_brg_tmpdir}/ls.txt"
+		local auto_file="polap/data/hifi/${long_sra}.txt.gz"
+		if [[ -s "$auto_file" ]]; then
+			matched=1
+			handle_file_downsample "${auto_file}"
+		else
+			echo "[ERR] No auto text file for: '$auto_file'" >&2
+			echo "Download the hifi read name data from polap github." >&2
+			echo "Required git-lfs" >&2
+			echo "sudo apt update" >&2
+			echo "sudo apt install git-lfs" >&2
+			echo "git clone --branch 0.5.3.1 https://github.com/goshng/polap.git" >&2
+			exit $ERR_INVALID_INPUT
+		fi
+	elif [[ -f "$_brg_downsample" ]]; then
+		matched=1
+		handle_file_downsample "$_brg_downsample"
+	else
+		# =========================================================================
+		# 2. Check for INTx and INTg using Regex (If not already matched as a file)
+		# =========================================================================
+		if [[ "$_brg_downsample" =~ ^[0-9]+x$ ]]; then
+			# Matches INTx format (e.g., 10x, 100x)
+
+			# Extract the number by removing the trailing 'x'
+			local factor="${_brg_downsample%x}"
+			matched=1
+			handle_factor_downsample "$factor"
+
+		elif [[ "$_brg_downsample" =~ ^[0-9]+g$ ]]; then
+			# Matches INTg format (e.g., 30g, 5g)
+
+			# Extract the number by removing the trailing 'g'
+			local count="${_brg_downsample%g}"
+			matched=1
+			handle_count_downsample "$count"
+		fi
+	fi
+
+	# Move the sampled fastq to the base
+	if [[ -s "${_brg_tmpdir}/ls.fq" ]]; then
+		mv "${_brg_tmpdir}/ls.fq" "${long_sra}.fastq"
+		echo "Input raw fastq: ${_brg_tmpdir}/l.fq.gz"
+		echo "Downsampled fastq: ${long_sra}.fastq"
+	fi
+
+	# =========================================================================
+	# 3. Final Error Check
+	# =========================================================================
+	if [[ $matched -eq 0 ]]; then
+		echo "[FATAL ERR] Unknown or invalid downsample type: '$_brg_downsample'" >&2
+		echo "Expected formats: INTx (e.g., 10x), INTg (e.g., 30g), or an existing file path." >&2
+		exit $ERR_INVALID_INPUT
+	fi
+
+	rsync -azuq --max-size=5M \
+		"${_brg_target}/" "${_brg_rundir}/"
+
+	# revert
+	# rm -rf "${_brg_target}"
+}
+
+# Summary of SRA ID fastq at the base directory
+run-summary-data-long-sra_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd}
+
+Synopsis:
+  bolap ${bolap_cmd} -s <species_folder>
+
+Description:
+  Seqkit stats -Ta summary of SRA-ID.fastq at the base directory.
+A downsampled fastq could be placed at the base directory with SRA-ID name.
+This saves the output from seqkit stats -Ta of the SRA-ID.fastq data file.
+
+Examples:
+  Summary of SRA-ID.fastq:
+    bolap ${bolap_cmd} -s Camelian_sativa
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	local _brg_topic=""
+	local data="read"
+	local folder="${HOME}"
+
+	parse_commandline() {
+		# echo "${_brg_args[@]}" >&2
+		set -- "${_brg_args[@]}"
+
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--folder)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					folder="$2"
+					shift || true
+				fi
+				;;
+			--data)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					data="$2"
+					shift || true
+				fi
+				;;
+			esac
+			shift || true
+		done
+	}
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	bolap_s_parse_commandline
+	parse_commandline
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+	mkdir -p "${_brg_target}"
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	seqkit stats -Ta "${long_sra}.fastq" -o "${_brg_target}/li.fq.seqkit.stats.ta.txt"
+
+	_polap_lib_conda-ensure_conda_env_deactivate || true
+
+	rsync -azuq --max-size=5M \
+		"${_brg_target}"/ \
+		"${_brg_rundir}"/
+
+	rm -rf "${_brg_target}"
+}
+
 # 2025-12-05
 # improve this template bolap command.
 # start with it for creating a new bolap subcommand.
@@ -18396,5 +18797,8 @@ EOF
 
 	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
 
+	bolap_s_parse_commandline
 	parse_commandline
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
 }

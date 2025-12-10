@@ -252,3 +252,74 @@ You should end up with:
 - `oatk-graph-metrics.csv`
 - `oatk-graph-metrics.pdf`
 - `oatk-ptmt-sheet.pdf`
+
+# Makefile.oatk
+
+with polap source folder at the present directory:
+make -f polap/src/polaplib/Makefile.oatk
+make -f polap/src/polaplib/Makefile.oatk print-vars
+make -f polap/src/polaplib/Makefile.oatk manifest
+make -f polap/src/polaplib/Makefile.oatk graph
+
+Draw four different kinds of plots.
+First, boxplots of one of the following values: total_mem_gb, total_time_hours, disk_gb, completeness_prop.
+X-axis can be ordered by pattern or cov.
+pattern is t-h, h-t, t-x, x-h, x-x.
+cov is 2,5,8,11,20,30,40,50.
+for only x-x, cov is 11,20,30,40,50.
+One way plotting boxplots of X-axis can be grouped by pattern, and cov is listed within each pattern.
+e.g., t-h-02, t-h-05, t-h-08, t-h-11, t-h-20, t-h-30, t-h-40, t-h-50,
+h-t-02, h-t-05, h-t-08, h-t-11, h-t-20, h-t-30, h-t-40, h-t-50,
+t-x-02, t-x-05, t-x-08, t-x-11, t-x-20, t-x-30, t-x-40, t-x-50,
+x-h-02, x-h-05, x-h-08, x-h-11, x-h-20, x-h-30, x-h-40, x-h-50,
+x-x-11, x-x-20, x-x-30, x-x-40, x-x-50,
+and tippo, himt, and oatk-30 (or x-30).
+
+Another way of plotting boxplots of X-axis is grouped by cov, and patterns are listed with each cov.
+e.g.,
+t-h-02, h-t-02, t-x-02, x-h-02, 
+t-h-05, h-t-05, t-x-05, x-h-05, 
+t-h-08, h-t-08, t-x-08, x-h-08, 
+t-h-11, h-t-11, t-x-11, x-h-11, x-x-11,
+t-h-20, h-t-20, t-x-20, x-h-20, x-x-20,
+t-h-30, h-t-30, t-x-30, x-h-30, x-x-30,
+t-h-40, h-t-40, t-x-40, x-h-40, x-x-40,
+t-h-50, h-t-50, t-x-50, x-h-50, x-x-50,
+and tippo, himt, and oatk-30 (or x-30).
+
+Second, aggregate each group of the boxplots in the first.
+Plotting boxplots can be listed by only patterns.
+e.g.,
+t-h, h-t, t-x, x-h, x-x, and tippo, himt, and oatk-30 (or x-30).
+each group aggregates all in that group; 
+i.e., t-h is all t-h-02, t-h-05, t-h-08, t-h-11, t-h-20, t-h-30, t-h-40, t-h-50,
+
+Plotting can be listed by only cov.
+e.g.,
+02, 05, 08, 11, 20, 30, 40, 50, and tippo, himt, and oatk-30 (or x-30).
+11 group includes t-h-11, h-t-11, t-x-11, x-h-11, x-x-11,
+
+So, up until now, 4 different kinds of boxplots for each of values: total_mem_gb, total_time_hours, disk_gb, completeness_prop.
+
+Third, this is not about boxplots. 
+Y-axis is over all the 81 datasets.
+X-axis is yes or no for completeness_prop is equal to 1 or at least 0.95 for one particular case. Each case is listed as follows:
+t-h-02, t-h-05, t-h-08, t-h-11, t-h-20, t-h-30, t-h-40, t-h-50,
+h-t-02, h-t-05, h-t-08, h-t-11, h-t-20, h-t-30, h-t-40, h-t-50,
+t-x-02, t-x-05, t-x-08, t-x-11, t-x-20, t-x-30, t-x-40, t-x-50,
+x-h-02, x-h-05, x-h-08, x-h-11, x-h-20, x-h-30, x-h-40, x-h-50,
+x-x-11, x-x-20, x-x-30, x-x-40, x-x-50,
+and tippo, himt, and oatk-30 (or x-30).
+
+Then, a graph of grid can be 81-by-(the number of cases) or 81-by-40.
+Mark one entry for yes, and no mark for no.
+We want to see marks near 0 (eg, 2, 5, 8, 11) for the filtering patterns such as t-h, h-t, t-x, x-h.
+Marks are some dispersed for x-x patterns and tippo, himt, and oatk-30.
+
+Fourth, for the X-axis of the grid plot in the third, sum the number of yes cases, and draw barplots along with all pattern-cov:
+t-h-02, t-h-05, t-h-08, t-h-11, t-h-20, t-h-30, t-h-40, t-h-50,
+h-t-02, h-t-05, h-t-08, h-t-11, h-t-20, h-t-30, h-t-40, h-t-50,
+t-x-02, t-x-05, t-x-08, t-x-11, t-x-20, t-x-30, t-x-40, t-x-50,
+x-h-02, x-h-05, x-h-08, x-h-11, x-h-20, x-h-30, x-h-40, x-h-50,
+x-x-11, x-x-20, x-x-30, x-x-40, x-x-50,
+and tippo, himt, and oatk-30 (or x-30).

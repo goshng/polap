@@ -2069,42 +2069,30 @@ benchmark-command_genus_species_for() {
 
 	if [[ "${confirm}" != "yes" ]]; then
 		echo "Benchmarking analysis is canceled."
-		return
+		return 0
 	fi
 
-	# run-data-long_genus_species
-	# run-data-long-10x_genus_species
-	# run-summary-data_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
-	# data-downsample-long_genus_species "${_brg_outdir}" "${_brg_sindex_0}" --coverage 0g
-	#
-	# download-ptdna_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
-	# if [[ -s "${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa" ]]; then
-	# 	if [[ $(wc -c <"${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa") -ge 1024 ]]; then
-	# 		run-ptgaul_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
-	# 	fi
-	# else
-	# 	_log_echo "No reference ptdna; no ptGAUL assembly of the ptDNA"
-	# fi
-	#
-	# download-mtdna_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
-	# if [[ -s "${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa" ]]; then
-	# 	if [[ $(wc -c <"${_brg_outdir_i}/ncbi-mtdna/mtdna-reference.fa") -ge 1024 ]]; then
-	# 		run-mtgaul_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
-	# 	fi
-	# else
-	# 	_log_echo "No reference mtdna; no ptGAUL assembly of the mtDNA"
-	# fi
+	run-data-long_genus_species
+	run-summary-data_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+	run-downsample-long-using-d-option_genus_species
+	run-summary-data-long-sra_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+	download-ptdna_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+	download-mtdna_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 
-	# run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" t-h 2..11
-	# run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" h-t 2..11
-	# run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" t-x 2..11
-	# run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" x-h 2..11
-	# run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" x-x 2..11
+	local cov_pattern="2,5,8,11,20,30,40,50"
+	local cov_pattern_x_x="11,20,30,40,50"
+	run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" t-h "$cov_pattern"
+	run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" h-t "$cov_pattern"
+	run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" t-x "$cov_pattern"
+	run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" x-h "$cov_pattern"
+	run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" x-x "$cov_pattern_x_x"
 	run-assess-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 
 	run-oatk_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 	run-tippo_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 	run-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+	# run-pmat2_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+	run-assess-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 
 	if [[ "${_local_host}" != "$(hostname)" ]]; then
 		sync_genus_species "${_brg_outdir}" "${_brg_sindex}" --main-push
@@ -4286,6 +4274,7 @@ Examples:
     bolap install oatk
     bolap install tippo
     bolap install himt
+    bolap install tiara
     bolap install bandage
 
 Copyright:
@@ -4334,6 +4323,7 @@ Examples:
     bolap man table-data [--set auto|some]
     bolap man sheet-ptmt [--set auto|some]
     bolap man graph [--set auto|some]
+    bolap man man [--set auto|some]
 
   Benchmarking batch run:
     bolap -s Brassica_rapa [-y] [-f 1h]
@@ -4396,17 +4386,8 @@ Examples:
     bolap man table-data [--set auto|some]
     bolap man sheet-ptmt [--set auto|some]
     bolap man graph [--set auto|some]
-    bolap man graph [--set auto|some]
-
-    bolap man pt-table [--set auto|some]
-    bolap man mt-table [--set auto|some]
     bolap man table-s1 [--set auto|some]
-
     bolap man man [--set auto|some]
-
-    bolap man figure
-    bolap man pt-figure
-    bolap man mt-figure
 
   Installation of other tools:
     bolap install pmat2
@@ -4417,12 +4398,13 @@ Examples:
 
   Setup:
     ln -s ~/all/polap/github polap
-    cd .. && rsync -aq thorne:$PWD/github/ github/ && rsync -aq thorne:.polap/ $HOME/.polap/ && cd -
+    cd .. && rsync -aq thorne:\$PWD/github/ github/ && cd -
+    cd .. && rsync -aq thorne:\$PWD/github/ github/ && rsync -aq thorne:.polap/ $HOME/.polap/ && cd -
     export POLAP=polap/src/polap.sh
     alias pl="bash \$POLAP"
     export BOLAP=polap/src/bolap.sh
     alias bl="bash \$BOLAP"
-    bolap use --data hifi
+    bolap use --data oatk
     source polap/src/polaplib/polap-bash-complete.sh
     bolap conda --cleanup
     bolap conda --recreate
@@ -4435,8 +4417,9 @@ Examples:
 
   Now:
     rm -rf polap/src/polaplib/figures
+    cd .. && rsync -aq thorne:\$PWD/github/ github/ && cd -
     cd .. && rsync -aq thorne:$PWD/github/ github/ && rsync -aq thorne:.polap/ $HOME/.polap/ && cd -
-    bolap use --data hifi
+    bolap use --data oatk
     bolap conda --create polap-pmat2
     bolap conda --create polap-himt
     bolap setup oatk
@@ -4447,26 +4430,26 @@ Examples:
     bolap benchmark -f 6h -y --remote thorne -s Cichorium_endivia
 
   Do Now:
-mkdir -p $HOME/all/polap/hifi1
-cd $HOME/all/polap/hifi1
+mkdir -p $HOME/all/polap/oatk1
+cd $HOME/all/polap/oatk1
 ln -s ~/all/polap/github polap
 rm -rf polap/src/polaplib/figures
 cd .. && rsync -aq thorne:$PWD/github/ github/ && rsync -aq thorne:.polap/ $HOME/.polap/ && cd -
-bl use --data hifi
+bl use --data oatk
+bl install tiara -y
 bl conda --create polap-pmat2 -y
 bl conda --create polap-himt -y
 bl setup oatk
 bl setup pmat2
 bl setup pmat2-apptainer
 source polap/src/polaplib/polap-bash-complete.sh
-bl benchmark -f 6h -y --remote thorne -s 
+bl benchmark -f 6h -y --remote thorne -s species_folder
 
 cd .. && rsync -aq thorne:$PWD/github/ github/ && rsync -aq thorne:.polap/ $HOME/.polap/ && cd -
 rsync -azuq --max-size=5M /tmp
 bl run assess-himt -s Quercus_berberidifolia
 bl sync -s Quercus_berberidifolia
 for i in Quercus_engelmannii Salix_arbutifolia; do bl benchmark -f 6h -y --remote thorne -s $i; done
-
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -4486,7 +4469,7 @@ Synopsis:
   bolap $bolap_cmd
 
 Description:
-Polap’s workflow is fully scripted, version-controlled, and manifest-driven, ensuring reproducibility and transparency. Every analytical step—from raw reads to final figure panels—is automated using standardized outputs (manifest.json, anno-\*.csv, and sheet-ptmt.pdf). This design facilitates consistent regeneration of results and integration with data repositories such as NCBI BioProject or Zenodo, enabling open and verifiable organelle genome research. The reproducibility and portability of Polap make it particularly suitable for collaborative and large-scale genomic initiatives.
+Polap’s workflow is fully scripted, version-controlled, and manifest-driven, ensuring reproducibility and transparency. Every analytical step, from raw reads to final figure panels, is automated using standardized outputs (manifest.json, anno-\*.csv, and sheet-ptmt.pdf). This design facilitates consistent regeneration of results and integration with data repositories such as NCBI BioProject or Zenodo, enabling open and verifiable organelle genome research. The reproducibility and portability of Polap make it particularly suitable for collaborative and large-scale genomic initiatives.
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -4501,9 +4484,7 @@ EOF
 
 	parse_commandline() {
 		set -- "${_brg_args[@]}"
-		# set -- "${_brg_unknown_opts[@]}"
 
-		# source "${_POLAPLIB_DIR}/polap-cmd-version.sh" # '.' means 'source'
 		while test $# -gt 0; do
 			_key="$1"
 			case "$_key" in
@@ -4514,9 +4495,6 @@ EOF
 					_brg_topic="$2"
 					shift || true
 				fi
-				;;
-			-*)
-				_log_echo0 "[ERROR] no such options: $1"
 				;;
 			esac
 			shift || true

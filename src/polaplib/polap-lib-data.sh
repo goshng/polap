@@ -11639,6 +11639,8 @@ EOF
 		return 2
 	fi
 
+	_polap_lib_conda-ensure_conda_env polap-oatk || return 1
+
 	# Working folder for this pipeline
 	# local work="${_brg_target}/oatk-tiara-himt"
 	local work="${_brg_target}"
@@ -11699,7 +11701,6 @@ EOF
 	# Output prefix: oatk-<pattern>-<c>
 	# utg GFA/FASTA etc should be written into oatk/ so that downstream tools see them
 	# -------------------------------------------------------------------------- #
-	_polap_lib_conda-ensure_conda_env polap-oatk || return 1
 
 	local oatk_dir="${work}/oatk"
 	mkdir -p "$oatk_dir"
@@ -12678,6 +12679,7 @@ install-himt_genus_species() {
 	local want_env="polap-himt"
 	local -a pkgs=(
 		shuyuan_tang::himt
+		seqkit
 	)
 
 	# Confirm (honors opt_y_flag if you set it elsewhere)

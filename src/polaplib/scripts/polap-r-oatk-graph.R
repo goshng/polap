@@ -1,52 +1,73 @@
 #!/usr/bin/env Rscript
 # polap-r-oatk-graph.R
-# Version : v2.0.0  (2025-12-09)
+# Version : v2.1.1  (2025-12-10)
 # Author  : Sang Chul Choi (POLAP)
 # License : GPL-3.0+
 #
-# Read a unified OATK metrics CSV (from polap-py-oatk-graph-table.py v0.6.0)
-# and draw:
+# New graphs for OATK / Tiara / HiMT / TIPPo coverage experiments.
 #
-# 1) total_mem_gb vs cov      for patterns: h-t, t-h, t-x, x-h, x-x, x
-# 2) total_time_hours vs cov  for patterns: h-t, t-h, t-x, x-h, x-x, x
-# 3) completeness_prop vs cov for patterns: h-t, t-h, t-x, x-h, x-x, x
-# 4) num_contigs vs cov       for patterns: h-t, t-h, t-x, x-h, x-x, x
-# 5) total_length vs cov      for patterns: h-t, t-h, t-x, x-h, x-x, x
-# 6) N50 vs cov               for patterns: h-t, t-h, t-x, x-h, x-x, x
+# Input CSV (via --data) is the long-format table produced by
+# polap-py-oatk-graph-table.py (v0.5.x), with (at least) columns:
 #
-# 7) total_mem_gb vs pattern (x-axis pattern)
-# 8) total_time_hours vs pattern
-# 9) completeness_prop vs pattern
-# 10) num_contigs vs pattern
-# 11) total_length vs pattern
-# 12) N50 vs pattern
-#
-# 13) Histogram of avg_qual (per species)
-# 14) Histogram of mean_length (per species)
-#
-# Input CSV columns (from v0.6.0 Python):
-#   species, code2, avg_qual, mean_length,
-#   tool, pattern, cov,
+#   species, code2,
+#   avg_qual, mean_length,
+#   tool         ∈ { "oatk", "tippo", "himt" }
+#   pattern      ∈ { "t-h", "h-t", "t-x", "x-h", "x-x", "x", ... }
+#   cov          (numeric / integer, e.g. 2,5,8,11,20,30,40,50; NA for some tools)
 #   mem_gb, time_hours,
-#   total_mem_gb, total_time_hours,
-#   completeness_prop, num_contigs, total_length, N50,
-#   mt_gfa, mt_png, pt_gfa, pt_png
+#   total_mem_gb, total_time_hours, disk_gb,
+#   completeness_prop, num_contigs, total_length, N50
 #
-# Only rows with tool == "oatk" are used for the pattern/cov graphs.
+# The script draws four classes of plots:
+#
+# 1) Boxplots of:
+#       total_mem_gb, total_time_hours, disk_gb, completeness_prop
+#    with four different X-axis groupings:
+#       (a) pattern-first:  t-h-02, t-h-05, ..., x-x-50, tippo, himt, x-30
+#       (b) cov-first:      t-h-02, h-t-02, ..., x-x-50, tippo, himt, x-30
+#       (c) aggregated by pattern: t-h, h-t, t-x, x-h, x-x, tippo, himt, x-30
+#       (d) aggregated by cov: 02,05,08,11,20,30,40,50, tippo, himt, x-30
+#
+# 2) Completeness “grid” plots (81 datasets × 40 cases):
+#    For each dataset (code2) and each case
+#      {all pattern–cov combos plus tippo, himt, x-30}
+#    mark a point if completeness_prop ≥ threshold.
+#    We make two pages:
+#      - strict  : completeness_prop == 1.0
+#      - relaxed : completeness_prop >= 0.95
+#
+# 3) Barplots of counts of “complete” datasets per case (same thresholds),
+#    again over all pattern–cov + tippo + himt + x-30.
+#
+# CLI:
+#   --data PATH         input CSV
+#   --out PATH          output PDF
+#   --title STRING      overall title
+#   --page-width-in N   PDF width  (inches)
+#   --page-height-in N  PDF height (inches)
+#   --margin-in N       (currently unused, kept for compatibility)
+#   --ncol-per-row N    used as number of columns when arranging boxplots
+#   --complete-threshold-strict  (default 1.0)
+#   --complete-threshold-relaxed (default 0.95)
+#
 
 library(optparse)
 suppressPackageStartupMessages({
   library(readr)
   library(dplyr)
+  library(tidyr)
   library(ggplot2)
   library(patchwork)
 })
 
+# -----------------------------------------------------------------------------#
+# CLI
+# -----------------------------------------------------------------------------#
 opt <- OptionParser(option_list = list(
   make_option(
     c("--data"),
     type  = "character",
-    help  = "CSV with metrics (species, code2, avg_qual, mean_length, tool, pattern, cov, ...)"
+    help  = "CSV with metrics (species, code2, tool, pattern, cov, ...)"
   ),
   make_option(
     c("--out"),
@@ -56,236 +77,444 @@ opt <- OptionParser(option_list = list(
   make_option(
     c("--title"),
     type    = "character",
-    default = "OATK metrics by coverage and pattern"
+    default = "OATK / Tiara / HiMT / TIPPo metrics"
   ),
-  make_option(c("--page-width-in"), type = "double", default = 11),
+  make_option(c("--page-width-in"),  type = "double", default = 11),
   make_option(c("--page-height-in"), type = "double", default = 8.5),
-  make_option(c("--margin-in"), type = "double", default = 0.5),
+  make_option(c("--margin-in"),      type = "double", default = 0.5),
+
+  # Used for arranging boxplots (how many panels per row)
   make_option(
     c("--ncol-per-row"),
-    type = "integer", default = 3,
-    help = "Number of panels per row [default: 3]"
+    type    = "integer",
+    default = 2,
+    help    = "Number of panels per row for boxplot grids [default: 2]"
+  ),
+
+  make_option(
+    c("--complete-threshold-strict"),
+    type    = "double",
+    default = 1.0,
+    help    = "Strict completeness threshold (default: 1.0)"
+  ),
+  make_option(
+    c("--complete-threshold-relaxed"),
+    type    = "double",
+    default = 0.95,
+    help    = "Relaxed completeness threshold (default: 0.95)"
   )
-)) |> parse_args()
+)) |>
+  parse_args()
 
 stopifnot(!is.null(opt$data), file.exists(opt$data), !is.null(opt$out))
 
 # -----------------------------------------------------------------------------#
 # Read data
 # -----------------------------------------------------------------------------#
-df_raw <- suppressMessages(read_csv(
+df <- suppressMessages(read_csv(
   opt$data,
   show_col_types = FALSE
 ))
 
-# -----------------------------------------------------------------------------#
-# Convert types (robust to numeric or character input)
-# -----------------------------------------------------------------------------#
-to_num <- function(x) {
-  if (is.numeric(x)) {
-    return(x)
-  }
-  readr::parse_number(as.character(x))
+required_cols <- c(
+  "species", "code2", "tool", "pattern", "cov",
+  "total_mem_gb", "total_time_hours", "disk_gb",
+  "completeness_prop", "num_contigs", "total_length", "N50"
+)
+
+missing_cols <- setdiff(required_cols, names(df))
+if (length(missing_cols) > 0) {
+  stop(
+    "Missing required columns in --data CSV: ",
+    paste(missing_cols, collapse = ", ")
+  )
 }
 
-df <- df_raw %>%
+# -----------------------------------------------------------------------------#
+# Type conversion (robust to numeric/character)
+# -----------------------------------------------------------------------------#
+to_num <- function(x) {
+  if (is.numeric(x)) return(x)
+  suppressWarnings(readr::parse_number(as.character(x)))
+}
+
+df <- df %>%
   mutate(
+    tool              = as.character(tool),
+    pattern           = as.character(pattern),
     cov               = to_num(cov),
-    avg_qual          = to_num(avg_qual),
-    mean_length       = to_num(mean_length),
-    mem_gb            = to_num(mem_gb),
-    time_hours        = to_num(time_hours),
     total_mem_gb      = to_num(total_mem_gb),
     total_time_hours  = to_num(total_time_hours),
+    disk_gb           = to_num(disk_gb),
     completeness_prop = to_num(completeness_prop),
     num_contigs       = to_num(num_contigs),
     total_length      = to_num(total_length),
-    N50               = to_num(N50),
-    pattern           = factor(pattern),
-    tool              = as.character(tool)
+    N50               = to_num(N50)
   )
 
-# OATK-only subset for pattern/cov graphs
-df_oatk <- df %>% filter(tool == "oatk")
+# -----------------------------------------------------------------------------#
+# Define pattern / coverage / case layout
+# -----------------------------------------------------------------------------#
+patterns_core   <- c("t-h", "h-t", "t-x", "x-h", "x-x")
+patterns_main   <- c("t-h", "h-t", "t-x", "x-h")  # x-x handled separately
+cov_all         <- c(2, 5, 8, 11, 20, 30, 40, 50)
+cov_xx          <- c(11, 20, 30, 40, 50)          # x-x only for these
 
-# Distinct species rows for histograms (avoid over-weighting by patterns/cov)
-df_species <- df %>%
-  distinct(species, code2, avg_qual, mean_length)
+# Pattern-first case labels (desired grid/bar order)
+cases_pattern_first <- c(
+  unlist(lapply(patterns_main, function(p) sprintf("%s-%02d", p, cov_all))),
+  sprintf("x-x-%02d", cov_xx),
+  "tippo",
+  "himt",
+  "x-30"  # base OATK (pattern 'x', cov=30)
+)
+
+# Cov-first case labels
+cases_cov_first <- {
+  out <- character(0)
+  for (cv in cov_all) {
+    out <- c(out, sprintf("t-h-%02d", cv))
+    out <- c(out, sprintf("h-t-%02d", cv))
+    out <- c(out, sprintf("t-x-%02d", cv))
+    out <- c(out, sprintf("x-h-%02d", cv))
+    if (cv %in% cov_xx) {
+      out <- c(out, sprintf("x-x-%02d", cv))
+    }
+  }
+  out <- c(out, "tippo", "himt", "x-30")
+  out
+}
+
+# Case levels for grid & barplots: pattern-first ordering
+cases_grid_levels <- cases_pattern_first
+
+# Aggregated group levels
+pattern_group_levels <- c("t-h", "h-t", "t-x", "x-h", "x-x", "tippo", "himt", "x-30")
+cov_group_levels     <- c("02", "05", "08", "11", "20", "30", "40", "50",
+                          "tippo", "himt", "x-30")
 
 # -----------------------------------------------------------------------------#
-# Metric definitions and labels
+# Build case_id and grouping fields
 # -----------------------------------------------------------------------------#
-metrics_cov <- c(
+df_cases <- df %>%
+  mutate(
+    cov_num = as.numeric(cov),
+    case_id = case_when(
+      tool == "oatk" & pattern %in% patterns_core & !is.na(cov_num) ~
+        sprintf("%s-%02d", pattern, as.integer(round(cov_num))),
+      tool == "oatk" & pattern %in% c("x", "") & !is.na(cov_num) &
+        as.integer(round(cov_num)) == 30L ~ "x-30",
+      tool == "tippo" ~ "tippo",
+      tool == "himt" ~ "himt",
+      TRUE ~ NA_character_
+    ),
+    pattern_group = case_when(
+      tool == "oatk" & pattern %in% patterns_core ~ pattern,
+      case_id == "x-30" ~ "x-30",
+      tool == "tippo"   ~ "tippo",
+      tool == "himt"    ~ "himt",
+      TRUE ~ NA_character_
+    ),
+    cov_group = case_when(
+      tool == "oatk" & pattern %in% patterns_core & !is.na(cov_num) ~
+        sprintf("%02d", as.integer(round(cov_num))),
+      case_id == "x-30" ~ "x-30",
+      tool == "tippo"   ~ "tippo",
+      tool == "himt"    ~ "himt",
+      TRUE ~ NA_character_
+    ),
+    pattern_group = factor(pattern_group, levels = pattern_group_levels),
+    cov_group     = factor(cov_group,     levels = cov_group_levels),
+    case_pattern_first = factor(case_id, levels = cases_pattern_first),
+    case_cov_first     = factor(case_id, levels = cases_cov_first)
+  ) %>%
+  filter(!is.na(case_id))  # only rows relevant to these plots
+
+if (nrow(df_cases) == 0) {
+  stop("No rows with recognized tool/pattern/cov combinations (df_cases is empty).")
+}
+
+# For coloring we use a display pattern / tool label
+df_cases <- df_cases %>%
+  mutate(
+    pattern_display = case_when(
+      pattern %in% patterns_core ~ pattern,
+      case_id == "x-30"         ~ "x-30",
+      tool == "tippo"           ~ "tippo",
+      tool == "himt"            ~ "himt",
+      TRUE                      ~ pattern
+    )
+  )
+
+# -----------------------------------------------------------------------------#
+# Metrics and labels
+# -----------------------------------------------------------------------------#
+metrics_box <- c(
   "total_mem_gb",
   "total_time_hours",
-  "completeness_prop",
-  "num_contigs",
-  "total_length",
-  "N50"
+  "disk_gb",
+  "completeness_prop"
 )
 
-metric_cov_labels <- c(
-  total_mem_gb      = "(A) total_mem_gb vs cov",
-  total_time_hours  = "(B) total_time_hours vs cov",
-  completeness_prop = "(C) completeness_prop vs cov",
-  num_contigs       = "(D) number of contigs vs cov",
-  total_length      = "(E) total_length (bp) vs cov",
-  N50               = "(F) N50 (bp) vs cov"
+metric_labels <- c(
+  total_mem_gb      = "Total peak memory (GB)",
+  total_time_hours  = "Total runtime (hours)",
+  disk_gb           = "Disk usage (GB)",
+  completeness_prop = "Gene set completeness"
 )
 
-metrics_pat <- metrics_cov
-
-metric_pat_labels <- c(
-  total_mem_gb      = "(G) total_mem_gb vs pattern",
-  total_time_hours  = "(H) total_time_hours vs pattern",
-  completeness_prop = "(I) completeness_prop vs pattern",
-  num_contigs       = "(J) number of contigs vs pattern",
-  total_length      = "(K) total_length (bp) vs pattern",
-  N50               = "(L) N50 (bp) vs pattern"
+# Pretty subtitles for each of the 4 boxplot styles (ASCII only)
+style_labels <- list(
+  pattern_first = "by pattern-coverage (pattern-first: t-h-02, ..., x-x-50, tippo, himt, x-30)",
+  cov_first     = "by coverage-pattern (cov-first: t-h-02, h-t-02, ..., x-x-50, tippo, himt, x-30)",
+  pattern_group = "aggregated by pattern (t-h, h-t, t-x, x-h, x-x, tippo, himt, x-30)",
+  cov_group     = "aggregated by coverage (02,05,08,11,20,30,40,50, tippo, himt, x-30)"
 )
 
 # -----------------------------------------------------------------------------#
-# Helper: metric vs coverage (for OATK patterns)
+# Helpers to make boxplots
 # -----------------------------------------------------------------------------#
-make_vs_cov_plot <- function(metric_name) {
-  if (!metric_name %in% names(df_oatk)) {
-    return(NULL)
-  }
-  y <- df_oatk[[metric_name]]
-  if (all(is.na(y))) {
-    return(NULL)
-  }
+make_box_pattern_first <- function(metric_name) {
+  d <- df_cases %>% filter(!is.na(.data[[metric_name]]))
+  if (nrow(d) == 0) return(NULL)
 
-  ggplot(df_oatk, aes(x = cov, y = .data[[metric_name]], color = pattern, group = pattern)) +
-    geom_line() +
-    geom_point(size = 2) +
-    scale_x_continuous(breaks = sort(unique(df_oatk$cov))) +
+  ggplot(
+    d,
+    aes(
+      x    = case_pattern_first,
+      y    = .data[[metric_name]],
+      fill = pattern_display
+    )
+  ) +
+    geom_boxplot(outlier.shape = 21, size = 0.2) +
     labs(
-      x     = "Coverage (cov)",
-      y     = metric_cov_labels[[metric_name]],
-      title = metric_cov_labels[[metric_name]],
-      color = "Pattern"
+      x     = "Pattern-coverage case (pattern-first)",
+      y     = metric_labels[[metric_name]],
+      title = paste(metric_labels[[metric_name]], style_labels$pattern_first),
+      fill  = "Pattern / tool"
     ) +
-    theme_bw(base_size = 10) +
+    scale_x_discrete(drop = FALSE) +
+    theme_bw(base_size = 8) +
     theme(
-      plot.title      = element_text(hjust = 0, face = "bold"),
-      axis.title.x    = element_text(size = 9),
-      axis.title.y    = element_text(size = 9),
+      axis.text.x  = element_text(angle = 90, hjust = 1, vjust = 0.5),
+      plot.title   = element_text(hjust = 0, face = "bold", size = 9),
       legend.position = "bottom"
     )
 }
 
-# -----------------------------------------------------------------------------#
-# Helper: metric vs pattern (pattern as x, values pooled across cov)
-# -----------------------------------------------------------------------------#
-make_vs_pattern_plot <- function(metric_name) {
-  if (!metric_name %in% names(df_oatk)) {
-    return(NULL)
-  }
-  y <- df_oatk[[metric_name]]
-  if (all(is.na(y))) {
-    return(NULL)
-  }
+make_box_cov_first <- function(metric_name) {
+  d <- df_cases %>% filter(!is.na(.data[[metric_name]]))
+  if (nrow(d) == 0) return(NULL)
 
-  ggplot(df_oatk, aes(x = pattern, y = .data[[metric_name]], color = pattern)) +
-    geom_boxplot(outlier.shape = 21, alpha = 0.8) +
+  ggplot(
+    d,
+    aes(
+      x    = case_cov_first,
+      y    = .data[[metric_name]],
+      fill = pattern_display
+    )
+  ) +
+    geom_boxplot(outlier.shape = 21, size = 0.2) +
     labs(
-      x     = "Pattern",
-      y     = metric_pat_labels[[metric_name]],
-      title = metric_pat_labels[[metric_name]],
-      color = "Pattern"
+      x     = "Pattern-coverage case (cov-first)",
+      y     = metric_labels[[metric_name]],
+      title = paste(metric_labels[[metric_name]], style_labels$cov_first),
+      fill  = "Pattern / tool"
     ) +
-    theme_bw(base_size = 10) +
+    scale_x_discrete(drop = FALSE) +
+    theme_bw(base_size = 8) +
     theme(
-      plot.title      = element_text(hjust = 0, face = "bold"),
-      axis.title.x    = element_text(size = 9),
-      axis.title.y    = element_text(size = 9),
+      axis.text.x  = element_text(angle = 90, hjust = 1, vjust = 0.5),
+      plot.title   = element_text(hjust = 0, face = "bold", size = 9),
+      legend.position = "bottom"
+    )
+}
+
+make_box_pattern_group <- function(metric_name) {
+  d <- df_cases %>%
+    filter(!is.na(.data[[metric_name]]), !is.na(pattern_group))
+  if (nrow(d) == 0) return(NULL)
+
+  ggplot(
+    d,
+    aes(
+      x    = pattern_group,
+      y    = .data[[metric_name]],
+      fill = pattern_group
+    )
+  ) +
+    geom_boxplot(outlier.shape = 21, size = 0.2) +
+    labs(
+      x     = "Pattern / tool group",
+      y     = metric_labels[[metric_name]],
+      title = paste(metric_labels[[metric_name]], style_labels$pattern_group),
+      fill  = "Pattern / tool"
+    ) +
+    scale_x_discrete(drop = FALSE) +
+    theme_bw(base_size = 8) +
+    theme(
+      axis.text.x  = element_text(angle = 45, hjust = 1, vjust = 1),
+      plot.title   = element_text(hjust = 0, face = "bold", size = 9),
+      legend.position = "none"
+    )
+}
+
+make_box_cov_group <- function(metric_name) {
+  d <- df_cases %>%
+    filter(!is.na(.data[[metric_name]]), !is.na(cov_group))
+  if (nrow(d) == 0) return(NULL)
+
+  ggplot(
+    d,
+    aes(
+      x    = cov_group,
+      y    = .data[[metric_name]],
+      fill = cov_group
+    )
+  ) +
+    geom_boxplot(outlier.shape = 21, size = 0.2) +
+    labs(
+      x     = "Coverage / tool group",
+      y     = metric_labels[[metric_name]],
+      title = paste(metric_labels[[metric_name]], style_labels$cov_group),
+      fill  = "Coverage / tool"
+    ) +
+    scale_x_discrete(drop = FALSE) +
+    theme_bw(base_size = 8) +
+    theme(
+      axis.text.x  = element_text(angle = 45, hjust = 1, vjust = 1),
+      plot.title   = element_text(hjust = 0, face = "bold", size = 9),
       legend.position = "none"
     )
 }
 
 # -----------------------------------------------------------------------------#
-# Histograms for avg_qual and mean_length
+# Completeness grid & barplots (strict / relaxed thresholds)
 # -----------------------------------------------------------------------------#
-make_hist_avg_qual <- function() {
-  if (!"avg_qual" %in% names(df_species)) {
-    return(NULL)
-  }
-  y <- df_species$avg_qual
-  if (all(is.na(y))) {
-    return(NULL)
-  }
+code2_levels <- sort(unique(df_cases$code2))
 
-  ggplot(df_species, aes(x = avg_qual)) +
-    geom_histogram(bins = 30, fill = "grey70", color = "black") +
+# One row per dataset/case with completeness
+df_comp <- df_cases %>%
+  select(code2, case = case_id, completeness_prop) %>%
+  distinct()
+
+# Full grid: all datasets × all cases (pattern-first ordering)
+grid_base <- expand_grid(
+  code2 = factor(code2_levels, levels = code2_levels),
+  case  = factor(cases_grid_levels, levels = cases_grid_levels)
+)
+
+grid_df <- grid_base %>%
+  left_join(df_comp, by = c("code2", "case")) %>%
+  # left_join coerces factor/character; restore factor levels explicitly
+  mutate(
+    case = factor(as.character(case), levels = cases_grid_levels),
+    complete_strict  = !is.na(completeness_prop) &
+      completeness_prop >= opt$`complete-threshold-strict` - 1e-9,
+    complete_relaxed = !is.na(completeness_prop) &
+      completeness_prop >= opt$`complete-threshold-relaxed` - 1e-9
+  )
+
+make_grid_plot <- function(flag_col, title_suffix) {
+  d_yes <- grid_df %>% filter(.data[[flag_col]])
+  ggplot(d_yes, aes(x = case, y = code2)) +
+    geom_point(size = 0.8) +
+    scale_x_discrete(drop = FALSE) +
+    scale_y_discrete(drop = FALSE) +
     labs(
-      x     = "Average quality (avg_qual)",
-      y     = "Count (species)",
-      title = "(M) Histogram of avg_qual (per species)"
+      x = "Pattern-coverage / tool case",
+      y = "Dataset (code2)",
+      title = paste("Completeness", title_suffix)
     ) +
-    theme_bw(base_size = 10) +
+    theme_bw(base_size = 7) +
     theme(
-      plot.title   = element_text(hjust = 0, face = "bold"),
-      axis.title.x = element_text(size = 9),
-      axis.title.y = element_text(size = 9)
+      axis.text.x  = element_text(angle = 90, hjust = 1, vjust = 0.5),
+      panel.grid   = element_blank(),
+      plot.title   = element_text(hjust = 0, face = "bold", size = 9)
     )
 }
 
-make_hist_mean_length <- function() {
-  if (!"mean_length" %in% names(df_species)) {
-    return(NULL)
-  }
-  y <- df_species$mean_length
-  if (all(is.na(y))) {
-    return(NULL)
-  }
+make_bar_count_plot <- function(flag_col, title_suffix) {
+  d_counts <- grid_df %>%
+    group_by(case) %>%
+    summarise(
+      n_complete = sum(.data[[flag_col]], na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      case = factor(as.character(case), levels = cases_grid_levels)
+    )
 
-  ggplot(df_species, aes(x = mean_length)) +
-    geom_histogram(bins = 30, fill = "grey70", color = "black") +
+  ggplot(d_counts, aes(x = case, y = n_complete)) +
+    geom_col() +
+    scale_x_discrete(drop = FALSE) +
     labs(
-      x     = "Mean read length (mean_length)",
-      y     = "Count (species)",
-      title = "(N) Histogram of mean_length (per species)"
+      x = "Pattern-coverage / tool case",
+      y = "Number of complete datasets",
+      title = paste("Count of complete datasets", title_suffix)
     ) +
-    theme_bw(base_size = 10) +
+    theme_bw(base_size = 8) +
     theme(
-      plot.title   = element_text(hjust = 0, face = "bold"),
-      axis.title.x = element_text(size = 9),
-      axis.title.y = element_text(size = 9)
+      axis.text.x  = element_text(angle = 90, hjust = 1, vjust = 0.5),
+      plot.title   = element_text(hjust = 0, face = "bold", size = 9)
     )
 }
 
-# -----------------------------------------------------------------------------#
-# Build all plots
-# -----------------------------------------------------------------------------#
-plots_vs_cov <- lapply(metrics_cov, make_vs_cov_plot)
-plots_vs_cov <- Filter(Negate(is.null), plots_vs_cov)
-
-plots_vs_pat <- lapply(metrics_pat, make_vs_pattern_plot)
-plots_vs_pat <- Filter(Negate(is.null), plots_vs_pat)
-
-hist1 <- make_hist_avg_qual()
-hist2 <- make_hist_mean_length()
-
-all_plots <- c(plots_vs_cov, plots_vs_pat, list(hist1, hist2))
-all_plots <- Filter(Negate(is.null), all_plots)
-
-if (length(all_plots) == 0) {
-  stop("No non-NA metrics available to plot.")
-}
+grid_strict_plot   <- make_grid_plot(
+  "complete_strict",
+  sprintf("== %.2f", opt$`complete-threshold-strict`)
+)
+grid_relaxed_plot  <- make_grid_plot(
+  "complete_relaxed",
+  sprintf(">= %.2f", opt$`complete-threshold-relaxed`)
+)
+bar_strict_plot    <- make_bar_count_plot(
+  "complete_strict",
+  sprintf("for completeness == %.2f", opt$`complete-threshold-strict`)
+)
+bar_relaxed_plot   <- make_bar_count_plot(
+  "complete_relaxed",
+  sprintf("for completeness >= %.2f", opt$`complete-threshold-relaxed`)
+)
 
 # -----------------------------------------------------------------------------#
-# Combine plots and write PDF
+# Output PDF
 # -----------------------------------------------------------------------------#
-ncol_layout <- opt$`ncol-per-row`
-combined <- wrap_plots(all_plots, ncol = ncol_layout) +
-  plot_annotation(title = opt$title)
-
-pdf(opt$out,
+pdf(
+  opt$out,
   width  = opt$`page-width-in`,
   height = opt$`page-height-in`
 )
-grid::grid.draw(combined)
+
+# 1–4) Boxplots (four styles) for each metric
+for (metric_name in metrics_box) {
+  p1 <- make_box_pattern_first(metric_name)
+  p2 <- make_box_cov_first(metric_name)
+  p3 <- make_box_pattern_group(metric_name)
+  p4 <- make_box_cov_group(metric_name)
+
+  plots_metric <- list(p1, p2, p3, p4)
+  plots_metric <- Filter(Negate(is.null), plots_metric)
+
+  if (length(plots_metric) == 0) {
+    next
+  }
+
+  combined <- wrap_plots(plots_metric, ncol = opt$`ncol-per-row`) +
+    plot_annotation(
+      title = paste0("Metric: ", metric_labels[[metric_name]])
+    ) &
+    theme(legend.position = "bottom")
+
+  print(combined)
+}
+
+# 5–8) Completeness grids and barplots
+print(grid_strict_plot)
+print(grid_relaxed_plot)
+print(bar_strict_plot)
+print(bar_relaxed_plot)
+
 dev.off()
 
 cat(opt$out, "\n")

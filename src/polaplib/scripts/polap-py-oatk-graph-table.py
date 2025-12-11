@@ -21,6 +21,7 @@
 #   cov                 # coverage number for oatk rows, "" for himt/tippo
 #   mem_gb
 #   time_hours
+#   disk_gb
 #   total_mem_gb
 #   total_time_hours
 #   completeness_prop   # geneset_completeness_prop
@@ -111,6 +112,7 @@ def collect_oatk_flat_rows(item: Dict[str, Any], base_info: Dict[str, str]) -> I
 
         mem_gb = _get(oatk, f"{prefix}_mem_gb")
         time_hours = _get(oatk, f"{prefix}_time_hours")
+        disk_gb = _get(oatk, f"{prefix}_disk_gb")
 
         # total_mem_gb / total_time_hours rarely present for flat OATK
         total_mem_gb = _get(oatk, f"{prefix}_total_mem_gb")
@@ -151,6 +153,7 @@ def collect_oatk_flat_rows(item: Dict[str, Any], base_info: Dict[str, str]) -> I
             "cov": cov_str,
             "mem_gb": mem_gb,
             "time_hours": time_hours,
+            "disk_gb": disk_gb,
             "total_mem_gb": total_mem_gb,
             "total_time_hours": total_time_hours,
             "completeness_prop": completeness,
@@ -195,6 +198,7 @@ def collect_oatk_pattern_rows(item: Dict[str, Any], base_info: Dict[str, str]) -
 
             mem_gb = _get(cov_block, "mem_gb")
             time_hours = _get(cov_block, "time_hours")
+            disk_gb = _get(cov_block, "disk_gb")
             total_mem_gb = _get(cov_block, "total_mem_gb")
             total_time_hours = _get(cov_block, "total_time_hours")
 
@@ -215,6 +219,7 @@ def collect_oatk_pattern_rows(item: Dict[str, Any], base_info: Dict[str, str]) -
                 "cov": cov_str,
                 "mem_gb": mem_gb,
                 "time_hours": time_hours,
+                "disk_gb": disk_gb,
                 "total_mem_gb": total_mem_gb,
                 "total_time_hours": total_time_hours,
                 "completeness_prop": completeness,
@@ -241,6 +246,7 @@ def collect_himt_rows(item: Dict[str, Any], base_info: Dict[str, str]) -> Iterab
 
     mem_gb = _get(himt, "mem_gb")
     time_hours = _get(himt, "time_hours")
+    disk_gb = _get(himt, "disk_gb")
     total_mem_gb = _get(himt, "total_mem_gb")
     total_time_hours = _get(himt, "total_time_hours")
 
@@ -261,6 +267,7 @@ def collect_himt_rows(item: Dict[str, Any], base_info: Dict[str, str]) -> Iterab
         "cov": "",
         "mem_gb": mem_gb,
         "time_hours": time_hours,
+        "disk_gb": disk_gb,
         "total_mem_gb": total_mem_gb,
         "total_time_hours": total_time_hours,
         "completeness_prop": completeness,
@@ -287,6 +294,7 @@ def collect_tippo_rows(item: Dict[str, Any], base_info: Dict[str, str]) -> Itera
 
     mem_gb = _get(tippo, "mem_gb")
     time_hours = _get(tippo, "time_hours")
+    disk_gb = _get(tippo, "disk_gb")
     total_mem_gb = _get(tippo, "total_mem_gb")
     total_time_hours = _get(tippo, "total_time_hours")
 
@@ -307,6 +315,7 @@ def collect_tippo_rows(item: Dict[str, Any], base_info: Dict[str, str]) -> Itera
         "cov": "",
         "mem_gb": mem_gb,
         "time_hours": time_hours,
+        "disk_gb": disk_gb,
         "total_mem_gb": total_mem_gb,
         "total_time_hours": total_time_hours,
         "completeness_prop": completeness,
@@ -394,6 +403,7 @@ def main(argv=None) -> int:
         "cov",
         "mem_gb",
         "time_hours",
+        "disk_gb",
         "total_mem_gb",
         "total_time_hours",
         "completeness_prop",

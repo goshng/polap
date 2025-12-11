@@ -182,6 +182,9 @@ EOF
 				_polap_log0 "bash $runner -i $inpath -o $outpath"
 				conda deactivate || true
 				[ "${_POLAP_DEBUG:-0}" -eq 1 ] && set +x
+				_polap_log0 "Keep going because of invalid input HiMT HTML: $inpath"
+				return 0
+				#
 				return 4
 			fi
 		else

@@ -2079,6 +2079,7 @@ benchmark-command_genus_species_for() {
 	download-ptdna_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 	download-mtdna_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 
+	# benchmark
 	local cov_pattern="2,5,8,11,20,30,40,50"
 	local cov_pattern_x_x="11,20,30,40,50"
 	run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" t-h "$cov_pattern"
@@ -4401,9 +4402,9 @@ Examples:
     cd .. && rsync -aq thorne:\$PWD/github/ github/ && cd -
     cd .. && rsync -aq thorne:\$PWD/github/ github/ && rsync -aq thorne:.polap/ $HOME/.polap/ && cd -
     export POLAP=polap/src/polap.sh
-    alias pl="bash \$POLAP"
+    alias pl="bash $POLAP"
     export BOLAP=polap/src/bolap.sh
-    alias bl="bash \$BOLAP"
+    alias bl="bash $BOLAP"
     bolap use --data oatk
     source polap/src/polaplib/polap-bash-complete.sh
     bolap conda --cleanup
@@ -4432,10 +4433,24 @@ Examples:
   Do Now:
 mkdir -p $HOME/all/polap/oatk1
 cd $HOME/all/polap/oatk1
-ln -s ~/all/polap/github polap
-rm -rf polap/src/polaplib/figures
 cd .. && rsync -aq thorne:$PWD/github/ github/ && rsync -aq thorne:.polap/ $HOME/.polap/ && cd -
+ln -s ~/all/polap/github polap
+ln -s ~/all/polap/hifi1/OatkDB
 bl use --data oatk
+
+bl install tiara -y
+
+bl benchmark -f 6h -y --remote thorne -s species_folder
+bl benchmark -y --remote thorne -s 
+
+
+source ~/miniconda3/bin/activate
+conda activate polap-himt
+conda install -y seqkit
+conda deactivate
+conda deactivate
+
+rm -rf polap/src/polaplib/figures
 bl install tiara -y
 bl conda --create polap-pmat2 -y
 bl conda --create polap-himt -y
@@ -4450,6 +4465,7 @@ rsync -azuq --max-size=5M /tmp
 bl run assess-himt -s Quercus_berberidifolia
 bl sync -s Quercus_berberidifolia
 for i in Quercus_engelmannii Salix_arbutifolia; do bl benchmark -f 6h -y --remote thorne -s $i; done
+for i in ; do bl benchmark -f 6h -y --remote thorne -s $i; done
 
 Copyright:
   Copyright © 2025 Sang Chul Choi

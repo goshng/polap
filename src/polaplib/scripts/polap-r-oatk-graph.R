@@ -1,13 +1,13 @@
 #!/usr/bin/env Rscript
 # polap-r-oatk-graph.R
-# Version : v2.1.1  (2025-12-10)
+# Version : v2.1.2  (2025-12-10)
 # Author  : Sang Chul Choi (POLAP)
 # License : GPL-3.0+
 #
-# New graphs for OATK / Tiara / HiMT / TIPPo coverage experiments.
+# OATK / Tiara / HiMT / TIPPo coverage graphs.
 #
 # Input CSV (via --data) is the long-format table produced by
-# polap-py-oatk-graph-table.py (v0.5.x), with (at least) columns:
+# polap-py-oatk-graph-table.py (v0.5.x+), with (at least) columns:
 #
 #   species, code2,
 #   avg_qual, mean_length,
@@ -18,38 +18,9 @@
 #   total_mem_gb, total_time_hours, disk_gb,
 #   completeness_prop, num_contigs, total_length, N50
 #
-# The script draws four classes of plots:
-#
-# 1) Boxplots of:
-#       total_mem_gb, total_time_hours, disk_gb, completeness_prop
-#    with four different X-axis groupings:
-#       (a) pattern-first:  t-h-02, t-h-05, ..., x-x-50, tippo, himt, x-30
-#       (b) cov-first:      t-h-02, h-t-02, ..., x-x-50, tippo, himt, x-30
-#       (c) aggregated by pattern: t-h, h-t, t-x, x-h, x-x, tippo, himt, x-30
-#       (d) aggregated by cov: 02,05,08,11,20,30,40,50, tippo, himt, x-30
-#
-# 2) Completeness “grid” plots (81 datasets × 40 cases):
-#    For each dataset (code2) and each case
-#      {all pattern–cov combos plus tippo, himt, x-30}
-#    mark a point if completeness_prop ≥ threshold.
-#    We make two pages:
-#      - strict  : completeness_prop == 1.0
-#      - relaxed : completeness_prop >= 0.95
-#
-# 3) Barplots of counts of “complete” datasets per case (same thresholds),
-#    again over all pattern–cov + tippo + himt + x-30.
-#
-# CLI:
-#   --data PATH         input CSV
-#   --out PATH          output PDF
-#   --title STRING      overall title
-#   --page-width-in N   PDF width  (inches)
-#   --page-height-in N  PDF height (inches)
-#   --margin-in N       (currently unused, kept for compatibility)
-#   --ncol-per-row N    used as number of columns when arranging boxplots
-#   --complete-threshold-strict  (default 1.0)
-#   --complete-threshold-relaxed (default 0.95)
-#
+# For flat OATK (oatk-x 10/20/30), and for HiMT and TIPPo, total_mem_gb and
+# total_time_hours are empty, so we fall back to mem_gb and time_hours for
+# those cases.
 
 library(optparse)
 suppressPackageStartupMessages({
@@ -74,23 +45,24 @@ opt <- OptionParser(option_list = list(
     type  = "character",
     help  = "Output PDF file"
   ),
+  make_option(c("--out-tsv"),
+    type = "character",
+    help = "Dummy for polap-r-oatk-graph-summary.R"
+  ),
   make_option(
     c("--title"),
     type    = "character",
     default = "OATK / Tiara / HiMT / TIPPo metrics"
   ),
-  make_option(c("--page-width-in"),  type = "double", default = 11),
+  make_option(c("--page-width-in"), type = "double", default = 11),
   make_option(c("--page-height-in"), type = "double", default = 8.5),
-  make_option(c("--margin-in"),      type = "double", default = 0.5),
-
-  # Used for arranging boxplots (how many panels per row)
+  make_option(c("--margin-in"), type = "double", default = 0.5),
   make_option(
     c("--ncol-per-row"),
     type    = "integer",
     default = 2,
     help    = "Number of panels per row for boxplot grids [default: 2]"
   ),
-
   make_option(
     c("--complete-threshold-strict"),
     type    = "double",
@@ -102,6 +74,11 @@ opt <- OptionParser(option_list = list(
     type    = "double",
     default = 0.95,
     help    = "Relaxed completeness threshold (default: 0.95)"
+  ),
+  make_option(c("--complete-threshold"),
+    type = "double",
+    default = 0,
+    help = "Dummy for polap-r-oatk-graph-summary.R"
   )
 )) |>
   parse_args()
@@ -118,8 +95,9 @@ df <- suppressMessages(read_csv(
 
 required_cols <- c(
   "species", "code2", "tool", "pattern", "cov",
-  "total_mem_gb", "total_time_hours", "disk_gb",
-  "completeness_prop", "num_contigs", "total_length", "N50"
+  "total_mem_gb", "total_time_hours", "total_disk_gb",
+  "completeness_prop", "num_contigs", "total_length", "N50",
+  "mem_gb", "time_hours"
 )
 
 missing_cols <- setdiff(required_cols, names(df))
@@ -134,7 +112,9 @@ if (length(missing_cols) > 0) {
 # Type conversion (robust to numeric/character)
 # -----------------------------------------------------------------------------#
 to_num <- function(x) {
-  if (is.numeric(x)) return(x)
+  if (is.numeric(x)) {
+    return(x)
+  }
   suppressWarnings(readr::parse_number(as.character(x)))
 }
 
@@ -143,8 +123,11 @@ df <- df %>%
     tool              = as.character(tool),
     pattern           = as.character(pattern),
     cov               = to_num(cov),
+    mem_gb            = to_num(mem_gb),
+    time_hours        = to_num(time_hours),
     total_mem_gb      = to_num(total_mem_gb),
     total_time_hours  = to_num(total_time_hours),
+    total_disk_gb     = to_num(total_disk_gb),
     disk_gb           = to_num(disk_gb),
     completeness_prop = to_num(completeness_prop),
     num_contigs       = to_num(num_contigs),
@@ -153,12 +136,42 @@ df <- df %>%
   )
 
 # -----------------------------------------------------------------------------#
+# For oatk-x (10/20/30), himt, and tippo, use mem_gb/time_hours if total_* are NA
+# -----------------------------------------------------------------------------#
+df <- df %>%
+  mutate(
+    is_oatk_x_flat = tool == "oatk" &
+      pattern %in% c("x", "") &
+      !is.na(cov) &
+      as.integer(round(cov)) %in% c(10L, 20L, 30L),
+    is_himt_tippo = tool %in% c("himt", "tippo")
+  ) %>%
+  mutate(
+    total_mem_gb = ifelse(
+      !is.na(total_mem_gb),
+      total_mem_gb,
+      ifelse(is_oatk_x_flat | is_himt_tippo, mem_gb, total_mem_gb)
+    ),
+    total_time_hours = ifelse(
+      !is.na(total_time_hours),
+      total_time_hours,
+      ifelse(is_oatk_x_flat | is_himt_tippo, time_hours, total_time_hours)
+    ),
+    total_disk_gb = ifelse(
+      !is.na(total_disk_gb),
+      total_disk_gb,
+      ifelse(is_oatk_x_flat | is_himt_tippo, disk_gb, total_disk_gb)
+    )
+  ) %>%
+  select(-is_oatk_x_flat, -is_himt_tippo)
+
+# -----------------------------------------------------------------------------#
 # Define pattern / coverage / case layout
 # -----------------------------------------------------------------------------#
-patterns_core   <- c("t-h", "h-t", "t-x", "x-h", "x-x")
-patterns_main   <- c("t-h", "h-t", "t-x", "x-h")  # x-x handled separately
-cov_all         <- c(2, 5, 8, 11, 20, 30, 40, 50)
-cov_xx          <- c(11, 20, 30, 40, 50)          # x-x only for these
+patterns_core <- c("t-h", "h-t", "t-x", "x-h", "x-x")
+patterns_main <- c("t-h", "h-t", "t-x", "x-h") # x-x handled separately
+cov_all <- c(2, 5, 8, 11, 20, 30, 40, 50)
+cov_xx <- c(11, 20, 30, 40, 50) # x-x only for these
 
 # Pattern-first case labels (desired grid/bar order)
 cases_pattern_first <- c(
@@ -166,7 +179,7 @@ cases_pattern_first <- c(
   sprintf("x-x-%02d", cov_xx),
   "tippo",
   "himt",
-  "x-30"  # base OATK (pattern 'x', cov=30)
+  "x-30" # base OATK (pattern 'x', cov=30)
 )
 
 # Cov-first case labels
@@ -190,8 +203,10 @@ cases_grid_levels <- cases_pattern_first
 
 # Aggregated group levels
 pattern_group_levels <- c("t-h", "h-t", "t-x", "x-h", "x-x", "tippo", "himt", "x-30")
-cov_group_levels     <- c("02", "05", "08", "11", "20", "30", "40", "50",
-                          "tippo", "himt", "x-30")
+cov_group_levels <- c(
+  "02", "05", "08", "11", "20", "30", "40", "50",
+  "tippo", "himt", "x-30"
+)
 
 # -----------------------------------------------------------------------------#
 # Build case_id and grouping fields
@@ -211,24 +226,24 @@ df_cases <- df %>%
     pattern_group = case_when(
       tool == "oatk" & pattern %in% patterns_core ~ pattern,
       case_id == "x-30" ~ "x-30",
-      tool == "tippo"   ~ "tippo",
-      tool == "himt"    ~ "himt",
+      tool == "tippo" ~ "tippo",
+      tool == "himt" ~ "himt",
       TRUE ~ NA_character_
     ),
     cov_group = case_when(
       tool == "oatk" & pattern %in% patterns_core & !is.na(cov_num) ~
         sprintf("%02d", as.integer(round(cov_num))),
       case_id == "x-30" ~ "x-30",
-      tool == "tippo"   ~ "tippo",
-      tool == "himt"    ~ "himt",
+      tool == "tippo" ~ "tippo",
+      tool == "himt" ~ "himt",
       TRUE ~ NA_character_
     ),
     pattern_group = factor(pattern_group, levels = pattern_group_levels),
-    cov_group     = factor(cov_group,     levels = cov_group_levels),
+    cov_group = factor(cov_group, levels = cov_group_levels),
     case_pattern_first = factor(case_id, levels = cases_pattern_first),
-    case_cov_first     = factor(case_id, levels = cases_cov_first)
+    case_cov_first = factor(case_id, levels = cases_cov_first)
   ) %>%
-  filter(!is.na(case_id))  # only rows relevant to these plots
+  filter(!is.na(case_id)) # only rows relevant to these plots
 
 if (nrow(df_cases) == 0) {
   stop("No rows with recognized tool/pattern/cov combinations (df_cases is empty).")
@@ -239,10 +254,10 @@ df_cases <- df_cases %>%
   mutate(
     pattern_display = case_when(
       pattern %in% patterns_core ~ pattern,
-      case_id == "x-30"         ~ "x-30",
-      tool == "tippo"           ~ "tippo",
-      tool == "himt"            ~ "himt",
-      TRUE                      ~ pattern
+      case_id == "x-30" ~ "x-30",
+      tool == "tippo" ~ "tippo",
+      tool == "himt" ~ "himt",
+      TRUE ~ pattern
     )
   )
 
@@ -252,18 +267,18 @@ df_cases <- df_cases %>%
 metrics_box <- c(
   "total_mem_gb",
   "total_time_hours",
-  "disk_gb",
+  "total_disk_gb",
   "completeness_prop"
 )
 
 metric_labels <- c(
   total_mem_gb      = "Total peak memory (GB)",
   total_time_hours  = "Total runtime (hours)",
-  disk_gb           = "Disk usage (GB)",
+  total_disk_gb     = "Total Disk usage (GB)",
   completeness_prop = "Gene set completeness"
 )
 
-# Pretty subtitles for each of the 4 boxplot styles (ASCII only)
+# ASCII-only subtitles
 style_labels <- list(
   pattern_first = "by pattern-coverage (pattern-first: t-h-02, ..., x-x-50, tippo, himt, x-30)",
   cov_first     = "by coverage-pattern (cov-first: t-h-02, h-t-02, ..., x-x-50, tippo, himt, x-30)",
@@ -276,7 +291,9 @@ style_labels <- list(
 # -----------------------------------------------------------------------------#
 make_box_pattern_first <- function(metric_name) {
   d <- df_cases %>% filter(!is.na(.data[[metric_name]]))
-  if (nrow(d) == 0) return(NULL)
+  if (nrow(d) == 0) {
+    return(NULL)
+  }
 
   ggplot(
     d,
@@ -296,15 +313,17 @@ make_box_pattern_first <- function(metric_name) {
     scale_x_discrete(drop = FALSE) +
     theme_bw(base_size = 8) +
     theme(
-      axis.text.x  = element_text(angle = 90, hjust = 1, vjust = 0.5),
-      plot.title   = element_text(hjust = 0, face = "bold", size = 9),
+      axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+      plot.title = element_text(hjust = 0, face = "bold", size = 9),
       legend.position = "bottom"
     )
 }
 
 make_box_cov_first <- function(metric_name) {
   d <- df_cases %>% filter(!is.na(.data[[metric_name]]))
-  if (nrow(d) == 0) return(NULL)
+  if (nrow(d) == 0) {
+    return(NULL)
+  }
 
   ggplot(
     d,
@@ -324,8 +343,8 @@ make_box_cov_first <- function(metric_name) {
     scale_x_discrete(drop = FALSE) +
     theme_bw(base_size = 8) +
     theme(
-      axis.text.x  = element_text(angle = 90, hjust = 1, vjust = 0.5),
-      plot.title   = element_text(hjust = 0, face = "bold", size = 9),
+      axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+      plot.title = element_text(hjust = 0, face = "bold", size = 9),
       legend.position = "bottom"
     )
 }
@@ -333,7 +352,9 @@ make_box_cov_first <- function(metric_name) {
 make_box_pattern_group <- function(metric_name) {
   d <- df_cases %>%
     filter(!is.na(.data[[metric_name]]), !is.na(pattern_group))
-  if (nrow(d) == 0) return(NULL)
+  if (nrow(d) == 0) {
+    return(NULL)
+  }
 
   ggplot(
     d,
@@ -353,8 +374,8 @@ make_box_pattern_group <- function(metric_name) {
     scale_x_discrete(drop = FALSE) +
     theme_bw(base_size = 8) +
     theme(
-      axis.text.x  = element_text(angle = 45, hjust = 1, vjust = 1),
-      plot.title   = element_text(hjust = 0, face = "bold", size = 9),
+      axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+      plot.title = element_text(hjust = 0, face = "bold", size = 9),
       legend.position = "none"
     )
 }
@@ -362,7 +383,9 @@ make_box_pattern_group <- function(metric_name) {
 make_box_cov_group <- function(metric_name) {
   d <- df_cases %>%
     filter(!is.na(.data[[metric_name]]), !is.na(cov_group))
-  if (nrow(d) == 0) return(NULL)
+  if (nrow(d) == 0) {
+    return(NULL)
+  }
 
   ggplot(
     d,
@@ -382,8 +405,8 @@ make_box_cov_group <- function(metric_name) {
     scale_x_discrete(drop = FALSE) +
     theme_bw(base_size = 8) +
     theme(
-      axis.text.x  = element_text(angle = 45, hjust = 1, vjust = 1),
-      plot.title   = element_text(hjust = 0, face = "bold", size = 9),
+      axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+      plot.title = element_text(hjust = 0, face = "bold", size = 9),
       legend.position = "none"
     )
 }
@@ -391,7 +414,20 @@ make_box_cov_group <- function(metric_name) {
 # -----------------------------------------------------------------------------#
 # Completeness grid & barplots (strict / relaxed thresholds)
 # -----------------------------------------------------------------------------#
-code2_levels <- sort(unique(df_cases$code2))
+# code2_levels <- sort(unique(df_cases$code2))
+
+# -----------------------------------------------------------------------------#
+# Y-axis ordering: sort code2 by numeric suffix (e.g. Au01, Al02, Ac03, ...)
+# -----------------------------------------------------------------------------#
+code2_levels <- df_cases %>%
+  distinct(code2) %>%
+  mutate(
+    code2_chr = as.character(code2),
+    code_num  = suppressWarnings(as.integer(sub("^.*?(\\d+)$", "\\1", code2_chr)))
+  ) %>%
+  arrange(code_num, code2_chr) %>% # numeric primary, alpha secondary
+  pull(code2_chr)
+
 
 # One row per dataset/case with completeness
 df_comp <- df_cases %>%
@@ -406,21 +442,114 @@ grid_base <- expand_grid(
 
 grid_df <- grid_base %>%
   left_join(df_comp, by = c("code2", "case")) %>%
-  # left_join coerces factor/character; restore factor levels explicitly
   mutate(
     case = factor(as.character(case), levels = cases_grid_levels),
-    complete_strict  = !is.na(completeness_prop) &
+    complete_strict = !is.na(completeness_prop) &
       completeness_prop >= opt$`complete-threshold-strict` - 1e-9,
     complete_relaxed = !is.na(completeness_prop) &
       completeness_prop >= opt$`complete-threshold-relaxed` - 1e-9
   )
 
+# make_grid_plot <- function(flag_col, title_suffix) {
+#   d_yes <- grid_df %>% filter(.data[[flag_col]])
+#   ggplot(d_yes, aes(x = case, y = code2)) +
+#     geom_point(size = 0.8) +
+#     scale_x_discrete(drop = FALSE) +
+#     scale_y_discrete(drop = FALSE) +
+#     labs(
+#       x = "Pattern-coverage / tool case",
+#       y = "Dataset (code2)",
+#       title = paste("Completeness", title_suffix)
+#     ) +
+#     theme_bw(base_size = 7) +
+#     theme(
+#       axis.text.x  = element_text(angle = 90, hjust = 1, vjust = 0.5),
+#       panel.grid   = element_blank(),
+#       plot.title   = element_text(hjust = 0, face = "bold", size = 9)
+#     )
+# }
+
+# working version
+# make_grid_plot <- function(flag_col, title_suffix) {
+#   d_yes <- grid_df %>% filter(.data[[flag_col]])
+#
+#   # numeric y positions for horizontal guide lines
+#   y_levels <- levels(grid_df$code2)
+#   y_pos <- seq_along(y_levels) + 0.5
+#
+#   ggplot(d_yes, aes(x = case, y = code2)) +
+#     # thin horizontal separators
+#     geom_hline(
+#       yintercept = y_pos,
+#       linewidth = 0.25,
+#       colour = "grey80"
+#     ) +
+#     geom_point(size = 0.8) +
+#     scale_x_discrete(drop = FALSE) +
+#     scale_y_discrete(
+#       drop = FALSE,
+#       limits = rev(code2_levels) # bottom → top ordering
+#     ) +
+#     labs(
+#       x = "Pattern-coverage / tool case",
+#       y = "Dataset (code2)",
+#       title = paste("Completeness", title_suffix)
+#     ) +
+#     theme_bw(base_size = 7) +
+#     theme(
+#       axis.text.x  = element_text(angle = 90, hjust = 1, vjust = 0.5),
+#       axis.text.y  = element_text(size = 7),
+#       panel.grid   = element_blank(), # keep only our custom lines
+#       plot.title   = element_text(hjust = 0, face = "bold", size = 9)
+#     )
+# }
+
+# version: o x
 make_grid_plot <- function(flag_col, title_suffix) {
+  # complete cases (●)
   d_yes <- grid_df %>% filter(.data[[flag_col]])
-  ggplot(d_yes, aes(x = case, y = code2)) +
-    geom_point(size = 0.8) +
+
+  # incomplete-but-present cases (×)
+  d_no <- grid_df %>%
+    filter(
+      !.data[[flag_col]] &
+        !is.na(completeness_prop) # only where data exists
+    )
+
+  # numeric y positions for horizontal guide lines
+  y_levels <- levels(grid_df$code2)
+  y_pos <- seq_along(y_levels) + 0.5
+
+  ggplot() +
+
+    # horizontal separators
+    geom_hline(
+      yintercept = y_pos,
+      linewidth = 0.25,
+      colour = "grey80"
+    ) +
+
+    # ● complete
+    geom_point(
+      data = d_yes,
+      aes(x = case, y = code2),
+      shape = 16,
+      size = 0.8
+    ) +
+
+    # × incomplete
+    geom_point(
+      data = d_no,
+      aes(x = case, y = code2),
+      shape = 4, # X mark
+      size = 0.9,
+      stroke = 0.6
+    ) +
     scale_x_discrete(drop = FALSE) +
-    scale_y_discrete(drop = FALSE) +
+    scale_y_discrete(
+      drop = FALSE,
+      limits = rev(code2_levels)
+    ) +
     labs(
       x = "Pattern-coverage / tool case",
       y = "Dataset (code2)",
@@ -429,10 +558,13 @@ make_grid_plot <- function(flag_col, title_suffix) {
     theme_bw(base_size = 7) +
     theme(
       axis.text.x  = element_text(angle = 90, hjust = 1, vjust = 0.5),
+      axis.text.y  = element_text(size = 7),
       panel.grid   = element_blank(),
       plot.title   = element_text(hjust = 0, face = "bold", size = 9)
     )
 }
+
+
 
 make_bar_count_plot <- function(flag_col, title_suffix) {
   d_counts <- grid_df %>%
@@ -460,19 +592,19 @@ make_bar_count_plot <- function(flag_col, title_suffix) {
     )
 }
 
-grid_strict_plot   <- make_grid_plot(
+grid_strict_plot <- make_grid_plot(
   "complete_strict",
   sprintf("== %.2f", opt$`complete-threshold-strict`)
 )
-grid_relaxed_plot  <- make_grid_plot(
+grid_relaxed_plot <- make_grid_plot(
   "complete_relaxed",
   sprintf(">= %.2f", opt$`complete-threshold-relaxed`)
 )
-bar_strict_plot    <- make_bar_count_plot(
+bar_strict_plot <- make_bar_count_plot(
   "complete_strict",
   sprintf("for completeness == %.2f", opt$`complete-threshold-strict`)
 )
-bar_relaxed_plot   <- make_bar_count_plot(
+bar_relaxed_plot <- make_bar_count_plot(
   "complete_relaxed",
   sprintf("for completeness >= %.2f", opt$`complete-threshold-relaxed`)
 )

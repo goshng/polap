@@ -3,7 +3,7 @@
 # 2025-12-07
 # polaplib/polap-bash-oatk-make-manifest.sh
 #
-# Version : v0.6.0  (2025-12-07)
+# Version : v0.6.1  (2025-12-12)
 # Author  : Sang Chul Choi (POLAP)
 # License : GPL-3.0+
 #
@@ -361,41 +361,29 @@ _extract_himt_metrics() {
 # Append OATK file paths as attributes under organelle "oatk" (legacy summary-oatk-*.txt)
 _oatk_append_oatk_files() {
 	local sp="$1" tier="$2" inum="$3" cov="$4" base_dir="$5"
-	# cov=${pattern}-05
-	# oatk_dir="${root}/oatk-tiara-himt-${pattern}/oatk"
-	# -> base_dir
-	# e.g.,
-	# cov=x-x-05
-	# pattern=x-x
 
 	local label="c${cov}"
-	# Q: weird?
-	# Q: summary-oatk-tiara-himt-h-t-c11.txt
 	local sdir="${sp}/${tier}/${inum}/summary-oatk-${cov}.txt"
 	local assess_dir="${sp}/${tier}/${inum}/assess/oatk-${cov}/report"
 	local assess_tool="oatk-${cov}"
 
 	# --- File paths (mtDNA / ptDNA) ---
 	local mt_gfa="${base_dir}/oatk-${cov}.mito.gfa"
-	local mt_fa="${base_dir}/oatk-${cov}.mito.ctg.fasta"
+	local mt_fasta="${base_dir}/oatk-${cov}.mito.ctg.fasta"
 	local mt_png="${base_dir}/oatk-${cov}.mito.png"
 	local pt_gfa="${base_dir}/oatk-${cov}.pltd.gfa"
-	local pt_fa="${base_dir}/oatk-${cov}.pltd.ctg.fasta"
+	local pt_fasta="${base_dir}/oatk-${cov}.pltd.ctg.fasta"
 	local pt_png="${base_dir}/oatk-${cov}.pltd.png"
 
-	# Use string as variable name:
-	# k="mt_gfa"
-	# mt_gfa="/path/to/mt.gfa"
-	# val="${!k}" -> "/path/to/mt.gfa"
-	# This loop iterates over symbolic variable names for OATK output files,
-	# resolves each to its actual filename using indirect expansion, builds an
-	# attribute key from the label and file type, and records the file path into
-	# the FACTS table only if the file exists and is non-empty.
-	for k in mt_gfa mt_fa mt_png pt_gfa pt_fa pt_png; do
+	# Emit as: c10_mt_gfa, c10_mt_fasta, c10_mt_png, c10_pt_gfa, ...
+	for k in mt_gfa mt_fasta mt_png pt_gfa pt_fasta pt_png; do
 		local val="${!k:-}"
-		local key="${label}_${k#*_}"
+		local key="${label}_${k}" # <-- IMPORTANT: keep full token (mt_gfa etc.)
 		if [[ -s "$val" ]]; then
 			append_fact "$sp" "$tier" "$inum" "oatk" "attr" "$key" "$val"
+		else
+			# optional: still emit empty key for structural consistency
+			append_fact "$sp" "$tier" "$inum" "oatk" "attr" "$key" ""
 		fi
 	done
 
@@ -408,48 +396,117 @@ _oatk_append_oatk_files() {
 		disk_gb=$(grep -E "Disk used" "$sdir" | sed -E 's/.*: *([0-9.]+) GB.*/\1/' | head -n1)
 		time_hms=$(grep -E "Elapsed time" "$sdir" | awk '{print $3}' | head -n1)
 	fi
+
 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_mem_kb" "$mem_kb"
 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_mem_gb" "$mem_gb"
 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_time_hms" "$time_hms"
 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_time_hours" "$time_hours"
 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_disk_gb" "$disk_gb"
 
-	# Extract 4C metrics
+	# --- 4C metrics (from assess/oatk-<cov>/report) ---
 	_extract_himt_metrics "$sp" "$TIER" "$INUM" "${assess_tool}"
 
-	# # --- HiMT metrics (4C) ---
-	# local geneset_completeness_prop="" num_contigs="" total_length="" N50=""
-	# local fragmentation_index="" max_contig_prop="" contig_length_cv=""
-	#
-	# if [[ -s "${assess_dir}/prefix.gene_integrity_summary.tsv" ]]; then
-	# 	geneset_completeness_prop=$(awk -F'\t' '$1=="geneset_completeness_prop"{print $2}' \
-	# 		"${assess_dir}/prefix.gene_integrity_summary.tsv" | head -n1)
-	# fi
-	# if [[ -s "${assess_dir}/prefix.mito_basic_info.tsv" ]]; then
-	# 	num_contigs=$(awk -F'\t' '$1=="Total contig number"{print $2}' \
-	# 		"${assess_dir}/prefix.mito_basic_info.tsv" | head -n1)
-	# 	total_length=$(awk -F'\t' '$1=="Total length"{print $2}' \
-	# 		"${assess_dir}/prefix.mito_basic_info.tsv" | head -n1)
-	# 	N50=$(awk -F'\t' '$1=="N50"{print $2}' \
-	# 		"${assess_dir}/prefix.mito_basic_info.tsv" | head -n1)
-	# fi
-	# if [[ -s "${assess_dir}/prefix.4c_metrics.tsv" ]]; then
-	# 	fragmentation_index=$(awk -F'\t' '$2=="fragmentation_index"{print $3}' \
-	# 		"${assess_dir}/prefix.4c_metrics.tsv" | head -n1)
-	# 	max_contig_prop=$(awk -F'\t' '$2=="max_contig_prop"{print $3}' \
-	# 		"${assess_dir}/prefix.4c_metrics.tsv" | head -n1)
-	# 	contig_length_cv=$(awk -F'\t' '$2=="contig_length_cv"{print $3}' \
-	# 		"${assess_dir}/prefix.4c_metrics.tsv" | head -n1)
-	# fi
-
-	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "geneset_completeness_prop" "${hmt_geneset}"
-	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "num_contigs" "${hmt_contigs}"
-	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "total_length" "${hmt_total_len}"
-	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "N50" "${hmt_n50}"
-	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "fragmentation_index" "${hmt_frag_idx}"
-	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "max_contig_prop" "${hmt_max_prop}"
-	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "contig_length_cv" "${hmt_cv}"
+	# IMPORTANT: these must be coverage-scoped (c10_, c20_, c30_)
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${label}_geneset_completeness_prop" "${hmt_geneset}"
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${label}_num_contigs" "${hmt_contigs}"
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${label}_total_length" "${hmt_total_len}"
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${label}_N50" "${hmt_n50}"
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${label}_fragmentation_index" "${hmt_frag_idx}"
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${label}_max_contig_prop" "${hmt_max_prop}"
+	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "${label}_contig_length_cv" "${hmt_cv}"
 }
+
+# _oatk_append_oatk_files() {
+# 	local sp="$1" tier="$2" inum="$3" cov="$4" base_dir="$5"
+# 	# cov=${pattern}-05
+# 	# oatk_dir="${root}/oatk-tiara-himt-${pattern}/oatk"
+# 	# -> base_dir
+# 	# e.g.,
+# 	# cov=x-x-05
+# 	# pattern=x-x
+#
+# 	local label="c${cov}"
+# 	# Q: weird?
+# 	# Q: summary-oatk-tiara-himt-h-t-c11.txt
+# 	local sdir="${sp}/${tier}/${inum}/summary-oatk-${cov}.txt"
+# 	local assess_dir="${sp}/${tier}/${inum}/assess/oatk-${cov}/report"
+# 	local assess_tool="oatk-${cov}"
+#
+# 	# --- File paths (mtDNA / ptDNA) ---
+# 	local mt_gfa="${base_dir}/oatk-${cov}.mito.gfa"
+# 	local mt_fa="${base_dir}/oatk-${cov}.mito.ctg.fasta"
+# 	local mt_png="${base_dir}/oatk-${cov}.mito.png"
+# 	local pt_gfa="${base_dir}/oatk-${cov}.pltd.gfa"
+# 	local pt_fa="${base_dir}/oatk-${cov}.pltd.ctg.fasta"
+# 	local pt_png="${base_dir}/oatk-${cov}.pltd.png"
+#
+# 	# Use string as variable name:
+# 	# k="mt_gfa"
+# 	# mt_gfa="/path/to/mt.gfa"
+# 	# val="${!k}" -> "/path/to/mt.gfa"
+# 	# This loop iterates over symbolic variable names for OATK output files,
+# 	# resolves each to its actual filename using indirect expansion, builds an
+# 	# attribute key from the label and file type, and records the file path into
+# 	# the FACTS table only if the file exists and is non-empty.
+# 	for k in mt_gfa mt_fa mt_png pt_gfa pt_fa pt_png; do
+# 		local val="${!k:-}"
+# 		local key="${label}_${k#*_}"
+# 		if [[ -s "$val" ]]; then
+# 			append_fact "$sp" "$tier" "$inum" "oatk" "attr" "$key" "$val"
+# 		fi
+# 	done
+#
+# 	# --- Summary metrics (memory/time/disk) ---
+# 	local mem_kb="" mem_gb="" time_hms="" time_hours="" disk_gb=""
+# 	if [[ -s "$sdir" ]]; then
+# 		mem_kb=$(grep -E "Net increase" "$sdir" | sed -E 's/.*: *([0-9]+) KB.*/\1/' | head -n1)
+# 		mem_gb=$(grep -E "Net increase" "$sdir" | sed -E 's/.*\(([0-9.]+) GB\).*/\1/' | head -n1)
+# 		time_hours=$(grep -E "Elapsed time" "$sdir" | sed -E 's/.*\(([0-9.]+) h\).*/\1/' | head -n1)
+# 		disk_gb=$(grep -E "Disk used" "$sdir" | sed -E 's/.*: *([0-9.]+) GB.*/\1/' | head -n1)
+# 		time_hms=$(grep -E "Elapsed time" "$sdir" | awk '{print $3}' | head -n1)
+# 	fi
+# 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_mem_kb" "$mem_kb"
+# 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_mem_gb" "$mem_gb"
+# 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_time_hms" "$time_hms"
+# 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_time_hours" "$time_hours"
+# 	append_fact "$sp" "$tier" "$inum" "oatk" "attr" "${label}_disk_gb" "$disk_gb"
+#
+# 	# Extract 4C metrics
+# 	_extract_himt_metrics "$sp" "$TIER" "$INUM" "${assess_tool}"
+#
+# 	# # --- HiMT metrics (4C) ---
+# 	# local geneset_completeness_prop="" num_contigs="" total_length="" N50=""
+# 	# local fragmentation_index="" max_contig_prop="" contig_length_cv=""
+# 	#
+# 	# if [[ -s "${assess_dir}/prefix.gene_integrity_summary.tsv" ]]; then
+# 	# 	geneset_completeness_prop=$(awk -F'\t' '$1=="geneset_completeness_prop"{print $2}' \
+# 	# 		"${assess_dir}/prefix.gene_integrity_summary.tsv" | head -n1)
+# 	# fi
+# 	# if [[ -s "${assess_dir}/prefix.mito_basic_info.tsv" ]]; then
+# 	# 	num_contigs=$(awk -F'\t' '$1=="Total contig number"{print $2}' \
+# 	# 		"${assess_dir}/prefix.mito_basic_info.tsv" | head -n1)
+# 	# 	total_length=$(awk -F'\t' '$1=="Total length"{print $2}' \
+# 	# 		"${assess_dir}/prefix.mito_basic_info.tsv" | head -n1)
+# 	# 	N50=$(awk -F'\t' '$1=="N50"{print $2}' \
+# 	# 		"${assess_dir}/prefix.mito_basic_info.tsv" | head -n1)
+# 	# fi
+# 	# if [[ -s "${assess_dir}/prefix.4c_metrics.tsv" ]]; then
+# 	# 	fragmentation_index=$(awk -F'\t' '$2=="fragmentation_index"{print $3}' \
+# 	# 		"${assess_dir}/prefix.4c_metrics.tsv" | head -n1)
+# 	# 	max_contig_prop=$(awk -F'\t' '$2=="max_contig_prop"{print $3}' \
+# 	# 		"${assess_dir}/prefix.4c_metrics.tsv" | head -n1)
+# 	# 	contig_length_cv=$(awk -F'\t' '$2=="contig_length_cv"{print $3}' \
+# 	# 		"${assess_dir}/prefix.4c_metrics.tsv" | head -n1)
+# 	# fi
+#
+# 	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "geneset_completeness_prop" "${hmt_geneset}"
+# 	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "num_contigs" "${hmt_contigs}"
+# 	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "total_length" "${hmt_total_len}"
+# 	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "N50" "${hmt_n50}"
+# 	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "fragmentation_index" "${hmt_frag_idx}"
+# 	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "max_contig_prop" "${hmt_max_prop}"
+# 	append_fact "$sp" "$TIER" "$INUM" "oatk" "attr" "contig_length_cv" "${hmt_cv}"
+# }
 
 # ------------------------------------------------------------------------------
 # Harvest new oatk-tiara-himt-* layouts for a species
@@ -477,10 +534,13 @@ harvest_oatk_tiara_himt() {
 		# HiMT + Tiara + each Oatk
 		local sum_himt_mem_gb=0
 		local sum_himt_time_hours=0
+		local sum_himt_disk_gb=0
 		local sum_tiara_mem_gb=0
 		local sum_tiara_time_hours=0
+		local sum_tiara_disk_gb=0
 		local sum_total_mem_gb=0
 		local sum_total_hours=0
+		local sum_total_disk_gb=0
 
 		# ---------------------- HiMT (filter) ----------------------
 		# e.g., oatk-tiara-himt-t-h/himt
@@ -513,6 +573,7 @@ harvest_oatk_tiara_himt() {
 				_extract_summary_metrics "$hf_summary"
 				sum_himt_mem_gb="$sum_mem_gb"
 				sum_himt_time_hours="$sum_time_hours"
+				sum_himt_disk_gb="$sum_disk_gb"
 
 				append_fact "$sp" "$tier" "$inum" "$org" "attr" "himt_filter_mem_kb" "$sum_mem_kb"
 				append_fact "$sp" "$tier" "$inum" "$org" "attr" "himt_filter_mem_gb" "$sum_mem_gb"
@@ -547,6 +608,7 @@ harvest_oatk_tiara_himt() {
 				_extract_summary_metrics "$t_summary"
 				sum_tiara_mem_gb="$sum_mem_gb"
 				sum_tiara_time_hours="$sum_time_hours"
+				sum_tiara_disk_gb="$sum_disk_gb"
 				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_mem_kb" "$sum_mem_kb"
 				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_mem_gb" "$sum_mem_gb"
 				append_fact "$sp" "$tier" "$inum" "$org" "attr" "tiara_time_hms" "$sum_time_hms"
@@ -565,8 +627,10 @@ harvest_oatk_tiara_himt() {
 				base="$(basename "$mt_gfa")"         # oatk-x-h-02.mito.gfa
 				local tmp="${base#oatk-${pattern}-}" # 02.mito.gfa
 				cov="${tmp%%.mito.gfa}"              # 02
+				local c
+				printf -v c "%02d" "$cov"
 				label="c${cov}"
-				local assess_tool="oatk-${pattern}-${cov}"
+				local assess_tool="oatk-${pattern}-${c}"
 
 				local mt_png="${oatk_dir}/oatk-${pattern}-${cov}.mito.png"
 				local mt_ctg="${oatk_dir}/oatk-${pattern}-${cov}.mito.ctg.fasta"
@@ -590,11 +654,15 @@ harvest_oatk_tiara_himt() {
 				if [[ -s "$o_summary" ]]; then
 					_extract_summary_metrics "$o_summary"
 					# Memory Calculation
-					sum_total_mem_gb=$(bc <<<"$sum_mem_gb + $sum_himt_mem_gb + $sum_tiara_mem_gb")
 					# Hours Calculation
+					# Disk Calculation
+					sum_total_mem_gb=$(bc <<<"$sum_mem_gb + $sum_himt_mem_gb + $sum_tiara_mem_gb")
 					sum_total_time_hours=$(bc <<<"$sum_time_hours + $sum_himt_time_hours + $sum_tiara_time_hours")
+					sum_total_disk_gb=$(bc <<<"$sum_disk_gb + $sum_himt_disk_gb + $sum_tiara_disk_gb")
+
 					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_total_mem_gb" "$sum_total_mem_gb"
 					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_total_time_hours" "$sum_total_time_hours"
+					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_total_disk_gb" "$sum_total_disk_gb"
 
 					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_mem_kb" "$sum_mem_kb"
 					append_fact "$sp" "$tier" "$inum" "$org" "attr" "${label}_mem_gb" "$sum_mem_gb"

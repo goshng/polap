@@ -68,6 +68,9 @@ MAN_DIR       ?= $(SR)/man
 FIGURE_DIR    ?= $(SR)/man/figures
 MANIFEST_DIR  ?= $(SR)/man/md
 
+# Manuscript folder
+MAN5_FIGURE := $(HOME)/all/manuscript/polap-v0.5/figures
+
 # Common manifest tag reused across all tier/inum/set combinations
 MANIFEST_TAG := $(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN)
 
@@ -110,6 +113,9 @@ SCRIPT_MANIFEST_PY := "$(POLAPLIB_DIR)/scripts/oatk_manifest_assemble.py"
 SCRIPT_GRAPH := "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-graph.sh"
 SCRIPT_GRAPH_PY := "$(POLAPLIB_DIR)/scripts/polap-py-$(BOLAP_TYPE)-graph-table.py"
 SCRIPT_GRAPH_R := "$(POLAPLIB_DIR)/scripts/polap-r-$(BOLAP_TYPE)-graph.R"
+SCRIPT_GRAPH_SUMMARY_R := "$(POLAPLIB_DIR)/scripts/polap-r-$(BOLAP_TYPE)-graph-summary.R"
+SCRIPT_SHEET := "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-ptmt-sheet.sh"
+
 
 # ------------------------------------------------------------------------------
 # Phony targets and default goal
@@ -297,19 +303,23 @@ anno-scan: $(MANIFEST_V6)
 
 # sheet-ptmt: $(MANIFEST_V6)
 sheet-ptmt:
-	@bash "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-ptmt-sheet.sh" \
+	@bash "$(SCRIPT_SHEET)" \
 	  --manifest "$(MANIFEST_V6)" \
 	  --species-codes "$(SPECIES_CODES_TXT)" \
 	  --out "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
-	  --page-width-in 11 --page-height-in 17 --margin-in 1.5 \
-	  --gap-mm 4.0 --label-cex 1.25 --title-cex 1.0 \
-	  --rows-per-page 8 \
-	  --columns-per-page 6 \
+	  --gap-mm 4.0 --label-cex 1.00 --title-cex 1.0 \
+	  --page-width-in 11 --page-height-in 8.5 --margin-in 1.5 \
+	  --rows-per-page 2 \
+	  --columns-per-page 4 \
 	  --start-page 47 \
 		--mt-only \
 	  --title "Supplementary Materials - plant mitogenome assembly graphs"
 	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
 		"$(POLAPLIB_DIR)/figures"
+
+# --page-width-in 8.5 --page-height-in 11 --margin-in 1.5 \
+# --rows-per-page 8 \
+# --columns-per-page 6 \
 
 #-------------------------------------------------------------------------------
 # Boxplots
@@ -327,10 +337,14 @@ $(T_GRAPH): $(MANIFEST_V6)
 	@bash "$(SCRIPT_GRAPH)" \
 	  --manifest "$(MANIFEST_V6)" \
 	  --out "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf" \
+	  --out-tsv "$(MANIFEST_DIR)/$(MANIFEST_TAG)-mt-graph-summary.tsv" \
+		--complete-threshold 0 \
 	  --page-width-in 11 --page-height-in 8.5 --margin-in 0.5 \
 		--title " "
 	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf" \
 		"$(POLAPLIB_DIR)/figures"
+	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf" \
+		"$(MAN5_FIGURE)"
 	@echo "[INFO] Wrote: $(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf"
 
 #-------------------------------------------------------------------------------

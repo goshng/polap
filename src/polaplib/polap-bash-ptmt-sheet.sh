@@ -214,6 +214,8 @@ awk -F'\t' 'BEGIN{OFS=","} NR==1{print "species","png"; next} {print $1,$2}' "$M
 # -----------------------------------------------------------------------------#
 # Render with R
 # -----------------------------------------------------------------------------#
+
+echo "[INFO] before running R" >&2
 Rscript "${_POLAPLIB_DIR}/scripts/polap-r-ptmt-sheet.R" \
 	--pt-list "$PT_CSV" --mt-list "$MT_CSV" \
 	--annot-pt "$ANN_PT" --annot-mt "$ANN_MT" \
@@ -223,5 +225,6 @@ Rscript "${_POLAPLIB_DIR}/scripts/polap-r-ptmt-sheet.R" \
 	--page-width-in "$PW" --page-height-in "$PH" --margin-in "$MG" \
 	--gap-mm "$GAP" --label-cex "$LABEL_CEX" --title-cex "$TITLE_CEX" \
 	--label-strip-frac "$LABEL_STRIP"
+echo "[INFO] after running R" >&2
 
 echo "[OK] Wrote: $OUTPDF"

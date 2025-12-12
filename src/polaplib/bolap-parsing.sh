@@ -312,7 +312,7 @@ commands:
   run                  Run tools
   download             Download data.
   uninstall            Uninstall tools.
-  use                  Benchmark type: hifi, oatk, read, cflye, aflye
+  use                  Benchmark type: hifi, oatk, (default: ${_bolap_type})
   conda                Manage conda environments.
   list                 List for tools.
   help                 Print help message for commands and others.
@@ -329,6 +329,7 @@ options:
   --help               Show help message of a subcommand in the man page style.
   -h                   Show this help message and exit.
 HEREDOC
+		# use                  Benchmark type: hifi, oatk, read, cflye, aflye (default: ${_bolap_type})
 		# -i INT               Set species index (default: ${_brg_sindex})
 		# -c FILE              Set value for -c option for CSV config (default: ${opt_c_arg})
 		# -t STR               Set value for -t option for run folder name (default: ${opt_t_arg})

@@ -47,6 +47,7 @@ R_BIN="${R_BIN:-Rscript}"
 
 GRAPH_TABLE_PY="${SCRIPT_DIR}/scripts/polap-py-oatk-graph-table.py"
 GRAPH_R="${SCRIPT_DIR}/scripts/polap-r-oatk-graph.R"
+GRAPH_SUMMARY_R="${SCRIPT_DIR}/scripts/polap-r-oatk-graph-summary.R"
 
 MANIFEST="${POLAP_OATK_MANIFEST:-oatk-manifest.json}"
 CSV="${POLAP_OATK_GRAPH_CSV:-oatk-graph-metrics.csv}"
@@ -106,6 +107,11 @@ echo "  CSV : $CSV"
 	--data "$CSV" \
 	--out "$PDF" \
 	--title "$TITLE" \
+	"${R_EXTRA_ARGS[@]}"
+
+# 3) CSV -> TSV
+"$R_BIN" "$GRAPH_SUMMARY_R" \
+	--data "$CSV" \
 	"${R_EXTRA_ARGS[@]}"
 
 echo "  PDF : $PDF"

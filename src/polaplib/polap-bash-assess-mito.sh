@@ -111,6 +111,6 @@ Rscript "$R_QC" \
 	"${PREFIX}.spliced_genes.tsv" \
 	"${PREFIX}.mito_qc_4c.pdf"
 
-echo "[polap-bash-assess-mito] Done."
-echo "  4C metrics TSV : ${PREFIX}.4c_metrics.tsv"
-echo "  QC dashboard   : ${PREFIX}.mito_qc_4c.pdf"
+# echo "[polap-bash-assess-mito] Done."
+# echo "  4C metrics TSV : ${PREFIX}.4c_metrics.tsv"
+# echo "  QC dashboard   : ${PREFIX}.mito_qc_4c.pdf"

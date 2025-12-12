@@ -239,7 +239,7 @@ def main():
         for row in metrics:
             w.writerow(row)
 
-    print(f"[4C] Wrote: {out_path}")
+    # print(f"[4C] Wrote: {out_path}")
 
 
 if __name__ == "__main__":

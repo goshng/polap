@@ -11606,9 +11606,9 @@ EOF
 		for i in $(seq 2 49); do
 			printf -v c "%02d" "$i"
 			if [[ -z "$_c_list" ]]; then
-				_c_list="$c"
+				_c_list="$i"
 			else
-				_c_list="${_c_list},$c"
+				_c_list="${_c_list},$i"
 			fi
 		done
 	elif [[ "$_c_list" == *..* ]]; then
@@ -11808,11 +11808,13 @@ EOF
 		for i in $(seq 2 49); do
 			printf -v c "%02d" "$i"
 			local oatk_dir="${_brg_outdir_i}/oatk-tiara-himt-${pattern}"
-			local prefix="oatk-${pattern}-${c}"
+			# local prefix="oatk-${pattern}-${c}"
+			local prefix="oatk-${pattern}-${i}"
 			local gfa="${oatk_dir}/oatk/${prefix}.mito.gfa"
 			local png="${oatk_dir}/oatk/${prefix}.mito.png"
 			local mito_fa="${oatk_dir}/oatk/${prefix}.mito.ctg.fasta"
-			local outdir="${assess_root}/${prefix}"
+			local prefix_assess="oatk-${pattern}-${c}"
+			local outdir="${assess_root}/${prefix_assess}"
 
 			if [[ ! -s "$mito_fa" ]]; then
 				# echo "[WARN] Missing mito assembly for $prefix ($mito_fa); skipping assess" >&2
@@ -11821,7 +11823,9 @@ EOF
 
 			rm -rf "$outdir"
 			mkdir -p "$outdir"
-			echo "[INFO] HiMT assess for $prefix"
+			if ((_brg_verbose > 1)); then
+				echo "[INFO] HiMT assess for $prefix"
+			fi
 			if [[ -s "${mito_fa}" ]]; then
 
 				himt assess \

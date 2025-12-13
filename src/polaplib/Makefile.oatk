@@ -70,6 +70,7 @@ MANIFEST_DIR  ?= $(SR)/man/md
 
 # Manuscript folder
 MAN5_FIGURE := $(HOME)/all/manuscript/polap-v0.5/figures
+MAN5_MD     := $(HOME)/all/manuscript/polap-v0.5/md
 
 # Common manifest tag reused across all tier/inum/set combinations
 MANIFEST_TAG := $(TIER_CLEAN)-$(INUM_CLEAN)-$(SET_CLEAN)
@@ -238,6 +239,7 @@ $(TABLE_S1_TSV): $(MANIFEST_V6)
 	  --out "$(TABLE_S1_TSV)" \
 	  --markdown
 	@echo "[OK] Wrote: $(TABLE_S1_TSV) and $(TABLE_S1_MD)"
+	@cp "$(TABLE_S1_MD)" "$(MAN5_MD)"
 
 $(TABLE_S1_MD): $(TABLE_S1_TSV)
 	@true
@@ -316,6 +318,8 @@ sheet-ptmt:
 	  --title "Supplementary Materials - plant mitogenome assembly graphs"
 	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
 		"$(POLAPLIB_DIR)/figures"
+	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
+		"$(MAN5_FIGURE)/figures"
 
 # --page-width-in 8.5 --page-height-in 11 --margin-in 1.5 \
 # --rows-per-page 8 \

@@ -116,6 +116,7 @@ SCRIPT_GRAPH_PY := "$(POLAPLIB_DIR)/scripts/polap-py-$(BOLAP_TYPE)-graph-table.p
 SCRIPT_GRAPH_R := "$(POLAPLIB_DIR)/scripts/polap-r-$(BOLAP_TYPE)-graph.R"
 SCRIPT_GRAPH_SUMMARY_R := "$(POLAPLIB_DIR)/scripts/polap-r-$(BOLAP_TYPE)-graph-summary.R"
 SCRIPT_SHEET := "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-ptmt-sheet.sh"
+SCRIPT_SHEET_R := "$(POLAPLIB_DIR)/polap-r-$(BOLAP_TYPE)-ptmt-sheet.R"
 
 
 # ------------------------------------------------------------------------------
@@ -305,14 +306,18 @@ anno-scan: $(MANIFEST_V6)
 
 # sheet-ptmt: $(MANIFEST_V6)
 sheet-ptmt:
+	@echo "[INFO] Building sheet for assembly graphs tier=$(TIER_CLEAN) set=$(SET_CLEAN) in $(SR)"
+	@echo "[INFO] bash script: ${SCRIPT_SHEET}" 
+	@echo "[INFO] python script: ${SCRIPT_GRAPH_PY}" 
+	@echo "[INFO] R script: ${SCRIPT_SHEET_R}" 
 	@bash "$(SCRIPT_SHEET)" \
 	  --manifest "$(MANIFEST_V6)" \
 	  --species-codes "$(SPECIES_CODES_TXT)" \
 	  --out "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
 	  --gap-mm 4.0 --label-cex 1.00 --title-cex 1.0 \
-	  --page-width-in 11 --page-height-in 8.5 --margin-in 1.5 \
-	  --rows-per-page 2 \
-	  --columns-per-page 4 \
+	  --page-width-in 11 --page-height-in 8.5 --margin-in 0.5 \
+	  --rows-per-page 5 \
+	  --columns-per-page 8 \
 	  --start-page 28 \
 		--mt-only \
 	  --title "Supplementary Materials - plant mitogenome assembly graphs"

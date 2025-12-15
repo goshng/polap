@@ -277,9 +277,9 @@ and tippo, himt, and oatk-30 (or x-30).
 
 Another way of plotting boxplots of X-axis is grouped by cov, and patterns are listed with each cov.
 e.g.,
-t-h-02, h-t-02, t-x-02, x-h-02, 
-t-h-05, h-t-05, t-x-05, x-h-05, 
-t-h-08, h-t-08, t-x-08, x-h-08, 
+t-h-02, h-t-02, t-x-02, x-h-02,
+t-h-05, h-t-05, t-x-05, x-h-05,
+t-h-08, h-t-08, t-x-08, x-h-08,
 t-h-11, h-t-11, t-x-11, x-h-11, x-x-11,
 t-h-20, h-t-20, t-x-20, x-h-20, x-x-20,
 t-h-30, h-t-30, t-x-30, x-h-30, x-x-30,
@@ -291,7 +291,7 @@ Second, aggregate each group of the boxplots in the first.
 Plotting boxplots can be listed by only patterns.
 e.g.,
 t-h, h-t, t-x, x-h, x-x, and tippo, himt, and oatk-30 (or x-30).
-each group aggregates all in that group; 
+each group aggregates all in that group;
 i.e., t-h is all t-h-02, t-h-05, t-h-08, t-h-11, t-h-20, t-h-30, t-h-40, t-h-50,
 
 Plotting can be listed by only cov.
@@ -301,7 +301,7 @@ e.g.,
 
 So, up until now, 4 different kinds of boxplots for each of values: total_mem_gb, total_time_hours, disk_gb, completeness_prop.
 
-Third, this is not about boxplots. 
+Third, this is not about boxplots.
 Y-axis is over all the 81 datasets.
 X-axis is yes or no for completeness_prop is equal to 1 or at least 0.95 for one particular case. Each case is listed as follows:
 t-h-02, t-h-05, t-h-08, t-h-11, t-h-20, t-h-30, t-h-40, t-h-50,
@@ -323,3 +323,15 @@ t-x-02, t-x-05, t-x-08, t-x-11, t-x-20, t-x-30, t-x-40, t-x-50,
 x-h-02, x-h-05, x-h-08, x-h-11, x-h-20, x-h-30, x-h-40, x-h-50,
 x-x-11, x-x-20, x-x-30, x-x-40, x-x-50,
 and tippo, himt, and oatk-30 (or x-30).
+
+Currently, I use Version : v1.7.1 (2025-12-12) of scripts/polap-r-oatk-ptmt-sheet.R
+that works fine. I want learn about it to plot all graphs for a dataset in a single plot in the same order in the graph.
+t-h-02, t-h-05, t-h-08, t-h-11, t-h-20, t-h-30, t-h-40, t-h-50,
+h-t-02, h-t-05, h-t-08, h-t-11, h-t-20, h-t-30, h-t-40, h-t-50,
+t-x-02, t-x-05, t-x-08, t-x-11, t-x-20, t-x-30, t-x-40, t-x-50,
+x-h-02, x-h-05, x-h-08, x-h-11, x-h-20, x-h-30, x-h-40, x-h-50,
+x-x-11, x-x-20, x-x-30, x-x-40, x-x-50,
+and tippo, himt, and oatk-30 (or x-30).
+These are 40 graphs total. First, suggest how I should approach this change to reflect polap-r-oatk-ptmt-sheet.R.
+
+Rscript /home/goshng/all/polap/oatk1/polap/src/polaplib/scripts/polap-r-oatk-ptmt-sheet.R --list oatk-ptmt-sheet-list.csv --out /media/h4/labshare/goshng/oatk1/man/figures/v2-0-auto-sheet-ptmt.pdf --species-codes /home/goshng/all/polap/oatk1/polap/src/polaplib/polap-species-codes-oatk.txt --gap-mm 4.0 --label-cex 1.00 --title-cex 1.0 --page-width-in 11 --page-height-in 8.5 --margin-in 1.5 --rows-per-page 2 --columns-per-page 4 --start-page 28 --mt-only --title Supplementary Materials - plant mitogenome assembly graphs

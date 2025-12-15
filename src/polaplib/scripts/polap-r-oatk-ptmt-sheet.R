@@ -1,9 +1,11 @@
 #!/usr/bin/env Rscript
 # scripts/polap-r-oatk-ptmt-sheet.R
-# Version : v1.7.1  (2025-12-12)
+# Version : v1.8.0  (2025-12-15)
 # Author  : Sang Chul Choi (POLAP)
 # License : GPL-3.0+
 #
+# v1.8.0 changes (relative to v1.7.1)
+# - One page per species dataset
 # v1.7.1 changes (relative to v1.7.0)
 # - Keep ALL v1.7.0 pages (species × pattern) unchanged
 # - ADD: one extra "summary" page per species that shows
@@ -46,14 +48,14 @@ opt <- OptionParser(option_list = list(
   make_option(
     c("--rows-per-page"),
     type    = "integer",
-    default = 8,
-    help    = "Rows of tiles per page (default: 8)"
+    default = 5,
+    help    = "Rows of tiles per page (default: 5)"
   ),
   make_option(
     c("--columns-per-page"),
     type    = "integer",
-    default = 6,
-    help    = "Columns of tiles per page (default: 6)"
+    default = 8,
+    help    = "Columns of tiles per page (default: 8)"
   ),
   make_option(
     c("--start-page"),
@@ -74,6 +76,15 @@ opt <- OptionParser(option_list = list(
     type    = "character",
     default = NULL,
     help    = "Species-codes mapping file (space-delimited: code species)"
+  ),
+  # Keep v1.7.1
+  # per-pattern: current output (summary + pattern pages)
+  # per-dataset: new output (one dataset page with 40 tiles)
+  make_option(
+    c("--mode"),
+    type = "character",
+    default = "per-dataset",
+    help = "Page mode: per-pattern or per-dataset (default)"
   ),
   # MT/PT selection
   make_option(
@@ -207,6 +218,20 @@ if (length(pattern_levels) == 0) {
   stop("No patterns found in CSV.")
 }
 
+# the 40-case order once
+# the target tile order that a dataset page must follow.
+cov_all <- c(2, 5, 8, 11, 20, 30, 40, 50)
+cov_xx <- c(11, 20, 30, 40, 50)
+
+cases_40 <- c(
+  sprintf("t-h-%02d", cov_all),
+  sprintf("h-t-%02d", cov_all),
+  sprintf("t-x-%02d", cov_all),
+  sprintf("x-h-%02d", cov_all),
+  sprintf("x-x-%02d", cov_xx),
+  "tippo", "himt", "x-30"
+)
+
 # which PNG column to use
 image_col <- if (opt$`mt-only`) {
   "mt_png"
@@ -243,6 +268,72 @@ if (!is.null(opt$`species-codes`) && nzchar(opt$`species-codes`) &&
 }
 
 # ------------------------------------------------------------------#
+# Build a case_id for every row (v1.8.0)
+# Turns a row into a single canonical slot in the 40-case page.
+# ------------------------------------------------------------------#
+make_case_id <- function(tool, pattern, cov) {
+  tool <- as.character(tool)
+  pat <- ifelse(is.na(pattern), "", as.character(pattern))
+  cv_i <- suppressWarnings(as.integer(round(as.numeric(cov))))
+
+  if (tool == "tippo") {
+    return("tippo")
+  }
+  if (tool == "himt") {
+    return("himt")
+  }
+
+  # patterned oatk
+  if (tool == "oatk" && pat %in% c("t-h", "h-t", "t-x", "x-h", "x-x") && !is.na(cv_i)) {
+    return(sprintf("%s-%02d", pat, cv_i))
+  }
+
+  # baseline oatk x-30
+  if (tool == "oatk" && pat %in% c("x", "") && !is.na(cv_i) && cv_i == 30L) {
+    return("x-30")
+  }
+
+  NA_character_
+}
+
+# ------------------------------------------------------------------#
+# New builder: one page per dataset with all 40 slots (v1.8.0)
+# Ensures exactly 40 rows in the correct order
+# Missing cases become NA -> your existing code prints No assembly
+# Provides .tile_label so you can label tiles by t-h-02, etc.
+# ------------------------------------------------------------------#
+make_dataset_slice <- function(df_sp_all, cases_40) {
+  # df_sp_all is already one species+code2
+  d <- df_sp_all %>%
+    mutate(
+      tool = if ("tool" %in% names(.)) as.character(tool) else "oatk", # if your CSV lacks tool, set it earlier
+      case_id = mapply(make_case_id, tool, pattern, cov, SIMPLIFY = TRUE)
+    ) %>%
+    filter(!is.na(case_id)) %>%
+    group_by(case_id) %>%
+    slice(1) %>% # if duplicates exist, keep first
+    ungroup()
+
+  # skeleton with all cases (keeps order and forces missing tiles)
+  skeleton <- data.frame(case_id = cases_40, stringsAsFactors = FALSE)
+
+  out <- skeleton %>%
+    left_join(d, by = "case_id")
+  sp_name0 <- df_sp_all$species[1]
+  sp_code20 <- df_sp_all$code2[1]
+  out$species <- sp_name0
+  out$code2 <- sp_code20
+
+
+  # Use case_id as the tile label for non-summary pages
+  out$.tile_label <- out$case_id
+
+  out
+}
+
+
+
+# ------------------------------------------------------------------#
 # Page drawing (v1.7.0 + summary-mode extension)
 # ------------------------------------------------------------------#
 draw_pattern_page <- function(df_pat, pattern_label,
@@ -264,98 +355,139 @@ draw_pattern_page <- function(df_pat, pattern_label,
   pushViewport(outer_vp)
 
   # ----------------------- Title & subtitle ----------------------- #
-  main_title <- opt$title
+  # main_title <- opt$title
+  # grid.text(
+  #   main_title,
+  #   x = 0.5,
+  #   y = unit(1, "npc"),
+  #   just = c("center", "top"),
+  #   gp = gpar(fontface = "bold", cex = opt$`title-cex`)
+  # )
+  #
+  # df_sp_uniq <- df_pat %>%
+  #   distinct(species, code2)
+  #
+  # if (nrow(df_sp_uniq) == 1L) {
+  #   sp_name <- df_sp_uniq$species[1]
+  #   sp_code2 <- df_sp_uniq$code2[1]
+  #   sp_pretty <- gsub("_", " ", sp_name, fixed = TRUE)
+  #   species_hdr <- sprintf("%s (%s)", sp_code2, sp_pretty)
+  # } else {
+  #   species_hdr <- "Multiple species"
+  # }
+  #
+  # sel_str <- if (image_col == "mt_png") "MT" else "PT"
+  #
+  # subtitle <- if (.is_summary) {
+  #   sprintf("Species: %s  |  Summary: oatk-x-10/20/30 + himt + tippo (%s)", species_hdr, sel_str)
+  # } else if (n_subpages > 1L) {
+  #   sprintf(
+  #     "Species: %s  |  Pattern: %s (%s, page %d/%d for this species+pattern)",
+  #     species_hdr, pattern_label, sel_str, subpage_index, n_subpages
+  #   )
+  # } else {
+  #   sprintf(
+  #     "Species: %s  |  Pattern: %s (%s)",
+  #     species_hdr, pattern_label, sel_str
+  #   )
+  # }
+  #
+  # grid.text(
+  #   subtitle,
+  #   x = 0.5,
+  #   y = unit(1, "npc") - unit(1.4, "lines"),
+  #   just = c("center", "top"),
+  #   gp = gpar(cex = 0.9)
+  # )
+
+  # ----- Build dataset label (single species expected for all-cases) -----
+  df_sp_uniq <- df_pat %>% distinct(species, code2)
+
+  sp_name <- if (nrow(df_sp_uniq) >= 1L) df_sp_uniq$species[1] else ""
+  sp_code2 <- if (nrow(df_sp_uniq) >= 1L) df_sp_uniq$code2[1] else ""
+  sp_pretty <- gsub("_", " ", sp_name, fixed = TRUE)
+
+  # Line 1: title + dataset
+  line1 <- sprintf("%s - %s %s", opt$title, sp_code2, sp_pretty)
+
+  # Line 2: fixed Methods hint
+  line2 <- "See the Materials and Methods for the description of label such as t-h-02-1.00"
+
   grid.text(
-    main_title,
+    line1,
     x = 0.5,
     y = unit(1, "npc"),
     just = c("center", "top"),
     gp = gpar(fontface = "bold", cex = opt$`title-cex`)
   )
 
-  df_sp_uniq <- df_pat %>%
-    distinct(species, code2)
-
-  if (nrow(df_sp_uniq) == 1L) {
-    sp_name <- df_sp_uniq$species[1]
-    sp_code2 <- df_sp_uniq$code2[1]
-    sp_pretty <- gsub("_", " ", sp_name, fixed = TRUE)
-    species_hdr <- sprintf("%s (%s)", sp_code2, sp_pretty)
-  } else {
-    species_hdr <- "Multiple species"
-  }
-
-  sel_str <- if (image_col == "mt_png") "MT" else "PT"
-
-  subtitle <- if (.is_summary) {
-    sprintf("Species: %s  |  Summary: oatk-x-10/20/30 + himt + tippo (%s)", species_hdr, sel_str)
-  } else if (n_subpages > 1L) {
-    sprintf(
-      "Species: %s  |  Pattern: %s (%s, page %d/%d for this species+pattern)",
-      species_hdr, pattern_label, sel_str, subpage_index, n_subpages
-    )
-  } else {
-    sprintf(
-      "Species: %s  |  Pattern: %s (%s)",
-      species_hdr, pattern_label, sel_str
-    )
-  }
-
   grid.text(
-    subtitle,
+    line2,
     x = 0.5,
-    y = unit(1, "npc") - unit(1.4, "lines"),
+    y = unit(1, "npc") - unit(1.2, "lines"),
     just = c("center", "top"),
-    gp = gpar(cex = 0.9)
+    gp = gpar(cex = 0.85)
   )
 
+
   # ----------------------- Species legend (per page) --------------- #
-  legend_y <- unit(1, "npc") - unit(2.5, "lines")
-  content_top <- unit(1, "npc") - unit(3.2, "lines")
+  # legend_y <- unit(1, "npc") - unit(2.5, "lines")
+  # # content_top <- unit(1, "npc") - unit(3.2, "lines")
+  # # We use only 2 header lines now; start content higher
+  # content_top <- unit(1, "npc") - unit(2.2, "lines")
+  #
+  #
+  # if (!is.null(species_codes_df)) {
+  #   df_uniq <- df_pat %>%
+  #     distinct(species, code2) %>%
+  #     filter(!is.na(code2), nzchar(code2), !is.na(species), nzchar(species))
+  #
+  #   legend_df <- df_uniq %>%
+  #     left_join(species_codes_df, by = c("species" = "species"))
+  #
+  #   legend_df <- legend_df %>%
+  #     mutate(
+  #       code_label    = if_else(!is.na(code), code, code2),
+  #       species_label = gsub("_", " ", species, fixed = TRUE),
+  #       legend_label  = paste(code_label, species_label)
+  #     )
+  #
+  #   legend_text <- paste(unique(legend_df$legend_label), collapse = "   ")
+  #
+  #   if (nzchar(legend_text)) {
+  #     grid.text(
+  #       legend_text,
+  #       x = 0.5,
+  #       y = legend_y,
+  #       just = c("center", "top"),
+  #       gp = gpar(cex = 0.85)
+  #     )
+  #   }
+  # } else {
+  #   df_uniq <- df_pat %>%
+  #     distinct(species, code2) %>%
+  #     filter(!is.na(code2), nzchar(code2), !is.na(species), nzchar(species)) %>%
+  #     mutate(
+  #       species_label = gsub("_", " ", species, fixed = TRUE),
+  #       legend_label  = paste(code2, species_label)
+  #     )
+  #   legend_text <- paste(unique(df_uniq$legend_label), collapse = "   ")
+  #   if (nzchar(legend_text)) {
+  #     grid.text(
+  #       legend_text,
+  #       x = 0.5,
+  #       y = legend_y,
+  #       just = c("center", "top"),
+  #       gp = gpar(cex = 0.85)
+  #     )
+  #   }
+  # }
 
-  if (!is.null(species_codes_df)) {
-    df_uniq <- df_pat %>%
-      distinct(species, code2)
+  # ----------------------- (Disabled) Species legend --------------- #
+  # We keep only the 2-line header (title + Methods note).
+  # So do NOT draw the per-page species legend line.
+  content_top <- unit(1, "npc") - unit(2.2, "lines")
 
-    legend_df <- df_uniq %>%
-      left_join(species_codes_df, by = c("species" = "species"))
-
-    legend_df <- legend_df %>%
-      mutate(
-        code_label    = if_else(!is.na(code), code, code2),
-        species_label = gsub("_", " ", species, fixed = TRUE),
-        legend_label  = paste(code_label, species_label)
-      )
-
-    legend_text <- paste(unique(legend_df$legend_label), collapse = "   ")
-
-    if (nzchar(legend_text)) {
-      grid.text(
-        legend_text,
-        x = 0.5,
-        y = legend_y,
-        just = c("center", "top"),
-        gp = gpar(cex = 0.85)
-      )
-    }
-  } else {
-    df_uniq <- df_pat %>%
-      distinct(species, code2) %>%
-      mutate(
-        species_label = gsub("_", " ", species, fixed = TRUE),
-        legend_label  = paste(code2, species_label)
-      )
-    legend_text <- paste(unique(df_uniq$legend_label), collapse = "   ")
-    if (nzchar(legend_text)) {
-      grid.text(
-        legend_text,
-        x = 0.5,
-        y = legend_y,
-        just = c("center", "top"),
-        gp = gpar(cex = 0.85)
-      )
-    }
-  }
 
   # ----------------------- Body layout --------------------------- #
   footer_height <- unit(1.2, "lines")
@@ -418,8 +550,8 @@ draw_pattern_page <- function(df_pat, pattern_label,
     local_rows <- rows_per_page
     local_cols <- cols_per_page
 
-    img_height_frac <- 0.75
-    img_y_center <- 0.45
+    # img_height_frac <- 0.75
+    # img_y_center <- 0.45
   }
 
   for (k in seq_len(max_tiles)) {
@@ -466,27 +598,49 @@ draw_pattern_page <- function(df_pat, pattern_label,
       comp_num <- suppressWarnings(as.numeric(comp_raw))
       comp_str <- if (!is.na(comp_num)) sprintf("%.2f", comp_num) else ""
 
-      if (.is_summary) {
-        # e.g. oatk-x-10-0.95  (or just oatk-x-10 if comp missing)
-        base_lab <- df_pat$.tile_label[k]
-        row_label <- if (nzchar(comp_str)) paste0(base_lab, "-", comp_str) else base_lab
+      # v1.7.1
+      # if (.is_summary) {
+      #   # e.g. oatk-x-10-0.95  (or just oatk-x-10 if comp missing)
+      #   base_lab <- df_pat$.tile_label[k]
+      #   row_label <- if (nzchar(comp_str)) paste0(base_lab, "-", comp_str) else base_lab
+      # } else {
+      #   # e.g. t-h-20-0.95 (two decimals)
+      #   cov_i <- suppressWarnings(as.integer(round(as.numeric(cov))))
+      #   cov_str <- if (!is.na(cov_i)) as.character(cov_i) else as.character(cov)
+      #   base_lab <- paste0(pat_k, "-", cov_str)
+      #   row_label <- if (nzchar(comp_str)) paste0(base_lab, "-", comp_str) else base_lab
+      # }
+
+      # v1.8.0
+      # Summary pages already set .tile_label (oatk-x-10, himt, tippo) -> used automatically.
+      # Your future per-dataset pages will also set .tile_label (t-h-02, ..., x-30) -> used automatically.
+      # Old per-pattern pages don’t have .tile_label -> it falls back to pattern-cov formatting.
+      # Completeness suffix (-0.95) still appends.
+      # v1.8.0
+      # If a tile label was precomputed (summary page OR per-dataset page), use it.
+      # Otherwise fall back to pattern+cov.
+      if (".tile_label" %in% names(df_pat) && !is.na(df_pat$.tile_label[k]) && nzchar(as.character(df_pat$.tile_label[k]))) {
+        base_lab <- as.character(df_pat$.tile_label[k])
       } else {
-        # e.g. t-h-20-0.95 (two decimals)
         cov_i <- suppressWarnings(as.integer(round(as.numeric(cov))))
-        cov_str <- if (!is.na(cov_i)) as.character(cov_i) else as.character(cov)
+        cov_str <- if (!is.na(cov_i)) sprintf("%02d", cov_i) else as.character(cov) # keep 02-style
         base_lab <- paste0(pat_k, "-", cov_str)
-        row_label <- if (nzchar(comp_str)) paste0(base_lab, "-", comp_str) else base_lab
       }
 
+      row_label <- if (nzchar(comp_str)) paste0(base_lab, "-", comp_str) else base_lab
 
 
-
+      # Change scheme-cov font size
+      label_cex_use <- opt$`label-cex`
+      if (".tile_label" %in% names(df_pat)) {
+        label_cex_use <- opt$`label-cex` * 0.85
+      }
       grid.text(
         row_label,
         x = 0,
-        y = 0.98,
+        y = 0.995,
         just = c("left", "top"),
-        gp = gpar(cex = opt$`label-cex`, fontface = 3)
+        gp = gpar(cex = label_cex_use, fontface = 3)
       )
 
       img_height_frac <- 0.75
@@ -517,15 +671,14 @@ draw_pattern_page <- function(df_pat, pattern_label,
             )
           }
         } else {
-          grid.text("No assembly",
-            gp = gpar(col = "red3", cex = 0.9, fontface = "bold"),
+          grid.text("x",
+            gp = gpar(col = "red3", cex = 2.0, fontface = "bold"),
             y  = unit(img_y_center, "npc")
           )
         }
       } else {
-        grid.text(
-          "No assembly",
-          gp = gpar(col = "red3", cex = 0.9, fontface = "bold"),
+        grid.text("x",
+          gp = gpar(col = "red3", cex = 2.0, fontface = "bold"),
           y  = unit(img_y_center, "npc")
         )
       }
@@ -555,7 +708,9 @@ draw_pattern_page <- function(df_pat, pattern_label,
 }
 
 # ------------------------------------------------------------------#
-# Build page list (KEEP v1.7.0 pages; ADD summary pages)
+# Build page list (v1.8.0 and v1.7.1)
+# If --mode per-pattern, you keep your working v1.7.1 output.
+# Otherwise, you get one page per dataset with 40 tiles.
 # ------------------------------------------------------------------#
 page_specs <- list()
 
@@ -573,48 +728,60 @@ for (sp_i in seq_len(nrow(species_list))) {
 
   if (nrow(df_sp_all) == 0L) next
 
-  # ---- ADD: one summary page per species (5 tiles) ----
-  df_sum <- make_summary_slice(df_sp_all)
-  page_specs[[length(page_specs) + 1L]] <- list(
-    species     = sp_name,
-    code2       = sp_code2,
-    pattern     = "summary",
-    df          = df_sum,
-    subpage_idx = 1L,
-    n_subpages  = 1L,
-    is_summary  = TRUE
-  )
+  if (opt$mode == "per-dataset") {
+    df_page <- make_dataset_slice(df_sp_all, cases_40)
 
-  # ---- KEEP: v1.7.0 per-pattern pages unchanged ----
-  for (pat in pattern_levels) {
-    df_sp_pat_all <- df_sp_all %>%
-      filter(pattern == pat) %>%
-      arrange(cov)
+    page_specs[[length(page_specs) + 1L]] <- list(
+      species     = sp_name,
+      code2       = sp_code2,
+      pattern     = "all-cases",
+      df          = df_page,
+      subpage_idx = 1L,
+      n_subpages  = 1L,
+      is_summary  = FALSE
+    )
+  } else {
+    # ---- current v1.7.1 behavior ----
+    df_sum <- make_summary_slice(df_sp_all)
+    page_specs[[length(page_specs) + 1L]] <- list(
+      species     = sp_name,
+      code2       = sp_code2,
+      pattern     = "summary",
+      df          = df_sum,
+      subpage_idx = 1L,
+      n_subpages  = 1L,
+      is_summary  = TRUE
+    )
 
-    if (nrow(df_sp_pat_all) == 0L) {
-      next
-    }
+    for (pat in pattern_levels) {
+      df_sp_pat_all <- df_sp_all %>%
+        filter(pattern == pat) %>%
+        arrange(cov)
 
-    n_tiles_pat <- nrow(df_sp_pat_all)
-    n_chunks <- ceiling(n_tiles_pat / tiles_per_page)
+      if (nrow(df_sp_pat_all) == 0L) next
 
-    for (chunk_i in seq_len(n_chunks)) {
-      start_i <- (chunk_i - 1L) * tiles_per_page + 1L
-      end_i <- min(start_i + tiles_per_page - 1L, n_tiles_pat)
-      df_slice <- df_sp_pat_all[start_i:end_i, , drop = FALSE]
+      n_tiles_pat <- nrow(df_sp_pat_all)
+      n_chunks <- ceiling(n_tiles_pat / tiles_per_page)
 
-      page_specs[[length(page_specs) + 1L]] <- list(
-        species     = sp_name,
-        code2       = sp_code2,
-        pattern     = as.character(pat),
-        df          = df_slice,
-        subpage_idx = chunk_i,
-        n_subpages  = n_chunks,
-        is_summary  = FALSE
-      )
+      for (chunk_i in seq_len(n_chunks)) {
+        start_i <- (chunk_i - 1L) * tiles_per_page + 1L
+        end_i <- min(start_i + tiles_per_page - 1L, n_tiles_pat)
+        df_slice <- df_sp_pat_all[start_i:end_i, , drop = FALSE]
+
+        page_specs[[length(page_specs) + 1L]] <- list(
+          species     = sp_name,
+          code2       = sp_code2,
+          pattern     = as.character(pat),
+          df          = df_slice,
+          subpage_idx = chunk_i,
+          n_subpages  = n_chunks,
+          is_summary  = FALSE
+        )
+      }
     }
   }
 }
+
 
 n_pages_global <- length(page_specs)
 if (n_pages_global == 0L) {

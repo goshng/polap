@@ -4311,6 +4311,7 @@ Examples:
     bolap batch --cmd run-downsample-long --type file:s.txt --coverage 0g
     bolap batch --cmd run-oatk-tiara-himt --tipe file:s.txt
     bolap batch --cmd run-assess-oatk-tiara-himt --type file:s.txt
+    bolap batch --cmd export --type file:s.txt
 
   Run Oatk for organelle genome assemblies:
     bolap run oatk-tiara-himt -s Brassica_rapa

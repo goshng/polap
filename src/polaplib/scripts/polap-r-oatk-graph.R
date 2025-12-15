@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # polap-r-oatk-graph.R
-# Version : v2.1.2  (2025-12-10)
+# Version : v2.1.3  (2025-12-14)
 # Author  : Sang Chul Choi (POLAP)
 # License : GPL-3.0+
 #
@@ -79,6 +79,17 @@ opt <- OptionParser(option_list = list(
     type = "double",
     default = 0,
     help = "Dummy for polap-r-oatk-graph-summary.R"
+  ),
+  make_option(c("--boxplot-layout"),
+    type    = "character",
+    default = "per-metric",
+    help    = "Boxplot layout: 'per-metric' (one figure per metric, default) or 'all-in-one'"
+  ),
+  make_option(
+    c("--boxplot-pages"),
+    type = "character",
+    default = "single",
+    help = "Boxplot pagination: 'combined' (4 panels per metric page) or 'single' (each panel on its own page)"
   )
 )) |>
   parse_args()
@@ -279,11 +290,17 @@ metric_labels <- c(
 )
 
 # ASCII-only subtitles
+# style_labels <- list(
+#   pattern_first = "by pattern-coverage (pattern-first: t-h-02, ..., x-x-50, tippo, himt, x-30)",
+#   cov_first     = "by coverage-pattern (cov-first: t-h-02, h-t-02, ..., x-x-50, tippo, himt, x-30)",
+#   pattern_group = "aggregated by pattern (t-h, h-t, t-x, x-h, x-x, tippo, himt, x-30)",
+#   cov_group     = "aggregated by coverage (02,05,08,11,20,30,40,50, tippo, himt, x-30)"
+# )
 style_labels <- list(
-  pattern_first = "by pattern-coverage (pattern-first: t-h-02, ..., x-x-50, tippo, himt, x-30)",
-  cov_first     = "by coverage-pattern (cov-first: t-h-02, h-t-02, ..., x-x-50, tippo, himt, x-30)",
-  pattern_group = "aggregated by pattern (t-h, h-t, t-x, x-h, x-x, tippo, himt, x-30)",
-  cov_group     = "aggregated by coverage (02,05,08,11,20,30,40,50, tippo, himt, x-30)"
+  pattern_first = NULL,
+  cov_first     = NULL,
+  pattern_group = NULL,
+  cov_group     = NULL
 )
 
 # -----------------------------------------------------------------------------#
@@ -305,17 +322,21 @@ make_box_pattern_first <- function(metric_name) {
   ) +
     geom_boxplot(outlier.shape = 21, size = 0.2) +
     labs(
-      x     = "Pattern-coverage case (pattern-first)",
+      x     = "Filtering scheme-Threshold",
       y     = metric_labels[[metric_name]],
-      title = paste(metric_labels[[metric_name]], style_labels$pattern_first),
+      # title = paste(metric_labels[[metric_name]], style_labels$pattern_first),
+      title = NULL,
       fill  = "Pattern / tool"
     ) +
     scale_x_discrete(drop = FALSE) +
-    theme_bw(base_size = 8) +
+    theme_bw(base_size = 18) +
     theme(
       axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
       plot.title = element_text(hjust = 0, face = "bold", size = 9),
-      legend.position = "bottom"
+      axis.title.x = element_text(
+        margin = margin(t = 10) # ⭐ space between title and ticks
+      ),
+      legend.position = "none"
     )
 }
 
@@ -335,13 +356,14 @@ make_box_cov_first <- function(metric_name) {
   ) +
     geom_boxplot(outlier.shape = 21, size = 0.2) +
     labs(
-      x     = "Pattern-coverage case (cov-first)",
+      x     = "Filtering scheme-Threshold",
       y     = metric_labels[[metric_name]],
-      title = paste(metric_labels[[metric_name]], style_labels$cov_first),
+      # title = paste(metric_labels[[metric_name]], style_labels$cov_first),
+      title = NULL,
       fill  = "Pattern / tool"
     ) +
     scale_x_discrete(drop = FALSE) +
-    theme_bw(base_size = 8) +
+    theme_bw(base_size = 18) +
     theme(
       axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
       plot.title = element_text(hjust = 0, face = "bold", size = 9),
@@ -366,16 +388,20 @@ make_box_pattern_group <- function(metric_name) {
   ) +
     geom_boxplot(outlier.shape = 21, size = 0.2) +
     labs(
-      x     = "Pattern / tool group",
+      x     = "Filtering scheme",
       y     = metric_labels[[metric_name]],
-      title = paste(metric_labels[[metric_name]], style_labels$pattern_group),
+      # title = paste(metric_labels[[metric_name]], style_labels$pattern_group),
+      title = NULL,
       fill  = "Pattern / tool"
     ) +
     scale_x_discrete(drop = FALSE) +
-    theme_bw(base_size = 8) +
+    theme_bw(base_size = 18) +
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
       plot.title = element_text(hjust = 0, face = "bold", size = 9),
+      axis.title.x = element_text(
+        margin = margin(t = 10) # ⭐ space between title and ticks
+      ),
       legend.position = "none"
     )
 }
@@ -397,13 +423,14 @@ make_box_cov_group <- function(metric_name) {
   ) +
     geom_boxplot(outlier.shape = 21, size = 0.2) +
     labs(
-      x     = "Coverage / tool group",
+      x     = "Threshold or Baseline tool",
       y     = metric_labels[[metric_name]],
-      title = paste(metric_labels[[metric_name]], style_labels$cov_group),
+      # title = paste(metric_labels[[metric_name]], style_labels$cov_group),
+      title = NULL,
       fill  = "Coverage / tool"
     ) +
     scale_x_discrete(drop = FALSE) +
-    theme_bw(base_size = 8) +
+    theme_bw(base_size = 18) +
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
       plot.title = element_text(hjust = 0, face = "bold", size = 9),
@@ -581,11 +608,12 @@ make_bar_count_plot <- function(flag_col, title_suffix) {
     geom_col() +
     scale_x_discrete(drop = FALSE) +
     labs(
-      x = "Pattern-coverage / tool case",
+      x = "Filtering scheme-Threshold",
       y = "Number of complete datasets",
-      title = paste("Count of complete datasets", title_suffix)
+      title = NULL
+      # title = paste("Count of complete datasets", title_suffix)
     ) +
-    theme_bw(base_size = 8) +
+    theme_bw(base_size = 18) +
     theme(
       axis.text.x  = element_text(angle = 90, hjust = 1, vjust = 0.5),
       plot.title   = element_text(hjust = 0, face = "bold", size = 9)
@@ -619,26 +647,74 @@ pdf(
 )
 
 # 1–4) Boxplots (four styles) for each metric
-for (metric_name in metrics_box) {
-  p1 <- make_box_pattern_first(metric_name)
-  p2 <- make_box_cov_first(metric_name)
-  p3 <- make_box_pattern_group(metric_name)
-  p4 <- make_box_cov_group(metric_name)
+if (opt$`boxplot-layout` == "per-metric") {
+  # One figure (4 panels) per page, per metric
+  for (metric_name in metrics_box) {
+    p1 <- make_box_pattern_first(metric_name)
+    p2 <- make_box_cov_first(metric_name)
+    p3 <- make_box_pattern_group(metric_name)
+    p4 <- make_box_cov_group(metric_name)
 
-  plots_metric <- list(p1, p2, p3, p4)
-  plots_metric <- Filter(Negate(is.null), plots_metric)
+    plots_metric <- list(p1, p2, p3, p4)
+    plots_metric <- Filter(Negate(is.null), plots_metric)
 
-  if (length(plots_metric) == 0) {
-    next
+    if (length(plots_metric) == 0) {
+      next
+    }
+
+    if (opt$`boxplot-pages` == "single") {
+      # One page per figure (4 pages per metric)
+      p_list <- list(
+        pattern_first = p1,
+        cov_first     = p2,
+        pattern_group = p3,
+        cov_group     = p4
+      )
+      p_list <- Filter(Negate(is.null), p_list)
+
+      for (nm in names(p_list)) {
+        p <- p_list[[nm]]
+        # labs(title = paste0("Metric: ", metric_labels[[metric_name]], " | ", nm))
+        print(p) # each print() -> a new PDF page
+      }
+    } else {
+      # Existing behavior: 4 figures in one page
+      plots_metric <- list(p1, p2, p3, p4)
+      plots_metric <- Filter(Negate(is.null), plots_metric)
+
+      if (length(plots_metric) > 0) {
+        combined <- wrap_plots(plots_metric, ncol = opt$`ncol-per-row`) +
+          plot_annotation(title = paste0("Metric: ", metric_labels[[metric_name]])) &
+          theme(legend.position = "bottom")
+        print(combined)
+      }
+    }
+
+
+    # combined <- wrap_plots(plots_metric, ncol = opt$`ncol-per-row`) +
+    #   plot_annotation(
+    #     title = paste0("Metric: ", metric_labels[[metric_name]])
+    #   ) &
+    #   theme(legend.position = "bottom")
+    #
+    # print(combined) # -> one page per metric
   }
-
-  combined <- wrap_plots(plots_metric, ncol = opt$`ncol-per-row`) +
-    plot_annotation(
-      title = paste0("Metric: ", metric_labels[[metric_name]])
-    ) &
-    theme(legend.position = "bottom")
-
-  print(combined)
+} else if (opt$`boxplot-layout` == "all-in-one") {
+  # Put all metrics' boxplots into a single big grid figure
+  all_boxplots <- list()
+  for (metric_name in metrics_box) {
+    p1 <- make_box_pattern_first(metric_name)
+    if (!is.null(p1)) {
+      all_boxplots[[length(all_boxplots) + 1L]] <- p1 +
+        ggtitle(paste0(metric_labels[[metric_name]], " (pattern-first)"))
+    }
+  }
+  if (length(all_boxplots) > 0) {
+    combined_all <- wrap_plots(all_boxplots, ncol = opt$`ncol-per-row`) +
+      plot_annotation(title = opt$title) &
+      theme(legend.position = "bottom")
+    print(combined_all) # one big page with all boxplots
+  }
 }
 
 # 5–8) Completeness grids and barplots

@@ -313,7 +313,7 @@ sheet-ptmt:
 	  --page-width-in 11 --page-height-in 8.5 --margin-in 1.5 \
 	  --rows-per-page 2 \
 	  --columns-per-page 4 \
-	  --start-page 47 \
+	  --start-page 28 \
 		--mt-only \
 	  --title "Supplementary Materials - plant mitogenome assembly graphs"
 	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
@@ -333,7 +333,8 @@ T_GRAPH := "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf"
 
 graph: $(T_GRAPH)
 
-$(T_GRAPH): $(MANIFEST_V6)
+# $(T_GRAPH): $(MANIFEST_V6)
+$(T_GRAPH): 
 	@echo "[INFO] Building graph tier=$(TIER_CLEAN) set=$(SET_CLEAN) in $(SR)"
 	@echo "[INFO] bash script: ${SCRIPT_GRAPH}" 
 	@echo "[INFO] python script: ${SCRIPT_GRAPH_PY}" 

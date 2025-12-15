@@ -17950,7 +17950,7 @@ Synopsis:
   bolap ${bolap_cmd}
 
 Description:
-  text.
+  Compress the species folder.
 
 Examples:
   Subtitle:

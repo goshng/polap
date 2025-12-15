@@ -195,6 +195,8 @@ required_cols <- c(
   "pt_png",
   "completeness_prop"
 )
+# Add tippo and himt.
+if ("tool" %in% names(df)) required_cols <- c(required_cols, "tool")
 
 missing_cols <- setdiff(required_cols, names(df))
 if (length(missing_cols) > 0) {

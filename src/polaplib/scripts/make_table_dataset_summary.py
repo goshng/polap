@@ -3,9 +3,10 @@
 ###############################################################################
 # scripts/make_table_dataset_summary.py
 #
-# Version : v0.2.2
+# Version : v0.2.3
 # Author  : Sang Chul Choi (POLAP)
-# Date    : 2025-12-05
+# Date    : 2025-12-15
+# Date    : 2025-12-05 v0.2.2
 # Date    : 2025-12-04 v0.2.1
 # Date    : 2025-10-22 v0.2.0
 # License : GPL-3.0+
@@ -14,41 +15,25 @@
 #   Read the POLAP manifest JSON and export Table S1 (dataset summary)
 #   as TSV (and optionally Markdown) for manuscripts.
 #
-# Input JSON schema (per item):
-#   {
-#     "code2": "Aa01",             # used as Species in the table
-#     "species": "Genus_species"   # Species name
-#     "data": {
-#       "total_bases": <number|string>,   # raw bases
-#       "read_count":  <number|string>,   # reads -> delete
-#       "mean_length": <number|string>,   # average read length (bases)
-#       "N50":         <number|string>,   # N50 (bases)
-#       "avg_qual":    <number|string>    # average quality (float)
-#       "sra_id":      <number|string>    # SRA
-#     }
-#   }
+# New in v0.2.3:
+#   - Add --columns to select a subset of columns (and order).
 #
-# Output TSV columns (UNITS APPLIED as requested):
-#   SpeciesCode  Species  SRA  Bases  Reads  AvgLen  N50  AvgQ
-#   - Species: string
-#   - SRA    : string
-#   - Bases  : gigabases, 1 decimal (e.g., 7.7)
-#   - AvgLen : kilobases, 1 decimal (e.g., 11.4)
-#   - N50    : kilobases, 1 decimal (e.g., 20.1)
-#   - AvgQ   : integer (rounded, e.g., 9)
+# Available output columns (use these names in --columns):
+#   Code, Species, SRA, Bases (Gb), Reads, AvgLen (kb), N50 (kb), AvgQ
 #
-# Usage :
+# Example:
 #   python scripts/make_table_dataset_summary.py \
-#       --manifest md/manifest-some.json \
-#       --out md/tableS1-dataset-summary.tsv \
-#       [--markdown]
+#       --manifest md/manifest.json \
+#       --out md/tableS1.tsv \
+#       --columns Code,Species,SRA \
+#       --markdown
 ###############################################################################
 import os
 import sys
 import json
 import csv
 import argparse
-from typing import Any, Optional
+from typing import Any, Optional, Dict, List
 
 
 def num(x: Any) -> Optional[float]:
@@ -69,25 +54,20 @@ def num(x: Any) -> Optional[float]:
 
 
 def fmt_gb(v: Optional[float]) -> str:
-    """Bases -> gigabases, 1 decimal. Empty if None."""
     if v is None:
         return ""
     return f"{(v / 1e9):.1f}"
 
 
 def fmt_kb(v: Optional[float]) -> str:
-    """Bases -> kilobases, 1 decimal. Empty if None."""
     if v is None:
         return ""
     return f"{(v / 1e3):.1f}"
 
 
 def fmt_int(v: Optional[float]) -> str:
-    """Rounded integer. Empty if None."""
     if v is None:
         return ""
-    # Round half up behavior for non-negative typical quality; Python's round is banker's.
-    # Use +0.5 then floor via int() for non-negative; if negative, fall back to round().
     if v >= 0:
         return str(int(v + 0.5))
     return str(int(round(v)))
@@ -101,23 +81,38 @@ def fmt_species(name: str) -> str:
     return f"*{clean}*"
 
 
-def write_tsv(path: str, header: list[str], rows: list[list[str]]) -> None:
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+def write_tsv(path: str, header: List[str], rows: List[List[str]]) -> None:
+    outdir = os.path.dirname(path)
+    if outdir:
+        os.makedirs(outdir, exist_ok=True)
     with open(path, "w", newline="") as f:
         w = csv.writer(f, delimiter="\t", lineterminator="\n")
         w.writerow(header)
         w.writerows(rows)
 
 
-def write_markdown(path_md: str, header: list[str], rows: list[list[str]]) -> None:
+def write_markdown(path_md: str, header: List[str], rows: List[List[str]]) -> None:
     with open(path_md, "w") as f:
         f.write("| " + " | ".join(header) + " |\n")
-        # left-align all columns (MultiMarkdown/pipe)
         f.write("|" + "|".join([":---"] * len(header)) + "|\n")
         for r in rows:
-            f.write(
-                "| " + " | ".join(str(x) if x is not None else "" for x in r) + " |\n"
-            )
+            f.write("| " + " | ".join(r) + " |\n")
+
+
+def parse_columns_arg(s: Optional[str], available: List[str]) -> List[str]:
+    """Parse --columns 'A,B,C' into a validated list."""
+    if not s:
+        return []
+    cols = [c.strip() for c in s.split(",") if c.strip()]
+    bad = [c for c in cols if c not in available]
+    if bad:
+        raise ValueError(
+            "Unknown column(s) in --columns: "
+            + ", ".join(bad)
+            + "\nAvailable: "
+            + ", ".join(available)
+        )
+    return cols
 
 
 def main() -> int:
@@ -128,7 +123,7 @@ def main() -> int:
     ap.add_argument(
         "--out",
         required=True,
-        help="Output TSV path (Markdown will use same stem if --markdown)",
+        help="Output TSV path (Markdown uses same stem if --markdown)",
     )
     ap.add_argument(
         "--markdown",
@@ -136,13 +131,21 @@ def main() -> int:
         default=False,
         help="Also write Markdown table beside TSV (same stem, .md extension)",
     )
+    ap.add_argument(
+        "--columns",
+        default="",
+        help=(
+            "Comma-separated output columns (subset + order). "
+            "Example: Code,Species,SRA. "
+            "Available: Code,Species,SRA,Bases (Gb),Reads,AvgLen (kb),N50 (kb),AvgQ"
+        ),
+    )
     args = ap.parse_args()
 
     if not os.path.exists(args.manifest):
         print(f"[ERR] manifest not found: {args.manifest}", file=sys.stderr)
         return 2
 
-    # Load JSON
     try:
         with open(args.manifest, "r") as fh:
             manifest = json.load(fh)
@@ -155,22 +158,33 @@ def main() -> int:
         print("[ERR] No 'items' array in manifest or empty.", file=sys.stderr)
         return 2
 
-    header = [
+    # Define ALL available output columns.
+    AVAILABLE = [
         "Code",
         "Species",
         "SRA",
         "Bases (Gb)",
-        # "Reads",
+        "Reads",
         "AvgLen (kb)",
-        # "N50_kb",
+        "N50 (kb)",
         "AvgQ",
     ]
-    out_rows: list[list[str]] = []
 
-    # Build rows with conversion/scaling applied
+    # Your current default output (v0.2.2 style)
+    DEFAULT_HEADER = ["Code", "Species", "SRA", "Bases (Gb)", "AvgLen (kb)", "AvgQ"]
+
+    try:
+        selected = parse_columns_arg(args.columns, AVAILABLE)
+    except ValueError as e:
+        print(f"[ERR] {e}", file=sys.stderr)
+        return 2
+
+    header = selected if selected else DEFAULT_HEADER
+
+    out_rows: List[List[str]] = []
     for it in items:
-        code2 = it.get("code2", "")  # Species code
-        species_name = it.get("species", "")  # Species name
+        code2 = it.get("code2", "")
+        species_name = it.get("species", "")
         d = it.get("data", {}) or {}
 
         v_bases = num(d.get("total_bases"))
@@ -180,23 +194,23 @@ def main() -> int:
         v_q = num(d.get("avg_qual"))
         v_sra = d.get("sra_id")
 
-        row = [
-            str(code2) if code2 is not None else "",
-            fmt_species(species_name) if species_name is not None else "",
-            str(v_sra) if v_sra is not None else "",
-            fmt_gb(v_bases),  # Bases (GB, 1 dec)
-            # str(int(v_reads)) if v_reads is not None else "",  # Reads (integer display)
-            fmt_kb(v_avlen),  # AvgLen (kb, 1 dec)
-            # fmt_kb(v_n50),  # N50 (kb, 1 dec)
-            fmt_int(v_q),  # AvgQ (rounded int)
-        ]
-        out_rows.append(row)
+        # Build a full row dict, then emit only selected columns in order.
+        row_map: Dict[str, str] = {
+            "Code": str(code2) if code2 is not None else "",
+            "Species": fmt_species(species_name) if species_name is not None else "",
+            "SRA": str(v_sra) if v_sra is not None else "",
+            "Bases (Gb)": fmt_gb(v_bases),
+            "Reads": str(int(v_reads)) if v_reads is not None else "",
+            "AvgLen (kb)": fmt_kb(v_avlen),
+            "N50 (kb)": fmt_kb(v_n50),
+            "AvgQ": fmt_int(v_q),
+        }
 
-    # Write TSV
+        out_rows.append([row_map.get(col, "") for col in header])
+
     write_tsv(args.out, header, out_rows)
     print(f"[INFO] Wrote TSV: {args.out}")
 
-    # Optionally write Markdown
     if args.markdown:
         md_out = os.path.splitext(args.out)[0] + ".md"
         write_markdown(md_out, header, out_rows)

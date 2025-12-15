@@ -10250,7 +10250,7 @@ install-man_genus_species() {
 				echo "[INFO] Conda environment 'polap-man' already exists."
 			else
 				conda create -y --name polap-man pandoc pandoc-crossref yq jq \
-					r-ggplot2 r-patchwork r-dplyr r-readr r-optparse
+					r-ggplot2 r-patchwork r-dplyr r-readr r-optparse r-stringr
 			fi
 		else
 			echo "Error: You're in the '$CONDA_DEFAULT_ENV' environment. Please activate base before running this script."

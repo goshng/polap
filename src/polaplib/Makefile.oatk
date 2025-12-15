@@ -91,7 +91,11 @@ DATA_TABLE_NO_BASE_PREFIX := $(MANIFEST_DIR)/$(MANIFEST_TAG)-data-summary-no-bas
 DATA_TABLE_NO_BASE_TSV    := $(DATA_TABLE_NO_BASE_PREFIX).tsv
 DATA_TABLE_NO_BASE_MD     := $(DATA_TABLE_NO_BASE_PREFIX).md
 TABLE_S1_TSV  := $(MANIFEST_DIR)/$(MANIFEST_TAG)-table-s1.tsv
+TABLE_S1_PDF  := $(TABLE_S1_TSV:.tsv=.pdf)
 TABLE_S1_MD   := $(TABLE_S1_TSV:.tsv=.md)
+TABLE_S1_TSV_3 := $(MANIFEST_DIR)/$(MANIFEST_TAG)-table-s1-3.tsv
+TABLE_S1_PDF_3 := $(TABLE_S1_TSV_3:.tsv=.pdf)
+TABLE_S1_MD_3  := $(TABLE_S1_TSV_3:.tsv=.md)
 SPECIES_CODES_TXT ?= $(POLAPLIB_DIR)/polap-species-codes-$(BOLAP_TYPE).txt
 
 # Inputs / outputs (override on CLI if desired)
@@ -117,6 +121,7 @@ SCRIPT_GRAPH_R := "$(POLAPLIB_DIR)/scripts/polap-r-$(BOLAP_TYPE)-graph.R"
 SCRIPT_GRAPH_SUMMARY_R := "$(POLAPLIB_DIR)/scripts/polap-r-$(BOLAP_TYPE)-graph-summary.R"
 SCRIPT_SHEET := "$(POLAPLIB_DIR)/polap-bash-$(BOLAP_TYPE)-ptmt-sheet.sh"
 SCRIPT_SHEET_R := "$(POLAPLIB_DIR)/polap-r-$(BOLAP_TYPE)-ptmt-sheet.R"
+# "$(POLAPLIB_DIR)/scripts/make_table_dataset_summary.py"
 
 
 # ------------------------------------------------------------------------------
@@ -232,7 +237,8 @@ $(MANIFEST_V6): check-env $(SPECIES_CODES_TXT)
 .PHONY: table-s1
 table-s1: $(TABLE_S1_TSV) $(TABLE_S1_MD)
 
-$(TABLE_S1_TSV): $(MANIFEST_V6)
+# $(TABLE_S1_TSV): $(MANIFEST_V6)
+$(TABLE_S1_TSV):
 	@mkdir -p "$(dir $@)"
 	@echo "[INFO] Building Table S1 from $(MANIFEST_V6)"
 	python3 "$(POLAPLIB_DIR)/scripts/make_table_dataset_summary.py" \
@@ -241,6 +247,18 @@ $(TABLE_S1_TSV): $(MANIFEST_V6)
 	  --markdown
 	@echo "[OK] Wrote: $(TABLE_S1_TSV) and $(TABLE_S1_MD)"
 	@cp "$(TABLE_S1_MD)" "$(MAN5_MD)"
+	python3 "$(POLAPLIB_DIR)/scripts/make_table_dataset_summary.py" \
+	  --manifest "$(MANIFEST_V6)" \
+	  --out "$(TABLE_S1_TSV_3)" \
+		--columns Code,Species,SRA \
+	  --markdown
+	Rscript --vanilla "$(POLAPLIB_DIR)/scripts/polap-r-table-s1-histograms.R" \
+		$(TABLE_S1_TSV) \
+		$(TABLE_S1_PDF_3)
+	@echo "[OK] Wrote: $(TABLE_S1_PDF_3)"
+	@cp "$(TABLE_S1_PDF_3)" "$(MAN5_FIGURE)"
+	@cp "$(TABLE_S1_MD_3)" "$(MAN5_MD)"
+
 
 $(TABLE_S1_MD): $(TABLE_S1_TSV)
 	@true
@@ -322,9 +340,10 @@ sheet-ptmt:
 		--mt-only \
 	  --title "Supplementary Materials - plant mitogenome assembly graphs"
 	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
-		"$(POLAPLIB_DIR)/figures"
-	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
 		"$(MAN5_FIGURE)/figures"
+
+	# @cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
+	# 	"$(POLAPLIB_DIR)/figures"
 
 # --page-width-in 8.5 --page-height-in 11 --margin-in 1.5 \
 # --rows-per-page 8 \

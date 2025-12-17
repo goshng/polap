@@ -11804,8 +11804,10 @@ EOF
 	rm -f "${_timing_txt}"
 
 	local pattern c
-	for pattern in t-h h-t t-x x-h x-x; do
-		for i in $(seq 2 49); do
+	# for pattern in t-h h-t t-x x-h x-x; do
+	# for i in $(seq 2 49); do
+	for pattern in x-x; do
+		for i in 5 8; do
 			printf -v c "%02d" "$i"
 			local oatk_dir="${_brg_outdir_i}/oatk-tiara-himt-${pattern}"
 			# local prefix="oatk-${pattern}-${c}"

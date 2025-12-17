@@ -182,7 +182,9 @@ df <- df %>%
 patterns_core <- c("t-h", "h-t", "t-x", "x-h", "x-x")
 patterns_main <- c("t-h", "h-t", "t-x", "x-h") # x-x handled separately
 cov_all <- c(2, 5, 8, 11, 20, 30, 40, 50)
-cov_xx <- c(11, 20, 30, 40, 50) # x-x only for these
+# 2025-12-17
+# cov_xx <- c(11, 20, 30, 40, 50) # x-x only for these
+cov_xx <- c(5, 8, 11, 20, 30, 40, 50) # x-x only for these
 
 # Pattern-first case labels (desired grid/bar order)
 cases_pattern_first <- c(

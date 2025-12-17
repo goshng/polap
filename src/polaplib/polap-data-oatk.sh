@@ -2257,6 +2257,77 @@ EOF
 }
 
 #-------------------------------------------------------------------------------
+# New simpler benchmark2
+#-------------------------------------------------------------------------------
+benchmark2_genus_species() {
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd} - benchmark2
+
+Synopsis:
+  bolap ${bolap_cmd}
+
+Description:
+  Do no-filtering x-x 5 and 8.
+
+Examples:
+  Subtitle:
+    bolap ${bolap_cmd} <species-folder>
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	bolap_s_parse_commandline
+	parse_commandline
+
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	local species_name="$(echo ${_brg_outdir} | sed 's/_/ /')"
+	local _brg_sindex_0=0
+
+	if [[ "${opt_y_flag}" == false ]]; then
+		echo "We will execute benchmarking2 using Oatk on ${_brg_outdir_i} ..."
+		read -p "Do you want to execute assemble on ${_brg_outdir_i}? (yes/no): " confirm
+	else
+		confirm="yes"
+	fi
+
+	if [[ "${confirm}" != "yes" ]]; then
+		echo "Benchmarking analysis is canceled."
+		return 0
+	fi
+
+	run-data-long_genus_species
+	# run-summary-data_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+	run-downsample-long-using-d-option_genus_species
+	# run-summary-data-long-sra_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+
+	# benchmark
+	local cov_pattern="2,5,8,11,20,30,40,50"
+	# change back: 2025-12-17
+	# local cov_pattern_x_x="11,20,30,40,50"
+	local cov_pattern_x_x="5,8"
+	run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" x-x "$cov_pattern_x_x"
+	run-assess-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
+
+	if [[ "${_local_host}" != "$(hostname)" ]]; then
+		sync_genus_species "${_brg_outdir}" "${_brg_sindex}" --main-push
+		clean-hifi_genus_species "${_brg_outdir}"
+	fi
+}
+
+#-------------------------------------------------------------------------------
 # Mode: development
 #
 # 1)
@@ -3785,6 +3856,52 @@ EOF
 	conda deactivate
 }
 
+man-figure-syncmer_genus_species() {
+	local args=("$@")
+
+	local bolap_cmd="${FUNCNAME%%_*}"
+
+	help_message=$(
+		cat <<EOF
+Name:
+  bolap ${bolap_cmd}
+
+Synopsis:
+  bolap $bolap_cmd
+
+Description:
+  Create a figure for the syncmer distributions.
+  The driver is a Makefile; e.g., Makefile.hifi or Makefile.read.
+
+Outputs:
+  man/figures/
+
+Examples:
+  Topic:
+    bolap $bolap_cmd [--set auto|some]
+
+Copyright:
+  Copyright © 2025 Sang Chul Choi
+  Free Software Foundation (2024-2025)
+
+Author:
+  Sang Chul Choi
+EOF
+	)
+
+	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
+
+	local set=""
+	parse_commandline_man
+
+	_polap_lib_conda-ensure_conda_env polap || exit 1
+
+	make BOLAP_TYPE="${_bolap_type}" SET="$set" \
+		-f "${_POLAPLIB_DIR}/Makefile.${_bolap_type}" figure-syncmer
+
+	conda deactivate
+}
+
 #
 man-table-data_genus_species() {
 	local args=("$@")
@@ -4325,6 +4442,7 @@ Examples:
     bolap man table-data [--set auto|some]
     bolap man sheet-ptmt [--set auto|some]
     bolap man graph [--set auto|some]
+    bolap man figure-syncmer [--set auto|some]
     bolap man man [--set auto|some]
 
   Benchmarking batch run:
@@ -4467,6 +4585,8 @@ bl run assess-himt -s Quercus_berberidifolia
 bl sync -s Quercus_berberidifolia
 for i in Quercus_engelmannii Salix_arbutifolia; do bl benchmark -f 6h -y --remote thorne -s $i; done
 for i in ; do bl benchmark -f 6h -y --remote thorne -s $i; done
+for i in ; do bl benchmark2 -f 6h -y --remote thorne -s $i; done
+for i in ; do bl benchmark2 -f 6h -y -s $i; done
 
 Copyright:
   Copyright © 2025 Sang Chul Choi

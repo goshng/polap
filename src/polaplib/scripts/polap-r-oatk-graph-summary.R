@@ -113,7 +113,9 @@ df <- df %>%
 patterns_main <- c("t-h", "h-t", "t-x", "x-h")
 patterns_xx <- c("x-x")
 cov_all <- c(2, 5, 8, 11, 20, 30, 40, 50)
-cov_xx <- c(11, 20, 30, 40, 50)
+# 2025-12-17
+# cov_xx <- c(11, 20, 30, 40, 50)
+cov_xx <- c(5, 8, 11, 20, 30, 40, 50)
 
 cases_pattern_first <- c(
   unlist(lapply(patterns_main, function(p) sprintf("%s-%02d", p, cov_all))),

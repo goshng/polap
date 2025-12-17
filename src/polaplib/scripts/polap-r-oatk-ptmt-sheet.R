@@ -10,6 +10,10 @@
 # - Keep ALL v1.7.0 pages (species × pattern) unchanged
 # - ADD: one extra "summary" page per species that shows
 #        tippo, himt, oatk-x-10, oatk-x-20, oatk-x-30 in a single page
+#
+# Test:
+# (polap-man) goshng@thorne:~/all/polap/oatk1$ Rscript /home/goshng/all/polap/oatk1/polap/src/polaplib/scripts/polap-r-oatk-ptmt-sheet.R   --list oatk-ptmt-sheet-list.csv   --out /media/h4/labshare/goshng/oatk1/man/figures/v2-0-auto-sheet-ptmt.pdf   --species-codes /home/goshng/all/polap/oatk1/polap/src/polaplib/polap-species-codes-oatk.txt   --mode per-dataset   --rows-per-page 6   --columns-per-page 8   --gap-mm 4.0   --label-cex 1.00   --title-cex 1.0   --page-width-in 11   --page-height-in 8.5   --margin-in 0.5   --start-page 28   --mt-only   --title "Supplementary Materials – plant mitogenome assembly graphs"
+
 
 library(optparse)
 suppressPackageStartupMessages({
@@ -223,7 +227,9 @@ if (length(pattern_levels) == 0) {
 # the 40-case order once
 # the target tile order that a dataset page must follow.
 cov_all <- c(2, 5, 8, 11, 20, 30, 40, 50)
-cov_xx <- c(11, 20, 30, 40, 50)
+# 2025-12-17
+# cov_xx <- c(11, 20, 30, 40, 50)
+cov_xx <- c(2, 5, 8, 11, 20, 30, 40, 50)
 
 cases_40 <- c(
   sprintf("t-h-%02d", cov_all),
@@ -283,6 +289,10 @@ make_case_id <- function(tool, pattern, cov) {
   }
   if (tool == "himt") {
     return("himt")
+  }
+
+  if (tool == "oatk" && pat == "x-x" && !is.na(cv_i) && cv_i == 2L) {
+    return(NA_character_)
   }
 
   # patterned oatk
@@ -356,6 +366,8 @@ draw_pattern_page <- function(df_pat, pattern_label,
   )
   pushViewport(outer_vp)
 
+
+
   # ----------------------- Title & subtitle ----------------------- #
   # main_title <- opt$title
   # grid.text(
@@ -412,8 +424,18 @@ draw_pattern_page <- function(df_pat, pattern_label,
   # Line 1: title + dataset
   line1 <- sprintf("%s - %s %s", opt$title, sp_code2, sp_pretty)
 
+  # Line 2: wrapped Methods caption
+  line2 <- paste(
+    strwrap(
+      "Each panel shows the assembly graph produced by Oatk for a given combination of read prefiltering scheme and syncmer coverage threshold. Filtering schemes are denoted by t (Tiara), h (HiMT), and x (no filtering), with the order indicating the sequence of filtering steps. The numeric suffix indicates the syncmer coverage threshold, followed by the corresponding mitochondrial gene-set completeness value. Red crosses indicate runs in which no assembly graph was produced.",
+      width = 150 # <-- tune this number if needed
+    ),
+    collapse = "\n"
+  )
+
+
   # Line 2: fixed Methods hint
-  line2 <- "Tiara for t, HiMT filter for h, no filtering for x, and the syncmer coverage threshold followed by gene-set completeness"
+  # line2 <- "Each panel shows the assembly graph produced by Oatk for a given combination of read prefiltering scheme and syncmer coverage threshold. Filtering schemes are denoted by t (Tiara), h (HiMT), and x (no filtering), with the order indicating the sequence of filtering steps. The numeric suffix indicates the syncmer coverage threshold, followed by the corresponding mitochondrial gene-set completeness value. Red crosses indicate runs in which no assembly graph was produced."
 
   left_x <- unit(0.01, "npc") # small inset from left margin
 
@@ -430,8 +452,17 @@ draw_pattern_page <- function(df_pat, pattern_label,
     x = left_x,
     y = unit(1, "npc") - unit(1.2, "lines"),
     just = c("left", "top"),
-    gp = gpar(cex = 0.85)
+    gp = gpar(cex = 0.85),
+    default.units = "npc"
   )
+
+  # grid.text(
+  #   line2,
+  #   x = left_x,
+  #   y = unit(1, "npc") - unit(1.2, "lines"),
+  #   just = c("left", "top"),
+  #   gp = gpar(cex = 0.85)
+  # )
 
   # Title: center align
   # grid.text(
@@ -507,7 +538,7 @@ draw_pattern_page <- function(df_pat, pattern_label,
   # ----------------------- (Disabled) Species legend --------------- #
   # We keep only the 2-line header (title + Methods note).
   # So do NOT draw the per-page species legend line.
-  content_top <- unit(1, "npc") - unit(2.2, "lines")
+  content_top <- unit(1, "npc") - unit(4.2, "lines")
 
 
   # ----------------------- Body layout --------------------------- #
@@ -593,7 +624,17 @@ draw_pattern_page <- function(df_pat, pattern_label,
       clip = "on"
     ))
 
+
     if (k <= n_tiles) {
+      # dummy padding slot: only x-x-02
+      is_dummy_xx02 <- FALSE
+      if (".tile_label" %in% names(df_pat)) {
+        lab <- as.character(df_pat$.tile_label[k])
+        if (identical(lab, "x-x-02")) {
+          is_dummy_xx02 <- TRUE
+        }
+      }
+
       # Subtitle for each subfigure: p=t-h c=20
       # cov <- df_pat$cov[k]
       # pat_k <- as.character(df_pat$pattern[k])
@@ -672,8 +713,6 @@ draw_pattern_page <- function(df_pat, pattern_label,
 
         if (!inherits(im, "try-error")) {
           if (.is_summary) {
-            # Preserve aspect ratio by leaving height = NULL
-            # (grid docs: if both width & height are set, image is likely distorted)
             grid.raster(
               im,
               width = unit(0.95, "npc"),
@@ -682,7 +721,6 @@ draw_pattern_page <- function(df_pat, pattern_label,
               interpolate = TRUE
             )
           } else {
-            # keep your original behavior for non-summary pages
             grid.raster(
               im,
               width = unit(0.95, "npc"),
@@ -692,16 +730,32 @@ draw_pattern_page <- function(df_pat, pattern_label,
             )
           }
         } else {
-          grid.text("x",
+          # readPNG failed → treat as missing
+          if (is_dummy_xx02) {
+            grid.text("NA",
+              gp = gpar(col = "grey50", cex = 1.6, fontface = "plain"),
+              y  = unit(img_y_center, "npc")
+            )
+          } else {
+            grid.text("×",
+              gp = gpar(col = "red3", cex = 2.0, fontface = "bold"),
+              y  = unit(img_y_center, "npc")
+            )
+          }
+        }
+      } else {
+        # file does not exist
+        if (is_dummy_xx02) {
+          grid.text("NA",
+            gp = gpar(col = "grey50", cex = 1.6, fontface = "plain"),
+            y  = unit(img_y_center, "npc")
+          )
+        } else {
+          grid.text("×",
             gp = gpar(col = "red3", cex = 2.0, fontface = "bold"),
             y  = unit(img_y_center, "npc")
           )
         }
-      } else {
-        grid.text("x",
-          gp = gpar(col = "red3", cex = 2.0, fontface = "bold"),
-          y  = unit(img_y_center, "npc")
-        )
       }
     }
 

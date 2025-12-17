@@ -336,7 +336,7 @@ sheet-ptmt:
 	  --page-width-in 11 --page-height-in 8.5 --margin-in 0.5 \
 	  --rows-per-page 5 \
 	  --columns-per-page 8 \
-	  --start-page 28 \
+	  --start-page 31 \
 		--mt-only \
 	  --title "Supplementary Materials - plant mitogenome assembly graphs"
 	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \

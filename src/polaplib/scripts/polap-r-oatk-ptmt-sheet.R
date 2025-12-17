@@ -413,23 +413,42 @@ draw_pattern_page <- function(df_pat, pattern_label,
   line1 <- sprintf("%s - %s %s", opt$title, sp_code2, sp_pretty)
 
   # Line 2: fixed Methods hint
-  line2 <- "See the Materials and Methods for the description of label such as t-h-02-1.00"
+  line2 <- "Tiara for t, HiMT filter for h, no filtering for x, and the syncmer coverage threshold followed by gene-set completeness"
+
+  left_x <- unit(0.01, "npc") # small inset from left margin
 
   grid.text(
     line1,
-    x = 0.5,
+    x = left_x,
     y = unit(1, "npc"),
-    just = c("center", "top"),
+    just = c("left", "top"),
     gp = gpar(fontface = "bold", cex = opt$`title-cex`)
   )
 
   grid.text(
     line2,
-    x = 0.5,
+    x = left_x,
     y = unit(1, "npc") - unit(1.2, "lines"),
-    just = c("center", "top"),
+    just = c("left", "top"),
     gp = gpar(cex = 0.85)
   )
+
+  # Title: center align
+  # grid.text(
+  #   line1,
+  #   x = 0.5,
+  #   y = unit(1, "npc"),
+  #   just = c("left", "top"),
+  #   gp = gpar(fontface = "bold", cex = opt$`title-cex`)
+  # )
+  #
+  # grid.text(
+  #   line2,
+  #   x = 0.5,
+  #   y = unit(1, "npc") - unit(1.2, "lines"),
+  #   just = c("left", "top"),
+  #   gp = gpar(cex = 0.85)
+  # )
 
 
   # ----------------------- Species legend (per page) --------------- #

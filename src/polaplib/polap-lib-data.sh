@@ -16583,12 +16583,16 @@ estimate-genomesize_genus_species() {
 # Because PacBio HiFi data could be used instead, we use the platform to
 # use HiFi data.
 estimate-genomesize-platform_genus_species() {
-	local _brg_outdir="${1:-all}"
-	local _brg_inum="${2:-0}"
+	local bolap_cmd="${FUNCNAME%%_*}"
 
-	local target_index="${_brg_outdir}-${_brg_inum}"
-	local long_sra="${_long["$target_index"]}"
-	local short_sra="${_short["$target_index"]}"
+	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
+
+	# local _brg_outdir="${1:-all}"
+	# local _brg_inum="${2:-0}"
+
+	# local target_index="${_brg_outdir}-${_brg_inum}"
+	# local long_sra="${_long["$target_index"]}"
+	local short_sra="${_short["${_brg_target}"]}"
 	local platform="${_platform["$_brg_target"]}"
 
 	local _genome_size="0"
@@ -16599,6 +16603,7 @@ estimate-genomesize-platform_genus_species() {
 	elif [[ -s "${_brg_outdir}/${opt_t_arg}/0/short_expected_genome_size.txt" ]]; then
 		_genome_size=$(<"${_brg_outdir}/${opt_t_arg}/0/short_expected_genome_size.txt")
 	else
+		_polap_lib_conda-ensure_conda_env polap || exit 1
 		if [[ "${platform}" == "PACBIO_SMRT" ]]; then
 			"${_polap_cmd}" find-genome-size-for-pacbio \
 				-o "${_brg_outdir}" \
@@ -16609,6 +16614,7 @@ estimate-genomesize-platform_genus_species() {
 				-b ${short_sra}_2.fastq \
 				-o "${_brg_outdir}"
 		fi
+		_polap_lib_conda-ensure_conda_env_deactivate || true
 		if [[ -s "${_brg_outdir}"/short_expected_genome_size.txt ]]; then
 			_genome_size=$(<"${_brg_outdir}"/short_expected_genome_size.txt)
 		fi
@@ -17956,7 +17962,7 @@ Description:
 
 Examples:
   Subtitle:
-    bolap ${bolap_cmd} -s Genus_species
+    bolap ${bolap_cmd} -s Genus_species --max-size 1M --out export
 
 Copyright:
   Copyright © 2025 Sang Chul Choi
@@ -17969,14 +17975,66 @@ EOF
 
 	_polap_lib_help-maybe-show "$bolap_cmd" help_message || return 0
 
+	local max_size="5M"
+	local outdir="export"
+
+	parse_commandline() {
+		set -- "${_brg_args[@]}"
+
+		while test $# -gt 0; do
+			_key="$1"
+			case "$_key" in
+			--max-size)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					max_size="$2"
+					shift || true
+				fi
+				;;
+			--out)
+				if test $# -lt 2; then
+					_log_echo0 "[ERROR] Missing value for the optional argument '$_key'." 1
+				else
+					outdir="$2"
+					shift || true
+				fi
+				;;
+			esac
+			shift || true
+		done
+	}
+
 	bolap_s_parse_commandline
+	parse_commandline
 
 	source "${_POLAPLIB_DIR}/polap-variables-data.sh"
 
 	# echo "s: ${_brg_outdir}" >&2
 	# echo "i: ${_brg_sindex}" >&2
 
-	tar_gz_with_progress "${_brg_outdir}" "${_brg_outdir}.tar.gz"
+	if [[ ! -d "${outdir}" ]]; then
+		mkdir -p "${outdir}"
+	fi
+
+	# 1. Sync ONLY *.gfa files (ignore size limits)
+	# We include all directories (*/) so rsync can find the .gfa files inside them
+	rsync -azuq \
+		--include="*/" \
+		--include="*.gfa" \
+		--exclude="*" \
+		"${_brg_outdir}/" "${outdir}/${_brg_outdir}/"
+
+	# 2. Sync EVERYTHING ELSE with the 1MB limit
+	# We exclude *.gfa here to avoid redundant processing/overwriting
+	rsync -azuq \
+		--max-size=${max_size} \
+		--exclude="*.gfa" \
+		"${_brg_outdir}/" "${outdir}/${_brg_outdir}/"
+
+	cd "${outdir}"
+	tar_gz_with_progress "${_brg_outdir}" "../${_brg_outdir}.tar.gz"
+	cd -
 }
 
 version_genus_species() {

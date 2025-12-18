@@ -2316,8 +2316,8 @@ EOF
 	# benchmark
 	local cov_pattern="2,5,8,11,20,30,40,50"
 	# change back: 2025-12-17
-	# local cov_pattern_x_x="11,20,30,40,50"
-	local cov_pattern_x_x="5,8"
+	local cov_pattern_x_x="5,8,11,20,30,40,50"
+	# local cov_pattern_x_x="5,8"
 	run-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}" x-x "$cov_pattern_x_x"
 	run-assess-oatk-tiara-himt_genus_species "${_brg_outdir}" "${_brg_sindex_0}"
 

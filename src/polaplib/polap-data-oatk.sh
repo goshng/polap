@@ -4439,10 +4439,12 @@ Examples:
   Run Oatk for organelle genome assemblies:
     bolap man init
     bolap man manifest [--set auto|some]
-    bolap man table-data [--set auto|some]
-    bolap man sheet-ptmt [--set auto|some]
     bolap man graph [--set auto|some]
+    bolap man sheet-ptmt [--set auto|some]
+    bolap man table-s1 [--set auto|some]
     bolap man figure-syncmer [--set auto|some]
+
+    bolap man table-data [--set auto|some]
     bolap man man [--set auto|some]
 
   Benchmarking batch run:
@@ -4521,9 +4523,9 @@ Examples:
     cd .. && rsync -aq thorne:\$PWD/github/ github/ && cd -
     cd .. && rsync -aq thorne:\$PWD/github/ github/ && rsync -aq thorne:.polap/ $HOME/.polap/ && cd -
     export POLAP=polap/src/polap.sh
-    alias pl="bash $POLAP"
+    alias pl="bash \$POLAP"
     export BOLAP=polap/src/bolap.sh
-    alias bl="bash $BOLAP"
+    alias bl="bash \$BOLAP"
     bolap use --data oatk
     source polap/src/polaplib/polap-bash-complete.sh
     bolap conda --cleanup

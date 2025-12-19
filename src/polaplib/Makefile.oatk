@@ -236,10 +236,11 @@ $(MANIFEST_V6): check-env $(SPECIES_CODES_TXT)
 # ------------------------------------------------------------------------------
 #	polap-bash-format-table-dataset-summary.sh" \
 .PHONY: table-s1
-table-s1: $(TABLE_S1_TSV) $(TABLE_S1_MD)
+# table-s1: $(TABLE_S1_TSV)
 
 # $(TABLE_S1_TSV): $(MANIFEST_V6)
-$(TABLE_S1_TSV):
+# $(TABLE_S1_TSV):
+table-s1:
 	@mkdir -p "$(dir $@)"
 	@echo "[INFO] Building Table S1 from $(MANIFEST_V6)"
 	python3 "$(POLAPLIB_DIR)/scripts/make_table_dataset_summary.py" \
@@ -247,7 +248,7 @@ $(TABLE_S1_TSV):
 	  --out "$(TABLE_S1_TSV)" \
 	  --markdown
 	@echo "[OK] Wrote: $(TABLE_S1_TSV) and $(TABLE_S1_MD)"
-	@cp "$(TABLE_S1_MD)" "$(MAN5_MD)"
+	@if [ -d "$(MAN5_MD)" ]; then cp "$(TABLE_S1_MD)" "$(MAN5_MD)"; fi
 	python3 "$(POLAPLIB_DIR)/scripts/make_table_dataset_summary.py" \
 	  --manifest "$(MANIFEST_V6)" \
 	  --out "$(TABLE_S1_TSV_3)" \
@@ -257,8 +258,8 @@ $(TABLE_S1_TSV):
 		$(TABLE_S1_TSV) \
 		$(TABLE_S1_PDF_3)
 	@echo "[OK] Wrote: $(TABLE_S1_PDF_3)"
-	@cp "$(TABLE_S1_PDF_3)" "$(MAN5_FIGURE)"
-	@cp "$(TABLE_S1_MD_3)" "$(MAN5_MD)"
+	@if [ -d "$(MAN5_FIGURE)" ]; then cp "$(TABLE_S1_PDF_3)" "$(MAN5_FIGURE)"; fi
+	@if [ -d "$(MAN5_MD)" ]; then cp "$(TABLE_S1_MD_3)" "$(MAN5_MD)"; fi
 
 
 $(TABLE_S1_MD): $(TABLE_S1_TSV)
@@ -337,14 +338,11 @@ sheet-ptmt:
 	  --page-width-in 11 --page-height-in 8.5 --margin-in 0.5 \
 	  --rows-per-page 6 \
 	  --columns-per-page 8 \
-	  --start-page 38 \
+	  --start-page 39 \
 		--mt-only \
 	  --title "Supplementary Materials - plant mitogenome assembly graphs"
-	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
-		"$(MAN5_FIGURE)/figures"
+	@if [ -d "$(MAN5_FIGURE)" ]; then cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" "$(MAN5_FIGURE)"; fi
 
-	# @cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" \
-	# 	"$(POLAPLIB_DIR)/figures"
 
 # --page-width-in 8.5 --page-height-in 11 --margin-in 1.5 \
 # --rows-per-page 8 \
@@ -358,8 +356,8 @@ T_GRAPH := "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf"
 
 graph: $(T_GRAPH)
 
-# $(T_GRAPH): 
-$(T_GRAPH): $(MANIFEST_V6)
+# $(T_GRAPH): $(MANIFEST_V6)
+$(T_GRAPH): 
 	@echo "[INFO] Building graph tier=$(TIER_CLEAN) set=$(SET_CLEAN) in $(SR)"
 	@echo "[INFO] bash script: ${SCRIPT_GRAPH}" 
 	@echo "[INFO] python script: ${SCRIPT_GRAPH_PY}" 
@@ -371,10 +369,7 @@ $(T_GRAPH): $(MANIFEST_V6)
 		--complete-threshold 0 \
 	  --page-width-in 11 --page-height-in 8.5 --margin-in 0.5 \
 		--title " "
-	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf" \
-		"$(POLAPLIB_DIR)/figures"
-	@cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf" \
-		"$(MAN5_FIGURE)"
+	@if [ -d "$(MAN5_FIGURE)" ]; then cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf" "$(MAN5_FIGURE)"; fi
 	@echo "[INFO] Wrote: $(FIGURE_DIR)/$(MANIFEST_TAG)-mt-graph.pdf"
 
 #-------------------------------------------------------------------------------

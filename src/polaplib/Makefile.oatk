@@ -338,7 +338,7 @@ sheet-ptmt:
 	  --page-width-in 11 --page-height-in 8.5 --margin-in 0.5 \
 	  --rows-per-page 6 \
 	  --columns-per-page 8 \
-	  --start-page 39 \
+	  --start-page 38 \
 		--mt-only \
 	  --title "Supplementary Materials - plant mitogenome assembly graphs"
 	@if [ -d "$(MAN5_FIGURE)" ]; then cp "$(FIGURE_DIR)/$(MANIFEST_TAG)-sheet-ptmt.pdf" "$(MAN5_FIGURE)"; fi

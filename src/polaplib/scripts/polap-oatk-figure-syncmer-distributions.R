@@ -209,24 +209,41 @@ clean_theme <- function(title_size) {
         hjust = 0, # LEFT align title
         size = title_size
       ),
+      axis.title.x = element_text(size = 24),
+      axis.title.y = element_text(size = 24),
       panel.grid.minor = element_blank()
     )
 }
 
+dfA_left_low <- subset(dfA_all, x < c_low)
+dfA_left_mod <- subset(dfA_all, x < c_mod)
+
 # ---------- Panel A (clean) ----------
 pA_clean <- ggplot() +
+  # full baseline
   geom_area(
     data = dfA_all, aes(x = x, y = y),
     alpha = 0.90, fill = "grey80"
   ) +
+  # left of c = 10 (moderate cutoff)
   geom_area(
-    data = dfA_removed_mod, aes(x = x, y = y),
-    alpha = 0.60, fill = "tomato"
+    data = dfA_left_mod, aes(x = x, y = y),
+    alpha = 0.50, fill = "tomato"
   ) +
+  # left of c = 5 (low cutoff, darker)
+  geom_area(
+    data = dfA_left_low, aes(x = x, y = y),
+    alpha = 0.80, fill = "tomato"
+  ) +
+  geom_vline(xintercept = c_low, linetype = "dotted", linewidth = 0.7) +
   geom_vline(xintercept = c_mod, linetype = "dashed", linewidth = 0.7) +
   annotate("text",
+    x = c_low, y = 1.05,
+    label = "c = 5", vjust = 0, hjust = 0.5, size = 4
+  ) +
+  annotate("text",
     x = c_mod, y = 1.05,
-    label = "c ≈ 8–11", vjust = 0, hjust = 0.5, size = 4
+    label = "c = 10", vjust = 0, hjust = 0.5, size = 4
   ) +
   labs(
     title = "(A) Subsampling effect",
@@ -262,10 +279,10 @@ pB_clean <- ggplot() +
   ) +
   annotate("text",
     x = c_mod, y = 1.05,
-    label = "c ≈ 8–11", vjust = 0, hjust = 0.5, size = 4
+    label = "c = 10", vjust = 0, hjust = 0.5, size = 4
   ) +
   labs(
-    title = "(B) Tiara filtering effect",
+    title = "(B) Prefiltering effect",
     x = "Syncmer coverage",
     y = "Relative abundance"
   ) +

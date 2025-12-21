@@ -1708,6 +1708,7 @@ fi
 
 if [[ -n "${_arg_config_path}" && ! -f "${_arg_config_path}" ]]; then
 	echo "[info] new profile (${_arg_preset}): ${_arg_config_path}" >&2
+	mkdir -p "$(dirname "${_arg_config_path}")"
 	touch "${_arg_config_path}"
 	# echo "[error] no such profile (${_arg_preset}): ${_arg_config_path}" >&2
 	# exit 127

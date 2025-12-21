@@ -1,3 +1,8 @@
+# polap bioconda recipes
+
+polap-build.sh
+polap-meta.yaml
+
 # Upload the packages to my channel of anaconda.org
 
 bioconda-utils build --packages cflye
